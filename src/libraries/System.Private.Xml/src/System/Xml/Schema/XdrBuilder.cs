@@ -1244,8 +1244,7 @@ namespace System.Xml.Schema
 
         private static void XDR_InitAttribute(XdrBuilder builder, object obj)
         {
-            if (builder._BaseDecl == null)
-                builder._BaseDecl = new DeclBaseInfo();
+            builder._BaseDecl ??= new DeclBaseInfo();
             builder._BaseDecl._MinOccurs = 0;
         }
 

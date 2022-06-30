@@ -995,14 +995,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocHGlobal(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;
@@ -1042,14 +1036,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocCoTaskMem(checked(nb + 1));
 
-            int nbWritten;
             byte* pbMem = (byte*)ptr;
-
-            fixed (char* firstChar = s)
-            {
-                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
-            }
-
+            int nbWritten = Encoding.UTF8.GetBytes(s, new Span<byte>(pbMem, nb));
             pbMem[nbWritten] = 0;
 
             return ptr;

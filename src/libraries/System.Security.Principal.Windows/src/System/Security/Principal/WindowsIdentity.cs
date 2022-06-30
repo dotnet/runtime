@@ -429,13 +429,11 @@ namespace System.Security.Principal
             {
                 if (_isAuthenticated == -1)
                 {
-                    if (s_authenticatedUserRid is null)
-                    {
-                        s_authenticatedUserRid = new SecurityIdentifier(
-                            IdentifierAuthority.NTAuthority,
-                            new int[] { Interop.SecurityIdentifier.SECURITY_AUTHENTICATED_USER_RID }
-                        );
-                    }
+                    s_authenticatedUserRid ??= new SecurityIdentifier(
+                        IdentifierAuthority.NTAuthority,
+                        new int[] { Interop.SecurityIdentifier.SECURITY_AUTHENTICATED_USER_RID }
+                    );
+
                     // This approach will not work correctly for domain guests (will return false
                     // instead of true). This is a corner-case that is not very interesting.
                     _isAuthenticated = CheckNtTokenForSid(s_authenticatedUserRid) ? 1 : 0;
@@ -502,13 +500,10 @@ namespace System.Security.Principal
                 if (_safeTokenHandle.IsInvalid)
                     return false;
 
-                if (s_domainRid is null)
-                {
-                    s_domainRid = new SecurityIdentifier(
-                        IdentifierAuthority.NTAuthority,
-                        new int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, (int)WindowsBuiltInRole.Guest }
-                    );
-                }
+                s_domainRid ??= new SecurityIdentifier(
+                    IdentifierAuthority.NTAuthority,
+                    new int[] { Interop.SecurityIdentifier.SECURITY_BUILTIN_DOMAIN_RID, (int)WindowsBuiltInRole.Guest }
+                );
 
                 return CheckNtTokenForSid(s_domainRid);
             }
@@ -522,13 +517,10 @@ namespace System.Security.Principal
                 if (_safeTokenHandle.IsInvalid)
                     return false;
 
-                if (s_localSystemRid is null)
-                {
-                    s_localSystemRid = new SecurityIdentifier(
-                        IdentifierAuthority.NTAuthority,
-                        new int[] { Interop.SecurityIdentifier.SECURITY_LOCAL_SYSTEM_RID }
-                    );
-                }
+                s_localSystemRid ??= new SecurityIdentifier(
+                    IdentifierAuthority.NTAuthority,
+                    new int[] { Interop.SecurityIdentifier.SECURITY_LOCAL_SYSTEM_RID }
+                );
 
                 return User == s_localSystemRid;
             }
@@ -542,13 +534,10 @@ namespace System.Security.Principal
                 if (_safeTokenHandle.IsInvalid)
                     return true;
 
-                if (s_anonymousRid is null)
-                {
-                    s_anonymousRid = new SecurityIdentifier(
-                        IdentifierAuthority.NTAuthority,
-                        new int[] { Interop.SecurityIdentifier.SECURITY_ANONYMOUS_LOGON_RID }
-                    );
-                }
+                s_anonymousRid ??= new SecurityIdentifier(
+                    IdentifierAuthority.NTAuthority,
+                    new int[] { Interop.SecurityIdentifier.SECURITY_ANONYMOUS_LOGON_RID }
+                );
 
                 return User == s_anonymousRid;
             }

@@ -292,10 +292,7 @@ namespace System.Drawing
         {
             ArgumentNullException.ThrowIfNull(format);
 
-            ImageCodecInfo? codec = format.FindEncoder();
-
-            if (codec == null)
-                codec = ImageFormat.Png.FindEncoder()!;
+            ImageCodecInfo codec = format.FindEncoder() ?? ImageFormat.Png.FindEncoder()!;
 
             Save(filename, codec, null);
         }

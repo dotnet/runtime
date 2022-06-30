@@ -625,10 +625,7 @@ namespace System.ComponentModel.Composition.Hosting
                 List<ComposablePart>? partList;
 
                 ConditionalWeakTable<object, List<ComposablePart>>? gcRoots = _gcRoots;
-                if (gcRoots == null)
-                {
-                    gcRoots = new ConditionalWeakTable<object, List<ComposablePart>>();
-                }
+                gcRoots ??= new ConditionalWeakTable<object, List<ComposablePart>>();
 
                 if (!gcRoots.TryGetValue(exportedValue, out partList))
                 {

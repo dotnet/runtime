@@ -160,10 +160,7 @@ namespace System.Net.Mime
             }
             catch (Exception ex)
             {
-                if (e == null)
-                {
-                    e = ex;
-                }
+                e ??= ex;
             }
             context._completed = true;
             context._result.InvokeCallback(e);

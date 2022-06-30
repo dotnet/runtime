@@ -105,26 +105,23 @@ function set_exit_code(exit_code, reason) {
 
     } else if (App && App.INTERNAL) {
         if (is_node) {
-            let _flush = function (_stream) {
-                return new Promise((resolve, reject) => {
-                    if (!_stream.write('')) {
-                        _stream.on('drain', () => resolve());
-                        setTimeout(reject, 3000);
-                    } else {
-                        resolve();
-                    }
-                });
+            let _flush = function(_stream) {
+                 return new Promise((resolve, reject) => {
+                     setTimeout(() => { reject(new Error("timed out waiting for stdout/stderr streams to flush")) }, 30000);
+                     _stream.on('error', (error) => reject(error));
+                     _stream.write('', function() { resolve () });
+                 });
             };
             let stderrFlushed = _flush(process.stderr);
             let stdoutFlushed = _flush(process.stdout);
 
-            Promise.all([stdoutFlushed, stderrFlushed])
-                .then(
-                    () => App.INTERNAL.mono_wasm_exit(exit_code),
-                    reason => {
-                        console.error(`flushing std* streams failed: ${reason}`);
-                        App.INTERNAL.mono_wasm_exit(123);
-                    });
+            Promise.all([ stdoutFlushed, stderrFlushed ])
+                    .then(
+                        () => App.INTERNAL.mono_wasm_exit(exit_code),
+                        reason => {
+                            console.error(`flushing std* streams failed: ${reason}`);
+                            App.INTERNAL.mono_wasm_exit(123456);
+                        });
         } else {
             App.INTERNAL.mono_wasm_exit(exit_code);
         }
@@ -358,37 +355,6 @@ if (is_browser) {
 Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
     applyArguments();
 
-    if (is_node) {
-        const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
-        if (modulesToLoad) {
-            modulesToLoad.split(',').forEach(module => {
-                const { 0: moduleName, 1: globalAlias } = module.split(':');
-
-                let message = `Loading npm '${moduleName}'`;
-                let moduleExport = INTERNAL.require(moduleName);
-
-                if (globalAlias) {
-                    message += ` and attaching to global as '${globalAlias}'`;
-                    globalThis[globalAlias] = moduleExport;
-                } else if (moduleName == "node-fetch") {
-                    message += ' and attaching to global';
-                    globalThis.fetch = moduleExport.default;
-                    globalThis.Headers = moduleExport.Headers;
-                    globalThis.Request = moduleExport.Request;
-                    globalThis.Response = moduleExport.Response;
-                } else if (moduleName == "node-abort-controller") {
-                    message += ' and attaching to global';
-                    globalThis.AbortController = moduleExport.AbortController;
-                }
-
-                console.log(message);
-            });
-        }
-    }
-
-    // Must be after loading npm modules.
-    runArgs.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
-
     return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
@@ -411,6 +377,37 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 
                 config.wait_for_debugger = -1;
             }
+    
+            if (is_node) {
+                const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
+                if (modulesToLoad) {
+                    modulesToLoad.split(',').forEach(module => {
+                        const { 0: moduleName, 1: globalAlias } = module.split(':');
+        
+                        let message = `Loading npm '${moduleName}'`;
+                        let moduleExport = INTERNAL.require(moduleName);
+        
+                        if (globalAlias) {
+                            message += ` and attaching to global as '${globalAlias}'`;
+                            globalThis[globalAlias] = moduleExport;
+                        } else if (moduleName == "node-fetch") {
+                            message += ' and attaching to global';
+                            globalThis.fetch = moduleExport.default;
+                            globalThis.Headers = moduleExport.Headers;
+                            globalThis.Request = moduleExport.Request;
+                            globalThis.Response = moduleExport.Response;
+                        } else if (moduleName == "node-abort-controller") {
+                            message += ' and attaching to global';
+                            globalThis.AbortController = moduleExport.AbortController;
+                        }
+        
+                        console.log(message);
+                    });
+                }
+            }
+
+            // Must be after loading npm modules.
+            config.environment_variables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
         },
         preRun: () => {
             if (!runArgs.enableGC) {
@@ -431,7 +428,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
         onAbort: (error) => {
             set_exit_code(1, stringify_as_error_with_stack(new Error()));
         },
-    }))
+    }));
 }).catch(function (err) {
     set_exit_code(1, "failed to load the dotnet.js file.\n" + stringify_as_error_with_stack(err));
 });

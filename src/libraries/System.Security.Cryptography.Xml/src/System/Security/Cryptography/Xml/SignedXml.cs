@@ -168,13 +168,8 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptedXml EncryptedXml
         {
-            get
-            {
-                if (_exml == null)
-                    _exml = new EncryptedXml(_containingDocument); // default processing rules
-                return _exml;
-            }
-            set { _exml = value; }
+            get => _exml ??= new EncryptedXml(_containingDocument); // default processing rules
+            set => _exml = value;
         }
 
         public Signature Signature
@@ -226,10 +221,7 @@ namespace System.Security.Cryptography.Xml
 
             m_signature.LoadXml(value);
 
-            if (_context == null)
-            {
-                _context = value;
-            }
+            _context ??= value;
 
             _bCacheValid = false;
         }
@@ -399,8 +391,7 @@ namespace System.Security.Cryptography.Xml
                 else if (key is RSA)
                 {
                     // Default to RSA-SHA256
-                    if (SignedInfo.SignatureMethod == null)
-                        SignedInfo.SignatureMethod = XmlDsigRSASHA256Url;
+                    SignedInfo.SignatureMethod ??= XmlDsigRSASHA256Url;
                 }
                 else
                 {
@@ -482,31 +473,29 @@ namespace System.Security.Cryptography.Xml
                     return key;
             }
 
-            if (_keyInfoEnum == null)
-                _keyInfoEnum = KeyInfo.GetEnumerator();
+            _keyInfoEnum ??= KeyInfo.GetEnumerator();
 
             // In our implementation, we move to the next KeyInfo clause which is an RSAKeyValue, DSAKeyValue or KeyInfoX509Data
             while (_keyInfoEnum.MoveNext())
             {
-                RSAKeyValue rsaKeyValue = _keyInfoEnum.Current as RSAKeyValue;
-                if (rsaKeyValue != null)
-                    return rsaKeyValue.Key;
-
-                DSAKeyValue dsaKeyValue = _keyInfoEnum.Current as DSAKeyValue;
-                if (dsaKeyValue != null)
-                    return dsaKeyValue.Key;
-
-                KeyInfoX509Data x509Data = _keyInfoEnum.Current as KeyInfoX509Data;
-                if (x509Data != null)
+                switch (_keyInfoEnum.Current)
                 {
-                    _x509Collection = Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification);
-                    if (_x509Collection.Count > 0)
-                    {
-                        _x509Enum = _x509Collection.GetEnumerator();
-                        AsymmetricAlgorithm key = GetNextCertificatePublicKey();
-                        if (key != null)
-                            return key;
-                    }
+                    case RSAKeyValue rsaKeyValue:
+                        return rsaKeyValue.Key;
+
+                    case DSAKeyValue dsaKeyValue:
+                        return dsaKeyValue.Key;
+
+                    case KeyInfoX509Data x509Data:
+                        _x509Collection = Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification);
+                        if (_x509Collection.Count > 0)
+                        {
+                            _x509Enum = _x509Collection.GetEnumerator();
+                            AsymmetricAlgorithm key = GetNextCertificatePublicKey();
+                            if (key != null)
+                                return key;
+                        }
+                        break;
                 }
             }
 
@@ -520,9 +509,10 @@ namespace System.Security.Cryptography.Xml
             {
                 foreach (KeyInfoClause clause in KeyInfo)
                 {
-                    KeyInfoX509Data x509Data = clause as KeyInfoX509Data;
-                    if (x509Data != null)
+                    if (clause is KeyInfoX509Data x509Data)
+                    {
                         collection.AddRange(Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification));
+                    }
                 }
             }
 
@@ -901,8 +891,7 @@ namespace System.Security.Cryptography.Xml
             foreach (Reference reference in sortedReferences)
             {
                 // If no DigestMethod has yet been set, default it to sha1
-                if (reference.DigestMethod == null)
-                    reference.DigestMethod = Reference.DefaultDigestMethod;
+                reference.DigestMethod ??= Reference.DefaultDigestMethod;
 
                 SignedXmlDebugLog.LogSigningReference(this, reference);
 

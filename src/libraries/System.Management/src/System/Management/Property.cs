@@ -250,16 +250,8 @@ namespace System.Management
         /// <para>A <see cref='System.Management.QualifierDataCollection'/> that represents
         ///    the set of qualifiers defined on the property.</para>
         /// </value>
-        public QualifierDataCollection Qualifiers
-        {
-            get
-            {
-                if (qualifiers == null)
-                    qualifiers = new QualifierDataCollection(parent, propertyName, QualifierType.PropertyQualifier);
+        public QualifierDataCollection Qualifiers => qualifiers ??= new QualifierDataCollection(parent, propertyName, QualifierType.PropertyQualifier);
 
-                return qualifiers;
-            }
-        }
         internal long NullEnumValue
         {
             get

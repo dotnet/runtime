@@ -190,10 +190,7 @@ namespace System.Net
         {
             get
             {
-                if (_webHeaders == null)
-                {
-                    _webHeaders = Interop.HttpApi.GetHeaders(RequestBuffer, OriginalBlobAddress);
-                }
+                _webHeaders ??= Interop.HttpApi.GetHeaders(RequestBuffer, OriginalBlobAddress);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"webHeaders:{_webHeaders}");
                 return _webHeaders;
             }
@@ -203,26 +200,13 @@ namespace System.Net
         {
             get
             {
-                if (_httpMethod == null)
-                {
-                    _httpMethod = Interop.HttpApi.GetVerb(RequestBuffer, OriginalBlobAddress);
-                }
+                _httpMethod ??= Interop.HttpApi.GetVerb(RequestBuffer, OriginalBlobAddress);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_httpMethod:{_httpMethod}");
                 return _httpMethod!;
             }
         }
 
-        public Stream InputStream
-        {
-            get
-            {
-                if (_requestStream == null)
-                {
-                    _requestStream = HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
-                }
-                return _requestStream;
-            }
-        }
+        public Stream InputStream => _requestStream ??= HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
 
         public bool IsAuthenticated
         {
@@ -302,10 +286,7 @@ namespace System.Net
         {
             get
             {
-                if (_localEndPoint == null)
-                {
-                    _localEndPoint = Interop.HttpApi.GetLocalEndPoint(RequestBuffer, OriginalBlobAddress);
-                }
+                _localEndPoint ??= Interop.HttpApi.GetLocalEndPoint(RequestBuffer, OriginalBlobAddress);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_localEndPoint={_localEndPoint}");
                 return _localEndPoint!;
             }
@@ -528,11 +509,8 @@ namespace System.Net
         {
             get
             {
-                if (_requestUri == null)
-                {
-                    _requestUri = HttpListenerRequestUriBuilder.GetRequestUri(
-                        _rawUrl!, RequestScheme, _cookedUrlHost!, _cookedUrlPath!, _cookedUrlQuery!);
-                }
+                _requestUri ??= HttpListenerRequestUriBuilder.GetRequestUri(
+                    _rawUrl!, RequestScheme, _cookedUrlHost!, _cookedUrlPath!, _cookedUrlQuery!);
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_requestUri:{_requestUri}");
                 return _requestUri;

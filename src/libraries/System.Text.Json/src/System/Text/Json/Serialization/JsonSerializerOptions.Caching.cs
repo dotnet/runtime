@@ -313,8 +313,7 @@ namespace System.Text.Json
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
                     NormalizeResolver(left._typeInfoResolver) == NormalizeResolver(right._typeInfoResolver) &&
-                    CompareLists(left._converters, right._converters) &&
-                    CompareLists(left._polymorphicTypeConfigurations, right._polymorphicTypeConfigurations);
+                    CompareLists(left._converters, right._converters);
 
                 static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
                 {
@@ -359,7 +358,6 @@ namespace System.Text.Json
                 hc.Add(options._writeIndented);
                 hc.Add(NormalizeResolver(options._typeInfoResolver));
                 GetHashCode(ref hc, options._converters);
-                GetHashCode(ref hc, options._polymorphicTypeConfigurations);
 
                 static void GetHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
                 {

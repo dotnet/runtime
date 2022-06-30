@@ -359,10 +359,7 @@ namespace System.Data
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRelation.set_RelationName|API> {0}, '{1}'", ObjectID, value);
                 try
                 {
-                    if (value == null)
-                    {
-                        value = string.Empty;
-                    }
+                    value ??= string.Empty;
 
                     CultureInfo locale = (_dataSet != null ? _dataSet.Locale : CultureInfo.CurrentCulture);
                     if (string.Compare(_relationName, value, true, locale) != 0)

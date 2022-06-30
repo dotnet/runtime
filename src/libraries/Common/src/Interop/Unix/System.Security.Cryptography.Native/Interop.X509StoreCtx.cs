@@ -61,7 +61,7 @@ internal static partial class Interop
         internal static SafeSharedX509StackHandle X509StoreCtxGetSharedUntrusted(SafeX509StoreCtxHandle ctx)
         {
             return SafeInteriorHandle.OpenInteriorHandle(
-                x => X509StoreCtxGetSharedUntrusted_private(x),
+                X509StoreCtxGetSharedUntrusted_private,
                 ctx);
         }
     }
