@@ -66,8 +66,8 @@ namespace System.Runtime.InteropServices.JavaScript
             if (!_isDisposed)
             {
                 JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
-                JSHandle = IntPtr.Zero;
                 _isDisposed = true;
+                JSHandle = IntPtr.Zero;
             }
         }
 

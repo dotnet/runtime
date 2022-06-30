@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.JavaScript
     /// <summary>
     /// Represents an Exception initiated from the JavaScript interop code.
     /// </summary>
-    [SupportedOSPlatform("browser")]
+    [SupportedOSPlatform("browser")] // @kg: Do we really need to platform-lock JSException?
     public sealed class JSException : Exception
     {
         // TODO after https://github.com/dotnet/runtime/issues/70133

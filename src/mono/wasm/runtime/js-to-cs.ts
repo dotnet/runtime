@@ -250,15 +250,11 @@ export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoo
     setup_managed_proxy(holder, tcs_gc_handle);
     thenable.then((result) => {
         corebindings._set_tcs_result_ref(tcs_gc_handle, result);
-        // let go of the thenable reference
-        mono_wasm_release_cs_owned_object(thenable_js_handle);
-
-        teardown_managed_proxy(holder, tcs_gc_handle); // this holds holder alive for finalizer, until the promise is freed
     }, (reason) => {
         corebindings._set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
+    }).finally(() => {
         // let go of the thenable reference
         mono_wasm_release_cs_owned_object(thenable_js_handle);
-
         teardown_managed_proxy(holder, tcs_gc_handle); // this holds holder alive for finalizer, until the promise is freed
     });
 

@@ -687,14 +687,15 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
     try {
         module.addRunDependency(configFilePath);
 
-        const configRaw = await runtimeHelpers.fetch(configFilePath);
-        const config = await configRaw.json();
+        const configResponse = await runtimeHelpers.fetch(configFilePath);
+        const config = (await configResponse.json()) || {};
 
-        runtimeHelpers.config = config || {};
         config.environment_variables = config.environment_variables || {};
         config.assets = config.assets || [];
         config.runtime_options = config.runtime_options || [];
         config.globalization_mode = config.globalization_mode || GlobalizationMode.AUTO;
+
+        runtimeHelpers.config = config;
         Module.removeRunDependency(configFilePath);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err}`;

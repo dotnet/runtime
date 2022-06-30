@@ -55,9 +55,15 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
     const js_handle = _js_handle_free_list.length ? _js_handle_free_list.pop() : _next_js_handle++;
     // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
     _cs_owned_objects_by_js_handle[<number>js_handle!] = js_obj;
+
     if (Object.isExtensible(js_obj)) {
         js_obj[cs_owned_js_handle_symbol] = js_handle;
     }
+    // else
+    //   The consequence of not adding the cs_owned_js_handle_symbol is, that we could have multiple JSHandles and multiple proxy instances. 
+    //   Throwing exception would prevent us from creating any proxy of non-extensible things. 
+    //   If we have weakmap instead, we would pay the price of the lookup for all proxies, not just non-extensible objects.
+
     return js_handle as JSHandle;
 }
 
@@ -109,7 +115,7 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
             _js_owned_object_registry.unregister(result);
         }
     }
-    if (gc_handle != GCHandleNull && _js_owned_object_table.delete(gc_handle)) {
+    if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle)) {
         corebindings._release_js_owned_object_by_gc_handle(gc_handle);
     }
 }

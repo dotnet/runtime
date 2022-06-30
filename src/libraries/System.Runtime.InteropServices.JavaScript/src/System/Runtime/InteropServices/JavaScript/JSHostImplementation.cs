@@ -37,14 +37,12 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static object GetTaskResult(Task task)
+        public static object? GetTaskResult(Task task)
         {
             MethodInfo method = GetTaskResultMethodInfo(task.GetType());
             if (method != null)
             {
-#pragma warning disable CS8603 // Possible null reference return.
                 return method.Invoke(task, null);
-#pragma warning restore CS8603 // Possible null reference return.
             }
             throw new InvalidOperationException();
         }
@@ -171,8 +169,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 return MarshalType.DELEGATE;
             else if ((type == typeof(Task)) || typeof(Task).IsAssignableFrom(type))
                 return MarshalType.TASK;
-            /*else if (typeof(Uri) == type)
-                return MarshalType.URI;*/
             else if (type.IsPointer)
                 return MarshalType.POINTER;
 

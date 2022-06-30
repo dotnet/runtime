@@ -26,12 +26,7 @@ const _signature_converters = new Map<string, Converter>();
 export function _get_type_name(typePtr: MonoType): string {
     if (!typePtr)
         return "<null>";
-    try {
-        return cwraps.mono_wasm_get_type_name(typePtr);
-    }
-    catch (ex) {
-        return "<not-found>";
-    }
+    return cwraps.mono_wasm_get_type_name(typePtr);
 }
 
 export function _get_type_aqn(typePtr: MonoType): string {

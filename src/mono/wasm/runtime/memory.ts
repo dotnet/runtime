@@ -138,7 +138,7 @@ export function setU52(offset: _MemOffset, value: number): void {
 
 export function setI64Big(offset: _MemOffset, value: bigint): void {
     mono_assert(is_bigint_supported, "BigInt is not supported.");
-    mono_assert(typeof value === "bigint", () => `Value is not an integer: ${value} (${typeof (value)})`);
+    mono_assert(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
     mono_assert(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
 
     HEAPI64[<any>offset >>> 3] = value;

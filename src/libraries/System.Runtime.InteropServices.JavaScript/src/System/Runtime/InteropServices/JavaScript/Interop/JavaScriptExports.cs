@@ -16,9 +16,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (JSHostImplementation.s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference))
                 {
                     reference.TryGetTarget(out JSObject? jsObject);
-                    if (shouldAddInflight != 0 && jsObject != null)
+                    if (shouldAddInflight != 0)
                     {
-                        jsObject.AddInFlight();
+                        jsObject?.AddInFlight();
                     }
                     result = jsObject;
                     return;

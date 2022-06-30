@@ -12,8 +12,6 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Execute the provided string in the JavaScript context
         /// </summary>
-        /// <returns>The js.</returns>
-        /// <param name="str">String.</param>
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
         public static string InvokeJS(string str)
             => JavaScriptImports.InvokeJS(str);
