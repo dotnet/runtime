@@ -53,7 +53,7 @@ namespace System.Text.Json
             (TKey, int)[] keys = new (TKey, int)[arrayCopy.Length];
             for (int i = 0; i < keys.Length; i++)
             {
-                keys[i] = (keySelector(items[i]), i);
+                keys[i] = (keySelector(arrayCopy[i]), i);
             }
 
             Array.Sort(keys, arrayCopy);
