@@ -6284,8 +6284,7 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement
 
     assert(link != nullptr);
 
-    // The hoist Expr does not have to computed into a specific register,
-    // so clear the RegNum if it was set in the original expression
+    // The hoist Expr does not have to computed into a specific register.
     hoistExpr->ClearRegNum();
 
     /* Put the statement in the preheader */
@@ -6296,24 +6295,40 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement
 
     GenTree* hoist = hoistExpr;
 
-    if (hoistExpr->OperIs(GT_ASG))
+    if (hoistExpr->TypeIs(TYP_VOID))
     {
         *link = gtNewNothingNode();
     }
     else
     {
-        CORINFO_CLASS_HANDLE structHnd = nullptr;
-        // When we have a GT_IND node with a SIMD type then we don't have a reliable
-        // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
-        //
-        if (varTypeIsStruct(hoistExpr) && ((hoistExpr->OperGet() != GT_IND) || !varTypeIsSIMD(hoistExpr)))
+        unsigned  cseLclVarNum = lvaGrabTemp(false DEBUGARG("optPerformHoistExpr"));
+        var_types cseLclVarTyp = genActualType(hoistExpr->TypeGet());
+        if (varTypeIsStruct(cseLclVarTyp))
         {
-            structHnd = gtGetStructHandleIfPresent(hoistExpr);
+            CORINFO_CLASS_HANDLE structHnd = gtGetStructHandle(hoistExpr);
+            assert(structHnd != NO_CLASS_HANDLE);
+            lvaSetStruct(cseLclVarNum, structHnd, false);
         }
+        lvaTable[cseLclVarNum].lvType = cseLclVarTyp;
+        GenTree* cseLclVar            = gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
 
-        TempInfo tempInfo = fgMakeTemp(hoistExpr, structHnd);
-        hoist             = tempInfo.asg;
-        *link             = tempInfo.load;
+         GenTree* asg = gtNewTempAssign(cseLclVarNum, hoistExpr);
+         GenTree* load = gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+        //CORINFO_CLASS_HANDLE structHnd = nullptr;
+        //// When we have a GT_IND node with a SIMD type then we don't have a reliable
+        //// struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
+        ////
+        //if (varTypeIsStruct(hoistExpr) && ((hoistExpr->OperGet() != GT_IND) || !varTypeIsSIMD(hoistExpr)))
+        //{
+        //    structHnd = gtGetStructHandleIfPresent(hoistExpr);
+        //}
+
+        //TempInfo tempInfo = fgMakeTemp(hoistExpr, structHnd);
+        //hoist             = tempInfo.asg;
+        //*link             = tempInfo.load;
+
+         hoist = asg;
+         *link = load;
     }
 
     preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
@@ -6343,9 +6358,6 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement
 
     hoistStmt->SetNextStmt(nullptr);
 
-    /// The link has changed so we need to update the side effects of the statement.
-    gtUpdateStmtSideEffects(exprStmt);
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -6355,6 +6367,19 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement
     }
 #endif
 
+    FieldSeqNode* fldSeq               = nullptr;
+    bool          commaOnly            = true;
+    GenTree*      effectiveExp         = hoistExpr->gtEffectiveVal(commaOnly);
+    const bool    hasZeroMapAnnotation = GetZeroOffsetFieldMap()->Lookup(effectiveExp, &fldSeq);
+
+    // If it has a zero-offset field seq, copy annotation.
+    if (hasZeroMapAnnotation)
+    {
+        fgAddFieldSeqForZeroOffset(*link, fldSeq);
+    }
+
+    assert(fgRemoveRestOfBlock == false);
+
     if (fgStmtListThreaded)
     {
         gtSetStmtInfo(hoistStmt);
@@ -6362,6 +6387,10 @@ void Compiler::optPerformHoistExpr(GenTree** link, BasicBlock* exprBb, Statement
         gtSetStmtInfo(exprStmt);
         fgSetStmtSeq(exprStmt);
     }
+
+    gtUpdateStmtSideEffects(exprStmt);
+   // /* re-morph the statement */
+   // fgMorphBlockStmt(exprBb, exprStmt DEBUGARG("optPerformHoistExpr"));
 
 #ifdef DEBUG
     if (m_nodeTestData != nullptr)
@@ -7272,7 +7301,6 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 isInvariant = isInvariant && IsTreeVNInvariant(tree);
 
                 Value& top = m_valueStack.TopRef();
-                assert(top.Node() == tree);
 
                 if (isInvariant)
                 {
@@ -7600,7 +7628,6 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             m_valueStack.Pop(childCount);
 
             Value& top = m_valueStack.TopRef();
-            assert(top.Node() == tree);
             top.m_hoistable      = treeIsHoistable;
             top.m_cctorDependent = treeIsCctorDependent;
             top.m_invariant      = treeIsInvariant;

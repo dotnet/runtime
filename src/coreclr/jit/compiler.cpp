@@ -4918,13 +4918,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VALUE_NUMBER, &Compiler::fgValueNumber);
             }
 
-            if (doLoopHoisting)
-            {
-                // Hoist invariant code out of loops
-                //
-                DoPhase(this, PHASE_HOIST_LOOP_CODE, &Compiler::optHoistLoopCode);
-            }
-
             if (doCopyProp)
             {
                 // Perform VN based copy propagation
@@ -4940,6 +4933,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             // Remove common sub-expressions
             //
             DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+
+            if (doLoopHoisting)
+            {
+                // Hoist invariant code out of loops
+                //
+                DoPhase(this, PHASE_HOIST_LOOP_CODE, &Compiler::optHoistLoopCode);
+            }
 
             if (doAssertionProp)
             {
