@@ -394,9 +394,17 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <!--Needs work to get these tests to pass -->
     <!--These tests have failures-->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" 
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj"
                       Condition="'$(TargetOS)' == 'linux'" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\FunctionalTests\Microsoft.Extensions.Hosting.Functional.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\EnterpriseTests\System.Net.Http.Enterprise.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\EnterpriseTests\System.Net.Security.Enterprise.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj"
                       Condition="'$(TargetOS)' == 'linux'" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />

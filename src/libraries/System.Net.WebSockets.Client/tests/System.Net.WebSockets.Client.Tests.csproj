@@ -3,6 +3,7 @@
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
     <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
 
