@@ -49,7 +49,7 @@ enum class ReadyToRunSectionType
     // 207 is unused - it was used by GCStaticDesc
     ThreadStaticOffsetRegion    = 208,
     // 209 is unused - it was used by ThreadStaticGCDescRegion
-    ThreadStaticIndex           = 210,
+    // 210 is unused - it was used by ThreadStaticIndex
     // 211 is unused - it was used by LoopHijackFlag
     ImportAddressTables         = 212,
 
