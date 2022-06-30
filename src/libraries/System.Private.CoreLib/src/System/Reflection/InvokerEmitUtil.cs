@@ -167,7 +167,6 @@ namespace System.Reflection
         private static class Methods
         {
             private static FieldInfo? s_ByReferenceOfByte_Value;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ByReference))]
             public static FieldInfo ByReferenceOfByte_Value() =>
                 s_ByReferenceOfByte_Value ??= typeof(ByReference).GetField("Value")!;
 
