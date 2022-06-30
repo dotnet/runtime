@@ -5,18 +5,21 @@
 
 namespace System.Runtime.InteropServices.Marshalling
 {
-    [CustomTypeMarshaller(typeof(HandleRef), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    internal struct HandleRefMarshaller
+    [CustomMarshaller(typeof(HandleRef), Scenario.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+    internal static class HandleRefMarshaller
     {
-        private HandleRef _handle;
-
-        public HandleRefMarshaller(HandleRef handle)
+        internal struct KeepAliveMarshaller
         {
-            _handle = handle;
+            private HandleRef _handle;
+
+            public void FromManaged(HandleRef handle)
+            {
+                _handle = handle;
+            }
+
+            public IntPtr ToUnmanaged() => _handle.Handle;
+
+            public void NotifyInvokeSucceeded() => GC.KeepAlive(_handle.Wrapper);
         }
-
-        public IntPtr ToNativeValue() => _handle.Handle;
-
-        public void FreeNative() => GC.KeepAlive(_handle.Wrapper);
     }
 }

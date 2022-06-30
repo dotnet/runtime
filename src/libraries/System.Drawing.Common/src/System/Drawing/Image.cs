@@ -44,34 +44,37 @@ namespace System.Drawing
         public delegate bool GetThumbnailImageAbort();
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(GetThumbnailImageAbort), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.UnmanagedResources)]
-        internal unsafe struct GetThumbnailImageAbortMarshaller
+        [CustomMarshaller(typeof(GetThumbnailImageAbort), Scenario.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        internal static class GetThumbnailImageAbortMarshaller
         {
-            private delegate Interop.BOOL GetThumbnailImageAbortNative(IntPtr callbackdata);
-            private GetThumbnailImageAbortNative? _managed;
-            private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
-            public GetThumbnailImageAbortMarshaller(GetThumbnailImageAbort managed)
+            internal unsafe struct KeepAliveMarshaller
             {
-                if (managed is null)
+                private delegate Interop.BOOL GetThumbnailImageAbortNative(IntPtr callbackdata);
+                private GetThumbnailImageAbortNative? _managed;
+                private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+                public void FromManaged(GetThumbnailImageAbort managed)
                 {
-                    _managed = null;
-                    _nativeFunction = null;
+                    if (managed is null)
+                    {
+                        _managed = null;
+                        _nativeFunction = null;
+                    }
+                    else
+                    {
+                        _managed = data => managed() ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                        _nativeFunction = (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                    }
                 }
-                else
+
+                public delegate* unmanaged<IntPtr, Interop.BOOL> ToUnmanaged()
                 {
-                    _managed = data => managed() ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-                    _nativeFunction = (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                    return _nativeFunction;
                 }
-            }
 
-            public delegate* unmanaged<IntPtr, Interop.BOOL> ToNativeValue()
-            {
-                return _nativeFunction;
-            }
-
-            public void FreeNative()
-            {
-                GC.KeepAlive(_managed);
+                public void NotifyInvokeSucceeded()
+                {
+                    GC.KeepAlive(_managed);
+                }
             }
         }
 #endif

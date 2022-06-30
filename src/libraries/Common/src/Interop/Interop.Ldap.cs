@@ -222,48 +222,52 @@ namespace System.DirectoryServices.Protocols
         public NOTIFYOFNEWCONNECTIONInternal notify;
         public DEREFERENCECONNECTIONInternal dereference;
 #if NET7_0_OR_GREATER
-        public static readonly unsafe int Size = sizeof(Marshaller.Native);
+        public static readonly unsafe int Size = sizeof(Marshaller.MarshalValue.Native);
 
-        [CustomTypeMarshaller(typeof(LdapReferralCallback), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-        public unsafe struct Marshaller
+        [CustomMarshaller(typeof(LdapReferralCallback), Scenario.ManagedToUnmanagedIn, typeof(MarshalValue))]
+        [CustomMarshaller(typeof(LdapReferralCallback), Scenario.ManagedToUnmanagedRef, typeof(MarshalValue))]
+        [CustomMarshaller(typeof(LdapReferralCallback), Scenario.ManagedToUnmanagedOut, typeof(MarshalValue))]
+        public static class Marshaller
         {
-            public unsafe struct Native
+            public unsafe struct MarshalValue
             {
-                public int sizeofcallback;
-                public IntPtr query;
-                public IntPtr notify;
-                public IntPtr dereference;
-            }
-
-            private LdapReferralCallback _managed;
-            private Native _native;
-
-            public Marshaller(LdapReferralCallback managed)
-                : this()
-            {
-                _managed = managed;
-                _native.sizeofcallback = sizeof(Native);
-                _native.query = managed.query is not null ? Marshal.GetFunctionPointerForDelegate(managed.query) : IntPtr.Zero;
-                _native.notify = managed.notify is not null ? Marshal.GetFunctionPointerForDelegate(managed.notify) : IntPtr.Zero;
-                _native.dereference = managed.dereference is not null ? Marshal.GetFunctionPointerForDelegate(managed.dereference) : IntPtr.Zero;
-            }
-
-            public Native ToNativeValue() => _native;
-
-            public void FromNativeValue(Native value) => _native = value;
-
-            public LdapReferralCallback ToManaged()
-            {
-                return new LdapReferralCallback()
+                public unsafe struct Native
                 {
-                    sizeofcallback = _native.sizeofcallback,
-                    query = _native.query != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<QUERYFORCONNECTIONInternal>(_native.query) : null,
-                    notify = _native.notify != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<NOTIFYOFNEWCONNECTIONInternal>(_native.notify) : null,
-                    dereference = _native.dereference != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<DEREFERENCECONNECTIONInternal>(_native.dereference) : null
-                };
-            }
+                    public int sizeofcallback;
+                    public IntPtr query;
+                    public IntPtr notify;
+                    public IntPtr dereference;
+                }
 
-            public void FreeNative() => GC.KeepAlive(_managed);
+                private LdapReferralCallback _managed;
+                private Native _native;
+
+                public void FromManaged(LdapReferralCallback managed)
+                {
+                    _managed = managed;
+                    _native.sizeofcallback = sizeof(Native);
+                    _native.query = managed.query is not null ? Marshal.GetFunctionPointerForDelegate(managed.query) : IntPtr.Zero;
+                    _native.notify = managed.notify is not null ? Marshal.GetFunctionPointerForDelegate(managed.notify) : IntPtr.Zero;
+                    _native.dereference = managed.dereference is not null ? Marshal.GetFunctionPointerForDelegate(managed.dereference) : IntPtr.Zero;
+                }
+
+                public Native ToUnmanaged() => _native;
+
+                public void FromUnmanaged(Native value) => _native = value;
+
+                public LdapReferralCallback ToManaged()
+                {
+                    return new LdapReferralCallback()
+                    {
+                        sizeofcallback = _native.sizeofcallback,
+                        query = _native.query != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<QUERYFORCONNECTIONInternal>(_native.query) : null,
+                        notify = _native.notify != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<NOTIFYOFNEWCONNECTIONInternal>(_native.notify) : null,
+                        dereference = _native.dereference != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<DEREFERENCECONNECTIONInternal>(_native.dereference) : null
+                    };
+                }
+
+                public void NotifyInvokeSucceeded() => GC.KeepAlive(_managed);
+            }
         }
 #else
         public static readonly unsafe int Size = Marshal.SizeOf<LdapReferralCallback>();
