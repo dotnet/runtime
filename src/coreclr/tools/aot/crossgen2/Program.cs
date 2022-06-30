@@ -622,16 +622,8 @@ namespace ILCompiler
                                         crossModuleInlineableCode.Add((EcmaModule)module);
                                     }
                                 }
-                                if (crossModulePgoAssemblyName == "-")
-                                {
-                                    crossModuleInlineableCode.Clear();
-                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        crossModuleInlineableCode.Add((EcmaModule)typeSystemContext.SystemModule);
                     }
 
                     //
