@@ -748,10 +748,16 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void Callback(void* configurationContext, void* name, GCConfigurationType type, long data)
+        private static unsafe void Callback(void* configurationContext, void* name, void* publicKey, GCConfigurationType type, long data)
         {
+            // If the public key is null, it means that the corresponding configuration isn't publically available
+            // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
+            if (publicKey == null)
+            {
+                return;
+            }
+
             Debug.Assert(configurationContext != null);
-            Debug.Assert(name != null);
 
             ref GCConfigurationContext context = ref Unsafe.As<byte, GCConfigurationContext>(ref *(byte*)configurationContext);
             Debug.Assert(context.Configurations != null);
@@ -779,7 +785,7 @@ namespace System
 
         /// <summary>
         /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't neccessarily have to be the same as the ones that are passed by the user.
-        /// For example for the ``GCHeapCount`` configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
+        /// For example for the "GCHeapCount" configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
         /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         /// </summary>
         public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
@@ -802,6 +808,6 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
-        internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, GCConfigurationType, long, void> callback);
+        internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
     }
 }

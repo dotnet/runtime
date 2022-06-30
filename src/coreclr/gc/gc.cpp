@@ -43964,6 +43964,8 @@ HRESULT GCHeap::Initialize()
     uint32_t nhp_from_config = 0;
 
 #ifdef MULTIPLE_HEAPS
+
+    GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
 

@@ -5,13 +5,13 @@
 #include "gcenv.h"
 #include "gc.h"
 
-#define BOOL_CONFIG(name, unused_private_key, unused_public_key, default, unused_enumerated, unused_doc) \
+#define BOOL_CONFIG(name, unused_private_key, unused_public_key, default, unused_doc) \
   bool GCConfig::Get##name() { return s_##name; }                                     \
   void GCConfig::Set##name(bool value) { s_Updated##name = value; }                   \
   bool GCConfig::s_##name = default;                                                  \
   bool GCConfig::s_Updated##name = default;
 
-#define INT_CONFIG(name, unused_private_key, unused_public_key, default, unused_enumerated, unused_doc)  \
+#define INT_CONFIG(name, unused_private_key, unused_public_key, default, unused_doc)  \
   int64_t GCConfig::Get##name() { return s_##name; }                                  \
   void GCConfig::Set##name(int64_t value) { s_Updated##name = value; }              \
   int64_t GCConfig::s_##name = default;                                               \
@@ -20,7 +20,7 @@
 // String configs are not cached because 1) they are rare and
 // not on hot paths and 2) they involve transfers of ownership
 // of EE-allocated strings, which is potentially complicated.
-#define STRING_CONFIG(name, private_key, public_key, unused_enumerated, unused_doc)  \
+#define STRING_CONFIG(name, private_key, public_key, unused_doc)  \
   GCConfigStringHolder GCConfig::Get##name()                                       \
   {                                                                                \
       const char* resultStr = nullptr;                                             \
@@ -36,54 +36,36 @@ GC_CONFIGURATION_KEYS
 
 void GCConfig::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
 {
-#define INT_CONFIG_false(name, default)
-#define INT_CONFIG_true(name, default)  \
-    configurationValueFunc(context, (void*)(#name), GCConfigurationType::Int64, static_cast<int64_t>(s_Updated##name));
+#define INT_CONFIG(name, unused_private_key, public_key, default, unused_doc) \
+    configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::Int64, static_cast<int64_t>(s_Updated##name));
     
-#define STRING_CONFIG_false(name, private_key, public_key)
-#define STRING_CONFIG_true(name, private_key, public_key)                            \
+#define STRING_CONFIG(name, private_key, public_key, unused_doc)                     \
     {                                                                                \
         const char* resultStr = nullptr;                                             \
         GCToEEInterface::GetStringConfigValue(private_key, public_key, &resultStr);  \
         GCConfigStringHolder holder(resultStr);                                      \
-        configurationValueFunc(context, (void*)(#name), GCConfigurationType::StringUtf8, reinterpret_cast<int64_t>(resultStr));               \
+        configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::StringUtf8, reinterpret_cast<int64_t>(resultStr)); \
     }
 
-#define BOOL_CONFIG_false(name, default)
-#define BOOL_CONFIG_true(name, default)  \
-    configurationValueFunc(context, (void*)(#name), GCConfigurationType::Boolean, static_cast<int64_t>(s_Updated##name));
-
-#define INT_CONFIG(name, unused_private_key, unused_public_key, default, enumerated, unused_doc)   \
-    INT_CONFIG_##enumerated(name, default)
-
-#define STRING_CONFIG(name, private_key, public_key, enumerated, unused_doc)                       \
-    STRING_CONFIG_##enumerated(name, private_key, public_key)
-
-#define BOOL_CONFIG(name, unused_private_key, unused_public_key, default, enumerated, unused_doc)  \
-    BOOL_CONFIG_##enumerated(name, default)
+#define BOOL_CONFIG(name, unused_private_key, public_key, default, unused_doc) \
+    configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::Boolean, static_cast<int64_t>(s_Updated##name));
 
 GC_CONFIGURATION_KEYS
 
-#undef BOOL_CONFIG_false
-#undef BOOL_CONFIG_true
 #undef BOOL_CONFIG
-#undef INT_CONFIG_false
-#undef INT_CONFIG_true
 #undef INT_CONFIG
-#undef STRING_CONFIG_false
-#undef STRING_CONFIG_true
 #undef STRING_CONFIG
 }
 
 void GCConfig::Initialize()
 {
-#define BOOL_CONFIG(name, private_key, public_key, default, unused_enumerated, unused_doc)          \
+#define BOOL_CONFIG(name, private_key, public_key, default, unused_doc)          \
     GCToEEInterface::GetBooleanConfigValue(private_key, public_key, &s_##name);
 
-#define INT_CONFIG(name, private_key, public_key, default, unused_enumerated, unused_doc)           \
+#define INT_CONFIG(name, private_key, public_key, default, unused_doc)           \
     GCToEEInterface::GetIntConfigValue(private_key, public_key, &s_##name);
 
-#define STRING_CONFIG(unused_name, unused_private_key, unused_public_key, unused_enumerated, unused_doc)
+#define STRING_CONFIG(unused_name, unused_private_key, unused_public_key, unused_doc)
 
 GC_CONFIGURATION_KEYS
 

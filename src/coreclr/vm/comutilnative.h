@@ -121,7 +121,7 @@ typedef GCMemoryInfoData * GCMEMORYINFODATA;
 typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
 #endif // USE_CHECKED_OBJECTREFS
 
-using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, GCConfigurationType type, int64_t data);
+using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
 
 class GCInterface {
 private:
