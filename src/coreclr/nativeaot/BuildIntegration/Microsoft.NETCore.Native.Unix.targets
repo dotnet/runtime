@@ -17,7 +17,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CustomToolchainSpecified Condition="'$(CppCompilerAndLinker)' != ''">true</CustomToolchainSpecified>
     <CppCompilerAndLinker Condition="'$(CustomToolchainSpecified)' != 'true'">clang</CppCompilerAndLinker>
     <CppCompilerAndLinkerAlternative Condition="'$(CustomToolchainSpecified)' != 'true' and '$(TargetOS)' != 'OSX'">gcc</CppCompilerAndLinkerAlternative>
-    <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <DsymUtilOptions Condition="'$(TargetOS)' == 'OSX'">--flat</DsymUtilOptions>
@@ -117,7 +116,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup Condition="'$(CppCompilerAndLinkerAlternative)' != '' and '$(_WhereLinker)' != '0' and '$(_WhereLinkerAlt)' == '0'">
       <CppCompilerAndLinker>$(CppCompilerAndLinkerAlternative)</CppCompilerAndLinker>
-      <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
       <CppLinker>$(CppCompilerAndLinker)</CppLinker>
       <_WhereLinker>0</_WhereLinker>
     </PropertyGroup>
