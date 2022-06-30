@@ -14029,11 +14029,11 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
 #endif
 GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 {
-    SSIZE_T       i1, i2, itemp;
-    INT64         lval1, lval2, ltemp;
-    float         f1, f2;
-    double        d1, d2;
-    var_types     switchType;
+    SSIZE_T   i1, i2, itemp;
+    INT64     lval1, lval2, ltemp;
+    float     f1, f2;
+    double    d1, d2;
+    var_types switchType;
     FieldSeq* fieldSeq = nullptr; // default unless we override it when folding
 
     assert(tree->OperIsUnary() || tree->OperIsBinary());
@@ -17641,8 +17641,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     {
                         FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
 
-                        if ((fieldSeq != nullptr) &&
-                            (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
+                        if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                         {
                             // No benefit to calling gtGetFieldClassHandle here, as
                             // the exact field being accessed can vary.

@@ -1168,13 +1168,13 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_Const,     // This chunk contains constant values.
-        CEA_Handle,    // This chunk contains handle constants.
-        CEA_Func0,     // Represents functions of arity 0.
-        CEA_Func1,     // ...arity 1.
-        CEA_Func2,     // ...arity 2.
-        CEA_Func3,     // ...arity 3.
-        CEA_Func4,     // ...arity 4.
+        CEA_Const,  // This chunk contains constant values.
+        CEA_Handle, // This chunk contains handle constants.
+        CEA_Func0,  // Represents functions of arity 0.
+        CEA_Func1,  // ...arity 1.
+        CEA_Func2,  // ...arity 2.
+        CEA_Func3,  // ...arity 3.
+        CEA_Func4,  // ...arity 4.
         CEA_Count
     };
 

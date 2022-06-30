@@ -4615,7 +4615,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeq* fldSeq, ssize_t offs
     {
         fldSeq = m_pComp->GetFieldSeqStore()->Append(FieldSeqVNToFieldSeq(funcApp.m_args[1]), fldSeq);
         res    = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0], VNForFieldSeq(fldSeq),
-                           VNForIntPtrCon(ConstantValue<ssize_t>(funcApp.m_args[2]) + offset));
+                        VNForIntPtrCon(ConstantValue<ssize_t>(funcApp.m_args[2]) + offset));
     }
     else if (funcApp.m_func == VNF_PtrToArrElem)
     {

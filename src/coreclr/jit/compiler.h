@@ -4738,12 +4738,8 @@ public:
 
     void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset);
 
-    void fgValueNumberFieldStore(GenTree*  storeNode,
-                                 GenTree*  baseAddr,
-                                 FieldSeq* fieldSeq,
-                                 ssize_t   offset,
-                                 unsigned  storeSize,
-                                 ValueNum  value);
+    void fgValueNumberFieldStore(
+        GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
@@ -10414,7 +10410,7 @@ public:
         Compiler* compRoot = impInlineRoot();
         if (compRoot->m_fieldSeqStore == nullptr)
         {
-            CompAllocator alloc = getAllocator(CMK_FieldSeqStore);
+            CompAllocator alloc       = getAllocator(CMK_FieldSeqStore);
             compRoot->m_fieldSeqStore = new (alloc) FieldSeqStore(alloc);
         }
         return compRoot->m_fieldSeqStore;

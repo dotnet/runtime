@@ -11742,7 +11742,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 GenTree* commaNode = commas.Top();
 
-                tree                       = op1;
+                tree = op1;
                 commaNode->AsOp()->gtOp2->gtFlags |= GTF_DONT_CSE;
 
                 // If the node we're about to put under a GT_ADDR is an indirection, it

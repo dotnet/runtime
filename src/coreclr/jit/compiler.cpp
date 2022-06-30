@@ -1935,10 +1935,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeTestData      = nullptr;
     m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
 #endif
-    m_switchDescMap      = nullptr;
-    m_blockToEHPreds     = nullptr;
-    m_fieldSeqStore      = nullptr;
-    m_refAnyClass        = nullptr;
+    m_switchDescMap  = nullptr;
+    m_blockToEHPreds = nullptr;
+    m_fieldSeqStore  = nullptr;
+    m_refAnyClass    = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {
         m_memorySsaMap[memoryKind] = nullptr;
