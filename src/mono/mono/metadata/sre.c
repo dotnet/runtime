@@ -335,7 +335,7 @@ method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflect
 	clauses = image_g_new0 (image, MonoExceptionClause, num_clauses);
 
 	clause_index = 0;
-	for (guint32 i = mono_array_length_internal (ilgen->ex_handlers) - 1; i >= 0; --i) {
+	for (int i = mono_array_length_internal (ilgen->ex_handlers) - 1; i >= 0; --i) {
 		ex_info = (MonoILExceptionInfo*)mono_array_addr_internal (ilgen->ex_handlers, MonoILExceptionInfo, i);
 		finally_start = ex_info->start + ex_info->len;
 		if (!ex_info->handlers)
@@ -4024,7 +4024,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	 */
 	rmb.nrefs = mb->nrefs;
 	rmb.refs = g_new0 (gpointer, mb->nrefs + 1);
-	for (gint32 i = 0; i < mb->nrefs; i += 2) {
+	for (int i = 0; i < mb->nrefs; i += 2) {
 		MonoClass *handle_class;
 		gpointer ref;
 		MonoObject *obj = mono_array_get_internal (mb->refs, MonoObject*, i);
