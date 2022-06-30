@@ -3466,7 +3466,7 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 #endif
 }
 
-#if defined(HOST_ARM64)
+#if defined(TARGET_ARM64)
 
 #define Define_InterlockMethod(RETURN_TYPE, METHOD_DECL, METHOD_INVOC, INTRINSIC_NAME) \
 __attribute__((target("lse")))  \
