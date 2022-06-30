@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
+using Xunit.Abstractions;
 
 #nullable enable
 
@@ -33,7 +34,7 @@ namespace DebuggerTests
         private static readonly ConcurrentDictionary<int, WeakReference<Action<RunLoopExitState>>> s_exitHandlers = new();
         private static readonly ConcurrentDictionary<string, RunLoopExitState> s_statusTable = new();
 
-        public static Task Start(string appPath, string pagePath, string url)
+        public static Task Start(string appPath, string pagePath, string url, ITestOutputHelper testOutput)
         {
             lock (proxyLock)
             {
@@ -48,12 +49,15 @@ namespace DebuggerTests
                     })
                     .ConfigureLogging(logging =>
                     {
-                        logging.AddSimpleConsole(options =>
-                                {
-                                    options.SingleLine = true;
-                                    options.TimestampFormat = "[HH:mm:ss] ";
-                                })
-                                .AddFilter("DevToolsProxy", LogLevel.Debug)
+                        logging
+                                .ClearProviders()
+                                .AddXunit(testOutput)
+                                //.AddSimpleConsole(options =>
+                                //{
+                                    //options.SingleLine = true;
+                                    //options.TimestampFormat = "[HH:mm:ss] ";
+                                //})
+                                //.AddFilter("DevToolsProxy", LogLevel.Debug)
                                 .AddFile(Path.Combine(DebuggerTestBase.TestLogPath, "proxy.log"),
                                             minimumLevel: LogLevel.Trace,
                                             levelOverrides: new Dictionary<string, LogLevel>
@@ -63,7 +67,7 @@ namespace DebuggerTests
                                             outputTemplate: "{Timestamp:o} [{Level:u3}] {SourceContext}: {Message}{NewLine}{Exception}")
                                 .AddFilter(null, LogLevel.Information);
                     })
-                .ConfigureServices((ctx, services) =>
+                    .ConfigureServices((ctx, services) =>
                     {
                         services.Configure<TestHarnessOptions>(ctx.Configuration);
                         services.Configure<TestHarnessOptions>(options =>
@@ -79,7 +83,7 @@ namespace DebuggerTests
                 hostTask = host.StartAsync(cts.Token);
             }
 
-            Console.WriteLine("WebServer Ready!");
+            testOutput.WriteLine("WebServer Ready!");
             return hostTask;
         }
 

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -13,8 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.Runtime.ExceptionServices;
-using Microsoft.AspNetCore.Routing.Tree;
-using System.Globalization;
+using Xunit.Abstractions;
 
 #nullable enable
 
@@ -40,27 +38,32 @@ namespace DebuggerTests
 
         protected static Lazy<ILoggerFactory> s_loggerFactory = new(() =>
         {
-            return LoggerFactory.Create(builder =>
-                    builder
-                        // .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
-                        .AddSimpleConsole(options =>
-                            {
-                                options.SingleLine = true;
-                                options.TimestampFormat = "[HH:mm:ss] ";
-                            })
-                           .AddFilter(null, LogLevel.Trace));
+            return LoggerFactory.Create(builder => {});
+            //return LoggerFactory.Create(builder =>
+                    ////builder
+                        ////// .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
+                        ////.AddSimpleConsole(options =>
+                            ////{
+                                ////options.SingleLine = true;
+                                ////options.TimestampFormat = "[HH:mm:ss] ";
+                            ////})
+                           ////.AddFilter(null, LogLevel.Debug));
         });
 
         protected ILogger _logger;
         public int Id { get; init; }
 
-        public Inspector(int testId)
+        public Inspector(int testId, ITestOutputHelper testOutput)
         {
             Id = testId;
             _cancellationTokenSource = new CancellationTokenSource();
             Token = _cancellationTokenSource.Token;
 
-            _logger = s_loggerFactory.Value.CreateLogger($"{nameof(Inspector)}-{Id}");
+            if (Id == 0)
+                s_loggerFactory.Value.AddXunit(testOutput);
+
+            _logger = s_loggerFactory.Value
+                            .CreateLogger($"{nameof(Inspector)}-{Id}");
             if (DebuggerTestBase.RunningOnChrome)
                 Client = new InspectorClient(_logger);
             else

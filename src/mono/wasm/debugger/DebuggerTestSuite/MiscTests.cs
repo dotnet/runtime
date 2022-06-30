@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using Xunit.Sdk;
+using Xunit.Abstractions;
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 
@@ -16,6 +16,8 @@ namespace DebuggerTests
 
     public class MiscTests : DebuggerTests
     {
+        public MiscTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
         [Fact]
         public void CheckThatAllSourcesAreSent()
@@ -525,7 +527,7 @@ namespace DebuggerTests
                 $"'{entry_method_name}'," +
                 (call_other ? "true" : "false") +
                 "); }, 1);";
-            Console.WriteLine($"{eval_expr}");
+            _testOutput.WriteLine($"{eval_expr}");
 
             var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, invoke_async ? "MoveNext" : method_name);
 

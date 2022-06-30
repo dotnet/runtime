@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
@@ -22,7 +23,11 @@ namespace DebuggerTests
 #else
     DebuggerTestFirefox
 #endif
-    {}
+    {
+        public DebuggerTests(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
+                : base(testOutput, driver)
+        {}
+    }
 
     public class DebuggerTestBase : IAsyncLifetime
     {
@@ -46,6 +51,7 @@ namespace DebuggerTests
 
         private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
         protected TimeSpan TestTimeout = TimeSpan.FromMilliseconds(DefaultTestTimeoutMs);
+        protected ITestOutputHelper _testOutput;
 
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
@@ -103,24 +109,24 @@ namespace DebuggerTests
                     string logPathVar = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
                     logPathVar = string.IsNullOrEmpty(logPathVar) ? Environment.CurrentDirectory : logPathVar;
                     Interlocked.CompareExchange(ref s_testLogPath, logPathVar, null);
-                    Console.WriteLine ($"logPathVar: {logPathVar}, s_testLogPath: {s_testLogPath}");
                 }
 
                 return s_testLogPath;
             }
         }
 
-        public DebuggerTestBase(string driver = "debugger-driver.html")
+        public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
         {
+            _testOutput = testOutput;
             Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
             // we want the test to mach it. We are also starting chrome with --lang=en-US
             System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
-            insp = new Inspector(Id);
+            insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging());
+            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput);
         }
 
         public virtual async Task InitializeAsync()
@@ -232,7 +238,7 @@ namespace DebuggerTests
             var res = await cli.SendCommand(EvaluateCommand(), CreateEvaluateArgs(eval_expression), token);
             if (!res.IsOk)
             {
-                Console.WriteLine($"Failed to run command {method} with args: {CreateEvaluateArgs(eval_expression)?.ToString()}\nresult: {res.Error.ToString()}");
+                _testOutput.WriteLine($"Failed to run command {method} with args: {CreateEvaluateArgs(eval_expression)?.ToString()}\nresult: {res.Error.ToString()}");
                 Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
             }
             var pause_location = await WaitFor(Inspector.PAUSE);
@@ -428,7 +434,7 @@ namespace DebuggerTests
             var res = await cli.SendCommand(method, args, token);
             if (!res.IsOk)
             {
-                Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
+                _testOutput.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
                 Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
             }
             return res;
@@ -542,7 +548,7 @@ namespace DebuggerTests
             var res = await cli.SendCommand(method, args, token);
             if (!res.IsOk)
             {
-                Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
+                _testOutput.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
                 Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
             }
 
@@ -825,7 +831,7 @@ namespace DebuggerTests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{ex.Message} \nExpected: {exp_val} \nActual: {actual_val}");
+                _testOutput.WriteLine($"{ex.Message} \nExpected: {exp_val} \nActual: {actual_val}");
                 throw;
             }
         }
@@ -1020,7 +1026,7 @@ namespace DebuggerTests
                 }
                 catch
                 {
-                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
+                    _testOutput.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
                     throw;
                 }
             }
@@ -1116,7 +1122,7 @@ namespace DebuggerTests
                 }
                 catch
                 {
-                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
+                    _testOutput.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
                     throw;
                 }
             }
@@ -1392,7 +1398,7 @@ namespace DebuggerTests
             try
             {
                 var res = await insp.WaitForEvent("Debugger.breakpointResolved");
-                Console.WriteLine ($"breakpoint resolved to {res}");
+                _testOutput.WriteLine ($"breakpoint resolved to {res}");
                 return res;
             }
             catch (TaskCanceledException)
