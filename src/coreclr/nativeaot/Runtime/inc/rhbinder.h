@@ -82,30 +82,6 @@ public:
     }
 };
 
-struct StaticGcDesc
-{
-    struct GCSeries
-    {
-        uint32_t m_size;
-        uint32_t m_startOffset;
-    };
-
-    uint32_t   m_numSeries;
-    GCSeries m_series[1];
-
-    uint32_t GetSize()
-    {
-        return (uint32_t)(offsetof(StaticGcDesc, m_series) + (m_numSeries * sizeof(GCSeries)));
-    }
-
-#ifdef DACCESS_COMPILE
-    static uint32_t DacSize(TADDR addr);
-#endif
-};
-
-typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
-typedef DPTR(StaticGcDesc::GCSeries) PTR_StaticGcDescGCSeries;
-
 class MethodTable;
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH

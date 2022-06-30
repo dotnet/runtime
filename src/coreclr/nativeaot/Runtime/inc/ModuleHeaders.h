@@ -46,9 +46,9 @@ enum class ReadyToRunSectionType
     TypeManagerIndirection      = 204,
     EagerCctor                  = 205,
     FrozenObjectRegion          = 206,
-    GCStaticDesc                = 207,
+    // 207 is unused - it was used by GCStaticDesc
     ThreadStaticOffsetRegion    = 208,
-    ThreadStaticGCDescRegion    = 209,
+    // 209 is unused - it was used by ThreadStaticGCDescRegion
     ThreadStaticIndex           = 210,
     // 211 is unused - it was used by LoopHijackFlag
     ImportAddressTables         = 212,
