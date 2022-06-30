@@ -965,10 +965,7 @@ namespace System.Xml
             }
 
             // detect & setup encoding
-            if (encoding == null)
-            {
-                encoding = DetectEncoding();
-            }
+            encoding ??= DetectEncoding();
             SetupEncoding(encoding);
 
             // eat preamble

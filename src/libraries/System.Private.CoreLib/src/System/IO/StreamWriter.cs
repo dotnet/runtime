@@ -97,14 +97,12 @@ namespace System.IO
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
             }
-            if (encoding == null)
-            {
-                encoding = UTF8NoBOM;
-            }
+
             if (!stream.CanWrite)
             {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             }
+
             if (bufferSize == -1)
             {
                 bufferSize = DefaultBufferSize;
@@ -115,7 +113,7 @@ namespace System.IO
             }
 
             _stream = stream;
-            _encoding = encoding;
+            _encoding = encoding ?? UTF8NoBOM;
             _encoder = _encoding.GetEncoder();
             if (bufferSize < MinBufferSize)
             {

@@ -1874,20 +1874,8 @@ namespace System.Collections.Concurrent
         #endregion
 
 
-        private bool AreAllBucketsEmpty()
-        {
-            int[] countPerLock = _tables._countPerLock;
-
-            for (int i = 0; i < countPerLock.Length; i++)
-            {
-                if (countPerLock[i] != 0)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        private bool AreAllBucketsEmpty() =>
+            _tables._countPerLock.AsSpan().IndexOfAnyExcept(0) < 0;
 
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the

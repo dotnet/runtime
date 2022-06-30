@@ -8434,12 +8434,9 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     /* Figure out the encoding format of the instruction */
 
-    bool idjShort = false;
     switch (ins)
     {
         case INS_bl_local:
-            idjShort = true;
-            FALLTHROUGH;
         case INS_b:
             // Unconditional jump is a single form.
             // Assume is long in case we cross hot/cold sections.
@@ -8473,7 +8470,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-    id->idjShort = idjShort;
+    id->idjShort = false;
 
 #ifdef DEBUG
     // Mark the finally call
@@ -8489,15 +8486,14 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
         // Skip unconditional jump that has a single form.
         // The target needs to be relocated.
-        if (!idjShort)
-        {
-            id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+        id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
 
 #ifdef DEBUG
-            if (emitComp->opts.compLongAddress) // Force long branches
-                id->idjKeepLong = 1;
-#endif // DEBUG
+        if (emitComp->opts.compLongAddress) // Force long branches
+        {
+            id->idjKeepLong = true;
         }
+#endif // DEBUG
     }
     else
     {

@@ -32,7 +32,7 @@ import {
     mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
-import { DotnetModuleConfigImports, DotnetModule, is_nullish } from "./types";
+import { DotnetModuleConfigImports, DotnetModule, is_nullish, MonoConfig, MonoConfigError } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
@@ -55,9 +55,7 @@ import {
     mono_wasm_invoke_js_with_args_ref, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
 import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
-import { mono_wasm_cancel_promise_ref } from "./cancelable-promise";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 import {
     setI8, setI16, setI32, setI52,
@@ -75,6 +73,8 @@ import {
     dotnet_browser_simple_digest_hash,
     dotnet_browser_sign
 } from "./crypto-worker";
+import { mono_wasm_cancel_promise_ref } from "./cancelable-promise";
+import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
 import { mono_wasm_pthread_on_pthread_attached, afterThreadInit } from "./pthreads/worker";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
@@ -98,7 +98,7 @@ const MONO = {
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
     mono_wasm_load_runtime: cwraps.mono_wasm_load_runtime,
 
-    config: runtimeHelpers.config,
+    config: <MonoConfig | MonoConfigError>runtimeHelpers.config,
     loaded_files: <string[]>[],
 
     // memory accessors
@@ -199,7 +199,7 @@ type PThreadReplacements = {
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
-    exports: { mono: any, binding: any, internal: any, module: any },
+    exports: { mono: any, binding: any, internal: any, module: any, marshaled_exports: any, marshaled_imports: any },
     replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, pthreadReplacements: PThreadReplacements | undefined | null },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
@@ -217,6 +217,8 @@ function initializeImportsAndExports(
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
+        EXPORTS: exports.marshaled_exports,
+        IMPORTS: exports.marshaled_imports,
         Module: module,
         RuntimeBuildInfo: {
             ProductVersion,
@@ -411,7 +413,7 @@ export const __linker_exports: any = {
 
 const INTERNAL: any = {
     // startup
-    BINDING_ASM: "[System.Private.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
+    BINDING_ASM: "[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.JavaScriptExports",
 
     // tests
     call_static_method,
@@ -444,9 +446,8 @@ const INTERNAL: any = {
     mono_wasm_raise_debug_event,
     mono_wasm_change_debugger_log_level,
     mono_wasm_debugger_attached,
-    mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
+    mono_wasm_runtime_is_ready: <boolean>runtimeHelpers.mono_wasm_runtime_is_ready,
 };
-
 
 // this represents visibility in the javascript
 // like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
@@ -454,6 +455,8 @@ export interface DotnetPublicAPI {
     MONO: typeof MONO,
     BINDING: typeof BINDING,
     INTERNAL: any,
+    EXPORTS: any,
+    IMPORTS: any,
     Module: EmscriptenModule,
     RuntimeId: number,
     RuntimeBuildInfo: {
@@ -475,4 +478,8 @@ class RuntimeList {
         const wr = this.list[runtimeId];
         return wr ? wr.deref() : undefined;
     }
+}
+
+export function get_dotnet_instance(): DotnetPublicAPI {
+    return exportedAPI;
 }

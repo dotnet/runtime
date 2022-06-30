@@ -242,10 +242,7 @@ namespace System.Xml
                 {
                     lock (OwnerDocument.objLock)
                     {
-                        if (_attributes == null)
-                        {
-                            _attributes = new XmlAttributeCollection(this);
-                        }
+                        _attributes ??= new XmlAttributeCollection(this);
                     }
                 }
 

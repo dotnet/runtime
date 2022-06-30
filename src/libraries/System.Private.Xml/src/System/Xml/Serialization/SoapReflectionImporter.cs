@@ -38,12 +38,8 @@ namespace System.Xml.Serialization
 
         public SoapReflectionImporter(SoapAttributeOverrides? attributeOverrides, string? defaultNamespace)
         {
-            if (defaultNamespace == null)
-                defaultNamespace = string.Empty;
-            if (attributeOverrides == null)
-                attributeOverrides = new SoapAttributeOverrides();
-            _attributeOverrides = attributeOverrides;
-            _defaultNs = defaultNamespace;
+            _defaultNs = defaultNamespace ?? string.Empty;
+            _attributeOverrides = attributeOverrides ?? new SoapAttributeOverrides();
             _typeScope = new TypeScope();
             _modelScope = new ModelScope(_typeScope);
         }
@@ -205,9 +201,9 @@ namespace System.Xml.Serialization
                             typeNs = baseAttributes.SoapType.Namespace;
                         TypeDesc valueTypeDesc = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc! : TypeScope.GetTypeDesc(dataType, XmlSchema.Namespace)!;
                         string xsdTypeName = string.IsNullOrEmpty(dataType) ? model.TypeDesc.BaseTypeDesc!.Name : dataType;
-                        TypeMapping? baseMapping = GetTypeMapping(xsdTypeName, typeNs, valueTypeDesc);
-                        if (baseMapping == null)
-                            baseMapping = ImportTypeMapping(_modelScope.GetTypeModel(baseTypeDesc.Type!), dataType, limiter);
+                        TypeMapping baseMapping =
+                            GetTypeMapping(xsdTypeName, typeNs, valueTypeDesc) ??
+                            ImportTypeMapping(_modelScope.GetTypeModel(baseTypeDesc.Type!), dataType, limiter);
                         return CreateNullableMapping(baseMapping, model.TypeDesc.Type!);
                     }
                     else
@@ -408,7 +404,7 @@ namespace System.Xml.Serialization
                 members.Add(member);
             }
             mapping.Members = members.ToArray();
-            if (mapping.BaseMapping == null) mapping.BaseMapping = GetRootMapping();
+            mapping.BaseMapping ??= GetRootMapping();
             IncludeTypes(model.Type, limiter);
 
             return true;
@@ -592,8 +588,7 @@ namespace System.Xml.Serialization
             if (a.SoapIgnore) return null;
             if ((a.GetSoapFlags() & ~SoapAttributeFlags.Enum) != 0)
                 throw new InvalidOperationException(SR.XmlInvalidEnumAttribute);
-            if (a.SoapEnum == null)
-                a.SoapEnum = new SoapEnumAttribute();
+            a.SoapEnum ??= new SoapEnumAttribute();
 
             ConstantMapping constant = new ConstantMapping();
             constant.XmlName = a.SoapEnum.Name.Length == 0 ? model.Name : a.SoapEnum.Name;

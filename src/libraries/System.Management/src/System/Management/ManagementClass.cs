@@ -383,10 +383,7 @@ namespace System.Management
             {
                 Initialize(true);
 
-                if (methods == null)
-                    methods = new MethodDataCollection(this);
-
-                return methods;
+                return methods ??= new MethodDataCollection(this);
             }
         }
 

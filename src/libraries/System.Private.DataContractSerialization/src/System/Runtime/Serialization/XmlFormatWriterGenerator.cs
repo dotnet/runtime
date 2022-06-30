@@ -302,8 +302,8 @@ namespace System.Runtime.Serialization
                             _ilg.LoadArrayElement(_childElementNamespacesLocal!, i + _childElementIndex);
                             _ilg.Call(methodInfo: XmlFormatGeneratorStatics.WriteNamespaceDeclMethod);
                         }
-                        if (memberValue == null)
-                            memberValue = LoadMemberValue(member);
+
+                        memberValue ??= LoadMemberValue(member);
                         WriteValue(memberValue, writeXsiType);
                         WriteEndElement();
                     }
@@ -431,10 +431,8 @@ namespace System.Runtime.Serialization
                     {
                         if (enumeratorType.IsInterface)
                         {
-                            if (moveNextMethod == null)
-                                moveNextMethod = XmlFormatGeneratorStatics.MoveNextMethod;
-                            if (getCurrentMethod == null)
-                                getCurrentMethod = XmlFormatGeneratorStatics.GetCurrentMethod;
+                            moveNextMethod ??= XmlFormatGeneratorStatics.MoveNextMethod;
+                            getCurrentMethod ??= XmlFormatGeneratorStatics.GetCurrentMethod;
                         }
                         else
                         {
@@ -454,10 +452,9 @@ namespace System.Runtime.Serialization
                                     }
                                 }
                             }
-                            if (moveNextMethod == null)
-                                moveNextMethod = CollectionDataContract.GetTargetMethodWithName(Globals.MoveNextMethodName, enumeratorType, ienumeratorInterface)!;
-                            if (getCurrentMethod == null)
-                                getCurrentMethod = CollectionDataContract.GetTargetMethodWithName(Globals.GetCurrentMethodName, enumeratorType, ienumeratorInterface)!;
+
+                            moveNextMethod ??= CollectionDataContract.GetTargetMethodWithName(Globals.MoveNextMethodName, enumeratorType, ienumeratorInterface)!;
+                            getCurrentMethod ??= CollectionDataContract.GetTargetMethodWithName(Globals.GetCurrentMethodName, enumeratorType, ienumeratorInterface)!;
                         }
                     }
                     Type elementType = getCurrentMethod.ReturnType;

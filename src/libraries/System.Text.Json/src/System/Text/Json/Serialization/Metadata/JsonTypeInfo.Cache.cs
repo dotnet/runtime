@@ -251,10 +251,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Check again to append the cache up to the threshold.
                 if (cacheCount < PropertyNameCountCacheThreshold)
                 {
-                    if (frame.PropertyRefCache == null)
-                    {
-                        frame.PropertyRefCache = new List<PropertyRef>();
-                    }
+                    frame.PropertyRefCache ??= new List<PropertyRef>();
 
                     Debug.Assert(info != null);
 
@@ -390,10 +387,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Check again to append the cache up to the threshold.
                 if (cacheCount < ParameterNameCountCacheThreshold)
                 {
-                    if (frame.CtorArgumentState.ParameterRefCache == null)
-                    {
-                        frame.CtorArgumentState.ParameterRefCache = new List<ParameterRef>();
-                    }
+                    frame.CtorArgumentState.ParameterRefCache ??= new List<ParameterRef>();
 
                     parameterRef = new ParameterRef(key, info!, utf8PropertyName);
                     frame.CtorArgumentState.ParameterRefCache.Add(parameterRef);

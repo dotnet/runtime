@@ -16,7 +16,7 @@ namespace Microsoft.Interop
         public const string CustomTypeMarshallerAttribute = "System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute";
         public const string CustomTypeMarshallerAttributeGenericPlaceholder = "System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute.GenericPlaceholder";
 
-        public const string ManagedToUnmanagedMarshallersAttribute = "System.Runtime.InteropServices.Marshalling.ManagedToUnmanagedMarshallersAttribute";
+        public const string CustomMarshallerAttribute = "System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute";
 
         public const string AnsiStringMarshaller = "System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller";
         public const string BStrStringMarshaller = "System.Runtime.InteropServices.Marshalling.BStrStringMarshaller";

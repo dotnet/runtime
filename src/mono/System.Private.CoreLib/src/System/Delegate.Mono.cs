@@ -430,8 +430,7 @@ namespace System
 
             object? target = _target;
 
-            if (data is null)
-                data = CreateDelegateData();
+            data ??= CreateDelegateData();
 
             // replace all Type.Missing with default values defined on parameters of the delegate if any
             MethodInfo? invoke = GetType().GetMethod("Invoke");

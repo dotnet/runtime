@@ -161,17 +161,9 @@ namespace System.Net
         {
             get
             {
-                if (_statusDescription == null)
-                {
-                    // if the user hasn't set this, generated on the fly, if possible.
-                    // We know this one is safe, no need to verify it as in the setter.
-                    _statusDescription = HttpStatusDescription.Get(StatusCode);
-                }
-                if (_statusDescription == null)
-                {
-                    _statusDescription = string.Empty;
-                }
-                return _statusDescription;
+                // if the user hasn't set this, generate on the fly, if possible.
+                // We know this one is safe, no need to verify it as in the setter.
+                return _statusDescription ??= HttpStatusDescription.Get(StatusCode) ?? string.Empty;
             }
             set
             {

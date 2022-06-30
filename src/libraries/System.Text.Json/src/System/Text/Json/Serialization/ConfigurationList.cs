@@ -22,7 +22,6 @@ namespace System.Text.Json.Serialization
 
         protected abstract bool IsLockedInstance { get; }
         protected abstract void VerifyMutable();
-        protected virtual void OnItemAdded(TItem item) { }
 
         public TItem this[int index]
         {
@@ -39,7 +38,6 @@ namespace System.Text.Json.Serialization
 
                 VerifyMutable();
                 _list[index] = value;
-                OnItemAdded(value);
             }
         }
 
@@ -56,7 +54,6 @@ namespace System.Text.Json.Serialization
 
             VerifyMutable();
             _list.Add(item);
-            OnItemAdded(item);
         }
 
         public void Clear()
@@ -94,7 +91,6 @@ namespace System.Text.Json.Serialization
 
             VerifyMutable();
             _list.Insert(index, item);
-            OnItemAdded(item);
         }
 
         public bool Remove(TItem item)

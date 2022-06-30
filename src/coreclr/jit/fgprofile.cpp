@@ -3584,6 +3584,27 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                     }
                 }
 
+                // Handler entries are assumed to run rarely, except for
+                // finally blocks: These are executed regardless of if
+                // an exception is thrown, and thus should inherit weight.
+                if (bbIsHandlerBeg(bDst))
+                {
+                    bSrc = bDst->bbPreds->getBlock();
+
+                    // To minimize asmdiffs for now, modify weights only if splitting.
+                    if (fgFirstColdBlock != nullptr)
+                    {
+                        if (bSrc->bbJumpKind == BBJ_CALLFINALLY)
+                        {
+                            newWeight = bSrc->bbWeight;
+                        }
+                        else
+                        {
+                            newWeight = BB_ZERO_WEIGHT;
+                        }
+                    }
+                }
+
                 if ((newWeight != BB_MAX_WEIGHT) && (bDst->bbWeight != newWeight))
                 {
                     changed        = true;
@@ -3597,6 +3618,20 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                     {
                         bDst->bbFlags &= ~BBF_RUN_RARELY;
                     }
+                }
+            }
+            else if (!bDst->hasProfileWeight() && bbIsHandlerBeg(bDst) && !bDst->isRunRarely())
+            {
+                // Assume handler/filter entries are rarely executed.
+                // To avoid unnecessary loop iterations, set weight
+                // only if bDst->bbWeight is not already zero.
+
+                // To minimize asmdiffs for now, modify weights only if splitting.
+                if (fgFirstColdBlock != nullptr)
+                {
+                    changed  = true;
+                    modified = true;
+                    bDst->bbSetRunRarely();
                 }
             }
 

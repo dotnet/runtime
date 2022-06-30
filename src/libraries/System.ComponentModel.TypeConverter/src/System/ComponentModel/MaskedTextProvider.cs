@@ -237,10 +237,7 @@ namespace System.ComponentModel
                 }
             }
 
-            if (culture == null)
-            {
-                culture = CultureInfo.CurrentCulture;
-            }
+            culture ??= CultureInfo.CurrentCulture;
 
             _flagState = default;
 
@@ -264,10 +261,7 @@ namespace System.ComponentModel
                 }
 
                 // Last resort use invariant culture.
-                if (Culture == null)
-                {
-                    Culture = CultureInfo.InvariantCulture;
-                }
+                Culture ??= CultureInfo.InvariantCulture;
             }
             else
             {

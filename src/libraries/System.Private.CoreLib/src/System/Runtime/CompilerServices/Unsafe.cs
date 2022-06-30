@@ -671,7 +671,7 @@ namespace System.Runtime.CompilerServices
         // Mono:AsRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AsRef<T>(in T source)
+        public static ref T AsRef<T>([LifetimeAnnotation(true, false)] in T source)
         {
             throw new PlatformNotSupportedException();
 
