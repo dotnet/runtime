@@ -8,7 +8,7 @@ trigger:
     include:
     - '*'
     exclude:
-    - **.md
+    - '**.md'
     - eng/Version.Details.xml
     - .github/*
     - docs/*

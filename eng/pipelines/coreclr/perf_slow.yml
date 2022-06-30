@@ -8,7 +8,7 @@ trigger:
     - '*'
     - src/libraries/System.Private.CoreLib/*
     exclude:
-    - **.md
+    - '**.md'
     - .github/*
     - docs/*
     - LICENSE.TXT
