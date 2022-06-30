@@ -226,7 +226,6 @@ namespace ILCompiler.IBC
 
         public static MibcConfig ParseMibcConfig(TypeSystemContext tsc, PEReader pEReader)
         {
-            MibcConfig mergedConfig = new();
             // When we merge multiple mibc let's just unconditionally pick the first valid MibcConfig
             EcmaModule mibcModule = EcmaModule.Create(tsc, pEReader, null);
             EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod(nameof(MibcConfig), null);
@@ -250,6 +249,7 @@ namespace ILCompiler.IBC
             //   ...
             //   ret
             string fieldName = null;
+            Dictionary<string, string> keyValue = new();
             while (ilReader.HasNext)
             {
                 ILOpcode opcode = ilReader.ReadILOpcode();
@@ -259,11 +259,7 @@ namespace ILCompiler.IBC
                         var ldStrValue = (string)ilBody.GetObject(ilReader.ReadILToken());
                         if (fieldName != null)
                         {
-                            var field = mergedConfig.GetType().GetField(fieldName);
-                            if (field != null)
-                            {
-                                field.SetValue(mergedConfig, ldStrValue);
-                            }
+                            keyValue[fieldName] = ldStrValue;
                         }
                         else
                         {
@@ -280,7 +276,8 @@ namespace ILCompiler.IBC
                         throw new InvalidOperationException($"Unexpected opcode: {opcode}");
                 }
             }
-            return mergedConfig;
+            
+            return MibcConfig.FromKeyValueMap(keyValue);
         }
 
         enum MibcGroupParseState

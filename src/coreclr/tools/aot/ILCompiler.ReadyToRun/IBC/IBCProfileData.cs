@@ -26,6 +26,22 @@ namespace ILCompiler.IBC
 
                 """;
         }
+
+        public static MibcConfig FromKeyValueMap(Dictionary<string, string> kvMap)
+        {
+            MibcConfig config = new();
+            foreach (var kvPair in kvMap)
+            {
+                switch (kvPair.Key)
+                {
+                    case nameof(FormatVersion): config.FormatVersion = kvPair.Value; break;
+                    case nameof(Os): config.Os = kvPair.Value; break;
+                    case nameof(Arch): config.Arch = kvPair.Value; break;
+                    case nameof(Runtime): config.Runtime = kvPair.Value; break;
+                }
+            }
+            return config;
+        }
     }
 
     public class IBCProfileData : ProfileData
