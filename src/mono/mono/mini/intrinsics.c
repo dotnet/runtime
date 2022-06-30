@@ -80,7 +80,7 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	/* Required intrinsics are always used even with -O=-intrins */
 
 	if (!(cfg->opt & MONO_OPT_INTRINS))
-		return NULL;
+		return ins;
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
@@ -90,7 +90,7 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	}
 #endif
 
-	return NULL;
+	return ins;
 }
 
 static MonoInst*
