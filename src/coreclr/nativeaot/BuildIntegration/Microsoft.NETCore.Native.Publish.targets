@@ -93,10 +93,15 @@
     <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb" />
 
+    <PropertyGroup>
+      <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
+      <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
+    </PropertyGroup>    
+
     <!-- replace native symbol file if it exists -->
-    <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)$(NativeSymbolExt)" />
-    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)$(NativeSymbolExt)" DestinationFolder="$(PublishDir)"
-      Condition="Exists('$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)$(NativeSymbolExt)')" />
+    <Delete Files="$(PublishDir)\$(TargetName)$(_symbolExt)" />
+    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(_symbolExt)" DestinationFolder="$(PublishDir)"
+      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)')" />
   </Target>
 
 </Project>
