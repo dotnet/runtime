@@ -448,13 +448,13 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 inline
 struct fpregs* GetNativeSigSimdContext(native_context_t *mc)
 {
-        return &(mc->uc_mcontext.mc_fpregs);
+    return &(mc->uc_mcontext.mc_fpregs);
 }
 
 inline
 const struct fpregs* GetConstNativeSigSimdContext(const native_context_t *mc)
 {
-        return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+    return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
 #elif !defined(TARGET_OSX) // TARGET_FREEBSD
