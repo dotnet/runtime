@@ -972,5 +972,27 @@ namespace DebuggerTests
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 "Evaluate");
         }
+
+        [Fact] 
+        public async Task InspectPropertiesOfObjectFromLibraryWithPdbDeleted()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] DebugWithoutSymbols:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1146, 8,
+                "Run",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var exc_props = await GetObjectOnFrame(pause_location["callFrames"][0], "exc");
+                    await CheckProps(exc_props, new
+                    {
+                        propA = TNumber(10),
+                        propB = TNumber(20),
+                        propC = TNumber(30)
+                    }, "exc");
+                }
+            );
+        }
     }
 }
