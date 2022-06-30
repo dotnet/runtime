@@ -70,4 +70,7 @@ When you want to test new profiler APIs you will need a new test profiler implem
    ...
    void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo)
 
+Also add it into profiler/native/guids.cpp if not already present
+   DEFINE_GUID(IID_ICorProfilerInfo13,                    0x6E6C7EE2,0x0701,0x4EC2,0x9D,0x29,0x2E,0x87,0x33,0xB6,0x69,0x34);
+
 4) Override the profiler callback functions that are relevant for your test and delete the rest. At minimum you will need to ensure that the test prints the phrase "PROFILER TEST PASSES" at some point to indicate this is a passing test. Typically that occurs in the Shutdown() method. It is also likely you want to override Initialize() in order to call SetEventMask so that the profiler receives events.
