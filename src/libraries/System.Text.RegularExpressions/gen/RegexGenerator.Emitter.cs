@@ -190,9 +190,8 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"            [{Literal(kvp.Key)}] = {kvp.Value},");
                 }
                 writer.WriteLine($"        }},");
-                writer.WriteLine($"        {nameof(TrieNode.Depth)} = {node.Depth},");
                 writer.WriteLine($"        {nameof(TrieNode.SuffixLink)} = {node.SuffixLink},");
-                writer.WriteLine($"        {nameof(TrieNode.DictionaryLink)} = {node.DictionaryLink}");
+                writer.WriteLine($"        {nameof(TrieNode.MatchLength)} = {node.MatchLength}");
                 writer.WriteLine($"    }}{(i == trie.Count - 1 ? "" : ",")}");
             }
             writer.WriteLine($"}};");
@@ -384,13 +383,10 @@ namespace System.Text.RegularExpressions.Generator
                     "{",
                     "    /// <summary>An associative collection of characters and the node index they lead to.</summary>",
                     "    public Dictionary<char, int> Children { get; init; }",
-                    "    /// <summary>The trie's depth. Each node's depth is one larger than its parent,",
-                    "    /// and the root node has a depth of zero.</summary>",
-                    "    public int Depth { get; init; }",
                     "    /// <summary>The index of the node the algorithm will jump to if it doesn't find a match in the node it is.</summary>",
                     "    public int SuffixLink { get; init; }",
-                    // TODO: Remove this.
-                    "    public int DictionaryLink { get; init; }",
+                    "    /// <summary>The length of the word that matches at this node, or -1 if there isn't such word.</summary>",
+                    "    public int MatchLength { get; init; }",
                     "}",
                     "",
                     "/// <summary>Finds the index of the longest leftmost match of one of <paramref name=\"trie\"/>'s",
@@ -422,11 +418,11 @@ namespace System.Text.RegularExpressions.Generator
                     "            currentState = trie[currentState].SuffixLink;",
                     "        }",
                     "",
-                    "        int dictLink = trie[currentState].DictionaryLink;",
+                    "        int matchLength = trie[currentState].MatchLength;",
                     "",
-                    "        if (dictLink != 0)",
+                    "        if (matchLength != -1)",
                     "        {",
-                    "            int indexOfMatch = i + 1 - trie[dictLink].Depth;",
+                    "            int indexOfMatch = i + 1 - matchLength;",
                     "",
                     "            if ((uint)indexOfMatch <= (uint)lastMatch)",
                     "            {",

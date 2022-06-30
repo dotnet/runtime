@@ -66,16 +66,15 @@ namespace System.Text.RegularExpressions
             if (vertex == TrieNode.Root)
             {
                 node.SuffixLink = TrieNode.Root;
-                node.DictionaryLink = TrieNode.Root;
-                goto End;
+                return;
             }
 
             // one character substrings
             if (node.Parent == TrieNode.Root)
             {
                 node.SuffixLink = TrieNode.Root;
-                node.DictionaryLink = node.IsMatch ? vertex : trie[node.SuffixLink].DictionaryLink;
-                goto End;
+                node.MatchLength = node.IsMatch ? node.Depth : trie[node.SuffixLink].MatchLength;
+                return;
             }
 
             // To calculate the suffix link for the current vertex, we need the suffix
@@ -102,13 +101,7 @@ namespace System.Text.RegularExpressions
                 curBetterVertex = trie[curBetterVertex].SuffixLink;
             }
 
-            node.DictionaryLink = node.IsMatch ? vertex : trie[node.SuffixLink].DictionaryLink;
-
-        End:;
-#if DEBUG
-            node.SuffixLinkPath = trie[node.SuffixLink].Path;
-            node.DictionaryLinkPath = trie[node.DictionaryLink].Path;
-#endif
+            node.MatchLength = node.IsMatch ? node.Depth : trie[node.SuffixLink].MatchLength;
         }
 
         public int Find(ReadOnlySpan<char> text)
@@ -140,13 +133,12 @@ namespace System.Text.RegularExpressions
                     currentState = Trie[currentState].SuffixLink;
                 }
 
-                int dictLink = Trie[currentState].DictionaryLink;
+                int matchLength = Trie[currentState].MatchLength;
 
-                if (dictLink != TrieNode.Root)
+                if (matchLength != -1)
                 {
                     // Found a match. We mark it and continue searching hoping it is getting bigger.
-                    // The depth of the node we are in is the length of the word we found.
-                    int indexOfMatch = i + 1 - Trie[dictLink].Depth;
+                    int indexOfMatch = i + 1 - matchLength;
 
                     // We want to return the leftmost-longest match.
                     // If this match starts later than the match we might have found before,

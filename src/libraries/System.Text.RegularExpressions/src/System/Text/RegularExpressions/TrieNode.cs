@@ -48,7 +48,9 @@ namespace System.Text.RegularExpressions
 
         public int SuffixLink = -1;
 
-        public int DictionaryLink = -1;
+        // Since we don't care about which string we matched, we use the length
+        // of the match that occurs in this node, or inherited by its suffix link.
+        public int MatchLength = -1;
 
         public string GetPath(List<TrieNode> trie)
         {
@@ -71,11 +73,8 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         public string? Path { get; init; }
-        public string? SuffixLinkPath;
-        public string? DictionaryLinkPath;
 
-        public override string ToString() =>
-            $"Path: {Path} Suffix Link: {SuffixLinkPath} Dictionary Link: {DictionaryLinkPath}";
+        public override string? ToString() => Path;
 #endif
     }
 
