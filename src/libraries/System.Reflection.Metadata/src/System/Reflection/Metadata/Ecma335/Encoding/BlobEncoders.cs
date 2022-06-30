@@ -23,13 +23,25 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
+        /// Encodes Field Signature blob, with additional support for
+        /// encoding ref fields, custom modifiers and typed references.
+        /// </summary>
+        /// <returns>Encoder of the field type.</returns>
+        public FieldTypeEncoder Field()
+        {
+            Builder.WriteByte((byte)SignatureKind.Field);
+            return new FieldTypeEncoder(Builder);
+        }
+
+        /// <summary>
         /// Encodes Field Signature blob.
         /// </summary>
         /// <returns>Encoder of the field type.</returns>
+        /// <remarks>To encode byref fields, custom modifiers or typed
+        /// references use <see cref="Field"/> instead.</remarks>
         public SignatureTypeEncoder FieldSignature()
         {
-            Builder.WriteByte((byte)SignatureKind.Field);
-            return new SignatureTypeEncoder(Builder);
+            return Field().Type(isByRef: false);
         }
 
         /// <summary>
@@ -400,6 +412,36 @@ namespace System.Reflection.Metadata.Ecma335
         public SignatureTypeEncoder AddArgument()
         {
             return new SignatureTypeEncoder(Builder);
+        }
+    }
+
+    public readonly struct FieldTypeEncoder
+    {
+        public BlobBuilder Builder { get; }
+
+        public FieldTypeEncoder(BlobBuilder builder)
+        {
+            Builder = builder;
+        }
+
+        public CustomModifiersEncoder CustomModifiers()
+        {
+            return new CustomModifiersEncoder(Builder);
+        }
+
+        public SignatureTypeEncoder Type(bool isByRef = false)
+        {
+            if (isByRef)
+            {
+                Builder.WriteByte((byte)SignatureTypeCode.ByReference);
+            }
+
+            return new SignatureTypeEncoder(Builder);
+        }
+
+        public void TypedReference()
+        {
+            Builder.WriteByte((byte)SignatureTypeCode.TypedReference);
         }
     }
 

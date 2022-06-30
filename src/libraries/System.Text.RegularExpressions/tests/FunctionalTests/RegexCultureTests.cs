@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         [Theory]
         [MemberData(nameof(TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture(int length, RegexOptions options)
         {
             var turkish = new CultureInfo("tr-TR");
@@ -161,7 +161,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public async Task TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_NonBacktracking()
         {
             var turkish = new CultureInfo("tr-TR");
@@ -342,186 +342,6 @@ namespace System.Text.RegularExpressions.Tests
             Regex[] re = Create(pattern, CultureInfo.InvariantCulture, RegexOptions.None);
             Assert.Equal(re[0].Match(input).Value, re[1].Match(input).Value);
             Assert.Equal("II", re[0].Match(input).Value);
-        }
-
-        private const char Turkish_I_withDot = '\u0130';
-        private const char Turkish_i_withoutDot = '\u0131';
-
-        /// <summary>
-        /// This test is to make sure that the generated IgnoreCaseRelation table for NonBacktracking does not need to be updated.
-        /// It would need to be updated/regenerated if this test fails.
-        /// </summary>
-        [OuterLoop("May take several seconds due to large number of cultures tested")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [Fact]
-        public void TestIgnoreCaseRelation()
-        {
-            // these 22 characters are considered case-insensitive by regex, while they are case-sensitive outside regex
-            // but they are only case-sensitive in an asymmmetrical way: tolower(c)=c, tolower(toupper(c)) != c
-            HashSet<char> treatedAsCaseInsensitive =
-                 new("\u00B5\u017F\u0345\u03C2\u03D0\u03D1\u03D5\u03D6\u03F0\u03F1\u03F5\u1C80\u1C81\u1C82\u1C83\u1C84\u1C85\u1C86\u1C87\u1C88\u1E9B\u1FBE");
-
-            foreach (char c in treatedAsCaseInsensitive)
-            {
-                char cU = char.ToUpper(c);
-                Assert.NotEqual(c, cU);
-                Assert.False(Regex.IsMatch(c.ToString(), cU.ToString(), RegexOptions.IgnoreCase));
-            }
-
-            Assert.False(Regex.IsMatch(Turkish_i_withoutDot.ToString(), "i", RegexOptions.IgnoreCase));
-
-            // as baseline it is assumed the the invariant culture does not change
-            HashSet<char>[] inv_table = ComputeIgnoreCaseTable(CultureInfo.InvariantCulture, treatedAsCaseInsensitive);
-            CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
-
-            // expected difference between invariant and tr or az culture
-            string tr_diff = string.Format("I:Ii/I{0},i:Ii/i{1},{1}:{1}/i{1},{0}:{0}/I{0}", Turkish_i_withoutDot, Turkish_I_withDot);
-
-            // expected differnce between invariant and other cultures including the default en-US
-            string default_diff = string.Format("I:Ii/Ii{0},i:Ii/Ii{0},{0}:{0}/Ii{0}", Turkish_I_withDot);
-
-            // the expected difference between invariant culture and all other cultures is only for i,I,Turkish_I_withDot,Turkish_i_withoutDot
-            // differentiate based on the TwoLetterISOLanguageName only (232 cases instead of 812)
-            List<CultureInfo> testcultures = new();
-            HashSet<string> done = new();
-            for (int i = 0; i < cultures.Length; i++)
-            {
-                if (cultures[i] != CultureInfo.InvariantCulture && done.Add(cultures[i].TwoLetterISOLanguageName))
-                {
-                    testcultures.Add(cultures[i]);
-                }
-            }
-
-            foreach (CultureInfo culture in testcultures)
-            {
-                HashSet<char>[] table = ComputeIgnoreCaseTable(culture, treatedAsCaseInsensitive);
-                string diff = GetDiff(inv_table, table);
-                if (culture.TwoLetterISOLanguageName == "tr" || culture.TwoLetterISOLanguageName == "az")
-                {
-                    // tr or az alphabet
-                    Assert.Equal(tr_diff, diff);
-                }
-                else
-                {
-                    // all other alphabets are treated the same as en-US
-                    Assert.Equal(default_diff, diff);
-                }
-            }
-        }
-
-        /// <summary>
-        /// This test currently only works correctly in NonBacktracking mode.
-        /// </summary>
-        [OuterLoop("May take tens of seconds")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
-        [Theory]
-        [InlineData(RegexHelpers.RegexOptionNonBacktracking)]
-        public void TestIgnoreCaseRelationBorderCasesInNonBacktracking(RegexOptions options)
-        {
-            // these 22 characters are considered case-insensitive by regex, while they are case-sensitive outside regex
-            // but they are only case-sensitive in an asymmmetrical way: tolower(c)=c, tolower(toupper(c)) != c
-            HashSet<char> treatedAsCaseInsensitive =
-                 new("\u00B5\u017F\u0345\u03C2\u03D0\u03D1\u03D5\u03D6\u03F0\u03F1\u03F5\u1C80\u1C81\u1C82\u1C83\u1C84\u1C85\u1C86\u1C87\u1C88\u1E9B\u1FBE");
-
-            foreach (char c in treatedAsCaseInsensitive)
-            {
-                char cU = char.ToUpper(c);
-                Assert.NotEqual(c, cU);
-                Assert.False(Regex.IsMatch(c.ToString(), cU.ToString(), RegexOptions.IgnoreCase | options));
-            }
-
-            Assert.False(Regex.IsMatch(Turkish_i_withoutDot.ToString(), "i", RegexOptions.IgnoreCase | options));
-            Assert.True(Regex.IsMatch(Turkish_I_withDot.ToString(), "i", RegexOptions.IgnoreCase | options));
-            Assert.True(Regex.IsMatch(Turkish_I_withDot.ToString(), "i", RegexOptions.IgnoreCase | options));
-            Assert.False(Regex.IsMatch(Turkish_I_withDot.ToString(), "i", RegexOptions.IgnoreCase | options | RegexOptions.CultureInvariant));
-
-            // Turkish i without dot is not considered case-sensitive in the default en-US culture
-            treatedAsCaseInsensitive.Add(Turkish_i_withoutDot);
-
-            List<char> caseSensitiveChars = new();
-            for (char c = '\0'; c < '\uFFFF'; c++)
-            {
-                if (!treatedAsCaseInsensitive.Contains(c) && char.ToUpper(c) != char.ToLower(c))
-                {
-                    caseSensitiveChars.Add(c);
-                }
-            }
-
-            // test all case-sensitive characters exhaustively in NonBacktracking mode
-            foreach (char c in caseSensitiveChars)
-            {
-                Assert.True(Regex.IsMatch(char.ToUpper(c).ToString() + char.ToLower(c).ToString(),
-                    c.ToString() + c.ToString(), RegexOptions.IgnoreCase | options));
-            }
-        }
-
-        /// <summary>
-        /// Maps each character c to the set of all of its equivalent characters if case is ignored or null if c in case-insensitive
-        /// </summary>
-        /// <param name="culture">ignoring case wrt this culture</param>
-        /// <param name="treatedAsCaseInsensitive">characters that are otherwise case-sensitive but not in a regex</param>
-        private static HashSet<char>[] ComputeIgnoreCaseTable(CultureInfo culture, HashSet<char> treatedAsCaseInsensitive)
-        {
-            CultureInfo ci = CultureInfo.CurrentCulture;
-            CultureInfo.CurrentCulture = culture;
-            var ignoreCase = new HashSet<char>[0x10000];
-
-            for (uint i = 0; i <= 0xFFFF; i++)
-            {
-                char c = (char)i;
-                char cU = char.ToUpper(c);
-                char cL = char.ToLower(c);
-                // Turkish i without dot is only considered case-sensitive in tr and az languages
-                if (treatedAsCaseInsensitive.Contains(c) ||
-                    (c == Turkish_i_withoutDot && culture.TwoLetterISOLanguageName != "tr" && culture.TwoLetterISOLanguageName != "az"))
-                {
-                    continue;
-                }
-
-                if (cU != cL)
-                {
-                    HashSet<char> set = (ignoreCase[c] == null ? (ignoreCase[cU] == null ? (ignoreCase[cL] == null ? new HashSet<char>()
-                                                     : ignoreCase[cL]) : ignoreCase[cU]) : ignoreCase[c]);
-                    set.Add(c);
-                    set.Add(cU);
-                    set.Add(cL);
-                    ignoreCase[c] = set;
-                    ignoreCase[cL] = set;
-                    ignoreCase[cU] = set;
-                }
-            }
-
-            CultureInfo.CurrentCulture = ci;
-            return ignoreCase;
-        }
-
-        /// <summary>Represent the difference between the two tables as a special string</summary>
-        private static string GetDiff(HashSet<char>[] table1, HashSet<char>[] table2)
-        {
-            List<string> diffs = new();
-            Func<HashSet<char>, int, string> F = (s, i) =>
-            {
-                if (s == null)
-                {
-                    return ((char)i).ToString();
-                }
-
-                var elems = new List<char>(s);
-                elems.Sort();
-                return new string(elems.ToArray());
-            };
-
-            for (int i = 0; i <= 0xFFFF; i++)
-            {
-                string s1 = F(table1[i], i);
-                string s2 = F(table2[i], i);
-                if (s1 != s2)
-                {
-                    diffs.Add($"{(char)i}:{s1}/{s2}");
-                }
-            }
-
-            return string.Join(",", diffs.ToArray());
         }
     }
 }

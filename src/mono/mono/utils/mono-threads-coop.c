@@ -178,7 +178,7 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 
 	state = &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
 
-	stackdata_size = (char*)mono_stackdata_get_stackpointer (stackdata_begin) - (char*)stackdata_end;
+	stackdata_size = GPTRDIFF_TO_INT ((char*)mono_stackdata_get_stackpointer (stackdata_begin) - (char*)stackdata_end);
 
 	if (((gsize) stackdata_begin & (SIZEOF_VOID_P - 1)) != 0)
 		g_error ("%s stackdata_begin (%p) must be %d-byte aligned", mono_stackdata_get_function_name (stackdata_begin), stackdata_begin, SIZEOF_VOID_P);

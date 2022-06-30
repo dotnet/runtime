@@ -66,18 +66,26 @@ echo XHARNESS_ARGS=$XHARNESS_ARGS
 
 function set_env_vars()
 {
+    local _DIR_NAME=
     if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
-        export PATH=$BASE_DIR/dotnet-workload:$PATH
+        _DIR_NAME=dotnet-workload
         export SDK_HAS_WORKLOAD_INSTALLED=true
-        export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/dotnet-workload
-        export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
-    elif [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
-        export WasmBuildSupportDir=$BASE_DIR/build
     else
-        export PATH=$BASE_DIR/sdk-no-workload:$PATH
+        _DIR_NAME=sdk-no-workload
         export SDK_HAS_WORKLOAD_INSTALLED=false
-        export SDK_FOR_WORKLOAD_TESTING_PATH=$BASE_DIR/sdk-no-workload
     fi
+
+    local _SDK_DIR=
+    if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
+        cp -r $BASE_DIR/$_DIR_NAME $EXECUTION_DIR
+        _SDK_DIR=$EXECUTION_DIR/$_DIR_NAME
+    else
+        _SDK_DIR=$BASE_DIR/$_DIR_NAME
+    fi
+
+    export PATH=$_SDK_DIR:$PATH
+    export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
+    export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
 }
 
 export TEST_LOG_PATH=${XHARNESS_OUT}/logs

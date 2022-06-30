@@ -698,24 +698,14 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyHelpers.ImportPem(input, label => {
-                if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
+            PemKeyHelpers.ImportPem(input, label =>
+                label switch
                 {
-                    return ImportPkcs8PrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
-                {
-                    return ImportSubjectPublicKeyInfo;
-                }
-                else if (label.SequenceEqual(PemLabels.EcPrivateKey))
-                {
-                    return ImportECPrivateKey;
-                }
-                else
-                {
-                    return null;
-                }
-            });
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    PemLabels.EcPrivateKey => ImportECPrivateKey,
+                    _ => null,
+                });
         }
 
         /// <summary>
@@ -888,7 +878,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.EcPrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.EcPrivateKey, exported);
                 }
                 finally
                 {

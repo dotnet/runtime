@@ -9,19 +9,19 @@ namespace Microsoft.Interop
         public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
 
-        public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
+        public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute";
 
-        public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.NativeMarshallingAttribute";
+        public const string MarshalUsingAttribute = "System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute";
 
-        public const string MarshalUsingAttribute = "System.Runtime.InteropServices.MarshalUsingAttribute";
+        public const string CustomTypeMarshallerAttribute = "System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute";
+        public const string CustomTypeMarshallerAttributeGenericPlaceholder = "System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute.GenericPlaceholder";
 
-        public const string CustomTypeMarshallerAttribute = "System.Runtime.InteropServices.CustomTypeMarshallerAttribute";
+        public const string CustomMarshallerAttribute = "System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute";
 
-        public const string CustomTypeMarshallerAttributeGenericPlaceholder = "System.Runtime.InteropServices.CustomTypeMarshallerAttribute.GenericPlaceholder";
-
-        public const string AnsiStringMarshaller = "System.Runtime.InteropServices.AnsiStringMarshaller";
-        public const string Utf16StringMarshaller = "System.Runtime.InteropServices.Utf16StringMarshaller";
-        public const string Utf8StringMarshaller = "System.Runtime.InteropServices.Utf8StringMarshaller";
+        public const string AnsiStringMarshaller = "System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller";
+        public const string BStrStringMarshaller = "System.Runtime.InteropServices.Marshalling.BStrStringMarshaller";
+        public const string Utf16StringMarshaller = "System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller";
+        public const string Utf8StringMarshaller = "System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller";
 
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
@@ -56,9 +56,9 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_MemoryMarshal = "System.Runtime.InteropServices.MemoryMarshal";
 
-        public const string System_Runtime_InteropServices_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.ArrayMarshaller`1";
+        public const string System_Runtime_InteropServices_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ArrayMarshaller`1";
 
-        public const string System_Runtime_InteropServices_PointerArrayMarshaller_Metadata = "System.Runtime.InteropServices.PointerArrayMarshaller`1";
+        public const string System_Runtime_InteropServices_PointerArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller`1";
 
         public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
 

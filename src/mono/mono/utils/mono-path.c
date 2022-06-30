@@ -60,7 +60,7 @@ mono_path_canonicalize (const char *path)
 	pos = strchr (lastpos, G_DIR_SEPARATOR);
 
 	while (pos != NULL) {
-		int len = pos - lastpos;
+		ptrdiff_t len = pos - lastpos;
 		if (len == 1 && lastpos [0] == '.') {
 			// nop
 		} else if (len == 2 && lastpos [0] == '.' && lastpos [1] == '.') {

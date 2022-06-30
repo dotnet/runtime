@@ -12,6 +12,7 @@
 ===========================================================*/
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -105,6 +106,9 @@ namespace System
 
         internal const ulong MinTrailingSignificand = 0x0000_0000_0000_0000;
         internal const ulong MaxTrailingSignificand = 0x000F_FFFF_FFFF_FFFF;
+
+        internal const int TrailingSignificandLength = 52;
+        internal const int SignificandLength = TrailingSignificandLength + 1;
 
         internal ushort BiasedExponent
         {
@@ -532,9 +536,6 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static double IAdditionOperators<double, double, double>.operator +(double left, double right) => left + right;
 
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static double IAdditionOperators<double, double, double>.operator checked +(double left, double right) => left + right;
-
         //
         // IAdditiveIdentity
         //
@@ -545,6 +546,9 @@ namespace System
         //
         // IBinaryNumber
         //
+
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static double IBinaryNumber<double>.AllBitsSet => BitConverter.UInt64BitsToDouble(0xFFFF_FFFF_FFFF_FFFF);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(double value)
@@ -601,18 +605,12 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static double IDecrementOperators<double>.operator --(double value) => --value;
 
-        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_CheckedDecrement(TSelf)" />
-        static double IDecrementOperators<double>.operator checked --(double value) => --value;
-
         //
         // IDivisionOperators
         //
 
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static double IDivisionOperators<double, double, double>.operator /(double left, double right) => left / right;
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static double IDivisionOperators<double, double, double>.operator checked /(double left, double right) => left / right;
 
         //
         // IExponentialFunctions
@@ -661,8 +659,11 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static double Truncate(double x) => Math.Truncate(x);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<double>.GetExponentByteCount() => sizeof(short);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
-        long IFloatingPoint<double>.GetExponentShortestBitLength()
+        int IFloatingPoint<double>.GetExponentShortestBitLength()
         {
             short exponent = Exponent;
 
@@ -676,8 +677,35 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
-        int IFloatingPoint<double>.GetExponentByteCount() => sizeof(short);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<double>.GetSignificandByteCount() => sizeof(ulong);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<double>.GetSignificandBitLength() => 53;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<double>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(short))
+            {
+                short exponent = Exponent;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
+                }
+
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(short);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -703,11 +731,29 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        long IFloatingPoint<double>.GetSignificandBitLength() => 53;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<double>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ulong))
+            {
+                ulong significand = Significand;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
-        int IFloatingPoint<double>.GetSignificandByteCount() => sizeof(ulong);
+                if (BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(ulong);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -776,100 +822,6 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(double x) => Math.ILogB(x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        public static double MaxMagnitudeNumber(double x, double y)
-        {
-            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
-            //
-            // It does not propagate NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
-
-            double ax = Abs(x);
-            double ay = Abs(y);
-
-            if ((ax > ay) || IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? y : x;
-            }
-
-            return y;
-        }
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
-        public static double MaxNumber(double x, double y)
-        {
-            // This matches the IEEE 754:2019 `maximumNumber` function
-            //
-            // It does not propagate NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
-
-            if (x != y)
-            {
-                if (!IsNaN(y))
-                {
-                    return y < x ? x : y;
-                }
-
-                return x;
-            }
-
-            return IsNegative(y) ? x : y;
-        }
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
-        public static double MinMagnitudeNumber(double x, double y)
-        {
-            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
-            //
-            // It does not propagate NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
-
-            double ax = Abs(x);
-            double ay = Abs(y);
-
-            if ((ax < ay) || IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? x : y;
-            }
-
-            return y;
-        }
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
-        public static double MinNumber(double x, double y)
-        {
-            // This matches the IEEE 754:2019 `minimumNumber` function
-            //
-            // It does not propagate NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
-
-            if (x != y)
-            {
-                if (!IsNaN(y))
-                {
-                    return x < y ? x : y;
-                }
-
-                return x;
-            }
-
-            return IsNegative(x) ? x : y;
-        }
-
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static double ReciprocalEstimate(double x) => Math.ReciprocalEstimate(x);
 
@@ -910,9 +862,6 @@ namespace System
 
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static double IIncrementOperators<double>.operator ++(double value) => ++value;
-
-        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        static double IIncrementOperators<double>.operator checked ++(double value) => ++value;
 
         //
         // ILogarithmicFunctions
@@ -967,323 +916,68 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static double IMultiplyOperators<double, double, double>.operator *(double left, double right) => left * right;
 
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static double IMultiplyOperators<double, double, double>.operator checked *(double left, double right) => left * right;
-
         //
         // INumber
         //
-
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static double Abs(double value) => Math.Abs(value);
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static double Clamp(double value, double min, double max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static double CopySign(double x, double y) => Math.CopySign(x, y);
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (double)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (double)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (double)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
+        public static double CopySign(double value, double sign) => Math.CopySign(value, sign);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static double Max(double x, double y) => Math.Max(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static double MaxNumber(double x, double y)
+        {
+            // This matches the IEEE 754:2019 `maximumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(y) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static double Min(double x, double y) => Math.Min(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static double MinMagnitude(double x, double y) => Math.MinMagnitude(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static double MinNumber(double x, double y)
+        {
+            // This matches the IEEE 754:2019 `minimumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(x) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
         public static int Sign(double value) => Math.Sign(value);
-
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out double result)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (byte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                result = (char)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                result = (double)(decimal)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                result = (double)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                result = (short)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                result = (int)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                result = (long)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                result = (nint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                result = (sbyte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                result = (float)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                result = (ushort)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                result = (uint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                result = (ulong)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                result = (nuint)(object)value;
-                return true;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                result = default;
-                return false;
-            }
-        }
 
         //
         // INumberBase
@@ -1292,8 +986,359 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static double INumberBase<double>.One => One;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<double>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static double INumberBase<double>.Zero => Zero;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static double Abs(double value) => Math.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<double>.IsCanonical(double value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<double>.IsComplexNumber(double value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(double value) => IsInteger(value) && (Abs(value % 2) == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<double>.IsImaginaryNumber(double value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(double value) => IsFinite(value) && (value == Truncate(value));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(double value) => IsInteger(value) && (Abs(value % 2) == 1);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(double value) => BitConverter.DoubleToInt64Bits(value) >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(double value)
+        {
+            // A NaN will never equal itself so this is an
+            // easy and efficient way to check for a real number.
+
+#pragma warning disable CS1718
+            return value == value;
+#pragma warning restore CS1718
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<double>.IsZero(double value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static double MaxMagnitude(double x, double y) => Math.MaxMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static double MaxMagnitudeNumber(double x, double y)
+        {
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            double ax = Abs(x);
+            double ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static double MinMagnitude(double x, double y) => Math.MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static double MinMagnitudeNumber(double x, double y)
+        {
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            double ax = Abs(x);
+            double ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<double>.TryConvertFromChecked<TOther>(TOther value, out double result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<double>.TryConvertFromSaturating<TOther>(TOther value, out double result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<double>.TryConvertFromTruncating<TOther>(TOther value, out double result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        private static bool TryConvertFrom<TOther>(TOther value, out double result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `double` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = (double)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = (double)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualValue = (nint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<double>.TryConvertToChecked<TOther>(double value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `double` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = checked((byte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = checked((char)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = checked((decimal)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = checked((ushort)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = checked((uint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = checked((ulong)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = checked((UInt128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<double>.TryConvertToSaturating<TOther>(double value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<double>.TryConvertToTruncating<TOther>(double value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        private static bool TryConvertTo<TOther>(double value, [NotNullWhen(true)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `double` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                    (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (value >= char.MaxValue) ? char.MaxValue :
+                                    (value <= char.MinValue) ? char.MinValue : (char)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value >= +79228162514264337593543950336.0) ? decimal.MaxValue :
+                                       (value <= -79228162514264337593543950336.0) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
+                                      (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                    (value <= uint.MinValue) ? uint.MinValue : (uint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value <= ulong.MinValue) ? ulong.MinValue :
+                                     IsNaN(value) ? 0 : (ulong)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value >= 340282366920938463463374607431768211455.0) ? UInt128.MaxValue :
+                                       (value <= 0.0) ? UInt128.MinValue : (UInt128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+#if TARGET_64BIT
+                nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
+                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#else
+                nuint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                     (value <= uint.MinValue) ? uint.MinValue : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#endif
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
 
         //
         // IParsable
@@ -1315,14 +1360,288 @@ namespace System
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static double Cbrt(double x) => Math.Cbrt(x);
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static double Hypot(double x, double y) => Math.Hypot(x, y);
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static double Hypot(double x, double y)
+        {
+            // This code is based on `hypot` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            double result;
+
+            if (IsFinite(x) && IsFinite(y))
+            {
+                double ax = Abs(x);
+                double ay = Abs(y);
+
+                if (ax == 0.0f)
+                {
+                    result = ay;
+                }
+                else if (ay == 0.0f)
+                {
+                    result = ax;
+                }
+                else
+                {
+                    ulong xBits = BitConverter.DoubleToUInt64Bits(ax);
+                    ulong yBits = BitConverter.DoubleToUInt64Bits(ay);
+
+                    uint xExp = (uint)((xBits >> BiasedExponentShift) & ShiftedExponentMask);
+                    uint yExp = (uint)((yBits >> BiasedExponentShift) & ShiftedExponentMask);
+
+                    int expDiff = (int)(xExp - yExp);
+                    double expFix = 1.0;
+
+                    if ((expDiff <= (SignificandLength + 1)) && (expDiff >= (-SignificandLength - 1)))
+                    {
+                        if ((xExp > (ExponentBias + 500)) || (yExp > (ExponentBias + 500)))
+                        {
+                            // To prevent overflow, scale down by 2^+600
+                            expFix = 4.149515568880993E+180;
+
+                            xBits -= 0x2580000000000000;
+                            yBits -= 0x2580000000000000;
+                        }
+                        else if ((xExp < (ExponentBias - 500)) || (yExp < (ExponentBias - 500)))
+                        {
+                            // To prevent underflow, scale up by 2^-600
+                            expFix = 2.409919865102884E-181;
+
+                            xBits += 0x2580000000000000;
+                            yBits += 0x2580000000000000;
+
+                            // For subnormal values, do an additional fixing up changing the
+                            // adjustment to scale up by 2^601 instead and then subtract a
+                            // correction of 2^601 to account for the implicit bit.
+
+                            if (xExp == 0) // x is subnormal
+                            {
+                                xBits += 0x0010000000000000;
+
+                                ax = BitConverter.UInt64BitsToDouble(xBits);
+                                ax -= 9.232978617785736E-128;
+
+                                xBits = BitConverter.DoubleToUInt64Bits(ax);
+                            }
+
+                            if (yExp == 0) // y is subnormal
+                            {
+                                yBits += 0x0010000000000000;
+
+                                ay = BitConverter.UInt64BitsToDouble(yBits);
+                                ay -= 9.232978617785736E-128;
+
+                                yBits = BitConverter.DoubleToUInt64Bits(ay);
+                            }
+                        }
+
+                        ax = BitConverter.UInt64BitsToDouble(xBits);
+                        ay = BitConverter.UInt64BitsToDouble(yBits);
+
+                        if (ax < ay)
+                        {
+                            // Sort so ax is greater than ay
+                            double tmp = ax;
+
+                            ax = ay;
+                            ay = tmp;
+
+                            ulong tmpBits = xBits;
+
+                            xBits = yBits;
+                            yBits = tmpBits;
+                        }
+
+                        Debug.Assert(ax >= ay);
+
+                        // Split ax and ay into a head and tail portion
+
+                        double xHead = BitConverter.UInt64BitsToDouble(xBits & 0xFFFF_FFFF_F800_0000);
+                        double yHead = BitConverter.UInt64BitsToDouble(yBits & 0xFFFF_FFFF_F800_0000);
+
+                        double xTail = ax - xHead;
+                        double yTail = ay - yHead;
+
+                        // Compute (x * x) + (y * y) with extra precision
+                        //
+                        // This includes taking into account expFix which may
+                        // cause an underflow or overflow, but if it does that
+                        // will still be the correct result.
+
+                        double xx = ax * ax;
+                        double yy = ay * ay;
+
+                        double rHead = xx + yy;
+                        double rTail = (xx - rHead) + yy;
+
+                        rTail += (xHead * xHead) - xx;
+                        rTail += 2 * xHead * xTail;
+                        rTail += xTail * xTail;
+
+                        if (expDiff == 0)
+                        {
+                            // We only need to do extra accounting when ax and ay have equal exponents
+
+                            rTail += (yHead * yHead) - yy;
+                            rTail += 2 * yHead * yTail;
+                            rTail += yTail * yTail;
+                        }
+
+                        result = Sqrt(rHead + rTail) * expFix;
+                    }
+                    else
+                    {
+                        // x or y is insignificant compared to the other
+                        result = x + y;
+                    }
+                }
+            }
+            else if (IsInfinity(x) || IsInfinity(y))
+            {
+                // IEEE 754 requires that we return +Infinity
+                // even if one of the inputs is NaN
+
+                result = PositiveInfinity;
+            }
+            else
+            {
+                // IEEE 754 requires that we return NaN
+                // if either input is NaN and neither is Infinity
+
+                result = NaN;
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
+        public static double Root(double x, int n)
+        {
+            double result;
+
+            if (n > 0)
+            {
+                if (n == 2)
+                {
+                    result = (x != 0.0) ? Sqrt(x) : 0.0;
+                }
+                else if (n == 3)
+                {
+                    result = Cbrt(x);
+                }
+                else
+                {
+                    result = PositiveN(x, n);
+                }
+            }
+            else if (n < 0)
+            {
+                result = NegativeN(x, n);
+            }
+            else
+            {
+                Debug.Assert(n == 0);
+                result = NaN;
+            }
+
+            return result;
+
+            static double PositiveN(double x, int n)
+            {
+                double result;
+
+                if (IsFinite(x))
+                {
+                    if (x != 0)
+                    {
+                        if ((x > 0) || IsOddInteger(n))
+                        {
+                            result = Pow(Abs(x), 1.0 / n);
+                            result = CopySign(result, x);
+                        }
+                        else
+                        {
+                            result = NaN;
+                        }
+                    }
+                    else if (IsEvenInteger(n))
+                    {
+                        result = 0.0;
+                    }
+                    else
+                    {
+                        result = CopySign(0.0, x);
+                    }
+                }
+                else if (IsNaN(x))
+                {
+                    result = NaN;
+                }
+                else if (x > 0)
+                {
+                    Debug.Assert(IsPositiveInfinity(x));
+                    result = PositiveInfinity;
+                }
+                else
+                {
+                    Debug.Assert(IsNegativeInfinity(x));
+                    result = int.IsOddInteger(n) ? NegativeInfinity : NaN;
+                }
+
+                return result;
+            }
+
+            static double NegativeN(double x, int n)
+            {
+                double result;
+
+                if (IsFinite(x))
+                {
+                    if (x != 0)
+                    {
+                        if ((x > 0) || IsOddInteger(n))
+                        {
+                            result = Pow(Abs(x), 1.0 / n);
+                            result = CopySign(result, x);
+                        }
+                        else
+                        {
+                            result = NaN;
+                        }
+                    }
+                    else if (IsEvenInteger(n))
+                    {
+                        result = PositiveInfinity;
+                    }
+                    else
+                    {
+                        result = CopySign(PositiveInfinity, x);
+                    }
+                }
+                else if (IsNaN(x))
+                {
+                    result = NaN;
+                }
+                else if (x > 0)
+                {
+                    Debug.Assert(IsPositiveInfinity(x));
+                    result = 0.0;
+                }
+                else
+                {
+                    Debug.Assert(IsNegativeInfinity(x));
+                    result = int.IsOddInteger(n) ? -0.0 : NaN;
+                }
+
+                return result;
+            }
+        }
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static double Sqrt(double x) => Math.Sqrt(x);
-
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
-        // public static double Root(double x, double n) => Math.Root(x, n);
 
         //
         // ISignedNumber
@@ -1348,9 +1667,6 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static double ISubtractionOperators<double, double, double>.operator -(double left, double right) => left - right;
 
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static double ISubtractionOperators<double, double, double>.operator checked -(double left, double right) => left - right;
-
         //
         // ITrigonometricFunctions
         //
@@ -1358,8 +1674,20 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static double Acos(double x) => Math.Acos(x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static double AcosPi(double x)
+        {
+            return Acos(x) / Pi;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static double Asin(double x) => Math.Asin(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static double AsinPi(double x)
+        {
+            return Asin(x) / Pi;
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static double Atan(double x) => Math.Atan(x);
@@ -1367,8 +1695,107 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
         public static double Atan2(double y, double x) => Math.Atan2(y, x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static double Atan2Pi(double y, double x)
+        {
+            return Atan2(y, x) / Pi;
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static double AtanPi(double x)
+        {
+            return Atan(x) / Pi;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static double Cos(double x) => Math.Cos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static double CosPi(double x)
+        {
+            // This code is based on `cospi` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            double result;
+
+            if (IsFinite(x))
+            {
+                double ax = Abs(x);
+
+                if (ax < 4_503_599_627_370_496.0)           // |x| < 2^52
+                {
+                    if (ax > 0.25)
+                    {
+                        long integral = (long)ax;
+
+                        double fractional = ax - integral;
+                        double sign = long.IsOddInteger(integral) ? -1.0 : +1.0;
+
+                        if (fractional <= 0.25)
+                        {
+                            result = sign;
+
+                            if (fractional != 0.00)
+                            {
+                                result *= CosForIntervalPiBy4(fractional * Pi, 0.0);
+                            }
+                        }
+                        else if (fractional <= 0.50)
+                        {
+                            if (fractional != 0.50)
+                            {
+                                result = sign * SinForIntervalPiBy4((0.5 - fractional) * Pi, 0.0);
+                            }
+                            else
+                            {
+                                result = 0.0;
+                            }
+                        }
+                        else if (fractional <= 0.75)
+                        {
+                            result = -sign * SinForIntervalPiBy4((fractional - 0.5) * Pi, 0.0);
+                        }
+                        else
+                        {
+                            result = -sign * CosForIntervalPiBy4((1.0 - fractional) * Pi, 0.0);
+                        }
+                    }
+                    else if (ax >= 6.103515625E-05)         // |x| >= 2^-14
+                    {
+                        result = CosForIntervalPiBy4(x * Pi, 0.0);
+                    }
+                    else if (ax >= 7.450580596923828E-09)   // |x| >= 2^-27
+                    {
+                        result = x * Pi;
+                        result = 1.0 - (result * result * 0.5);
+                    }
+                    else
+                    {
+                        result = 1.0;
+                    }
+                }
+                else if (ax < 9_007_199_254_740_992.0)      // |x| < 2^53
+                {
+                    // x is an integer
+                    long bits = BitConverter.DoubleToInt64Bits(ax);
+                    result = long.IsOddInteger(bits) ? -1.0 : +1.0;
+                }
+                else
+                {
+                    // x is an even integer
+                    result = 1.0;
+                }
+            }
+            else
+            {
+                result = NaN;
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static double Sin(double x) => Math.Sin(x);
@@ -1376,29 +1803,181 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (double Sin, double Cos) SinCos(double x) => Math.SinCos(x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static double SinPi(double x)
+        {
+            // This code is based on `sinpi` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            double result;
+
+            if (IsFinite(x))
+            {
+                double ax = Abs(x);
+
+                if (ax < 4_503_599_627_370_496.0)           // |x| < 2^52
+                {
+                    if (ax > 0.25)
+                    {
+                        long integral = (long)ax;
+
+                        double fractional = ax - integral;
+                        double sign = ((x > 0.0) ? +1.0 : -1.0) * (long.IsOddInteger(integral) ? -1.0 : +1.0);
+
+                        if (fractional <= 0.25)
+                        {
+                            if (fractional != 0.00)
+                            {
+                                result = sign * SinForIntervalPiBy4(fractional * Pi, 0.0);
+                            }
+                            else
+                            {
+                                result = x * 0.0;
+                            }
+                        }
+                        else if (fractional <= 0.50)
+                        {
+                            result = sign;
+
+                            if (fractional != 0.50)
+                            {
+                                result *= CosForIntervalPiBy4((0.5 - fractional) * Pi, 0.0);
+                            }
+                        }
+                        else if (fractional <= 0.75)
+                        {
+                            result = sign * CosForIntervalPiBy4((fractional - 0.5) * Pi, 0.0);
+                        }
+                        else
+                        {
+                            result = sign * SinForIntervalPiBy4((1.0 - fractional) * Pi, 0.0);
+                        }
+                    }
+                    else if (ax >= 1.220703125E-4)          // |x| >= 2^-13
+                    {
+                        result = SinForIntervalPiBy4(x * Pi, 0.0);
+                    }
+                    else if (ax >= 7.450580596923828E-09)   // |x| >= 2^-27
+                    {
+                        result = x * Pi;
+                        result -= result * (result * (result * (1.0 / 6.0)));
+                    }
+                    else
+                    {
+                        result = x * Pi;
+                    }
+                }
+                else
+                {
+                    // x is an integer
+                    result = x * 0.0;
+                }
+            }
+            else
+            {
+                result = NaN;
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static double Tan(double x) => Math.Tan(x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
-        // public static double AcosPi(double x) => Math.AcosPi(x);
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static double TanPi(double x)
+        {
+            // This code is based on `tanpi` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
-        // public static double AsinPi(double x) => Math.AsinPi(x);
+            double result;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
-        // public static double AtanPi(double x) => Math.AtanPi(x);
+            if (IsFinite(x))
+            {
+                double ax = Abs(x);
+                double sign = (x > 0.0) ? +1.0 : -1.0;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
-        // public static double Atan2Pi(double y, double x) => Math.Atan2Pi(y, x);
+                if (ax < 4_503_599_627_370_496.0)           // |x| < 2^52
+                {
+                    if (ax > 0.25)
+                    {
+                        long integral = (long)ax;
+                        double fractional = ax - integral;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
-        // public static double CosPi(double x) => Math.CosPi(x);
+                        if (fractional <= 0.25)
+                        {
+                            result = sign;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
-        // public static double SinPi(double x) => Math.SinPi(x, y);
+                            if (fractional != 0.00)
+                            {
+                                result *= TanForIntervalPiBy4(fractional * Pi, 0.0, isReciprocal: false);
+                            }
+                            else
+                            {
+                                result *= long.IsOddInteger(integral) ? -0.0 : +0.0;
+                            }
+                        }
+                        else if (fractional <= 0.50)
+                        {
+                            result = sign;
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
-        // public static double TanPi(double x) => Math.TanPi(x, y);
+                            if (fractional != 0.50)
+                            {
+                                result *= -TanForIntervalPiBy4((0.5 - fractional) * Pi, 0.0, isReciprocal: true);
+                            }
+                            else
+                            {
+                                result *= long.IsOddInteger(integral) ? NegativeInfinity : PositiveInfinity;
+                            }
+                        }
+                        else if (fractional <= 0.75)
+                        {
+                            result = +sign * TanForIntervalPiBy4((fractional - 0.5) * Pi, 0.0, isReciprocal: true);
+                        }
+                        else
+                        {
+                            result = -sign * TanForIntervalPiBy4((1.0 - fractional) * Pi, 0.0, isReciprocal: false);
+                        }
+                    }
+                    else if (ax >= 6.103515625E-05)         // |x| >= 2^-14
+                    {
+                        result = TanForIntervalPiBy4(x * Pi, 0.0, isReciprocal: false);
+                    }
+                    else if (ax >= 7.450580596923828E-09)   // |x| >= 2^-27
+                    {
+                        result = x * Pi;
+                        result += (result * (result * (result * (1.0 / 3.0))));
+                    }
+                    else
+                    {
+                        result = x * Pi;
+                    }
+                }
+                else if (ax < 9_007_199_254_740_992.0)      // |x| < 2^53
+                {
+                    // x is an integer
+                    long bits = BitConverter.DoubleToInt64Bits(ax);
+                    result = sign * (long.IsOddInteger(bits) ? -0.0 : +0.0);
+                }
+                else
+                {
+                    // x is an even integer
+                    result = sign * 0.0;
+                }
+            }
+            else
+            {
+                result = NaN;
+            }
+
+            return result;
+        }
 
         //
         // IUnaryNegationOperators
@@ -1407,14 +1986,203 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static double IUnaryNegationOperators<double, double>.operator -(double value) => -value;
 
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static double IUnaryNegationOperators<double, double>.operator checked -(double value) => -value;
-
         //
         // IUnaryPlusOperators
         //
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static double IUnaryPlusOperators<double, double>.operator +(double value) => (double)(+value);
+
+        //
+        // Helpers
+        //
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double CosForIntervalPiBy4(double x, double xTail)
+        {
+            // This code is based on `cos_piby4` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Taylor series for cos(x) is: 1 - (x^2 / 2!) + (x^4 / 4!) - (x^6 / 6!) ...
+            //
+            // Then define f(xx) where xx = (x * x)
+            // and f(xx) = 1 - (xx / 2!) + (xx^2 / 4!) - (xx^3 / 6!) ...
+            //
+            // We use a minimax approximation of (f(xx) - 1 + (xx / 2)) / (xx * xx)
+            // because this produces an expansion in even powers of x.
+            //
+            // If xTail is non-zero, we subtract a correction term g(x, xTail) = (x * xTail)
+            // to the result, where g(x, xTail) is an approximation to sin(x) * sin(xTail)
+            //
+            // This is valid because xTail is tiny relative to x.
+
+            const double C1 = +0.41666666666666665390037E-1;        // approx: +1 / 4!
+            const double C2 = -0.13888888888887398280412E-2;        // approx: -1 / 6!
+            const double C3 = +0.248015872987670414957399E-4;       // approx: +1 / 8!
+            const double C4 = -0.275573172723441909470836E-6;       // approx: -1 / 10!
+            const double C5 = +0.208761463822329611076335E-8;       // approx: +1 / 12!
+            const double C6 = -0.113826398067944859590880E-10;      // approx: -1 / 14!
+
+            double xx = x * x;
+
+            double tmp1 = 0.5 * xx;
+            double tmp2 = 1.0 - tmp1;
+
+            double result = C6;
+
+            result = (result * xx) + C5;
+            result = (result * xx) + C4;
+            result = (result * xx) + C3;
+            result = (result * xx) + C2;
+            result = (result * xx) + C1;
+
+            result *= (xx * xx);
+            result += 1.0 - tmp2 - tmp1 - (x * xTail);
+            result += tmp2;
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double SinForIntervalPiBy4(double x, double xTail)
+        {
+            // This code is based on `sin_piby4` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Taylor series for sin(x) is x - (x^3 / 3!) + (x^5 / 5!) - (x^7 / 7!) ...
+            // Which can be expressed as x * (1 - (x^2 / 3!) + (x^4 /5!) - (x^6 /7!) ...)
+            //
+            // Then define f(xx) where xx = (x * x)
+            // and f(xx) = 1 - (xx / 3!) + (xx^2 / 5!) - (xx^3 / 7!) ...
+            //
+            // We use a minimax approximation of (f(xx) - 1) / xx
+            // because this produces an expansion in even powers of x.
+            //
+            // If xTail is non-zero, we add a correction term g(x, xTail) = (1 - xx / 2) * xTail
+            // to the result, where g(x, xTail) is an approximation to cos(x) * sin(xTail)
+            //
+            // This is valid because xTail is tiny relative to x.
+
+            const double C1 = -0.166666666666666646259241729;       // approx: -1 / 3!
+            const double C2 = +0.833333333333095043065222816E-2;    // approx: +1 / 5!
+            const double C3 = -0.19841269836761125688538679E-3;     // approx: -1 / 7!
+            const double C4 = +0.275573161037288022676895908448E-5; // approx: +1 / 9!
+            const double C5 = -0.25051132068021699772257377197E-7;  // approx: -1 / 11!
+            const double C6 = +0.159181443044859136852668200E-9;    // approx: +1 / 13!
+
+            double xx = x * x;
+            double xxx = xx * x;
+
+            double result = C6;
+
+            result = (result * xx) + C5;
+            result = (result * xx) + C4;
+            result = (result * xx) + C3;
+            result = (result * xx) + C2;
+
+            if (xTail == 0.0)
+            {
+                result = (xx * result) + C1;
+                result = (xxx * result) + x;
+            }
+            else
+            {
+                result = x - ((xx * ((0.5 * xTail) - (xxx * result))) - xTail - (xxx * C1));
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double TanForIntervalPiBy4(double x, double xTail, bool isReciprocal)
+        {
+            // This code is based on `tan_piby4` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // In order to maintain relative precision transform using the identity:
+            //  tan((pi / 4) - x) = (1 - tan(x)) / (1 + tan(x)) for arguments close to (pi / 4).
+            //
+            // Similarly use tan(x - (pi / 4)) = (tan(x) - 1) / (tan(x) + 1) close to (-pi / 4).
+
+            const double PiBy4Head = 7.85398163397448278999E-01;
+            const double PiBy4Tail = 3.06161699786838240164E-17;
+
+            int transform = 0;
+
+            if (x > +0.68)
+            {
+                transform = 1;
+                x = (PiBy4Head - x) + (PiBy4Tail - xTail);
+                xTail = 0.0;
+            }
+            else if (x < -0.68)
+            {
+                transform = -1;
+                x = (PiBy4Head + x) + (PiBy4Tail + xTail);
+                xTail = 0.0;
+            }
+
+            // Core Remez [2, 3] approximation to tan(x + xTail) on the interval [0, 0.68].
+
+            double tmp1 = (x * x) + (2.0 * x * xTail);
+
+            double denominator = -0.232371494088563558304549252913E-3;
+            denominator = +0.260656620398645407524064091208E-1 + (denominator * tmp1);
+            denominator = -0.515658515729031149329237816945E+0 + (denominator * tmp1);
+            denominator = +0.111713747927937668539901657944E+1 + (denominator * tmp1);
+
+            double numerator = +0.224044448537022097264602535574E-3;
+            numerator = -0.229345080057565662883358588111E-1 + (numerator * tmp1);
+            numerator = +0.372379159759792203640806338901E+0 + (numerator * tmp1);
+
+            double tmp2 = x * tmp1;
+            tmp2 *= numerator / denominator;
+            tmp2 += xTail;
+
+            // Reconstruct tan(x) in the transformed case
+
+            double result = x + tmp2;
+
+            if (transform != 0)
+            {
+                if (isReciprocal)
+                {
+                    result = (transform * (2 * result / (result - 1))) - 1.0;
+                }
+                else
+                {
+                    result = transform * (1.0 - (2 * result / (1 + result)));
+                }
+            }
+            else if (isReciprocal)
+            {
+                // Compute -1.0 / (x + tmp2) accurately
+
+                ulong bits = BitConverter.DoubleToUInt64Bits(result);
+                bits &= 0xFFFFFFFF00000000;
+
+                double z1 = BitConverter.UInt64BitsToDouble(bits);
+                double z2 = tmp2 - (z1 - x);
+
+                double reciprocal = -1.0 / result;
+
+                bits = BitConverter.DoubleToUInt64Bits(reciprocal);
+                bits &= 0xFFFFFFFF00000000;
+
+                double reciprocalHead = BitConverter.UInt64BitsToDouble(bits);
+                result = reciprocalHead + (reciprocal * (1.0 + (reciprocalHead * z1) + (reciprocalHead * z2)));
+            }
+
+            return result;
+        }
     }
 }

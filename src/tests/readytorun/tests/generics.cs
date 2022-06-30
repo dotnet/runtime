@@ -1147,7 +1147,7 @@ class Program
                 Verify("DerivedClass2.GVMethod3", gvm3.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
                 Verify("DerivedClass2.GVMethod4", gvm4.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
 
-                // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on CoreRT, because vtable entries
+                // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on NativeAOT, because vtable entries
                 // get populated on demand (the first type won't get a Method3 entry, and the latter won't get a Method1 entry)
                 new BaseClass<int>().Method1(1);
                 m1 = typeof(BaseClass<int>).GetMethod("Method1");

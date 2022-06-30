@@ -243,7 +243,7 @@ namespace System.IO
             for (int i = path.Length; --i >= 0;)
             {
                 if (i < root || PathInternal.IsDirectorySeparator(path[i]))
-                    return path.Slice(i + 1, path.Length - i - 1);
+                    return path.Slice(i + 1);
             }
 
             return path;
@@ -696,7 +696,7 @@ namespace System.IO
                 string.Concat(first, PathInternal.DirectorySeparatorCharAsString, second);
         }
 
-        private unsafe readonly struct Join3Payload
+        private readonly unsafe struct Join3Payload
         {
             public Join3Payload(char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, byte separators)
             {
@@ -750,7 +750,7 @@ namespace System.IO
             }
         }
 
-        private unsafe readonly struct Join4Payload
+        private readonly unsafe struct Join4Payload
         {
             public Join4Payload(char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, char* fourth, int fourthLength, byte separators)
             {
@@ -816,11 +816,7 @@ namespace System.IO
             }
         }
 
-        private static ReadOnlySpan<byte> Base32Char => new byte[32] { // uses C# compiler's optimization for static byte[] data
-                (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f', (byte)'g', (byte)'h',
-                (byte)'i', (byte)'j', (byte)'k', (byte)'l', (byte)'m', (byte)'n', (byte)'o', (byte)'p',
-                (byte)'q', (byte)'r', (byte)'s', (byte)'t', (byte)'u', (byte)'v', (byte)'w', (byte)'x',
-                (byte)'y', (byte)'z', (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5' };
+        private static ReadOnlySpan<byte> Base32Char => "abcdefghijklmnopqrstuvwxyz012345"u8;
 
         private static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
         {

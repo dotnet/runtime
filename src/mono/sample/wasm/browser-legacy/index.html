@@ -13,13 +13,15 @@
   <h3 id="header">Wasm Browser Legacy Sample</h3>
   Result from Sample.Test.TestMeaning: <span id="out"></span>
   <script type='text/javascript'>
-    function set_exit_code(exit_code, reason) {
+    function wasm_exit(exit_code, reason) {
       /* Set result in a tests_done element, to be read by xharness */
       const tests_done_elem = document.createElement("label");
       tests_done_elem.id = "tests_done";
       tests_done_elem.innerHTML = exit_code.toString();
+      if (exit_code) tests_done_elem.style.background = "red";
       document.body.appendChild(tests_done_elem);
 
+      if(reason) console.error(reason);
       console.log(`WASM EXIT ${exit_code}`);
     };
 
@@ -31,7 +33,7 @@
 
         console.debug(`ret: ${ret}`);
         let exit_code = ret == 42 ? 0 : 1;
-        set_exit_code(exit_code);
+        wasm_exit(exit_code);
       },
     };
   </script>

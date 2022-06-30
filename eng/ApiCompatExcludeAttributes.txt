@@ -1,3 +1,4 @@
 T:System.Diagnostics.CodeAnalysis.MemberNotNullAttribute
 T:System.Diagnostics.DebuggerGuidedStepThroughAttribute
 T:System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute
+T:System.Runtime.CompilerServices.NativeIntegerAttribute

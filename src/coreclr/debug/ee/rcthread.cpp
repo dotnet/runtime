@@ -11,11 +11,6 @@
 
 #include "stdafx.h"
 #include "threadsuspend.h"
-#ifndef TARGET_UNIX
-
-#include "securitywrapper.h"
-#endif
-#include <aclapi.h>
 
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
@@ -105,28 +100,6 @@ void DebuggerRCThread::CloseIPCHandles()
         m_pDCB->m_rightSideProcessHandle.Close();
     }
 }
-
-//-----------------------------------------------------------------------------
-// Helper to get the proper decorated name
-// Caller ensures that pBufSize is large enough. We'll assert just to check,
-// but no runtime failure.
-// pBuf - the output buffer to write the decorated name in
-// cBufSizeInChars - the size of the buffer in characters, including the null.
-// pPrefx - The undecorated name of the event.
-//-----------------------------------------------------------------------------
-void GetPidDecoratedName(_Out_writes_(cBufSizeInChars) WCHAR * pBuf,
-                         int cBufSizeInChars,
-                         const WCHAR * pPrefix)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    DWORD pid = GetCurrentProcessId();
-
-    GetPidDecoratedName(pBuf, cBufSizeInChars, pPrefix, pid);
-}
-
-
-
 
 //-----------------------------------------------------------------------------
 // Simple wrapper to create win32 events.
@@ -575,13 +548,12 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
         // We can't really use SStrings on the helper thread; though if we're at this point, we've already died.
         // So go ahead and risk it and use them anyways.
         SString sStack;
-        StackScratchBuffer buffer;
         GetStackTraceAtContext(sStack, ep->ContextRecord);
         const CHAR *string = NULL;
 
         EX_TRY
         {
-            string = sStack.GetANSI(buffer);
+            string = sStack.GetUTF8();
         }
         EX_CATCH
         {
@@ -821,7 +793,7 @@ bool DebuggerRCThread::HandleRSEA()
     memcpy(e, GetIPCEventReceiveBuffer(), CorDBIPC_BUFFER_SIZE);
 #else
     // Be sure to fetch the event into the official receive buffer since some event handlers assume it's there
-    // regardless of the the event buffer pointer passed to them.
+    // regardless of the event buffer pointer passed to them.
     e = GetIPCEventReceiveBuffer();
     g_pDbgTransport->GetNextEvent(e, CorDBIPC_BUFFER_SIZE);
 #endif // !FEATURE_DBGIPC_TRANSPOPRT

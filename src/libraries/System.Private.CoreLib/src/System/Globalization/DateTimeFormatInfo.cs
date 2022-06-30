@@ -249,7 +249,7 @@ namespace System.Globalization
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
         {
             Debug.Assert(cultureData != null);
-            Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initalized calendarId");
+            Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initialized calendarId");
 
             if (firstDayOfWeek == -1)
             {
@@ -260,22 +260,10 @@ namespace System.Globalization
                 calendarWeekRule = cultureData.CalendarWeekRule;
             }
 
-            if (amDesignator == null)
-            {
-                amDesignator = cultureData.AMDesignator;
-            }
-            if (pmDesignator == null)
-            {
-                pmDesignator = cultureData.PMDesignator;
-            }
-            if (timeSeparator == null)
-            {
-                timeSeparator = cultureData.TimeSeparator;
-            }
-            if (dateSeparator == null)
-            {
-                dateSeparator = cultureData.DateSeparator(calendarId);
-            }
+            amDesignator ??= cultureData.AMDesignator;
+            pmDesignator ??= cultureData.PMDesignator;
+            timeSeparator ??= cultureData.TimeSeparator;
+            dateSeparator ??= cultureData.DateSeparator(calendarId);
 
             allLongTimePatterns = _cultureData.LongTimes;
             Debug.Assert(allLongTimePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some long time patterns");
@@ -358,11 +346,7 @@ namespace System.Globalization
         {
             get
             {
-                if (amDesignator == null)
-                {
-                    amDesignator = _cultureData.AMDesignator;
-                }
-
+                amDesignator ??= _cultureData.AMDesignator;
                 Debug.Assert(amDesignator != null, "DateTimeFormatInfo.AMDesignator, amDesignator != null");
                 return amDesignator;
             }
@@ -599,10 +583,7 @@ namespace System.Globalization
         {
             get
             {
-                if (dateSeparator == null)
-                {
-                    dateSeparator = _cultureData.DateSeparator(Calendar.ID);
-                }
+                dateSeparator ??= _cultureData.DateSeparator(Calendar.ID);
                 Debug.Assert(dateSeparator != null, "DateTimeFormatInfo.DateSeparator, dateSeparator != null");
                 return dateSeparator;
             }
@@ -796,11 +777,7 @@ namespace System.Globalization
         {
             get
             {
-                if (pmDesignator == null)
-                {
-                    pmDesignator = _cultureData.PMDesignator;
-                }
-
+                pmDesignator ??= _cultureData.PMDesignator;
                 Debug.Assert(pmDesignator != null, "DateTimeFormatInfo.PMDesignator, pmDesignator != null");
                 return pmDesignator;
             }
@@ -975,10 +952,7 @@ namespace System.Globalization
         {
             get
             {
-                if (timeSeparator == null)
-                {
-                    timeSeparator = _cultureData.TimeSeparator;
-                }
+                timeSeparator ??= _cultureData.TimeSeparator;
                 Debug.Assert(timeSeparator != null, "DateTimeFormatInfo.TimeSeparator, timeSeparator != null");
                 return timeSeparator;
             }

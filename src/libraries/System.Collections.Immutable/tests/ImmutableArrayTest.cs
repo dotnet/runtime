@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Collections.Immutable.Tests
 {
@@ -1154,6 +1155,34 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Theory]
+        [InlineData(new int[] { }, new int[] { 1, 2, 3 }, 2)]
+        [InlineData(new int[] { 1, 2 }, new int[] { 1, 2, 3 }, 2)]
+        [InlineData(new int[] { }, new int[] { 1, 2 }, 0)]
+        [InlineData(new int[] { 1, 2 }, new int[] { 1, 2 }, 0)]
+        public void AddRangeWithLength(IEnumerable<int> source, IEnumerable<int> items, int length)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Equal(source.Concat(items.Take(length)), array.AddRange(items.ToArray(), length)); // Array overload
+            Assert.Equal(source.Concat(items.Take(length)), array.AddRange(items.ToImmutableArray(), length)); // ImmutableArray overload
+            Assert.Equal(source, array); // Make sure the original array wasn't affected.
+        }
+
+        [Theory]
+        [InlineData(new object[] { }, new int[] { 1, 2, 3 })]
+        [InlineData(new object[] { 1, 2 }, new int[] { 1, 2, 3 })]
+        [InlineData(new object[] { }, new int[] { 1, 2 })]
+        [InlineData(new object[] { 1, 2 }, new int[] { 1, 2 })]
+        public void AddRangeDerivedArray(IEnumerable<object> source, IEnumerable<int> items)
+        {
+            var array = source.ToImmutableArray();
+
+            Assert.Equal(source.Concat(items.Cast<object>()), array.AddRange(items.ToArray())); // Array overload
+            Assert.Equal(source.Concat(items.Cast<object>()), array.AddRange(items.ToImmutableArray())); // ImmutableArray overload
+            Assert.Equal(source, array); // Make sure the original array wasn't affected.
+        }
+
+        [Theory]
         [MemberData(nameof(Int32EnumerableData))]
         public void AddRangeEmptyOptimization(IEnumerable<int> source)
         {
@@ -1198,6 +1227,29 @@ namespace System.Collections.Immutable.Tests
 
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(s_emptyDefault));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange((IEnumerable<int>)s_emptyDefault));
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void AddRangeWithLengthInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+            var items = new int[] { 1, 2 };
+
+            AssertExtensions.Throws<ArgumentNullException>("items", () => array.AddRange(null, 3));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.AddRange(items, items.Length + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.AddRange(items, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.AddRange(items.ToImmutableArray(), -1));
+        }
+
+        [Fact]
+        public void AddRangeDerivedArrayInvalid()
+        {
+            var array = new object[] { 1, 2 }.ToImmutableArray();
+            int[] items = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("items", () => array.AddRange(items));
         }
 
         [Theory]

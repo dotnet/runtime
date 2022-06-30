@@ -171,10 +171,7 @@ namespace System.Xml
 
         public override Task WriteWhitespaceAsync(string? ws)
         {
-            if (ws == null)
-            {
-                ws = string.Empty;
-            }
+            ws ??= string.Empty;
 
             // "checkNames" is intentional here; if false, the whitespace is checked in XmlWellformedWriter
             if (_checkNames)

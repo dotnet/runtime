@@ -174,15 +174,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Type ResolveType();
 
-        public override Type FieldType
-        {
-            get
-            {
-                if (type == null)
-                    type = ResolveType();
-                return type;
-            }
-        }
+        public override Type FieldType => type ??= ResolveType();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Type GetParentType(bool declaring);
@@ -272,13 +264,13 @@ namespace System.Reflection
             }
             if (IsLiteral)
                 throw new FieldAccessException("Cannot set a constant field");
-            if (binder == null)
-                binder = Type.DefaultBinder;
+
+            binder ??= Type.DefaultBinder;
             CheckGeneric();
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                bool _ = false;
+                ParameterCopyBackAction _ = default;
 
                 if (!ReferenceEquals(val.GetType(), fieldType))
                 {

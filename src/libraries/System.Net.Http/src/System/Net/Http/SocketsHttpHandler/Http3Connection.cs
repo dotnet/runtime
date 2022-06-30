@@ -31,7 +31,7 @@ namespace System.Net.Http
         private readonly Dictionary<QuicStream, Http3RequestStream> _activeRequests = new Dictionary<QuicStream, Http3RequestStream>();
 
         // Set when GOAWAY is being processed, when aborting, or when disposing.
-        private long _lastProcessedStreamId = -1;
+        private long _firstRejectedStreamId = -1;
 
         // Our control stream.
         private QuicStream? _clientControl;
@@ -66,7 +66,7 @@ namespace System.Net.Http
             get
             {
                 Debug.Assert(Monitor.IsEntered(SyncObj));
-                return _lastProcessedStreamId != -1;
+                return _firstRejectedStreamId != -1;
             }
         }
 
@@ -101,9 +101,9 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                if (_lastProcessedStreamId == -1)
+                if (_firstRejectedStreamId == -1)
                 {
-                    _lastProcessedStreamId = long.MaxValue;
+                    _firstRejectedStreamId = long.MaxValue;
                     CheckForShutdown();
                 }
             }
@@ -127,10 +127,7 @@ namespace System.Net.Http
             {
                 // Close the QuicConnection in the background.
 
-                if (_connectionClosedTask == null)
-                {
-                    _connectionClosedTask = _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
-                }
+                _connectionClosedTask ??= _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
 
                 QuicConnection connection = _connection;
                 _connection = null;
@@ -218,7 +215,7 @@ namespace System.Net.Http
                 bool goAway;
                 lock (SyncObj)
                 {
-                    goAway = _lastProcessedStreamId != -1 && requestStream.StreamId > _lastProcessedStreamId;
+                    goAway = _firstRejectedStreamId != -1 && requestStream.StreamId >= _firstRejectedStreamId;
                 }
 
                 if (goAway)
@@ -276,11 +273,11 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                // Set _lastProcessedStreamId != -1 to make ShuttingDown = true.
+                // Set _firstRejectedStreamId != -1 to make ShuttingDown = true.
                 // It's possible GOAWAY is already being processed, in which case this would already be != -1.
-                if (_lastProcessedStreamId == -1)
+                if (_firstRejectedStreamId == -1)
                 {
-                    _lastProcessedStreamId = long.MaxValue;
+                    _firstRejectedStreamId = long.MaxValue;
                 }
 
                 // Abort the connection. This will cause all of our streams to abort on their next I/O.
@@ -295,7 +292,7 @@ namespace System.Net.Http
             return abortException;
         }
 
-        private void OnServerGoAway(long lastProcessedStreamId)
+        private void OnServerGoAway(long firstRejectedStreamId)
         {
             // Stop sending requests to this connection.
             _pool.InvalidateHttp3Connection(this);
@@ -304,7 +301,7 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                if (_lastProcessedStreamId != -1 && lastProcessedStreamId > _lastProcessedStreamId)
+                if (_firstRejectedStreamId != -1 && firstRejectedStreamId > _firstRejectedStreamId)
                 {
                     // Server can send multiple GOAWAY frames.
                     // Spec says a server MUST NOT increase the stream ID in subsequent GOAWAYs,
@@ -316,11 +313,11 @@ namespace System.Net.Http
                     return;
                 }
 
-                _lastProcessedStreamId = lastProcessedStreamId;
+                _firstRejectedStreamId = firstRejectedStreamId;
 
                 foreach (KeyValuePair<QuicStream, Http3RequestStream> request in _activeRequests)
                 {
-                    if (request.Value.StreamId > lastProcessedStreamId)
+                    if (request.Value.StreamId >= firstRejectedStreamId)
                     {
                         streamsToGoAway.Add(request.Value);
                     }
@@ -341,7 +338,7 @@ namespace System.Net.Http
             lock (SyncObj)
             {
                 bool removed = _activeRequests.Remove(stream);
-                Debug.Assert(removed == true);
+                Debug.Assert(removed);
 
                 if (ShuttingDown)
                 {
@@ -711,10 +708,10 @@ namespace System.Net.Http
 
             async ValueTask ProcessGoAwayFrameAsync(long goawayPayloadLength)
             {
-                long lastStreamId;
+                long firstRejectedStreamId;
                 int bytesRead;
 
-                while (!VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out lastStreamId, out bytesRead))
+                while (!VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out firstRejectedStreamId, out bytesRead))
                 {
                     buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
                     bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);
@@ -737,7 +734,7 @@ namespace System.Net.Http
                     throw new Http3ConnectionException(Http3ErrorCode.FrameError);
                 }
 
-                OnServerGoAway(lastStreamId);
+                OnServerGoAway(firstRejectedStreamId);
             }
 
             async ValueTask SkipUnknownPayloadAsync(Http3FrameType frameType, long payloadLength)

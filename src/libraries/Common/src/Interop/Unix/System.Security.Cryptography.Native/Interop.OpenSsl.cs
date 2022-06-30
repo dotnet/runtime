@@ -22,6 +22,8 @@ internal static partial class Interop
     {
         private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
         private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
+        private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
+        private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
         private static readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> s_clientSslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
@@ -49,6 +51,8 @@ internal static partial class Interop
 
             return bindingHandle;
         }
+
+        private static int s_cacheSize = GetCacheSize();
 
         private static volatile int s_disableTlsResume = -1;
 
@@ -79,6 +83,22 @@ internal static partial class Interop
             }
         }
 
+        private static int GetCacheSize()
+        {
+            int cacheSize = -1;
+            string? value = AppContext.GetData(TlsCacheSizeCtxName) as string ?? Environment.GetEnvironmentVariable(TlsCacheSizeEnvironmentVariable);
+            try
+            {
+                if (value != null)
+                {
+                    cacheSize = int.Parse(value);
+                }
+            }
+            catch { };
+
+            return cacheSize;
+        }
+
         // This is helper function to adjust requested protocols based on CipherSuitePolicy and system capability.
         private static SslProtocols CalculateEffectiveProtocols(SslAuthenticationOptions sslAuthenticationOptions)
         {
@@ -91,7 +111,7 @@ internal static partial class Interop
                 if (protocols != SslProtocols.None &&
                     CipherSuitesPolicyPal.WantsTls13(protocols))
                 {
-                    protocols = protocols & (~SslProtocols.Tls13);
+                    protocols &= ~SslProtocols.Tls13;
                 }
             }
             else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
@@ -186,18 +206,18 @@ internal static partial class Interop
                 {
                     if (sslAuthenticationOptions.IsServer)
                     {
-                        Ssl.SslCtxSetCaching(sslCtx, 1, null, null);
+                        Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, null, null);
                     }
                     else
                     {
-                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, &NewSessionCallback, &RemoveSessionCallback);
+                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, &NewSessionCallback, &RemoveSessionCallback);
                         Debug.Assert(result == 1);
                         sslCtx.EnableSessionCache();
                     }
                 }
                 else
                 {
-                    Ssl.SslCtxSetCaching(sslCtx, 0, null, null);
+                    Ssl.SslCtxSetCaching(sslCtx, 0, -1, null, null);
                 }
 
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
@@ -214,11 +234,19 @@ internal static partial class Interop
                     SetSslCertificate(sslCtx, certHandle!, certKeyHandle!);
                 }
 
-                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
+                if (sslAuthenticationOptions.CertificateContext != null)
                 {
-                    if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
+                    if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
-                        throw CreateSslException(SR.net_ssl_use_cert_failed);
+                        if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
+                        {
+                            throw CreateSslException(SR.net_ssl_use_cert_failed);
+                        }
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext.OcspStaplingAvailable)
+                    {
+                        Ssl.SslCtxSetDefaultOcspCallback(sslCtx);
                     }
                 }
             }
@@ -402,27 +430,37 @@ internal static partial class Interop
                         Ssl.SslSetVerifyPeer(sslHandle);
                     }
 
-                    if (sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
+                    if (sslAuthenticationOptions.CertificateContext != null)
                     {
-                        SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
-                        X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
-
-                        Debug.Assert(certList != null, "certList != null");
-                        Span<IntPtr> handles = certList.Count <= 256
-                            ? stackalloc IntPtr[256]
-                            : new IntPtr[certList.Count];
-
-                        for (int i = 0; i < certList.Count; i++)
+                        if (sslAuthenticationOptions.CertificateContext.Trust?._sendTrustInHandshake == true)
                         {
-                            handles[i] = certList[i].Handle;
+                            SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
+                            X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
+
+                            Debug.Assert(certList != null, "certList != null");
+                            Span<IntPtr> handles = certList.Count <= 256 ?
+                                stackalloc IntPtr[256] :
+                                new IntPtr[certList.Count];
+
+                            for (int i = 0; i < certList.Count; i++)
+                            {
+                                handles[i] = certList[i].Handle;
+                            }
+
+                            if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                            {
+                                // The method can fail only when the number of cert names exceeds the maximum capacity
+                                // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
+                                // operation.
+                                Debug.Fail("Failed to add issuer to trusted CA list.");
+                            }
                         }
 
-                        if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                        byte[]? ocspResponse = sslAuthenticationOptions.CertificateContext.GetOcspResponseNoWaiting();
+
+                        if (ocspResponse != null)
                         {
-                            // The method can fail only when the number of cert names exceeds the maximum capacity
-                            // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
-                            // operation.
-                            Debug.Fail("Failed to add issuer to trusted CA list.");
+                            Ssl.SslStapleOcsp(sslHandle, ocspResponse);
                         }
                     }
                 }

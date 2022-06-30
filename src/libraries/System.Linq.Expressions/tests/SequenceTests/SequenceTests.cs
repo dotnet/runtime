@@ -491,6 +491,7 @@ namespace System.Linq.Expressions.Tests
 
         [Fact]
         // this tests calling static methods by name (generic and non-generic)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69928", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void TestCallStaticMethodsByName()
         {
             NWindProxy.Customer[] custs = new[] { new NWindProxy.Customer { CustomerID = "BUBBA", ContactName = "Bubba Gump" } };
@@ -3001,6 +3002,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69943", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void NumericOperators(bool useInterpreter)
         {
             RelationalOperatorTests(typeof(sbyte), (sbyte)1, false, useInterpreter);

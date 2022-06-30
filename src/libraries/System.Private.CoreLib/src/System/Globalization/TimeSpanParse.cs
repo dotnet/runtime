@@ -228,7 +228,7 @@ namespace System.Globalization
                 int length = 1;
                 while (true)
                 {
-                    if (++_pos >= _value.Length || (uint)(_value[_pos] - '0') <= 9)
+                    if (++_pos >= _value.Length || char.IsAsciiDigit(_value[_pos]))
                     {
                         break;
                     }
@@ -1421,7 +1421,7 @@ namespace System.Globalization
             while (tokenLength < maxDigitLength)
             {
                 char ch = tokenizer.NextChar();
-                if (ch < '0' || ch > '9')
+                if (!char.IsAsciiDigit(ch))
                 {
                     tokenizer.BackOne();
                     break;
@@ -1483,7 +1483,10 @@ namespace System.Globalization
                 while (i < _len)
                 {
                     char ch = _str[i];
-                    if (ch < '0' || ch > '9') return ch;
+                    if (!char.IsAsciiDigit(ch))
+                    {
+                        return ch;
+                    }
                     i++;
                 }
 
@@ -1567,7 +1570,7 @@ namespace System.Globalization
             {
                 i = 0;
                 int p = _pos;
-                while (_ch >= '0' && _ch <= '9')
+                while (char.IsAsciiDigit(_ch))
                 {
                     if ((i & 0xF0000000) != 0)
                     {
@@ -1638,7 +1641,7 @@ namespace System.Globalization
                     {
                         NextChar();
                         int f = (int)TimeSpan.TicksPerSecond;
-                        while (f > 1 && _ch >= '0' && _ch <= '9')
+                        while (f > 1 && char.IsAsciiDigit(_ch))
                         {
                             f /= 10;
                             time += (_ch - '0') * f;

@@ -399,7 +399,7 @@ This has the side effect of hoisting the call to be a top level (statement)
 expression and introduces a return value placeholder.
 
 We currently already have a similar transformation in the JIT, the "fat calli"
-transformation needed on CoreRT. This transformation runs at the right time --
+transformation needed on NativeAOT. This transformation runs at the right time --
 after the importer and before the inliner -- and introduces the right kind of
 `if-then-else` control flow structure. So the thought is to generalize this to
 handle guarded devirtualization as well.

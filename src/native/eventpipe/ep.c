@@ -762,7 +762,7 @@ write_event_2 (
 			ep_thread_set_session_write_in_progress (current_thread, i);
 			{
 				EventPipeSession *const session = ep_volatile_load_session (i);
-				// Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occured in between
+				// Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occurred in between
 				// the check and the load
 				if (session != NULL) {
 					ep_session_write_event (
@@ -792,12 +792,17 @@ get_next_config_value (const ep_char8_t *data, const ep_char8_t **start, const e
 	EP_ASSERT (end != NULL);
 
 	*start = data;
-	while (*data != '\0' && *data != ':')
+	while (*data != '\0' && *data != ',' && *data != ':')
 		data++;
 
 	*end = data;
 
-	return *data != '\0' ? ++data : NULL;
+	if (*data == '\0')
+		return NULL;
+	else if (*data == ',')
+		return data;
+	else
+		return ++data;
 }
 
 static

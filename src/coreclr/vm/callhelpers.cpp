@@ -246,7 +246,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
 
     if (regArgNum < NUM_ARGUMENT_REGISTERS)
     {
-        pMap[regArgNum] = typ;
+        pMap[regArgNum] = (BYTE)typ;
     }
 }
 #endif // CALLDESCR_REGTYPEMAP
@@ -304,9 +304,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         // may not trigger a GC before we actually call managed code
         //
         GCX_FORBID();
-
-        // Record this call if required
-        g_IBCLogger.LogMethodDescAccess(m_pMD);
 
         //
         // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is

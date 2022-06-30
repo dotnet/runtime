@@ -25,6 +25,7 @@ namespace System.Text.Json
         /// and <see cref="SerializeAsync{TValue}(IO.Stream, TValue, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             Type runtimeType = GetRuntimeType(value);
@@ -54,6 +55,7 @@ namespace System.Text.Json
         /// and <see cref="SerializeAsync(IO.Stream, object?, Type, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static string Serialize(
             object? value,
             Type inputType,

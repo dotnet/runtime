@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
     if (checkSimpleExceptionHandling() != 100)
         return 5;
 
-    // CoreRT is not designed to be unloadable, so this won't actually unload the library properly. Verify that attempt
+    // NativeAOT is not designed to be unloadable, so this won't actually unload the library properly. Verify that attempt
     // to unload the library does not to crash at least.
 #ifdef TARGET_WINDOWS
     FreeLibrary(handle);

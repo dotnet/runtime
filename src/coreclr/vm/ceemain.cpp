@@ -72,7 +72,7 @@
 // * file:..\inc\corhdr.h#ManagedHeader - From a data structure point of view, this is the entry point into
 //     the runtime. This is how all other data in the EXE are found.
 //
-// * code:ICorJitCompiler#EEToJitInterface - This is the interface from the the EE to the Just in time (JIT)
+// * code:ICorJitCompiler#EEToJitInterface - This is the interface from the EE to the Just in time (JIT)
 //     compiler. The interface to the JIT is relatively simple (compileMethod), however the EE provides a
 //     rich set of callbacks so the JIT can get all the information it needs. See also
 //     file:../../Documentation/botr/ryujit-overview.md for general information on the JIT.
@@ -401,7 +401,26 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
 // A host can specify that it only wants one version of hosting interface to be used.
 BOOL g_singleVersionHosting;
 
+#ifdef TARGET_WINDOWS
+typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
+PINITIALIZECONTEXT2 g_pfnInitializeContext2 = NULL;
 
+#ifdef TARGET_X86
+typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
+PRTLRESTORECONTEXT g_pfnRtlRestoreContext = NULL;
+#endif // TARGET_X86
+
+void InitializeOptionalWindowsAPIPointers()
+{
+    HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
+    g_pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
+
+#ifdef TARGET_X86
+    hm = GetModuleHandleW(_T("ntdll.dll"));
+    g_pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
+#endif //TARGET_X86
+}
+#endif // TARGET_WINDOWS
 
 void InitializeStartupFlags()
 {
@@ -595,6 +614,9 @@ void EEStartupHelper()
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
 #endif
 
+#ifdef HOST_WINDOWS
+        InitializeOptionalWindowsAPIPointers();
+#endif // HOST_WINDOWS
 
         // SString initialization
         // This needs to be done before config because config uses SString::Empty()
@@ -1204,7 +1226,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         if (!g_fProcessDetach)
         {
             // Convert key locks into "shutdown" mode. A lock in shutdown mode means:
-            // - Only the finalizer/helper/shutdown threads will be able to take the the lock.
+            // - Only the finalizer/helper/shutdown threads will be able to take the lock.
             // - Any other thread that tries takes it will just get redirected to an endless WaitForEndOfShutdown().
             //
             // The only managed code that should run after this point is the finalizers for shutdown.
@@ -1237,41 +1259,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Flush and close the perf map file.
         PerfMap::Destroy();
 #endif
-
-        {
-            // If we're doing basic block profiling, we need to write the log files to disk.
-            static BOOL fIBCLoggingDone = FALSE;
-            if (!fIBCLoggingDone)
-            {
-                if (g_IBCLogger.InstrEnabled())
-                {
-                    Thread * pThread = GetThreadNULLOk();
-                    ThreadLocalIBCInfo* pInfo = NULL;
-
-                    if (pThread != NULL)
-                    {
-                        pInfo = pThread->GetIBCInfo();
-                        if (pInfo == NULL)
-                        {
-                            CONTRACT_VIOLATION( ThrowsViolation | FaultViolation);
-                            pInfo = new ThreadLocalIBCInfo();
-                            pThread->SetIBCInfo(pInfo);
-                        }
-                    }
-
-                    // Acquire the Crst lock before creating the IBCLoggingDisabler object.
-                    // Only one thread at a time can be processing an IBC logging event.
-                    CrstHolder lock(IBCLogger::GetSync());
-                    {
-                        IBCLoggingDisabler disableLogging( pInfo );  // runs IBCLoggingDisabler::DisableLogging
-
-                        CONTRACT_VIOLATION(GCViolation);
-                        Module::WriteAllModuleProfileData(true);
-                    }
-                }
-                fIBCLoggingDone = TRUE;
-            }
-        }
 
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
 
@@ -1369,11 +1356,6 @@ part2:
 
                 // No longer process exceptions
                 g_fNoExceptions = true;
-
-                //
-                // Remove our global exception filter. If it was NULL before, we want it to be null now.
-                //
-                UninstallUnhandledExceptionFilter();
 
                 // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
                 // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
@@ -1568,7 +1550,7 @@ void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading)
 
     if (!fIsDllUnloading)
     {
-        if (FastInterlockIncrement(&OnlyOne) != 0)
+        if (InterlockedIncrement(&OnlyOne) != 0)
         {
             // I'm in a regular shutdown -- but another thread got here first.
             // It's a race if I return from here -- I'll call ExitProcess next, and
@@ -1934,7 +1916,7 @@ static void TerminateDebugger(void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // copy culture name into szBuffer and return length
 // ---------------------------------------------------------------------------
-extern BOOL g_fFatalErrorOccuredOnGCThread;
+extern BOOL g_fFatalErrorOccurredOnGCThread;
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 {
     CONTRACTL
@@ -1956,7 +1938,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 #if 0 // Enable and test if/once the unmanaged runtime is localized
         Thread * pThread = GetThreadNULLOk();
 
-        // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+        // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
         // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
         // getting localized with a non-default thread-specific culture.
         // A canonical stack trace that gets here is a fatal error in the GC that comes through:
@@ -1972,7 +1954,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
         // coreclr.dll!EventReporter::EventReporter
         // coreclr.dll!EEPolicy::LogFatalError
         // coreclr.dll!EEPolicy::HandleFatalError
-        if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread) {
+        if (pThread != NULL && !g_fFatalErrorOccurredOnGCThread) {
 
             // Switch to cooperative mode, since we'll be looking at managed objects
             // and we don't want them moving on us.
@@ -2086,7 +2068,7 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
     Thread * pThread = GetThreadNULLOk();
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
-    // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+    // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
     // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
     // getting localized with a non-default thread-specific culture.
     // A canonical stack trace that gets here is a fatal error in the GC that comes through:
@@ -2102,7 +2084,7 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
     // coreclr.dll!EventReporter::EventReporter
     // coreclr.dll!EEPolicy::LogFatalError
     // coreclr.dll!EEPolicy::HandleFatalError
-    if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread)
+    if (pThread != NULL && !g_fFatalErrorOccurredOnGCThread)
     {
 
         // Switch to cooperative mode, since we'll be looking at managed objects

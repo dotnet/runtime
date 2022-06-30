@@ -102,7 +102,7 @@ namespace System.Threading
                     }
                 }
 
-                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)Marshal.AllocHGlobal(sizeof(NativeOverlapped) + sizeof(GCHandle));
+                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)NativeMemory.Alloc((nuint)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
                 *(GCHandle*)(pNativeOverlapped + 1) = default(GCHandle);
                 _pNativeOverlapped = pNativeOverlapped;
 
@@ -150,7 +150,7 @@ namespace System.Threading
                 if (handle.IsAllocated)
                     handle.Free();
 
-                Marshal.FreeHGlobal((IntPtr)_pNativeOverlapped);
+                NativeMemory.Free(_pNativeOverlapped);
                 _pNativeOverlapped = null;
             }
         }

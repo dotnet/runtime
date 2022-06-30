@@ -32,7 +32,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, 
     StatusCode bundleStatus = bundle::info_t::process_bundle(host_path, app_path, bundle_header_offset);
     if (bundleStatus != StatusCode::Success)
     {
-        trace::error(_X("A fatal error occured while processing application bundle"));
+        trace::error(_X("A fatal error occurred while processing application bundle"));
         return bundleStatus;
     }
 
@@ -106,7 +106,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 //        required to store the located SDK.
 //
 //   If resolution succeeds and the positive return value is less than
-//   or equal to buffer_size (i.e. the the buffer is large enough),
+//   or equal to buffer_size (i.e. the buffer is large enough),
 //   then the resolved SDK path is copied to the buffer and null
 //   terminated. Otherwise, no data is written to the buffer.
 //

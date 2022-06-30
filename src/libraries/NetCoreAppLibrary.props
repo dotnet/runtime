@@ -127,6 +127,7 @@
       System.Runtime.Extensions;
       System.Runtime.Handles;
       System.Runtime.InteropServices;
+      System.Runtime.InteropServices.JavaScript;
       System.Runtime.InteropServices.RuntimeInformation;
       System.Runtime.Intrinsics;
       System.Runtime.Loader;
@@ -183,6 +184,12 @@
       System.Private.Xml;
       System.Private.Xml.Linq;
     </NetCoreAppLibraryNoReference>
+    <!-- List .NETCoreApp shared framework generator project names below. -->
+    <NetCoreAppLibraryGenerator>
+      LibraryImportGenerator;
+      System.Text.Json.SourceGeneration.Roslyn4.0;
+      System.Text.RegularExpressions.Generator;
+    </NetCoreAppLibraryGenerator>
     <AspNetCoreAppLibrary>
       Microsoft.Extensions.Caching.Abstractions;
       Microsoft.Extensions.Caching.Memory;
@@ -245,6 +252,7 @@
     <NetFxReference Include="$(NetFxReference)" />
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
     <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
+    <NetCoreAppLibraryGenerator Include="$(NetCoreAppLibraryGenerator)" />
     <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
     <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />
   </ItemGroup>

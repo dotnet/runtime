@@ -2126,7 +2126,7 @@ public:
         return TYPE_INTERCEPTION;
     }
 
-    // Our base class is a a M2U TransitionType; but we're not. So override and set us back to None.
+    // Our base class is an M2U TransitionType; but we're not. So override and set us back to None.
     ETransitionType GetTransitionType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2387,7 +2387,7 @@ public:
         return INTERCEPTION_PRESTUB;
     }
 
-    // Our base class is a a M2U TransitionType; but we're not. So override and set us back to None.
+    // Our base class is an M2U TransitionType; but we're not. So override and set us back to None.
     virtual ETransitionType GetTransitionType()
     {
         LIMITED_METHOD_DAC_CONTRACT;

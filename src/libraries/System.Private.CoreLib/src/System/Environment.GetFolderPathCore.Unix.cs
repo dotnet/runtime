@@ -93,7 +93,7 @@ namespace System
                     // "$XDG_DATA_HOME defines the base directory relative to which user specific data files should be stored."
                     // "If $XDG_DATA_HOME is either not set or empty, a default equal to $HOME/.local/share should be used."
                     string? data = GetEnvironmentVariable("XDG_DATA_HOME");
-                    if (string.IsNullOrEmpty(data) || data[0] != '/')
+                    if (data is null || !data.StartsWith('/'))
                     {
                         data = Path.Combine(home, ".local", "share");
                     }
@@ -137,7 +137,7 @@ namespace System
             // "$XDG_CONFIG_HOME defines the base directory relative to which user specific configuration files should be stored."
             // "If $XDG_CONFIG_HOME is either not set or empty, a default equal to $HOME/.config should be used."
             string? config = GetEnvironmentVariable("XDG_CONFIG_HOME");
-            if (string.IsNullOrEmpty(config) || config[0] != '/')
+            if (config is null || !config.StartsWith('/'))
             {
                 config = Path.Combine(home, ".config");
             }
@@ -151,7 +151,7 @@ namespace System
             Debug.Assert(!string.IsNullOrEmpty(fallback), $"Expected non-empty fallback");
 
             string? envPath = GetEnvironmentVariable(key);
-            if (!string.IsNullOrEmpty(envPath) && envPath[0] == '/')
+            if (envPath is not null && envPath.StartsWith('/'))
             {
                 return envPath;
             }

@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Registration
                     }
                 }
 
-                // An error occured the expression must be a Property Member Expression
+                // An error occurred the expression must be a Property Member Expression
                 throw new ArgumentException(SR.Format(SR.Argument_ExpressionMustBePropertyMember, nameof(propertyFilter)), nameof(propertyFilter));
             }
 
@@ -126,10 +126,7 @@ namespace System.ComponentModel.Composition.Registration
                                 var lambdaExpression = (LambdaExpression)parameter;
                                 Delegate importDelegate = lambdaExpression.Compile();
 
-                                if (_importBuilders == null)
-                                {
-                                    _importBuilders = new Dictionary<ParameterInfo, Action<ImportBuilder>>();
-                                }
+                                _importBuilders ??= new Dictionary<ParameterInfo, Action<ImportBuilder>>();
 
                                 _importBuilders.Add(parameterInfos[index], (Action<ImportBuilder>)importDelegate);
                                 ++index;

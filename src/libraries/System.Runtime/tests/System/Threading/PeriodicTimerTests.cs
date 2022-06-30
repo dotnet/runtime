@@ -112,20 +112,46 @@ namespace System.Threading.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task PeriodicTimer_ActiveOperations_TimerRooted()
         {
-            (WeakReference<PeriodicTimer> timer, ValueTask<bool> task) = Create();
+            // Step 1: Verify that if we have an active wait the timer does not get collected.
+            WeakReference<PeriodicTimer> timer = await CreateAndVerifyRooted();
 
-            WaitForTimerToBeCollected(timer, expected: false);
-
-            Assert.True(await task);
-
+            // Step 2: Verify that now the timer does get collected
             WaitForTimerToBeCollected(timer, expected: true);
 
+            // It is important that we do these two things in NoInlining
+            // methods. We are only guaranteed that references inside these
+            // methods are not live anymore when the functions return.
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static (WeakReference<PeriodicTimer>, ValueTask<bool>) Create()
+            static async ValueTask<WeakReference<PeriodicTimer>> CreateAndVerifyRooted()
             {
-                var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
-                ValueTask<bool> task = timer.WaitForNextTickAsync();
-                return (new WeakReference<PeriodicTimer>(timer), task);
+                (WeakReference<PeriodicTimer> timer, ValueTask<bool> task) = CreateActive();
+
+                WaitForTimerToBeCollected(timer, expected: false);
+
+                Assert.True(await task);
+
+                return timer;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (WeakReference<PeriodicTimer>, ValueTask<bool>) CreateActive()
+            {
+                int waitMs = 1;
+                for (int i = 0; i < 10; i++)
+                {
+                    var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(waitMs));
+                    ValueTask<bool> task = timer.WaitForNextTickAsync();
+                    if (!task.IsCompleted)
+                    {
+                        return (new WeakReference<PeriodicTimer>(timer), task);
+                    }
+
+                    task.GetAwaiter().GetResult();
+
+                    waitMs *= 2;
+                }
+
+                throw new Exception("Expected to be able to create an active wait for a timer");
             }
         }
 

@@ -110,6 +110,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectionFailure_AfterInitialRequestCancelled_SecondRequestSucceedsOnNewConnection(bool useSsl)
         {
             if (UseVersion == HttpVersion.Version30)
@@ -263,6 +264,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Incurs significant delay")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Expect100Continue_WaitsExpectedPeriodOfTimeBeforeSendingContent()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>

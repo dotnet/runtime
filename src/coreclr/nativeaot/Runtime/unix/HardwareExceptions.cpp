@@ -640,7 +640,7 @@ bool InitializeHardwareExceptionHandling()
     return true;
 }
 
-// Set CoreRT hardware exception handler
+// Set hardware exception handler
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
 {
     ASSERT_MSG(g_hardwareExceptionHandler == NULL, "Hardware exception handler already set")

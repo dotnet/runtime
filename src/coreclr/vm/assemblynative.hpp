@@ -25,7 +25,7 @@ class AssemblyNative
 
 public:
 
-    static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage);
+    static Assembly* LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths = false);
 
     // static FCALLs
     static FCDECL0(FC_BOOL_RET, IsTracingEnabled);
@@ -142,5 +142,6 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(QCall::AssemblyHandle assem
 
 extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported();
 
-#endif
+extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec);
 
+#endif

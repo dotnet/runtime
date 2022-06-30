@@ -59,12 +59,15 @@ namespace System
                     ++i;
                     break;
                 }
+
                 if (char.IsLetter(name[i]) || name[i] == '-' || name[i] == '_')
                 {
                     validShortName = true;
                 }
-                else if (name[i] < '0' || name[i] > '9')
+                else if (!char.IsAsciiDigit(name[i]))
+                {
                     return false;
+                }
             }
 
             if (!validShortName)
@@ -93,7 +96,7 @@ namespace System
                     if (!validShortName)
                         return false;
                 }
-                else if (char.IsLetter(name[i]) || (name[i] >= '0' && name[i] <= '9'))
+                else if (char.IsLetter(name[i]) || char.IsAsciiDigit(name[i]))
                 {
                     if (!validShortName)
                         validShortName = true;

@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
                 start++;
             }
 
-            WriteCryptoBinary(name, valBuf.Slice(start, valBuf.Length - start), builder);
+            WriteCryptoBinary(name, valBuf.Slice(start), builder);
         }
 
         internal static void WriteCryptoBinary(string name, ReadOnlySpan<byte> value, StringBuilder builder)
@@ -202,10 +202,7 @@ namespace System.Security.Cryptography
                     return null;
                 }
 
-                if (_enumerator == null)
-                {
-                    _enumerator = _enumerable.GetEnumerator();
-                }
+                _enumerator ??= _enumerable.GetEnumerator();
 
                 int origIdx = _index;
                 int idx = origIdx;

@@ -1358,10 +1358,7 @@ namespace System.Xml
 
         private void AddUndeclaredNotation(string notationName)
         {
-            if (_undeclaredNotations == null)
-            {
-                _undeclaredNotations = new Dictionary<string, UndeclaredNotation>();
-            }
+            _undeclaredNotations ??= new Dictionary<string, UndeclaredNotation>();
             UndeclaredNotation un = new UndeclaredNotation(notationName, LineNo, LinePos - notationName.Length);
             UndeclaredNotation? loggedUn;
             if (_undeclaredNotations.TryGetValue(notationName, out loggedUn))
@@ -1995,9 +1992,8 @@ namespace System.Xml
                         Throw(_curPos, SR.Xml_IncompleteDtdContent);
                     }
                 }
-                if (_chars[_curPos + 1] == 'P' && _chars[_curPos + 2] == 'C' &&
-                     _chars[_curPos + 3] == 'D' && _chars[_curPos + 4] == 'A' &&
-                     _chars[_curPos + 5] == 'T' && _chars[_curPos + 6] == 'A')
+
+                if (_chars.AsSpan(_curPos + 1).StartsWith("PCDATA"))
                 {
                     _curPos += 7;
                     _scanningFunction = ScanningFunction.Element6;
@@ -3127,9 +3123,8 @@ namespace System.Xml
                     return false;
                 }
             }
-            if (_chars[_curPos + 1] != 'U' || _chars[_curPos + 2] != 'B' ||
-                 _chars[_curPos + 3] != 'L' || _chars[_curPos + 4] != 'I' ||
-                 _chars[_curPos + 5] != 'C')
+
+            if (!_chars.AsSpan(_curPos + 1).StartsWith("UBLIC"))
             {
                 return false;
             }
@@ -3147,9 +3142,8 @@ namespace System.Xml
                     return false;
                 }
             }
-            if (_chars[_curPos + 1] != 'Y' || _chars[_curPos + 2] != 'S' ||
-                 _chars[_curPos + 3] != 'T' || _chars[_curPos + 4] != 'E' ||
-                 _chars[_curPos + 5] != 'M')
+
+            if (!_chars.AsSpan(_curPos + 1).StartsWith("YSTEM"))
             {
                 return false;
             }
@@ -3476,7 +3470,7 @@ namespace System.Xml
         {
             _curPos = curPos;
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, arg, (int)LineNo, (int)LinePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, arg, (int)LineNo, (int)LinePos, baseUri?.ToString()));
         }
 
         [DoesNotReturn]
@@ -3484,14 +3478,14 @@ namespace System.Xml
         {
             _curPos = curPos;
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, args, (int)LineNo, (int)LinePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, args, (int)LineNo, (int)LinePos, baseUri?.ToString()));
         }
 
         [DoesNotReturn]
         private void Throw(string res, string arg, int lineNo, int linePos)
         {
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, arg, (int)lineNo, (int)linePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, arg, (int)lineNo, (int)linePos, baseUri?.ToString()));
         }
 
         private void ThrowInvalidChar(int pos, string data, int invCharPos)
@@ -3596,10 +3590,7 @@ namespace System.Xml
                     }
                     if (j > i + 1)
                     {
-                        if (norValue == null)
-                        {
-                            norValue = new StringBuilder(len);
-                        }
+                        norValue ??= new StringBuilder(len);
                         norValue.Append(value, startPos, i - startPos + 1);
                         startPos = j;
                         i = j - 1;

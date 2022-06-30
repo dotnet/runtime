@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
+    [StructLayout(LayoutKind.Auto)]
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
@@ -112,7 +114,7 @@ namespace System.Text.Json
         /// <summary>
         /// Indicates that the next converter is polymorphic and must serialize a type discriminator.
         /// </summary>
-        public string? PolymorphicTypeDiscriminator;
+        public object? PolymorphicTypeDiscriminator;
 
         /// <summary>
         /// Whether the current frame needs to write out any metadata.
@@ -158,7 +160,7 @@ namespace System.Text.Json
             SupportContinuation = supportContinuation;
             SupportAsync = supportAsync;
 
-            return jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            return jsonTypeInfo.Converter;
         }
 
         /// <summary>

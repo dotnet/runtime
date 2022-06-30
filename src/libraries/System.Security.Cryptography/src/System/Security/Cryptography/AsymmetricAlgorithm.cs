@@ -117,8 +117,7 @@ namespace System.Security.Cryptography
             return ExportArray(
                 passwordBytes,
                 pbeParameters,
-                (ReadOnlySpan<byte> span, PbeParameters parameters, Span<byte> destination, out int i) =>
-                    TryExportEncryptedPkcs8PrivateKey(span, parameters, destination, out i));
+                TryExportEncryptedPkcs8PrivateKey);
         }
 
         public virtual byte[] ExportEncryptedPkcs8PrivateKey(
@@ -128,17 +127,16 @@ namespace System.Security.Cryptography
             return ExportArray(
                 password,
                 pbeParameters,
-                (ReadOnlySpan<char> span, PbeParameters parameters, Span<byte> destination, out int i) =>
-                    TryExportEncryptedPkcs8PrivateKey(span, parameters, destination, out i));
+                TryExportEncryptedPkcs8PrivateKey);
         }
 
         public virtual byte[] ExportPkcs8PrivateKey() =>
             ExportArray(
-                (Span<byte> destination, out int i) => TryExportPkcs8PrivateKey(destination, out i));
+                TryExportPkcs8PrivateKey);
 
         public virtual byte[] ExportSubjectPublicKeyInfo() =>
             ExportArray(
-                (Span<byte> destination, out int i) => TryExportSubjectPublicKeyInfo(destination, out i));
+                TryExportSubjectPublicKeyInfo);
 
         public virtual bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
@@ -362,20 +360,12 @@ namespace System.Security.Cryptography
         public virtual void ImportFromPem(ReadOnlySpan<char> input)
         {
             PemKeyHelpers.ImportPem(input, label =>
-            {
-                if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
+                label switch
                 {
-                    return ImportPkcs8PrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
-                {
-                    return ImportSubjectPublicKeyInfo;
-                }
-                else
-                {
-                    return null;
-                }
-            });
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
         }
 
         /// <summary>
@@ -409,7 +399,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.Pkcs8PrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, exported);
                 }
                 finally
                 {
@@ -462,7 +452,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.EncryptedPkcs8PrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, exported);
                 }
                 finally
                 {
@@ -498,7 +488,7 @@ namespace System.Security.Cryptography
         public string ExportSubjectPublicKeyInfoPem()
         {
             byte[] exported = ExportSubjectPublicKeyInfo();
-            return PemKeyHelpers.CreatePemFromData(PemLabels.SpkiPublicKey, exported);
+            return PemEncoding.WriteString(PemLabels.SpkiPublicKey, exported);
         }
 
         /// <summary>

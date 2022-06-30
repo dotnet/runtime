@@ -155,14 +155,12 @@ namespace System.DirectoryServices.AccountManagement
                 // (it's probably read-only, e.g., "lastLogon").
                 if (toLdap != null)
                 {
-                    if (mappingTableByProperty[propertyName] == null)
-                        mappingTableByProperty[propertyName] = new ArrayList();
+                    mappingTableByProperty[propertyName] ??= new ArrayList();
 
                     ((ArrayList)mappingTableByProperty[propertyName]).Add(propertyEntry);
                 }
 
-                if (mappingTableByPropertyFull[propertyName] == null)
-                    mappingTableByPropertyFull[propertyName] = new ArrayList();
+                mappingTableByPropertyFull[propertyName] ??= new ArrayList();
 
                 ((ArrayList)mappingTableByPropertyFull[propertyName]).Add(propertyEntry);
 
@@ -173,8 +171,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     string ldapAttributeLower = ldapAttribute.ToLowerInvariant();
 
-                    if (mappingTableByLDAP[ldapAttributeLower] == null)
-                        mappingTableByLDAP[ldapAttributeLower] = new ArrayList();
+                    mappingTableByLDAP[ldapAttributeLower] ??= new ArrayList();
 
                     ((ArrayList)mappingTableByLDAP[ldapAttributeLower]).Add(propertyEntry);
                 }
@@ -364,8 +361,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             try
             {
-                Debug.Assert(p.unpersisted == true);
-                Debug.Assert(p.fakePrincipal == false);
+                Debug.Assert(p.unpersisted);
+                Debug.Assert(!p.fakePrincipal);
 
                 // Insert the principal into the store
                 SDSUtils.InsertPrincipal(
@@ -795,8 +792,8 @@ namespace System.DirectoryServices.AccountManagement
         internal override void InitializeUserAccountControl(AuthenticablePrincipal p)
         {
             Debug.Assert(p != null);
-            Debug.Assert(p.fakePrincipal == false);
-            Debug.Assert(p.unpersisted == true); // should only ever be called for new principals
+            Debug.Assert(!p.fakePrincipal);
+            Debug.Assert(p.unpersisted); // should only ever be called for new principals
 
             // set the userAccountControl bits on the underlying directory entry
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
@@ -1192,9 +1189,9 @@ namespace System.DirectoryServices.AccountManagement
                     // duplicates because the list of global groups will show up on both the GC and DC.
                     Debug.Assert(p.ContextType == ContextType.Domain);
 
-                    Forest forest = Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest, this.DnsForestName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null));
+                    Forest forest = Forest.GetForest(new DirectoryContext(DirectoryContextType.Forest, this.DnsForestName, this.credentials?.UserName, this.credentials?.Password));
 
-                    DirectoryContext dc = new DirectoryContext(DirectoryContextType.Domain, this.DnsDomainName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null);
+                    DirectoryContext dc = new DirectoryContext(DirectoryContextType.Domain, this.DnsDomainName, this.credentials?.UserName, this.credentials?.Password);
                     DomainController dd = DomainController.FindOne(dc);
 
                     GlobalCatalog gc = null;
@@ -1213,7 +1210,7 @@ namespace System.DirectoryServices.AccountManagement
                             }
                         }
 
-                        roots.Add(new DirectoryEntry("GC://" + gc.Name + "/" + p.DistinguishedName, this.credentials != null ? this.credentials.UserName : null, this.credentials != null ? this.credentials.Password : null, this.AuthTypes));
+                        roots.Add(new DirectoryEntry("GC://" + gc.Name + "/" + p.DistinguishedName, this.credentials?.UserName, this.credentials?.Password, this.AuthTypes));
 
                         if (!string.Equals(this.DnsDomainName, gc.Domain.Name, StringComparison.OrdinalIgnoreCase))
                         {
@@ -1390,7 +1387,7 @@ namespace System.DirectoryServices.AccountManagement
             // SID search
             //
             //
-            //  If we can read the defaultNamingContext and retrive the well known path for the foreignSecurityPrincipal container start there.
+            //  If we can read the defaultNamingContext and retrieve the well known path for the foreignSecurityPrincipal container start there.
             //  If we can only read the defaultNamingContext then start there
             //  Else just start at the base DN from the original context
             //
@@ -1436,7 +1433,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf(ctx): Read DNC of {0}", this.DefaultNamingContext);
 
-                        fspWkDn = ADUtils.RetriveWkDn(dncContainer, this.DefaultNamingContext, this.UserSuppliedServerName, Constants.GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE);
+                        fspWkDn = ADUtils.RetrieveWkDn(dncContainer, this.DefaultNamingContext, this.UserSuppliedServerName, Constants.GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE);
 
                         if (null != fspWkDn)
                         {
@@ -1445,7 +1442,7 @@ namespace System.DirectoryServices.AccountManagement
                         }
                     }
 
-                    ds = new DirectorySearcher((fspContainer != null) ? fspContainer : ((dncContainer != null ? dncContainer : this.ctxBase)));
+                    ds = new DirectorySearcher(fspContainer ?? dncContainer ?? this.ctxBase);
 
                     // Pick some reasonable default values
                     ds.PageSize = 256;
@@ -1521,7 +1518,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
                 else
                 {
-                    // We don't need to retrive the Primary group ID here because we have already established that this user is not from this domain
+                    // We don't need to retrieve the Primary group ID here because we have already established that this user is not from this domain
                     // and the users primary group must be from the same domain as the user.
                     Debug.Assert(foreignPrincipal.ContextType != ContextType.ApplicationDirectory);
 
@@ -1619,7 +1616,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                if (true == ADUtils.VerifyOutboundTrust(this.DnsDomainName, (this.credentials == null ? null : this.credentials.UserName), (this.credentials == null ? null : this.credentials.Password)))
+                if (ADUtils.VerifyOutboundTrust(this.DnsDomainName, this.credentials?.UserName, this.credentials?.Password))
                 {
                     return new AuthZSet(sid, this.credentials, this.contextOptions, this.FlatDomainName, this, this.ctxBase);
                 }

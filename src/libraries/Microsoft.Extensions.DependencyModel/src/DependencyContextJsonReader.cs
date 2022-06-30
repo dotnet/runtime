@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.RuntimeTargetPropertyName:
                         ReadRuntimeTarget(ref reader, out runtimeTargetName, out runtimeSignature);
                         break;
-                    case DependencyContextStrings.CompilationOptionsPropertName:
+                    case DependencyContextStrings.CompilationOptionsPropertyName:
                         compilationOptions = ReadCompilationOptions(ref reader);
                         break;
                     case DependencyContextStrings.TargetsPropertyName:
@@ -165,10 +165,7 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
 
-            if (compilationOptions == null)
-            {
-                compilationOptions = CompilationOptions.Default;
-            }
+            compilationOptions ??= CompilationOptions.Default;
 
             Target? runtimeTarget = SelectRuntimeTarget(targets, runtimeTargetName);
             runtimeTargetName = runtimeTarget?.Name;

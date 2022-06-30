@@ -235,26 +235,3 @@ BOOL BaseAssemblySpec::RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAss
         return (CompareStrings(pRef->GetName(), pDef->GetName())==0);
     }
 }
-
-VOID BaseAssemblySpec::SetName(SString const & ssName)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        GC_NOTRIGGER;
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    if (m_ownedFlags & NAME_OWNED)
-    {
-        delete [] m_pAssemblyName;
-        m_ownedFlags &= ~NAME_OWNED;
-    }
-
-    m_pAssemblyName = NULL;
-
-    IfFailThrow(FString::ConvertUnicode_Utf8(ssName.GetUnicode(), & ((LPSTR &) m_pAssemblyName)));
-
-    m_ownedFlags |= NAME_OWNED;
-}

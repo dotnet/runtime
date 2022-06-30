@@ -6,7 +6,7 @@
 ** Source:  test4.c
 **
 ** Purpose: Tests the PAL implementation of the CopyFileW function
-**          to see if a file can through different users belonging to 
+**          to see if a file can through different users belonging to
 **          different groups.
 **
 
@@ -14,7 +14,7 @@
 
 /* USECASE
     Copy a file from a different user, belonging to a different group to
-    the the current user, who is a member of the current group.  Then check
+    the current user, who is a member of the current group.  Then check
     to see that the current user has the basic access rights to the copied
     file.
 
@@ -43,7 +43,7 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
     DWORD dwBytesWritten=0;
     DWORD dwBytesRead=0;
     int size=0;
-    
+
     if (0 != PAL_Initialize(argc,argv))
     {
         return FAIL;
@@ -55,13 +55,13 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
     {
         Fail("CopyFileW: Cannot copy a file with error, %u",GetLastError());
     }
-    
+
     /* try to get file attributes of destination file */
     if (GetFileAttributesW(szDest) == -1)
     {
         Fail("CopyFileW: GetFileAttributes of destination file "
             "failed with error code %u. \n",
-            GetLastError());  
+            GetLastError());
     }
 
     /* set the attributes of the destination file to normal again */
@@ -73,7 +73,7 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
     }
 
     /* open the file for write purposes */
-    hFile = CreateFileW((WCHAR *)szDest, 
+    hFile = CreateFileW((WCHAR *)szDest,
         GENERIC_WRITE,
         0,
         NULL,
@@ -83,7 +83,7 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
 
     if(hFile == INVALID_HANDLE_VALUE)
     {
-        Fail("CopyFileW: ERROR -> Unable to create file \"%S\".\n", 
+        Fail("CopyFileW: ERROR -> Unable to create file \"%S\".\n",
             szDest);
     }
 
@@ -92,12 +92,12 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
     size = size*sizeof(WCHAR);
 
     /* Attempt to write to the file */
-    bRc = WriteFile(hFile, 
-            szStringTest, 
-            size, 
-            &dwBytesWritten, 
+    bRc = WriteFile(hFile,
+            szStringTest,
+            size,
+            &dwBytesWritten,
             NULL);
-    
+
     if (!bRc)
     {
         Trace("CopyFileW: ERROR -> Unable to write to copied file with error "
@@ -120,9 +120,9 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
             ".\n",szDest,GetLastError());
     }
 
- 
+
     /* open the file for read purposes */
-    hFile = CreateFileW((WCHAR *)szDest, 
+    hFile = CreateFileW((WCHAR *)szDest,
         GENERIC_READ,
         0,
         NULL,
@@ -132,17 +132,17 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
 
     if(hFile == INVALID_HANDLE_VALUE)
     {
-        Fail("CopyFileW: ERROR -> Unable to create file \"%S\".\n", 
+        Fail("CopyFileW: ERROR -> Unable to create file \"%S\".\n",
             szDest);
     }
 
     /* Attempt to read from the file */
-    bRc = ReadFile(hFile, 
-        szStringRead, 
-        size, 
-        &dwBytesRead, 
+    bRc = ReadFile(hFile,
+        szStringRead,
+        size,
+        &dwBytesRead,
         NULL);
-    
+
     if (!bRc)
     {
         Trace("CopyFileW: ERROR -> Unable to read from copied file with "
@@ -169,7 +169,7 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
                 "error %u.\n",szDest, GetLastError());
         }
         Fail("");
-    }        
+    }
 
     /* Close the file handle */
     bRc = CloseHandle(hFile);
@@ -185,11 +185,11 @@ PALTEST(file_io_CopyFileW_test3_paltest_copyfilew_test3, "file_io/CopyFileW/test
     {
         Fail("CopyFileW: Could not remove copied file with error %u.\n",
             GetLastError());
-    }  
-  
+    }
+
     PAL_Terminate();
     return PASS;
 
 #endif
-    
+
 }

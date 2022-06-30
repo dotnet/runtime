@@ -689,27 +689,6 @@ LPWSTRToGuid(
     return TRUE;
 } // GuidToLPWSTR
 
-
-#ifdef _DEBUG
-// Always write regardless of registry.
-void _cdecl DbgWriteEx(LPCTSTR szFmt, ...)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    WCHAR rcBuff[1024];
-    va_list marker;
-
-    va_start(marker, szFmt);
-    _vsnwprintf_s(rcBuff, ARRAY_SIZE(rcBuff), _TRUNCATE, szFmt, marker);
-    va_end(marker);
-    WszOutputDebugString(rcBuff);
-}
-#endif //_DEBUG
-
 /**************************************************************************/
 void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
 {
@@ -766,6 +745,19 @@ void TrimWhiteSpace(_Outptr_result_buffer_(*pcch)  LPCWSTR *pwsz, __inout LPDWOR
     *pcch = cch;
 } // TrimWhiteSpace
 
+void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
+{
+#ifdef TARGET_UNIX
+    OutputDebugStringA(utf8DebugMsg);
+#else
+    if (utf8DebugMsg == NULL)
+        utf8DebugMsg = "";
+
+    MAKE_WIDEPTR_FROMUTF8_NOTHROW(wideDebugMsg, utf8DebugMsg);
+    OutputDebugStringW(wideDebugMsg);
+#endif // !TARGET_UNIX
+}
+
 BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack)
 {
     // We need to make sure there will be a reserved but never committed page at the end
@@ -807,4 +799,3 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
     // more than sizeCommitedStack.
     return (sizeReservedStack > sizeCommitedStack + ((size_t)sysInfo.dwPageSize));
 } // ThreadWillCreateGuardPage
-

@@ -15,19 +15,8 @@ namespace ILCompiler
     /// </summary>
     public class NoMethodsCompilationModuleGroup : ReadyToRunCompilationModuleGroupBase
     {
-        public NoMethodsCompilationModuleGroup(
-            CompilerTypeSystemContext context,
-            bool isCompositeBuildMode,
-            bool isInputBubble,
-            IEnumerable<EcmaModule> compilationModuleSet,
-            IEnumerable<ModuleDesc> versionBubbleModuleSet,
-            bool compileGenericDependenciesFromVersionBubbleModuleSet) :
-                base(context,
-                     isCompositeBuildMode,
-                     isInputBubble,
-                     compilationModuleSet,
-                     versionBubbleModuleSet,
-                     compileGenericDependenciesFromVersionBubbleModuleSet)
+        public NoMethodsCompilationModuleGroup(ReadyToRunCompilationModuleGroupConfig config) :
+                base(config)
         {
         }
 

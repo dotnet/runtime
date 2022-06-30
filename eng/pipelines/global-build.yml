@@ -15,13 +15,12 @@ pr:
     - docs/manpages/*
     - eng/pipelines/global-build.yml
     exclude:
-    - /**/*.md
+    - '**.md'
     - .github/*
     - docs/*
     - eng/pipelines/coreclr/*.*
     - eng/pipelines/libraries/*.*
     - eng/pipelines/installer/*.*
-    - eng/pipelines/*.*
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
@@ -36,6 +35,7 @@ jobs:
     platforms:
     - windows_x86
     - OSX_x64
+    - OSX_arm64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Runtime_Debug

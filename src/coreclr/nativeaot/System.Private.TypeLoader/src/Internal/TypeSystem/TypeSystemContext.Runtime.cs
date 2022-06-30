@@ -321,10 +321,8 @@ namespace Internal.TypeSystem
 
                 protected override bool CompareKeyToValue(RuntimeMethodKey key, MethodDesc value)
                 {
-                    if (value is RuntimeMethodDesc)
+                    if (value is RuntimeMethodDesc runtimeMethod)
                     {
-                        RuntimeMethodDesc runtimeMethod = (RuntimeMethodDesc)value;
-
                         if (key._unboxingStub != runtimeMethod.UnboxingStub)
                             return false;
 
@@ -433,7 +431,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Get a DefType that is the generic instantiation of an open generic type over instantiation arguments
-        /// This looks like a rename of GetInstantiatedType, but isn't because the corert GetInstantiatedType
+        /// This looks like a rename of GetInstantiatedType, but isn't because the GetInstantiatedType
         /// relies on typeDef being a MetadataType, whereas this permits non-metadata types.
         /// </summary>
         public DefType ResolveGenericInstantiation(DefType typeDef, Instantiation arguments)

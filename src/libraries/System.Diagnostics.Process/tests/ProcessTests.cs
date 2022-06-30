@@ -23,6 +23,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+
         private class FinalizingProcess : Process
         {
             public static volatile bool WasFinalized;
@@ -1214,8 +1218,10 @@ namespace System.Diagnostics.Tests
             Process currentProcess = Process.GetCurrentProcess();
             Process[] processes = Process.GetProcessesByName(name);
 
+            int expectedCount = (PlatformDetection.IsMobile) ? 1 : 2;
+
             Assert.Contains(processes, process => process.ProcessName == currentProcess.ProcessName);
-            Assert.InRange(processes.Length, 2, int.MaxValue); // should contain current process and some number of additional processes
+            Assert.InRange(processes.Length, expectedCount, int.MaxValue); // should contain current process and some number of additional processes
         }
 
         [Fact]
@@ -2191,7 +2197,7 @@ namespace System.Diagnostics.Tests
                 // Instead of using sleep directly, we wrap it with a script.
                 sleepPath = GetTestFilePath();
                 File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
-                ChMod(sleepPath, "744");
+                File.SetUnixFileMode(sleepPath, ExecutablePermissions);
             }
             else
             {

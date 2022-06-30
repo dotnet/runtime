@@ -35,10 +35,7 @@ namespace System.Linq.Expressions
 
         private int GetId(object o)
         {
-            if (_ids == null)
-            {
-                _ids = new Dictionary<object, int>();
-            }
+            _ids ??= new Dictionary<object, int>();
 
             int id;
             if (!_ids.TryGetValue(o, out id))
@@ -120,7 +117,7 @@ namespace System.Linq.Expressions
             VisitExpressions(open, expressions, close, ", ");
         }
 
-        private void VisitExpressions<T>(char open, ReadOnlyCollection<T> expressions, char close, string seperator) where T : Expression
+        private void VisitExpressions<T>(char open, ReadOnlyCollection<T> expressions, char close, string separator) where T : Expression
         {
             Out(open);
             if (expressions != null)
@@ -134,7 +131,7 @@ namespace System.Linq.Expressions
                     }
                     else
                     {
-                        Out(seperator);
+                        Out(separator);
                     }
                     Visit(e);
                 }

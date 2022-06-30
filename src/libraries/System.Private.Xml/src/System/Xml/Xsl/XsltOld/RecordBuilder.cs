@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(output != null);
             _output = output;
-            _nameTable = nameTable != null ? nameTable : new NameTable();
+            _nameTable = nameTable ?? new NameTable();
             _atoms = new OutKeywords(_nameTable);
             _scopeManager = new OutputScopeManager(_nameTable, _atoms);
         }
@@ -211,7 +211,7 @@ namespace System.Xml.Xsl.XsltOld
             PopElementScope();
             _popScope = (state & StateMachine.PopScope) != 0;
 
-            if ((state & StateMachine.EmptyTag) != 0 && _mainNode.IsEmptyTag == true)
+            if ((state & StateMachine.EmptyTag) != 0 && _mainNode.IsEmptyTag)
             {
                 return Processor.OutputResult.Continue;
             }
@@ -627,9 +627,13 @@ namespace System.Xml.Xsl.XsltOld
                         if (minus)
                         {
                             if (newComment == null)
+                            {
                                 newComment = new StringBuilder(comment, begin, index, 2 * comment.Length);
+                            }
                             else
+                            {
                                 newComment.Append(comment, begin, index - begin);
+                            }
 
                             newComment.Append(s_SpaceMinus);
                             begin = index + 1;

@@ -2068,7 +2068,7 @@ namespace Microsoft.VisualBasic
             Output.Write(')');
         }
 
-        // In VB, constraints are put right after the type paramater name.
+        // In VB, constraints are put right after the type parameter name.
         // In C#, there is a separate "where" statement
         private void OutputTypeParameterConstraints(CodeTypeParameter typeParameter)
         {
@@ -2531,15 +2531,12 @@ namespace Microsoft.VisualBasic
 
         private string GetTypeOutputWithoutArrayPostFix(CodeTypeReference typeRef)
         {
-            StringBuilder sb = new StringBuilder();
-
             while (typeRef.ArrayElementType != null)
             {
                 typeRef = typeRef.ArrayElementType;
             }
 
-            sb.Append(GetBaseTypeOutput(typeRef));
-            return sb.ToString();
+            return GetBaseTypeOutput(typeRef);
         }
 
         private string GetTypeArgumentsOutput(CodeTypeReferenceCollection typeArguments)

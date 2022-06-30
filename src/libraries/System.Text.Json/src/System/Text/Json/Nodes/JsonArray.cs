@@ -99,6 +99,7 @@ namespace System.Text.Json.Nodes
         ///   The object to be added to the end of the <see cref="JsonArray"/>.
         /// </param>
         [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void Add<T>(T? value)
         {
             if (value == null)
@@ -107,11 +108,7 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                JsonNode? jNode = value as JsonNode;
-                if (jNode == null)
-                {
-                    jNode = new JsonValueNotTrimmable<T>(value);
-                }
+                JsonNode jNode = value as JsonNode ?? new JsonValueNotTrimmable<T>(value);
 
                 // Call the IList.Add() implementation.
                 Add(jNode);

@@ -258,11 +258,7 @@ namespace System.Linq.Parallel
             internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref T currentElement, ref int currentKey)
             {
                 // Lazily allocate the mutable holder.
-                Mutables? mutables = _mutables;
-                if (mutables == null)
-                {
-                    mutables = _mutables = new Mutables();
-                }
+                Mutables mutables = _mutables ??= new Mutables();
 
                 // If we are aren't within the chunk, we need to find another.
                 if (++mutables._currentPositionInChunk < mutables._currentChunkSize || MoveNextSlowPath())
@@ -367,10 +363,7 @@ namespace System.Linq.Parallel
             internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref T currentElement, ref int currentKey)
             {
                 // Lazily allocate the current index if needed.
-                if (_currentIndex == null)
-                {
-                    _currentIndex = new Shared<int>(_startIndex);
-                }
+                _currentIndex ??= new Shared<int>(_startIndex);
 
                 // Now increment the current index, check bounds, and so on.
                 int current = ++_currentIndex.Value;
@@ -436,11 +429,7 @@ namespace System.Linq.Parallel
             internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref T currentElement, ref int currentKey)
             {
                 // Lazily allocate the mutable holder.
-                Mutables? mutables = _mutables;
-                if (mutables == null)
-                {
-                    mutables = _mutables = new Mutables();
-                }
+                Mutables mutables = _mutables ??= new Mutables();
 
                 // If we are aren't within the chunk, we need to find another.
                 if (++mutables._currentPositionInChunk < mutables._currentChunkSize || MoveNextSlowPath())
@@ -545,10 +534,7 @@ namespace System.Linq.Parallel
             internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref T currentElement, ref int currentKey)
             {
                 // Lazily allocate the current index if needed.
-                if (_currentIndex == null)
-                {
-                    _currentIndex = new Shared<int>(_startIndex);
-                }
+                _currentIndex ??= new Shared<int>(_startIndex);
 
                 // Now increment the current index, check bounds, and so on.
                 int current = ++_currentIndex.Value;
@@ -623,11 +609,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref T currentElement, ref int currentKey)
             {
-                Mutables? mutables = _mutables;
-                if (mutables == null)
-                {
-                    mutables = _mutables = new Mutables();
-                }
+                Mutables? mutables = _mutables ??= new Mutables();
 
                 Debug.Assert(mutables._chunkBuffer != null);
 
@@ -703,7 +685,7 @@ namespace System.Linq.Parallel
                     {
                         if ((mutables._chunkCounter++ & chunksPerChunkSize) == chunksPerChunkSize)
                         {
-                            mutables._nextChunkMaxSize = mutables._nextChunkMaxSize * 2;
+                            mutables._nextChunkMaxSize *= 2;
                             if (mutables._nextChunkMaxSize > chunkBuffer.Length)
                             {
                                 mutables._nextChunkMaxSize = chunkBuffer.Length;

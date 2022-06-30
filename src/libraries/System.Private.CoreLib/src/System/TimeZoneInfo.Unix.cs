@@ -899,7 +899,7 @@ namespace System
 
             int index = 1;
 
-            if (index >= date.Length || ((uint)(date[index] - '0') > '9'-'0'))
+            if ((uint)index >= (uint)date.Length || !char.IsAsciiDigit(date[index]))
             {
                 throw new InvalidTimeZoneException(SR.InvalidTimeZone_InvalidJulianDay);
             }
@@ -908,9 +908,9 @@ namespace System
 
             do
             {
-                julianDay = julianDay * 10 + (int) (date[index] - '0');
+                julianDay = julianDay * 10 + (int)(date[index] - '0');
                 index++;
-            } while (index < date.Length && ((uint)(date[index] - '0') <= '9'-'0'));
+            } while ((uint)index < (uint)date.Length && char.IsAsciiDigit(date[index]));
 
             int[] days = GregorianCalendarHelper.DaysToMonth365;
 

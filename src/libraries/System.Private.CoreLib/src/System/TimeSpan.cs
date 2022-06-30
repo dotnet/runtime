@@ -32,18 +32,7 @@ namespace System
           IComparable<TimeSpan>,
           IEquatable<TimeSpan>,
           ISpanFormattable,
-          IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>,
-          IAdditiveIdentity<TimeSpan, TimeSpan>,
-          IComparisonOperators<TimeSpan, TimeSpan>,
-          IDivisionOperators<TimeSpan, double, TimeSpan>,
-          IDivisionOperators<TimeSpan, TimeSpan, double>,
-          IMinMaxValue<TimeSpan>,
-          IMultiplyOperators<TimeSpan, double, TimeSpan>,
-          IMultiplicativeIdentity<TimeSpan, double>,
-          ISpanParsable<TimeSpan>,
-          ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
-          IUnaryNegationOperators<TimeSpan, TimeSpan>,
-          IUnaryPlusOperators<TimeSpan, TimeSpan>
+          ISpanParsable<TimeSpan>
     {
         /// <summary>
         /// Represents the number of nanoseconds per tick. This field is constant.
@@ -644,65 +633,5 @@ namespace System
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(TimeSpan t1, TimeSpan t2) => t1._ticks >= t2._ticks;
-
-        //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked +(TimeSpan left, TimeSpan right) => left + right;
-
-        //
-        // IAdditiveIdentity
-        //
-
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static TimeSpan IAdditiveIdentity<TimeSpan, TimeSpan>.AdditiveIdentity => default;
-
-        //
-        // IDivisionOperators
-        //
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator checked /(TimeSpan left, double right) => left / right;
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static double IDivisionOperators<TimeSpan, TimeSpan, double>.operator checked /(TimeSpan left, TimeSpan right) => left / right;
-
-        //
-        // IMinMaxValue
-        //
-
-        static TimeSpan IMinMaxValue<TimeSpan>.MinValue => MinValue;
-
-        static TimeSpan IMinMaxValue<TimeSpan>.MaxValue => MaxValue;
-
-        //
-        // IMultiplicativeIdentity
-        //
-
-        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
-        static double IMultiplicativeIdentity<TimeSpan, double>.MultiplicativeIdentity => 1.0;
-
-        //
-        // IMultiplyOperators
-        //
-
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator checked *(TimeSpan left, double right) => left * right;
-
-        //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked -(TimeSpan left, TimeSpan right) => left - right;
-
-        //
-        // IUnaryNegationOperators
-        //
-
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator checked -(TimeSpan value) => -value;
     }
 }

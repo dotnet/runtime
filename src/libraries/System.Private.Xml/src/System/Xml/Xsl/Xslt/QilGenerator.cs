@@ -15,12 +15,11 @@ using System.Text;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using ScopeRecord = System.Xml.Xsl.Xslt.CompilerScopeManager<System.Xml.Xsl.Qil.QilIterator>.ScopeRecord;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ScopeRecord = CompilerScopeManager<QilIterator>.ScopeRecord;
-    using T = XmlQueryTypeFactory;
-
     // Everywhere in this code in case of error in the stylesheet we should call ReportError or ReportWarning
 
     internal sealed class ReferenceReplacer : QilReplaceVisitor
@@ -239,7 +238,7 @@ namespace System.Xml.Xsl.Xslt
         {
             // Initialization code should be executed before any other code (global variables/parameters or root expression)
             // For this purpose we insert it as THE FIRST global variable $init (global variables are calculated before global parameters)
-            // and put all initalization code in it.
+            // and put all initialization code in it.
             // In retail mode global variables are calculated lasely if they don't have side effects.
             // To mark $init as variable with side effect we put all code to function and set SideEffect flag on this function.
             // ILGen expects that all library functions are sideeffect free. To prevent calls to RegisterDecimalFormat() to be optimized out
@@ -348,7 +347,7 @@ namespace System.Xml.Xsl.Xslt
         // 3. In context of global variable
         // We treating this methods differentely when they are called to create implicit arguments.
         // Implicite argument (position, last) are rare and lead to uneficiant code. So we treating them
-        // specialy to be able eliminate them later, wen we compiled everithing and can detect was they used or not.
+        // specially to be able eliminate them later, wen we compiled everithing and can detect was they used or not.
 
         // Returns context node
         private QilNode GetCurrentNode()
@@ -1620,15 +1619,18 @@ namespace System.Xml.Xsl.Xslt
                         if (!fwdCompat)
                         {
                             // check for qname-but-not-ncname
-                            string prefix, nsUri;
-                            bool isValid = _compiler.ParseQName(dataType, out prefix, out _, (IErrorHelper)this);
-                            nsUri = isValid ? ResolvePrefix(/*ignoreDefaultNs:*/true, prefix) : _compiler.CreatePhantomNamespace();
-
-                            if (nsUri.Length == 0)
+                            if (_compiler.ParseQName(dataType, out string prefix, out _, (IErrorHelper)this))
                             {
-                                // this is a ncname; we might report SR.Xslt_InvalidAttrValue,
-                                // but the following error message is more user friendly
+                                ResolvePrefix(/*ignoreDefaultNs:*/true, prefix);
                             }
+                            else
+                            {
+                                _compiler.CreatePhantomNamespace();
+                            }
+
+                            // If nsUri.Length == 0, this is a ncname; we might report SR.Xslt_InvalidAttrValue,
+                            // but the following error message is more user friendly
+
                             ReportError(/*[XT_034]*/SR.Xslt_BistateAttribute, "data-type", DtText, DtNumber);
                         }
                         // fall through to default case
@@ -1906,7 +1908,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode countMatches, fromMatches, A, F, AF;
             QilIterator i, j;
 
-            countPattern2 = (countPattern != null) ? countPattern.DeepClone(_f.BaseFactory) : null;
+            countPattern2 = countPattern?.DeepClone(_f.BaseFactory);
             countMatches = _f.Filter(i = _f.For(_f.AncestorOrSelf(GetCurrentNode())), MatchCountPattern(countPattern, i));
             if (multiple)
             {
@@ -2422,10 +2424,7 @@ namespace System.Xml.Xsl.Xslt
             XPathScanner scanner;
             QilNode result;
 
-            if (_keyMatchBuilder == null)
-            {
-                _keyMatchBuilder = new KeyMatchBuilder((IXPathEnvironment)this);
-            }
+            _keyMatchBuilder ??= new KeyMatchBuilder((IXPathEnvironment)this);
             SetEnvironmentFlags(/*allowVariables:*/false, /*allowCurrent:*/false, /*allowKey:*/false);
             if (pttrn == null)
             {
@@ -2562,7 +2561,7 @@ namespace System.Xml.Xsl.Xslt
 
         // Fills invokeArgs with values from actualArgs in order given by formalArgs
         // Returns true if formalArgs maps 1:1 with actual args.
-        // Formaly this is n*n algorithm. We can optimize it by calculationg "signature"
+        // Formally this is n*n algorithm. We can optimize it by calculationg "signature"
         // of the function as sum of all hashes of its args names.
         private static bool FillupInvokeArgs(IList<QilNode> formalArgs, IList<XslNode> actualArgs, QilList invokeArgs)
         {

@@ -36,8 +36,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XmlExtensionFunction func;
 
-            if (_funcCached == null)
-                _funcCached = new XmlExtensionFunction();
+            _funcCached ??= new XmlExtensionFunction();
 
             // If the extension function already exists in the table, then binding has already been performed
             _funcCached.Init(name, namespaceUri, numArgs, objectType, flags);

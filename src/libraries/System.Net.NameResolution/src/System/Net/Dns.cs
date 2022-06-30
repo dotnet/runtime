@@ -390,7 +390,7 @@ namespace System.Net
                 if (errorCode != SocketError.Success)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(hostName, $"{hostName} DNS lookup failed with {errorCode}");
-                    throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                    throw CreateException(errorCode, nativeErrorCode);
                 }
 
                 result = justAddresses ? (object)
@@ -440,7 +440,7 @@ namespace System.Net
                 if (errorCode != SocketError.Success)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"{address} DNS lookup failed with {errorCode}");
-                    throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                    throw CreateException(errorCode, nativeErrorCode);
                 }
                 Debug.Assert(name != null);
             }
@@ -710,6 +710,13 @@ namespace System.Net
             }
 
             return task;
+        }
+
+        private static Exception CreateException(SocketError error, int nativeError)
+        {
+            SocketException e = new SocketException((int)error);
+            e.HResult = nativeError;
+            return e;
         }
     }
 }

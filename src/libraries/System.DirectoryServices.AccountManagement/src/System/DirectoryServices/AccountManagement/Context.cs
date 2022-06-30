@@ -85,10 +85,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool BindSam(string target, string userName, string password)
         {
-            StringBuilder adsPath = new StringBuilder();
-            adsPath.Append("WinNT://");
-            adsPath.Append(_serverName);
-            adsPath.Append(",computer");
+            string adsPath = $"WinNT://{_serverName},computer";
             Guid g = new Guid("fd8256d0-fd15-11ce-abc4-02608c9e7553"); // IID_IUnknown
             object value = null;
             // always attempt secure auth..
@@ -110,7 +107,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                int hr = UnsafeNativeMethods.ADsOpenObject(adsPath.ToString(), userName, password, (int)authenticationType, ref g, out value);
+                int hr = UnsafeNativeMethods.ADsOpenObject(adsPath, userName, password, (int)authenticationType, ref g, out value);
 
                 if (hr != 0)
                 {
@@ -628,10 +625,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                string hostname = _name;
-
-                if (hostname == null)
-                    hostname = Utils.GetComputerFlatName();
+                string hostname = _name ?? Utils.GetComputerFlatName();
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoMachineInit: hostname is " + hostname);
 

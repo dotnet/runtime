@@ -834,7 +834,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	 * The ip points to the instruction causing the single step event, which is before
 	 * the offset recorded in the seq point map, so find the next seq point after ip.
 	 */
-	if (!mono_find_next_seq_point_for_native_offset (method, (guint8*)ip - (guint8*)ji->code_start, &info, &sp)) {
+	if (!mono_find_next_seq_point_for_native_offset (method, GPTRDIFF_TO_INT32 ((guint8*)ip - (guint8*)ji->code_start), &info, &sp)) {
 		g_assert_not_reached ();
 		goto exit;
 	}
@@ -1035,7 +1035,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	method = jinfo_get_method (ji);
 
 	/* Compute the native offset of the breakpoint from the ip */
-	native_offset = ip - (guint8*)ji->code_start;
+	native_offset = GPTRDIFF_TO_UINT32 (ip - (guint8*)ji->code_start);
 
 	if (!rt_callbacks.begin_breakpoint_processing (tls, ctx, ji, from_signal))
 		return;
@@ -1318,7 +1318,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 						break;
 					MonoJitExceptionInfo *ei = &jinfo->clauses [j];
 
-					if (mono_find_next_seq_point_for_native_offset (frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
+					if (mono_find_next_seq_point_for_native_offset (frame->method, GPTRDIFF_TO_INT32 ((char*)ei->handler_start - (char*)jinfo->code_start), NULL, &local_sp))
 						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, local_sp.il_offset);
 				}
 			}

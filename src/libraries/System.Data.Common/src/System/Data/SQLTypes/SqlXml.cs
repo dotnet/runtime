@@ -85,10 +85,7 @@ namespace System.Data.SqlTypes
             }
 
             // NOTE: Maintaining createSqlReaderMethodInfo private field member to preserve the serialization of the class
-            if (_createSqlReaderMethodInfo == null)
-            {
-                _createSqlReaderMethodInfo = CreateSqlReaderMethodInfo;
-            }
+            _createSqlReaderMethodInfo ??= CreateSqlReaderMethodInfo;
             Debug.Assert(_createSqlReaderMethodInfo != null, "MethodInfo reference for XmlReader.CreateSqlReader should not be null.");
 
             XmlReader r = CreateSqlXmlReader(stream);
@@ -125,18 +122,8 @@ namespace System.Data.SqlTypes
             return CreateSqlReaderMethodInfo.CreateDelegate<Func<Stream, XmlReaderSettings, XmlParserContext?, XmlReader>>();
         }
 
-        private static MethodInfo CreateSqlReaderMethodInfo
-        {
-            get
-            {
-                if (s_createSqlReaderMethodInfo == null)
-                {
-                    s_createSqlReaderMethodInfo = typeof(System.Xml.XmlReader).GetMethod("CreateSqlReader", BindingFlags.Static | BindingFlags.NonPublic)!;
-                }
-
-                return s_createSqlReaderMethodInfo;
-            }
-        }
+        private static MethodInfo CreateSqlReaderMethodInfo =>
+            s_createSqlReaderMethodInfo ??= typeof(System.Xml.XmlReader).GetMethod("CreateSqlReader", BindingFlags.Static | BindingFlags.NonPublic)!;
 
         // INullable
         public bool IsNull
@@ -419,6 +406,22 @@ namespace System.Data.SqlTypes
                 _stream.Seek(_lPosition, SeekOrigin.Begin);
 
             int iBytesRead = _stream.Read(buffer, offset, count);
+            _lPosition += iBytesRead;
+
+            return iBytesRead;
+        }
+
+        // Duplicate the Read(byte[]) logic here instead of refactoring both to use Spans
+        // in case the backing _stream doesn't override Read(Span).
+        public override int Read(Span<byte> buffer)
+        {
+            ThrowIfStreamClosed(nameof(Read));
+            ThrowIfStreamCannotRead(nameof(Read));
+
+            if (_stream.CanSeek && _stream.Position != _lPosition)
+                _stream.Seek(_lPosition, SeekOrigin.Begin);
+
+            int iBytesRead = _stream.Read(buffer);
             _lPosition += iBytesRead;
 
             return iBytesRead;

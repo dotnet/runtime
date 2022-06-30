@@ -260,19 +260,16 @@ namespace System.Security.Cryptography.X509Certificates
                 if (!HasPrivateKey)
                     return null;
 
-                if (_lazyPrivateKey == null)
+                _lazyPrivateKey ??= GetKeyAlgorithm() switch
                 {
-                    _lazyPrivateKey = GetKeyAlgorithm() switch
-                    {
-                        Oids.Rsa => Pal.GetRSAPrivateKey(),
-                        Oids.Dsa => Pal.GetDSAPrivateKey(),
+                    Oids.Rsa => Pal.GetRSAPrivateKey(),
+                    Oids.Dsa => Pal.GetDSAPrivateKey(),
 
-                        // This includes ECDSA, because an Oids.EcPublicKey key can be
-                        // many different algorithm kinds, not necessarily with mutual exclusion.
-                        // Plus, .NET Framework only supports RSA and DSA in this property.
-                        _ => throw new NotSupportedException(SR.NotSupported_KeyAlgorithm),
-                    };
-                }
+                    // This includes ECDSA, because an Oids.EcPublicKey key can be
+                    // many different algorithm kinds, not necessarily with mutual exclusion.
+                    // Plus, .NET Framework only supports RSA and DSA in this property.
+                    _ => throw new NotSupportedException(SR.NotSupported_KeyAlgorithm),
+                };
 
                 return _lazyPrivateKey;
             }
@@ -288,22 +285,12 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                X500DistinguishedName? issuerName = _lazyIssuerName;
-                if (issuerName == null)
-                    issuerName = _lazyIssuerName = Pal.IssuerName;
-                return issuerName;
+                return _lazyIssuerName ??= Pal.IssuerName;
             }
         }
 
-        public DateTime NotAfter
-        {
-            get { return GetNotAfter(); }
-        }
-
-        public DateTime NotBefore
-        {
-            get { return GetNotBefore(); }
-        }
+        public DateTime NotAfter => GetNotAfter();
+        public DateTime NotBefore => GetNotBefore();
 
         public PublicKey PublicKey
         {
@@ -312,14 +299,16 @@ namespace System.Security.Cryptography.X509Certificates
                 ThrowIfInvalid();
 
                 PublicKey? publicKey = _lazyPublicKey;
+
                 if (publicKey == null)
                 {
                     string keyAlgorithmOid = GetKeyAlgorithm();
-                    byte[] parameters = GetKeyAlgorithmParameters();
-                    byte[] keyValue = GetPublicKey();
+                    byte[] parameters = Pal.KeyAlgorithmParameters;
+                    byte[] keyValue = Pal.PublicKeyValue;
                     Oid oid = new Oid(keyAlgorithmOid);
                     publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue));
                 }
+
                 return publicKey;
             }
         }
@@ -343,13 +332,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public string SerialNumber
-        {
-            get
-            {
-                return GetSerialNumberString();
-            }
-        }
+        public string SerialNumber => GetSerialNumberString();
 
         public Oid SignatureAlgorithm
         {
@@ -357,13 +340,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                Oid? signatureAlgorithm = _lazySignatureAlgorithm;
-                if (signatureAlgorithm == null)
-                {
-                    string oidValue = Pal.SignatureAlgorithm;
-                    signatureAlgorithm = _lazySignatureAlgorithm = new Oid(oidValue, null);
-                }
-                return signatureAlgorithm;
+                return _lazySignatureAlgorithm ??= new Oid(Pal.SignatureAlgorithm, null);
             }
         }
 
@@ -373,10 +350,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                X500DistinguishedName? subjectName = _lazySubjectName;
-                if (subjectName == null)
-                    subjectName = _lazySubjectName = Pal.SubjectName;
-                return subjectName;
+                return _lazySubjectName ??= Pal.SubjectName;
             }
         }
 
@@ -445,10 +419,7 @@ namespace System.Security.Cryptography.X509Certificates
             return Pal.GetNameInfo(nameType, forIssuer);
         }
 
-        public override string ToString()
-        {
-            return base.ToString(fVerbose: true);
-        }
+        public override string ToString() => base.ToString(fVerbose: true);
 
         public override string ToString(bool verbose)
         {
@@ -727,7 +698,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public ECDiffieHellman? GetECDiffieHellmanPublicKey()
         {
-            return this.GetPublicKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+            return this.GetPublicKey<ECDiffieHellman>(HasECDiffieHellmanKeyUsage);
         }
 
         /// <summary>
@@ -742,7 +713,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
         {
-            return this.GetPrivateKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+            return this.GetPrivateKey<ECDiffieHellman>(HasECDiffieHellmanKeyUsage);
         }
 
         /// <summary>
@@ -1163,16 +1134,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </remarks>
         public string ExportCertificatePem()
         {
-            int pemSize = PemEncoding.GetEncodedSize(PemLabels.X509Certificate.Length, RawDataMemory.Length);
-
-            return string.Create(pemSize, this, static (destination, cert) => {
-                if (!cert.TryExportCertificatePem(destination, out int charsWritten) ||
-                    charsWritten != destination.Length)
-                {
-                    Debug.Fail("Pre-allocated buffer was not the correct size.");
-                    throw new CryptographicException();
-                }
-            });
+            return PemEncoding.WriteString(PemLabels.X509Certificate, RawDataMemory.Span);
         }
 
         /// <summary>
@@ -1274,6 +1236,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.KeyUsage => new X509KeyUsageExtension(),
                 Oids.EnhancedKeyUsage => new X509EnhancedKeyUsageExtension(),
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
+                Oids.AuthorityInformationAccess => new X509AuthorityInformationAccessExtension(),
                 _ => null,
             };
 

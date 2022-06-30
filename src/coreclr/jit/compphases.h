@@ -55,6 +55,7 @@ CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,        "Create EH funclets",          
 #endif // FEATURE_EH_FUNCLETS
 CompPhaseNameMacro(PHASE_MERGE_THROWS,           "Merge throw blocks",             "MRGTHROW", false, -1, false)
 CompPhaseNameMacro(PHASE_INVERT_LOOPS,           "Invert loops",                   "LOOP-INV", false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_FLOW,          "Optimize control flow",          "OPT-FLOW", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,        "Optimize layout",                "LAYOUT",   false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_REACHABILITY,   "Compute blocks reachability",    "BL_REACH", false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_WEIGHTS,      "Set block weights",              "BL-WEIGHTS", false, -1, false)
@@ -65,6 +66,7 @@ CompPhaseNameMacro(PHASE_UNROLL_LOOPS,           "Unroll loops",                
 CompPhaseNameMacro(PHASE_CLEAR_LOOP_INFO,        "Clear loop info",                "LP-CLEAR", false, -1, false)
 CompPhaseNameMacro(PHASE_HOIST_LOOP_CODE,        "Hoist loop code",                "LP-HOIST", false, -1, false)
 CompPhaseNameMacro(PHASE_MARK_LOCAL_VARS,        "Mark local vars",                "MARK-LCL", false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_ADD_COPIES,    "Opt add copies",                 "OPT-ADD-CP", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BOOLS,         "Optimize bools",                 "OPT-BOOL", false, -1, false)
 CompPhaseNameMacro(PHASE_FIND_OPER_ORDER,        "Find oper order",                "OPER-ORD", false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_ORDER,        "Set block order",                "BLK-ORD",  false, -1, true)
@@ -84,7 +86,6 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,      "Redundant branch opts",       
 CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,    "Assertion prop",                 "AST-PROP", false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,  "Update flow graph opt pass",     "UPD-FG-O", false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS2,  "Compute edge weights (2, false)","EDG-WGT2", false, -1, false)
-CompPhaseNameMacro(PHASE_REMOVE_DEAD_BLOCKS,     "Remove dead blocks",             "DEAD-BLK", false, -1, false)
 CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,        "Insert GC Polls",                "GC-POLLS", false, -1, true)
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block", "COLD-BLK", false, -1, true)
 CompPhaseNameMacro(PHASE_RATIONALIZE,            "Rationalize IR",                 "RAT",      false, -1, false)

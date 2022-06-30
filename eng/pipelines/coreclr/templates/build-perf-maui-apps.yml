@@ -110,14 +110,20 @@ steps:
   #      overwriteExistingFiles: true
   #      cleanDestinationFolder: false
 
+  # There is a global.json in the runtime repo, but it sets the version to 7.xxx preview. This creates a local global.json to allow the running of 6.0 version.
+  - script: |
+      echo '' > ./global.json 
+    displayName: Create global.json
+    workingDirectory: $(Build.SourcesDirectory)
+
   # Get the current maui nuget config so all things can be found and darc based package sources are kept up to date.
   - script: |
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ./dotnet-install.sh --channel 6.0.3xx --quality daily --install-dir .
+      ./dotnet-install.sh --channel 6.0.4xx --quality daily --install-dir .
       ./dotnet --info
-      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --configfile NuGet.config
+      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/net6.0.json --configfile NuGet.config
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 

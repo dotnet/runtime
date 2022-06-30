@@ -58,7 +58,6 @@ public:
 
     static FCDECL1(Object*, InternalAlloc, ReflectClassBaseObject* target);
     static FCDECL1(Object*, InternalAllocLike, Object* pThis);
-    static FCDECL2(FC_BOOL_RET, InternalEqualTypes, Object* pThis, Object *pThat);
 
     static FCDECL3(PCODE, AdjustTarget, Object* refThis, Object* target, PCODE method);
     static FCDECL2(PCODE, GetCallStub, Object* refThis, PCODE method);
@@ -89,9 +88,6 @@ public:
 #ifdef FEATURE_COMINTEROP
     static ComPlusCallInfo * PopulateComPlusCallInfo(MethodTable * pDelMT);
 #endif // FEATURE_COMINTEROP
-
-    // Checks whether two delegates wrapping function pointers have the same unmanaged target
-    static FCDECL2(FC_BOOL_RET, CompareUnmanagedFunctionPtrs, Object *refDelegate1UNSAFE, Object *refDelegate2UNSAFE);
 
     static PCODE GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static MethodDesc* GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWORD dwStubFlags);

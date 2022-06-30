@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-20220421022739-9c434db
 
 COPY ./kdc/kadm5.acl /etc/krb5kdc/
 COPY ./kdc/kdc.conf /etc/krb5kdc/

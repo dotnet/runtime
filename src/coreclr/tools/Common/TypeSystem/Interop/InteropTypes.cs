@@ -44,11 +44,6 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MemoryMarshal");
         }
 
-        public static MetadataType GetStubHelpers(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System.StubHelpers", "StubHelpers");
-        }
-
         public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");

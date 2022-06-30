@@ -159,7 +159,7 @@ namespace ILCompiler
             }
             else
             {
-                // The derived class should be a subclass of the the base class.
+                // The derived class should be a subclass of the base class.
                 // this check is perfomed via typedef checking instead of casting, as we accept canon methods calling exact types
                 TypeDesc checkType;
                 for (checkType = implType; checkType != null && !checkType.HasSameTypeDefinition(declMethod.OwningType); checkType = checkType.BaseType)
@@ -167,7 +167,7 @@ namespace ILCompiler
 
                 if ((checkType == null) || (checkType.ConvertToCanonForm(CanonicalFormKind.Specific) != declMethod.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                 {
-                    // The derived class should be a subclass of the the base class.
+                    // The derived class should be a subclass of the base class.
                     devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS;
                     return null;
                 }

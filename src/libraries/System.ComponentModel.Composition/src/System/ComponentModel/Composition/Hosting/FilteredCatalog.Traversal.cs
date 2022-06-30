@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class FilteredCatalog
     {
         /// <summary>
-        /// Creates a new instance of the <see cref="FilteredCatalog"/> that conatains all the parts from the orignal filtered catalog and all their dependecies.
+        /// Creates a new instance of the <see cref="FilteredCatalog"/> that conatains all the parts from the orignal filtered catalog and all their dependencies.
         /// </summary>
         /// <returns></returns>
         public FilteredCatalog IncludeDependencies()
@@ -69,7 +69,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 traversal.Initialize();
                 var traversalClosure = GetTraversalClosure(_innerCatalog.Where(_filter), traversal);
-                return new FilteredCatalog(_innerCatalog, p => traversalClosure.Contains(p));
+                return new FilteredCatalog(_innerCatalog, traversalClosure.Contains);
             }
             finally
             {

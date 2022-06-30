@@ -315,7 +315,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void Contains_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -783,7 +783,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void Replace_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -830,7 +830,7 @@ namespace System.Tests
 
                 // Android has different results w/ tr-TR
                 // See https://github.com/dotnet/runtime/issues/60568
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };
                     yield return new object[] { "\u0069\u0130", "\u0069", "a", true, new CultureInfo("tr-TR"), "aa" };
@@ -1112,7 +1112,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_TurkishI_TurkishCulture_Char()
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -1968,6 +1968,23 @@ namespace System.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [InlineData("a", "A", 0)]
+        [InlineData("A", "a", 0)]
+        [InlineData("Ab", "aB", 0)]
+        [InlineData("aB", "Ab", 0)]
+        [InlineData("aB", "Aa", 1)]
+        [InlineData("aa", "aB", -1)]
+        [InlineData("\u0160a", "\u0160A", 0)]
+        [InlineData("\u0160a", "\u0160B", -1)]
+        [InlineData("\u0160b", "\u0160A", 1)]
+        [InlineData("\u0160b\u0160\u0160\u0160", "\u0160A\u0160\u0160\u0160", 1)]
+        [InlineData("\u0160A\u0160\u0160\u0160", "\u0160b\u0160\u0160\u0160", -1)]
+        public static void TestCompareOrdinalIgnoreCase(string a, string b, int sign)
+        {
+            Assert.Equal(sign, Math.Sign(string.Compare(a, b, StringComparison.OrdinalIgnoreCase)));
         }
     }
 }

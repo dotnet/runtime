@@ -269,7 +269,7 @@ namespace System.Xml
             else
             {
                 string? defaultNs = _predefinedNamespaces.LookupNamespace(string.Empty);
-                _nsStack[2].Set(string.Empty, (defaultNs == null ? string.Empty : defaultNs), NamespaceKind.Implied);
+                _nsStack[2].Set(string.Empty, defaultNs ?? string.Empty, NamespaceKind.Implied);
             }
             _nsTop = 2;
 
@@ -443,18 +443,12 @@ namespace System.Xml
                     {
                         prefix = LookupPrefix(ns);
                     }
-                    if (prefix == null)
-                    {
-                        prefix = string.Empty;
-                    }
+                    prefix ??= string.Empty;
                 }
                 else if (prefix.Length > 0)
                 {
                     CheckNCName(prefix);
-                    if (ns == null)
-                    {
-                        ns = LookupNamespace(prefix);
-                    }
+                    ns ??= LookupNamespace(prefix);
                     if (ns == null || (ns != null && ns.Length == 0))
                     {
                         throw new ArgumentException(SR.Xml_PrefixForEmptyNs);
@@ -640,10 +634,7 @@ namespace System.Xml
                             prefix = LookupPrefix(namespaceName);
                     }
 
-                    if (prefix == null)
-                    {
-                        prefix = string.Empty;
-                    }
+                    prefix ??= string.Empty;
                 }
                 if (namespaceName == null)
                 {
@@ -651,10 +642,7 @@ namespace System.Xml
                     {
                         namespaceName = LookupNamespace(prefix);
                     }
-                    if (namespaceName == null)
-                    {
-                        namespaceName = string.Empty;
-                    }
+                    namespaceName ??= string.Empty;
                 }
 
                 if (prefix.Length == 0)
@@ -873,10 +861,7 @@ namespace System.Xml
         {
             try
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
                 AdvanceState(Token.CData);
                 _writer.WriteCData(text);
             }
@@ -891,10 +876,7 @@ namespace System.Xml
         {
             try
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
                 AdvanceState(Token.Comment);
                 _writer.WriteComment(text);
             }
@@ -1307,7 +1289,7 @@ namespace System.Xml
                         return prefix;
                     }
                 }
-                return (_predefinedNamespaces != null) ? _predefinedNamespaces.LookupPrefix(ns) : null;
+                return _predefinedNamespaces?.LookupPrefix(ns);
             }
             catch
             {
@@ -1795,7 +1777,7 @@ namespace System.Xml
             {
                 throw new ArgumentException(SR.Format(SR.Xml_NamespaceDeclXmlXmlns, prefix));
             }
-            if (prefix.Length > 0 && prefix[0] == 'x')
+            if (prefix.StartsWith('x'))
             {
                 if (prefix == "xml")
                 {
@@ -1902,14 +1884,8 @@ namespace System.Xml
 
         private static XmlException DupAttrException(string prefix, string localName)
         {
-            StringBuilder sb = new StringBuilder();
-            if (prefix.Length > 0)
-            {
-                sb.Append(prefix);
-                sb.Append(':');
-            }
-            sb.Append(localName);
-            return new XmlException(SR.Xml_DupAttributeName, sb.ToString());
+            string attr = prefix.Length > 0 ? $"{prefix}:{localName}" : localName;
+            return new XmlException(SR.Xml_DupAttributeName, attr);
         }
 
         // Advance the state machine
@@ -2080,7 +2056,7 @@ namespace System.Xml
                     return _nsStack[i].namespaceUri;
                 }
             }
-            return (_predefinedNamespaces != null) ? _predefinedNamespaces.LookupNamespace(prefix) : null;
+            return _predefinedNamespaces?.LookupNamespace(prefix);
         }
 
         private string? LookupLocalNamespace(string prefix)

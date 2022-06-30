@@ -29,11 +29,9 @@ namespace DebuggerTests
 
         public static readonly Uri Endpoint = new Uri("http://localhost:9400");
 
-        // FIXME: use concurrentdictionary?
-        // And remove the "used" proxy entries
-        private static readonly ConcurrentBag<(string id, DebuggerProxyBase proxy)> s_proxyTable = new();
-        private static readonly ConcurrentBag<(string id, Action<RunLoopExitState> handler)> s_exitHandlers = new();
-        private static readonly ConcurrentBag<(string id, RunLoopExitState state)> s_statusTable = new();
+        private static readonly ConcurrentDictionary<string, WeakReference<DebuggerProxyBase>> s_proxyTable = new();
+        private static readonly ConcurrentDictionary<int, WeakReference<Action<RunLoopExitState>>> s_exitHandlers = new();
+        private static readonly ConcurrentDictionary<string, RunLoopExitState> s_statusTable = new();
 
         public static Task Start(string appPath, string pagePath, string url)
         {
@@ -87,71 +85,62 @@ namespace DebuggerTests
 
         public static void RegisterNewProxy(string id, DebuggerProxyBase proxy)
         {
-            if (s_proxyTable.Where(t => t.id == id).Any())
+            if (s_proxyTable.ContainsKey(id))
                 throw new ArgumentException($"Proxy with id {id} already exists");
 
-            s_proxyTable.Add((id, proxy));
-        }
-
-        private static bool TryGetProxyById(string id, [NotNullWhen(true)] out DebuggerProxyBase? proxy)
-        {
-            proxy = null;
-            IEnumerable<(string id, DebuggerProxyBase proxy)> found = s_proxyTable.Where(t => t.id == id);
-            if (found.Any())
-                proxy = found.First().proxy;
-
-            return proxy != null;
+            s_proxyTable[id] = new WeakReference<DebuggerProxyBase>(proxy);
         }
 
         public static void RegisterExitHandler(string id, Action<RunLoopExitState> handler)
         {
-            if (s_exitHandlers.Any(t => t.id == id))
+            int intId = int.Parse(id);
+            if (s_exitHandlers.ContainsKey(intId))
                 throw new Exception($"Cannot register a duplicate exit handler for {id}");
 
-            s_exitHandlers.Add(new(id, handler));
+            s_exitHandlers[intId] = new WeakReference<Action<RunLoopExitState>>(handler);
         }
 
         public static void RegisterProxyExitState(string id, RunLoopExitState status)
         {
-            Console.WriteLine ($"[{id}] RegisterProxyExitState: {status}");
-            s_statusTable.Add((id, status));
-            (string id, Action<RunLoopExitState> handler)[]? found = s_exitHandlers.Where(e => e.id == id).ToArray();
-            if (found.Length > 0)
-                found[0].handler.Invoke(status);
+            int intId = int.Parse(id);
+            s_statusTable[id] = status;
+            // we have the explicit state now, so we can drop the reference
+            // to the proxy
+            s_proxyTable.TryRemove(id, out WeakReference<DebuggerProxyBase> _);
+
+            if (s_exitHandlers.TryRemove(intId, out WeakReference<Action<RunLoopExitState>>? handlerRef)
+                && handlerRef.TryGetTarget(out Action<RunLoopExitState>? handler))
+            {
+                handler(status);
+            }
         }
 
         // FIXME: remove
         public static bool TryGetProxyExitState(string id, [NotNullWhen(true)] out RunLoopExitState? state)
         {
-            state = new(RunLoopStopReason.Cancelled, null);
+            state = null;
 
-            if (!TryGetProxyById(id, out DebuggerProxyBase? proxy))
+            if (s_proxyTable.TryGetValue(id, out WeakReference<DebuggerProxyBase>? proxyRef) && proxyRef.TryGetTarget(out DebuggerProxyBase? proxy))
             {
-                (string id, RunLoopExitState state)[]? found = s_statusTable.Where(t => t.id == id).ToArray();
-                if (found.Length == 0)
-                {
-                    Console.WriteLine($"[{id}] Cannot find exit proxy for {id}");
-                    return false;
-                }
-
-                state = found[0].state;
-                return true;
+                state = proxy.ExitState;
+            }
+            else if (!s_statusTable.TryGetValue(id, out state))
+            {
+                Console.WriteLine($"[{id}] Cannot find exit proxy for {id}");
+                state = null;
             }
 
-            state = proxy.ExitState;
             return state is not null;
         }
 
         public static DebuggerProxyBase? ShutdownProxy(string id)
         {
-            if (!string.IsNullOrEmpty(id))
+            if (!string.IsNullOrEmpty(id)
+                && s_proxyTable.TryGetValue(id, out WeakReference<DebuggerProxyBase>? proxyRef)
+                && proxyRef.TryGetTarget(out DebuggerProxyBase? proxy))
             {
-                (_, DebuggerProxyBase? proxy) = s_proxyTable.FirstOrDefault(t => t.id == id);
-                if (proxy is not null)
-                {
-                    proxy.Shutdown();
-                    return proxy;
-                }
+                proxy.Shutdown();
+                return proxy;
             }
             return null;
         }

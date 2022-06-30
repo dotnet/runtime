@@ -275,7 +275,8 @@ enum collection_mode
     collection_non_blocking = 0x00000001,
     collection_blocking = 0x00000002,
     collection_optimized = 0x00000004,
-    collection_compacting = 0x00000008
+    collection_compacting = 0x00000008,
+    collection_aggressive = 0x00000010
 #ifdef STRESS_HEAP
     , collection_gcstress = 0x80000000
 #endif // STRESS_HEAP
@@ -612,7 +613,7 @@ public:
     // Gets memory related information the last GC observed. Depending on the last arg, this could
     // be any last GC that got recorded, or of the kind specified by this arg. All info below is
     // what was observed by that last GC.
-    // 
+    //
     // highMemLoadThreshold - physical memory load (in percentage) when GC will start to
     //   react aggressively to reclaim memory.
     // totalPhysicalMem - the total amount of phyiscal memory available on the machine and the memory
@@ -621,7 +622,7 @@ public:
     // lastRecordedHeapSizeBytes - total managed heap size.
     // lastRecordedFragmentation - total fragmentation in the managed heap.
     // totalCommittedBytes - total committed bytes by the managed heap.
-    // promotedBytes - promoted bytes. 
+    // promotedBytes - promoted bytes.
     // pinnedObjectCount - # of pinned objects observed.
     // finalizationPendingCount - # of objects ready for finalization.
     // index - the index of the GC.
@@ -741,8 +742,8 @@ public:
     // Returns whether or not a GC is in progress.
     virtual bool IsGCInProgressHelper(bool bConsiderGCStart = false) = 0;
 
-    // Returns the number of GCs that have occured. Mainly used for
-    // sanity checks asserting that a GC has not occured.
+    // Returns the number of GCs that have occurred. Mainly used for
+    // sanity checks asserting that a GC has not occurred.
     virtual unsigned GetGcCount() = 0;
 
     // Gets whether or not the home heap of this alloc context matches the heap
@@ -785,11 +786,11 @@ public:
     ============================================================================
     */
 
-    // Get the timestamp corresponding to the last GC that occured for the
+    // Get the timestamp corresponding to the last GC that occurred for the
     // given generation.
     virtual size_t GetLastGCStartTime(int generation) = 0;
 
-    // Gets the duration of the last GC that occured for the given generation.
+    // Gets the duration of the last GC that occurred for the given generation.
     virtual size_t GetLastGCDuration(int generation) = 0;
 
     // Gets a timestamp for the current moment in time.
@@ -921,10 +922,17 @@ public:
     // Enables or disables the given keyword or level on the private event provider.
     virtual void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) = 0;
 
+    // Get the segment/region associated with an address together with its generation for the profiler.
     virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) = 0;
 
     IGCHeap() {}
-    virtual ~IGCHeap() {}
+
+    // The virtual destructors for the IGCHeap class hierarchy is intentionally omitted.
+    // This is to ensure we have a stable virtual function table for this interface for
+    // version resilience purposes.
+
+    // Get the total paused duration.
+    virtual int64_t GetTotalPauseDuration() = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK

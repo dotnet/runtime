@@ -49,7 +49,7 @@ enum GC_LOAD_STATUS {
 };
 
 // Load status of the GC. If GC loading fails, the value of this
-// global indicates where the failure occured.
+// global indicates where the failure occurred.
 GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 
 // The version of the GC that we have loaded.
@@ -60,7 +60,7 @@ PTR_VOID g_gc_module_base;
 
 bool GCHeapUtilities::s_useThreadAllocationContexts;
 
-// GC entrypoints for the the linked-in GC. These symbols are invoked
+// GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
 extern "C" void GC_VersionInfo(/* Out */ VersionInfo* info);
 extern "C" HRESULT GC_Initialize(

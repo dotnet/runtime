@@ -54,7 +54,7 @@ namespace Internal.Runtime.TypeLoader
                     else
                     {
                         // If the type does not have a Cctor context, search for the field on the type in the field map which has the lowest offset,
-                        // yet has the the correct type of storage.
+                        // yet has the correct type of storage.
                         IntPtr staticAddress;
                         if (TryGetStaticFieldBaseFromFieldAccessMap(runtimeTypeHandle, FieldAccessStaticDataKind.NonGC, out staticAddress))
                         {
@@ -118,7 +118,7 @@ namespace Internal.Runtime.TypeLoader
                 if (!typeAsEEType->IsDynamicType && !typeAsEEType->IsGeneric)
                 {
                     //search for the field on the type in the field map which has the lowest offset,
-                    // yet has the the correct type of storage.
+                    // yet has the correct type of storage.
                     IntPtr staticAddress;
                     if (TryGetStaticFieldBaseFromFieldAccessMap(runtimeTypeHandle, FieldAccessStaticDataKind.GC, out staticAddress))
                     {

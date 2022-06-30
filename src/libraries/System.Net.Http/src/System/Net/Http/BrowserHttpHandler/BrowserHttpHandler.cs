@@ -1,20 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
 using System.Net.Security;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices.JavaScript;
 
-using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
-using JSException = System.Runtime.InteropServices.JavaScript.JSException;
-using Uint8Array = System.Runtime.InteropServices.JavaScript.Uint8Array;
-using Function = System.Runtime.InteropServices.JavaScript.Function;
+#pragma warning disable CS0612 // using obsolete members until we finish https://github.com/dotnet/runtime/pull/66304/
 
 namespace System.Net.Http
 {
@@ -28,8 +22,8 @@ namespace System.Net.Http
     internal sealed class BrowserHttpHandler : HttpMessageHandler
     {
         // This partial implementation contains members common to Browser WebAssembly running on .NET Core.
-        private static readonly JSObject? s_fetch = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("fetch");
-        private static readonly JSObject? s_window = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("window");
+        private static readonly JSObject? s_fetch = (JSObject)Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("fetch");
+        private static readonly JSObject? s_window = (JSObject)Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("window");
 
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
@@ -46,6 +40,10 @@ namespace System.Net.Http
             using (var streamingSupported = new Function("return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'"))
                 return (bool)streamingSupported.Call();
         }
+
+        private static Function AbortControllerFactory = new Function("return new AbortController()");
+        private static Function HeadersFactory = new Function("return new Headers()");
+        private static Function ObjectFactory = new Function("return new Object()");
 
 #pragma warning disable CA1822
         public bool UseCookies
@@ -153,7 +151,7 @@ namespace System.Net.Http
                 CancellationTokenRegistration? abortRegistration = null;
                 try
                 {
-                    using var requestObject = new JSObject();
+                    using var requestObject = (JSObject)ObjectFactory.Call();
 
                     if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
                     {
@@ -200,7 +198,8 @@ namespace System.Net.Http
                     // Process headers
                     // Cors has its own restrictions on headers.
                     // https://developer.mozilla.org/en-US/docs/Web/API/Headers
-                    using (JSObject jsHeaders = new JSObject("Headers"))
+
+                    using (JSObject jsHeaders = (JSObject)HeadersFactory.Call())
                     {
                         foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
                         {
@@ -223,7 +222,7 @@ namespace System.Net.Http
                     }
 
 
-                    JSObject abortController = new JSObject("AbortController");
+                    JSObject abortController = (JSObject)AbortControllerFactory.Call();
                     using JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
                     requestObject.SetObjectProperty("signal", signal);
 
@@ -239,7 +238,7 @@ namespace System.Net.Http
                     using var args = new System.Runtime.InteropServices.JavaScript.Array();
                     if (request.RequestUri != null)
                     {
-                        args.Push(request.RequestUri.ToString());
+                        args.Push(request.RequestUri.IsAbsoluteUri ? request.RequestUri.AbsoluteUri : request.RequestUri.ToString());
                         args.Push(requestObject);
                     }
 

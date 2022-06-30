@@ -3,8 +3,7 @@
 
 #nullable enable
 
-
-namespace System.Runtime.InteropServices.GeneratedMarshalling
+namespace System.Runtime.InteropServices.Marshalling
 {
     [CustomTypeMarshaller(typeof(HandleRef), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
     internal struct HandleRefMarshaller

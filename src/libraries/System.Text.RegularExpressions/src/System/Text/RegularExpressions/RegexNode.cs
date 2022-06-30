@@ -1126,7 +1126,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
-                    if (alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic } parent)
+                    if (alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic })
                     {
                         var atomic = new RegexNode(RegexNodeKind.Atomic, alternation.Options);
                         atomic.AddChild(newAlternate);
@@ -1807,7 +1807,32 @@ namespace System.Text.RegularExpressions
                     // If the node can be changed to atomic based on what comes after it, do so.
                     switch (node.Kind)
                     {
-                        case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop when CanBeMadeAtomic(node, subsequent, allowSubsequentIteration: true):
+                        case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop when CanBeMadeAtomic(node, subsequent, iterateNullableSubsequent: true, allowLazy: false):
+                            // The greedy loop doesn't overlap with what comes after it, which means giving anything it matches back will not
+                            // help the overall match to succeed, which means it can simply become atomic to match as much as possible. The call
+                            // to CanBeMadeAtomic passes iterateNullableSubsequent=true because, in a pattern like a*b*c*, when analyzing a*, we
+                            // want to examine the b* and the c* rather than just giving up after seeing that b* is nullable; in order to make
+                            // the a* atomic, we need to know that anything that could possibly come after the loop doesn't overlap.
+                            node.MakeLoopAtomic();
+                            break;
+
+                        case RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when CanBeMadeAtomic(node, subsequent, iterateNullableSubsequent: false, allowLazy: true):
+                            // The lazy loop doesn't overlap with what comes after it, which means it needs to match as much as its allowed
+                            // to match in order for there to be a possibility that what comes next matches (if it doesn't match as much
+                            // as it's allowed and there was still more it could match, then what comes next is guaranteed to not match,
+                            // since it doesn't match any of the same things the loop matches).  We don't want to just make the lazy loop
+                            // atomic, as an atomic lazy loop matches as little as possible, not as much as possible.  Instead, we want to
+                            // make the lazy loop into an atomic greedy loop.  Note that when we check CanBeMadeAtomic, we need to set
+                            // "iterateNullableSubsequent" to false so that we only inspect non-nullable subsequent nodes.  For example,
+                            // given a pattern like a*?b, we want to upgrade that loop to being greedy atomic, e.g. (?>a*)b.  But given a
+                            // pattern like a*?b*, the subsequent node is nullable, which means it doesn't have to be part of a match, which
+                            // means the a*? could match by itself, in which case as it's lazy it needs to match as few a's as possible, e.g.
+                            // a+?b* against the input "aaaab" should match "a", not "aaaa" nor "aaaab". (Technically for lazy, we only need to prevent
+                            // walking off the end of the pattern, but it's not currently worth complicating the implementation for that case.)
+                            // allowLazy is set to true so that the implementation will analyze rather than ignore this node; generally lazy nodes
+                            // are ignored due to making them atomic not generally being a sound change, but here we're explicitly choosing to
+                            // given the circumstances.
+                            node.Kind -= RegexNodeKind.Onelazy - RegexNodeKind.Oneloop; // lazy to greedy
                             node.MakeLoopAtomic();
                             break;
 
@@ -1863,7 +1888,7 @@ namespace System.Text.RegularExpressions
             {
                 int concatCount = node.ChildCount();
                 RegexNode lastConcatChild = node.Child(concatCount - 1);
-                if (CanBeMadeAtomic(lastConcatChild, node.Child(0), allowSubsequentIteration: false))
+                if (CanBeMadeAtomic(lastConcatChild, node.Child(0), iterateNullableSubsequent: false, allowLazy: false))
                 {
                     return lastConcatChild;
                 }
@@ -1953,11 +1978,12 @@ namespace System.Text.RegularExpressions
             return this;
         }
 
-        /// <summary>
-        /// Determines whether node can be switched to an atomic loop.  Subsequent is the node
-        /// immediately after 'node'.
-        /// </summary>
-        private static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, bool allowSubsequentIteration)
+        /// <summary>Determines whether a node can be switched to an atomic loop.</summary>
+        /// <param name="node">The node being examined to determine whether it could be made atomic.</param>
+        /// <param name="subsequent">The node following <paramref name="node"/>, used to determine whether it overlaps.</param>
+        /// <param name="iterateNullableSubsequent">Whether to allow examining nodes beyond <paramref name="subsequent"/> if <paramref name="subsequent"/> is nullable.</param>
+        /// <param name="allowLazy">Whether lazy loops in addition to greedy loops should be considered for atomicity.</param>
+        private static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, bool iterateNullableSubsequent, bool allowLazy)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -2009,7 +2035,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.ExpressionConditional when childCount == 3: // condition, yes, and no branch
                         for (int i = 0; i < childCount; i++)
                         {
-                            if (!CanBeMadeAtomic(node, subsequent.Child(i), allowSubsequentIteration))
+                            if (!CanBeMadeAtomic(node, subsequent.Child(i), iterateNullableSubsequent, allowLazy: false))
                             {
                                 return false;
                             }
@@ -2023,6 +2049,7 @@ namespace System.Text.RegularExpressions
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Oneloop:
+                    case RegexNodeKind.Onelazy when allowLazy:
                         switch (subsequent.Kind)
                         {
                             case RegexNodeKind.One when node.Ch != subsequent.Ch:
@@ -2052,6 +2079,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNodeKind.Notoneloop:
+                    case RegexNodeKind.Notonelazy when allowLazy:
                         switch (subsequent.Kind)
                         {
                             case RegexNodeKind.One when node.Ch == subsequent.Ch:
@@ -2070,6 +2098,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNodeKind.Setloop:
+                    case RegexNodeKind.Setlazy when allowLazy:
                         switch (subsequent.Kind)
                         {
                             case RegexNodeKind.One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
@@ -2103,7 +2132,7 @@ namespace System.Text.RegularExpressions
                 // and thus we need to move subsequent to be the next node in sequence and loop around to try again.
                 Debug.Assert(subsequent.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy);
                 Debug.Assert(subsequent.M == 0);
-                if (!allowSubsequentIteration)
+                if (!iterateNullableSubsequent)
                 {
                     return false;
                 }
@@ -2274,7 +2303,7 @@ namespace System.Text.RegularExpressions
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, assume there's no minimum we can enforce.
+                // If we can't recur further, assume there's no maximum we can enforce.
                 return null;
             }
 

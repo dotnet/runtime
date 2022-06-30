@@ -46,17 +46,22 @@ namespace Microsoft.Interop
 
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
+            return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
+        }
+
+        public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, ExpressionSyntax? initializer)
+        {
             VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
-            if (initializeToDefault)
+            if (initializer is not null)
             {
                 decl = decl.WithInitializer(
                     EqualsValueClause(
-                        LiteralExpression(SyntaxKind.DefaultLiteralExpression)));
+                        initializer));
             }
 
             // <type> <identifier>;
             // or
-            // <type> <identifier> = default;
+            // <type> <identifier> = <initializer>;
             return LocalDeclarationStatement(
                 VariableDeclaration(
                     typeSyntax,
@@ -85,6 +90,41 @@ namespace Microsoft.Interop
             }
             return spanElementTypeSyntax;
         }
+
+
+        // Marshal.SetLastSystemError(<errorCode>);
+        public static StatementSyntax CreateClearLastSystemErrorStatement(int errorCode) =>
+            ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("SetLastSystemError")),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode)))))));
+
+        // <lastError> = Marshal.GetLastSystemError();
+        public static StatementSyntax CreateGetLastSystemErrorStatement(string lastErrorIdentifier) =>
+            ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(lastErrorIdentifier),
+                    InvocationExpression(
+                        MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("GetLastSystemError")))));
+
+        // Marshal.SetLastPInvokeError(<lastError>);
+        public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
+            ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("SetLastPInvokeError")),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(IdentifierName(lastErrorIdentifier))))));
 
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
@@ -226,7 +266,7 @@ namespace Microsoft.Interop
         public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
             MarshallingInfo elementMarshallingInfo)
         {
-            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
+            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo_V1 nestedCollection)
             {
                 if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
                 {

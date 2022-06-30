@@ -232,7 +232,7 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [InlineData(AssemblyBuilderAccess.Run)]
         [InlineData(AssemblyBuilderAccess.RunAndCollect)]
-        public void SetCustomAttribute_ConstructorBuidler_ByteArray(AssemblyBuilderAccess access)
+        public void SetCustomAttribute_ConstructorBuilder_ByteArray(AssemblyBuilderAccess access)
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly(access: access);
             ConstructorInfo constructor = typeof(BoolAllAttribute).GetConstructor(new Type[] { typeof(bool) });
@@ -243,14 +243,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SetCustomAttribute_ConstructorBuidler_ByteArray_NullConstructorBuilder_ThrowsArgumentNullException()
+        public void SetCustomAttribute_ConstructorBuildler_ByteArray_NullConstructorBuilder_ThrowsArgumentNullException()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             AssertExtensions.Throws<ArgumentNullException>("con", () => assembly.SetCustomAttribute(null, new byte[0]));
         }
 
         [Fact]
-        public void SetCustomAttribute_ConstructorBuidler_ByteArray_NullByteArray_ThrowsArgumentNullException()
+        public void SetCustomAttribute_ConstructorBuildler_ByteArray_NullByteArray_ThrowsArgumentNullException()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             ConstructorInfo constructor = typeof(IntAllAttribute).GetConstructor(new Type[] { typeof(int) });
@@ -398,12 +398,12 @@ namespace System.Reflection.Emit.Tests
 
 	    Assert.Throws<MethodAccessException>(() => d ());
 	}
-	
+
 	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
 	void Invoke_Private_SameAssembly_ThrowsMethodAccessException()
 	{
 	    ModuleBuilder modb = Helpers.DynamicModule();
-	    
+
 	    string calleeName = "PrivateMethod";
 
 	    TypeBuilder tbCalled = modb.DefineType ("CalledClass", TypeAttributes.Public);

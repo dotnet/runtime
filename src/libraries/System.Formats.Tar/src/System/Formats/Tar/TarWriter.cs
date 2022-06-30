@@ -13,37 +13,45 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed partial class TarWriter : IDisposable
     {
-        private bool _wroteGEA;
         private bool _wroteEntries;
         private bool _isDisposed;
         private readonly bool _leaveOpen;
         private readonly Stream _archiveStream;
-        private readonly IEnumerable<KeyValuePair<string, string>>? _globalExtendedAttributes;
+        private int _nextGlobalExtendedAttributesEntryNumber;
 
         /// <summary>
-        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leave the stream open upon disposal of this instance, and can optionally add a Global Extended Attributes entry at the beginning of the archive. When using this constructor, the format of the resulting archive is <see cref="TarFormat.Pax"/>.
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream and closes the <paramref name="archiveStream"/> upon disposal of this instance.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
-        /// <param name="globalExtendedAttributes">An optional enumeration of string key-value pairs that represent Global Extended Attributes metadata that should apply to all subsquent entries. If <see langword="null"/>, then no Global Extended Attributes entry is written. If an empty instance is passed, a Global Extended Attributes entry is written with default values.</param>
-        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
-        public TarWriter(Stream archiveStream, IEnumerable<KeyValuePair<string, string>>? globalExtendedAttributes = null, bool leaveOpen = false)
-            : this(archiveStream, TarFormat.Pax, leaveOpen)
+        /// <remarks>When using this constructor, <see cref="TarEntryFormat.Pax"/> is used as the default format of the entries written to the archive using the <see cref="WriteEntry(string, string?)"/> method.</remarks>
+        public TarWriter(Stream archiveStream)
+            : this(archiveStream, TarEntryFormat.Pax, leaveOpen: false)
         {
-            _globalExtendedAttributes = globalExtendedAttributes;
         }
 
         /// <summary>
-        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leave the stream open upon disposal of this instance, and can specify the format of the underlying archive.
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream and optionally leaves the stream open upon disposal of this instance. When using this constructor, the format of the resulting archive is <see cref="TarEntryFormat.Pax"/>.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
-        /// <param name="archiveFormat">The format of the archive.</param>
         /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
-        /// <remarks><para>If the selected <paramref name="archiveFormat"/> is <see cref="TarFormat.Pax"/>, no Global Extended Attributes entry is written. To write a PAX archive with a Global Extended Attributes entry inserted at the beginning of the archive, use the <see cref="TarWriter(Stream, IEnumerable{KeyValuePair{string, string}}?, bool)"/> constructor instead.</para>
-        /// <para>The recommended format is <see cref="TarFormat.Pax"/> for its flexibility.</para></remarks>
+        public TarWriter(Stream archiveStream, bool leaveOpen = false)
+            : this(archiveStream, TarEntryFormat.Pax, leaveOpen)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leaves the stream open upon disposal of
+        /// this instance, and can optionally specify the format when writing entries using the <see cref="WriteEntry(string, string?)"/> method.
+        /// </summary>
+        /// <param name="archiveStream">The stream to write to.</param>
+        /// <param name="format">The format to use when calling <see cref="WriteEntry(string, string?)"/>. The default value is <see cref="TarEntryFormat.Pax"/>.</param>
+        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed;
+        /// <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
+        /// <remarks>The recommended format is <see cref="TarEntryFormat.Pax"/> for its flexibility.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException"><paramref name="archiveStream"/> is unwritable.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="archiveFormat"/> is either <see cref="TarFormat.Unknown"/>, or not one of the other enum values.</exception>
-        public TarWriter(Stream archiveStream, TarFormat archiveFormat, bool leaveOpen = false)
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        public TarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
 
@@ -52,24 +60,23 @@ namespace System.Formats.Tar
                 throw new IOException(SR.IO_NotSupported_UnwritableStream);
             }
 
-            if (archiveFormat is not TarFormat.V7 and not TarFormat.Ustar and not TarFormat.Pax and not TarFormat.Gnu)
+            if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
             {
-                throw new ArgumentOutOfRangeException(nameof(archiveFormat));
+                throw new ArgumentOutOfRangeException(nameof(format));
             }
 
             _archiveStream = archiveStream;
-            Format = archiveFormat;
+            Format = format;
             _leaveOpen = leaveOpen;
             _isDisposed = false;
             _wroteEntries = false;
-            _wroteGEA = false;
-            _globalExtendedAttributes = null;
+            _nextGlobalExtendedAttributesEntryNumber = 1;
         }
 
         /// <summary>
-        /// The format of the archive.
+        /// The format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
-        public TarFormat Format { get; private set; }
+        public TarEntryFormat Format { get; private set; }
 
         /// <summary>
         /// Disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
@@ -95,7 +102,7 @@ namespace System.Formats.Tar
         /// <param name="entryName">The name of the file as it should be represented in the archive. It should include the optional relative path and the filename.</param>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="ArgumentException"><paramref name="fileName"/> or <paramref name="entryName"/> is <see langword="null"/> or empty.</exception>
-        /// <exception cref="IOException">An I/O problem ocurred.</exception>
+        /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(string fileName, string? entryName)
         {
             ThrowIfDisposed();
@@ -107,11 +114,6 @@ namespace System.Formats.Tar
             if (string.IsNullOrEmpty(entryName))
             {
                 entryName = Path.GetFileName(fileName);
-            }
-
-            if (Format is TarFormat.Pax)
-            {
-                WriteGlobalExtendedAttributesEntryIfNeeded();
             }
 
             ReadFileFromDiskAndWriteToArchiveStreamAsEntry(fullPath, entryName);
@@ -136,7 +138,7 @@ namespace System.Formats.Tar
         /// <para>These are the entry types supported for writing on each format:</para>
         /// <list type="bullet">
         /// <item>
-        /// <para><see cref="TarFormat.V7"/></para>
+        /// <para><see cref="TarEntryFormat.V7"/></para>
         /// <list type="bullet">
         /// <item><see cref="TarEntryType.Directory"/></item>
         /// <item><see cref="TarEntryType.HardLink"/></item>
@@ -145,7 +147,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </item>
         /// <item>
-        /// <para><see cref="TarFormat.Ustar"/>, <see cref="TarFormat.Pax"/> and <see cref="TarFormat.Gnu"/></para>
+        /// <para><see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/></para>
         /// <list type="bullet">
         /// <item><see cref="TarEntryType.BlockDevice"/></item>
         /// <item><see cref="TarEntryType.CharacterDevice"/></item>
@@ -160,36 +162,40 @@ namespace System.Formats.Tar
         /// </remarks>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="InvalidOperationException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
-        /// <exception cref="IOException">An I/O problem ocurred.</exception>
+        /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(TarEntry entry)
         {
             ThrowIfDisposed();
-
-            TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, Format, forWriting: true);
-
-            WriteGlobalExtendedAttributesEntryIfNeeded();
 
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
             Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
             buffer.Clear(); // Rented arrays aren't clean
             try
             {
-                switch (Format)
+                switch (entry.Format)
                 {
-                    case TarFormat.V7:
+                    case TarEntryFormat.V7:
                         entry._header.WriteAsV7(_archiveStream, buffer);
                         break;
-                    case TarFormat.Ustar:
+                    case TarEntryFormat.Ustar:
                         entry._header.WriteAsUstar(_archiveStream, buffer);
                         break;
-                    case TarFormat.Pax:
-                        entry._header.WriteAsPax(_archiveStream, buffer);
+                    case TarEntryFormat.Pax:
+                        if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
+                        {
+                            entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber);
+                            _nextGlobalExtendedAttributesEntryNumber++;
+                        }
+                        else
+                        {
+                            entry._header.WriteAsPax(_archiveStream, buffer);
+                        }
                         break;
-                    case TarFormat.Gnu:
+                    case TarEntryFormat.Gnu:
                         entry._header.WriteAsGnu(_archiveStream, buffer);
                         break;
-                    case TarFormat.Unknown:
                     default:
+                        Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
                         throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
                 }
             }
@@ -210,7 +216,7 @@ namespace System.Formats.Tar
         // /// <para>These are the entry types supported for writing on each format:</para>
         // /// <list type="bullet">
         // /// <item>
-        // /// <para><see cref="TarFormat.V7"/></para>
+        // /// <para><see cref="TarEntryFormat.V7"/></para>
         // /// <list type="bullet">
         // /// <item><see cref="TarEntryType.Directory"/></item>
         // /// <item><see cref="TarEntryType.HardLink"/></item>
@@ -219,7 +225,7 @@ namespace System.Formats.Tar
         // /// </list>
         // /// </item>
         // /// <item>
-        // /// <para><see cref="TarFormat.Ustar"/>, <see cref="TarFormat.Pax"/> and <see cref="TarFormat.Gnu"/></para>
+        // /// <para><see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/></para>
         // /// <list type="bullet">
         // /// <item><see cref="TarEntryType.BlockDevice"/></item>
         // /// <item><see cref="TarEntryType.CharacterDevice"/></item>
@@ -245,8 +251,6 @@ namespace System.Formats.Tar
             {
                 try
                 {
-                    WriteGlobalExtendedAttributesEntryIfNeeded();
-
                     if (_wroteEntries)
                     {
                         WriteFinalRecords();
@@ -274,36 +278,6 @@ namespace System.Formats.Tar
             }
         }
 
-        // Writes a Global Extended Attributes entry at the beginning of the archive.
-        private void WriteGlobalExtendedAttributesEntryIfNeeded()
-        {
-            Debug.Assert(!_isDisposed);
-
-            if (_wroteGEA || Format != TarFormat.Pax)
-            {
-                return;
-            }
-
-            Debug.Assert(!_wroteEntries); // The GEA entry can only be the first entry
-
-            if (_globalExtendedAttributes != null)
-            {
-                byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
-                try
-                {
-                    Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize);
-                    buffer.Clear(); // Rented arrays aren't clean
-                    // Write the GEA entry regardless if it has values or not
-                    TarHeader.WriteGlobalExtendedAttributesHeader(_archiveStream, buffer, _globalExtendedAttributes);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(rented);
-                }
-            }
-            _wroteGEA = true;
-        }
-
         // The spec indicates that the end of the archive is indicated
         // by two records consisting entirely of zero bytes.
         private void WriteFinalRecords()
@@ -311,7 +285,6 @@ namespace System.Formats.Tar
             byte[] emptyRecord = new byte[TarHelpers.RecordSize];
             _archiveStream.Write(emptyRecord);
             _archiveStream.Write(emptyRecord);
-            _archiveStream.SetLength(_archiveStream.Position);
         }
 
         // Partial method for reading an entry from disk and writing it into the archive stream.
