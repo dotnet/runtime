@@ -27,7 +27,7 @@ internal static partial class Interop
         internal static unsafe partial int setattrlist(string path, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options);
 
         internal const uint FSOPT_NOFOLLOW = 0x00000001;
-        [LibraryImport(Libraries.libc, EntryPoint = "fsetattrlist", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        [LibraryImport(Libraries.libc, EntryPoint = "fsetattrlist", SetLastError = true)]
         private static unsafe partial int fsetattrlist(int fd, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options);
 
         internal static unsafe int fsetattrlist(SafeHandle handle, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options)

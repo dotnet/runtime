@@ -24,7 +24,7 @@ internal static partial class Interop
                 nFileSizeLow = findData.nFileSizeLow;
             }
 
-            internal void PopulateFrom(ref BY_HANDLE_FILE_INFORMATION fileInformationData)
+            internal void PopulateFrom(in BY_HANDLE_FILE_INFORMATION fileInformationData)
             {
                 dwFileAttributes = (int)fileInformationData.dwFileAttributes;
                 ftCreationTime = fileInformationData.ftCreationTime;
