@@ -45,7 +45,7 @@ namespace System.Linq
             OrderBy(source, static element => element, comparer);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-            new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false, null);
+            => new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false, null);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
             => new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, false, null);
