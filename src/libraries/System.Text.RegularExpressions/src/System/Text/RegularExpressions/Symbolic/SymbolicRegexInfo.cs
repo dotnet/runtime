@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Misc information of structural properties of a <see cref="SymbolicRegexNode{S}"/> that is computed bottom up.</summary>
@@ -20,55 +22,28 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private SymbolicRegexInfo(uint i) => _info = i;
 
-        internal static SymbolicRegexInfo Create(
+        private static SymbolicRegexInfo Create(
             bool isAlwaysNullable = false, bool canBeNullable = false,
             bool startsWithLineAnchor = false, bool containsLineAnchor = false,
             bool startsWithSomeAnchor = false, bool containsSomeAnchor = false,
             bool isHighPriorityNullable = false, bool containsEffect = false)
         {
-            uint i = 0;
-
-            if (canBeNullable || isAlwaysNullable)
-            {
-                i |= CanBeNullableMask;
-
-                if (isAlwaysNullable)
-                {
-                    i |= IsAlwaysNullableMask;
-                }
-            }
-
-            if (containsLineAnchor || containsSomeAnchor || startsWithLineAnchor || startsWithSomeAnchor)
-            {
-                i |= ContainsSomeAnchorMask;
-
-                if (containsLineAnchor || startsWithLineAnchor)
-                {
-                    i |= ContainsLineAnchorMask;
-
-                    if (startsWithLineAnchor)
-                    {
-                        i |= StartsWithLineAnchorMask;
-                    }
-                }
-
-                if (startsWithLineAnchor || startsWithSomeAnchor)
-                {
-                    i |= StartsWithSomeAnchorMask;
-                }
-            }
-
-            if (isHighPriorityNullable)
-            {
-                i |= IsHighPriorityNullableMask;
-            }
-
-            if (containsEffect)
-            {
-                i |= ContainsEffectMask;
-            }
-
-            return new SymbolicRegexInfo(i);
+            // Assert that the expected implications hold. For example, every node that contains a line anchor
+            // must also be marked as containing some anchor.
+            Debug.Assert(!isAlwaysNullable || canBeNullable);
+            Debug.Assert(!startsWithLineAnchor || containsLineAnchor);
+            Debug.Assert(!startsWithLineAnchor || startsWithSomeAnchor);
+            Debug.Assert(!containsLineAnchor || containsSomeAnchor);
+            Debug.Assert(!startsWithSomeAnchor || containsSomeAnchor);
+            return new SymbolicRegexInfo(
+                (isAlwaysNullable ? IsAlwaysNullableMask : 0) |
+                (canBeNullable ? CanBeNullableMask : 0) |
+                (startsWithLineAnchor ? StartsWithLineAnchorMask : 0) |
+                (containsLineAnchor ? ContainsLineAnchorMask : 0) |
+                (startsWithSomeAnchor ? StartsWithSomeAnchorMask : 0) |
+                (containsSomeAnchor ? ContainsSomeAnchorMask : 0) |
+                (isHighPriorityNullable ? IsHighPriorityNullableMask : 0) |
+                (containsEffect ? ContainsEffectMask : 0));
         }
 
         public bool IsNullable => (_info & IsAlwaysNullableMask) != 0;
@@ -88,6 +63,27 @@ namespace System.Text.RegularExpressions.Symbolic
         public bool IsHighPriorityNullable => (_info & IsHighPriorityNullableMask) != 0;
 
         public bool ContainsEffect => (_info & ContainsEffectMask) != 0;
+
+        /// <summary>
+        /// Used for any node that acts as an epsilon, i.e., something that always matches the empty string.
+        /// </summary>
+        public static SymbolicRegexInfo Epsilon() =>
+            Create(
+                isAlwaysNullable: true,
+                canBeNullable: true,
+                isHighPriorityNullable: true);
+
+        /// <summary>
+        /// Used for all anchors.
+        /// </summary>
+        /// <param name="isLineAnchor">whether this anchor is a line anchor</param>
+        public static SymbolicRegexInfo Anchor(bool isLineAnchor) =>
+            Create(
+                canBeNullable: true,
+                startsWithLineAnchor: isLineAnchor,
+                containsLineAnchor: isLineAnchor,
+                startsWithSomeAnchor: true,
+                containsSomeAnchor: true);
 
         /// <summary>
         /// The alternation remains high priority nullable if the left alternative is so.

@@ -45,6 +45,6 @@ namespace System.Text.RegularExpressions.Symbolic
         };
 
         /// <summary>Returns whether the given value is in the range of valid character kinds.</summary>
-        internal static bool IsValidCharKind(uint charKind) => 0 <= charKind && charKind < CharKindCount;
+        internal static bool IsValidCharKind(uint charKind) => charKind < CharKindCount;
     }
 }

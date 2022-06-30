@@ -8,10 +8,10 @@ using System.Net;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
-    /// <summary>Captures a state of a DFA explored during matching.</summary>
-    internal sealed class DfaMatchingState<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
+    /// <summary>Captures a state explored during matching.</summary>
+    internal sealed class MatchingState<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
-        internal DfaMatchingState(SymbolicRegexNode<TSet> node, uint prevCharKind)
+        internal MatchingState(SymbolicRegexNode<TSet> node, uint prevCharKind)
         {
             Node = node;
             PrevCharKind = prevCharKind;
@@ -26,14 +26,22 @@ namespace System.Text.RegularExpressions.Symbolic
         /// and transitioning on each character to states that match that character's kind.
         /// </summary>
         /// <remarks>
-        /// For patterns with no anchors this will always be set to <see cref="CharKind.General"/>, which can reduce the
-        /// number of states created.
+        /// Tracking this information is an optimization that allows each transition taken in the matcher to only depend
+        /// on the next character (and its kind). In general, the transitions from a state with anchors in its pattern
+        /// depend on both the previous and the next character. Creating distinct states for each kind of the previous
+        /// character embeds the necessary information about the previous character into the state space of the automaton.
+        /// However, this does incur a memory overhead due to the duplication of states. For patterns with no anchors
+        /// this will always be set to <see cref="CharKind.General"/>, which can reduce the number of states created.
+        ///
+        /// The performance effect of this optimization has not been investigated. If this optimization were removed, the
+        /// transition logic would in turn have to become more complicated for derivatives that depend on the nullability
+        /// of anchors. Care should be taken to not slow down transitions without anchors involved.
         /// </remarks>
         internal uint PrevCharKind { get; }
 
         /// <summary>
         /// A unique identifier for this state, which is used in <see cref="SymbolicRegexMatcher{TSet}"/> to index into
-        /// state information and transition arrays.
+        /// state information and transition arrays. Valid IDs are always >= 1.
         /// </summary>
         internal int Id { get; set; }
 
@@ -97,7 +105,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         public override bool Equals(object? obj) =>
-            obj is DfaMatchingState<TSet> s && PrevCharKind == s.PrevCharKind && Node.Equals(s.Node);
+            obj is MatchingState<TSet> s && PrevCharKind == s.PrevCharKind && Node.Equals(s.Node);
 
         public override int GetHashCode() => (PrevCharKind, Node).GetHashCode();
 

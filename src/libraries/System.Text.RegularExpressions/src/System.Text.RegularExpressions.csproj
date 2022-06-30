@@ -64,7 +64,7 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharSetSolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\MatchingState.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DoublyLinkedList.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\ISolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermClassifier.cs" />

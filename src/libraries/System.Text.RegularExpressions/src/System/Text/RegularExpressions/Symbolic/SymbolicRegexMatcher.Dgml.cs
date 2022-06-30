@@ -28,7 +28,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 writer.WriteLine("    <Nodes>");
                 writer.WriteLine("        <Node Id=\"dfa\" Label=\" \" Group=\"Collapsed\" Category=\"DFA\" DFAInfo=\"{0}\" />", FormatInfo(this, transitions.Count));
                 writer.WriteLine("        <Node Id=\"dfainfo\" Category=\"DFAInfo\" Label=\"{0}\"/>", FormatInfo(this, transitions.Count));
-                foreach (DfaMatchingState<TSet> state in _stateCache.Values)
+                foreach (MatchingState<TSet> state in _stateCache.Values)
                 {
                     string info = CharKind.DescribePrev(state.PrevCharKind);
                     string deriv = WebUtility.HtmlEncode(state.Node.ToString());
@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 writer.WriteLine("    </Nodes>");
                 writer.WriteLine("    <Links>");
-                foreach (DfaMatchingState<TSet> initialState in GetInitialStates(this))
+                foreach (MatchingState<TSet> initialState in GetInitialStates(this))
                 {
                     writer.WriteLine("        <Link Source=\"dfa\" Target=\"{0}\" Label=\"\" Category=\"StartTransition\" />", initialState.Id);
                 }
@@ -73,7 +73,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                 }
 
-                foreach (DfaMatchingState<TSet> state in _stateCache.Values)
+                foreach (MatchingState<TSet> state in _stateCache.Values)
                 {
                     writer.WriteLine("        <Link Source=\"{0}\" Target=\"{0}info\" Category=\"Contains\" />", state.Id);
                 }
@@ -144,7 +144,7 @@ namespace System.Text.RegularExpressions.Symbolic
             static Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> GatherTransitions(SymbolicRegexMatcher<TSet> matcher)
             {
                 Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> result = new();
-                foreach (DfaMatchingState<TSet> source in matcher._stateCache.Values)
+                foreach (MatchingState<TSet> source in matcher._stateCache.Values)
                 {
                     // Get the span of entries in delta that gives the transitions for the different minterms
                     Span<int> deltas = matcher.GetDeltasFor(source);
@@ -168,7 +168,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             {
                                 foreach (int nfaTarget in nfaTargets)
                                 {
-                                    entry.NfaTargets.Add(matcher._nfaStateArray[nfaTarget]);
+                                    entry.NfaTargets.Add(matcher._nfaCoreIdArray[nfaTarget]);
                                 }
                             }
                             // Expand the rule for this minterm
@@ -200,13 +200,13 @@ namespace System.Text.RegularExpressions.Symbolic
             static string DescribeLabel(TSet label, SymbolicRegexBuilder<TSet> builder) =>
                 WebUtility.HtmlEncode(builder._solver.PrettyPrint(label, builder._charSetSolver));
 
-            static IEnumerable<DfaMatchingState<TSet>> GetInitialStates(SymbolicRegexMatcher<TSet> matcher)
+            static IEnumerable<MatchingState<TSet>> GetInitialStates(SymbolicRegexMatcher<TSet> matcher)
             {
-                foreach (DfaMatchingState<TSet> state in matcher._dotstarredInitialStates)
+                foreach (MatchingState<TSet> state in matcher._dotstarredInitialStates)
                     yield return state;
-                foreach (DfaMatchingState<TSet> state in matcher._initialStates)
+                foreach (MatchingState<TSet> state in matcher._initialStates)
                     yield return state;
-                foreach (DfaMatchingState<TSet> state in matcher._reverseInitialStates)
+                foreach (MatchingState<TSet> state in matcher._reverseInitialStates)
                     yield return state;
             }
         }

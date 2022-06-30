@@ -51,7 +51,7 @@
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\CharKind.cs" Link="Production\CharKind.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\CharSetSolver.cs" Link="Production\CharSetSolver.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" Link="Production\DerivativeEffect.cs" />
-    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" Link="Production\DfaMatchingState.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\MatchingState.cs" Link="Production\MatchingState.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DoublyLinkedList.cs" Link="Production\DoublyLinkedList.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\ISolver.cs" Link="Production\ISolver.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\MintermGenerator.cs" Link="Production\MintermGenerator.cs" />
