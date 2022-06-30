@@ -32,7 +32,7 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IEnumerable<string> GenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
+    public IEnumerable<string>? GenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
     {
         _icalls.Clear();
         _signatures.Clear();
@@ -40,14 +40,22 @@ internal sealed class IcallTableGenerator
         if (runtimeIcallTableFile != null)
             ReadTable(runtimeIcallTableFile);
 
+        bool hasError = false;
+
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
         {
             var a = mlc.LoadFromAssemblyPath(aname);
             foreach (var type in a.GetTypes())
-                ProcessType(type);
+            {
+                if (!ProcessType(type))
+                    hasError = true;
+            }
         }
+
+        if (hasError)
+            return null;
 
         if (outputPath != null)
         {
@@ -139,14 +147,24 @@ internal sealed class IcallTableGenerator
         }
     }
 
-    private void ProcessType(Type type)
+    private bool ProcessType(Type type)
     {
+        bool hasError = false;
         foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
         {
             if ((method.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) == 0)
                 continue;
 
-            AddSignature(type, method);
+            try
+            {
+                AddSignature(type, method);
+            }
+            catch (Exception ex)
+            {
+                hasError = true;
+                Log.LogError($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");
+                continue;
+            }
 
             var className = method.DeclaringType!.FullName!;
             if (!_runtimeIcalls.ContainsKey(className))
@@ -177,6 +195,8 @@ internal sealed class IcallTableGenerator
 
         foreach (var nestedType in type.GetNestedTypes())
             ProcessType(nestedType);
+
+        return !hasError;
 
         string? BuildSignature(MethodInfo method, string className)
         {

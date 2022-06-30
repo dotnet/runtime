@@ -19,7 +19,7 @@ internal sealed class PInvokeTableGenerator
 
     public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
 
-    public IEnumerable<string> GenPInvokeTable(string[] pinvokeModules, string[] assemblies, string outputPath)
+    public IEnumerable<string>? GenPInvokeTable(string[] pinvokeModules, string[] assemblies, string outputPath)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
@@ -30,14 +30,22 @@ internal sealed class PInvokeTableGenerator
         var pinvokes = new List<PInvoke>();
         var callbacks = new List<PInvokeCallback>();
 
+        bool hasError = false;
+
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
         {
             var a = mlc.LoadFromAssemblyPath(aname);
             foreach (var type in a.GetTypes())
-                CollectPInvokes(pinvokes, callbacks, signatures, type);
+            {
+                if (!CollectPInvokes(pinvokes, callbacks, signatures, type))
+                    hasError = true;
+            }
         }
+
+        if (hasError)
+            return null;
 
         string tmpFileName = Path.GetTempFileName();
         try
@@ -61,8 +69,9 @@ internal sealed class PInvokeTableGenerator
         return signatures;
     }
 
-    private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
+    private bool CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
     {
+        bool hasError = false;
         foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
         {
             try
@@ -71,9 +80,12 @@ internal sealed class PInvokeTableGenerator
             }
             catch (Exception ex)
             {
-                throw new LogAsErrorException($"Could not get pinvoke, or callbacks for method {method.Name}: {ex}");
+                hasError = true;
+                Log.LogError($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");
             }
         }
+
+        return !hasError;
 
         void CollectPInvokesForMethod(MethodInfo method)
         {
@@ -87,7 +99,7 @@ internal sealed class PInvokeTableGenerator
                 string? signature = SignatureMapper.MethodToSignature(method);
                 if (signature == null)
                 {
-                    throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
+                    throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
                 }
 
                 Log.LogMessage(MessageImportance.Normal, $"[pinvoke] Adding signature {signature} for method '{type.FullName}.{method.Name}'");
@@ -100,7 +112,8 @@ internal sealed class PInvokeTableGenerator
                 {
                     if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" ||
                         cattr.AttributeType.Name == "MonoPInvokeCallbackAttribute")
-                        callbacks.Add(new PInvokeCallback(method));
+
+                    callbacks.Add(new PInvokeCallback(method));
                 }
                 catch
                 {
