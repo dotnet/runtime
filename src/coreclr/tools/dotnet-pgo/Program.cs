@@ -1209,7 +1209,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         {
                             duplicateModuleAnalysis[simpleName] = candidatePaths = new HashSet<string>();
                         }
-                        duplicateModuleAnalysis[simpleName].Add(candidateFilePath);
+                        candidatePaths.Add(candidateFilePath);
                     }
                 }
 
@@ -1222,7 +1222,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ModuleDesc loadedViaReference = null;
                     foreach (var module in modulesLoadedViaReference)
                     {
-                        if (String.Compare(module.Assembly.GetName().Name, assembliesWithDuplicates.Key, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(module.Assembly.GetName().Name, assembliesWithDuplicates.Key, StringComparison.OrdinalIgnoreCase))
                         {
                             loadedViaReference = module;
                             break;
