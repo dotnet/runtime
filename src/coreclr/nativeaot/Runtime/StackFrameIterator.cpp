@@ -546,83 +546,83 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.IP   = pCtx->GetIp();
 
 #ifdef TARGET_UNIX
-#define PTR_TO_REG(type, ptr, reg) (&((ptr)->reg()))
+#define PTR_TO_REG(ptr, reg) (&((ptr)->reg()))
 #else
-#define PTR_TO_REG(type, ptr, reg) (&((ptr)->reg))
+#define PTR_TO_REG(ptr, reg) (&((ptr)->reg))
 #endif
 
 #ifdef TARGET_ARM64
 
-    m_RegDisplay.pIP  = (PTR_PCODE)PTR_TO_REG(CONTEXT, pCtx, Pc);
+    m_RegDisplay.pIP  = (PTR_PCODE)PTR_TO_REG(pCtx, Pc);
 
     //
     // preserved regs
     //
-    m_RegDisplay.pX19 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X19);
-    m_RegDisplay.pX20 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X20);
-    m_RegDisplay.pX21 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X21);
-    m_RegDisplay.pX22 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X22);
-    m_RegDisplay.pX23 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X23);
-    m_RegDisplay.pX24 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X24);
-    m_RegDisplay.pX25 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X25);
-    m_RegDisplay.pX26 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X26);
-    m_RegDisplay.pX27 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X27);
-    m_RegDisplay.pX28 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X28);
-    m_RegDisplay.pFP = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Fp);
-    m_RegDisplay.pLR = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Lr);
+    m_RegDisplay.pX19 = (PTR_UIntNative)PTR_TO_REG(pCtx, X19);
+    m_RegDisplay.pX20 = (PTR_UIntNative)PTR_TO_REG(pCtx, X20);
+    m_RegDisplay.pX21 = (PTR_UIntNative)PTR_TO_REG(pCtx, X21);
+    m_RegDisplay.pX22 = (PTR_UIntNative)PTR_TO_REG(pCtx, X22);
+    m_RegDisplay.pX23 = (PTR_UIntNative)PTR_TO_REG(pCtx, X23);
+    m_RegDisplay.pX24 = (PTR_UIntNative)PTR_TO_REG(pCtx, X24);
+    m_RegDisplay.pX25 = (PTR_UIntNative)PTR_TO_REG(pCtx, X25);
+    m_RegDisplay.pX26 = (PTR_UIntNative)PTR_TO_REG(pCtx, X26);
+    m_RegDisplay.pX27 = (PTR_UIntNative)PTR_TO_REG(pCtx, X27);
+    m_RegDisplay.pX28 = (PTR_UIntNative)PTR_TO_REG(pCtx, X28);
+    m_RegDisplay.pFP = (PTR_UIntNative)PTR_TO_REG(pCtx, Fp);
+    m_RegDisplay.pLR = (PTR_UIntNative)PTR_TO_REG(pCtx, Lr);
 
     //
     // scratch regs
     //
-    m_RegDisplay.pX0 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X0);
-    m_RegDisplay.pX1 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X1);
-    m_RegDisplay.pX2 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X2);
-    m_RegDisplay.pX3 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X3);
-    m_RegDisplay.pX4 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X4);
-    m_RegDisplay.pX5 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X5);
-    m_RegDisplay.pX6 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X6);
-    m_RegDisplay.pX7 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X7);
-    m_RegDisplay.pX8 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X8);
-    m_RegDisplay.pX9 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X9);
-    m_RegDisplay.pX10 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X10);
-    m_RegDisplay.pX11 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X11);
-    m_RegDisplay.pX12 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X12);
-    m_RegDisplay.pX13 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X13);
-    m_RegDisplay.pX14 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X14);
-    m_RegDisplay.pX15 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X15);
-    m_RegDisplay.pX16 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X16);
-    m_RegDisplay.pX17 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X17);
-    m_RegDisplay.pX18 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, X18);
+    m_RegDisplay.pX0 = (PTR_UIntNative)PTR_TO_REG(pCtx, X0);
+    m_RegDisplay.pX1 = (PTR_UIntNative)PTR_TO_REG(pCtx, X1);
+    m_RegDisplay.pX2 = (PTR_UIntNative)PTR_TO_REG(pCtx, X2);
+    m_RegDisplay.pX3 = (PTR_UIntNative)PTR_TO_REG(pCtx, X3);
+    m_RegDisplay.pX4 = (PTR_UIntNative)PTR_TO_REG(pCtx, X4);
+    m_RegDisplay.pX5 = (PTR_UIntNative)PTR_TO_REG(pCtx, X5);
+    m_RegDisplay.pX6 = (PTR_UIntNative)PTR_TO_REG(pCtx, X6);
+    m_RegDisplay.pX7 = (PTR_UIntNative)PTR_TO_REG(pCtx, X7);
+    m_RegDisplay.pX8 = (PTR_UIntNative)PTR_TO_REG(pCtx, X8);
+    m_RegDisplay.pX9 = (PTR_UIntNative)PTR_TO_REG(pCtx, X9);
+    m_RegDisplay.pX10 = (PTR_UIntNative)PTR_TO_REG(pCtx, X10);
+    m_RegDisplay.pX11 = (PTR_UIntNative)PTR_TO_REG(pCtx, X11);
+    m_RegDisplay.pX12 = (PTR_UIntNative)PTR_TO_REG(pCtx, X12);
+    m_RegDisplay.pX13 = (PTR_UIntNative)PTR_TO_REG(pCtx, X13);
+    m_RegDisplay.pX14 = (PTR_UIntNative)PTR_TO_REG(pCtx, X14);
+    m_RegDisplay.pX15 = (PTR_UIntNative)PTR_TO_REG(pCtx, X15);
+    m_RegDisplay.pX16 = (PTR_UIntNative)PTR_TO_REG(pCtx, X16);
+    m_RegDisplay.pX17 = (PTR_UIntNative)PTR_TO_REG(pCtx, X17);
+    m_RegDisplay.pX18 = (PTR_UIntNative)PTR_TO_REG(pCtx, X18);
 
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
 
-    m_RegDisplay.pIP  = (PTR_PCODE)PTR_TO_REG(CONTEXT, pCtx, Rip);
+    m_RegDisplay.pIP  = (PTR_PCODE)PTR_TO_REG(pCtx, Rip);
 
     //
     // preserved regs
     //
-    m_RegDisplay.pRbp = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Rbp);
-    m_RegDisplay.pRsi = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Rsi);
-    m_RegDisplay.pRdi = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Rdi);
-    m_RegDisplay.pRbx = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Rbx);
+    m_RegDisplay.pRbp = (PTR_UIntNative)PTR_TO_REG(pCtx, Rbp);
+    m_RegDisplay.pRsi = (PTR_UIntNative)PTR_TO_REG(pCtx, Rsi);
+    m_RegDisplay.pRdi = (PTR_UIntNative)PTR_TO_REG(pCtx, Rdi);
+    m_RegDisplay.pRbx = (PTR_UIntNative)PTR_TO_REG(pCtx, Rbx);
 #ifdef TARGET_AMD64     
-    m_RegDisplay.pR12 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, R12);
-    m_RegDisplay.pR13 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, R13);
-    m_RegDisplay.pR14 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, R14);
-    m_RegDisplay.pR15 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, R15);
+    m_RegDisplay.pR12 = (PTR_UIntNative)PTR_TO_REG(pCtx, R12);
+    m_RegDisplay.pR13 = (PTR_UIntNative)PTR_TO_REG(pCtx, R13);
+    m_RegDisplay.pR14 = (PTR_UIntNative)PTR_TO_REG(pCtx, R14);
+    m_RegDisplay.pR15 = (PTR_UIntNative)PTR_TO_REG(pCtx, R15);
 #endif // TARGET_AMD64  
                         
     //                  
     // scratch regs     
     //                  
-    m_RegDisplay.pRax = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Rax);
-    m_RegDisplay.pRcx = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Rcx);
-    m_RegDisplay.pRdx = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, Rdx);
+    m_RegDisplay.pRax = (PTR_UIntNative)PTR_TO_REG(pCtx, Rax);
+    m_RegDisplay.pRcx = (PTR_UIntNative)PTR_TO_REG(pCtx, Rcx);
+    m_RegDisplay.pRdx = (PTR_UIntNative)PTR_TO_REG(pCtx, Rdx);
 #ifdef TARGET_AMD64     
-    m_RegDisplay.pR8  = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, R8);
-    m_RegDisplay.pR9  = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, R9);
-    m_RegDisplay.pR10 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, R10);
-    m_RegDisplay.pR11 = (PTR_UIntNative)PTR_TO_REG(CONTEXT, pCtx, R11);
+    m_RegDisplay.pR8  = (PTR_UIntNative)PTR_TO_REG(pCtx, R8);
+    m_RegDisplay.pR9  = (PTR_UIntNative)PTR_TO_REG(pCtx, R9);
+    m_RegDisplay.pR10 = (PTR_UIntNative)PTR_TO_REG(pCtx, R10);
+    m_RegDisplay.pR11 = (PTR_UIntNative)PTR_TO_REG(pCtx, R11);
 #endif // TARGET_AMD64
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
