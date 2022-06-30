@@ -34,7 +34,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
       "${TOOLSET_PREFIX}${exec}")
 
     if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-      message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
+      message(FATAL_ERROR "Unable to find toolchain executable. Name: '${exec}', Prefix: '${TOOLSET_PREFIX}.'")
     endif()
     set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
   endfunction()
@@ -49,6 +49,8 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
 
   if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
     locate_toolchain_exec(objdump CMAKE_OBJDUMP)
+    locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
+
 
     if(CLR_CMAKE_TARGET_ANDROID)
       set(TOOLSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
@@ -59,11 +61,8 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
       else()
         set(TOOLSET_PREFIX "${TOOLCHAIN}-")
       endif()
-    else()
-      set(TOOLSET_PREFIX "")
     endif()
 
-    locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
   endif()
 endif()
 

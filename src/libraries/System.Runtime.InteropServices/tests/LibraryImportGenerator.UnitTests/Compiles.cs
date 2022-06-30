@@ -117,10 +117,10 @@ namespace LibraryImportGenerator.UnitTests
 
             // [In, Out] attributes
             // By value non-blittable array
-            yield return new [] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out")
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out")
                 + CodeSnippets.CustomStructMarshalling_V1.NonBlittableUserDefinedType()
                 + CodeSnippets.CustomStructMarshalling_V1.NativeTypeRef };
-            yield return new [] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out")
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out")
                 + CodeSnippets.CustomStructMarshalling_V1.NonBlittableUserDefinedType()
                 + CodeSnippets.CustomStructMarshalling_V1.NativeTypeRef };
 
@@ -170,15 +170,26 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: true) };
 
             // Custom type marshalling
-            yield return new[] { CodeSnippets.CustomStructMarshalling.ParametersAndModifiers };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.MarshalUsingParametersAndModifiers };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyOutParameter };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedGuaranteedOnlyOutParameter };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyReturnValue };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedGuaranteedOnlyReturnValue };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.StackallocByValueInParameter };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.StackallocParametersAndModifiersNoRef };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.OptionalStackallocParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.ParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.MarshalUsingParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedOnlyOutParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedGuaranteedOnlyOutParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedOnlyReturnValue };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedGuaranteedOnlyReturnValue };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.StackallocByValueInParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.StackallocParametersAndModifiersNoRef };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.OptionalStackallocParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.ParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.ParametersAndModifiersWithFree };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.ParametersAndModifiersWithNotifyInvokeSucceeded };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.MarshalUsingParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedOnlyOutParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedGuaranteedOnlyOutParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedOnlyReturnValue };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedGuaranteedOnlyReturnValue };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.StackallocByValueInParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.StackallocParametersAndModifiersNoRef };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.OptionalStackallocParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling_V1.ParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling_V1.StackallocParametersAndModifiersNoRef };
             yield return new[] { CodeSnippets.CustomStructMarshalling_V1.StackallocTwoStageParametersAndModifiersNoRef };

@@ -1226,6 +1226,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static char IBinaryNumber<char>.AllBitsSet => (char)0xFFFF;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         static bool IBinaryNumber<char>.IsPow2(char value) => ushort.IsPow2(value);
 

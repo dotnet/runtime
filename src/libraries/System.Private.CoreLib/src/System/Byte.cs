@@ -378,6 +378,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static byte IBinaryNumber<byte>.AllBitsSet => MaxValue;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(byte value) => BitOperations.IsPow2((uint)value);
 

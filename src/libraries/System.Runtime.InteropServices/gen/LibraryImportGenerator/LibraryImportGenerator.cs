@@ -358,10 +358,13 @@ namespace Microsoft.Interop
                     // Since the char type in an array will not be part of the P/Invoke signature, we can
                     // use the regular blittable marshaller in all cases.
                     new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true),
-                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, Scenario.ElementIn, Scenario.ElementRef, Scenario.ElementOut));
                 // We don't need to include the later generator factories for collection elements
                 // as the later generator factories only apply to parameters.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(
+                    generatorFactory,
+                    elementFactory,
+                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, Scenario.ManagedToUnmanagedIn, Scenario.ManagedToUnmanagedRef, Scenario.ManagedToUnmanagedOut));
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }

@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
+using static SharedTypes.IntWrapperWithNotificationMarshaller;
 
 namespace SharedTypes
 {
@@ -162,6 +163,123 @@ namespace SharedTypes
         public static void Free(int* unmanaged)
         {
             Marshal.FreeCoTaskMem((IntPtr)unmanaged);
+        }
+    }
+
+
+    [CustomMarshaller(typeof(IntWrapper), Scenario.Default, typeof(Marshaller))]
+    public static unsafe class IntWrapperMarshallerStateful
+    {
+        public struct Marshaller
+        {
+            private IntWrapper managed;
+            private int* native;
+            public void FromManaged(IntWrapper wrapper)
+            {
+                managed = wrapper;
+            }
+
+            public int* ToUnmanaged()
+            {
+                native = (int*)Marshal.AllocCoTaskMem(sizeof(int));
+                *native = managed.i;
+                return native;
+            }
+
+            public void FromUnmanaged(int* value)
+            {
+                native = value;
+            }
+
+            public IntWrapper ToManaged() => managed = new IntWrapper() { i = *native };
+
+            public void Free()
+            {
+                Marshal.FreeCoTaskMem((IntPtr)native);
+            }
+        }
+    }
+
+    [NativeMarshalling(typeof(IntWrapperWithNotificationMarshaller))]
+    public struct IntWrapperWithNotification
+    {
+        [ThreadStatic]
+        public static int NumInvokeSucceededOnUninitialized = 0;
+
+        private bool initialized;
+        public int Value;
+        public event EventHandler InvokeSucceeded;
+
+        public IntWrapperWithNotification()
+        {
+            initialized = true;
+        }
+
+        public void RaiseInvokeSucceeded()
+        {
+            if (!initialized)
+            {
+                NumInvokeSucceededOnUninitialized++;
+            }
+            InvokeSucceeded?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    [CustomMarshaller(typeof(IntWrapperWithNotification), Scenario.Default, typeof(Marshaller))]
+    public static class IntWrapperWithNotificationMarshaller
+    {
+        public struct Marshaller
+        {
+            private IntWrapperWithNotification _managed;
+
+            public void FromManaged(IntWrapperWithNotification managed) =>_managed = managed;
+
+            public int ToUnmanaged() => _managed.Value;
+
+            public void FromUnmanaged(int i) => _managed.Value = i;
+
+            public IntWrapperWithNotification ToManaged() => _managed;
+
+            public void NotifyInvokeSucceeded() => _managed.RaiseInvokeSucceeded();
+        }
+    }
+
+    [CustomMarshaller(typeof(BoolStruct), Scenario.Default, typeof(Marshaller))]
+    public static class BoolStructMarshallerStateful
+    {
+        public struct BoolStructNative
+        {
+            public byte b1;
+            public byte b2;
+            public byte b3;
+        }
+
+        public struct Marshaller
+        {
+            private BoolStructNative _boolStructNative;
+            public void FromManaged(BoolStruct managed)
+            {
+                _boolStructNative = new BoolStructNative
+                {
+                    b1 = (byte)(managed.b1 ? 1 : 0),
+                    b2 = (byte)(managed.b2 ? 1 : 0),
+                    b3 = (byte)(managed.b3 ? 1 : 0)
+                };
+            }
+
+            public BoolStructNative ToUnmanaged() => _boolStructNative;
+
+            public void FromUnmanaged(BoolStructNative value) => _boolStructNative = value;
+
+            public BoolStruct ToManaged()
+            {
+                return new BoolStruct
+                {
+                    b1 = _boolStructNative.b1 != 0,
+                    b2 = _boolStructNative.b2 != 0,
+                    b3 = _boolStructNative.b3 != 0
+                };
+            }
         }
     }
 }
