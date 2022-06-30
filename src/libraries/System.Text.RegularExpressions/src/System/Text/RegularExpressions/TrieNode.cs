@@ -93,19 +93,5 @@ namespace System.Text.RegularExpressions
             }
             return matchCount;
         }
-
-        public static string GetCommonPrefix(this List<TrieNode> trie)
-        {
-            TrieNode currentNode = trie[TrieNode.Root];
-            while (currentNode.Children is { Count: 1 } dict)
-            {
-                foreach (KeyValuePair<char, int> kvp in dict)
-                {
-                    currentNode = trie[kvp.Value];
-                    break;
-                }
-            }
-            return currentNode.GetPath(trie);
-        }
     }
 }

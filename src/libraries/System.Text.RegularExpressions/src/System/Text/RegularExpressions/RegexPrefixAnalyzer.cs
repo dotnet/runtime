@@ -24,8 +24,7 @@ namespace System.Text.RegularExpressions
         {
             if ((node.Options & RegexOptions.RightToLeft) != 0)
             {
-                // MultiStringMatcher is not yet supported in RightToLeft.
-                // We use a more lightweight method to get that single prefix if it exists.
+                // MultiStringMatcher is not supported in RightToLeft.
                 return (FindPrefix(node), null);
             }
 
@@ -33,7 +32,7 @@ namespace System.Text.RegularExpressions
             {
                 if (trie.GetMatchCount() < MinMultiPrefixes)
                 {
-                    return (trie.GetCommonPrefix(), null);
+                    return (FindPrefix(node), null);
                 }
                 else
                 {
