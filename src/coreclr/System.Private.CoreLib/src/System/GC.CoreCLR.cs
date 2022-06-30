@@ -750,13 +750,14 @@ namespace System
         [UnmanagedCallersOnly]
         private static unsafe void Callback(void* configurationContext, void* name, void* publicKey, GCConfigurationType type, long data)
         {
-            // If the public key is null, it means that the corresponding configuration isn't publically available
+            // If the public key is null, it means that the corresponding configuration isn't publicly available
             // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
             if (publicKey == null)
             {
                 return;
             }
 
+            Debug.Assert(name != null);
             Debug.Assert(configurationContext != null);
 
             ref GCConfigurationContext context = ref Unsafe.As<byte, GCConfigurationContext>(ref *(byte*)configurationContext);
