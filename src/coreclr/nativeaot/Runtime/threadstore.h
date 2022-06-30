@@ -21,7 +21,6 @@ class ThreadStore
 
     SList<Thread>       m_ThreadList;
     PTR_RuntimeInstance m_pRuntimeInstance;
-    CLREventStatic      m_SuspendCompleteEvent;
     ReaderWriterLock    m_Lock;
 
 private:

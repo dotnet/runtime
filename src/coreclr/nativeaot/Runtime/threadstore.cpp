@@ -82,9 +82,6 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
-    if (!pNewThreadStore->m_SuspendCompleteEvent.CreateManualEventNoThrow(true))
-        return NULL;
-
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
 
     pNewThreadStore.SuppressRelease();
@@ -208,7 +205,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     {
         GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
     }
-    m_SuspendCompleteEvent.Reset();
 
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
@@ -260,8 +256,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
         }
 
     } while (keepWaiting);
-
-    m_SuspendCompleteEvent.Set();
 }
 
 void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
