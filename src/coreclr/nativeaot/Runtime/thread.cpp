@@ -26,6 +26,7 @@
 #include "rhbinder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
+#include "RhVolatile.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -36,12 +37,6 @@ EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
 static int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
 
-#ifdef _MSC_VER
-extern "C" void _ReadWriteBarrier(void);
-#pragma intrinsic(_ReadWriteBarrier)
-#else // _MSC_VER
-#define _ReadWriteBarrier() __asm__ volatile("" : : : "memory")
-#endif // _MSC_VER
 #endif //!DACCESS_COMPILE
 
 PInvokeTransitionFrame* Thread::GetTransitionFrame()
@@ -79,15 +74,14 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 
     do
     {
-        m_pTransitionFrame = pTransitionFrame;
+        // set preemptive mode
+        VolatileStoreWithoutBarrier(&m_pTransitionFrame, pTransitionFrame);
 
         Unhijack();
         RedhawkGCInterface::WaitForGCCompletion();
 
-        m_pTransitionFrame = NULL;
-
-        // We need to prevent compiler reordering between above write and below read.
-        _ReadWriteBarrier();
+        // must be in cooperative mode when checking the trap flag
+        VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
     }
     while (ThreadStore::IsTrapThreadsRequested());
 
@@ -115,7 +109,11 @@ bool Thread::CacheTransitionFrameForSuspend()
     if (m_pCachedTransitionFrame != NULL)
         return true;
 
-    PInvokeTransitionFrame* temp = m_pTransitionFrame;     // volatile read
+    // Once we see a thread posted a transition frame we can assume it will not enter cooperative mode.
+    // It may temporarily set the frame to NULL when checking the trap flag, but will revert.
+    // We can safely return true here and ache the frame.
+    // Make sure compiler emits only one read.
+    PInvokeTransitionFrame* temp = VolatileLoadWithoutBarrier(&m_pTransitionFrame);
     if (temp == NULL)
         return false;
 
@@ -144,21 +142,16 @@ void Thread::EnablePreemptiveMode()
 
     Unhijack();
 
-    // ORDERING -- this write must occur before checking the trap
-    m_pTransitionFrame = m_pDeferredTransitionFrame;
+    // set preemptive mode
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
 }
 
 void Thread::DisablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
 
-    // ORDERING -- this write must occur before checking the trap
-    m_pTransitionFrame = NULL;
-
-    // We need to prevent compiler reordering between above write and below read.  Both the read and the write
-    // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
-    // but if not, this barrier would be required.  If so, it won't change anything to add the barrier.
-    _ReadWriteBarrier();
+    // must be in cooperative mode when checking the trap flag
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
 
     if (ThreadStore::IsTrapThreadsRequested() && (this != ThreadStore::GetSuspendingThread()))
     {
@@ -1197,11 +1190,8 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
-    // set our mode to cooperative
-    m_pTransitionFrame = NULL;
-
-    // We need to prevent compiler reordering between above write and below read.
-    _ReadWriteBarrier();
+    // must be in cooperative mode when checking the trap flag
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
 
     // now check if we need to trap the thread
     if (ThreadStore::IsTrapThreadsRequested())
@@ -1244,11 +1234,8 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
-    // set our mode to cooperative
-    m_pTransitionFrame = NULL;
-
-    // We need to prevent compiler reordering between above write and below read.
-    _ReadWriteBarrier();
+    // must be in cooperative mode when checking the trap flag
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
 
     // now check if we need to trap the thread
     if (ThreadStore::IsTrapThreadsRequested())
@@ -1277,19 +1264,21 @@ void Thread::EnsureRuntimeInitialized()
 
 FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
 {
-    m_pTransitionFrame = pFrame->m_savedPInvokeTransitionFrame;
+    // set our mode to preemptive
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame->m_savedPInvokeTransitionFrame);
 }
 
 FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
 {
     pFrame->m_pThread = this;
     // set our mode to preemptive
-    m_pTransitionFrame = pFrame;
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
 }
 
 FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame * pFrame)
 {
-    m_pTransitionFrame = NULL;
+    // must be in cooperative mode when checking the trap flag
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
     if (ThreadStore::IsTrapThreadsRequested())
     {
         RhpWaitForGC2(pFrame);
