@@ -701,18 +701,14 @@ PatchpointInfo * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo
     }
     CONTRACTL_END;
 
-    PTR_PatchpointInfo patchpointInfo = NULL;
-
     // Check flag byte.
     BYTE flagByte = *pDebugInfo;
     pDebugInfo++;
 
-    if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
-    {
-        patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
-    }
+    if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) == 0)
+        return NULL;
 
-    return patchpointInfo;
+    return static_cast<PatchpointInfo*>(PTR_READ(dac_cast<TADDR>(pDebugInfo), dac_cast<PTR_PatchpointInfo>(pDebugInfo)->PatchpointInfoSize()));
 }
 
 #endif
