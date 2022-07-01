@@ -15,6 +15,14 @@ namespace System.Text.Json.Serialization.Metadata
     /// or a type's converter, if the current instance is a <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
+        /// <summary>
+        /// Returns true if the property's converter is external (a user's custom converter)
+        /// and the type to convert is not the same as the declared property type (polymorphic).
+        /// Used to determine whether to perform additional validation on the value returned by the
+        /// converter on deserialization.
+        /// </summary>
+        private bool _converterIsExternalAndPolymorphic;
+
         // Since a converter's TypeToConvert (which is the T value in this type) can be different than
         // the property's type, we track that and whether the property type can be null.
         private readonly bool _propertyTypeEqualsTypeToConvert;
@@ -188,6 +196,16 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonTypeInfo = propertyTypeInfo;
             NumberHandling = propertyInfo.NumberHandling;
+        }
+
+        internal override void Configure()
+        {
+            base.Configure();
+
+            if (!IsForTypeInfo && !IsIgnored)
+            {
+                _converterIsExternalAndPolymorphic = !EffectiveConverter.IsInternalConverter && PropertyType != EffectiveConverter.TypeToConvert;
+            }
         }
 
         private protected override void DetermineEffectiveConverter()

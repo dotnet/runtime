@@ -243,7 +243,7 @@ namespace System.Text.Json.Serialization.Metadata
             _isConfigured = true;
         }
 
-        internal void Configure()
+        internal virtual void Configure()
         {
             Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             DeclaringTypeNumberHandling = ParentTypeInfo.NumberHandling;
