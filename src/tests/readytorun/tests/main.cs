@@ -330,7 +330,7 @@ class Program
 
         public void TestMultipleLoads()
         {
-            Assembly a = LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), "test.ni.dll"));
+            Assembly a = LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), "test.dll"));
             Assert.AreEqual(AssemblyLoadContext.GetLoadContext(a), this);
         }
 
@@ -424,58 +424,88 @@ class Program
 
     static void RunAllTests()
     {
+        Console.WriteLine("TestVirtualMethodCalls");
         TestVirtualMethodCalls();
+        Console.WriteLine("TestMovedVirtualMethod");
         TestMovedVirtualMethods();
 
+        Console.WriteLine("TestConstrainedMethodCalls");
         TestConstrainedMethodCalls();
 
+        Console.WriteLine("TestConstrainedMethodCalls_Unsupported");
         TestConstrainedMethodCalls_Unsupported();
 
+        Console.WriteLine("TestInterop");
         TestInterop();
 
+        Console.WriteLine("TestStaticFields");
         TestStaticFields();
 
+        Console.WriteLine("TestPreInitializedArray");
         TestPreInitializedArray();
 
+        Console.WriteLine("TestMultiDimmArray");
         TestMultiDimmArray();
 
+        Console.WriteLine("TestGenericVirtualMethod");
         TestGenericVirtualMethod();
+        Console.WriteLine("TestMovedGenericVirtualMethod");
         TestMovedGenericVirtualMethod();
+        Console.WriteLine("TestGenericNonVirtualMethod");
         TestGenericNonVirtualMethod();
 
+        Console.WriteLine("TestGenericOverStruct");
         TestGenericOverStruct();
 
+        Console.WriteLine("TestInstanceFields");
         TestInstanceFields();
 
+        Console.WriteLine("TestInstanceFieldsWithLayout");
         TestInstanceFieldsWithLayout();
 
+        Console.WriteLine("TestInheritingFromGrowingBase");
         TestInheritingFromGrowingBase();
 
+        Console.WriteLine("TestGrowingStruct");
         TestGrowingStruct();
+        Console.WriteLine("TestChangingStruct");
         TestChangingStruct();
+        Console.WriteLine("TestChangingHFAStruct");
         TestChangingHFAStruct();
 
+        Console.WriteLine("TestGetType");
         TestGetType();
 
+        Console.WriteLine("TestMultipleLoads");
         TestMultipleLoads();
 
+        Console.WriteLine("TestFieldLayoutNGenMixAndMatch");
         TestFieldLayoutNGenMixAndMatch();
 
+        Console.WriteLine("TestStaticBaseCSE");
         TestStaticBaseCSE();
 
+        Console.WriteLine("TestIsInstCSE");
         TestIsInstCSE();
 
+        Console.WriteLine("TestCastClassCSE");
         TestCastClassCSE();
 
+        Console.WriteLine("TestRangeCheckElimination");
         TestRangeCheckElimination();
 
+        Console.WriteLine("TestOpenClosedDelegate");
         TestOpenClosedDelegate();
 
+        Console.WriteLine("GenericLdtokenFieldsTest");
         GenericLdtokenFieldsTest();
 
+        Console.WriteLine("RVAFieldTest");
         RVAFieldTest();
 
-        TestLoadR2RImageFromByteArray();
+//        Disable for https://github.com/dotnet/runtime/issues/71507
+//        Console.WriteLine("TestLoadR2RImageFromByteArray");
+//        TestLoadR2RImageFromByteArray();
     }
 
     static int Main()

@@ -1136,3 +1136,14 @@ public static class DefaultInterfaceMethod
     }
 }
 #endregion
+public class DebugWithoutSymbols
+{
+    public static void Run()
+    {
+        var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-pdb-deleted.dll");
+        var myType = asm.GetType("DebuggerTests.ClassWithPdbDeleted");
+        var myMethod = myType.GetConstructor(new Type[] { });
+        var exc = myMethod.Invoke(new object[]{});
+        System.Diagnostics.Debugger.Break();
+    }
+}
