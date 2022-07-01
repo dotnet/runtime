@@ -65,7 +65,7 @@ public:
 
         if (header.cbLocalVarSig == 0)
         {
-            nonCodeAlternateBlob.AppendByte(0);
+            nonCodeAlternateBlob.AppendByte(2);
         }
         else
         {
