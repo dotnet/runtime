@@ -24,14 +24,22 @@ namespace System.Text.RegularExpressions
         private const int BranchingDepthLimit = 1;
 
         /// <summary>
-        /// What is the maximum regex set size that will be accepted during the node traversal.
+        /// The maximum regex set size that will be accepted during the node traversal.
         /// </summary>
         /// <remarks>
         /// If the limit was 1, regex <c>[ab][cde]</c> would produce an empty trie,
         /// if it was 2 the trie would match <c>a</c> and <c>b</c>, and if it was 3
         /// the trie would match <c>ac</c>, <c>ad</c>, <c>ae</c>, <c>bc</c>, <c>bd</c>
-        /// and <c>be</c>.</remarks>
+        /// and <c>be</c>.
+        /// </remarks>
         private const int SetLimit = 2;
+
+        /// <summary>
+        /// The maximum depth that a trie node can have. It is synonymous with the maximum length of a word in the trie.
+        /// </summary>
+        private const int DepthLimit = 12;
+
+        private delegate int OneToOneNodeMapping<T>(TrieBuilder builder, int nodeIndex, T state, out bool canContinue);
 
         public TrieBuilder() { }
 
@@ -76,24 +84,35 @@ namespace System.Text.RegularExpressions
         /// <param name="state">A parameter passed to <paramref name="func"/>.</param>
         /// <param name="func">A function that accepts this trie, a node index of <paramref name="nodes"/>,
         /// <paramref name="state"/>, and returns a new node index. Typically it would call either
-        /// <see cref="Add(int, char)"/> or <see cref="Add(int, string)"/>.</param>
-        /// <returns></returns>
-        private NodeCollection AddOneToOneHelper<T>(NodeCollection nodes, T state, Func<TrieBuilder, int, T, int> func)
+        /// <see cref="Add(TrieBuilder, int, char, out bool)"/> or <see cref="Add(TrieBuilder, int, string, out bool)"/>.</param>
+        /// <param name="canContinue">Returns whether the traversal algorithm can continue past this transformation.</param>
+        private NodeCollection AddOneToOneHelper<T>(NodeCollection nodes, T state, OneToOneNodeMapping<T> func, out bool canContinue)
         {
             int count = nodes.Count;
             switch (count)
             {
                 case 0:
+                    canContinue = false;
                     return NodeCollection.Empty;
                 case 1:
-                    int newNode = func(this, nodes[0], state);
+                    int newNode = func(this, nodes[0], state, out canContinue);
                     return new NodeCollection(newNode);
                 default:
+                    canContinue = false;
                     List<int> result = new List<int>(count);
                     for (int i = 0; i < count; i++)
                     {
-                        int nextNodeIndex = func(this, nodes[i], state);
-                        result.Add(nextNodeIndex);
+                        newNode = func(this, nodes[i], state, out bool canContinueInner);
+                        // See comments in handling RegexNodeKind.Alternate below, to understand how it works.
+                        if (canContinueInner)
+                        {
+                            canContinue = true;
+                            result.Add(newNode);
+                        }
+                        else
+                        {
+                            _nodes[newNode].IsMatch = true;
+                        }
                     }
                     return new NodeCollection(result);
             }
@@ -104,26 +123,36 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="nodes">The collection of nodes</param>
         /// <param name="c">The character to add.</param>
+        /// <param name="canContinue">Returns whether the traversal algorithm can look past the character.</param>
         /// <returns>The collection of node indices that each node of
         /// <paramref name="nodes"/> leads to, at <paramref name="c"/>.</returns>
-        private NodeCollection Add(NodeCollection nodes, char c)
+        private NodeCollection Add(NodeCollection nodes, char c, out bool canContinue)
         {
-            return AddOneToOneHelper(nodes, c, static (trie, idx, c) => trie.Add(idx, c));
+            return AddOneToOneHelper(nodes, c, Add, out canContinue);
         }
 
         /// <summary>
         /// Adds a character after the given node.
         /// </summary>
+        /// <param name="builder">The <see cref="TrieBuilder"/> <paramref name="nodeIndex"/> belongs to.</param>
         /// <param name="nodeIndex">The node's index.</param>
         /// <param name="c">The character to add.</param>
+        /// <param name="canContinue">Returns whether the traversal algorithm can look past the character.</param>
         /// <returns>The index of the node that <paramref name="nodeIndex"/>
         /// leads to, at <paramref name="c"/>.</returns>
-        private int Add(int nodeIndex, char c)
+        private static int Add(TrieBuilder builder, int nodeIndex, char c, out bool canContinue)
         {
-            TrieNode node = _nodes[nodeIndex];
+            List<TrieNode> nodes = builder._nodes;
+            TrieNode node = nodes[nodeIndex];
+            if (node.Depth >= DepthLimit)
+            {
+                canContinue = false;
+                return nodeIndex;
+            }
+
             if (!node.Children.TryGetValue(c, out int nextNodeIndex))
             {
-                nextNodeIndex = _nodes.Count;
+                nextNodeIndex = nodes.Count;
 
                 TrieNode newNode = new TrieNode()
                 {
@@ -136,8 +165,9 @@ namespace System.Text.RegularExpressions
                 };
 
                 node.Children.Add(c, nextNodeIndex);
-                _nodes.Add(newNode);
+                nodes.Add(newNode);
             }
+            canContinue = true;
             return nextNodeIndex;
         }
 
@@ -146,25 +176,29 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="nodes">The collection of nodes</param>
         /// <param name="s">The string to add.</param>
+        /// <param name="canContinue">Returns whether the traversal algorithm can look past the string.</param>
         /// <returns>The collection of node indices that each node of
         /// <paramref name="nodes"/> leads to, at <paramref name="s"/>.</returns>
-        private NodeCollection Add(NodeCollection nodes, string s)
+        private NodeCollection Add(NodeCollection nodes, string s, out bool canContinue)
         {
-            return AddOneToOneHelper(nodes, s, static (trie, idx, s) => trie.Add(idx, s));
+            return AddOneToOneHelper(nodes, s, Add, out canContinue);
         }
 
         /// <summary>
         /// Adds a string after the given node.
         /// </summary>
+        /// <param name="builder">The <see cref="TrieBuilder"/> <paramref name="nodeIndex"/> belongs to.</param>
         /// <param name="nodeIndex">The node's index.</param>
         /// <param name="s">The character to add.</param>
+        /// <param name="canContinue">Returns whether the traversal algorithm can look past the string.</param>
         /// <returns>The index of the node that <paramref name="nodeIndex"/>
         /// leads to, at <paramref name="s"/>.</returns>
-        private int Add(int nodeIndex, string s)
+        private static int Add(TrieBuilder builder, int nodeIndex, string s, out bool canContinue)
         {
-            for (int i = 0; i < s.Length; i++)
+            canContinue = true;
+            for (int i = 0; i < s.Length && canContinue; i++)
             {
-                nodeIndex = Add(nodeIndex, s[i]);
+                nodeIndex = Add(builder, nodeIndex, s[i], out canContinue);
             }
             return nodeIndex;
         }
@@ -176,7 +210,7 @@ namespace System.Text.RegularExpressions
         /// <param name="setString">A string that describes the set.</param>
         /// <param name="branchingDepth">A reference that tracks how many consecutive alternations have been encountered.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past the set.</param>
-        /// <returns>The collection of node indices that were created after <see cref="Add(int, char)"/>ing each
+        /// <returns>The collection of node indices that were created after <see cref="Add(TrieBuilder, int, char, out bool)"/>ing each
         /// node of <paramref name="nodes"/>.</returns>
         private NodeCollection AddSet(NodeCollection nodes, string setString, ref int branchingDepth, out bool canContinue)
         {
@@ -194,8 +228,7 @@ namespace System.Text.RegularExpressions
             // we don't need to increase the branching depth.
             if (setLength == 1)
             {
-                canContinue = true;
-                return Add(nodes, set[0]);
+                return Add(nodes, set[0], out canContinue);
             }
 
             if (branchingDepth++ > BranchingDepthLimit)
@@ -203,11 +236,24 @@ namespace System.Text.RegularExpressions
                 canContinue = false;
                 return nodes;
             }
-            canContinue = true;
-            NodeCollection[] nodeCollections = new NodeCollection[setLength];
+            canContinue = false;
+            NodeCollection[] results = new NodeCollection[setLength];
             for (int i = 0; i < setLength; i++)
-                nodeCollections[i] = Add(nodes, set[i]);
-            return new NodeCollection(nodeCollections);
+            {
+                NodeCollection result = Add(nodes, set[i], out bool canContinueInner);
+                // See comments in handling RegexNodeKind.Alternate below, to understand how it works.
+                if (canContinueInner)
+                {
+                    results[i] = result;
+                    canContinue = true;
+                }
+                else
+                {
+                    results[i] = NodeCollection.Empty;
+                    AcceptMatches(result);
+                }
+            }
+            return new NodeCollection(results);
         }
 
         /// <summary>
@@ -251,12 +297,10 @@ namespace System.Text.RegularExpressions
                     return nodes;
                 case RegexNodeKind.One:
                     // Easy, just add the character.
-                    canContinue = true;
-                    return Add(nodes, regexNode.Ch);
+                    return Add(nodes, regexNode.Ch, out canContinue);
                 case RegexNodeKind.Multi:
                     // Easy, just add the string.
-                    canContinue = true;
-                    return Add(nodes, regexNode.Str!);
+                    return Add(nodes, regexNode.Str!, out canContinue);
                 case RegexNodeKind.Set:
                     return AddSet(nodes, regexNode.Str!, ref branchingDepth, out canContinue);
                 case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
@@ -271,9 +315,10 @@ namespace System.Text.RegularExpressions
                     }
                     // a{3,} for example is equivalent to aaaa*. The first three a's can be
                     // added to the trie.
-                    for (int i = 0; i < min; i++)
+                    canContinue = true;
+                    for (int i = 0; i < min && canContinue; i++)
                     {
-                        nodes = Add(nodes, regexNode.Ch);
+                        nodes = Add(nodes, regexNode.Ch, out canContinue);
                     }
                     // If the repetition count is fixed (like a{3}), we can continue past it.
                     // If it isn't we would have to handle all repetition cases (like aaaa,
