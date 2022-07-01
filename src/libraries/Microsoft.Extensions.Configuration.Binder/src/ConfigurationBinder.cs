@@ -755,17 +755,19 @@ namespace Microsoft.Extensions.Configuration
         private static List<PropertyInfo> GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             var allProperties = new List<PropertyInfo>();
-            HashSet<string>? virtualProperties = null;
 
             Type baseType = type;
             while (baseType != typeof(object))
             {
                 PropertyInfo[] properties = baseType.GetProperties(DeclaredOnlyLookup);
 
-                allProperties.Capacity = allProperties.Count + properties.Length; // No overriden properties should be common case
                 foreach (PropertyInfo property in properties)
                 {
-                    if (!IsOverriddenSetPropertyMethod(property, ref virtualProperties))
+                    // if the property is virtual, only add the base-most definition so
+                    // overriden properties aren't duplicated in the list.
+                    MethodInfo? setMethod = property.GetSetMethod(true);
+
+                    if (setMethod is null || !setMethod.IsVirtual || setMethod == setMethod.GetBaseDefinition())
                     {
                         allProperties.Add(property);
                     }
@@ -775,23 +777,6 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return allProperties;
-        }
-
-        private static bool IsOverriddenSetPropertyMethod(PropertyInfo property, ref HashSet<string>? virtualProperties)
-        {
-            MethodInfo? setMethod = property.GetSetMethod(true);
-            if (setMethod is null || !setMethod.IsVirtual)
-            {
-                return false;
-            }
-
-            if (setMethod.Equals(setMethod.GetBaseDefinition())) // take care of 'new virtual': it is the last virtual layer of current virtual property, need to reset 'virtualProperties' for this property name.
-            {
-                return virtualProperties is not null && virtualProperties.Remove(property.Name);
-            }
-
-            virtualProperties ??= new();
-            return !virtualProperties.Add(property.Name);
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
