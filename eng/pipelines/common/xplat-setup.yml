@@ -16,7 +16,7 @@ jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
     # if shouldContinueOnError is '', then treat it as false, else use the value.. 
-    shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError true), and(eq(parameters.shouldContinueOnError, ''), endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
+    shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(eq(parameters.shouldContinueOnError, ''), endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
     dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms')) }}
