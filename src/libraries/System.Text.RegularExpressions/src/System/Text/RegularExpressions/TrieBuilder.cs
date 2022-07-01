@@ -36,23 +36,6 @@ namespace System.Text.RegularExpressions
         public TrieBuilder() { }
 
         /// <summary>
-        /// Creates a trie that matches <paramref name="words"/>.
-        /// </summary>
-        public static List<TrieNode> Create(ReadOnlySpan<string> words)
-        {
-            Debug.Assert(!words.IsEmpty);
-
-            TrieBuilder builder = new TrieBuilder();
-            for (int i = 0; i < words.Length; i++)
-            {
-                int endNodeIndex = builder.Add(TrieNode.Root, words[i]);
-                builder._nodes[endNodeIndex].IsMatch = true;
-            }
-
-            return builder._nodes;
-        }
-
-        /// <summary>
         /// Tries to create a trie from the leading fixed part of a <see cref="RegexNode"/>.
         /// </summary>
         public static bool TryCreateFromPrefix(RegexNode regexNode, [NotNullWhen(true)] out List<TrieNode>? trie)

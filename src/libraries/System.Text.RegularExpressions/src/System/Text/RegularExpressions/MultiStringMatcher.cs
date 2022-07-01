@@ -25,20 +25,6 @@ namespace System.Text.RegularExpressions
             Trie = trie;
         }
 
-        public MultiStringMatcher(ReadOnlySpan<string> words)
-        {
-            Trie = BuildTrie(words);
-        }
-
-        private static List<TrieNode> BuildTrie(ReadOnlySpan<string> words)
-        {
-            List<TrieNode> trie = TrieBuilder.Create(words);
-
-            BuildTrieLinks(trie);
-
-            return trie;
-        }
-
         private static void BuildTrieLinks(List<TrieNode> trie)
         {
             Queue<int> vertexQueue = new Queue<int>();
