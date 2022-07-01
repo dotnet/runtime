@@ -1024,9 +1024,7 @@ namespace System.Net.Http
                             {
                                 if (request.IsWebSocketH2Request())
                                 {
-                                    int settingsTimeoutInMilliseconds = 5 * 60 * 1000;
-                                    CancellationTokenSource cts = new CancellationTokenSource(settingsTimeoutInMilliseconds);
-                                    if (await connection.InitialSettingsReceived.WaitWithCancellationAsync(cts.Token).ConfigureAwait(false) && !connection.IsConnectEnabled)
+                                    if (await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false) && !connection.IsConnectEnabled)
                                     {
                                         HttpRequestException exception = new("Extended CONNECT is not supported");
                                         exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
