@@ -1,45 +1,273 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Quic.Implementations;
 using System.Net.Quic.Implementations.MsQuic;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Quic;
+using static Microsoft.Quic.MsQuic;
 
-namespace System.Net.Quic
+namespace System.Net.Quic;
+
+public sealed partial class QuicListener : IAsyncDisposable
 {
-    public sealed class QuicListener : IDisposable
-    {
-        public static bool IsSupported => MsQuicApi.IsQuicSupported;
+    /// <summary>
+    /// Returns <c>true</c> if QUIC is supported on the current machine and can be used; otherwise, <c>false</c>.
+    /// </summary>
+    /// <remarks>
+    /// The current implementation depends on <see href="https://github.com/microsoft/msquic">MsQuic</see> native library, this property checks its presence (Linux machines).
+    /// It also checks whether TLS 1.3, requirement for QUIC protocol, is available and enabled (Windows machines).
+    /// </remarks>
+    public static bool IsSupported => MsQuicApi.IsQuicSupported;
 
-        public static ValueTask<QuicListener> ListenAsync(QuicListenerOptions options, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Creates a new <see cref="QuicListener"/> and starts listening for new connections.
+    /// </summary>
+    /// <param name="options">Options for the listener.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+    /// <returns>An asynchronous task that completes with the started listener.</returns>
+    public static ValueTask<QuicListener> ListenAsync(QuicListenerOptions options, CancellationToken cancellationToken = default)
+    {
+        if (!IsSupported)
         {
-            if (!IsSupported)
+            throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+        }
+
+        // Validate and fill in defaults for the options.
+        if (options.ApplicationProtocols.Count <= 0)
+        {
+            throw new ArgumentException($"Expected at least one item in '{nameof(QuicListenerOptions.ApplicationProtocols)}' to start the listener.", nameof(options));
+        }
+        if (options.ListenBacklog == 0)
+        {
+            options.ListenBacklog = 512;
+        }
+
+        var listener = new QuicListener(options);
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(listener, $"Listener listens on {listener.LocalEndPoint}");
+        }
+
+        return ValueTask.FromResult(listener);
+    }
+
+    /// <summary>
+    /// Handle to MsQuic listener object.
+    /// </summary>
+    private MsQuicContextSafeHandle _handle;
+
+    /// <summary>
+    /// Set to non-zero once disposed. Prevents double and/or concurrent disposal.
+    /// </summary>
+    private int _disposed;
+
+    /// <summary>
+    /// Completed when SHUTDOWN_COMPLETE arrives.
+    /// </summary>
+    private readonly ValueTaskSource _shutdownTcs = new ValueTaskSource();
+
+    /// <summary>
+    /// Selects connection options for incoming connections.
+    /// </summary>
+    private readonly Func<QuicConnection, SslClientHelloInfo, CancellationToken, ValueTask<QuicServerConnectionOptions>> _connectionOptionsCallback;
+
+    /// <summary>
+    /// Incoming connections waiting to be accepted via AcceptAsync.
+    /// </summary>
+    private readonly Channel<PendingConnection> _acceptQueue;
+
+    /// <summary>
+    /// The actual listening endpoint.
+    /// </summary>
+    public IPEndPoint LocalEndPoint { get; }
+
+    public override string ToString() => _handle.ToString();
+
+    private unsafe QuicListener(QuicListenerOptions options)
+    {
+        var context = GCHandle.Alloc(this, GCHandleType.Weak);
+        try
+        {
+            QUIC_HANDLE* handle;
+            ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerOpen(
+                MsQuicApi.Api.Registration.QuicHandle,
+                &NativeCallback,
+                (void*)GCHandle.ToIntPtr(context),
+                &handle),
+                "ListenerOpen failed");
+            _handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->ListenerClose, SafeHandleType.Listener);
+        }
+        catch
+        {
+            context.Free();
+            throw;
+        }
+
+        // Save the connection options before starting the listener
+        _connectionOptionsCallback = options.ConnectionOptionsCallback;
+        _acceptQueue = Channel.CreateBounded<PendingConnection>(new BoundedChannelOptions(options.ListenBacklog) { SingleWriter = true });
+
+        // Start the listener, from now on MsQuic events will come.
+        using MsQuicBuffers alpnBuffers = new MsQuicBuffers();
+        alpnBuffers.Initialize(options.ApplicationProtocols, applicationProtocol => applicationProtocol.Protocol);
+        QuicAddr address = options.ListenEndPoint.ToQuicAddr();
+        if (options.ListenEndPoint.Address.Equals(IPAddress.IPv6Any))
+        {
+            // For IPv6Any, MsQuic would listen only for IPv6 connections. This would make it impossible
+            // to connect the listener by using the IPv4 address (which could have been e.g. resolved by DNS).
+            // Using the Unspecified family makes MsQuic handle connections from all IP addresses.
+            address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
+        }
+        ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerStart(
+            _handle.QuicHandle,
+            alpnBuffers.Buffers,
+            (uint)alpnBuffers.Count,
+            &address),
+            "ListenerStart failed");
+
+        // Get the actual listening endpoint.
+        LocalEndPoint = MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS, options.ListenEndPoint.AddressFamily);
+    }
+
+    public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        try
+        {
+            while (true)
             {
-                throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+                PendingConnection pendingConnection = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                await using (pendingConnection.ConfigureAwait(false))
+                {
+                    var connection = await pendingConnection.FinishHandshakeAsync(cancellationToken).ConfigureAwait(false);
+                    // Handshake failed, discard this connection and try to get another from the queue.
+                    if (connection is null)
+                    {
+                        continue;
+                    }
+
+                    return connection;
+                }
+            }
+        }
+        catch (ChannelClosedException ex) when (ex.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            throw;
+        }
+    }
+
+    private unsafe int HandleListenerEvent(ref QUIC_LISTENER_EVENT listenerEvent)
+    {
+        if (listenerEvent.Type == QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION)
+        {
+            ref var data = ref listenerEvent.NEW_CONNECTION;
+
+            // Check if there's capacity to have another connection waiting to be accepted.
+            var pendingConnection = new PendingConnection();
+            if (!_acceptQueue.Writer.TryWrite(pendingConnection))
+            {
+                return QUIC_STATUS_CONNECTION_REFUSED;
             }
 
-            return ValueTask.FromResult(new QuicListener(new MsQuicListener(options)));
+            var connection = new QuicConnection(new MsQuicConnection(data.Connection, data.Info));
+            var clientHello = new SslClientHelloInfo(Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength), SslProtocols.Tls13);
+
+            // Kicks off the rest of the handshake in the background.
+            pendingConnection.StartHandshake(connection, clientHello, _connectionOptionsCallback);
+
+            return QUIC_STATUS_SUCCESS;
         }
-
-        private readonly MsQuicListener _provider;
-
-        internal QuicListener(MsQuicListener provider)
+        if (listenerEvent.Type == QUIC_LISTENER_EVENT_TYPE.STOP_COMPLETE)
         {
-            _provider = provider;
+            _shutdownTcs.TrySetResult();
+            return QUIC_STATUS_SUCCESS;
         }
 
-        public IPEndPoint ListenEndPoint => _provider.ListenEndPoint;
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Error(this, $"Unknown listener event type '{listenerEvent.Type}'");
+        }
+        return QUIC_STATUS_SUCCESS;
+    }
 
-        /// <summary>
-        /// Accept a connection.
-        /// </summary>
-        /// <returns></returns>
-        public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default) =>
-            new QuicConnection(await _provider.AcceptConnectionAsync(cancellationToken).ConfigureAwait(false));
+#pragma warning disable CS3016
+    [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+#pragma warning restore CS3016
+    private static unsafe int NativeCallback(QUIC_HANDLE* listener, void* context, QUIC_LISTENER_EVENT* listenerEvent)
+    {
+        GCHandle stateHandle = GCHandle.FromIntPtr((IntPtr)context);
 
-        public void Dispose() => _provider.Dispose();
+        // Check if the instance hasn't been collected.
+        if (!stateHandle.IsAllocated || stateHandle.Target is not QuicListener instance)
+        {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Error(null, $"Received event {listenerEvent->Type}");
+            }
+            return QUIC_STATUS_INVALID_STATE;
+        }
+
+        try
+        {
+            // Process the event.
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(instance, $"Received event {listenerEvent->Type}");
+            }
+            return instance.HandleListenerEvent(ref *listenerEvent);
+        }
+        catch (Exception ex)
+        {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Error(instance, $"Exception while processing event {listenerEvent->Type}: {ex}");
+            }
+            return QUIC_STATUS_INTERNAL_ERROR;
+        }
+    }
+
+    private void ThrowIfDisposed()
+    {
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            throw new ObjectDisposedException(nameof(QuicListener));
+        }
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return;
+        }
+
+        // Check if the listener has been shut down and if not, shut it down.
+        if (_shutdownTcs.TryInitialize(out var valueTask, this))
+        {
+            unsafe
+            {
+                MsQuicApi.Api.ApiTable->ListenerStop(_handle.QuicHandle);
+            }
+        }
+
+        await valueTask.ConfigureAwait(false);
+        _handle.Dispose();
+
+        // Flush the queue and dispose all remaining connections.
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+        while (_acceptQueue.Reader.TryRead(out var pendingConnection))
+        {
+            await pendingConnection.DisposeAsync().ConfigureAwait(false);
+        }
     }
 }

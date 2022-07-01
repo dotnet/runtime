@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 
@@ -10,10 +11,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicAddressHelpers
     {
-        internal static unsafe IPEndPoint INetToIPEndPoint(IntPtr pInetAddress)
+        internal static unsafe IPEndPoint ToIPEndPoint(this ref QuicAddr quicAddress)
         {
             // MsQuic always uses storage size as if IPv6 was used
-            Span<byte> addressBytes = new Span<byte>((byte*)pInetAddress, Internals.SocketAddress.IPv6AddressSize);
+            Span<byte> addressBytes = new Span<byte>((byte*)Unsafe.AsPointer(ref quicAddress), Internals.SocketAddress.IPv6AddressSize);
             return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(addressBytes), addressBytes).GetIPEndPoint();
         }
 

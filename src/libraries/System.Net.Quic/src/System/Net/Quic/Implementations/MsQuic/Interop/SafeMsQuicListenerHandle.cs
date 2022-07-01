@@ -8,7 +8,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal sealed class SafeMsQuicListenerHandle : MsQuicSafeHandle
     {
         public unsafe SafeMsQuicListenerHandle(QUIC_HANDLE* handle)
-            : base(handle, ptr => MsQuicApi.Api.ApiTable->ListenerClose((QUIC_HANDLE*)ptr), SafeHandleType.Listener)
+            : base(handle, MsQuicApi.Api.ApiTable->ListenerClose, SafeHandleType.Listener)
         { }
     }
 }
