@@ -20,27 +20,31 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <inheritdoc />
-        public override string StackTrace
+        public override string? StackTrace
         {
-            get => throw new NotImplementedException();
+            get
+            {
+                return null;
+            }
         }
 
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            throw new NotImplementedException();
+            return base.Equals(obj);
         }
 
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            throw new NotImplementedException();
+            return base.GetHashCode();
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
-            throw new NotImplementedException();
+            // we avoid expensive stack trace
+            return Message;
         }
     }
 }
