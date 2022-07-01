@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Returns value of the property as <see cref="string"/> if the property exists, otherwise 0.
+        /// Returns value of the property as <see cref="double"/> if the property exists, otherwise 0.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double GetPropertyAsDouble(string propertyName)
