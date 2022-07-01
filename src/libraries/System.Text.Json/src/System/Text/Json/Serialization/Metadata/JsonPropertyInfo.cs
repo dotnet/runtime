@@ -115,6 +115,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _ignoreCondition = value;
                 IsIgnored = value == JsonIgnoreCondition.Always;
                 _shouldSerialize = value != null ? GetShouldSerializeForIgnoreCondition(value.Value) : null;
+                _shouldSerializeIsExplicitlySet = false;
             }
         }
 
