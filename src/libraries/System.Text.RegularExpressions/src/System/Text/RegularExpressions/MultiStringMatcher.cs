@@ -39,9 +39,9 @@ namespace System.Text.RegularExpressions
 #endif
                 CalculateSuffixAndDictionaryLinks(trie, currentVertex);
 
-                foreach (int vertex in trie[currentVertex].Children.Values)
+                foreach (KeyValuePair<char, int> vertex in trie[currentVertex].Children)
                 {
-                    vertexQueue.Enqueue(vertex);
+                    vertexQueue.Enqueue(vertex.Value);
                 }
             }
         }
