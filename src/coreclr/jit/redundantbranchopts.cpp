@@ -59,7 +59,7 @@ PhaseStatus Compiler::optRedundantBranches()
                 {
                     for (BasicBlock* succ : bbNext->Succs())
                     {
-                        m_compiler->optRedundantBranch(succ->GetFarthestUniqueSuccOrSelf());
+                        m_compiler->optRedundantBranch(succ);
                     }
                 }
 
@@ -67,7 +67,7 @@ PhaseStatus Compiler::optRedundantBranches()
                 {
                     for (BasicBlock* succ : bbJump->Succs())
                     {
-                        m_compiler->optRedundantBranch(succ->GetFarthestUniqueSuccOrSelf());
+                        m_compiler->optRedundantBranch(succ);
                     }
                 }
             }
