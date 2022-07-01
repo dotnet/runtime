@@ -217,7 +217,11 @@ namespace System.Runtime.InteropServices
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         /// <returns>A span representing the specified reference and length.</returns>
-        /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
+        /// <remarks>
+        /// This method should be used with caution. It is dangerous because the length argument is not checked.
+        /// Even though the ref is annotated as scoped, it will be stored into the returned span, and the lifetime
+        /// of the returned span will not be validated for safety, even by span-aware languages.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> CreateSpan<T>(scoped ref T reference, int length) =>
             new Span<T>(ref Unsafe.AsRef(in reference), length);
@@ -230,7 +234,11 @@ namespace System.Runtime.InteropServices
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
         /// <returns>A read-only span representing the specified reference and length.</returns>
-        /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
+        /// <remarks>
+        /// This method should be used with caution. It is dangerous because the length argument is not checked.
+        /// Even though the ref is annotated as scoped, it will be stored into the returned span, and the lifetime
+        /// of the returned span will not be validated for safety, even by span-aware languages.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref T reference, int length) =>
             new ReadOnlySpan<T>(ref Unsafe.AsRef(in reference), length);
