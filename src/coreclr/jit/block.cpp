@@ -937,31 +937,6 @@ BasicBlock* BasicBlock::GetUniqueSucc() const
     }
 }
 
-//------------------------------------------------------------------------
-// GetFarthestUniqueSuccOrSelf: Returns the farthest unique successor of a block, if one exists.
-// Only considers BBJ_ALWAYS and BBJ_NONE block types.
-//
-// Arguments:
-//    None.
-//
-// Return Value:
-//    The farthest unique successor of a block, or self if there is no unique successor.
-
-BasicBlock* BasicBlock::GetFarthestUniqueSuccOrSelf() const
-{
-    BasicBlock* currentBb = (BasicBlock*)this;
-    while (true)
-    {
-        BasicBlock* succ = currentBb->GetUniqueSucc();
-        if (succ == nullptr)
-        {
-            break;
-        }
-        currentBb = succ;
-    }
-    return currentBb;
-}
-
 // Static vars.
 BasicBlock::MemoryPhiArg* BasicBlock::EmptyMemoryPhiDef = (BasicBlock::MemoryPhiArg*)0x1;
 
