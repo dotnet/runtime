@@ -10,6 +10,23 @@ import { isDiagnosticMessage } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
 import { DiagnosticServer } from "./event_pipe";
 
+import { mockScript } from "./mock-remote";
+import PromiseController from "./promise-controller";
+
+//function delay(ms: number): Promise<void> {
+//    return new Promise(resolve => setTimeout(resolve, ms));
+//}
+
+function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
+    return new Promise((resolve) => {
+        const listener: (event: Event) => void = ((event: MessageEvent<string | ArrayBuffer>) => {
+            src.removeEventListener("message", listener);
+            resolve(event);
+        }) as (event: Event) => void;
+        src.addEventListener("message", listener);
+    });
+}
+
 class DiagnosticServerImpl implements DiagnosticServer {
     readonly websocketUrl: string;
     readonly ws: WebSocket | null;
@@ -29,26 +46,53 @@ class DiagnosticServerImpl implements DiagnosticServer {
                 "cmd": "started",
                 "thread_id": pthread_self.pthread_id
             });
-            this.installTimeoutHandler();
         }
     }
 
     private stopRequested = false;
+    private stopRequestedController = new PromiseController<void>();
 
     stop(): void {
         this.stopRequested = true;
+        this.stopRequestedController.resolve();
     }
 
-    private installTimeoutHandler(): void {
-        if (!this.stopRequested) {
-            setTimeout(this.timeoutHandler.bind(this), 500);
+    async serverLoop(this: DiagnosticServerImpl): Promise<void> {
+        while (!this.stopRequested) {
+            const firstPromise: Promise<["first", string] | ["second", undefined]> = this.advertiseAndWaitForClient().then((r) => ["first", r]);
+            const secondPromise: Promise<["first", string] | ["second", undefined]> = this.stopRequestedController.promise.then(() => ["second", undefined]);
+            const clientCommandState = await Promise.race([firstPromise, secondPromise]);
+            // dispatchClientCommand(clientCommandState);
+            if (clientCommandState[0] === "first") {
+                console.debug("command received: ", clientCommandState[1]);
+            } else if (clientCommandState[0] === "second") {
+                console.debug("stop requested");
+                break;
+            }
         }
     }
 
-    private timeoutHandler(this: DiagnosticServerImpl): void {
-        console.debug("ping from diagnostic server");
-        this.installTimeoutHandler();
+    async advertiseAndWaitForClient(): Promise<string> {
+        const sock = mockScript.open();
+        const p = addOneShotMessageEventListener(sock);
+        sock.send("ADVR");
+        const message = await p;
+        return message.data.toString();
     }
+
+    // async eventPipeSessionLoop(): Promise<void> {
+    // await runtimeStarted();
+    // const eventPipeFlushThread = await enableEventPipeSessionAndSignalResume();
+    // while (!this.stopRequested) {
+    //     const outcome = await oneOfStoppedOrMessageReceived(eventPipeFlushThread);
+    //     if (outcome === "stopped") {
+    //         break;
+    //     } else {
+    //         sendEPBufferToWebSocket(outcome);
+    //     }
+    // }
+    // await closeWebSocket();
+    // }
 
     onMessage(this: DiagnosticServerImpl, event: MessageEvent<unknown>): void {
         const d = event.data;
@@ -65,4 +109,10 @@ export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUr
     console.debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     const server = new DiagnosticServerImpl(websocketUrl);
     server.start();
+    queueMicrotask(() => {
+        mockScript.run();
+    });
+    queueMicrotask(() => {
+        server.serverLoop();
+    });
 }
