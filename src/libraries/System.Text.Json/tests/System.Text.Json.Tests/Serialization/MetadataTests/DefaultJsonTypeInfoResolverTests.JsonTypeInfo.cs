@@ -218,6 +218,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(testObj.IntProp, deserialized.IntProp);
         }
 
+        [Theory]
+        [InlineData(typeof(List<int>), JsonTypeInfoKind.Enumerable)]
+        [InlineData(typeof(Dictionary<string, int>), JsonTypeInfoKind.Dictionary)]
+        [InlineData(typeof(object), JsonTypeInfoKind.None)]
+        [InlineData(typeof(string), JsonTypeInfoKind.None)]
+        public static void AddingPropertyToNonObjectJsonTypeInfoKindThrows(Type type, JsonTypeInfoKind expectedKind)
+        {
+            JsonSerializerOptions options = new();
+            DefaultJsonTypeInfoResolver resolver = new();
+            JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
+            Assert.Equal(expectedKind, typeInfo.Kind);
+
+            JsonPropertyInfo property = typeInfo.CreateJsonPropertyInfo(typeof(int), "test");
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(property));
+        }
+
         [Fact]
         public static void RecursiveTypeNumberHandling()
         {
