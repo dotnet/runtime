@@ -610,7 +610,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 assembly = store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
-                return Result.Err("Assembly '" + aname + "' not found.");
+                return Result.Err($"Assembly '{aname}' not found," +
+                                    $"needed to get method location of '{typeName}:{methodName}'");
             }
 
             TypeInfo type = assembly.GetTypeByName(typeName);

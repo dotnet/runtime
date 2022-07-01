@@ -18,16 +18,17 @@
     <WasmExtraFilesToDeploy Include="weather.json" />
 
     <!-- We want to bundle these assemblies, so build them first -->
-    <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" Private="true"/>
-    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" Private="true"/>
-    <ProjectReference Include="..\library-dependency-debugger-test1\library-dependency-debugger-test1.csproj" Private="true"/>
-    <ProjectReference Include="..\library-dependency-debugger-test2\library-dependency-debugger-test2.csproj" Private="true"/>
-    <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" Private="true"/>
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
-    <ProjectReference Include="..\debugger-test-with-full-debug-type\debugger-test-with-full-debug-type.csproj" Private="true"/>
     <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" Private="true"/>
-    <ProjectReference Include="..\debugger-test-with-pdb-deleted\debugger-test-with-pdb-deleted.csproj" Private="true"/>
-    <ProjectReference Include="..\debugger-test-without-debug-symbols\debugger-test-without-debug-symbols.csproj" Private="true"/>
+    <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" Private="true" />
+
+    <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\debugger-test-with-full-debug-type\debugger-test-with-full-debug-type.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\debugger-test-with-pdb-deleted\debugger-test-with-pdb-deleted.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\debugger-test-without-debug-symbols\debugger-test-without-debug-symbols.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\library-dependency-debugger-test1\library-dependency-debugger-test1.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\library-dependency-debugger-test2\library-dependency-debugger-test2.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="Build">
@@ -35,7 +36,7 @@
            Text="Cannot find %24(MicrosoftNetCoreAppRuntimePackRidDir)=$(MicrosoftNetCoreAppRuntimePackRidDir)native. Make sure to set the runtime configuration with %24(RuntimeConfiguration). Current value: $(RuntimeConfiguration)" />
 
     <PropertyGroup>
-      <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>    
+      <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
       <!-- like is used on blazor -->
@@ -46,16 +47,19 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
-      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-full-debug-type.dll" />
-      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
-      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-special-char-in-path.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-pdb-deleted.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-without-debug-symbols.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
+      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
+
+      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\lazy-debugger-test-embedded.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\lazy-debugger-test.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\debugger-test-with-full-debug-type.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\debugger-test-with-pdb-deleted.dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\debugger-test-without-debug-symbols.dll" />
 
       <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
   </Target>
   <Target Name="PreserveEnCAssembliesFromLinking"
