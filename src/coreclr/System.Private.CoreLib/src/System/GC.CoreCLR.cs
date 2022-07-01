@@ -779,7 +779,7 @@ namespace System
                     }
 
                 case GCConfigurationType.Boolean:
-                    configurationDictionary![nameAsString] = data != 0;
+                    configurationDictionary[nameAsString] = data != 0;
                     break;
             }
         }
