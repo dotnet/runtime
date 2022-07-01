@@ -74,6 +74,12 @@ extern "C" {
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
 typedef PVOID NATIVE_LIBRARY_HANDLE;
 
+#if defined(TARGET_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+extern bool g_arm64_atomics_present;
+#endif
+
 /******************* Processor-specific glue  *****************************/
 
 #ifndef _MSC_VER
