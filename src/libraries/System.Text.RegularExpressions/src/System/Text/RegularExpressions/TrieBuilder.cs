@@ -12,16 +12,17 @@ namespace System.Text.RegularExpressions
     {
         private readonly List<TrieNode> _nodes = new List<TrieNode>() { TrieNode.CreateRoot() };
 
+        private readonly int _nodeLimit = CompiledNodeLimit;
+
+        private bool IsNodeLimitReached => _nodes.Count >= _nodeLimit;
+
         /// <summary>
-        /// How many times the regex node traversal can branch.
+        /// The maximum number of nodes in a trie, in the compiled and source-generated mode.
         /// </summary>
         /// <remarks>
-        /// This limit exists to prevent the trie from getting too big.
-        /// With a limit of 1, regex <c>[ab]c[de]f[gh]</c> would produce a
-        /// trie matching <c>ac</c> and <c>bc</c>, while with a limit of 2,
-        /// it would match <c>acd</c>, <c>ace</c>, <c>bcd</c>, and <c>bcec</c>.
+        /// In the interpreted mode its value is halved.
         /// </remarks>
-        private const int BranchingDepthLimit = 1;
+        private const int CompiledNodeLimit = 256;
 
         /// <summary>
         /// The maximum regex set size that will be accepted during the node traversal.
@@ -32,7 +33,7 @@ namespace System.Text.RegularExpressions
         /// the trie would match <c>ac</c>, <c>ad</c>, <c>ae</c>, <c>bc</c>, <c>bd</c>
         /// and <c>be</c>.
         /// </remarks>
-        private const int SetLimit = 2;
+        private const int SetLimit = 16;
 
         /// <summary>
         /// The maximum depth that a trie node can have. It is synonymous with the maximum length of a word in the trie.
@@ -41,16 +42,23 @@ namespace System.Text.RegularExpressions
 
         private delegate int OneToOneNodeMapping<T>(TrieBuilder builder, int nodeIndex, T state, out bool canContinue);
 
-        public TrieBuilder() { }
+        public TrieBuilder(RegexNode regexNode)
+        {
+#if !REGEXGENERATOR
+            if ((regexNode.Options & RegexOptions.Compiled) == 0)
+            {
+                _nodeLimit /= 2;
+            }
+#endif
+        }
 
         /// <summary>
         /// Tries to create a trie from the leading fixed part of a <see cref="RegexNode"/>.
         /// </summary>
         public static bool TryCreateFromPrefix(RegexNode regexNode, [NotNullWhen(true)] out List<TrieNode>? trie)
         {
-            TrieBuilder builder = new TrieBuilder();
-            int branchingDepth = 0;
-            NodeCollection matchNodes = builder.Add(new NodeCollection(TrieNode.Root), regexNode, ref branchingDepth, out _);
+            TrieBuilder builder = new TrieBuilder(regexNode);
+            NodeCollection matchNodes = builder.Add(new NodeCollection(TrieNode.Root), regexNode, out _);
             builder.AcceptMatches(matchNodes);
 
             // If we still have one trie node -the root one-, the regex node has no fixed leading part
@@ -146,7 +154,7 @@ namespace System.Text.RegularExpressions
         {
             List<TrieNode> nodes = builder._nodes;
             TrieNode node = nodes[nodeIndex];
-            if (node.Depth >= DepthLimit)
+            if (builder.IsNodeLimitReached || node.Depth >= DepthLimit)
             {
                 canContinue = false;
                 return nodeIndex;
@@ -210,11 +218,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="nodes">The collection of nodes.</param>
         /// <param name="setString">A string that describes the set.</param>
-        /// <param name="branchingDepth">A reference that tracks how many consecutive alternations have been encountered.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past the set.</param>
         /// <returns>The collection of node indices that were created after <see cref="Add(TrieBuilder, int, char, out bool)"/>ing each
         /// node of <paramref name="nodes"/>.</returns>
-        private NodeCollection AddSet(NodeCollection nodes, string setString, ref int branchingDepth, out bool canContinue)
+        private NodeCollection AddSet(NodeCollection nodes, string setString, out bool canContinue)
         {
             Span<char> set = stackalloc char[SetLimit];
             int setLength = RegexCharClass.GetSetChars(setString, set);
@@ -231,12 +238,6 @@ namespace System.Text.RegularExpressions
             if (setLength == 1)
             {
                 return Add(nodes, set[0], out canContinue);
-            }
-
-            if (++branchingDepth > BranchingDepthLimit)
-            {
-                canContinue = false;
-                return nodes;
             }
             canContinue = false;
             NodeCollection[] results = new NodeCollection[setLength];
@@ -263,10 +264,9 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="nodes">The collection of nodes.</param>
         /// <param name="regexNode">The <see cref="RegexNode"/> to traverse.</param>
-        /// <param name="branchingDepth">A reference that tracks how many consecutive alternations have been encountered.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past <paramref name="regexNode"/>.</param>
         /// <returns></returns>
-        private NodeCollection Add(NodeCollection nodes, RegexNode regexNode, ref int branchingDepth, out bool canContinue)
+        private NodeCollection Add(NodeCollection nodes, RegexNode regexNode, out bool canContinue)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -304,7 +304,7 @@ namespace System.Text.RegularExpressions
                     // Easy, just add the string.
                     return Add(nodes, regexNode.Str!, out canContinue);
                 case RegexNodeKind.Set:
-                    return AddSet(nodes, regexNode.Str!, ref branchingDepth, out canContinue);
+                    return AddSet(nodes, regexNode.Str!, out canContinue);
                 case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
                     // These remarks also apply to the rest of the loop types.
                     int min = regexNode.M;
@@ -337,7 +337,7 @@ namespace System.Text.RegularExpressions
                     canContinue = true;
                     for (int i = 0; i < min && canContinue; i++)
                     {
-                        nodes = AddSet(nodes, regexNode.Str!, ref branchingDepth, out canContinue);
+                        nodes = AddSet(nodes, regexNode.Str!, out canContinue);
                     }
                     // Traversing items of set loops (and the more general kinds of loops below) might
                     // signal us that we should stop. So to continue we need both to successfully pass
@@ -355,7 +355,7 @@ namespace System.Text.RegularExpressions
                     canContinue = true;
                     for (int i = 0; i < min && canContinue; i++)
                     {
-                        nodes = Add(nodes, loopItem, ref branchingDepth, out canContinue);
+                        nodes = Add(nodes, loopItem, out canContinue);
                     }
                     canContinue &= min == max;
                     return nodes;
@@ -364,27 +364,17 @@ namespace System.Text.RegularExpressions
                     canContinue = true;
                     for (int i = 0; i < childCount && canContinue; i++)
                     {
-                        nodes = Add(nodes, regexNode.Child(i), ref branchingDepth, out canContinue);
+                        nodes = Add(nodes, regexNode.Child(i), out canContinue);
                     }
                     return nodes;
                 case RegexNodeKind.Alternate:
                     childCount = regexNode.ChildCount();
                     Debug.Assert(childCount != 0);
-                    // If we have branched too many times we stop here.
-                    if (++branchingDepth > BranchingDepthLimit)
-                    {
-                        goto End;
-                    }
                     NodeCollection[] results = new NodeCollection[childCount];
                     canContinue = false;
-                    // To avoid modifying branchingDepth during the traversal of the
-                    // node's children, we have to use a separate variable and update
-                    // it at the end.
-                    int branchingDepthNew = branchingDepth;
                     for (int i = 0; i < childCount; i++)
                     {
-                        int branchingDepthLocal = branchingDepth;
-                        NodeCollection result = Add(nodes, regexNode.Child(i), ref branchingDepthLocal, out bool canContinueInner);
+                        NodeCollection result = Add(nodes, regexNode.Child(i), out bool canContinueInner);
                         if (canContinueInner)
                         {
                             // If we can continue after this node, we flow its results to the
@@ -405,12 +395,7 @@ namespace System.Text.RegularExpressions
                             results[i] = NodeCollection.Empty;
                             AcceptMatches(result);
                         }
-                        if (branchingDepthLocal > branchingDepthNew)
-                        {
-                            branchingDepthNew = branchingDepthLocal;
-                        }
                     }
-                    branchingDepth = branchingDepthNew;
                     return new NodeCollection(results);
             }
 

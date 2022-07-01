@@ -62,6 +62,8 @@ namespace System.Text.RegularExpressions
 #if DEBUG
         public string? Path { get; init; }
 
+        public int ChildCount => Children.Count;
+
         public override string? ToString() => Path;
 #endif
     }
