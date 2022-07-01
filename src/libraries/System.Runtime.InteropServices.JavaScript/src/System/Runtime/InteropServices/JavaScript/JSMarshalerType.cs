@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
         /// <summary>
-        /// Marshal as JavaScript Number via <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array">Int16Array</see>.
+        /// Marshal as JavaScript Number via <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array">Int32Array</see>.
         /// </summary>
         public static JSMarshalerType Int32 { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
