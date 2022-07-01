@@ -528,10 +528,7 @@ namespace System.Xml
         internal XmlTextReaderImpl(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
         {
-            if (xmlFragment == null)
-            {
-                xmlFragment = string.Empty;
-            }
+            xmlFragment ??= string.Empty;
 
             if (context == null)
             {
@@ -2265,10 +2262,7 @@ namespace System.Xml
             {
                 if (_incReadDecoder != _readCharsDecoder)
                 { // mixing ReadChars with ReadBase64 or ReadBinHex
-                    if (_readCharsDecoder == null)
-                    {
-                        _readCharsDecoder = new IncrementalReadCharsDecoder();
-                    }
+                    _readCharsDecoder ??= new IncrementalReadCharsDecoder();
                     _readCharsDecoder.Reset();
                     _incReadDecoder = _readCharsDecoder;
                 }
@@ -2286,10 +2280,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_readCharsDecoder == null)
-                {
-                    _readCharsDecoder = new IncrementalReadCharsDecoder();
-                }
+                _readCharsDecoder ??= new IncrementalReadCharsDecoder();
 
                 InitIncrementalRead(_readCharsDecoder);
                 return IncrementalRead(buffer, index, count);
@@ -2323,10 +2314,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_base64Decoder == null)
-                {
-                    _base64Decoder = new Base64Decoder();
-                }
+                _base64Decoder ??= new Base64Decoder();
 
                 InitIncrementalRead(_base64Decoder);
                 return IncrementalRead(array, offset, len);
@@ -2360,10 +2348,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_binHexDecoder == null)
-                {
-                    _binHexDecoder = new BinHexDecoder();
-                }
+                _binHexDecoder ??= new BinHexDecoder();
 
                 InitIncrementalRead(_binHexDecoder);
                 return IncrementalRead(array, offset, len);
@@ -2962,11 +2947,7 @@ namespace System.Xml
             }
 
             // detect & setup encoding
-            if (encoding == null)
-            {
-                encoding = DetectEncoding();
-            }
-
+            encoding ??= DetectEncoding();
             SetupEncoding(encoding);
 
             // eat preamble
@@ -7734,12 +7715,7 @@ namespace System.Xml
             }
             Debug.Assert(nodeIndex < _nodes.Length);
 
-            NodeData node = _nodes[nodeIndex];
-            if (node == null)
-            {
-                node = new NodeData();
-                _nodes[nodeIndex] = node;
-            }
+            NodeData node = _nodes[nodeIndex] ??= new NodeData();
             node.depth = nodeDepth;
             return node;
         }
@@ -9142,10 +9118,7 @@ namespace System.Xml
             _nameTable = nt;
 
             // make sure we have namespace manager
-            if (_namespaceManager == null)
-            {
-                _namespaceManager = new XmlNamespaceManager(nt);
-            }
+            _namespaceManager ??= new XmlNamespaceManager(nt);
 
             // copy xml:space and xml:lang
             _xmlContext.xmlSpace = context.XmlSpace;
@@ -9609,10 +9582,7 @@ namespace System.Xml
                 return uri1Str == uri2Str;
             }
 
-            if (uri1 == null)
-            {
-                uri1 = resolver.ResolveUri(null, uri1Str);
-            }
+            uri1 ??= resolver.ResolveUri(null, uri1Str);
 
             Uri uri2 = resolver.ResolveUri(null, uri2Str);
             return uri1.Equals(uri2);

@@ -449,10 +449,7 @@ namespace System.Formats.Asn1
 
         private Scope PushTag(Asn1Tag tag, UniversalTagNumber tagType)
         {
-            if (_nestingStack == null)
-            {
-                _nestingStack = new Stack<StackFrame>();
-            }
+            _nestingStack ??= new Stack<StackFrame>();
 
             Debug.Assert(tag.IsConstructed);
             WriteTag(tag);

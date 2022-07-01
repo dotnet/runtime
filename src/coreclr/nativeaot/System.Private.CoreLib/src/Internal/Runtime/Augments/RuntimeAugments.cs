@@ -641,6 +641,17 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot));
         }
 
+        public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
+        {
+            EETypePtr genericContextPtr = default;
+            IntPtr result = RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot), &genericContextPtr);
+            if (result != IntPtr.Zero)
+                genericContext = new RuntimeTypeHandle(genericContextPtr);
+            else
+                genericContext = default;
+            return result;
+        }
+
         public static IntPtr ResolveDispatch(object instance, RuntimeTypeHandle interfaceType, int slot)
         {
             return RuntimeImports.RhResolveDispatch(instance, CreateEETypePtr(interfaceType), checked((ushort)slot));

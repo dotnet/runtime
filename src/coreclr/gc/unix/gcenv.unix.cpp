@@ -569,6 +569,9 @@ void GCToOSInterface::FlushProcessWriteBuffers()
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
             }
+
+            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
+            CHECK_MACH("mach_port_deallocate()", machret);
         }
         // Deallocate the thread list now we're done with it.
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));

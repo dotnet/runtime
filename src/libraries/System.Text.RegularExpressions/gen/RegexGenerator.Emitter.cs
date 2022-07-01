@@ -1365,7 +1365,7 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 int numChars = RegexCharClass.GetSetChars(childStart.Str!, setChars);
                                 Debug.Assert(numChars != 0);
-                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(c => Literal(c)))}:");
+                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(Literal))}:");
                             }
                             else
                             {

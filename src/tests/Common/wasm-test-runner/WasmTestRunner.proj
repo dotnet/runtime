@@ -31,7 +31,7 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
-      <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" />
+      <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"/>
       <WasmAssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />

@@ -15,13 +15,6 @@ namespace System.Xml.Xsl.XsltOld
         // Compile time precalculated AVT
         private string? _name;
 
-        private const char CharX = 'X';
-        private const char Charx = 'x';
-        private const char CharM = 'M';
-        private const char Charm = 'm';
-        private const char CharL = 'L';
-        private const char Charl = 'l';
-
         internal ProcessingInstructionAction() { }
 
         internal override void Compile(Compiler compiler)
@@ -156,11 +149,7 @@ namespace System.Xml.Xsl.XsltOld
                 return false;
             }
 
-            if (nameLength == 3 &&
-                (name[0] == CharX || name[0] == Charx) &&
-                (name[1] == CharM || name[1] == Charm) &&
-                (name[2] == CharL || name[2] == Charl)
-            )
+            if (nameLength == 3 && name.StartsWith("xml", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }

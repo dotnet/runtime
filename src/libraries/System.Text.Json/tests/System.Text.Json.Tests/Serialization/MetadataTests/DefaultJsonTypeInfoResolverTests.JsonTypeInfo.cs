@@ -385,12 +385,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(typeInfo.Converter.CanConvert(typeof(T)));
 
             JsonPropertyInfo prop = typeInfo.CreateJsonPropertyInfo(typeof(string), "foo");
+            Assert.True(typeInfo.Properties.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => untyped.CreateObject = untyped.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = typeInfo.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.NumberHandling = typeInfo.NumberHandling);
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(prop));
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Insert(0, prop));
+            Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = new());
+
+            if (typeInfo.PolymorphismOptions is JsonPolymorphismOptions jpo)
+            {
+                Assert.True(jpo.DerivedTypes.IsReadOnly);
+                Assert.Throws<InvalidOperationException>(() => jpo.IgnoreUnrecognizedTypeDiscriminators = true);
+                Assert.Throws<InvalidOperationException>(() => jpo.TypeDiscriminatorPropertyName = "__case");
+                Assert.Throws<InvalidOperationException>(() => jpo.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor);
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Clear());
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Add(default));
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Insert(0, default));
+            }
 
             foreach (var property in typeInfo.Properties)
             {
@@ -580,6 +594,54 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(typeInfo.Properties[0]);
         }
 
+        [Fact]
+        public static void CreateJsonTypeInfoWithNullArgumentsThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(null, new JsonSerializerOptions()));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(typeof(string), null));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(null, null));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo<string>(null));
+        }
+
+        [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(Dictionary<,>))]
+        [InlineData(typeof(List<>))]
+        [InlineData(typeof(Nullable<>))]
+        [InlineData(typeof(int*))]
+        [InlineData(typeof(RefStruct))]
+        public static void CreateJsonTypeInfoWithInappropriateTypeThrows(Type type)
+        {
+            Assert.Throws<ArgumentException>(() => JsonTypeInfo.CreateJsonTypeInfo(type, new JsonSerializerOptions()));
+        }
+
+        ref struct RefStruct
+        {
+            public int Foo { get; set; }
+        }
+
+        [Fact]
+        public static void CreateJsonPropertyInfoWithNullArgumentsThrows()
+        {
+            JsonTypeInfo ti = JsonTypeInfo.CreateJsonTypeInfo<MyClass>(new JsonSerializerOptions());
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(null, "test"));
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(typeof(string), null));
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(null, null));
+        }
+
+        [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(Dictionary<,>))]
+        [InlineData(typeof(List<>))]
+        [InlineData(typeof(Nullable<>))]
+        [InlineData(typeof(int*))]
+        [InlineData(typeof(RefStruct))]
+        public static void CreateJsonPropertyInfoWithInappropriateTypeThrows(Type type)
+        {
+            JsonTypeInfo ti = JsonTypeInfo.CreateJsonTypeInfo<MyClass>(new JsonSerializerOptions());
+            Assert.Throws<ArgumentException>(() => ti.CreateJsonPropertyInfo(type, "test"));
+        }
+
         [Theory]
         [InlineData(typeof(object))]
         [InlineData(typeof(string))]
@@ -639,6 +701,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { 13 };
             yield return new object[] { new SomeClass { IntProp = 17 } };
             yield return new object[] { new SomeRecursiveClass() };
+            yield return new object[] { new SomePolymorphicClass() };
         }
 
         [Fact]

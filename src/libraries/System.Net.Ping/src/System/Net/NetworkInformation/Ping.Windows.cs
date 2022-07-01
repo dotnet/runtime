@@ -57,10 +57,7 @@ namespace System.Net.NetworkInformation
             // Cache correct handle.
             InitialiseIcmpHandle();
 
-            if (_replyBuffer == null)
-            {
-                _replyBuffer = SafeLocalAllocHandle.LocalAlloc(MaxUdpPacket);
-            }
+            _replyBuffer ??= SafeLocalAllocHandle.LocalAlloc(MaxUdpPacket);
 
             int error;
             try

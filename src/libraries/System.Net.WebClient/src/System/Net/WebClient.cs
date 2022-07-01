@@ -1161,10 +1161,7 @@ namespace System.Net
             }
 
             // Do we have an encoding guess?  If not, use default.
-            if (enc == null)
-            {
-                enc = Encoding;
-            }
+            enc ??= Encoding;
 
             // Calculate BOM length based on encoding guess.  Then check for it in the data.
             if (bomLengthInData == -1)

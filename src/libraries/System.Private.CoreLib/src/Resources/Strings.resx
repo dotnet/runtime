@@ -2269,6 +2269,9 @@
   <data name="Format_InvalidString" xml:space="preserve">
     <value>Input string was not in a correct format.</value>
   </data>
+  <data name="Format_InvalidStringWithValue" xml:space="preserve">
+    <value>The input string '{0}' was not in a correct format.</value>
+  </data>
   <data name="Format_MissingIncompleteDate" xml:space="preserve">
     <value>There must be at least a partial date with a year present in the input string '{0}'.</value>
   </data>

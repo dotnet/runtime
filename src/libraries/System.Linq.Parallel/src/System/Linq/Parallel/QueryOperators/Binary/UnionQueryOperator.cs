@@ -325,12 +325,7 @@ namespace System.Linq.Parallel
 
                 _leftOrdered = leftOrdered;
                 _rightOrdered = rightOrdered;
-                _comparer = comparer;
-
-                if (_comparer == null)
-                {
-                    _comparer = EqualityComparer<TInputOutput>.Default;
-                }
+                _comparer = comparer ?? EqualityComparer<TInputOutput>.Default;
 
                 _cancellationToken = cancellationToken;
             }
