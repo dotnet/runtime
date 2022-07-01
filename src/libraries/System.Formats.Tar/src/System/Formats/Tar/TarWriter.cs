@@ -105,7 +105,7 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(string fileName, string? entryName)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
 
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
@@ -165,7 +165,7 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(TarEntry entry)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
 
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
             Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
@@ -266,15 +266,6 @@ namespace System.Formats.Tar
                 {
                     _isDisposed = true;
                 }
-            }
-        }
-
-        // If the underlying archive stream is disposed, throws 'ObjectDisposedException'.
-        private void ThrowIfDisposed()
-        {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
             }
         }
 

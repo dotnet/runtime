@@ -59,8 +59,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </returns>
         public static object Invoke(this JSObject self, string method, params object?[] args)
         {
-            if (self == null) throw new ArgumentNullException(nameof(self));
-            if (self.IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {self.GetType().Name}.");
+            ArgumentNullException.ThrowIfNull(self);
+            ObjectDisposedException.ThrowIf(self.IsDisposed, self);
             Interop.Runtime.InvokeJSWithArgsRef(self.JSHandle, method, args, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
@@ -93,8 +93,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </returns>
         public static object GetObjectProperty(this JSObject self, string name)
         {
-            if (self == null) throw new ArgumentNullException(nameof(self));
-            if (self.IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {self.GetType().Name}.");
+            ArgumentNullException.ThrowIfNull(self);
+            ObjectDisposedException.ThrowIf(self.IsDisposed, self);
 
             Interop.Runtime.GetObjectPropertyRef(self.JSHandle, name, out int exception, out object propertyValue);
             if (exception != 0)
@@ -117,8 +117,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="hasOwnProperty"></param>
         public static void SetObjectProperty(this JSObject self, string name, object? value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
-            if (self == null) throw new ArgumentNullException(nameof(self));
-            if (self.IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {self.GetType().Name}.");
+            ArgumentNullException.ThrowIfNull(self);
+            ObjectDisposedException.ThrowIf(self.IsDisposed, self);
 
             Interop.Runtime.SetObjectPropertyRef(self.JSHandle, name, in value, createIfNotExists, hasOwnProperty, out int exception, out object res);
             if (exception != 0)
@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void AssertNotDisposed(this JSObject self)
         {
-            if (self.IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {self.GetType().Name}.");
+            ObjectDisposedException.ThrowIf(self.IsDisposed, self);
         }
 
         public static void AssertInFlight(this JSObject self, int expectedInFlightCount)

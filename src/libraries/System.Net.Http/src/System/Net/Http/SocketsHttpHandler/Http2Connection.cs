@@ -229,11 +229,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_shutdown)
                 {
@@ -279,11 +276,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_shutdown)
                 {
@@ -337,11 +331,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 Debug.Assert(_availableStreamsWaiter is null, "As used currently, shouldn't already have a waiter");
 
