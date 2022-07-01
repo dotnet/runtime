@@ -3996,9 +3996,7 @@ VOID ETW::EnumerationLog::StartRundown()
 
         BOOL bIsRichDebugInfoEnabled =
             bIsIlToNativeMapRundownEnabled &&
-            ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context,
-                                         TRACE_LEVEL_INFORMATION,
-                                         CLR_JITTED_METHOD_RICH_DEBUG_INFO_KEYWORD);
+            ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo);
 
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
@@ -4186,10 +4184,8 @@ VOID ETW::EnumerationLog::EndRundown()
                                                                             TRACE_LEVEL_INFORMATION,
                                                                             CLR_RUNDOWNJITTEDMETHODILTONATIVEMAP_KEYWORD);
         BOOL bIsRichDebugInfoEnabled =
-            bIsIlToNativeMapsRundownEnabled /*&&
-            ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context,
-                                         TRACE_LEVEL_INFORMATION,
-                                         CLR_JITTED_METHOD_RICH_DEBUG_INFO_KEYWORD)*/;
+            bIsIlToNativeMapsRundownEnabled &&
+            ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo);
 
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
@@ -5549,9 +5545,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
             ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetILCodeVersionId());
         }
 
-        if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context,
-                                         TRACE_LEVEL_INFORMATION,
-                                         CLR_JITTED_METHOD_RICH_DEBUG_INFO_KEYWORD))
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo))
         {
             _ASSERTE(g_pDebugInterface != NULL);
             g_pDebugInterface->InitializeLazyDataIfNecessary();
