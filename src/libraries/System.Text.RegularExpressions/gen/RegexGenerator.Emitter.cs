@@ -183,13 +183,25 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"    // {Literal(node.GetPath(trie))}");
                 writer.WriteLine($"    new {HelpersTypeName}.TrieNode()");
                 writer.WriteLine($"    {{");
-                writer.WriteLine($"        Children = new Dictionary<char, int>({node.Children.Count})");
-                writer.WriteLine($"        {{");
-                foreach (KeyValuePair<char, int> kvp in node.Children)
+                switch (node.Children.Count)
                 {
-                    writer.WriteLine($"            [{Literal(kvp.Key)}] = {kvp.Value},");
+                    case 0:
+                        writer.WriteLine($"        Children = {HelpersTypeName}.TrieNode.s_EmptyChildrenDictionary,");
+                        break;
+                    case 1:
+                        KeyValuePair<char, int> singleKvp = node.Children.Single();
+                        writer.WriteLine($"        Children = new Dictionary<char, int>(1) {{ [{Literal(singleKvp.Key)}] = {singleKvp.Value}}},");
+                        break;
+                    default:
+                        writer.WriteLine($"        Children = new Dictionary<char, int>({node.Children.Count})");
+                        writer.WriteLine($"        {{");
+                        foreach (KeyValuePair<char, int> kvp in node.Children)
+                        {
+                            writer.WriteLine($"            [{Literal(kvp.Key)}] = {kvp.Value},");
+                        }
+                        writer.WriteLine($"        }},");
+                        break;
                 }
-                writer.WriteLine($"        }},");
                 writer.WriteLine($"        {nameof(TrieNode.SuffixLink)} = {node.SuffixLink},");
                 writer.WriteLine($"        {nameof(TrieNode.MatchLength)} = {node.MatchLength}");
                 writer.WriteLine($"    }}{(i == trie.Count - 1 ? "" : ",")}");
@@ -381,12 +393,14 @@ namespace System.Text.RegularExpressions.Generator
                     "/// a word that is formed from the path of characters that leads from the root node to this one.</summary>",
                     "internal readonly struct TrieNode",
                     "{",
+                    "    /// <summary>A cached empty trie children dictionary.</summary>",
+                    "    internal static readonly Dictionary<char, int> s_EmptyChildrenDictionary = new Dictionary<char, int>();",
                     "    /// <summary>An associative collection of characters and the node index they lead to.</summary>",
-                    "    public Dictionary<char, int> Children { get; init; }",
+                    "    internal Dictionary<char, int> Children { get; init; }",
                     "    /// <summary>The index of the node the algorithm will jump to if it doesn't find a match in the node it is.</summary>",
-                    "    public int SuffixLink { get; init; }",
+                    "    internal int SuffixLink { get; init; }",
                     "    /// <summary>The length of the word that matches at this node, or -1 if there isn't such word.</summary>",
-                    "    public int MatchLength { get; init; }",
+                    "    internal int MatchLength { get; init; }",
                     "}",
                     "",
                     "/// <summary>Finds the index of the longest leftmost match of one of <paramref name=\"trie\"/>'s",
@@ -3182,9 +3196,9 @@ namespace System.Text.RegularExpressions.Generator
                             overlap = literal.Item3.Contains(node.Ch);
                             writer.WriteLine((overlap, literal.Item3.Length) switch
                             {
-                                (true,  2) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.Item3[0])}, {Literal(literal.Item3[1])});",
-                                (true,  3) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.Item3[0])}, {Literal(literal.Item3[1])}, {Literal(literal.Item3[2])});",
-                                (true,  _) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.Item3)});",
+                                (true, 2) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.Item3[0])}, {Literal(literal.Item3[1])});",
+                                (true, 3) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.Item3[0])}, {Literal(literal.Item3[1])}, {Literal(literal.Item3[2])});",
+                                (true, _) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal.Item3)});",
 
                                 (false, 2) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(node.Ch)}, {Literal(literal.Item3[0])}, {Literal(literal.Item3[1])});",
                                 (false, _) => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal($"{node.Ch}{literal.Item3}")});",
@@ -3499,7 +3513,7 @@ namespace System.Text.RegularExpressions.Generator
                     EmitStackPush(
                         !isInLoop ? (expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } : new[] { "pos" }) :
                         iterationMayBeEmpty ? (expressionHasCaptures ? new[] { "pos", iterationCount, startingPos!, sawEmpty!, "base.Crawlpos()" } : new[] { "pos", iterationCount, startingPos!, sawEmpty! }) :
-                        expressionHasCaptures ? new[] { "pos", iterationCount, "base.Crawlpos()"} :
+                        expressionHasCaptures ? new[] { "pos", iterationCount, "base.Crawlpos()" } :
                         new[] { "pos", iterationCount });
 
                     string skipBacktrack = ReserveName("LazyLoopSkipBacktrack");
@@ -4539,9 +4553,9 @@ namespace System.Text.RegularExpressions.Generator
                     return (negate, RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out mask)) switch
                     {
                         (false, false) => $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))",
-                        (true,  false) => $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}) & (ch != {Literal(setChars[2])}))",
-                        (false, true)  => $"((((ch = {chExpr}) | 0x{mask:X}) == {Literal((char)(setChars[1] | mask))}) | (ch == {Literal(setChars[2])}))",
-                        (true,  true)  => $"((((ch = {chExpr}) | 0x{mask:X}) != {Literal((char)(setChars[1] | mask))}) & (ch != {Literal(setChars[2])}))",
+                        (true, false) => $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}) & (ch != {Literal(setChars[2])}))",
+                        (false, true) => $"((((ch = {chExpr}) | 0x{mask:X}) == {Literal((char)(setChars[1] | mask))}) | (ch == {Literal(setChars[2])}))",
+                        (true, true) => $"((((ch = {chExpr}) | 0x{mask:X}) != {Literal((char)(setChars[1] | mask))}) & (ch != {Literal(setChars[2])}))",
                     };
             }
 
