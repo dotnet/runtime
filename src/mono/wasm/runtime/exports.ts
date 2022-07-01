@@ -260,7 +260,7 @@ function initializeImportsAndExports(
     replacements.readAsync = readAsync_like;
     replacements.requireOut = module.imports.require;
     const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: Buffer) => {
+    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
         originalUpdateGlobalBufferAndViews(buffer);
         afterUpdateGlobalBufferAndViews(buffer);
     };
