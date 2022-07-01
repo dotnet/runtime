@@ -31,11 +31,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter GetConverter(JsonSerializerOptions options)
         {
             DefaultJsonTypeInfoResolver.RootDefaultInstance();
-            return GetEffectiveConverter(
-                    typeof(T),
-                    parentClassType: null, // A TypeInfo never has a "parent" class.
-                    memberInfo: null, // A TypeInfo never has a "parent" property.
-                    options);
+            return options.GetConverterForType(typeof(T));
         }
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()

@@ -151,8 +151,8 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (hasJsonInclude)
                     {
-                        Debug.Assert(jsonPropertyInfo.ClrName != null, "ClrName is not set by source gen");
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName, jsonPropertyInfo.DeclaringType);
+                        Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
                     }
 
                     continue;
@@ -160,17 +160,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (jsonPropertyInfo.MemberType == MemberTypes.Field && !hasJsonInclude && !Options.IncludeFields)
                 {
-                    continue;
-                }
-
-                if (jsonPropertyInfo.SrcGen_IsExtensionData)
-                {
-                    if (ExtensionDataProperty != null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
-                    }
-
-                    ExtensionDataProperty = jsonPropertyInfo;
                     continue;
                 }
 

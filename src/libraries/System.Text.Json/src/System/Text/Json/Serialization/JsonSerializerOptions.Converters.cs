@@ -27,21 +27,17 @@ namespace System.Text.Json
         public IList<JsonConverter> Converters => _converters;
 
         // This may return factory converter
-        internal JsonConverter? GetCustomConverterFromMember(Type? parentClassType, Type typeToConvert, MemberInfo? memberInfo)
+        internal JsonConverter? GetCustomConverterFromMember(Type typeToConvert, MemberInfo memberInfo)
         {
+            Debug.Assert(memberInfo.DeclaringType != null, "Properties and fields always have a declaring type.");
             JsonConverter? converter = null;
 
-            if (memberInfo != null)
+            JsonConverterAttribute? converterAttribute = (JsonConverterAttribute?)
+                GetAttributeThatCanHaveMultiple(memberInfo.DeclaringType, typeof(JsonConverterAttribute), memberInfo);
+
+            if (converterAttribute != null)
             {
-                Debug.Assert(parentClassType != null);
-
-                JsonConverterAttribute? converterAttribute = (JsonConverterAttribute?)
-                    GetAttributeThatCanHaveMultiple(parentClassType!, typeof(JsonConverterAttribute), memberInfo);
-
-                if (converterAttribute != null)
-                {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert, classTypeAttributeIsOn: parentClassType!, memberInfo);
-                }
+                converter = GetConverterFromAttribute(converterAttribute, typeToConvert, memberInfo);
             }
 
             return converter;
@@ -185,7 +181,7 @@ namespace System.Text.Json
 
                 if (converterAttribute != null)
                 {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: typeToConvert, classTypeAttributeIsOn: typeToConvert, memberInfo: null);
+                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: typeToConvert, memberInfo: null);
                 }
             }
 
@@ -215,29 +211,30 @@ namespace System.Text.Json
         // This suppression needs to be removed. https://github.com/dotnet/runtime/issues/68878
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "The factory constructors are only invoked in the context of reflection serialization code paths " +
             "and are marked RequiresDynamicCode")]
-        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, MemberInfo? memberInfo)
+        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, MemberInfo? memberInfo)
         {
             JsonConverter? converter;
 
-            Type? type = converterAttribute.ConverterType;
-            if (type == null)
+            Type declaringType = memberInfo?.DeclaringType ?? typeToConvert;
+            Type? converterType = converterAttribute.ConverterType;
+            if (converterType == null)
             {
                 // Allow the attribute to create the converter.
                 converter = converterAttribute.CreateConverter(typeToConvert);
                 if (converter == null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, memberInfo, typeToConvert);
+                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(declaringType, memberInfo, typeToConvert);
                 }
             }
             else
             {
-                ConstructorInfo? ctor = type.GetConstructor(Type.EmptyTypes);
-                if (!typeof(JsonConverter).IsAssignableFrom(type) || ctor == null || !ctor.IsPublic)
+                ConstructorInfo? ctor = converterType.GetConstructor(Type.EmptyTypes);
+                if (!typeof(JsonConverter).IsAssignableFrom(converterType) || ctor == null || !ctor.IsPublic)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(classTypeAttributeIsOn, memberInfo);
+                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(declaringType, memberInfo);
                 }
 
-                converter = (JsonConverter)Activator.CreateInstance(type)!;
+                converter = (JsonConverter)Activator.CreateInstance(converterType)!;
             }
 
             Debug.Assert(converter != null);
@@ -255,7 +252,7 @@ namespace System.Text.Json
                     return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
                 }
 
-                ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, memberInfo, typeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(declaringType, memberInfo, typeToConvert);
             }
 
             return converter;

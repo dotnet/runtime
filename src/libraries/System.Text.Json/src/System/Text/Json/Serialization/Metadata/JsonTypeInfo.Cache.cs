@@ -51,35 +51,12 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
-        internal JsonPropertyInfo CreateProperty(
-            Type declaredPropertyType,
-            MemberInfo? memberInfo,
-            Type parentClassType,
-            bool isVirtual,
-            JsonConverter converter,
-            JsonSerializerOptions options,
-            JsonIgnoreCondition? ignoreCondition = null,
-            JsonTypeInfo? jsonTypeInfo = null,
-            JsonConverter? customConverter = null,
-            bool isUserDefinedProperty = false)
+        internal JsonPropertyInfo CreateProperty(Type propertyType, JsonConverter converter)
         {
             // Create the JsonPropertyInfo instance.
-            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo(parentTypeInfo: this);
-
-            jsonPropertyInfo.Initialize(
-                parentClassType,
-                declaredPropertyType,
-                converterStrategy: converter.ConverterStrategy,
-                memberInfo,
-                isVirtual,
-                converter,
-                ignoreCondition,
-                options,
-                jsonTypeInfo,
-                isUserDefinedProperty: isUserDefinedProperty);
-
-            jsonPropertyInfo.CustomConverter = customConverter;
-
+            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo(declaringTypeInfo: this, propertyType, Options);
+            jsonPropertyInfo.DefaultConverterForType = converter;
+            jsonPropertyInfo.ConverterStrategy = converter.ConverterStrategy;
             return jsonPropertyInfo;
         }
 
@@ -87,23 +64,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
         /// See <seealso cref="PropertyInfoForTypeInfo"/>.
         /// </summary>
-        private JsonPropertyInfo CreatePropertyInfoForTypeInfo(
-            Type declaredPropertyType,
-            JsonConverter converter,
-            JsonSerializerOptions options,
-            JsonTypeInfo? jsonTypeInfo = null)
+        private JsonPropertyInfo CreatePropertyInfoForTypeInfo(JsonTypeInfo jsonTypeInfo, JsonConverter converter)
         {
-            JsonPropertyInfo jsonPropertyInfo = CreateProperty(
-                declaredPropertyType: declaredPropertyType,
-                memberInfo: null, // Not a real property so this is null.
-                parentClassType: ObjectType, // a dummy value (not used)
-                isVirtual: false,
-                converter: converter,
-                options: options,
-                jsonTypeInfo: jsonTypeInfo);
-
-            Debug.Assert(jsonPropertyInfo.IsForTypeInfo);
-
+            JsonPropertyInfo jsonPropertyInfo = CreateProperty(jsonTypeInfo.Type, converter: converter);
+            jsonPropertyInfo.JsonTypeInfo = jsonTypeInfo;
+            jsonPropertyInfo.IsForTypeInfo = true;
             return jsonPropertyInfo;
         }
 

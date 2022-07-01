@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             _mutable = false;
 
-            JsonTypeInfo.ValidateType(type, null, null, options);
+            JsonTypeInfo.ValidateType(type);
             JsonTypeInfo typeInfo = CreateJsonTypeInfo(type, options);
 
             if (_modifiers != null)
