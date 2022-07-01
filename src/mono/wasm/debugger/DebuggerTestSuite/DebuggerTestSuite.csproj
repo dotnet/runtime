@@ -18,6 +18,9 @@
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
 
     <Compile Include="..\BrowserDebugProxy\Common\*.cs" />
+
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\XunitLoggerFactoryExtensions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\XunitLoggerProvider.cs" />
   </ItemGroup>
 
   <ItemGroup>

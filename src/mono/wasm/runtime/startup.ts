@@ -213,7 +213,7 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
 
     const bytes = new Uint8Array(asset.buffer);
     if (ctx.tracing)
-        console.log(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
+        console.trace(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
 
     const virtualName: string = typeof (asset.virtual_path) === "string"
         ? asset.virtual_path
@@ -244,7 +244,7 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
                 fileName = fileName.substr(1);
             if (parentDirectory) {
                 if (ctx.tracing)
-                    console.log(`MONO_WASM: Creating directory '${parentDirectory}'`);
+                    console.trace(`MONO_WASM: Creating directory '${parentDirectory}'`);
 
                 Module.FS_createPath(
                     "/", parentDirectory, true, true // fixme: should canWrite be false?
@@ -254,7 +254,7 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
             }
 
             if (ctx.tracing)
-                console.log(`MONO_WASM: Creating file '${fileName}' in directory '${parentDirectory}'`);
+                console.trace(`MONO_WASM: Creating file '${fileName}' in directory '${parentDirectory}'`);
 
             if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
                 Module.FS_createDataFile(
@@ -498,7 +498,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
             ++parallel_count;
             if (parallel_count == max_parallel_downloads) {
                 if (ctx!.tracing)
-                    console.log("MONO_WASM: Throttling further parallel downloads");
+                    console.trace("MONO_WASM: Throttling further parallel downloads");
 
                 throttling_promise = new Promise((resolve) => {
                     throttling_promise_resolve = resolve;
@@ -537,10 +537,10 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                 }
                 if (asset.name === attemptUrl) {
                     if (ctx!.tracing)
-                        console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}'`);
+                        console.trace(`MONO_WASM: Attempting to fetch '${attemptUrl}'`);
                 } else {
                     if (ctx!.tracing)
-                        console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}' for ${asset.name}`);
+                        console.trace(`MONO_WASM: Attempting to fetch '${attemptUrl}' for ${asset.name}`);
                 }
                 try {
                     const response = await runtimeHelpers.fetch(attemptUrl);
@@ -567,7 +567,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
             --parallel_count;
             if (throttling_promise && parallel_count == ((max_parallel_downloads / 2) | 0)) {
                 if (ctx!.tracing)
-                    console.log("MONO_WASM: Resuming more parallel downloads");
+                    console.trace("MONO_WASM: Resuming more parallel downloads");
                 throttling_promise_resolve!();
                 throttling_promise = undefined;
             }
@@ -611,8 +611,8 @@ function finalize_assets(config: MonoConfig | MonoConfigError | undefined): void
 
         ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
         if (ctx.tracing) {
-            console.log("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
-            console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
+            console.trace("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
+            console.trace("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
         }
     } catch (err: any) {
         Module.printErr("MONO_WASM: Error in finalize_assets: " + err);
