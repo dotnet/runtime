@@ -3668,47 +3668,29 @@ Return Values
 The return value is the initial value of the destination.
 
 --*/
-EXTERN_C
-PALIMPORT
-inline
-LONG
-PALAPI
-InterlockedCompareExchange(
-    IN OUT LONG volatile *Destination,
-    IN LONG Exchange,
-    IN LONG Comperand)
-{
-    LONG result =
-        __sync_val_compare_and_swap(
-            Destination, /* The pointer to a variable whose value is to be compared with. */
-            Comperand, /* The value to be compared */
-            Exchange /* The value to be stored */);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONG,
+    InterlockedCompareExchange(IN OUT LONG volatile *Destination, IN LONG Exchange, IN LONG Comperand),
+    InterlockedCompareExchange(Destination, Exchange, Comperand),
+    __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */)
+)
 
 #define InterlockedCompareExchangeAcquire InterlockedCompareExchange
 #define InterlockedCompareExchangeRelease InterlockedCompareExchange
 
 // See the 32-bit variant in interlock2.s
-EXTERN_C
-PALIMPORT
-inline
-LONGLONG
-PALAPI
-InterlockedCompareExchange64(
-    IN OUT LONGLONG volatile *Destination,
-    IN LONGLONG Exchange,
-    IN LONGLONG Comperand)
-{
-    LONGLONG result =
-        __sync_val_compare_and_swap(
-            Destination, /* The pointer to a variable whose value is to be compared with. */
-            Comperand, /* The value to be compared */
-            Exchange /* The value to be stored */);
-    PAL_ArmInterlockedOperationBarrier();
-    return result;
-}
+Define_InterlockMethod(
+    LONGLONG,
+    InterlockedCompareExchange64(IN OUT LONGLONG volatile *Destination, IN LONGLONG Exchange, IN LONGLONG Comperand),
+    InterlockedCompareExchange64(Destination, Exchange, Comperand),
+    __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */)
+)
 
 /*++
 Function:
