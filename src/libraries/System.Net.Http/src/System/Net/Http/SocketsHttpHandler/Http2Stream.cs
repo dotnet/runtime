@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
@@ -1434,7 +1435,10 @@ namespace System.Net.Http
 
             private sealed class Http2ReadStream : Http2ReadWriteStream
             {
-                public Http2ReadStream(Http2Stream http2Stream) : base(http2Stream) { }
+                public Http2ReadStream(Http2Stream http2Stream) : base(http2Stream)
+                {
+                    base.CloseResponseBody = true;
+                }
 
                 public override bool CanWrite => false;
 
@@ -1482,9 +1486,8 @@ namespace System.Net.Http
             public class Http2ReadWriteStream : HttpBaseStream
             {
                 private Http2Stream? _http2Stream;
-                // should be removed
                 private readonly HttpResponseMessage _responseMessage;
-                // need to handle data flow
+                protected bool CloseResponseBody { get; set; }
 
                 public Http2ReadWriteStream(Http2Stream http2Stream)
                 {
@@ -1520,8 +1523,10 @@ namespace System.Net.Http
                     // protocol, we have little choice: if someone drops the Http2ReadStream without
                     // disposing of it, we need to a) signal to the server that the stream is being
                     // canceled, and b) clean up the associated state in the Http2Connection.
-
-                    http2Stream.CloseResponseBody();
+                    if (CloseResponseBody)
+                    {
+                        http2Stream.CloseResponseBody();
+                    }
 
                     base.Dispose(disposing);
                 }
