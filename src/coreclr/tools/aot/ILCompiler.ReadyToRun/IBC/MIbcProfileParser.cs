@@ -250,7 +250,62 @@ namespace ILCompiler.IBC
                 }
             }
 
-            return new IBCProfileData(false, loadedMethodProfileData);
+            return new IBCProfileData(ParseMibcConfig(tsc, peReader), false, loadedMethodProfileData);
+        }
+
+        public static MibcConfig ParseMibcConfig(TypeSystemContext tsc, PEReader pEReader)
+        {
+            EcmaModule mibcModule = EcmaModule.Create(tsc, pEReader, null);
+            EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod(nameof(MibcConfig), null);
+
+            if (mibcConfigMth == null)
+                return null;
+
+            var ilBody = EcmaMethodIL.Create(mibcConfigMth);
+            var ilReader = new ILReader(ilBody.GetILBytes());
+
+            // Parse:
+            //
+            //   ldstr "key1"
+            //   ldstr "value1"
+            //   pop
+            //   pop
+            //   ldstr "key2"
+            //   ldstr "value2"
+            //   pop
+            //   pop
+            //   ...
+            //   ret
+            string fieldName = null;
+            Dictionary<string, string> keyValue = new();
+            while (ilReader.HasNext)
+            {
+                ILOpcode opcode = ilReader.ReadILOpcode();
+                switch (opcode)
+                {
+                    case ILOpcode.ldstr:
+                        var ldStrValue = (string)ilBody.GetObject(ilReader.ReadILToken());
+                        if (fieldName != null)
+                        {
+                            keyValue[fieldName] = ldStrValue;
+                        }
+                        else
+                        {
+                            fieldName = ldStrValue;
+                        }
+                        break;
+
+                    case ILOpcode.ret:
+                    case ILOpcode.pop:
+                        fieldName = null;
+                        break;
+
+                    default:
+                        throw new InvalidOperationException($"Unexpected opcode: {opcode}");
+                }
+            }
+            
+            return MibcConfig.FromKeyValueMap(keyValue);
         }
 
         enum MibcGroupParseState
