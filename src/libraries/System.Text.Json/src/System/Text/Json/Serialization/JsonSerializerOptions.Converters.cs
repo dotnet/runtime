@@ -32,9 +32,7 @@ namespace System.Text.Json
             Debug.Assert(memberInfo.DeclaringType != null, "Properties and fields always have a declaring type.");
             JsonConverter? converter = null;
 
-            JsonConverterAttribute? converterAttribute = (JsonConverterAttribute?)
-                GetAttributeThatCanHaveMultiple(memberInfo.DeclaringType, typeof(JsonConverterAttribute), memberInfo);
-
+            JsonConverterAttribute? converterAttribute = memberInfo.GetUniqueCustomAttribute<JsonConverterAttribute>(inherit: false);
             if (converterAttribute != null)
             {
                 converter = GetConverterFromAttribute(converterAttribute, typeToConvert, memberInfo);
@@ -176,9 +174,7 @@ namespace System.Text.Json
             // Priority 2: Attempt to get converter from [JsonConverter] on the type being converted.
             if (converter == null)
             {
-                JsonConverterAttribute? converterAttribute = (JsonConverterAttribute?)
-                    GetAttributeThatCanHaveMultiple(typeToConvert, typeof(JsonConverterAttribute));
-
+                JsonConverterAttribute? converterAttribute = typeToConvert.GetUniqueCustomAttribute<JsonConverterAttribute>(inherit: false);
                 if (converterAttribute != null)
                 {
                     converter = GetConverterFromAttribute(converterAttribute, typeToConvert: typeToConvert, memberInfo: null);
@@ -256,34 +252,6 @@ namespace System.Text.Json
             }
 
             return converter;
-        }
-
-        private static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType, MemberInfo memberInfo)
-        {
-            object[] attributes = memberInfo.GetCustomAttributes(attributeType, inherit: false);
-            return GetAttributeThatCanHaveMultiple(attributeType, classType, memberInfo, attributes);
-        }
-
-        internal static Attribute? GetAttributeThatCanHaveMultiple(Type classType, Type attributeType)
-        {
-            object[] attributes = classType.GetCustomAttributes(attributeType, inherit: false);
-            return GetAttributeThatCanHaveMultiple(attributeType, classType, null, attributes);
-        }
-
-        private static Attribute? GetAttributeThatCanHaveMultiple(Type attributeType, Type classType, MemberInfo? memberInfo, object[] attributes)
-        {
-            if (attributes.Length == 0)
-            {
-                return null;
-            }
-
-            if (attributes.Length == 1)
-            {
-                return (Attribute)attributes[0];
-            }
-
-            ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType, classType, memberInfo);
-            return default;
         }
     }
 }

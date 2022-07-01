@@ -212,9 +212,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static JsonNumberHandling? GetNumberHandlingForType(Type type)
         {
-            var numberHandlingAttribute =
-                (JsonNumberHandlingAttribute?)JsonSerializerOptions.GetAttributeThatCanHaveMultiple(type, typeof(JsonNumberHandlingAttribute));
-
+            JsonNumberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             return numberHandlingAttribute?.Handling;
         }
 
