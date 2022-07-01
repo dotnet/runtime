@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(getter is null or Func<object, object?> or Func<object, T>);
 
-            CheckMutable();
+            VerifyMutable();
 
             if (getter is null)
             {
@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(setter is null or Action<object, object?> or Action<object, T>);
 
-            CheckMutable();
+            VerifyMutable();
 
             if (setter is null)
             {
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 Action<object, object?> untypedSet = (Action<object, object?>)setter;
-                _typedSet = ((obj, value) => untypedSet(obj, (T)value!));
+                _typedSet = ((obj, value) => untypedSet(obj, value));
                 _untypedSet = untypedSet;
             }
         }
@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         case PropertyInfo propertyInfo:
                             {
-                                bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+                                bool useNonPublicAccessors = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
 
                                 MethodInfo? getMethod = propertyInfo.GetMethod;
                                 if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))

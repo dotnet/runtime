@@ -30,6 +30,7 @@ namespace System.Numerics
         public static System.Numerics.BigInteger One { get { throw null; } }
         public int Sign { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger,System.Numerics.BigInteger>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.BigInteger System.Numerics.IBinaryNumber<System.Numerics.BigInteger>.AllBitsSet { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger,System.Numerics.BigInteger>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.Numerics.BigInteger>.Radix { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.ISignedNumber<System.Numerics.BigInteger>.NegativeOne { get { throw null; } }

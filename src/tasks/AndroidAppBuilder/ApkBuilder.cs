@@ -354,7 +354,7 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
 
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " +
-            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B monodroid";
+            $"-DANDROID_PLATFORM=android-{MinApiLevel} -B monodroid";
 
         string cmakeBuildArgs = "--build monodroid";
 

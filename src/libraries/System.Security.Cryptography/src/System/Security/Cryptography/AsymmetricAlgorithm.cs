@@ -117,8 +117,7 @@ namespace System.Security.Cryptography
             return ExportArray(
                 passwordBytes,
                 pbeParameters,
-                (ReadOnlySpan<byte> span, PbeParameters parameters, Span<byte> destination, out int i) =>
-                    TryExportEncryptedPkcs8PrivateKey(span, parameters, destination, out i));
+                TryExportEncryptedPkcs8PrivateKey);
         }
 
         public virtual byte[] ExportEncryptedPkcs8PrivateKey(
@@ -128,17 +127,16 @@ namespace System.Security.Cryptography
             return ExportArray(
                 password,
                 pbeParameters,
-                (ReadOnlySpan<char> span, PbeParameters parameters, Span<byte> destination, out int i) =>
-                    TryExportEncryptedPkcs8PrivateKey(span, parameters, destination, out i));
+                TryExportEncryptedPkcs8PrivateKey);
         }
 
         public virtual byte[] ExportPkcs8PrivateKey() =>
             ExportArray(
-                (Span<byte> destination, out int i) => TryExportPkcs8PrivateKey(destination, out i));
+                TryExportPkcs8PrivateKey);
 
         public virtual byte[] ExportSubjectPublicKeyInfo() =>
             ExportArray(
-                (Span<byte> destination, out int i) => TryExportSubjectPublicKeyInfo(destination, out i));
+                TryExportSubjectPublicKeyInfo);
 
         public virtual bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,

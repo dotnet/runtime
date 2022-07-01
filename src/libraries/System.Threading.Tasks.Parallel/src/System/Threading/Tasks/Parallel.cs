@@ -3098,8 +3098,7 @@ namespace System.Threading.Tasks
                 Debug.Assert(exObj is Exception);
                 Exception ex = (Exception)exObj;
 
-                if (first == null)
-                    first = ex;
+                first ??= ex;
 
                 // If mismatch found, fail-fast:
                 OperationCanceledException? ocEx = ex as OperationCanceledException;

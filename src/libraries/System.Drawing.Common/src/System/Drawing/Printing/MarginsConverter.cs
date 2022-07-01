@@ -57,10 +57,7 @@ namespace System.Drawing.Printing
                 else
                 {
                     // Parse 4 integer values.
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
@@ -99,10 +96,7 @@ namespace System.Drawing.Printing
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = GetIntConverter();
                     string?[] args = new string[4];

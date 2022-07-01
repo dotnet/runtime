@@ -36,7 +36,7 @@
     <Reference Include="System.Threading.Channels" Condition="'$(TargetPlatformIdentifier)' == 'Browser'" />
     <Reference Include="System.Memory" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" Condition="'$(TargetPlatformIdentifier)' == 'Browser'" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
   </ItemGroup>
 </Project>

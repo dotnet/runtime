@@ -380,8 +380,7 @@ namespace System.Xml.XPath
         {
             Debug.Assert(pageElem[idxElem].NodeType == XPathNodeType.Element && pageNmsp[idxNmsp].NodeType == XPathNodeType.Namespace);
 
-            if (_mapNmsp == null)
-                _mapNmsp = new Dictionary<XPathNodeRef, XPathNodeRef>();
+            _mapNmsp ??= new Dictionary<XPathNodeRef, XPathNodeRef>();
 
             _mapNmsp.Add(new XPathNodeRef(pageElem, idxElem), new XPathNodeRef(pageNmsp, idxNmsp));
         }
@@ -413,8 +412,7 @@ namespace System.Xml.XPath
         /// </summary>
         internal void AddIdElement(string id, XPathNode[] pageElem, int idxElem)
         {
-            if (_idValueMap == null)
-                _idValueMap = new Dictionary<string, XPathNodeRef>();
+             _idValueMap ??= new Dictionary<string, XPathNodeRef>();
 
             if (!_idValueMap.ContainsKey(id))
                 _idValueMap.Add(id, new XPathNodeRef(pageElem, idxElem));

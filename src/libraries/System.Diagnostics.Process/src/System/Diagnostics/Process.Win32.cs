@@ -265,18 +265,7 @@ namespace System.Diagnostics
             return true;
         }
 
-        public string MainWindowTitle
-        {
-            get
-            {
-                if (_mainWindowTitle == null)
-                {
-                    _mainWindowTitle = GetMainWindowTitle();
-                }
-
-                return _mainWindowTitle;
-            }
-        }
+        public string MainWindowTitle => _mainWindowTitle ??= GetMainWindowTitle();
 
         private bool IsRespondingCore()
         {

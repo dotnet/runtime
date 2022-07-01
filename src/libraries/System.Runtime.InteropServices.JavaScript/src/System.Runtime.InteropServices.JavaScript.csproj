@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <!-- Use following lines to write the generated files to disk. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <RootNamespace></RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+    <Compile Include="System\Runtime\InteropServices\JavaScript\PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.cs" />
+
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\ArrayBuffer.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\DataView.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Function.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Uint8Array.cs" />
+
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSObject.References.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSHostImplementation.Types.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />
+  </ItemGroup>
+</Project>

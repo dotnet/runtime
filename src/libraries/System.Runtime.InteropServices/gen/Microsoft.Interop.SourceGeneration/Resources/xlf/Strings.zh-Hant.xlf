@@ -14,7 +14,7 @@
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">指定的參數必須從受控封送處理到非受控，以及從非受控封送處理到受控，但封送處理程式類型 '{0}' 不支援。</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
@@ -99,12 +99,12 @@
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">指定的參數必須從受控封送處理到非受控，但封送處理程式類型 '{0}' 不支援。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStatic">
         <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
-        <target state="new">The marshaller type '{0}' for managed type '{1}' must be static.</target>
+        <target state="translated">受控類型 '{1}' 的封送處理程式類型 '{0}' 必須是靜態。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
@@ -159,7 +159,7 @@
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">指定的參數必須從非受控封送處理到受控，但封送處理程式類型 '{0}' 不支援。</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">

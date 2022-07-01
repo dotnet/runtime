@@ -1028,10 +1028,7 @@ namespace System.Data.ProviderBase
                     //
                     if (addPrimaryKeys && schemaRow.IsKey)
                     {
-                        if (keys == null)
-                        {
-                            keys = new DataColumn[schemaRows.Length];
-                        }
+                        keys ??= new DataColumn[schemaRows.Length];
                         keys[keyCount++] = dataColumn;
 
                         // see case 3 above, we do want dataColumn.AllowDBNull not schemaRow.AllowDBNull

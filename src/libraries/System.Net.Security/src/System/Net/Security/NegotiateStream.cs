@@ -51,8 +51,6 @@ namespace System.Net.Security
         private bool _canRetryAuthentication;
         private ProtectionLevel _expectedProtectionLevel;
         private TokenImpersonationLevel _expectedImpersonationLevel;
-        private uint _writeSequenceNumber;
-        private uint _readSequenceNumber;
         private ExtendedProtectionPolicy? _extendedProtectionPolicy;
 
         /// <summary>
@@ -344,6 +342,8 @@ namespace System.Net.Security
         private async ValueTask<int> ReadAsync<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+            Debug.Assert(_context is not null);
+
             if (Interlocked.Exchange(ref _readInProgress, 1) == 1)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
@@ -394,7 +394,7 @@ namespace System.Net.Security
 
                     // Decrypt into internal buffer, change "readBytes" to count now _Decrypted Bytes_
                     // Decrypted data start from zero offset, the size can be shrunk after decryption.
-                    _readBufferCount = readBytes = DecryptData(_readBuffer!, 0, readBytes, out _readBufferOffset);
+                    _readBufferCount = readBytes = _context.Decrypt(_readBuffer.AsSpan(0, readBytes), out _readBufferOffset);
                     if (readBytes == 0 && buffer.Length != 0)
                     {
                         // Read again.
@@ -481,6 +481,8 @@ namespace System.Net.Security
         private async Task WriteAsync<TIOAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+            Debug.Assert(_context is not null);
+
             if (Interlocked.Exchange(ref _writeInProgress, 1) == 1)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
@@ -494,14 +496,14 @@ namespace System.Net.Security
                     int encryptedBytes;
                     try
                     {
-                        encryptedBytes = EncryptData(buffer.Slice(0, chunkBytes).Span, ref _writeBuffer);
+                        encryptedBytes = _context.Encrypt(buffer.Slice(0, chunkBytes).Span, ref _writeBuffer);
                     }
                     catch (Exception e)
                     {
                         throw new IOException(SR.net_io_encrypt, e);
                     }
 
-                    await TIOAdapter.WriteAsync(InnerStream, _writeBuffer, 0, encryptedBytes, cancellationToken).ConfigureAwait(false);
+                    await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(_writeBuffer, 0, encryptedBytes), cancellationToken).ConfigureAwait(false);
                     buffer = buffer.Slice(chunkBytes);
                 }
             }
@@ -611,8 +613,6 @@ namespace System.Net.Security
 
             _expectedProtectionLevel = protectionLevel;
             _expectedImpersonationLevel = isServer ? impersonationLevel : TokenImpersonationLevel.None;
-            _writeSequenceNumber = 0;
-            _readSequenceNumber = 0;
 
             ContextFlagsPal flags = ContextFlagsPal.Connection;
 
@@ -953,26 +953,6 @@ namespace System.Net.Security
             }
 
             return message;
-        }
-
-        private int EncryptData(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? outBuffer)
-        {
-            Debug.Assert(_context != null);
-            ThrowIfFailed(authSuccessCheck: true);
-
-            // SSPI seems to ignore this sequence number.
-            ++_writeSequenceNumber;
-            return _context.Encrypt(buffer, ref outBuffer, _writeSequenceNumber);
-        }
-
-        private int DecryptData(byte[] buffer, int offset, int count, out int newOffset)
-        {
-            Debug.Assert(_context != null);
-            ThrowIfFailed(authSuccessCheck: true);
-
-            // SSPI seems to ignore this sequence number.
-            ++_readSequenceNumber;
-            return _context.Decrypt(buffer, offset, count, out newOffset, _readSequenceNumber);
         }
 
         private static void ThrowCredentialException(long error)

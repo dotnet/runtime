@@ -719,6 +719,7 @@ namespace System
         public const byte MaxValue = (byte)255;
         public const byte MinValue = (byte)0;
         static byte System.Numerics.IAdditiveIdentity<System.Byte,System.Byte>.AdditiveIdentity { get { throw null; } }
+        static byte System.Numerics.IBinaryNumber<System.Byte>.AllBitsSet { get { throw null; } }
         static byte System.Numerics.IMinMaxValue<System.Byte>.MaxValue { get { throw null; } }
         static byte System.Numerics.IMinMaxValue<System.Byte>.MinValue { get { throw null; } }
         static byte System.Numerics.IMultiplicativeIdentity<System.Byte,System.Byte>.MultiplicativeIdentity { get { throw null; } }
@@ -852,6 +853,7 @@ namespace System
         public const char MaxValue = '\uFFFF';
         public const char MinValue = '\0';
         static char System.Numerics.IAdditiveIdentity<System.Char,System.Char>.AdditiveIdentity { get { throw null; } }
+        static char System.Numerics.IBinaryNumber<System.Char>.AllBitsSet { get { throw null; } }
         static char System.Numerics.IMinMaxValue<System.Char>.MaxValue { get { throw null; } }
         static char System.Numerics.IMinMaxValue<System.Char>.MinValue { get { throw null; } }
         static char System.Numerics.IMultiplicativeIdentity<System.Char,System.Char>.MultiplicativeIdentity { get { throw null; } }
@@ -2097,6 +2099,7 @@ namespace System
         public const double PositiveInfinity = 1.0 / 0.0;
         public const double Tau = 6.283185307179586;
         static double System.Numerics.IAdditiveIdentity<System.Double,System.Double>.AdditiveIdentity { get { throw null; } }
+        static double System.Numerics.IBinaryNumber<System.Double>.AllBitsSet { get { throw null; } }
         static double System.Numerics.IFloatingPointIeee754<System.Double>.E { get { throw null; } }
         static double System.Numerics.IFloatingPointIeee754<System.Double>.Epsilon { get { throw null; } }
         static double System.Numerics.IFloatingPointIeee754<System.Double>.NaN { get { throw null; } }
@@ -2739,6 +2742,7 @@ namespace System
         public static System.Half Pi { get { throw null; } }
         public static System.Half PositiveInfinity { get { throw null; } }
         static System.Half System.Numerics.IAdditiveIdentity<System.Half,System.Half>.AdditiveIdentity { get { throw null; } }
+        static System.Half System.Numerics.IBinaryNumber<System.Half>.AllBitsSet { get { throw null; } }
         static int System.Numerics.INumberBase<System.Half>.Radix { get { throw null; } }
         public static System.Half Tau { get { throw null; } }
         public static System.Half Zero { get { throw null; } }
@@ -3077,6 +3081,7 @@ namespace System
         public static System.Int128 NegativeOne { get { throw null; } }
         public static System.Int128 One { get { throw null; } }
         static System.Int128 System.Numerics.IAdditiveIdentity<System.Int128,System.Int128>.AdditiveIdentity { get { throw null; } }
+        static System.Int128 System.Numerics.IBinaryNumber<System.Int128>.AllBitsSet { get { throw null; } }
         static System.Int128 System.Numerics.IMultiplicativeIdentity<System.Int128,System.Int128>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int128>.Radix { get { throw null; } }
         public static System.Int128 Zero { get { throw null; } }
@@ -3246,6 +3251,7 @@ namespace System
         public const short MaxValue = (short)32767;
         public const short MinValue = (short)-32768;
         static short System.Numerics.IAdditiveIdentity<System.Int16,System.Int16>.AdditiveIdentity { get { throw null; } }
+        static short System.Numerics.IBinaryNumber<System.Int16>.AllBitsSet { get { throw null; } }
         static short System.Numerics.IMinMaxValue<System.Int16>.MaxValue { get { throw null; } }
         static short System.Numerics.IMinMaxValue<System.Int16>.MinValue { get { throw null; } }
         static short System.Numerics.IMultiplicativeIdentity<System.Int16,System.Int16>.MultiplicativeIdentity { get { throw null; } }
@@ -3373,6 +3379,7 @@ namespace System
         public const int MaxValue = 2147483647;
         public const int MinValue = -2147483648;
         static int System.Numerics.IAdditiveIdentity<System.Int32,System.Int32>.AdditiveIdentity { get { throw null; } }
+        static int System.Numerics.IBinaryNumber<System.Int32>.AllBitsSet { get { throw null; } }
         static int System.Numerics.IMinMaxValue<System.Int32>.MaxValue { get { throw null; } }
         static int System.Numerics.IMinMaxValue<System.Int32>.MinValue { get { throw null; } }
         static int System.Numerics.IMultiplicativeIdentity<System.Int32,System.Int32>.MultiplicativeIdentity { get { throw null; } }
@@ -3500,6 +3507,7 @@ namespace System
         public const long MaxValue = (long)9223372036854775807;
         public const long MinValue = (long)-9223372036854775808;
         static long System.Numerics.IAdditiveIdentity<System.Int64,System.Int64>.AdditiveIdentity { get { throw null; } }
+        static long System.Numerics.IBinaryNumber<System.Int64>.AllBitsSet { get { throw null; } }
         static long System.Numerics.IMinMaxValue<System.Int64>.MaxValue { get { throw null; } }
         static long System.Numerics.IMinMaxValue<System.Int64>.MinValue { get { throw null; } }
         static long System.Numerics.IMultiplicativeIdentity<System.Int64,System.Int64>.MultiplicativeIdentity { get { throw null; } }
@@ -3633,6 +3641,7 @@ namespace System
         public static nint MinValue { get { throw null; } }
         public static int Size { get { throw null; } }
         static nint System.Numerics.IAdditiveIdentity<nint,nint>.AdditiveIdentity { get { throw null; } }
+        static nint System.Numerics.IBinaryNumber<nint>.AllBitsSet { get { throw null; } }
         static nint System.Numerics.IMinMaxValue<nint>.MaxValue { get { throw null; } }
         static nint System.Numerics.IMinMaxValue<nint>.MinValue { get { throw null; } }
         static nint System.Numerics.IMultiplicativeIdentity<nint,nint>.MultiplicativeIdentity { get { throw null; } }
@@ -3796,7 +3805,7 @@ namespace System
     public partial interface IParsable<TSelf> where TSelf : System.IParsable<TSelf>
     {
         static abstract TSelf Parse(string s, System.IFormatProvider? provider);
-        static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out TSelf result);
+        static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
     }
     public partial interface IProgress<in T>
     {
@@ -3809,7 +3818,7 @@ namespace System
     public partial interface ISpanParsable<TSelf> : System.IParsable<TSelf> where TSelf : System.ISpanParsable<TSelf>
     {
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider);
-        static abstract bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out TSelf result);
+        static abstract bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
     }
     public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
@@ -4566,6 +4575,7 @@ namespace System
         public const sbyte MaxValue = (sbyte)127;
         public const sbyte MinValue = (sbyte)-128;
         static sbyte System.Numerics.IAdditiveIdentity<System.SByte,System.SByte>.AdditiveIdentity { get { throw null; } }
+        static sbyte System.Numerics.IBinaryNumber<System.SByte>.AllBitsSet { get { throw null; } }
         static sbyte System.Numerics.IMinMaxValue<System.SByte>.MaxValue { get { throw null; } }
         static sbyte System.Numerics.IMinMaxValue<System.SByte>.MinValue { get { throw null; } }
         static sbyte System.Numerics.IMultiplicativeIdentity<System.SByte,System.SByte>.MultiplicativeIdentity { get { throw null; } }
@@ -4706,6 +4716,7 @@ namespace System
         public const float PositiveInfinity = 1.0f / 0.0f;
         public const float Tau = 6.2831855f;
         static float System.Numerics.IAdditiveIdentity<System.Single,System.Single>.AdditiveIdentity { get { throw null; } }
+        static float System.Numerics.IBinaryNumber<System.Single>.AllBitsSet { get { throw null; } }
         static float System.Numerics.IFloatingPointIeee754<System.Single>.E { get { throw null; } }
         static float System.Numerics.IFloatingPointIeee754<System.Single>.Epsilon { get { throw null; } }
         static float System.Numerics.IFloatingPointIeee754<System.Single>.NaN { get { throw null; } }
@@ -6054,6 +6065,7 @@ namespace System
         public static System.UInt128 MinValue { get { throw null; } }
         public static System.UInt128 One { get { throw null; } }
         static System.UInt128 System.Numerics.IAdditiveIdentity<System.UInt128,System.UInt128>.AdditiveIdentity { get { throw null; } }
+        static System.UInt128 System.Numerics.IBinaryNumber<System.UInt128>.AllBitsSet { get { throw null; } }
         static System.UInt128 System.Numerics.IMultiplicativeIdentity<System.UInt128,System.UInt128>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt128>.Radix { get { throw null; } }
         public static System.UInt128 Zero { get { throw null; } }
@@ -6230,6 +6242,7 @@ namespace System
         public const ushort MaxValue = (ushort)65535;
         public const ushort MinValue = (ushort)0;
         static ushort System.Numerics.IAdditiveIdentity<System.UInt16,System.UInt16>.AdditiveIdentity { get { throw null; } }
+        static ushort System.Numerics.IBinaryNumber<System.UInt16>.AllBitsSet { get { throw null; } }
         static ushort System.Numerics.IMinMaxValue<System.UInt16>.MaxValue { get { throw null; } }
         static ushort System.Numerics.IMinMaxValue<System.UInt16>.MinValue { get { throw null; } }
         static ushort System.Numerics.IMultiplicativeIdentity<System.UInt16,System.UInt16>.MultiplicativeIdentity { get { throw null; } }
@@ -6357,6 +6370,7 @@ namespace System
         public const uint MaxValue = (uint)4294967295;
         public const uint MinValue = (uint)0;
         static uint System.Numerics.IAdditiveIdentity<System.UInt32,System.UInt32>.AdditiveIdentity { get { throw null; } }
+        static uint System.Numerics.IBinaryNumber<System.UInt32>.AllBitsSet { get { throw null; } }
         static uint System.Numerics.IMinMaxValue<System.UInt32>.MaxValue { get { throw null; } }
         static uint System.Numerics.IMinMaxValue<System.UInt32>.MinValue { get { throw null; } }
         static uint System.Numerics.IMultiplicativeIdentity<System.UInt32,System.UInt32>.MultiplicativeIdentity { get { throw null; } }
@@ -6484,6 +6498,7 @@ namespace System
         public const ulong MaxValue = (ulong)18446744073709551615;
         public const ulong MinValue = (ulong)0;
         static ulong System.Numerics.IAdditiveIdentity<System.UInt64,System.UInt64>.AdditiveIdentity { get { throw null; } }
+        static ulong System.Numerics.IBinaryNumber<System.UInt64>.AllBitsSet { get { throw null; } }
         static ulong System.Numerics.IMinMaxValue<System.UInt64>.MaxValue { get { throw null; } }
         static ulong System.Numerics.IMinMaxValue<System.UInt64>.MinValue { get { throw null; } }
         static ulong System.Numerics.IMultiplicativeIdentity<System.UInt64,System.UInt64>.MultiplicativeIdentity { get { throw null; } }
@@ -6616,6 +6631,7 @@ namespace System
         public static nuint MinValue { get { throw null; } }
         public static int Size { get { throw null; } }
         static nuint System.Numerics.IAdditiveIdentity<nuint,nuint>.AdditiveIdentity { get { throw null; } }
+        static nuint System.Numerics.IBinaryNumber<nuint>.AllBitsSet { get { throw null; } }
         static nuint System.Numerics.IMinMaxValue<nuint>.MaxValue { get { throw null; } }
         static nuint System.Numerics.IMinMaxValue<nuint>.MinValue { get { throw null; } }
         static nuint System.Numerics.IMultiplicativeIdentity<nuint,nuint>.MultiplicativeIdentity { get { throw null; } }
@@ -10382,6 +10398,7 @@ namespace System.Numerics
     }
     public partial interface IBinaryNumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryNumber<TSelf>
     {
+        static abstract TSelf AllBitsSet { get; }
         static abstract bool IsPow2(TSelf value);
         static abstract TSelf Log2(TSelf value);
     }

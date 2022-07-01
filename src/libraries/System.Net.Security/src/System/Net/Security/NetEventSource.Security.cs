@@ -76,10 +76,7 @@ namespace System.Net
                     catch { };
                 }
 
-                if (localId == null)
-                {
-                    localId = IdOf(innerStream);
-                }
+                localId ??= IdOf(innerStream);
 
                 SslStreamCtor(IdOf(sslStream), localId, remoteId);
             }

@@ -474,6 +474,8 @@ interface DotnetPublicAPI {
     MONO: typeof MONO;
     BINDING: typeof BINDING;
     INTERNAL: any;
+    EXPORTS: any;
+    IMPORTS: any;
     Module: EmscriptenModule;
     RuntimeId: number;
     RuntimeBuildInfo: {

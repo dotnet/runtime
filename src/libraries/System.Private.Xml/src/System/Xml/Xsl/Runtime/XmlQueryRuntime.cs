@@ -239,18 +239,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the object that manages the state needed to implement various Xslt functions.
         /// </summary>
-        public XsltLibrary XsltFunctions
-        {
-            get
-            {
-                if (_xsltLib == null)
-                {
-                    _xsltLib = new XsltLibrary(this);
-                }
-
-                return _xsltLib;
-            }
-        }
+        public XsltLibrary XsltFunctions => _xsltLib ??= new XsltLibrary(this);
 
         /// <summary>
         /// Get the early-bound extension object identified by "index".  If it does not yet exist, create an instance using the
