@@ -732,7 +732,11 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
+    // Compute the ValueNumber for a bitcast
     ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
+
+    // Compute the ValueNumberPair for a bitcast
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType);
 
     bool IsVNNotAField(ValueNum vn);
 

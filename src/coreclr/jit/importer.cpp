@@ -4911,6 +4911,89 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_BitConverter_DoubleToInt64Bits:
+            {
+                GenTree* op1 = impPopStack().val;
+                assert(varTypeIsFloating(op1));
+
+                if (op1->IsCnsFltOrDbl())
+                {
+                    double f64Cns = op1->AsDblCon()->gtDconVal;
+                    retNode = gtNewLconNode(*(int64_t*)&f64Cns);
+                }
+#if TARGET_64BIT
+                else
+                {
+                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+
+                    if (op1->TypeGet() != TYP_DOUBLE)
+                    {
+                        op1 = gtNewCastNode(TYP_DOUBLE, op1, false, TYP_DOUBLE);
+                    }
+                    retNode = gtNewBitCastNode(TYP_LONG, op1);
+                }
+#endif
+                break;
+            }
+
+            case NI_System_BitConverter_Int32BitsToSingle:
+            {
+                GenTree* op1 = impPopStack().val;
+                assert(varTypeIsInt(op1));
+
+                if (op1->IsIntegralConst())
+                {
+                    int32_t i32Cns = (int32_t)op1->AsIntConCommon()->IconValue();
+                    retNode = gtNewDconNode(*(float*)&i32Cns, TYP_FLOAT);
+                }
+                else
+                {
+                    retNode = gtNewBitCastNode(TYP_FLOAT, op1);
+                }
+                break;
+            }
+
+            case NI_System_BitConverter_Int64BitsToDouble:
+            {
+                GenTree* op1 = impPopStack().val;
+                assert(varTypeIsLong(op1));
+
+                if (op1->IsIntegralConst())
+                {
+                    int64_t i64Cns = op1->AsIntConCommon()->LngValue();
+                    retNode = gtNewDconNode(*(double*)&i64Cns);
+                }
+#if TARGET_64BIT
+                else
+                {
+                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    retNode = gtNewBitCastNode(TYP_DOUBLE, op1);
+                }
+#endif
+                break;
+            }
+
+            case NI_System_BitConverter_SingleToInt32Bits:
+            {
+                GenTree* op1 = impPopStack().val;
+                assert(varTypeIsFloating(op1));
+
+                if (op1->IsCnsFltOrDbl())
+                {
+                    float f32Cns = (float)op1->AsDblCon()->gtDconVal;
+                    retNode = gtNewIconNode(*(int32_t*)&f32Cns);
+                }
+                else
+                {
+                    if (op1->TypeGet() != TYP_FLOAT)
+                    {
+                        op1 = gtNewCastNode(TYP_FLOAT, op1, false, TYP_FLOAT);
+                    }
+                    retNode = gtNewBitCastNode(TYP_INT, op1);
+                }
+                break;
+            }
+
             default:
                 break;
         }
@@ -5547,6 +5630,53 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "DefaultConstructorOf") == 0)
             {
                 result = NI_System_Activator_DefaultConstructorOf;
+            }
+        }
+        else if (strcmp(className, "BitConverter") == 0)
+        {
+            if (methodName[0] == 'D')
+            {
+                if (strcmp(methodName, "DoubleToInt64Bits") == 0)
+                {
+                    result = NI_System_BitConverter_DoubleToInt64Bits;
+                }
+                else if (strcmp(methodName, "DoubleToUInt64Bits") == 0)
+                {
+                    result = NI_System_BitConverter_DoubleToInt64Bits;
+                }
+            }
+            else if (methodName[0] == 'I')
+            {
+                if (strcmp(methodName, "Int32BitsToSingle") == 0)
+                {
+                    result = NI_System_BitConverter_Int32BitsToSingle;
+                }
+                else if (strcmp(methodName, "Int64BitsToDouble") == 0)
+                {
+                    result = NI_System_BitConverter_Int64BitsToDouble;
+                }
+            }
+            else if (methodName[0] == 'S')
+            {
+                if (strcmp(methodName, "SingleToInt32Bits") == 0)
+                {
+                    result = NI_System_BitConverter_SingleToInt32Bits;
+                }
+                else if (strcmp(methodName, "SingleToUInt32Bits") == 0)
+                {
+                    result = NI_System_BitConverter_SingleToInt32Bits;
+                }
+            }
+            else if (methodName[0] == 'U')
+            {
+                if (strcmp(methodName, "UInt32BitsToSingle") == 0)
+                {
+                    result = NI_System_BitConverter_Int32BitsToSingle;
+                }
+                else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
+                {
+                    result = NI_System_BitConverter_Int64BitsToDouble;
+                }
             }
         }
         else if (strcmp(className, "ByReference`1") == 0)

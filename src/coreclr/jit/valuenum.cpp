@@ -8737,6 +8737,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberCastTree(tree);
         }
+        else if (tree->OperGet() == GT_BITCAST)
+        {
+            fgValueNumberBitCast(tree);
+        }
         else if (tree->OperGet() == GT_INTRINSIC)
         {
             fgValueNumberIntrinsic(tree);
@@ -9483,6 +9487,16 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     tree->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 }
 
+void Compiler::fgValueNumberBitCast(GenTree* tree)
+{
+    assert(tree->OperGet() == GT_BITCAST);
+
+    ValueNumPair srcVNPair  = tree->gtGetOp1()->gtVNPair;
+    var_types    castToType = tree->TypeGet();
+
+    tree->gtVNPair = vnStore->VNPairForBitCast(srcVNPair, castToType);
+}
+
 // Compute the ValueNumber for a cast operation
 ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   var_types castToType,
@@ -9584,7 +9598,25 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
         return VNZeroForType(castToType);
     }
 
-    return VNForFunc(castToType, VNF_BitCast, srcVN, VNForIntCon(castToType));
+    ValueNum srcExcVN;
+    ValueNum srcNormVN;
+    VNUnpackExc(srcVN, &srcNormVN, &srcExcVN);
+
+    ValueNum resultNormVN = VNForFunc(castToType, VNF_BitCast, srcNormVN, VNForIntCon(castToType));
+    ValueNum resultExcVN  = srcExcVN;
+    
+    return VNWithExc(resultNormVN, resultExcVN);
+}
+
+// Compute the ValueNumberPair for a bitcast operation
+ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType)
+{
+    ValueNum srcLibVN     = srcVNPair.GetLiberal();
+    ValueNum srcConVN     = srcVNPair.GetConservative();
+    ValueNum bitCastLibVN = VNForBitCast(srcLibVN, castToType);
+    ValueNum bitCastConVN = VNForBitCast(srcConVN, castToType);
+
+    return {bitCastLibVN, bitCastConVN};
 }
 
 void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc)

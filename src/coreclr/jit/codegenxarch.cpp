@@ -493,12 +493,18 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             emitter* emit       = GetEmitter();
             emitAttr size       = emitTypeSize(targetType);
             double   constValue = tree->AsDblCon()->gtDconVal;
+            int64_t  constBits  = *(__int64*)&constValue;
 
             // Make sure we use "xorps reg, reg" only for +ve zero constant (0.0) and not for -ve zero (-0.0)
-            if (*(__int64*)&constValue == 0)
+            if (constBits == 0)
             {
-                // A faster/smaller way to generate 0
+                // A faster/smaller way to generate Zero
                 emit->emitIns_R_R(INS_xorps, size, targetReg, targetReg);
+            }
+            else if ((constBits == -1) || ((size == 4) && (constBits == 0xFFFFFFFFE0000000)))
+            {
+                // A faster/smaller way to generate AllBitsSet
+                emit->emitIns_R_R(INS_pcmpeqd, size, targetReg, targetReg);
             }
             else
             {
