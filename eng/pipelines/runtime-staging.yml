@@ -68,6 +68,7 @@ jobs:
     scenarios:
       - normal
       - WasmTestOnBrowser
+    shouldContinueOnError: false
 
 # AOT Library tests
 - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -78,12 +79,14 @@ jobs:
     runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
     runAOT: true
     alwaysRun: ${{ variables.isRollingBuild }}
+    shouldContinueOnError: false
 
 - template: /eng/pipelines/common/templates/wasm-build-tests.yml
   parameters:
     platforms:
       - Browser_wasm_win
     alwaysRun: ${{ variables.isRollingBuild }}
+    shouldContinueOnError: false
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
   parameters:
@@ -91,6 +94,7 @@ jobs:
       - Browser_wasm
       - Browser_wasm_win
     alwaysRun: ${{ variables.isRollingBuild }}
+    shouldContinueOnError: false
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
   parameters:
