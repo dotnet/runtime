@@ -2405,7 +2405,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		else if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
 	} else if (in_corlib &&
-			!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
+			(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
+			!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29)) &&
 			!strcmp (tm, "get_IsSupported")) {
 		*op = MINT_LDC_I4_0;
 	} else if (in_corlib &&
