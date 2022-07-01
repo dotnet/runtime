@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.Marshalling;
 -           ManagedType = managedType;
 -           MarshallerKind = marshallerKind;
 -      }
-- 
+-
 -      public Type ManagedType { get; }
 -      public CustomTypeMarshallerKind MarshallerKind { get; }
 -      public int BufferSize { get; set; }
@@ -51,13 +51,13 @@ namespace System.Runtime.InteropServices.Marshalling;
 -      {
 -      }
 - }
-- 
+-
 - public enum CustomTypeMarshallerKind
 - {
 -      Value,
 -      LinearCollection
 - }
-- 
+-
 - [Flags]
 - public enum CustomTypeMarshallerFeatures
 - {
@@ -108,8 +108,8 @@ namespace System.Runtime.InteropServices.Marshalling;
 +     /// </summary>
 +     public int BufferSize { get; set; }
 + }
-+ 
-+ 
++
++
 + /// <summary>
 + /// Base class attribute for custom marshaller attributes.
 + /// </summary>
@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices.Marshalling;
 +     /// </summary>
 +     public sealed class GenericPlaceholder { }
 + }
-+ 
++
 + /// <summary>
 + /// Specify marshallers used in the managed to unmanaged direction (that is, P/Invoke)
 + /// </summary>
@@ -137,23 +137,23 @@ namespace System.Runtime.InteropServices.Marshalling;
 +     /// </summary>
 +     /// <param name="managedType">Managed type to marshal</param>
 +     public ManagedToUnmanagedMarshallersAttribute(Type managedType) { }
-+ 
++
 +     /// <summary>
 +     /// Marshaller to use when a parameter of the managed type is passed by-value or with the <c>in</c> keyword.
 +     /// </summary>
 +     public Type? InMarshaller { get; set; }
-+ 
++
 +     /// <summary>
 +     /// Marshaller to use when a parameter of the managed type is passed by-value or with the <c>ref</c> keyword.
 +     /// </summary>
 +     public Type? RefMarshaller { get; set; }
-+ 
++
 +     /// <summary>
 +     /// Marshaller to use when a parameter of the managed type is passed by-value or with the <c>out</c> keyword.
 +     /// </summary>
 +     public Type? OutMarshaller { get; set; }
 + }
-+ 
++
 + /// <summary>
 + /// Specify marshallers used in the unmanaged to managed direction (that is, Reverse P/Invoke)
 + /// </summary>
@@ -165,23 +165,23 @@ namespace System.Runtime.InteropServices.Marshalling;
 +     /// </summary>
 +     /// <param name="managedType">Managed type to marshal</param>
 +     public UnmanagedToManagedMarshallersAttribute(Type managedType) { }
-+ 
++
 +     /// <summary>
 +     /// Marshaller to use when a parameter of the managed type is passed by-value or with the <c>in</c> keyword.
 +     /// </summary>
 +     public Type? InMarshaller { get; set; }
-+ 
++
 +     /// <summary>
 +     /// Marshaller to use when a parameter of the managed type is passed by-value or with the <c>ref</c> keyword.
 +     /// </summary>
 +     public Type? RefMarshaller { get; set; }
-+ 
++
 +     /// <summary>
 +     /// Marshaller to use when a parameter of the managed type is passed by-value or with the <c>out</c> keyword.
 +     /// </summary>
 +     public Type? OutMarshaller { get; set; }
 + }
-+ 
++
 + /// <summary>
 + /// Specify marshaller for array-element marshalling and default struct field marshalling.
 + /// </summary>
@@ -195,7 +195,7 @@ namespace System.Runtime.InteropServices.Marshalling;
 +     /// <param name="elementMarshaller">Marshaller type to use for marshalling <paramref name="managedType"/>.</param>
 +     public ElementMarshallerAttribute(Type managedType, Type elementMarshaller) { }
 + }
-+ 
++
 + /// <summary>
 + /// Specifies that a particular generic parameter is the collection element's unmanaged type.
 + /// </summary>
@@ -470,10 +470,10 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
     public static class ManagedToNative
     {
         public static TNative AllocateContainerForUnmanagedElements(TCollection managed, out int numElements); // Can throw exceptions
-        
+
         public static ReadOnlySpan<TManagedElement> GetManagedValuesSource(TCollection managed); // Can throw exceptions
 
-        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TNative nativeValue, int numElements); // Can throw exceptions
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TNative unmanaged, int numElements); // Can throw exceptions
 
         public static ref TOther GetPinnableReference(TManaged managed);  // Optional. Can throw exceptions. Result pinnned and passed to Invoke.
 
@@ -495,10 +495,10 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
     public static class ManagedToNative
     {
         public static TNative AllocateContainerForUnmanagedElements(TCollection managed, Span<TOther> buffer, out int numElements); // Can throw exceptions
-        
+
         public static ReadOnlySpan<TManagedElement> GetManagedValuesSource(TCollection managed); // Can throw exceptions
 
-        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TNative nativeValue, int numElements); // Can throw exceptions
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TNative unmanaged, int numElements); // Can throw exceptions
 
         public static ref TOther GetPinnableReference(TManaged managed);  // Optional. Can throw exceptions. Result pinnned and passed to Invoke.
 
@@ -517,11 +517,11 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 {
     public static class NativeToManaged
     {
-        public static TCollection AllocateContainerForManagedElements(int length); // Can throw exceptions
+        public static TCollection AllocateContainerForManagedElements(TNative unmanaged, int length); // Can throw exceptions
 
         public static Span<TManagedElement> GetManagedValuesDestination(T[] managed) => managed;  // Can throw exceptions
 
-        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TNative nativeValue, int numElements);  // Can throw exceptions
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TNative unmanaged, int numElements);  // Can throw exceptions
 
         public static void Free(TNative native); // Optional. Should not throw exceptions.
     }
@@ -540,11 +540,11 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 {
     public static class NativeToManaged
     {
-        public static TCollection AllocateContainerForManagedElementsGuaranteed(int length); // Should not throw exceptions other than OutOfMemoryException.
+        public static TCollection AllocateContainerForManagedElementsGuaranteed(TNative unmanaged, int length); // Should not throw exceptions other than OutOfMemoryException.
 
         public static Span<TManagedElement> GetManagedValuesDestination(T[] managed) => managed;  // Can throw exceptions
 
-        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TNative nativeValue, int numElements);  // Can throw exceptions
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TNative unmanaged, int numElements);  // Can throw exceptions
 
         public static void Free(TNative native); // Optional. Should not throw exceptions.
     }
@@ -584,7 +584,7 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 
         public ReadOnlySpan<TManagedElement> GetManagedValuesSource(); // Can throw exceptions.
 
-        public Span<byte> GetNativeValuesDestination(); // Can throw exceptions.
+        public Span<byte> GetUnmanagedValuesDestination(); // Can throw exceptions.
 
         public ref TIgnored GetPinnableReference(); // Optional. Can throw exceptions.
 
@@ -615,7 +615,7 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 
         public ReadOnlySpan<TManagedElement> GetManagedValuesSource(); // Can throw exceptions.
 
-        public Span<byte> GetNativeValuesDestination(); // Can throw exceptions.
+        public Span<byte> GetUnmanagedValuesDestination(); // Can throw exceptions.
 
         public ref TIgnored GetPinnableReference(); // Optional. Can throw exceptions.
 
@@ -642,7 +642,7 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 
         public void FromUnmanaged(TNative value); // Should not throw exceptions.
 
-        public ReadOnlySpan<TUnmanagedElement> GetNativeValuesSource(int length); // Can throw exceptions.
+        public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int length); // Can throw exceptions.
 
         public Span<TManagedElement> GetManagedValuesDestination(int length); // Can throw exceptions.
 
@@ -667,7 +667,7 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 
         public void FromUnmanaged(TNative value); // Should not throw exceptions.
 
-        public ReadOnlySpan<TUnmanagedElement> GetNativeValuesSource(int length); // Can throw exceptions.
+        public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int length); // Can throw exceptions.
 
         public Span<TManagedElement> GetManagedValuesDestination(int length); // Can throw exceptions.
 

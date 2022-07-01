@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -23,6 +22,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         private JsonPropertyInfoDictionaryValueList? _properties;
 
+        private Action<object>? _onSerializing;
+        private Action<object>? _onSerialized;
+        private Action<object>? _onDeserializing;
+        private Action<object>? _onDeserialized;
+
         /// <summary>
         /// Object constructor. If set to null type is not deserializable.
         /// </summary>
@@ -41,7 +45,95 @@ namespace System.Text.Json.Serialization.Metadata
         internal Func<object>? CreateObjectForExtensionDataProperty { get; private protected set; }
 
         /// <summary>
-        /// Gets JsonPropertyInfo list. Only applicable when Kind is Object.
+        /// Gets or sets a callback to be invoked before serialization occurs.
+        /// </summary>
+        /// <remarks>
+        /// Types implementing <see cref="IJsonOnSerializing"/> will map to this callback.
+        /// </remarks>
+        internal Action<object>? OnSerializing
+        {
+            get => _onSerializing;
+            set
+            {
+                VerifyMutable();
+
+                if (Kind != JsonTypeInfoKind.Object)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializationCallbacksNotSupported(Kind);
+                }
+
+                _onSerializing = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a callback to be invoked after serialization occurs.
+        /// </summary>
+        /// <remarks>
+        /// Types implementing <see cref="IJsonOnSerialized"/> will map to this callback.
+        /// </remarks>
+        internal Action<object>? OnSerialized
+        {
+            get => _onSerialized;
+            set
+            {
+                VerifyMutable();
+
+                if (Kind != JsonTypeInfoKind.Object)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializationCallbacksNotSupported(Kind);
+                }
+
+                _onSerialized = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a callback to be invoked before deserialization occurs.
+        /// </summary>
+        /// <remarks>
+        /// Types implementing <see cref="IJsonOnSerializing"/> will map to this callback.
+        /// </remarks>
+        internal Action<object>? OnDeserializing
+        {
+            get => _onDeserializing;
+            set
+            {
+                VerifyMutable();
+
+                if (Kind != JsonTypeInfoKind.Object)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializationCallbacksNotSupported(Kind);
+                }
+
+                _onDeserializing = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a callback to be invoked after deserialization occurs.
+        /// </summary>
+        /// <remarks>
+        /// Types implementing <see cref="IJsonOnDeserialized"/> will map to this callback.
+        /// </remarks>
+        internal Action<object>? OnDeserialized
+        {
+            get => _onDeserialized;
+            set
+            {
+                VerifyMutable();
+
+                if (Kind != JsonTypeInfoKind.Object)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializationCallbacksNotSupported(Kind);
+                }
+
+                _onDeserialized = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets JsonPropertyInfo list. Only applicable when <see cref="Kind"/> equals <see cref="JsonTypeInfoKind.Object"/>.
         /// </summary>
         public IList<JsonPropertyInfo> Properties
         {
@@ -70,6 +162,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Gets or sets a configuration object specifying polymorphism metadata.
         /// </summary>
+        /// <remarks>
+        /// Configuration specified in the <see cref="JsonPolymorphicAttribute"/> and
+        /// <see cref="JsonDerivedTypeAttribute"/> will automatically map to this property.
+        /// </remarks>
         public JsonPolymorphismOptions? PolymorphismOptions
         {
             get => _polymorphismOptions;
@@ -98,7 +194,30 @@ namespace System.Text.Json.Serialization.Metadata
         // Add method delegate for non-generic Stack and Queue; and types that derive from them.
         internal object? AddMethodDelegate { get; set; }
 
-        internal JsonPropertyInfo? DataExtensionProperty { get; set; }
+        /// <summary>
+        /// Gets or sets an extension data property for the current type.
+        /// </summary>
+        /// <remarks>
+        /// Properties annotated with <see cref="JsonExtensionDataAttribute"/>
+        /// will appears here when using <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>.
+        /// </remarks>
+        internal JsonPropertyInfo? ExtensionDataProperty
+        {
+            get => _extensionDataProperty;
+            set
+            {
+                VerifyMutable();
+
+                if (value != null && !IsValidDataExtensionProperty(value))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, value);
+                }
+
+                _extensionDataProperty = value;
+            }
+        }
+
+        private JsonPropertyInfo? _extensionDataProperty;
 
         internal PolymorphicTypeResolver? PolymorphicTypeResolver { get; private set; }
 
@@ -201,7 +320,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal Type? KeyType { get; set; }
 
         /// <summary>
-        /// Options associated with JsonTypeInfo
+        /// Gets the <see cref="JsonSerializerOptions"/> instance associated with <see cref="JsonTypeInfo" />.
         /// </summary>
         public JsonSerializerOptions Options { get; private set; }
 
@@ -250,8 +369,11 @@ namespace System.Text.Json.Serialization.Metadata
         private DefaultValueHolder? _defaultValueHolder;
 
         /// <summary>
-        /// Type specific value overriding JsonSerializerOptions NumberHandling. For DefaultJsonTypeInfoResolver it is equivalent to JsonNumberHandlingAttribute value.
+        /// Gets or sets the type-level <see cref="JsonSerializerOptions.NumberHandling"/> override.
         /// </summary>
+        /// <remarks>
+        /// For <see cref="DefaultJsonTypeInfoResolver" /> it is equivalent to annotating the property with <see cref="JsonNumberHandlingAttribute" />.
+        /// </remarks>
         public JsonNumberHandling? NumberHandling
         {
             get => _numberHandling;
@@ -362,10 +484,10 @@ namespace System.Text.Json.Serialization.Metadata
                 LateAddProperties();
             }
 
-            if (DataExtensionProperty != null)
+            if (ExtensionDataProperty != null)
             {
-                DataExtensionProperty.EnsureChildOf(this);
-                DataExtensionProperty.EnsureConfigured();
+                ExtensionDataProperty.EnsureChildOf(this);
+                ExtensionDataProperty.EnsureConfigured();
             }
 
             if (converter.ConverterStrategy == ConverterStrategy.Object)
@@ -374,7 +496,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 foreach (var jsonPropertyInfoKv in PropertyCache.List)
                 {
-                    JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value!;
+                    JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
 
                     jsonPropertyInfo.EnsureChildOf(this);
                     jsonPropertyInfo.EnsureConfigured();
@@ -419,7 +541,7 @@ namespace System.Text.Json.Serialization.Metadata
                 sb.AppendLine("  Properties: {");
                 foreach (var property in PropertyCache!.List)
                 {
-                    JsonPropertyInfo pi = property.Value!;
+                    JsonPropertyInfo pi = property.Value;
                     sb.AppendLine($"    {property.Key}:");
                     sb.AppendLine($"{pi.GetDebugInfo(indent: 6)},");
                 }
@@ -613,9 +735,9 @@ namespace System.Text.Json.Serialization.Metadata
             // the parameter name to the object property name and do not use the JSON version of the name here.
             var nameLookup = new Dictionary<ParameterLookupKey, ParameterLookupValue>(PropertyCache!.Count);
 
-            foreach (KeyValuePair<string, JsonPropertyInfo?> kvp in PropertyCache.List)
+            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in PropertyCache.List)
             {
-                JsonPropertyInfo jsonProperty = kvp.Value!;
+                JsonPropertyInfo jsonProperty = kvp.Value;
                 string propertyName = jsonProperty.ClrName ?? jsonProperty.Name;
 
                 ParameterLookupKey key = new(propertyName, jsonProperty.PropertyType);
@@ -652,11 +774,11 @@ namespace System.Text.Json.Serialization.Metadata
                     parameterCache.Add(jsonPropertyInfo.Name, jsonParameterInfo);
                 }
                 // It is invalid for the extension data property to bind with a constructor argument.
-                else if (DataExtensionProperty != null &&
-                    StringComparer.OrdinalIgnoreCase.Equals(paramToCheck.Name, DataExtensionProperty.Name))
+                else if (ExtensionDataProperty != null &&
+                    StringComparer.OrdinalIgnoreCase.Equals(paramToCheck.Name, ExtensionDataProperty.Name))
                 {
-                    Debug.Assert(DataExtensionProperty.ClrName != null, "Custom property info cannot be data extension property");
-                    ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty.ClrName, DataExtensionProperty);
+                    Debug.Assert(ExtensionDataProperty.ClrName != null, "Custom property info cannot be data extension property");
+                    ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(ExtensionDataProperty.ClrName, ExtensionDataProperty);
                 }
             }
 

@@ -333,6 +333,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public MethodDebugInformation DebugInformation;
         public MethodDefinitionHandle methodDefHandle;
         private MetadataReader pdbMetadataReader;
+        private bool hasDebugInformation;
 
         public SourceLocation StartLocation { get; set; }
         public SourceLocation EndLocation { get; set; }
@@ -345,7 +346,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int IsAsync { get; set; }
         public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
         public TypeInfo TypeInfo { get; }
-        public bool HasSequencePoints { get => !DebugInformation.SequencePointsBlob.IsNil; }
+        public bool HasSequencePoints { get => hasDebugInformation && !DebugInformation.SequencePointsBlob.IsNil; }
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
 
@@ -354,13 +355,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.IsAsync = -1;
             this.Assembly = assembly;
             this.methodDef = asmMetadataReader.GetMethodDefinition(methodDefHandle);
-            this.DebugInformation = pdbMetadataReader.GetMethodDebugInformation(methodDefHandle.ToDebugInformationHandle());
+            if (pdbMetadataReader != null && !methodDefHandle.ToDebugInformationHandle().IsNil)
+            {
+                this.DebugInformation = pdbMetadataReader.GetMethodDebugInformation(methodDefHandle.ToDebugInformationHandle());
+                hasDebugInformation = true;
+            }
             this.Source = source;
             this.Token = token;
             this.methodDefHandle = methodDefHandle;
             this.Name = assembly.EnCGetString(methodDef.Name);
             this.pdbMetadataReader = pdbMetadataReader;
-            if (!DebugInformation.GetStateMachineKickoffMethod().IsNil)
+            if (hasDebugInformation && !DebugInformation.GetStateMachineKickoffMethod().IsNil)
                 this.KickOffMethod = asmMetadataReader.GetRowNumber(DebugInformation.GetStateMachineKickoffMethod());
             else
                 this.KickOffMethod = -1;
@@ -424,7 +429,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
-            localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
+            if (pdbMetadataReader != null)
+                localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }
 
         public ParameterInfo[] GetParametersInfo()
@@ -998,30 +1004,27 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var typeInfo = new TypeInfo(this, type, typeDefinition, asmMetadataReader, logger);
                 TypesByName[typeInfo.FullName] = typeInfo;
                 TypesByToken[typeInfo.Token] = typeInfo;
-                if (pdbMetadataReader != null)
+                foreach (MethodDefinitionHandle method in typeDefinition.GetMethods())
                 {
-                    foreach (MethodDefinitionHandle method in typeDefinition.GetMethods())
+                    var methodDefinition = asmMetadataReader.GetMethodDefinition(method);
+                    SourceFile source = null;
+                    if (pdbMetadataReader != null)
                     {
-                        var methodDefinition = asmMetadataReader.GetMethodDefinition(method);
-                        if (!method.ToDebugInformationHandle().IsNil)
+                        MethodDebugInformation methodDebugInformation = pdbMetadataReader.GetMethodDebugInformation(method.ToDebugInformationHandle());
+                        if (!methodDebugInformation.Document.IsNil)
                         {
-                            var methodDebugInformation = pdbMetadataReader.GetMethodDebugInformation(method.ToDebugInformationHandle());
-                            SourceFile source = null;
-                            if (!methodDebugInformation.Document.IsNil)
-                            {
-                                var document = pdbMetadataReader.GetDocument(methodDebugInformation.Document);
-                                var documentName = pdbMetadataReader.GetString(document.Name);
-                                source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
-                            }
-                            var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
-                            methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
-
-                            if (source != null)
-                                source.AddMethod(methodInfo);
-
-                            typeInfo.Methods.Add(methodInfo);
+                            var document = pdbMetadataReader.GetDocument(methodDebugInformation.Document);
+                            var documentName = pdbMetadataReader.GetString(document.Name);
+                            source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
                         }
                     }
+                    var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
+                    methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
+
+                    if (source != null)
+                        source.AddMethod(methodInfo);
+
+                    typeInfo.Methods.Add(methodInfo);
                 }
             }
         }

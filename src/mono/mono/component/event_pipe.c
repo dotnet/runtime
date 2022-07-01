@@ -13,6 +13,9 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
+#ifdef HOST_WASM
+#include <emscripten/emscripten.h>
+#endif
 
 extern void ep_rt_mono_component_init (void);
 static bool _event_pipe_component_inited = false;
