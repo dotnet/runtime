@@ -59,10 +59,6 @@ namespace System.Net.Security.Tests
                         expectedToFail: true);
                 });
 
-            // TODO remove this temporary re-throw
-            if (e is not AuthenticationException)
-                throw e;
-
             Assert.NotNull(e);
             Assert.IsAssignableFrom(expectedException, e);
         }
