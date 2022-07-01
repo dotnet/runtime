@@ -176,15 +176,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     exception = ce;
                     return null;
                 }
-                catch (NotSupportedException)
-                {
-                    Debug.Fail("Internal algorithm instances should implement symmetric one-shots");
-                    // If we get a NotSupportedException then the algorithm instance does not support one shots, so
-                    // fall through. We don't expect this to happen since OpenAlgorithm always returns internal
-                    // implementations and they should have one shots implemented.
-                }
-#endif
-
+#else
                 int encryptedContentLength = encryptedContent.Length;
                 byte[] encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
 
@@ -229,6 +221,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 {
                     CryptoPool.Return(encryptedContentArray, encryptedContentLength);
                 }
+#endif
             }
 
             public override void Dispose()

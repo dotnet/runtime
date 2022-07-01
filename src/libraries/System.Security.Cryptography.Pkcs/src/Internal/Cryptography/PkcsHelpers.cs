@@ -438,7 +438,7 @@ namespace Internal.Cryptography
                 return transform.TransformFinalBlock(data, offset, length);
             }
 
-            using (MemoryStream memoryStream = new MemoryStream())
+            using (MemoryStream memoryStream = new MemoryStream(length))
             {
                 using (var cryptoStream = new CryptoStream(memoryStream, transform, CryptoStreamMode.Write))
                 {
