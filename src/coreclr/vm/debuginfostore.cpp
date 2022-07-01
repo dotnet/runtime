@@ -478,7 +478,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 #endif
 
     DWORD cbRichDebugInfo = 0;
-    if ((iInlineTree > 0) || (pRichOffsetMappings > 0))
+    if ((iInlineTree > 0) || (iRichOffsetMappings > 0))
     {
         // Lengths
         cbRichDebugInfo += 8;
