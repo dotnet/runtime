@@ -1090,7 +1090,7 @@ namespace System.Text.Json
         {
             if (_utf8Json.IsEmpty)
             {
-                ThrowHelper.ThrowObjectDisposedException_Utf8JsonWriter();
+                ThrowHelper.ThrowObjectDisposedException_JsonDocument();
             }
         }
 

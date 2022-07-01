@@ -675,6 +675,12 @@ namespace System.Text.Json
         {
             throw new ObjectDisposedException(nameof(Utf8JsonWriter));
         }
+
+        [DoesNotReturn]
+        public static void ThrowObjectDisposedException_JsonDocument()
+        {
+            throw new ObjectDisposedException(nameof(JsonDocument));
+        }
     }
 
     internal enum ExceptionResource
