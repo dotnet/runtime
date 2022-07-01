@@ -20009,14 +20009,14 @@ EXTERN_C const IID IID_ICorProfilerInfo13;
         virtual HRESULT STDMETHODCALLTYPE CreateHandle(
             /* [in] */  ObjectID object,
             /* [in] */  COR_PRF_HANDLE_TYPE type,
-            /* [out] */ ObjectHandleID* pHandle);
+            /* [out] */ ObjectHandleID* pHandle) = 0;
 
         virtual HRESULT STDMETHODCALLTYPE DestroyHandle(
-            /* [in] */ ObjectHandleID handle);
+            /* [in] */ ObjectHandleID handle) = 0;
 
         virtual HRESULT STDMETHODCALLTYPE GetObjectIDFromHandle(
             /* [in] */ ObjectHandleID handle,
-            /* [out] */ ObjectID* pObject);
+            /* [out] */ ObjectID* pObject) = 0;
     };
 
 
