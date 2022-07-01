@@ -78,6 +78,7 @@ namespace System.Security.Cryptography
             private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
                 Debug.Assert(otherPartyPublicKey != null);
+                Debug.Assert(_key is not null); // Callers should have checked for null
 
                 // Ensure that this ECDH object contains a private key by attempting a parameter export
                 // which will throw an OpenSslCryptoException if no private key is available
