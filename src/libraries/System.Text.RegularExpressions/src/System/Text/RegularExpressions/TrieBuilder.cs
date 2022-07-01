@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -233,7 +233,7 @@ namespace System.Text.RegularExpressions
                 return Add(nodes, set[0], out canContinue);
             }
 
-            if (branchingDepth++ > BranchingDepthLimit)
+            if (++branchingDepth > BranchingDepthLimit)
             {
                 canContinue = false;
                 return nodes;
@@ -371,12 +371,16 @@ namespace System.Text.RegularExpressions
                     childCount = regexNode.ChildCount();
                     Debug.Assert(childCount != 0);
                     // If we have branched too many times we stop here.
-                    if (branchingDepth++ > BranchingDepthLimit)
+                    if (++branchingDepth > BranchingDepthLimit)
                     {
                         goto End;
                     }
                     NodeCollection[] results = new NodeCollection[childCount];
                     canContinue = false;
+                    // To avoid modifying branchingDepth during the traversal of the
+                    // node's children, we have to use a separate variable and update
+                    // it at the end.
+                    int branchingDepthNew = branchingDepth;
                     for (int i = 0; i < childCount; i++)
                     {
                         int branchingDepthLocal = branchingDepth;
@@ -401,11 +405,12 @@ namespace System.Text.RegularExpressions
                             results[i] = NodeCollection.Empty;
                             AcceptMatches(result);
                         }
-                        if (branchingDepthLocal > branchingDepth)
+                        if (branchingDepthLocal > branchingDepthNew)
                         {
-                            branchingDepth = branchingDepthLocal;
+                            branchingDepthNew = branchingDepthLocal;
                         }
                     }
+                    branchingDepth = branchingDepthNew;
                     return new NodeCollection(results);
             }
 
