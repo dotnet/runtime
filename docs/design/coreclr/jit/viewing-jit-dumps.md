@@ -20,7 +20,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
       <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
       </PropertyGroup>
 
@@ -58,7 +58,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
     }
     ```
 
-* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/$(NetCoreAppCurrent)/<rid>/publish`.
+* After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/<tfm>/<rid>/publish`.
 * Overwrite the CLR dlls with the ones you've built locally. If you're a fan of the command line, here are some shell commands for doing this:
 
     ```shell
@@ -67,8 +67,8 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
     copy /y <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Debug\clrjit.dll <app root>\bin\Release\<tfm>\<rid>\publish > NUL
 
     # Unix
-    cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/$(NetCoreAppCurrent)<rid>/publish
-    cp <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Debug/libclrjit.so <app root>/bin/Release/$(NetCoreAppCurrent)/<rid>/publish
+    cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/<tfm>/<rid>/publish
+    cp <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Debug/libclrjit.so <app root>/bin/Release/<tfm>/<rid>/publish
     ```
 
 * Set the configuration knobs you need (see below) and run your published app. The info you want should be dumped to stdout.

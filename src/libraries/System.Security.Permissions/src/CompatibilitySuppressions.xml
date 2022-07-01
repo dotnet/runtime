@@ -21,13 +21,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Xaml.Permissions.XamlLoadPermission</Target>
-    <Left>lib/net5.0/System.Security.Permissions.dll</Left>
-    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Xaml.Permissions.XamlLoadPermission</Target>
     <Left>lib/netcoreapp3.1/System.Security.Permissions.dll</Left>
     <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>

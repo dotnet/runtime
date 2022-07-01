@@ -37,20 +37,15 @@ namespace Microsoft.NET.HostModel.Bundle
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
 
-            if (FrameworkVersion.CompareTo(net60) >= 0)
+            if (FrameworkVersion.CompareTo(net70) >= 0)
+            {
+                BundleMajorVersion = 7u;
+                DefaultOptions = BundleOptions.None;
+            }
+            else if (FrameworkVersion.CompareTo(net60) >= 0)
             {
                 BundleMajorVersion = 6u;
                 DefaultOptions = BundleOptions.None;
-            }
-            else if (FrameworkVersion.CompareTo(net50) >= 0)
-            {
-                BundleMajorVersion = 2u;
-                DefaultOptions = BundleOptions.None;
-            }
-            else if (FrameworkVersion.Major == 3 && (FrameworkVersion.Minor == 0 || FrameworkVersion.Minor == 1))
-            {
-                BundleMajorVersion = 1u;
-                DefaultOptions = BundleOptions.BundleAllContent;
             }
             else
             {
@@ -116,11 +111,9 @@ namespace Microsoft.NET.HostModel.Bundle
         public bool ShouldExclude(string relativePath) =>
             (FrameworkVersion.Major != 3) && (relativePath.Equals(HostFxr) || relativePath.Equals(HostPolicy));
 
+        private readonly Version net70 = new Version(7, 0);
         private readonly Version net60 = new Version(6, 0);
-        private readonly Version net50 = new Version(5, 0);
         private string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
         private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";
-
-
     }
 }
