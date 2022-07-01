@@ -239,6 +239,7 @@ namespace System.Text.Json
             _bitStack = default;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckNotDisposed()
         {
             if (_stream == null)

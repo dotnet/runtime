@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -1086,6 +1087,7 @@ namespace System.Text.Json
             database.CompleteAllocations();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckNotDisposed()
         {
             if (_utf8Json.IsEmpty)
