@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Returns value of the property as <see cref="string"/> if the property exists, otherwise false.
+        /// Returns value of the property as <see cref="bool"/> if the property exists, otherwise false.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetPropertyAsBoolean(string propertyName)
