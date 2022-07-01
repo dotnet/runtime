@@ -16,8 +16,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	{
 		[KeptAttributeAttribute (typeof (KeepsPublicConstructorAttribute))]
 		[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+		[KeptAttributeAttribute (typeof (TypeArrayAttribute))]
 		[KeepsPublicConstructor (typeof (ClassWithKeptPublicConstructor))]
 		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods")]
+		[TypeArray (new Type[] { typeof (AttributeConstructorDataflow) })]
 		// Trimmer only for now - https://github.com/dotnet/linker/issues/2273
 		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = ProducedBy.Trimmer)]
 		public static void Main ()
@@ -107,6 +109,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				[Kept]
 				public int Field;
+			}
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (Attribute))]
+		class TypeArrayAttribute : Attribute
+		{
+			[Kept]
+			public TypeArrayAttribute (Type[] types) // This should not trigger data flow analysis of the parameter
+			{
 			}
 		}
 	}

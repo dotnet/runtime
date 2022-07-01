@@ -104,8 +104,6 @@ namespace Mono.Linker
 		/// </summary>
 		TypeDefinition? PopulateCacheForType (TypeDefinition type)
 		{
-			var originalType = type;
-
 			// Look in the declaring type if this is a compiler-generated type (state machine or display class).
 			// State machines can be emitted into display classes, so we may also need to go one more level up.
 			// To avoid depending on implementation details, we go up until we see a non-compiler-generated type.

@@ -120,7 +120,7 @@ namespace Mono.Linker
 			(FileName, Provider, SourceLine, SourceColumn, ILOffset) == (other.FileName, other.Provider, other.SourceLine, other.SourceColumn, other.ILOffset);
 
 		public override bool Equals (object? obj) => obj is MessageOrigin messageOrigin && Equals (messageOrigin);
-		public override int GetHashCode () => (FileName, Provider, SourceLine, SourceColumn).GetHashCode ();
+		public override int GetHashCode () => (FileName, Provider, SourceLine, SourceColumn, ILOffset).GetHashCode ();
 		public static bool operator == (MessageOrigin lhs, MessageOrigin rhs) => lhs.Equals (rhs);
 		public static bool operator != (MessageOrigin lhs, MessageOrigin rhs) => !lhs.Equals (rhs);
 
