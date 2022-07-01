@@ -949,17 +949,17 @@ BasicBlock* BasicBlock::GetUniqueSucc() const
 
 BasicBlock* BasicBlock::GetFarthestUniqueSuccOrSelf() const
 {
-    BasicBlock* result = GetUniqueSucc();
-    while (result != nullptr)
+    BasicBlock* currentBb = (BasicBlock*)this;
+    while (true)
     {
-        BasicBlock* succ = result->GetUniqueSucc();
+        BasicBlock* succ = currentBb->GetUniqueSucc();
         if (succ == nullptr)
         {
             break;
         }
-        result = succ;
+        currentBb = succ;
     }
-    return result == nullptr ? (BasicBlock*)this : result;
+    return currentBb;
 }
 
 // Static vars.
