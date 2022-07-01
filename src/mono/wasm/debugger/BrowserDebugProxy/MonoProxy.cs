@@ -1623,7 +1623,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var locations = GetBPReqLocations(store, req);
 
-            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, context.IsRuntimeReady);
+            logger.LogDebug("BP request for '{Req}' runtime ready {Context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
 

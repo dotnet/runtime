@@ -166,7 +166,6 @@ namespace SharedTypes
         }
     }
 
-
     [CustomMarshaller(typeof(IntWrapper), Scenario.Default, typeof(Marshaller))]
     public static unsafe class IntWrapperMarshallerStateful
     {
@@ -281,5 +280,93 @@ namespace SharedTypes
                 };
             }
         }
+    }
+
+    [CustomMarshaller(typeof(List<>), Scenario.Default, typeof(ListMarshaller<,>))]
+    public unsafe static class ListMarshaller<T, [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+    {
+        public static byte* AllocateContainerForUnmanagedElements(List<T> managed, out int numElements)
+            => AllocateContainerForUnmanagedElements(managed, Span<byte>.Empty, out numElements);
+
+        public static byte* AllocateContainerForUnmanagedElements(List<T> managed, Span<byte> buffer, out int numElements)
+        {
+            if (managed is null)
+            {
+                numElements = 0;
+                return null;
+            }
+
+            numElements = managed.Count;
+
+            // Always allocate at least one byte when the list is zero-length.
+            int spaceToAllocate = Math.Max(checked(sizeof(TUnmanagedElement) * numElements), 1);
+            if (spaceToAllocate <= buffer.Length)
+            {
+                return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+            }
+            else
+            {
+                return (byte*)Marshal.AllocCoTaskMem(spaceToAllocate);
+            }
+        }
+
+        public static ReadOnlySpan<T> GetManagedValuesSource(List<T> managed)
+            => CollectionsMarshal.AsSpan(managed);
+
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(byte* unmanaged, int numElements)
+            => new Span<TUnmanagedElement>(unmanaged, numElements);
+
+        public static List<T> AllocateContainerForManagedElements(byte* unmanaged, int length)
+        {
+            if (unmanaged is null)
+                return null;
+
+            var list = new List<T>(length);
+            for (int i = 0; i < length; i++)
+            {
+                list.Add(default);
+            }
+
+            return list;
+        }
+
+        public static Span<T> GetManagedValuesDestination(List<T> managed)
+            => CollectionsMarshal.AsSpan(managed);
+
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* nativeValue, int numElements)
+            => new ReadOnlySpan<TUnmanagedElement>(nativeValue, numElements);
+
+        public static void Free(byte* unmanaged)
+            => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
+    }
+
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), Scenario.Default, typeof(CustomArrayMarshaller<,>))]
+    public unsafe static class CustomArrayMarshaller<T, [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+    {
+        public static byte* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
+        {
+            if (managed is null)
+            {
+                numElements = 0;
+                return null;
+            }
+
+            numElements = managed.Length;
+            return (byte*)Marshal.AllocCoTaskMem(checked(sizeof(TUnmanagedElement) * numElements));
+        }
+
+        public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
+
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(byte* unmanaged, int numElements)
+            => new Span<TUnmanagedElement>(unmanaged, numElements);
+
+        public static T[] AllocateContainerForManagedElements(byte* unmanaged, int length) => unmanaged is null ? null : new T[length];
+
+        public static Span<T> GetManagedValuesDestination(T[] managed) => managed;
+
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* unmanaged, int numElements)
+            => new Span<TUnmanagedElement>(unmanaged, numElements);
+
+        public static void Free(byte* unmanaged) => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
     }
 }

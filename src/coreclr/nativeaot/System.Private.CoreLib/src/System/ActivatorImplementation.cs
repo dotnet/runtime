@@ -34,7 +34,7 @@ namespace System
                 if (type.IsValueType)
                     return RuntimeAugments.NewObject(type.TypeHandle);
 
-                throw new MissingMethodException(SR.Arg_NoDefCTor);
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
             object result = constructor.Invoke(Array.Empty<object>());
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
@@ -82,7 +82,7 @@ namespace System
                 if (numArgs == 0 && type.IsValueType)
                     return RuntimeAugments.NewObject(type.TypeHandle);
 
-                throw new MissingMethodException(SR.Arg_NoDefCTor);
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
 
             if (binder == null)

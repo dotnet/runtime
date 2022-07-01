@@ -9,11 +9,15 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class SetVariableValueTests : DebuggerTests
     {
+        public SetVariableValueTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("a", 1, 30, 130)]
         [InlineData("a", 1, -30, -130)]

@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": true,
+        "noEmitOnError": true,
+        "removeComments": false,
+        "sourceMap": false,
+        "target": "ES2018",
+        "moduleResolution": "Node",
+        "strict": true,
+        "lib": [
+            "esnext"
+        ],
+    },
+    "exclude": [
+        "dotnet.d.ts",
+        "bin"
+    ]
+}

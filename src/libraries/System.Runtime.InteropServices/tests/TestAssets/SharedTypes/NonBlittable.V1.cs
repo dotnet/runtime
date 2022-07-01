@@ -144,24 +144,24 @@ namespace SharedTypes
     }
 
     [CustomTypeMarshaller(typeof(List<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x200)]
-    public unsafe ref struct ListMarshaller<T>
+    public unsafe ref struct ListMarshaller_V1<T>
     {
         private List<T> managedList;
         private readonly int sizeOfNativeElement;
         private IntPtr allocatedMemory;
 
-        public ListMarshaller(int sizeOfNativeElement)
+        public ListMarshaller_V1(int sizeOfNativeElement)
             : this()
         {
             this.sizeOfNativeElement = sizeOfNativeElement;
         }
 
-        public ListMarshaller(List<T> managed, int sizeOfNativeElement)
+        public ListMarshaller_V1(List<T> managed, int sizeOfNativeElement)
             :this(managed, Span<byte>.Empty, sizeOfNativeElement)
         {
         }
 
-        public ListMarshaller(List<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
+        public ListMarshaller_V1(List<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
         {
             allocatedMemory = default;
             this.sizeOfNativeElement = sizeOfNativeElement;
@@ -228,10 +228,10 @@ namespace SharedTypes
         }
     }
 
-    [NativeMarshalling(typeof(WrappedListMarshaller<>))]
-    public struct WrappedList<T>
+    [NativeMarshalling(typeof(WrappedListMarshaller_V1<>))]
+    public struct WrappedList_V1<T>
     {
-        public WrappedList(List<T> list)
+        public WrappedList_V1(List<T> list)
         {
             Wrapped = list;
         }
@@ -241,25 +241,25 @@ namespace SharedTypes
         public ref T GetPinnableReference() => ref CollectionsMarshal.AsSpan(Wrapped).GetPinnableReference();
     }
 
-    [CustomTypeMarshaller(typeof(WrappedList<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x200)]
-    public unsafe ref struct WrappedListMarshaller<T>
+    [CustomTypeMarshaller(typeof(WrappedList_V1<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x200)]
+    public unsafe ref struct WrappedListMarshaller_V1<T>
     {
-        private ListMarshaller<T> _marshaller;
+        private ListMarshaller_V1<T> _marshaller;
 
-        public WrappedListMarshaller(int sizeOfNativeElement)
+        public WrappedListMarshaller_V1(int sizeOfNativeElement)
             : this()
         {
-            this._marshaller = new ListMarshaller<T>(sizeOfNativeElement);
+            this._marshaller = new ListMarshaller_V1<T>(sizeOfNativeElement);
         }
 
-        public WrappedListMarshaller(WrappedList<T> managed, int sizeOfNativeElement)
+        public WrappedListMarshaller_V1(WrappedList_V1<T> managed, int sizeOfNativeElement)
             : this(managed, Span<byte>.Empty, sizeOfNativeElement)
         {
         }
 
-        public WrappedListMarshaller(WrappedList<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
+        public WrappedListMarshaller_V1(WrappedList_V1<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
         {
-            this._marshaller = new ListMarshaller<T>(managed.Wrapped, stackSpace, sizeOfNativeElement);
+            this._marshaller = new ListMarshaller_V1<T>(managed.Wrapped, stackSpace, sizeOfNativeElement);
         }
 
         public ReadOnlySpan<T> GetManagedValuesSource() => _marshaller.GetManagedValuesSource();
@@ -276,7 +276,7 @@ namespace SharedTypes
 
         public void FromNativeValue(byte* value) => _marshaller.FromNativeValue(value);
 
-        public WrappedList<T> ToManaged() => new(_marshaller.ToManaged());
+        public WrappedList_V1<T> ToManaged() => new(_marshaller.ToManaged());
 
         public void FreeNative() => _marshaller.FreeNative();
     }
