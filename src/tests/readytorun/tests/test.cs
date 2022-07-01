@@ -871,17 +871,6 @@ public class ILInliningVersioningTest<T>
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    static void TestLoadR2RImageFromByteArray()
-    {
-        Assembly assembly1 = typeof(ILInliningVersioningTest<T>).Assembly;
-
-        byte[] array = File.ReadAllBytes(assembly1.Location);
-        Assembly assembly2 = Assembly.Load(array);
-
-        Assert.AreEqual(assembly2.FullName, assembly1.FullName);
-    }
-
-    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     static void TestILBodyChange()
     {
         int actualMethodCallResult = (int)typeof(ILInliningTest).GetMethod("TestDifferentIntValue").Invoke(null, new object[]{});
@@ -1017,9 +1006,6 @@ public class ILInliningVersioningTest<T>
 
         ValidateTestHasCrossModuleImplementation("TestRVAField", linesWithILInliningVersioningTest, expectedToBePresent: false /* RVA field cross module referencing not implemented yet. */);
         TestRVAField();
-
-        ValidateTestHasCrossModuleImplementation("TestLoadR2RImageFromByteArray", linesWithILInliningVersioningTest);
-        TestLoadR2RImageFromByteArray();
 
         ValidateTestHasCrossModuleImplementation("TestILBodyChange", linesWithILInliningVersioningTest);
         TestILBodyChange();
