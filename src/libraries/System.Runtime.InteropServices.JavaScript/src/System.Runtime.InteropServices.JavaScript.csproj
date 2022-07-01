@@ -13,8 +13,6 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'Browser'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup>
-  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="System.Collections" />
