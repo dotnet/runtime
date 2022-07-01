@@ -229,7 +229,7 @@ namespace System.Xml
             }
         }
 
-        protected void WriteBytes(Span<byte> bytes)
+        protected void WriteBytes(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length < bufferLength)
             {
