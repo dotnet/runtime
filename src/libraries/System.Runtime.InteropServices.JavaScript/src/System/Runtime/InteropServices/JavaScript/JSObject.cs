@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.JavaScript
     /// <summary>
     /// Holds proxy of JavaScript object.
     /// </summary>
-    /// <remarks>Proxies are relatively expensive object. Developers could manualy <see cref="Dispose()"/> them to safe runtime resources.</remarks>
+    /// <remarks>Proxies are relatively expensive object. Developers could manualy <see cref="Dispose()"/> them to save runtime resources.</remarks>
     [SupportedOSPlatform("browser")]
     public partial class JSObject : IDisposable
     {
