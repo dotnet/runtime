@@ -142,25 +142,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                switch (_attributeProvider = value)
-                {
-                    case PropertyInfo propertyInfo:
-                        {
-                            MemberName = propertyInfo.Name;
-                            IsVirtual = propertyInfo.IsVirtual();
-                            MemberType = MemberTypes.Property;
-                            break;
-                        }
-                    case FieldInfo fieldInfo:
-                        {
-                            MemberName = fieldInfo.Name;
-                            MemberType = MemberTypes.Field;
-                            break;
-                        }
-                    default:
-                        // Don't set any metadata when value is unsupported MemberInfo type
-                        break;
-                }
+                _attributeProvider = value;
             }
         }
 
@@ -546,7 +528,26 @@ namespace System.Text.Json.Serialization.Metadata
         internal void InitializeUsingMemberReflection(MemberInfo memberInfo)
         {
             Debug.Assert(AttributeProvider == null);
-            Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
+
+            switch (AttributeProvider = memberInfo)
+            {
+                case PropertyInfo propertyInfo:
+                    {
+                        MemberName = propertyInfo.Name;
+                        IsVirtual = propertyInfo.IsVirtual();
+                        MemberType = MemberTypes.Property;
+                        break;
+                    }
+                case FieldInfo fieldInfo:
+                    {
+                        MemberName = fieldInfo.Name;
+                        MemberType = MemberTypes.Field;
+                        break;
+                    }
+                default:
+                    Debug.Fail("Only FieldInfo and PropertyInfo members are supported.");
+                    break;
+            }
 
             DeterminePoliciesFromMember(memberInfo);
             DeterminePropertyNameFromMember(memberInfo);
@@ -557,7 +558,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
-            AttributeProvider = memberInfo;
         }
 
         internal bool IgnoreDefaultValuesOnRead { get; private set; }
