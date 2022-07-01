@@ -8087,11 +8087,6 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     }
 #endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SendMethodDetailsForInlinees))
-    {
-        ETW::MethodLog::SendMethodDetailsEvent(GetMethod(inlineeHnd));
-    }
-
     EE_TO_JIT_TRANSITION();
 }
 
@@ -9342,17 +9337,28 @@ void *CEEInfo::allocateArray(size_t cBytes)
     return result;
 }
 
+void CEEInfo::freeArrayInternal(void* array)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    delete [] ((BYTE*) array);
+}
+
 void CEEInfo::freeArray(void *array)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION();
 
-    delete [] ((BYTE*) array);
+    freeArrayInternal(array);
 
     EE_TO_JIT_TRANSITION();
 }
@@ -11006,16 +11012,32 @@ void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInf
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEJitInfo::reportInternalData(const uint8_t* data, size_t dataSize)
+void CEEJitInfo::reportRichMappings(
+        ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+        uint32_t                          numInlineTreeNodes,
+        ICorDebugInfo::RichOffsetMapping* mappings,
+        uint32_t                          numMappings)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(dataSize <= UINT32_MAX);
-
-    PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
-    ETW::MethodLog::LogJitCompilationInternalData(config, static_cast<uint32_t>(dataSize), data);
+    if (m_jitManager->IsStoringRichDebugInfo())
+    {
+        m_inlineTreeNodes = inlineTreeNodes;
+        m_numInlineTreeNodes = numInlineTreeNodes;
+        m_richOffsetMappings = mappings;
+        m_numRichOffsetMappings = numMappings;
+    }
+    else
+    {
+        freeArrayInternal(inlineTreeNodes);
+        freeArrayInternal(mappings);
+    }
 
     EE_TO_JIT_TRANSITION();
 }
@@ -11085,7 +11107,7 @@ void CEEJitInfo::CompressDebugInfo()
         return;
     }
 
-    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL))
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0))
         return;
 
     JIT_TO_EE_TRANSITION();
@@ -11103,7 +11125,8 @@ void CEEJitInfo::CompressDebugInfo()
             m_pOffsetMapping, m_iOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
             patchpointInfo,
-            NULL, 0,
+            m_inlineTreeNodes, m_numInlineTreeNodes,
+            m_richOffsetMappings, m_numRichOffsetMappings,
             writeFlagByte,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
@@ -14382,7 +14405,11 @@ void CEEInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::N
     UNREACHABLE();      // only called on derived class.
 }
 
-void CEEInfo::reportInternalData(const uint8_t* data, size_t dataSize)
+void CEEInfo::reportRichMappings(
+        ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+        uint32_t                          numInlineTreeNodes,
+        ICorDebugInfo::RichOffsetMapping* mappings,
+        uint32_t                          numMappings)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

@@ -3013,8 +3013,10 @@ namespace Internal.JitInterface
             extendOthers = true;
         }
 
-        private void reportInternalData(byte* data, UIntPtr dataSize)
+        private void reportRichMappings(InlineTreeNode* inlineTree, uint numInlineTree, RichOffsetMapping* mappings, uint numMappings)
         {
+            Marshal.FreeHGlobal((IntPtr)inlineTree);
+            Marshal.FreeHGlobal((IntPtr)mappings);
         }
 
         private void* allocateArray(UIntPtr cBytes)

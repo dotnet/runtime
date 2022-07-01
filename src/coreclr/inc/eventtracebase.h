@@ -769,6 +769,7 @@ namespace ETW
                 MethodDCEndILToNativeMap=           0x00020000,
                 JitMethodILToNativeMap=             0x00040000,
                 TypeUnload=                         0x00080000,
+                JittedMethodRichDebugInfo=          0x00100000,
 
                 // Helpers
                 ModuleRangeEnabledAny = ModuleRangeLoad | ModuleRangeDCStart | ModuleRangeDCEnd | ModuleRangeLoadPrivate,
@@ -897,10 +898,12 @@ namespace ETW
             BOOL fUnloadOrDCEnd,
             BOOL fSendMethodEvent,
             BOOL fSendILToNativeMapEvent,
+            BOOL fSendRichDebugInfoEvent,
             BOOL fGetCodeIds);
         static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
         static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
         static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, ReJITID ilCodeId);
+        static VOID SendMethodRichDebugInfo(MethodDesc * pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId);
         static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, PCODE pNativeCodeStartAddress = 0, PrepareCodeConfig *pConfig = NULL);
         static VOID SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
     public:
@@ -940,7 +943,6 @@ namespace ETW
         static VOID MethodTableRestored(MethodTable * pMethodTable);
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc);
         static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods);
-        static VOID LogJitCompilationInternalData(PrepareCodeConfig* pConfig, uint32_t cbData, const BYTE *data);
 #else // FEATURE_EVENT_TRACE
     public:
         static VOID GetR2RGetEntryPointStart(MethodDesc *pMethodDesc) {};
@@ -953,7 +955,6 @@ namespace ETW
         static VOID MethodTableRestored(MethodTable * pMethodTable) {};
         static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};
         static VOID LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods) {};
-        static VOID LogJitCompilationInternalData(PrepareCodeConfig* pConfig, uint32_t cbData, const BYTE *data) {};
 #endif // FEATURE_EVENT_TRACE
     };
 

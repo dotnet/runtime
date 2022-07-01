@@ -10125,7 +10125,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
                 // Is it an inline candidate?
-                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
+                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
             }
 
             // append the call node.
@@ -10345,7 +10345,7 @@ DONE:
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
         // Is it an inline candidate?
-        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
+        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
     }
 
     // Extra checks for tail calls and tail recursion.
@@ -20880,6 +20880,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
 //    exactContextHnd -- context handle for inlining
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
+//    ilOffset -- the actual IL offset of the instruction that produced this inline candidate
 //
 // Notes:
 //    Mostly a wrapper for impMarkInlineCandidateHelper that also undoes
@@ -20889,12 +20890,13 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
 void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
-                                      CORINFO_CALL_INFO*     callInfo)
+                                      CORINFO_CALL_INFO*     callInfo,
+                                      IL_OFFSET              ilOffset)
 {
     GenTreeCall* call = callNode->AsCall();
 
     // Do the actual evaluation
-    impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
+    impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset);
 
     // If this call is an inline candidate or is not a guarded devirtualization
     // candidate, we're done.
@@ -20925,6 +20927,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    exactContextHnd -- context handle for inlining
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
+//    ilOffset -- IL offset of instruction creating the inline candidate
 //
 // Notes:
 //    If callNode is an inline candidate, this method sets the flag
@@ -20939,7 +20942,8 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
                                             bool                   exactContextNeedsRuntimeLookup,
-                                            CORINFO_CALL_INFO*     callInfo)
+                                            CORINFO_CALL_INFO*     callInfo,
+                                            IL_OFFSET              ilOffset)
 {
     // Let the strategy know there's another call
     impInlineRoot()->m_inlineStrategy->NoteCall();
@@ -21161,6 +21165,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);
     inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
+    inlineCandidateInfo->ilOffset = ilOffset;
     call->gtInlineCandidateInfo                         = inlineCandidateInfo;
 
     // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate

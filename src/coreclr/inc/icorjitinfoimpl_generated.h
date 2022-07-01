@@ -410,9 +410,11 @@ void setVars(
           uint32_t cVars,
           ICorDebugInfo::NativeVarInfo* vars) override;
 
-void reportInternalData(
-          const uint8_t* data,
-          size_t dataSize) override;
+void reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings) override;
 
 void* allocateArray(
           size_t cBytes) override;

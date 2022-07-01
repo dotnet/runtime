@@ -695,11 +695,13 @@ void interceptor_ICJI::setVars(
     original_ICorJitInfo->setVars(ftn, cVars, vars);
 }
 
-void interceptor_ICJI::reportInternalData(
-          const uint8_t* data,
-          size_t dataSize)
+void interceptor_ICJI::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
 {
-    original_ICorJitInfo->reportInternalData(data, dataSize);
+    original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
 void* interceptor_ICJI::allocateArray(

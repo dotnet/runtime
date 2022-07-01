@@ -967,13 +967,15 @@ void WrapICorJitInfo::setVars(
     API_LEAVE(setVars);
 }
 
-void WrapICorJitInfo::reportInternalData(
-          const uint8_t* data,
-          size_t dataSize)
+void WrapICorJitInfo::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
 {
-    API_ENTER(reportInternalData);
-    wrapHnd->reportInternalData(data, dataSize);
-    API_LEAVE(reportInternalData);
+    API_ENTER(reportRichMappings);
+    wrapHnd->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+    API_LEAVE(reportRichMappings);
 }
 
 void* WrapICorJitInfo::allocateArray(

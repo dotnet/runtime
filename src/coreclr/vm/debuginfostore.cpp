@@ -442,23 +442,26 @@ void CompressDebugInfo::CompressVars(
 }
 
 PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
-    IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
-    IN ULONG            iOffsetMapping,
-    IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
-    IN ULONG            iNativeVarInfo,
-    IN PatchpointInfo * patchpointInfo,
-    IN PTR_BYTE         pRichDebugInfo,
-    IN ULONG32          richDebugInfoSize,
-    IN BOOL             writeFlagByte,
-    IN LoaderHeap     * pLoaderHeap
+    IN ICorDebugInfo::OffsetMapping*     pOffsetMapping,
+    IN ULONG                             iOffsetMapping,
+    IN ICorDebugInfo::NativeVarInfo*     pNativeVarInfo,
+    IN ULONG                             iNativeVarInfo,
+    IN PatchpointInfo*                   patchpointInfo,
+    IN ICorDebugInfo::InlineTreeNode*    pInlineTree,
+    IN ULONG                             iInlineTree,
+    IN ICorDebugInfo::RichOffsetMapping* pRichOffsetMappings,
+    IN ULONG                             iRichOffsetMappings,
+    IN BOOL                              writeFlagByte,
+    IN LoaderHeap*                       pLoaderHeap
     )
 {
     CONTRACTL {
         THROWS; // compression routines throw
         PRECONDITION((iOffsetMapping == 0) == (pOffsetMapping == NULL));
         PRECONDITION((iNativeVarInfo == 0) == (pNativeVarInfo == NULL));
-        PRECONDITION((richDebugInfoSize == 0) || (pRichDebugInfo != NULL));
-        PRECONDITION(writeFlagByte || ((richDebugInfoSize == 0) && (patchpointInfo == NULL)));
+        PRECONDITION((iInlineTree == 0) || (pInlineTree != NULL));
+        PRECONDITION((iRichOffsetMappings == 0) || (pRichOffsetMappings != NULL));
+        PRECONDITION(writeFlagByte || ((patchpointInfo == NULL) && (iInlineTree == 0) && (iRichOffsetMappings == 0)));
         PRECONDITION(pLoaderHeap != NULL);
     } CONTRACTL_END;
 
@@ -473,6 +476,16 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 #else
     _ASSERTE(patchpointInfo == NULL);
 #endif
+
+    DWORD cbRichDebugInfo = 0;
+    if ((iInlineTree > 0) || (pRichOffsetMappings > 0))
+    {
+        // Lengths
+        cbRichDebugInfo += 8;
+        // Data
+        cbRichDebugInfo += iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
+        cbRichDebugInfo += iRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+    }
 
     // Actually do the compression. These will throw on oom.
     NibbleWriter boundsBuffer;
@@ -502,12 +515,12 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     DWORD cbHeader;
     PVOID pHeader = w.GetBlob(&cbHeader);
 
-    S_UINT32 cbFinalSize;
+    S_UINT32 cbFinalSize(0);
     if (writeFlagByte)
         cbFinalSize += 1;
 
     cbFinalSize += cbPatchpointInfo;
-    cbFinalSize += richDebugInfoSize;
+    cbFinalSize += cbRichDebugInfo;
     cbFinalSize += S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
 
     if (cbFinalSize.IsOverflow())
@@ -521,7 +534,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         BYTE flagByte = 0;
         if (cbPatchpointInfo > 0)
             flagByte |= EXTRA_DEBUG_INFO_PATCHPOINT;
-        if (richDebugInfoSize > 0)
+        if (cbRichDebugInfo > 0)
             flagByte |= EXTRA_DEBUG_INFO_RICH;
 
         *ptr++ = flagByte;
@@ -530,8 +543,17 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
     ptr += cbPatchpointInfo;
 
-    memcpy(ptr, pRichDebugInfo, richDebugInfoSize);
-    ptr += richDebugInfoSize;
+    if (cbRichDebugInfo > 0)
+    {
+        memcpy(ptr, &iInlineTree, 4);
+        ptr += 4;
+        memcpy(ptr, &iRichOffsetMappings, 4);
+        ptr += 4;
+        memcpy(ptr, pInlineTree, iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode));
+        ptr += iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
+        memcpy(ptr, pRichOffsetMappings, iRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping));
+        ptr += iRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+    }
 
     memcpy(ptr, pHeader, cbHeader);
     ptr += cbHeader;
@@ -591,8 +613,12 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
 
         if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
         {
-            UINT32 richDebugInfoSize = *PTR_UINT32(pDebugInfo);
-            pDebugInfo += richDebugInfoSize;
+            UINT32 iInlineTree = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            UINT32 iRichMappings = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            pDebugInfo += iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
+            pDebugInfo += iRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
             flagByte &= ~EXTRA_DEBUG_INFO_RICH;
         }
 
@@ -691,20 +717,32 @@ PatchpointInfo * CompressDebugInfo::RestorePatchpointInfo(IN PTR_BYTE pDebugInfo
 
 #endif
 
-PTR_BYTE CompressDebugInfo::RestoreRichDebugInfo(IN PTR_BYTE pDebugInfo)
+void CompressDebugInfo::RestoreRichDebugInfo(
+        IN FP_IDS_NEW                          fpNew,
+        IN void*                               pNewData,
+        IN PTR_BYTE                            pDebugInfo,
+        OUT ICorDebugInfo::InlineTreeNode**    ppInlineTree,
+        OUT ULONG32*                           pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32*                           pNumRichMappings)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     BYTE flagByte = *pDebugInfo;
     if ((flagByte & EXTRA_DEBUG_INFO_RICH) == 0)
-        return NULL;
+    {
+        *ppInlineTree = NULL;
+        *pNumInlineTree = 0;
+        *ppRichMappings = NULL;
+        *pNumRichMappings = 0;
+        return;
+    }
 
     pDebugInfo++;
 
@@ -716,7 +754,26 @@ PTR_BYTE CompressDebugInfo::RestoreRichDebugInfo(IN PTR_BYTE pDebugInfo)
     }
 #endif
 
-    return pDebugInfo;
+    *pNumInlineTree = *PTR_UINT32(pDebugInfo);
+    UINT32 cbInlineTree = *pNumInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
+    pDebugInfo += 4;
+
+    *pNumRichMappings = *PTR_UINT32(pDebugInfo);
+    UINT32 cbRichOffsetMappings = *pNumRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+    pDebugInfo += 4;
+
+    *ppInlineTree = reinterpret_cast<ICorDebugInfo::InlineTreeNode*>(fpNew(pNewData, cbInlineTree));
+    if (*ppInlineTree == NULL)
+        ThrowOutOfMemory();
+
+    memcpy(*ppInlineTree, PTR_READ(dac_cast<TADDR>(pDebugInfo), cbInlineTree), cbInlineTree);
+    pDebugInfo += cbInlineTree;
+
+    *ppRichMappings = reinterpret_cast<ICorDebugInfo::RichOffsetMapping*>(fpNew(pNewData, cbRichOffsetMappings));
+    if (*ppRichMappings == NULL)
+        ThrowOutOfMemory();
+
+    memcpy(*ppRichMappings, PTR_READ(dac_cast<TADDR>(pDebugInfo), cbRichOffsetMappings), cbRichOffsetMappings);
 }
 
 #ifdef DACCESS_COMPILE
@@ -729,6 +786,8 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+    PTR_BYTE pStart = pDebugInfo;
 
     if (hasFlagByte)
     {
@@ -745,8 +804,12 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
 
         if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
         {
-            UINT32 size = *PTR_UINT32(pDebugInfo);
-            pDebugInfo += 4 + size;
+            UINT32 iInlineTree = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            UINT32 iRichMappings = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            pDebugInfo += iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
+            pDebugInfo += iRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
             flagByte &= ~EXTRA_DEBUG_INFO_RICH;
         }
 
@@ -758,7 +821,9 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
     ULONG cbBounds = r.ReadEncodedU32();
     ULONG cbVars   = r.ReadEncodedU32();
 
-    DacEnumMemoryRegion(dac_cast<TADDR>(pDebugInfo), r.GetNextByteIndex() + cbBounds + cbVars);
+    pDebugInfo += r.GetNextByteIndex() + cbBounds + cbVars;
+
+    DacEnumMemoryRegion(dac_cast<TADDR>(pStart), pDebugInfo - pStart);
 }
 #endif // DACCESS_COMPILE
 
@@ -808,6 +873,31 @@ BOOL DebugInfoManager::GetBoundariesAndVars(
     }
 
     return pJitMan->GetBoundariesAndVars(request, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
+}
+
+BOOL DebugInfoManager::GetRichDebugInfo(
+    const DebugInfoRequest& request,
+    IN FP_IDS_NEW fpNew, IN void* pNewData,
+    OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+    OUT ULONG32* pNumInlineTree,
+    OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+    OUT ULONG32* pNumRichMappings)
+{
+    CONTRACTL
+    {
+        THROWS;
+        WRAPPER(GC_TRIGGERS); // depends on fpNew
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    IJitManager* pJitMan = ExecutionManager::FindJitMan(request.GetStartAddress());
+    if (pJitMan == NULL)
+    {
+        return FALSE; // no info available.
+    }
+
+    return pJitMan->GetRichDebugInfo(request, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
 }
 
 #ifdef DACCESS_COMPILE

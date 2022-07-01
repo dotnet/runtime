@@ -614,6 +614,7 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     unsigned               preexistingSpillTemp;
     unsigned               clsAttr;
     unsigned               methAttr;
+    IL_OFFSET              ilOffset; // actual IL offset of instruction that resulted in this inline candidate
     CorInfoInitClassResult initClassResult;
     var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
@@ -742,12 +743,12 @@ public:
 
     // Dump full subtree in xml format
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     IL_OFFSET GetActualCallOffset()
     {
         return m_ActualCallOffset;
     }
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // Get callee handle
     CORINFO_METHOD_HANDLE GetCallee() const
@@ -867,6 +868,7 @@ private:
     unsigned              m_ILSize;            // size of IL buffer for the method
     unsigned              m_ImportedILSize;    // estimated size of imported IL
     ILLocation            m_Location;          // inlining statement location within parent
+    IL_OFFSET             m_ActualCallOffset;  // IL offset of actual call instruction leading to the inline
     InlineObservation     m_Observation;       // what lead to this inline success or failure
     int                   m_CodeSizeEstimate;  // in bytes * 10
     unsigned              m_Ordinal;           // Ordinal number of this inline
@@ -879,7 +881,6 @@ private:
 
     InlinePolicy* m_Policy;           // policy that evaluated this inline
     unsigned      m_TreeID;           // ID of the GenTreeCall in the parent
-    IL_OFFSET     m_ActualCallOffset; // IL offset of actual call instruction leading to the inline
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

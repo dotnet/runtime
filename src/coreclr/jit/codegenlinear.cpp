@@ -426,9 +426,10 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
-        bool addRichMappings = JitConfig.JitReportRichDebugInfo() != 0;
+        bool addRichMappings = JitConfig.RichDebugInfo() != 0;
 
         INDEBUG(addRichMappings |= JitConfig.JitDisasmWithDebugInfo() != 0);
+        INDEBUG(addRichMappings |= JitConfig.WriteRichDebugInfoFile() != nullptr);
 
         DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))

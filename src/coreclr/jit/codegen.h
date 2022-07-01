@@ -678,10 +678,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
     void genReportRichDebugInfo();
 
-    template <typename TWriteData>
-    void genReportRichDebugInfoInlineTree(InlineContext* context, TWriteData write);
-    template <typename TWriteData>
-    void genReportRichDebugInfoMappings(TWriteData write);
+    void genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* tree);
 
 #ifdef DEBUG
     void genReportRichDebugInfoToFile();

@@ -7623,7 +7623,7 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
 //
 void CodeGen::genReportRichDebugInfoToFile()
 {
-    if (JitConfig.JitReportRichDebugInfoFile() == nullptr)
+    if (JitConfig.WriteRichDebugInfoFile() == nullptr)
     {
         return;
     }
@@ -7631,7 +7631,7 @@ void CodeGen::genReportRichDebugInfoToFile()
     static CritSecObject s_critSect;
     CritSecHolder        holder(s_critSect);
 
-    FILE* file = _wfopen(JitConfig.JitReportRichDebugInfoFile(), W("a"));
+    FILE* file = _wfopen(JitConfig.WriteRichDebugInfoFile(), W("a"));
     if (file == nullptr)
     {
         return;
@@ -7682,104 +7682,86 @@ static void WriteBits(TWriteData write, TValue val)
 }
 
 //------------------------------------------------------------------------
-// genReportRichDebugInfoInlineTree:
-//   Recursively process a context in the inline tree and write information
-//   about it in a binary format into the specified functor.
+// genRecordRichDebugInfoInlineTree:
+//   Recursively process a context in the inline tree and record information
+//   about it.
 //
 // Parameters:
 //   context - the inline context
-//   write   - write functor
+//   nodes   - the array to record into
 //
-template <typename TWriteData>
-void CodeGen::genReportRichDebugInfoInlineTree(InlineContext* context, TWriteData write)
+void CodeGen::genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* nodes)
 {
-    WriteBits(write, (uint32_t)context->GetOrdinal());
-    WriteBits(write, (void*)context->GetCallee());
-    WriteBits(write, (uint32_t)context->GetLocation().GetOffset());
-    WriteBits(write, (uint8_t)context->GetLocation().EncodeSourceTypes());
-
-    uint32_t numChildren = 0;
-    for (InlineContext* child = context->GetChild(); child != nullptr; child = child->GetSibling())
+    if (context->IsSuccess())
     {
-        if (child->IsSuccess())
-        {
-            numChildren++;
-        }
+        // We expect 1 + NumInlines unique ordinals
+        assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+
+        ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
+        node->Method = context->GetCallee();
+        node->ILOffset = context->GetActualCallOffset();
+        node->Child = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
+        node->Sibling = context->GetSibling() == nullptr ? 0 : context->GetSibling()->GetOrdinal();
     }
 
-    WriteBits(write, numChildren);
-
-    for (InlineContext* child = context->GetChild(); child != nullptr; child = child->GetSibling())
+    if (context->GetSibling() != nullptr)
     {
-        if (child->IsSuccess())
-        {
-            genReportRichDebugInfoInlineTree(child, write);
-        }
+        genRecordRichDebugInfoInlineTree(context->GetSibling(), nodes);
     }
-}
 
-//------------------------------------------------------------------------
-// genReportRichDebugInfoMappings:
-//   Write rich mappings in a binary format to the specified write functor.
-//
-// Parameters:
-//   write - write functor
-//
-template <typename TWriteData>
-void CodeGen::genReportRichDebugInfoMappings(TWriteData write)
-{
-    for (const RichIPMapping& mapping : compiler->genRichIPmappings)
+    if (context->GetChild() != nullptr)
     {
-        WriteBits(write, (uint32_t)mapping.nativeLoc.CodeOffset(GetEmitter()));
-        WriteBits(write, (uint32_t)mapping.debugInfo.GetInlineContext()->GetOrdinal());
-        WriteBits(write, (uint32_t)mapping.debugInfo.GetLocation().GetOffset());
-        WriteBits(write, (uint8_t)mapping.debugInfo.GetLocation().EncodeSourceTypes());
+        genRecordRichDebugInfoInlineTree(context->GetChild(), nodes);
     }
 }
 
 //------------------------------------------------------------------------
 // genReportRichDebugInfo:
-//   If enabled, report rich debugging information to file and/or as JIT
-//   compilation data.
+//   If enabled, report rich debugging information to file and/or EE.
 //
 void CodeGen::genReportRichDebugInfo()
 {
-    if (JitConfig.JitReportRichDebugInfo() == 0)
+    INDEBUG(genReportRichDebugInfoToFile());
+
+    if (JitConfig.RichDebugInfo() == 0)
     {
         return;
     }
 
-    INDEBUG(genReportRichDebugInfoToFile());
+    unsigned numContexts = 1 + compiler->m_inlineStrategy->GetInlineCount();
+    unsigned numRichMappings = static_cast<unsigned>(compiler->genRichIPmappings.size());
 
-    size_t binarySize = 4; // fourcc
-    auto recordSize   = [&binarySize](const void* data, size_t numBytes) { binarySize += numBytes; };
-    genReportRichDebugInfoInlineTree(compiler->compInlineContext, recordSize);
-    genReportRichDebugInfoMappings(recordSize);
+    ICorDebugInfo::InlineTreeNode* inlineTree = static_cast<ICorDebugInfo::InlineTreeNode*>(
+        compiler->info.compCompHnd->allocateArray(numContexts * sizeof(ICorDebugInfo::InlineTreeNode)));
+    ICorDebugInfo::RichOffsetMapping* mappings = static_cast<ICorDebugInfo::RichOffsetMapping*>(
+        compiler->info.compCompHnd->allocateArray(numRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping)));
 
-    uint8_t  inlineBytes[512];
-    uint8_t* bytes =
-        binarySize <= sizeof(inlineBytes) ? inlineBytes : new (compiler, CMK_DebugInfo) uint8_t[binarySize];
+    memset(inlineTree, 0, numContexts * sizeof(ICorDebugInfo::InlineTreeNode));
+    memset(mappings, 0, numRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping));
 
-    uint8_t* cursor = bytes;
+    genRecordRichDebugInfoInlineTree(compiler->compInlineContext, inlineTree);
+
 #ifdef DEBUG
-    auto recordData = [&cursor, bytes, binarySize](const void* data, size_t numBytes) {
-        assert(cursor + numBytes <= bytes + binarySize);
-        memcpy(cursor, data, numBytes);
-        cursor += numBytes;
-    };
-#else
-    auto recordData = [&cursor](const void* data, size_t numBytes) {
-        memcpy(cursor, data, numBytes);
-        cursor += numBytes;
-    };
+    for (unsigned i = 0; i < numContexts; i++)
+    {
+        assert(inlineTree[i].Method != NO_METHOD_HANDLE);
+    }
 #endif
-    recordData("DBG0", 4);
-    genReportRichDebugInfoInlineTree(compiler->compInlineContext, recordData);
-    genReportRichDebugInfoMappings(recordData);
 
-    assert(cursor == (bytes + binarySize));
+    size_t mappingIndex = 0;
+    for (const RichIPMapping& richMapping : compiler->genRichIPmappings)
+    {
+        ICorDebugInfo::RichOffsetMapping* mapping = &mappings[mappingIndex];
+        assert(richMapping.debugInfo.IsValid());
+        mapping->NativeOffset = richMapping.nativeLoc.CodeOffset(GetEmitter());
+        mapping->Inlinee = richMapping.debugInfo.GetInlineContext()->GetOrdinal();
+        mapping->ILOffset = richMapping.debugInfo.GetLocation().GetOffset();
+        mapping->Source = richMapping.debugInfo.GetLocation().EncodeSourceTypes();
 
-    compiler->info.compCompHnd->reportInternalData(bytes, binarySize);
+        mappingIndex++;
+    }
+
+    compiler->info.compCompHnd->reportRichMappings(inlineTree, numContexts, mappings, numRichMappings);
 }
 
 //------------------------------------------------------------------------

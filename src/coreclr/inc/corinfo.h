@@ -2734,10 +2734,14 @@ public:
                                                             //      jit allocated with allocateArray, EE frees
             ) = 0;
 
-    // Report internal JIT data back to the EE (for eventing and data analysis purposes).
-    virtual void reportInternalData(
-            const uint8_t                  *data,           // [IN] pointer to data to report
-            size_t                          dataSize        // [IN] length of data to report
+    // Report inline tree and rich offset mappings to EE.
+    // The arrays are expected to be allocated with allocateArray
+    // and ownership is transferred to the EE with this call.
+    virtual void reportRichMappings(
+            ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,    // [IN] Nodes of the inline tree
+            uint32_t                          numInlineTreeNodes, // [IN] Number of nodes in the inline tree
+            ICorDebugInfo::RichOffsetMapping* mappings,           // [IN] Rich mappings
+            uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
 
     /*-------------------------- Misc ---------------------------------------*/

@@ -1461,12 +1461,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static void _reportInternalData(IntPtr thisHandle, IntPtr* ppException, byte* data, UIntPtr dataSize)
+        static void _reportRichMappings(IntPtr thisHandle, IntPtr* ppException, InlineTreeNode* inlineTreeNodes, uint numInlineTreeNodes, RichOffsetMapping* mappings, uint numMappings)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.reportInternalData(data, dataSize);
+                _this.reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
             }
             catch (Exception ex)
             {
@@ -2680,7 +2680,7 @@ namespace Internal.JitInterface
             callbacks[95] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, OffsetMapping*, void>)&_setBoundaries;
             callbacks[96] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, ILVarInfo**, bool*, void>)&_getVars;
             callbacks[97] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, NativeVarInfo*, void>)&_setVars;
-            callbacks[98] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, UIntPtr, void>)&_reportInternalData;
+            callbacks[98] = (delegate* unmanaged<IntPtr, IntPtr*, InlineTreeNode*, uint, RichOffsetMapping*, uint, void>)&_reportRichMappings;
             callbacks[99] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_allocateArray;
             callbacks[100] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void>)&_freeArray;
             callbacks[101] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ARG_LIST_STRUCT_*, CORINFO_ARG_LIST_STRUCT_*>)&_getArgNext;

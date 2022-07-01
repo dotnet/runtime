@@ -1018,9 +1018,13 @@ void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of inte
     freeArray(vars); // See note in recSetVars... we own destroying this array
 }
 
-void MyICJI::reportInternalData(const uint8_t* data, size_t dataSize)
+void MyICJI::reportRichMappings(
+    ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+    uint32_t                          numInlineTreeNodes,
+    ICorDebugInfo::RichOffsetMapping* mappings,
+    uint32_t                          numMappings)
 {
-    jitInstance->mc->cr->AddCall("reportInternalData");
+    jitInstance->mc->cr->AddCall("reportRichMappings");
 }
 
 /*-------------------------- Misc ---------------------------------------*/

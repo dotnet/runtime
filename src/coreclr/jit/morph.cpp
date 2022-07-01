@@ -5624,7 +5624,6 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
         // If we failed to inline, we have a bit of work to do to cleanup
         if (inlineResult->IsFailure())
         {
-
             if (createdContext != nullptr)
             {
                 // We created a context before we got to the failure, so mark
