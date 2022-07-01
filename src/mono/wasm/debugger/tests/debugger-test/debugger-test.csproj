@@ -21,12 +21,16 @@
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
     <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" Private="true"/>
     <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" Private="true" />
+    <!-- loaded by *tests*, and not the test app -->
+    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" SkipUseReferenceAssembly="true" Private="true" />
 
+    <!-- These are only loaded dynamically -->
     <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" SkipUseReferenceAssembly="true" />
-    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\debugger-test-with-full-debug-type\debugger-test-with-full-debug-type.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\debugger-test-with-pdb-deleted\debugger-test-with-pdb-deleted.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\debugger-test-without-debug-symbols\debugger-test-without-debug-symbols.csproj" SkipUseReferenceAssembly="true" />
+
+    <!-- a?? -->
     <ProjectReference Include="..\library-dependency-debugger-test1\library-dependency-debugger-test1.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\library-dependency-debugger-test2\library-dependency-debugger-test2.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
@@ -51,7 +55,7 @@
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
       <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
 
-      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\lazy-debugger-test-embedded.dll" />
+      <!-- Assemblies only dynamically loaded -->
       <WasmFilesToIncludeInFileSystem Include="$(OutDir)\lazy-debugger-test.dll" />
       <WasmFilesToIncludeInFileSystem Include="$(OutDir)\debugger-test-with-full-debug-type.dll" />
       <WasmFilesToIncludeInFileSystem Include="$(OutDir)\debugger-test-with-pdb-deleted.dll" />

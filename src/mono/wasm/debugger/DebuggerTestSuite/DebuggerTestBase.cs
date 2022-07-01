@@ -1255,6 +1255,7 @@ namespace DebuggerTests
                 pdb_base64 = Convert.ToBase64String(bytes);
             }
 
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             var load_assemblies = JObject.FromObject(new
             {
                 expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTestALC:LoadLazyAssemblyInALC', asm_b64, pdb_b64); }}"
@@ -1263,7 +1264,8 @@ namespace DebuggerTests
             Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
 
             Assert.True(load_assemblies_res.IsOk);
-            Thread.Sleep(1000);
+            await bpResolved;
+
             var run_method = JObject.FromObject(new
             {
                 expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] LoadDebuggerTestALC:RunMethodInALC', '" + type_name + "',  '" + method_name + "'); }, 1);"
