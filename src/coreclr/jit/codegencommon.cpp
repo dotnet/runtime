@@ -7668,20 +7668,6 @@ void CodeGen::genReportRichDebugInfoToFile()
 #endif
 
 //------------------------------------------------------------------------
-// WriteBits:
-//   Helper function to write any value to a "write" template functor.
-//
-// Parameters:
-//   write - the write functor
-//   val   - the value
-//
-template <typename TWriteData, typename TValue>
-static void WriteBits(TWriteData write, TValue val)
-{
-    write(&val, sizeof(val));
-}
-
-//------------------------------------------------------------------------
 // genRecordRichDebugInfoInlineTree:
 //   Recursively process a context in the inline tree and record information
 //   about it.
