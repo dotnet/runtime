@@ -79,6 +79,11 @@ namespace System.Net.Security
             _isNtlmUsed = isNtlmUsed;
         }
 
+        public override bool IsInvalid
+        {
+            get { return (null == _credential); }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
