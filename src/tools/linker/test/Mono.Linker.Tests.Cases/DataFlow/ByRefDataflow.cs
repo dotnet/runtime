@@ -126,10 +126,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static IntPtr GetDangerous () { return IntPtr.Zero; }
 
 			[Kept]
+			[ExpectedWarning ("IL2070")]
+			static unsafe void LocalStackAllocDeref (Type t)
+			{
+				// Code pattern from CoreLib which caused problems in AOT port
+				// so making sure we handle this correctly (that is without failing)
+				int buffSize = 256;
+				byte* stackSpace = stackalloc byte[buffSize];
+				byte* buffer = stackSpace;
+
+				byte* toFree = buffer;
+				buffer = null;
+
+				// IL2070 - this is to make sure that DataFlow ran on the method's body
+				t.GetProperties ();
+			}
+
+			[Kept]
 			[ExpectedWarning ("IL2026")]
 			public static void Test ()
 			{
 				IntPtrDeref ();
+				LocalStackAllocDeref (null);
 			}
 		}
 	}

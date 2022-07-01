@@ -1,7 +1,6 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 
@@ -15,7 +14,7 @@ namespace ILLink.RoslynAnalyzer
 			return new DiagnosticDescriptor (diagnosticId.AsString (),
 				diagnosticString.GetTitleFormat (),
 				diagnosticString.GetMessageFormat (),
-				GetDiagnosticCategory (diagnosticId),
+				diagnosticId.GetDiagnosticCategory (),
 				DiagnosticSeverity.Warning,
 				true);
 		}
@@ -24,7 +23,7 @@ namespace ILLink.RoslynAnalyzer
 			=> new DiagnosticDescriptor (diagnosticId.AsString (),
 				diagnosticString.GetTitle (),
 				diagnosticString.GetMessage (),
-				GetDiagnosticCategory (diagnosticId),
+				diagnosticId.GetDiagnosticCategory (),
 				DiagnosticSeverity.Warning,
 				true);
 
@@ -41,7 +40,7 @@ namespace ILLink.RoslynAnalyzer
 				return new DiagnosticDescriptor (diagnosticId.AsString (),
 					diagnosticString.GetTitleFormat (),
 					diagnosticString.GetMessageFormat (),
-					diagnosticCategory ?? GetDiagnosticCategory (diagnosticId),
+					diagnosticCategory ?? diagnosticId.GetDiagnosticCategory (),
 					diagnosticSeverity,
 					isEnabledByDefault,
 					helpLinkUri);
@@ -50,29 +49,10 @@ namespace ILLink.RoslynAnalyzer
 			return new DiagnosticDescriptor (diagnosticId.AsString (),
 				lrsTitle!,
 				lrsMessage!,
-				diagnosticCategory ?? GetDiagnosticCategory (diagnosticId),
+				diagnosticCategory ?? diagnosticId.GetDiagnosticCategory (),
 				diagnosticSeverity,
 				isEnabledByDefault,
 				helpLinkUri);
-		}
-
-		static string GetDiagnosticCategory (DiagnosticId diagnosticId)
-		{
-			switch ((int) diagnosticId) {
-			case > 2000 and < 3000:
-				return DiagnosticCategory.Trimming;
-
-			case >= 3000 and < 3050:
-				return DiagnosticCategory.SingleFile;
-
-			case >= 3050 and <= 6000:
-				return DiagnosticCategory.AOT;
-
-			default:
-				break;
-			}
-
-			throw new ArgumentException ($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).");
 		}
 	}
 }

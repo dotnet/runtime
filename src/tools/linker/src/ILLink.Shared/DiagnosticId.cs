@@ -4,6 +4,8 @@
 // This is needed due to NativeAOT which doesn't enable nullable globally yet
 #nullable enable
 
+using System;
+
 namespace ILLink.Shared
 {
 	public enum DiagnosticId
@@ -223,6 +225,14 @@ namespace ILLink.Shared
 				>= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
 				>= 3054 and <= 3055 => MessageSubCategory.AotAnalysis,
 				_ => MessageSubCategory.None,
+			};
+
+		public static string GetDiagnosticCategory (this DiagnosticId diagnosticId) =>
+			(int) diagnosticId switch {
+				> 2000 and < 3000 => DiagnosticCategory.Trimming,
+				>= 3000 and < 3050 => DiagnosticCategory.SingleFile,
+				>= 3050 and <= 6000 => DiagnosticCategory.AOT,
+				_ => throw new ArgumentException ($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
 			};
 	}
 }
