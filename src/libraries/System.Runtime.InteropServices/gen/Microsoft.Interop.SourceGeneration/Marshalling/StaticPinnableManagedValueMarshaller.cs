@@ -13,9 +13,9 @@ namespace Microsoft.Interop
     public sealed class StaticPinnableManagedValueMarshaller : IMarshallingGenerator
     {
         private readonly IMarshallingGenerator _innerMarshallingGenerator;
-        private readonly ManagedTypeInfo _getPinnableReferenceType;
+        private readonly TypeSyntax _getPinnableReferenceType;
 
-        public StaticPinnableManagedValueMarshaller(IMarshallingGenerator innerMarshallingGenerator, ManagedTypeInfo getPinnableReferenceType)
+        public StaticPinnableManagedValueMarshaller(IMarshallingGenerator innerMarshallingGenerator, TypeSyntax getPinnableReferenceType)
         {
             _innerMarshallingGenerator = innerMarshallingGenerator;
             _getPinnableReferenceType = getPinnableReferenceType;
@@ -97,7 +97,7 @@ namespace Microsoft.Interop
                                     PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                     InvocationExpression(
                                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                            _getPinnableReferenceType.Syntax,
+                                            _getPinnableReferenceType,
                                             IdentifierName(ShapeMemberNames.GetPinnableReference)),
                                         ArgumentList(SingletonSeparatedList(
                                             Argument(IdentifierName(managedIdentifier))))))
