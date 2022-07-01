@@ -61,9 +61,24 @@
 
 /src/native/public/mono @marek-safar @lambdageek
 
+/src/libraries/sendtohelix-wasm.targets @radical
 /src/mono/wasm @lewing
 /src/mono/wasm/debugger @thaystg @radical
 /src/mono/wasm/build @radical
+
+/src/mono/nuget/*WebAssembly*/ @lewing @radical
+/src/mono/nuget/*MonoTargets*/ @lewing @radical
+/src/mono/nuget/*BrowserDebugHost*/ @lewing @radical
+/src/mono/nuget/*Workload.Mono.Toolchain*/ @lewing @radical
+/src/mono/nuget/*MonoAOTCompiler*/ @lewing @radical
+
+/src/tests/BuildWasmApps/ @radical
+/src/tasks/WasmAppBuilder/ @radical
+/src/tasks/WorkloadBuildTasks/ @radical
+/src/tasks/AotCompilerTask/ @radical
+/src/tasks/WasmBuildTasks/ @radical
+
+/eng/pipelines/**/*wasm* @radical
 
 # Obsoletions / Custom Diagnostics
 
