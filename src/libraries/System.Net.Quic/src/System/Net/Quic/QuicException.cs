@@ -7,22 +7,11 @@ namespace System.Net.Quic
 {
     public sealed class QuicException : IOException
     {
-        public QuicException(QuicError error, string message, long? applicationErrorCode, Exception? innerException)
+        public QuicException(QuicError error, long? applicationErrorCode, string message, Exception? innerException)
             : base(message, innerException)
         {
             QuicError = error;
             ApplicationErrorCode = applicationErrorCode;
-        }
-
-        public QuicException(QuicError error, string message, long? applicationErrorCode, Exception? innerException, int result)
-            : this(error, message, applicationErrorCode, innerException)
-        {
-            // HResult 0 means OK, so do not override the default value set by Exception ctor,
-            // because in this case we don't have an HResult.
-            if (result != 0)
-            {
-                HResult = result;
-            }
         }
 
         public QuicError QuicError { get; }

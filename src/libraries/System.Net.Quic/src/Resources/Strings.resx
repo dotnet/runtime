@@ -151,7 +151,7 @@
     <value>Timeout can only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
   </data>
   <data name="net_quic_timeout" xml:space="preserve">
-    <value>Connection timed out.</value>
+    <value>Connection timed out waiting for a response from the peer.</value>
   </data>
   <data name="net_quic_ssl_option" xml:space="preserve">
     <value>'{0}' is not supported by System.Net.Quic.</value>
@@ -197,6 +197,9 @@
   </data>
   <data name="net_quic_connection_idle" xml:space="preserve">
     <value>The connection timed out from inactivity.</value>
+  </data>
+  <data name="net_quic_invalid_address" xml:space="preserve">
+    <value>Binding to socket failed, likely caused by a family mismatch between local and remote address.</value>
   </data>
   <!-- Same as in System.Net.Security -->
   <data name="net_io_invalidnestedcall" xml:space="preserve">

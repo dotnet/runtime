@@ -14,7 +14,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return errorCode switch
             {
                 -1 => GetOperationAbortedException(), // Shutdown initiated by us.
-                long err => new QuicException(QuicError.ConnectionAborted, SR.Format(SR.net_quic_connectionaborted, err), err, null) // Shutdown initiated by peer.
+                long err => new QuicException(QuicError.ConnectionAborted, err, SR.Format(SR.net_quic_connectionaborted, err), null) // Shutdown initiated by peer.
             };
         }
 
@@ -23,13 +23,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             return errorCode switch
             {
                 -1 => GetOperationAbortedException(), // Shutdown initiated by us.
-                long err => new QuicException(QuicError.StreamAborted, SR.Format(SR.net_quic_streamaborted, err), err, null) // Shutdown initiated by peer.
+                long err => new QuicException(QuicError.StreamAborted, err, SR.Format(SR.net_quic_streamaborted, err), null) // Shutdown initiated by peer.
             };
         }
 
         internal static QuicException GetOperationAbortedException(string? message = null)
         {
-            return new QuicException(QuicError.OperationAborted, message ?? SR.net_quic_operationaborted, null, null);
+            return new QuicException(QuicError.OperationAborted, null, message ?? SR.net_quic_operationaborted, null);
         }
 
         internal static Exception GetExceptionForMsQuicStatus(int status, string? message = null)
@@ -48,13 +48,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 //
                 // Start by checking for statuses mapped to QuicError enum
                 //
-                if (status == QUIC_STATUS_ADDRESS_IN_USE) return new QuicException(QuicError.AddressInUse, SR.net_quic_address_in_use, null, null);
-                if (status == QUIC_STATUS_UNREACHABLE) return new QuicException(QuicError.HostUnreachable, SR.net_quic_host_unreachable, null, null);
-                if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, SR.net_quic_connection_refused, null, null);
+                if (status == QUIC_STATUS_ADDRESS_IN_USE) return new QuicException(QuicError.AddressInUse, null, SR.net_quic_address_in_use, null);
+                if (status == QUIC_STATUS_UNREACHABLE) return new QuicException(QuicError.HostUnreachable, null, SR.net_quic_host_unreachable, null);
+                if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, SR.net_quic_connection_refused, null);
                 // TODO: Uncomment after updating to latest sources
-                // if (status == QUIC_STATUS_VERSION_NEGOTIATION_ERROR) return new QuicException(QuicError.VersionNegotiationError, SR.net_quic_ver_neg_error, null, null);
-                if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, SR.net_quic_connection_idle, null, null);
-                if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.ProtocolError, SR.net_quic_protocol_error, null, null);
+                // if (status == QUIC_STATUS_VERSION_NEGOTIATION_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, SR.net_quic_ver_neg_error, null);
+                // if (status == QUIC_STATUS_INVALID_ADDRESS) return new QuicException(QuicError.invalidAddress, null, SR.net_quic_invalid_address, null);
+                if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, SR.net_quic_connection_idle, null);
+                if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.ProtocolError, null, SR.net_quic_protocol_error, null);
 
                 if (status == QUIC_STATUS_TLS_ERROR ||
                     status == QUIC_STATUS_CERT_EXPIRED ||
@@ -97,7 +98,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 //
                 // for everything else, use general InternalError
                 //
-                return new QuicException(QuicError.InternalError, SR.net_quic_internal_error, null, new MsQuicException(status, message));
+                return new QuicException(QuicError.InternalError, null, SR.net_quic_internal_error, new MsQuicException(status, message));
             }
         }
 

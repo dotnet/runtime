@@ -50,8 +50,7 @@ namespace System.Net.Quic
     }
     public sealed partial class QuicException : System.IO.IOException
     {
-        public QuicException(System.Net.Quic.QuicError error, string message, long? applicationErrorCode, System.Exception? innerException) { }
-        public QuicException(System.Net.Quic.QuicError error, string message, long? applicationErrorCode, System.Exception? innerException, int result) { }
+        public QuicException(System.Net.Quic.QuicError error, long? applicationErrorCode, string message, System.Exception? innerException) { }
         public long? ApplicationErrorCode { get { throw null; } }
         public System.Net.Quic.QuicError QuicError { get { throw null; } }
     }
