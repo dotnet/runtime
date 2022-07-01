@@ -23,14 +23,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Theory]
-        // MLL where global hive has a better match
-        [InlineData("5.0.0", "net5.0", true, "5.1.2")]
-        [InlineData("5.0.0", "net5.0", null, "5.1.2")] // MLL is on by default before 7.0, so same as true
-        [InlineData("5.0.0", "net5.0", false, "5.2.0")] // No global hive allowed
         // MLL (where global hive has better match) with various TFMs
-        [InlineData("5.0.0", "netcoreapp3.0", true, "5.1.2")]
-        [InlineData("5.0.0", "netcoreapp3.0", null, "5.1.2")]
-        [InlineData("5.0.0", "netcoreapp3.0", false, "5.2.0")]
         [InlineData("5.0.0", "netcoreapp3.1", true, "5.1.2")]
         [InlineData("5.0.0", "netcoreapp3.1", null, "5.1.2")]
         [InlineData("5.0.0", "netcoreapp3.1", false, "5.2.0")]
@@ -60,19 +53,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithFramework(MicrosoftNETCoreApp, requestedVersion),
                 multiLevelLookup)
                 .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, resolvedVersion);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Multiple hives are only supported on Windows.
-        public void FrameworkHiveSelection_CurrentDirectoryIsIgnored()
-        {
-            RunTest(new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithTfm(Constants.Tfm.Net5)
-                        .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
-                    .WithWorkingDirectory(SharedState.DotNetCurrentHive.BinPath),
-                multiLevelLookup: true)
-                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2");
         }
 
         [Theory]
@@ -191,9 +171,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Theory]
-        [InlineData("net5.0", true, true)]
-        [InlineData("net5.0", null, true)]
-        [InlineData("net5.0", false, false)]
         // MLL is disabled for 7.0+
         [InlineData("net7.0", true, false)]
         [InlineData("net7.0", null, false)]
