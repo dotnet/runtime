@@ -20,7 +20,7 @@ using System.Reflection.PortableExecutable;
 
 namespace ILCompiler.IBC
 {
-    static class MIbcProfileParser
+    public static class MIbcProfileParser
     {
         private class MetadataLoaderForPgoData : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
         {
@@ -151,8 +151,27 @@ namespace ILCompiler.IBC
         /// 
         /// </summary>
         /// <returns></returns>
-        public static ProfileData ParseMIbcFile(TypeSystemContext tsc, PEReader peReader, HashSet<string> assemblyNamesInVersionBubble, string onlyDefinedInAssembly)
+        public enum MibcGroupParseRules
         {
+            AllGroups, // All groups regardless of bubble details are included in the parse
+            VersionBubble, // Groups that include only modules that are either in the version bubble list
+            VersionBubbleWithCrossModule1, // Groups that include at least one module in the bubble and the rest of the modules are either in the version bubble list, or in the cross module list
+            VersionBubbleWithCrossModule2, // Groups that include only modules that are either in the version bubble list, or in the cross module list
+        }
+
+        private static HashSet<string> s_EmptyHash = new HashSet<string>();
+
+        public static ProfileData ParseMIbcFile(TypeSystemContext tsc, PEReader peReader, HashSet<string> assemblyNamesInVersionBubble, string onlyDefinedInAssembly, MibcGroupParseRules parseRule = MibcGroupParseRules.VersionBubble, HashSet<string> crossModuleInlineModules = null)
+        {
+            if (parseRule == MibcGroupParseRules.VersionBubble)
+                crossModuleInlineModules = s_EmptyHash;
+
+            if (parseRule == MibcGroupParseRules.AllGroups)
+                assemblyNamesInVersionBubble = null;
+
+            if (crossModuleInlineModules == null)
+                crossModuleInlineModules = s_EmptyHash;
+
             var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
 
             var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
@@ -187,25 +206,37 @@ namespace ILCompiler.IBC
                         bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
 
                         if (!hasMatchingDefinition)
+                        {
                             break;
+                        }
 
                         if (assemblyNamesInVersionBubble != null)
                         {
-                            bool areAllEntriesInVersionBubble = true;
+                            bool mibcGroupUseable = true;
+                            bool someEntryInVersionBubble = false;
                             foreach (string s in assembliesByName)
                             {
                                 if (string.IsNullOrEmpty(s))
                                     continue;
 
-                                if (!assemblyNamesInVersionBubble.Contains(s))
+                                bool entryInVersionBubble = assemblyNamesInVersionBubble.Contains(s);
+                                someEntryInVersionBubble = someEntryInVersionBubble || entryInVersionBubble;
+
+                                if (!entryInVersionBubble && !crossModuleInlineModules.Contains(s))
                                 {
-                                    areAllEntriesInVersionBubble = false;
+                                    // If the group references a module that isn't in the version bubble and isn't cross module inlineable, its not useful.
+                                    mibcGroupUseable = false;
                                     break;
                                 }
                             }
 
-                            if (!areAllEntriesInVersionBubble)
+                            if (!someEntryInVersionBubble && (parseRule == MibcGroupParseRules.VersionBubbleWithCrossModule1))
+                                mibcGroupUseable = false;
+
+                            if (!mibcGroupUseable)
+                            {
                                 break;
+                            }
                         }
 
                         loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token)));
