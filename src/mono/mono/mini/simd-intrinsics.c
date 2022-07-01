@@ -1928,7 +1928,6 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 	switch (id) {
 	case SN_get_IsSupported: {
-		MonoInst *ins = NULL;
 		EMIT_NEW_ICONST (cfg, ins, 1);
 		return ins;
 	}
@@ -3950,7 +3949,6 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 
 	switch (id) {
 	case SN_get_IsSupported: {
-		MonoInst *ins = NULL;
 		EMIT_NEW_ICONST (cfg, ins, 1);
 		return ins;
 	}
