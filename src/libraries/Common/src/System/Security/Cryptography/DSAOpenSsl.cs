@@ -355,7 +355,6 @@ namespace System.Security.Cryptography
             }
         }
 
-
         private SafeDsaHandle GetKey()
         {
             ThrowIfDisposed();
