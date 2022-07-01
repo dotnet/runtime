@@ -3,6 +3,7 @@
 
 import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
+import MonoWasmThreads from "consts:monoWasmThreads";
 
 import {
     mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root,
@@ -74,6 +75,8 @@ import {
 } from "./crypto-worker";
 import { mono_wasm_cancel_promise_ref } from "./cancelable-promise";
 import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
+import { mono_wasm_pthread_on_pthread_attached, afterThreadInit } from "./pthreads/worker";
+import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
     // current "public" MONO API
@@ -184,14 +187,20 @@ export type BINDINGType = typeof BINDING;
 
 let exportedAPI: DotnetPublicAPI;
 
+// We need to replace some of the methods in the Emscripten PThreads support with our own
+type PThreadReplacements = {
+    loadWasmModuleToWorker: Function,
+    threadInit: Function
+}
+
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
+    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any, marshaled_exports: any, marshaled_imports: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, pthreadReplacements: PThreadReplacements | undefined | null },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -257,6 +266,19 @@ function initializeImportsAndExports(
     };
 
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
+
+    if (replacements.pthreadReplacements) {
+        const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
+        replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
+            originalLoadWasmModuleToWorker(worker, onFinishedLoading);
+            afterLoadWasmModuleToWorker(worker);
+        };
+        const originalThreadInit = replacements.pthreadReplacements.threadInit;
+        replacements.pthreadReplacements.threadInit = (): void => {
+            originalThreadInit();
+            afterThreadInit();
+        };
+    }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = imports.isESM;
@@ -330,6 +352,13 @@ export const __initializeImportsAndExports: any = initializeImportsAndExports; /
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
+const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
+    // mono-threads-wasm.c
+    mono_wasm_pthread_on_pthread_attached,
+};
+
+// the methods would be visible to EMCC linker
+// --- keep in sync with dotnet.cjs.lib.js ---
 export const __linker_exports: any = {
     // mini-wasm.c
     mono_set_timeout,
@@ -376,7 +405,10 @@ export const __linker_exports: any = {
     // pal_crypto_webworker.c
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
+    dotnet_browser_sign,
+
+    // threading exports, if threading is enabled
+    ...mono_wasm_threads_exports,
 };
 
 const INTERNAL: any = {
