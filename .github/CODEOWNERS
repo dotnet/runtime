@@ -61,6 +61,9 @@
 
 /src/native/public/mono @marek-safar @lambdageek
 
+/src/mono/wasm @lewing
+/src/mono/wasm/debugger @thaystg @radical
+
 # Obsoletions / Custom Diagnostics
 
 /docs/project/list-of-diagnostics.md                @jeffhandley
