@@ -44,7 +44,6 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="moduleUrl"></param>
         /// <param name="cancellationToken">A cancellation token to observe.</param>
         /// <returns>Proxy object of the module exports.</returns>
-        /// <exception cref="NotImplementedException"></exception>
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
