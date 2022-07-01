@@ -133,7 +133,7 @@ struct READYTORUN_CORE_HEADER
 | READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS    | 0x00000008 | PInvoke stubs compiled into image are non-shareable (no secret parameter)
 | READYTORUN_FLAG_EMBEDDED_MSIL              | 0x00000010 | Input MSIL is embedded in the R2R image.
 | READYTORUN_FLAG_COMPONENT                  | 0x00000020 | This is a component assembly of a composite R2R image
-| READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
+| READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.3, all modules are assumed to possibly have this characteristic)
 | READYTORUN_FLAG_UNRELATED_R2R_CODE         | 0x00000080 | This R2R module has code in it that would not be naturally encoded into this module
 
 ## READYTORUN_SECTION
@@ -532,7 +532,7 @@ the `READYTORUN_FIXUP_ModuleOverride` bit flag on the signature fixup byte or th
 **Note:** It doesn't make sense to use references to assemblies external to the version bubble
 in the manifest metadata via the `READYTORUN_FIXUP_ModuleOverride` or `ELEMENT_TYPE_MODULE_ZAPSIG` concept
 as there's no guarantee that their metadata token values remain constant; thus we cannot encode signatures relative to them.
-However, as of R2R version 6.2, the native manifest metadata may contain tokens to be further resolved to actual
+However, as of R2R version 6.3, the native manifest metadata may contain tokens to be further resolved to actual
 implementation assemblies.
 
 The module override index translation algorithm is as follows (**ILAR** = *the number of `AssemblyRef` rows in the input MSIL*):

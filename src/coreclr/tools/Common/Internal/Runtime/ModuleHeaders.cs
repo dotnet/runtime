@@ -67,7 +67,7 @@ namespace Internal.Runtime
         OwnerCompositeExecutable = 116, // Added in 4.1
         PgoInstrumentationData = 117, // Added in 5.2
         ManifestAssemblyMvids = 118, // Added in 5.3
-        CrossModuleInlineInfo = 119, // Added in 6.2
+        CrossModuleInlineInfo = 119, // Added in 6.3
 
         //
         // NativeAOT ReadyToRun sections
