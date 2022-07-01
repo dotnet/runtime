@@ -3137,8 +3137,7 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
         BasicBlock* predBlock = predEdge->getBlock();
         if (predBlock == block)
         {
-            // can a block have a predEdge to itself?
-            return block->bbIDom;
+            continue;
         }
 
         // We check pred's count of InEdges - it's quite conservative.
