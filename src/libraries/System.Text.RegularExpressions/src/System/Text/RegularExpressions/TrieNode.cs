@@ -55,7 +55,9 @@ namespace System.Text.RegularExpressions
                     currentNode = x.trie[currentNode.Parent];
                 }
             });
+#if DEBUG
             Debug.Assert(path == Path);
+#endif
             return path;
         }
 
