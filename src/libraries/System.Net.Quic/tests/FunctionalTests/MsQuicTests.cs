@@ -265,6 +265,8 @@ namespace System.Net.Quic.Tests
             string? receivedHostName = null;
 
             var listenerOptions = CreateQuicListenerOptions();
+            // loopback may resolve to IPv6
+            listenerOptions.ListenEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
             listenerOptions.ServerAuthenticationOptions.ServerCertificate = null;
             listenerOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, hostName) =>
             {
