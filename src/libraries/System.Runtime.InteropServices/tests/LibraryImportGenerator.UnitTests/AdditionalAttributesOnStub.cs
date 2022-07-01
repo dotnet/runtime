@@ -123,7 +123,6 @@ partial class C
         {
             yield return new object[] { TestTargetFramework.Net, true };
             yield return new object[] { TestTargetFramework.Net6, true };
-            yield return new object[] { TestTargetFramework.Net5, true };
             yield return new object[] { TestTargetFramework.Core, false };
             yield return new object[] { TestTargetFramework.Standard, false };
             yield return new object[] { TestTargetFramework.Framework, false };
