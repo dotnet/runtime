@@ -63,8 +63,6 @@ namespace System.Text.Json
 
             // We do not know if any of the keys needs to be updated therefore we need to re-create cache
             _parent.Clear();
-            // Perform a final sort of properties before rebuilding the cache
-            _items.StableSortByKey(static prop => prop.Order);
 
             foreach (JsonPropertyInfo item in _items)
             {
