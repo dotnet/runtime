@@ -3,7 +3,7 @@
 
 #include "createdump.h"
 
-#if defined(TARGET_ARM64)
+#if defined(HOST_ARM64)
 // Flag to check if atomics feature is available on
 // the machine
 bool g_arm64_atomics_present = false;
