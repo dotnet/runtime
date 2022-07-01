@@ -10,6 +10,7 @@
         "lib": [
             "esnext"
         ],
+        "types": []
     },
     "exclude": [
         "dotnet.d.ts",
