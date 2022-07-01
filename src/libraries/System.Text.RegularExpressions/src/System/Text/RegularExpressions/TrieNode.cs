@@ -26,19 +26,7 @@ namespace System.Text.RegularExpressions
 
         public readonly Dictionary<char, int> Children = new();
 
-        private bool _isMatch;
-
-        public bool IsMatch
-        {
-            get => _isMatch;
-            set
-            {
-                if (Parent != -1)
-                {
-                    _isMatch = value;
-                }
-            }
-        }
+        public bool IsMatch { get; set; }
 
         public int Parent { get; init; }
 

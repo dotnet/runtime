@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -54,10 +54,12 @@ namespace System.Text.RegularExpressions
             builder.AcceptMatches(matchNodes);
 
             // If we still have one trie node -the root one-, the regex node has no fixed leading part
-            // (i.e. it starts with (a)*) and we cannot make a trie.
-            if (builder._nodes.Count == 1)
+            // (for example it starts with (a)*) and we cannot use the trie.
+            // Furthermore if the root node is a match, it means that a regex may start with something not
+            // in the trie (for example in a*|b|c, the trie will have b and c but not a) so we cannot use it either.
+            if (builder._nodes.Count == 1 || builder._nodes[TrieNode.Root].IsMatch)
             {
-                trie = default;
+                trie = null;
                 return false;
             }
             trie = builder._nodes;
