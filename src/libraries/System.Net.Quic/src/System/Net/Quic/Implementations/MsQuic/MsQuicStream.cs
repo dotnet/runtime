@@ -413,6 +413,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (status == QUIC_STATUS_ABORTED)
                 {
+                    if (_state.SendErrorCode != -1)
+                    {
+                        throw ThrowHelper.GetStreamAbortedException(_state.SendErrorCode);
+                    }
                     throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
                 }
                 ThrowHelper.ThrowIfMsQuicError(status, "Could not send data to peer.");
