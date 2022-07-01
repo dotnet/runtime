@@ -243,9 +243,9 @@ namespace System.Net.Security
                 // Save the inner context handle for further calls to NetSecurity
                 //
                 // For the first call `negoContext.GssContext` is invalid and we expect the
-                // inital handle to be returned from AcceptSecContext. For any subsequent
+                // inital handle to be returned from InitSecContext. For any subsequent
                 // call the handle should stay the same or it can be destroyed by the native
-                // AcceptSecContext call.
+                // InitSecContext call.
                 Debug.Assert(
                     negoContext.GssContext == contextHandle ||
                     negoContext.GssContext.IsInvalid ||
