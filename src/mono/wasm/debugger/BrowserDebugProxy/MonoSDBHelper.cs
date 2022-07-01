@@ -886,7 +886,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (type == null)
             {
-                type = new TypeInfo(asm, typeName, typeToken, logger);
+                type = asm.CreateTypeInfo(typeName, typeToken);
             }
 
             types[typeId] = new TypeInfoWithDebugInformation(type, typeId, typeName);

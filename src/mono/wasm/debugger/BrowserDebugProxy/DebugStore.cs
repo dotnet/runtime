@@ -349,6 +349,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool HasSequencePoints { get => hasDebugInformation && !DebugInformation.SequencePointsBlob.IsNil; }
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
+
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
             this.IsAsync = -1;
@@ -360,6 +361,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             TypeInfo.Methods.Add(this);
             assembly.Methods[methodToken] = this;
         }
+
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
             this.IsAsync = -1;
@@ -692,43 +694,38 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private readonly ILogger logger;
         internal AssemblyInfo assembly;
-        private TypeDefinition type;
-        private List<MethodInfo> methods;
         internal int Token { get; }
         internal string Namespace { get; }
-
+        public string FullName { get; }
+        public List<MethodInfo> Methods { get; } = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
 
-        public TypeInfo(AssemblyInfo assembly, string typeName, int typeToken, ILogger logger)
+        internal TypeInfo(AssemblyInfo assembly, string typeName, int typeToken, ILogger logger)
         {
             this.logger = logger;
             this.assembly = assembly;
-            Name = typeName;
+            FullName = typeName;
             Token = typeToken;
-            assembly.TypesByToken[this.Token] = this;
-            assembly.TypesByName[this.Name] = this;
-            methods = new List<MethodInfo>();
         }
-        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type, MetadataReader metadataReader, ILogger logger)
+
+        internal TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type, MetadataReader metadataReader, ILogger logger)
         {
             this.logger = logger;
             this.assembly = assembly;
             Token = MetadataTokens.GetToken(metadataReader, typeHandle);
-            this.type = type;
-            methods = new List<MethodInfo>();
-            Name = assembly.EnCGetString(type.Name);
+            string name = assembly.EnCGetString(type.Name);
             var declaringType = type;
             while (declaringType.IsNested)
             {
                 declaringType = metadataReader.GetTypeDefinition(declaringType.GetDeclaringType());
-                Name = metadataReader.GetString(declaringType.Name) + "." + Name;
+                name = metadataReader.GetString(declaringType.Name) + "." + name;
             }
             Namespace = assembly.EnCGetString(declaringType.Namespace);
             if (Namespace.Length > 0)
-                FullName = Namespace + "." + Name;
+                FullName = Namespace + "." + name;
             else
-                FullName = Name;
+                FullName = name;
 
             foreach (var field in type.GetFields())
             {
@@ -787,16 +784,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
         }
-
-        public TypeInfo(AssemblyInfo assembly, string name)
-        {
-            Name = name;
-            FullName = name;
-        }
-
-        public string Name { get; }
-        public string FullName { get; }
-        public List<MethodInfo> Methods => methods;
 
         public override string ToString() => "TypeInfo('" + FullName + "')";
     }
@@ -958,9 +945,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int typeDefIdx = GetTypeDefIdx(asmMetadataReaderParm, asmMetadataReaderParm.GetRowNumber(entry.Handle));
                         var typeDefinition = asmMetadataReaderParm.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(typeDefIdx));
                         StringHandle name = MetadataTokens.StringHandle(typeDefinition.Name.GetHashCode() & 127);
-                        typeInfo = new TypeInfo(this, typeHandle, typeDefinition, asmMetadataReaderParm, logger);
-                        TypesByName[typeInfo.FullName] = typeInfo;
-                        TypesByToken[typeInfo.Token] = typeInfo;
+
+                        typeInfo = CreateTypeInfo(typeHandle, typeDefinition, asmMetadataReaderParm);
                     }
                 }
                 else if (entry.Operation == EditAndContinueOperation.Default)
@@ -1028,10 +1014,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (TypeDefinitionHandle type in asmMetadataReader.TypeDefinitions)
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
+                var typeInfo = CreateTypeInfo(type, typeDefinition, asmMetadataReader);
 
-                var typeInfo = new TypeInfo(this, type, typeDefinition, asmMetadataReader, logger);
-                TypesByName[typeInfo.FullName] = typeInfo;
-                TypesByToken[typeInfo.Token] = typeInfo;
                 foreach (MethodDefinitionHandle method in typeDefinition.GetMethods())
                 {
                     var methodDefinition = asmMetadataReader.GetMethodDefinition(method);
@@ -1101,6 +1085,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             return null;
+        }
+
+        public TypeInfo CreateTypeInfo(TypeDefinitionHandle typeHandle, TypeDefinition type, MetadataReader metadataReader)
+        {
+            var typeInfo = new TypeInfo(this, typeHandle, type, asmMetadataReader, logger);
+            TypesByName[typeInfo.FullName] = typeInfo;
+            TypesByToken[typeInfo.Token] = typeInfo;
+            return typeInfo;
+        }
+
+        public TypeInfo CreateTypeInfo(string typeName, int typeToken)
+        {
+            var typeInfo = new TypeInfo(this, typeName, typeToken, logger);
+            TypesByName[typeInfo.FullName] = typeInfo;
+            TypesByToken[typeInfo.Token] = typeInfo;
+            return typeInfo;
         }
 
         public IEnumerable<SourceFile> Sources => this._documentIdToSourceFileTable.Values;
