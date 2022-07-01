@@ -41,7 +41,6 @@ internal sealed class IcallTableGenerator
             ReadTable(runtimeIcallTableFile);
 
         bool hasError = false;
-
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
