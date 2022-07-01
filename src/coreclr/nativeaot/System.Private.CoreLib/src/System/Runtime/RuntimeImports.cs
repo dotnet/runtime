@@ -449,10 +449,6 @@ namespace System.Runtime
         internal static extern int RhGetThunkSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThreadLocalStorageForDynamicType")]
-        internal static extern IntPtr RhGetThreadLocalStorageForDynamicType(int index, int tlsStorageSize, int numTlsCells);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
         // For my life cannot figure out the ordering of modifiers this is expecting.
 #pragma warning disable IDE0036

@@ -961,7 +961,7 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type.GetClosestDefType()));
-            staticsBagKind = BagElementKind.End; // GC static EETypes not yet implemented in type loader
+            staticsBagKind = BagElementKind.ThreadStaticDesc;
 
             return symbol;
         }

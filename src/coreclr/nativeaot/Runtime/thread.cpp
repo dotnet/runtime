@@ -277,9 +277,6 @@ void Thread::Construct()
              (offsetof(Thread, m_pTransitionFrame)));
 #endif // USE_PORTABLE_HELPERS
 
-    m_numDynamicTypesTlsCells = 0;
-    m_pDynamicTypesTlsCells = NULL;
-
     m_pThreadLocalModuleStatics = NULL;
     m_numThreadLocalModuleStatics = 0;
 
@@ -375,16 +372,6 @@ void Thread::Destroy()
 
     if (m_hPalThread != INVALID_HANDLE_VALUE)
         PalCloseHandle(m_hPalThread);
-
-    if (m_pDynamicTypesTlsCells != NULL)
-    {
-        for (uint32_t i = 0; i < m_numDynamicTypesTlsCells; i++)
-        {
-            if (m_pDynamicTypesTlsCells[i] != NULL)
-                delete[] m_pDynamicTypesTlsCells[i];
-        }
-        delete[] m_pDynamicTypesTlsCells;
-    }
 
     if (m_pThreadLocalModuleStatics != NULL)
     {
@@ -1140,58 +1127,7 @@ PTR_UInt8 Thread::GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOf
 #endif
 }
 
-PTR_UInt8 Thread::GetThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset)
-{
-    // Note: When called from GC root enumeration, no changes can be made by the AllocateThreadLocalStorageForDynamicType to
-    // the 2 variables accessed here because AllocateThreadLocalStorageForDynamicType is called in cooperative mode.
-
-    uTlsTypeOffset &= ~DYNAMIC_TYPE_TLS_OFFSET_FLAG;
-    return dac_cast<PTR_UInt8>(uTlsTypeOffset < m_numDynamicTypesTlsCells ? m_pDynamicTypesTlsCells[uTlsTypeOffset] : NULL);
-}
-
 #ifndef DACCESS_COMPILE
-PTR_UInt8 Thread::AllocateThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset, uint32_t tlsStorageSize, uint32_t numTlsCells)
-{
-    uTlsTypeOffset &= ~DYNAMIC_TYPE_TLS_OFFSET_FLAG;
-
-    if (m_pDynamicTypesTlsCells == NULL || m_numDynamicTypesTlsCells <= uTlsTypeOffset)
-    {
-        // Keep at least a 2x grow so that we don't have to reallocate everytime a new type with TLS statics is created
-        if (numTlsCells < 2 * m_numDynamicTypesTlsCells)
-            numTlsCells = 2 * m_numDynamicTypesTlsCells;
-
-        PTR_UInt8* pTlsCells = new (nothrow) PTR_UInt8[numTlsCells];
-        if (pTlsCells == NULL)
-            return NULL;
-
-        memset(&pTlsCells[m_numDynamicTypesTlsCells], 0, sizeof(PTR_UInt8) * (numTlsCells - m_numDynamicTypesTlsCells));
-
-        if (m_pDynamicTypesTlsCells != NULL)
-        {
-            memcpy(pTlsCells, m_pDynamicTypesTlsCells, sizeof(PTR_UInt8) * m_numDynamicTypesTlsCells);
-            delete[] m_pDynamicTypesTlsCells;
-        }
-
-        m_pDynamicTypesTlsCells = pTlsCells;
-        m_numDynamicTypesTlsCells = numTlsCells;
-    }
-
-    ASSERT(uTlsTypeOffset < m_numDynamicTypesTlsCells);
-
-    if (m_pDynamicTypesTlsCells[uTlsTypeOffset] == NULL)
-    {
-        uint8_t* pTlsStorage = new (nothrow) uint8_t[tlsStorageSize];
-        if (pTlsStorage == NULL)
-            return NULL;
-
-        // Initialize storage to 0's before returning it
-        memset(pTlsStorage, 0, tlsStorageSize);
-
-        m_pDynamicTypesTlsCells[uTlsTypeOffset] = pTlsStorage;
-    }
-
-    return m_pDynamicTypesTlsCells[uTlsTypeOffset];
-}
 
 #ifndef TARGET_UNIX
 EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
