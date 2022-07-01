@@ -63,6 +63,7 @@
 
 /src/mono/wasm @lewing
 /src/mono/wasm/debugger @thaystg @radical
+/src/mono/wasm/build @radical
 
 # Obsoletions / Custom Diagnostics
 
