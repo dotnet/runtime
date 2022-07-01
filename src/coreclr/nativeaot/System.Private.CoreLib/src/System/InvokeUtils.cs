@@ -569,14 +569,15 @@ namespace System
 
             Debug.Assert(argSetupState.parameters != null);
             object? incomingParam = argSetupState.parameters[index];
-            bool nullable = type.ToEETypePtr().IsNullable;
 
             // Handle default parameters
             if ((incomingParam == System.Reflection.Missing.Value) && paramType == DynamicInvokeParamType.In)
             {
                 incomingParam = GetDefaultValue(argSetupState.targetMethodOrDelegate, type, index);
-                if (incomingParam != null && nullable)
+                if (incomingParam != null && type.ToEETypePtr().IsNullable)
                 {
+                    // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
+                    // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
                     EETypePtr nullableType = type.ToEETypePtr().NullableType;
                     if (nullableType.IsEnum)
                     {
@@ -589,6 +590,7 @@ namespace System
             }
 
             RuntimeTypeHandle widenAndCompareType = type;
+            bool nullable = type.ToEETypePtr().IsNullable;
             if (nullable)
             {
                 widenAndCompareType = new RuntimeTypeHandle(type.ToEETypePtr().NullableType);
