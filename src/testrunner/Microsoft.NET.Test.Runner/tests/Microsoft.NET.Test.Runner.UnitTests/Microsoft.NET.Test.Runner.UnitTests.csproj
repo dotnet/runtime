@@ -10,7 +10,7 @@
   <Import Project="$(RepoRoot)src\testrunner\packageLayout\Microsoft.NET.Test.Runner\build\netstandard2.0\Microsoft.NET.Test.Runner.props" />
 
   <ItemGroup>
-    <Compile Include="..\..\src\Microsoft.NET.Test.Runner\JsonRpc\Jsonite\Jsonite.cs" Link="Jsonite.cs" />
+    <Compile Include="$(RepoRoot)src\testrunner\Microsoft.NET.Test.Runner\src\Microsoft.NET.Test.Runner\JsonRpc\Jsonite.cs" Link="Jsonite.cs" />
   </ItemGroup>
   
   <ItemGroup>
