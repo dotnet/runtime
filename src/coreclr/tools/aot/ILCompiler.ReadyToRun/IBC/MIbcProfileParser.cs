@@ -220,13 +220,10 @@ namespace ILCompiler.IBC
             }
 
             return new IBCProfileData(ParseMibcConfig(tsc, peReader), false, loadedMethodProfileData);
-
-
         }
 
         public static MibcConfig ParseMibcConfig(TypeSystemContext tsc, PEReader pEReader)
         {
-            // When we merge multiple mibc let's just unconditionally pick the first valid MibcConfig
             EcmaModule mibcModule = EcmaModule.Create(tsc, pEReader, null);
             EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod(nameof(MibcConfig), null);
 
