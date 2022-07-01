@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -109,10 +109,19 @@ namespace System.Text.RegularExpressions
                     return new NodeCollection(newNode);
                 default:
                     canContinue = false;
+#if REGEXGENERATOR
+                    HashSet<int> visited = new HashSet<int>();
+#else
+                    HashSet<int> visited = new HashSet<int>(count);
+#endif
                     List<int> result = new List<int>(count);
                     for (int i = 0; i < count; i++)
                     {
                         newNode = func(this, nodes[i], state, out bool canContinueInner);
+                        if (!visited.Add(newNode))
+                        {
+                            continue;
+                        }
                         // See comments in handling RegexNodeKind.Alternate below, to understand how it works.
                         if (canContinueInner)
                         {
@@ -447,6 +456,7 @@ namespace System.Text.RegularExpressions
                         this = nodeCollections[0];
                         break;
                     default:
+                        HashSet<int> visited = new HashSet<int>();
                         List<int> results = new List<int>();
                         foreach (NodeCollection nodeCollection in nodeCollections)
                         {
@@ -454,7 +464,10 @@ namespace System.Text.RegularExpressions
                             for (int i = 0; i < count; i++)
                             {
                                 int nodeIndex = nodeCollection[i];
-                                results.Add(nodeIndex);
+                                if (visited.Add(nodeIndex))
+                                {
+                                    results.Add(nodeIndex);
+                                }
                             }
                         }
                         this = new NodeCollection(results);
