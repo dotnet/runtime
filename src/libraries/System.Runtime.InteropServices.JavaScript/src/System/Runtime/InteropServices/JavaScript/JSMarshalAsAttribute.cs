@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.JavaScript
     /// <summary>
     /// Should be used to specify type of JavaScript object, which should be result of argument marshaling.
     /// </summary>
-    /// <typeparam name="T">One of he types defined in <see cref="JSType"/>, for example <see cref="JSType.MemoryView"/></typeparam>
+    /// <typeparam name="T">One of the types defined in <see cref="JSType"/>, for example <see cref="JSType.MemoryView"/></typeparam>
     /// <example>
     /// <code>
     /// [JSImport("createFunction", "my-math-helper")]
