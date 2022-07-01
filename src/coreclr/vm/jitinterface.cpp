@@ -12629,7 +12629,7 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
     }
-    else if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0)
+    else if ((g_pConfig->TieredPGO())
         && (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) || flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR)))
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
@@ -12639,8 +12639,7 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
     }
-    else if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0)
-        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
+    else if (g_pConfig->TieredPGO() && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
     }
