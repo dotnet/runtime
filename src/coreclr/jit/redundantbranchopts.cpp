@@ -55,7 +55,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
                 // It's possible that either bbNext or bbJump were unlinked and it's proven
                 // to be profitable to pay special attention to their successors.
-                if (madeChanges && (bbNext != nullptr) && (bbNext->countOfInEdges() == 0))
+                if (madeChanges && (bbNext->countOfInEdges() == 0))
                 {
                     for (BasicBlock* succ : bbNext->Succs())
                     {
@@ -63,7 +63,7 @@ PhaseStatus Compiler::optRedundantBranches()
                     }
                 }
 
-                if (madeChanges && (bbJump != nullptr) && (bbJump->countOfInEdges() == 0))
+                if (madeChanges && (bbJump->countOfInEdges() == 0))
                 {
                     for (BasicBlock* succ : bbJump->Succs())
                     {

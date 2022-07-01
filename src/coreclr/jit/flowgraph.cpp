@@ -3128,7 +3128,6 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
 BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
 {
     assert(fgDomsComputed);
-    int         reachablePreds    = 0;
     BasicBlock* lastReachablePred = nullptr;
 
     // Check if we have unreachable preds
@@ -3144,22 +3143,16 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
         // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
         if (predBlock->countOfInEdges() > 0)
         {
-            lastReachablePred = predBlock;
-            reachablePreds++;
-            if (reachablePreds > 1)
+            if (lastReachablePred != nullptr)
             {
-                // Too many "reachable" preds - return cached result
+                // More than one of "reachable" preds - return cached result
                 return block->bbIDom;
             }
+            lastReachablePred = predBlock;
         }
     }
 
-    if (reachablePreds == 1)
-    {
-        assert(lastReachablePred != nullptr);
-        return lastReachablePred;
-    }
-    return block->bbIDom;
+    return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
 }
 
 /*****************************************************************************************************
