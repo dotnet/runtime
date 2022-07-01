@@ -23,7 +23,7 @@ namespace System.CodeDom
 
         public CodeMethodReferenceExpression Method
         {
-            get => _method ?? (_method = new CodeMethodReferenceExpression());
+            get => _method ??= new CodeMethodReferenceExpression();
             set => _method = value;
         }
 

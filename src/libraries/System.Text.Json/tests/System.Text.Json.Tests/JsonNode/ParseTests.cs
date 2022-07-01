@@ -138,7 +138,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Null(JsonSerializer.Deserialize<JsonNode>("null"));
             Assert.Null(JsonNode.Parse("null"));
 
-            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            using (MemoryStream stream = new MemoryStream("null"u8.ToArray()))
             {
                 Assert.Null(JsonNode.Parse(stream));
             }

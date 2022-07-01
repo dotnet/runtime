@@ -11,9 +11,10 @@
     <!-- Disable: CLSCompliant attribute is not needed -->
     <NoWarn>$(NoWarn);3021</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
-    <Nullable>annotations</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
+    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -28,10 +29,14 @@
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
     <Compile Include="MD4Tests.cs" />
     <Compile Include="NTAuthenticationTests.cs" />
+    <Compile Include="NegotiateAuthenticationTests.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslStream.Implementation.cs" />
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
-    <Compile Include="Fakes\FakeNtlmServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\FakeNtlmServer.cs"
+             Link="Common\System\Net\Security\FakeNtlmServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\FakeNegotiateServer.cs"
+             Link="Common\System\Net\Security\FakeNegotiateServer.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />

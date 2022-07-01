@@ -9,12 +9,16 @@ using Newtonsoft.Json.Linq;
 using System.Threading;
 using Xunit;
 using System.Collections.Generic;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
     public class CustomViewTests : DebuggerTests
     {
+        public CustomViewTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task UsingDebuggerDisplay()
         {

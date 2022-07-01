@@ -32,8 +32,6 @@ namespace System.Threading.RateLimiting.Tests
                 async () => await limiter.WaitAsync(string.Empty, 1, new CancellationToken(true)));
         }
 
-        // Create
-
         [Fact]
         public void Create_AcquireCallsUnderlyingPartitionsLimiter()
         {
@@ -277,6 +275,29 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
+        public void Create_DisposeWithThrowingDisposes_DisposesAllLimiters()
+        {
+            var limiter1 = new CustomizableLimiter();
+            limiter1.DisposeImpl = _ => throw new Exception();
+            var limiter2 = new CustomizableLimiter();
+            limiter2.DisposeImpl = _ => throw new Exception();
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                if (resource == "1")
+                {
+                    return RateLimitPartition.Create(1, _ => limiter1);
+                }
+                return RateLimitPartition.Create(2, _ => limiter2);
+            });
+
+            limiter.Acquire("1");
+            limiter.Acquire("2");
+
+            var ex = Assert.Throws<AggregateException>(() => limiter.Dispose());
+            Assert.Equal(2, ex.InnerExceptions.Count);
+        }
+
+        [Fact]
         public void Create_DisposeThrowsForFutureMethodCalls()
         {
             var limiterFactory = new TrackingRateLimiterFactory<int>();
@@ -318,6 +339,29 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Equal(1, limiterFactory.Limiters[1].Limiter.AcquireCallCount);
             Assert.Equal(1, limiterFactory.Limiters[1].Limiter.DisposeCallCount);
             Assert.Equal(1, limiterFactory.Limiters[1].Limiter.DisposeAsyncCallCount);
+        }
+
+        [Fact]
+        public async Task Create_DisposeAsyncWithThrowingDisposes_DisposesAllLimiters()
+        {
+            var limiter1 = new CustomizableLimiter();
+            limiter1.DisposeAsyncCoreImpl = () => throw new Exception();
+            var limiter2 = new CustomizableLimiter();
+            limiter2.DisposeAsyncCoreImpl = () => throw new Exception();
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                if (resource == "1")
+                {
+                    return RateLimitPartition.Create(1, _ => limiter1);
+                }
+                return RateLimitPartition.Create(2, _ => limiter2);
+            });
+
+            limiter.Acquire("1");
+            limiter.Acquire("2");
+
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => limiter.DisposeAsync().AsTask());
+            Assert.Equal(2, ex.InnerExceptions.Count);
         }
 
         [Fact]
@@ -403,102 +447,153 @@ namespace System.Threading.RateLimiting.Tests
             await Assert.ThrowsAsync<TaskCanceledException>(async () => await waitTask);
         }
 
-        internal sealed class NotImplementedPartitionedRateLimiter<T> : PartitionedRateLimiter<T>
+        [Fact]
+        public async Task IdleLimiterIsCleanedUp()
         {
-            public override int GetAvailablePermits(T resourceID) => throw new NotImplementedException();
-            protected override RateLimitLease AcquireCore(T resourceID, int permitCount) => throw new NotImplementedException();
-            protected override ValueTask<RateLimitLease> WaitAsyncCore(T resourceID, int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
-        }
-
-        internal sealed class TrackingRateLimiter : RateLimiter
-        {
-            private int _getAvailablePermitsCallCount;
-            private int _acquireCallCount;
-            private int _waitAsyncCallCount;
-            private int _disposeCallCount;
-            private int _disposeAsyncCallCount;
-
-            public int GetAvailablePermitsCallCount => _getAvailablePermitsCallCount;
-            public int AcquireCallCount => _acquireCallCount;
-            public int WaitAsyncCallCount => _waitAsyncCallCount;
-            public int DisposeCallCount => _disposeCallCount;
-            public int DisposeAsyncCallCount => _disposeAsyncCallCount;
-
-            public override TimeSpan? IdleDuration => throw new NotImplementedException();
-
-            public override int GetAvailablePermits()
+            CustomizableLimiter innerLimiter = null;
+            var factoryCallCount = 0;
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                Interlocked.Increment(ref _getAvailablePermitsCallCount);
-                return 1;
-            }
-
-            protected override RateLimitLease AcquireCore(int permitCount)
-            {
-                Interlocked.Increment(ref _acquireCallCount);
-                return new Lease();
-            }
-
-            protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken)
-            {
-                Interlocked.Increment(ref _waitAsyncCallCount);
-                return new ValueTask<RateLimitLease>(new Lease());
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                Interlocked.Increment(ref _disposeCallCount);
-            }
-
-            protected override ValueTask DisposeAsyncCore()
-            {
-                Interlocked.Increment(ref _disposeAsyncCallCount);
-                return new ValueTask();
-            }
-
-            private sealed class Lease : RateLimitLease
-            {
-                public override bool IsAcquired => throw new NotImplementedException();
-
-                public override IEnumerable<string> MetadataNames => throw new NotImplementedException();
-
-                public override bool TryGetMetadata(string metadataName, out object? metadata) => throw new NotImplementedException();
-            }
-        }
-
-        internal sealed class TrackingRateLimiterFactory<TKey>
-        {
-            public List<(TKey Key, TrackingRateLimiter Limiter)> Limiters { get; } = new();
-
-            public RateLimiter GetLimiter(TKey key)
-            {
-                TrackingRateLimiter limiter;
-                lock (Limiters)
+                return RateLimitPartition.Create(1, _ =>
                 {
-                    limiter = new TrackingRateLimiter();
-                    Limiters.Add((key, limiter));
-                }
-                return limiter;
-            }
+                    factoryCallCount++;
+                    innerLimiter = new CustomizableLimiter();
+                    return innerLimiter;
+                });
+            });
+
+            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
+
+            var lease = limiter.Acquire("");
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(1, factoryCallCount);
+
+            var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            innerLimiter.DisposeAsyncCoreImpl = () =>
+            {
+                tcs.SetResult(null);
+                return default;
+            };
+            innerLimiter.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
+
+            await timerLoopMethod();
+
+            // Limiter is disposed when timer runs and sees that IdleDuration is greater than idle limit
+            await tcs.Task;
+            innerLimiter.DisposeAsyncCoreImpl = () => default;
+
+            // Acquire will call limiter factory again as the limiter was disposed and removed
+            lease = limiter.Acquire("");
+            Assert.True(lease.IsAcquired);
+            Assert.Equal(2, factoryCallCount);
         }
 
-        internal sealed class TestEquality : IEqualityComparer<int>
+        [Fact]
+        public async Task AllIdleLimitersCleanedUp_DisposeThrows()
         {
-            private int _equalsCallCount;
-            private int _getHashCodeCallCount;
-
-            public int EqualsCallCount => _equalsCallCount;
-            public int GetHashCodeCallCount => _getHashCodeCallCount;
-
-            public bool Equals(int x, int y)
+            CustomizableLimiter innerLimiter1 = null;
+            CustomizableLimiter innerLimiter2 = null;
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
             {
-                Interlocked.Increment(ref _equalsCallCount);
-                return x == y;
-            }
-            public int GetHashCode([DisallowNull] int obj)
+                if (resource == "1")
+                {
+                    return RateLimitPartition.Create(1, _ =>
+                    {
+                        innerLimiter1 = new CustomizableLimiter();
+                        return innerLimiter1;
+                    });
+                }
+                else
+                {
+                    return RateLimitPartition.Create(2, _ =>
+                    {
+                        innerLimiter2 = new CustomizableLimiter();
+                        return innerLimiter2;
+                    });
+                }
+            });
+
+            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
+
+            var lease = limiter.Acquire("1");
+            Assert.True(lease.IsAcquired);
+            Assert.NotNull(innerLimiter1);
+            limiter.Acquire("2");
+            Assert.NotNull(innerLimiter2);
+
+            var dispose1Called = false;
+            var dispose2Called = false;
+            innerLimiter1.DisposeAsyncCoreImpl = () =>
             {
-                Interlocked.Increment(ref _getHashCodeCallCount);
-                return obj.GetHashCode();
-            }
+                dispose1Called = true;
+                throw new Exception();
+            };
+            innerLimiter1.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
+            innerLimiter2.DisposeAsyncCoreImpl = () =>
+            {
+                dispose2Called = true;
+                throw new Exception();
+            };
+            innerLimiter2.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
+
+            // Run Timer
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => timerLoopMethod());
+
+            Assert.True(dispose1Called);
+            Assert.True(dispose2Called);
+
+            Assert.Equal(2, ex.InnerExceptions.Count);
+        }
+
+        [Fact]
+        public async Task ThrowingTryReplenishDoesNotPreventIdleLimiterBeingCleanedUp()
+        {
+            CustomizableReplenishingLimiter replenishLimiter = new CustomizableReplenishingLimiter();
+            CustomizableLimiter idleLimiter = null;
+            var factoryCallCount = 0;
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                if (resource == "1")
+                {
+                    return RateLimitPartition.Create(1, _ =>
+                    {
+                        factoryCallCount++;
+                        idleLimiter = new CustomizableLimiter();
+                        return idleLimiter;
+                    });
+                }
+                return RateLimitPartition.Create(2, _ =>
+                {
+                    return replenishLimiter;
+                });
+            });
+
+            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
+
+            // Add the replenishing limiter to the internal storage
+            limiter.Acquire("2");
+            var lease = limiter.Acquire("1");
+            Assert.True(lease.IsAcquired);
+            Assert.Equal(1, factoryCallCount);
+
+            // Start throwing from TryReplenish, this will happen the next time the Timer runs
+            replenishLimiter.TryReplenishImpl = () => throw new Exception();
+
+            var disposeTcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            // This DisposeAsync will be called in the same Timer iteration as the throwing TryReplenish, so we block below on the disposeTcs to make sure DisposeAsync is called even with a throwing TryReplenish
+            idleLimiter.DisposeAsyncCoreImpl = () =>
+            {
+                disposeTcs.SetResult(null);
+                return default;
+            };
+            idleLimiter.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
+
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => timerLoopMethod());
+            Assert.Single(ex.InnerExceptions);
+
+            // Wait for Timer to run again which will see the throwing TryReplenish and an idle limiter it needs to clean-up
+            await disposeTcs.Task;
         }
     }
 }

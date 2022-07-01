@@ -128,7 +128,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (request == null || store == null)
                 return false;
 
-            return store.AllSources().FirstOrDefault(source => TryResolve(source)) != null;
+            return store.AllSources().FirstOrDefault(TryResolve) != null;
         }
 
         public bool CompareRequest(JObject req)
@@ -333,6 +333,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public MethodDebugInformation DebugInformation;
         public MethodDefinitionHandle methodDefHandle;
         private MetadataReader pdbMetadataReader;
+        private bool hasDebugInformation;
 
         public SourceLocation StartLocation { get; set; }
         public SourceLocation EndLocation { get; set; }
@@ -345,7 +346,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int IsAsync { get; set; }
         public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
         public TypeInfo TypeInfo { get; }
-        public bool HasSequencePoints { get => !DebugInformation.SequencePointsBlob.IsNil; }
+        public bool HasSequencePoints { get => hasDebugInformation && !DebugInformation.SequencePointsBlob.IsNil; }
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
 
@@ -354,13 +355,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.IsAsync = -1;
             this.Assembly = assembly;
             this.methodDef = asmMetadataReader.GetMethodDefinition(methodDefHandle);
-            this.DebugInformation = pdbMetadataReader.GetMethodDebugInformation(methodDefHandle.ToDebugInformationHandle());
+            if (pdbMetadataReader != null && !methodDefHandle.ToDebugInformationHandle().IsNil)
+            {
+                this.DebugInformation = pdbMetadataReader.GetMethodDebugInformation(methodDefHandle.ToDebugInformationHandle());
+                hasDebugInformation = true;
+            }
             this.Source = source;
             this.Token = token;
             this.methodDefHandle = methodDefHandle;
             this.Name = assembly.EnCGetString(methodDef.Name);
             this.pdbMetadataReader = pdbMetadataReader;
-            if (!DebugInformation.GetStateMachineKickoffMethod().IsNil)
+            if (hasDebugInformation && !DebugInformation.GetStateMachineKickoffMethod().IsNil)
                 this.KickOffMethod = asmMetadataReader.GetRowNumber(DebugInformation.GetStateMachineKickoffMethod());
             else
                 this.KickOffMethod = -1;
@@ -424,7 +429,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
-            localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
+            if (pdbMetadataReader != null)
+                localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }
 
         public ParameterInfo[] GetParametersInfo()
@@ -998,30 +1004,27 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var typeInfo = new TypeInfo(this, type, typeDefinition, asmMetadataReader, logger);
                 TypesByName[typeInfo.FullName] = typeInfo;
                 TypesByToken[typeInfo.Token] = typeInfo;
-                if (pdbMetadataReader != null)
+                foreach (MethodDefinitionHandle method in typeDefinition.GetMethods())
                 {
-                    foreach (MethodDefinitionHandle method in typeDefinition.GetMethods())
+                    var methodDefinition = asmMetadataReader.GetMethodDefinition(method);
+                    SourceFile source = null;
+                    if (pdbMetadataReader != null)
                     {
-                        var methodDefinition = asmMetadataReader.GetMethodDefinition(method);
-                        if (!method.ToDebugInformationHandle().IsNil)
+                        MethodDebugInformation methodDebugInformation = pdbMetadataReader.GetMethodDebugInformation(method.ToDebugInformationHandle());
+                        if (!methodDebugInformation.Document.IsNil)
                         {
-                            var methodDebugInformation = pdbMetadataReader.GetMethodDebugInformation(method.ToDebugInformationHandle());
-                            SourceFile source = null;
-                            if (!methodDebugInformation.Document.IsNil)
-                            {
-                                var document = pdbMetadataReader.GetDocument(methodDebugInformation.Document);
-                                var documentName = pdbMetadataReader.GetString(document.Name);
-                                source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
-                            }
-                            var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
-                            methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
-
-                            if (source != null)
-                                source.AddMethod(methodInfo);
-
-                            typeInfo.Methods.Add(methodInfo);
+                            var document = pdbMetadataReader.GetDocument(methodDebugInformation.Document);
+                            var documentName = pdbMetadataReader.GetString(document.Name);
+                            source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
                         }
                     }
+                    var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
+                    methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
+
+                    if (source != null)
+                        source.AddMethod(methodInfo);
+
+                    typeInfo.Methods.Add(methodInfo);
                 }
             }
         }
@@ -1366,36 +1369,61 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, ExecutionContext context, bool useDebuggerProtocol, [EnumeratorCancellation] CancellationToken token)
         {
             var asm_files = new List<string>();
-            var pdb_files = new List<string>();
-            foreach (string file_name in loaded_files)
-            {
-                if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
-                    pdb_files.Add(file_name);
-                else
-                    asm_files.Add(file_name);
-            }
-
             List<DebugItem> steps = new List<DebugItem>();
-            foreach (string url in asm_files)
-            {
-                try
-                {
-                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
-                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
 
-                    steps.Add(
-                        new DebugItem
-                        {
-                            Url = url,
-                            Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
-                        });
-                }
-                catch (Exception e)
+            if (!useDebuggerProtocol)
+            {
+                var pdb_files = new List<string>();
+                foreach (string file_name in loaded_files)
                 {
-                    logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                        pdb_files.Add(file_name);
+                    else
+                        asm_files.Add(file_name);
+                }
+
+                foreach (string url in asm_files)
+                {
+                    try
+                    {
+                        string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                        string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+
+                        steps.Add(
+                            new DebugItem
+                            {
+                                Url = url,
+                                Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                            });
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    }
+                }
+            }
+            else
+            {
+                foreach (string file_name in loaded_files)
+                {
+                    if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    try
+                    {
+                        steps.Add(
+                            new DebugItem
+                            {
+                                Url = file_name,
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(file_name), token)
+                            });
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogDebug($"Failed to read {file_name} ({e.Message})");
+                    }
                 }
             }
 
@@ -1405,6 +1433,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     byte[][] bytes = await step.Data.ConfigureAwait(false);
+                    if (bytes[0] == null)
+                    {
+                        logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
+                        continue;
+                    }
                     assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], logger, token);
                 }
                 catch (Exception e)

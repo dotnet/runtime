@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
     public class SoapElementAttribute : System.Attribute
     {
@@ -25,14 +25,14 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string ElementName
         {
-            get { return _elementName == null ? string.Empty : _elementName; }
+            get { return _elementName ?? string.Empty; }
             set { _elementName = value; }
         }
 
         [AllowNull]
         public string DataType
         {
-            get { return _dataType == null ? string.Empty : _dataType; }
+            get { return _dataType ?? string.Empty; }
             set { _dataType = value; }
         }
 

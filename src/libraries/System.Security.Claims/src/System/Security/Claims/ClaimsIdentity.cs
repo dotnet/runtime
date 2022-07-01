@@ -343,17 +343,7 @@ namespace System.Security.Claims
         /// Allow the association of claims with this instance of <see cref="ClaimsIdentity"/>.
         /// The claims will not be serialized or added in Clone(). They will be included in searches, finds and returned from the call to <see cref="ClaimsIdentity.Claims"/>.
         /// </summary>
-        internal List<List<Claim>> ExternalClaims
-        {
-            get
-            {
-                if (_externalClaims == null)
-                {
-                    _externalClaims = new List<List<Claim>>();
-                }
-                return _externalClaims;
-            }
-        }
+        internal List<List<Claim>> ExternalClaims => _externalClaims ??= new List<List<Claim>>();
 
         /// <summary>
         /// Gets or sets the label for this <see cref="ClaimsIdentity"/>

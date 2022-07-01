@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -33,6 +34,18 @@ namespace System.Text.Json
         public static void ThrowArgumentOutOfRangeException_CommentEnumMustBeInRange(string parameterName)
         {
             throw GetArgumentOutOfRangeException(parameterName, SR.CommentHandlingMustBeValid);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_ArrayIndexNegative(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArrayIndexNegative);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_ArrayTooSmall(string paramName)
+        {
+            throw new ArgumentException(SR.ArrayTooSmall, paramName);
         }
 
         private static ArgumentException GetArgumentException(string message)
@@ -652,9 +665,21 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_SerializationCallbacksNotSupported(JsonTypeInfoKind typeInfoKind)
+        {
+            throw GetInvalidOperationException(SR.Format(SR.SerializationCallbacksNotSupported, typeInfoKind));
+        }
+
+        [DoesNotReturn]
         public static void ThrowObjectDisposedException_Utf8JsonWriter()
         {
             throw new ObjectDisposedException(nameof(Utf8JsonWriter));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowObjectDisposedException_JsonDocument()
+        {
+            throw new ObjectDisposedException(nameof(JsonDocument));
         }
     }
 

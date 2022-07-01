@@ -93,10 +93,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Requires.NotNull(completeAction, nameof(completeAction));
 
-            if (_completeActionList == null)
-            {
-                _completeActionList = new List<Action>();
-            }
+            _completeActionList ??= new List<Action>();
             _completeActionList.Add(completeAction);
         }
 
@@ -108,10 +105,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Requires.NotNull(revertAction, nameof(revertAction));
 
-            if (_revertActionList == null)
-            {
-                _revertActionList = new List<Action>();
-            }
+            _revertActionList ??= new List<Action>();
             _revertActionList.Add(revertAction);
         }
 
@@ -269,7 +263,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             set
             {
-                if (value == true && _containsInnerAtomicComposition == true)
+                if (value && _containsInnerAtomicComposition)
                 {
                     throw new InvalidOperationException(SR.AtomicComposition_AlreadyNested);
                 }

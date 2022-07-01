@@ -372,10 +372,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddNamespaceAlias(string StylesheetURI, NamespaceInfo AliasInfo)
         {
-            if (_globalNamespaceAliasTable == null)
-            {
-                _globalNamespaceAliasTable = new Hashtable();
-            }
+            _globalNamespaceAliasTable ??= new Hashtable();
             NamespaceInfo? duplicate = _globalNamespaceAliasTable[StylesheetURI] as NamespaceInfo;
             if (duplicate == null || AliasInfo.stylesheetId <= duplicate.stylesheetId)
             {

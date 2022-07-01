@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
@@ -92,6 +93,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public Task ConnectWithRevocation_WithCallback(bool checkRevocation)
         {
             X509RevocationMode mode = checkRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
@@ -99,12 +101,17 @@ namespace System.Net.Security.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Linux)]
-        [Theory]
+        [ConditionalTheory]
         [OuterLoop("Subject to system load race conditions")]
         [InlineData(false)]
         [InlineData(true)]
         public Task ConnectWithRevocation_StapledOcsp(bool offlineContext)
         {
+            if (PlatformDetection.IsRedHatFamily7 && !offlineContext)
+            {
+                throw new SkipTestException("Active test issue https://github.com/dotnet/runtime/issues/71037");
+            }
+
             // Offline will only work if
             // a) the revocation has been checked recently enough that it is cached, or
             // b) the server stapled the response
@@ -183,8 +190,36 @@ namespace System.Net.Security.Tests
 
                     if (revocationMode == X509RevocationMode.Offline)
                     {
-                        // Give the OCSP response a better chance to finish.
-                        await Task.Delay(200);
+                        if (offlineContext.GetValueOrDefault(false))
+                        {
+                            // Add a delay just to show we're not winning because of race conditions.
+                            await Task.Delay(200);
+                        }
+                        else
+                        {
+                            if (!OperatingSystem.IsLinux())
+                            {
+                                throw new InvalidOperationException(
+                                    "This test configuration uses reflection and is only defined for Linux.");
+                            }
+
+                            FieldInfo pendingDownloadTaskField = typeof(SslStreamCertificateContext).GetField(
+                                "_pendingDownload",
+                                BindingFlags.Instance | BindingFlags.NonPublic);
+
+                            if (pendingDownloadTaskField is null)
+                            {
+                                throw new InvalidOperationException("Cannot find the pending download field.");
+                            }
+
+                            Task download = (Task)pendingDownloadTaskField.GetValue(serverOpts.ServerCertificateContext);
+
+                            // If it's null, it should mean it has already finished. If not, it might not have.
+                            if (download is not null)
+                            {
+                                await download;
+                            }
+                        }
                     }
                 }
                 else

@@ -31,12 +31,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(AltSvcHeaderUpgradeVersions))]
         public async Task AltSvc_Header_Upgrade_Success(Version fromVersion, bool overrideHost)
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/54050")]
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             // The test makes a request to a HTTP/1 or HTTP/2 server first, which supplies an Alt-Svc header pointing to the second server.
             using GenericLoopbackServer firstServer =
                 fromVersion.Major switch
@@ -48,7 +42,7 @@ namespace System.Net.Http.Functional.Tests
 
             // The second request is expected to come in on this HTTP/3 server.
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
-            
+
             if (!overrideHost)
                 Assert.Equal(firstServer.Address.IdnHost, secondServer.Address.IdnHost);
 
@@ -80,12 +74,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/54050")]
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);
@@ -111,12 +99,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task AltSvc_ResponseFrame_UpgradeFrom20_Success()
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/54050")]
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);

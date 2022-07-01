@@ -72,14 +72,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(writer);
 
-            XmlDictionaryWriter? dictionaryWriter = writer as XmlDictionaryWriter;
-
-            if (dictionaryWriter == null)
-            {
-                dictionaryWriter = new XmlWrappedWriter(writer);
-            }
-
-            return dictionaryWriter;
+            return writer as XmlDictionaryWriter ?? new XmlWrappedWriter(writer);
         }
 
         public override Task WriteBase64Async(byte[] buffer, int index, int count)
@@ -169,9 +162,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(localName);
 
-            if (namespaceUri == null)
-                namespaceUri = XmlDictionaryString.Empty;
-#pragma warning suppress 56506 // Microsoft, XmlDictionaryString.Empty is never null
+            namespaceUri ??= XmlDictionaryString.Empty;
             WriteQualifiedName(localName.Value, namespaceUri.Value);
         }
 
@@ -217,7 +208,7 @@ namespace System.Xml
                     break;
                 if (blockSize < 65536 && bytesRead == blockSize)
                 {
-                    blockSize = blockSize * 16;
+                    blockSize *= 16;
                     block = new byte[blockSize];
                 }
             }

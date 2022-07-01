@@ -402,11 +402,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._typename == null)
-                {
-                    info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
-                }
-                return info._typename;
+                return info._typename ??= GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -421,11 +417,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._type == null)
-                {
-                    info._type = GetSqlType(i)._type;
-                }
-                return info._type;
+                return info._type ??= GetSqlType(i)._type;
             }
             throw ADP.DataReaderNoData();
         }
@@ -435,15 +427,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._name == null)
-                {
-                    info._name = GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW);
-                    if (null == info._name)
-                    { // MDAC 66681
-                        info._name = "";
-                    }
-                }
-                return info._name;
+                return info._name ??= GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW) ?? "";
             }
             throw ADP.DataReaderNoData();
         }
@@ -604,7 +588,7 @@ namespace System.Data.Odbc
             {
                 info._dbtype = unchecked((ODBC32.SQL_TYPE)(int)GetColAttribute(i, ODBC32.SQL_DESC.CONCISE_TYPE, ODBC32.SQL_COLUMN.TYPE, ODBC32.HANDLER.THROW));
                 typeMap = TypeMap.FromSqlType(info._dbtype.Value);
-                if (typeMap._signType == true)
+                if (typeMap._signType)
                 {
                     bool sign = (GetColAttribute(i, ODBC32.SQL_DESC.UNSIGNED, ODBC32.SQL_COLUMN.UNSIGNED, ODBC32.HANDLER.THROW).ToInt64() != 0);
                     typeMap = TypeMap.UpgradeSignedType(typeMap, sign);
@@ -2040,7 +2024,7 @@ namespace System.Data.Odbc
                 // furthermore size needs to be special cased for wchar types
                 //
                 typeMap = TypeMap.FromSqlType((ODBC32.SQL_TYPE)unchecked((int)GetColAttribute(i, ODBC32.SQL_DESC.CONCISE_TYPE, ODBC32.SQL_COLUMN.TYPE, ODBC32.HANDLER.THROW)));
-                if (typeMap._signType == true)
+                if (typeMap._signType)
                 {
                     bool sign = (GetColAttribute(i, ODBC32.SQL_DESC.UNSIGNED, ODBC32.SQL_COLUMN.UNSIGNED, ODBC32.HANDLER.THROW).ToInt64() != 0);
                     // sign = true if the column is unsigned
@@ -2378,10 +2362,7 @@ namespace System.Data.Odbc
                                     _metadata[ordinal].isNullable = false;
                                     _metadata[ordinal].baseTableName = qualifiedTableName.Table;
 
-                                    if (_metadata[ordinal].baseColumnName == null)
-                                    {
-                                        _metadata[ordinal].baseColumnName = columnname;
-                                    }
+                                    _metadata[ordinal].baseColumnName ??= columnname;
                                 }
                                 else
                                 {
@@ -2453,10 +2434,7 @@ namespace System.Data.Odbc
                         if (ordinal != -1)
                         {
                             _metadata[ordinal].isRowVersion = true;
-                            if (_metadata[ordinal].baseColumnName == null)
-                            {
-                                _metadata[ordinal].baseColumnName = columnname;
-                            }
+                            _metadata[ordinal].baseColumnName ??= columnname;
                         }
                     }
                     // Unbind the column
@@ -2656,14 +2634,8 @@ namespace System.Data.Odbc
                         // test test test - we don't know if this is nulalble or not so why do we want to set it to a value?
                         _metadata[indexordinal].isNullable = false;
                         _metadata[indexordinal].isUnique = true;
-                        if (_metadata[indexordinal].baseTableName == null)
-                        {
-                            _metadata[indexordinal].baseTableName = qualifiedTableName.Table;
-                        }
-                        if (_metadata[indexordinal].baseColumnName == null)
-                        {
-                            _metadata[indexordinal].baseColumnName = columnname;
-                        }
+                        _metadata[indexordinal].baseTableName ??= qualifiedTableName.Table;
+                        _metadata[indexordinal].baseColumnName ??= columnname;
                     }
                 }
                 // Unbind the columns
@@ -2749,16 +2721,16 @@ namespace System.Data.Odbc
             int idx;
             CStringTokenizer tokenstmt = new CStringTokenizer(localcmdtext, Connection!.QuoteChar(ADP.GetSchemaTable)[0], Connection.EscapeChar(ADP.GetSchemaTable));
 
-            if (tokenstmt.StartsWith("select") == true)
+            if (tokenstmt.StartsWith("select"))
             {
                 // select command, search for from clause
                 idx = tokenstmt.FindTokenIndex("from");
             }
             else
             {
-                if ((tokenstmt.StartsWith("insert") == true) ||
-                    (tokenstmt.StartsWith("update") == true) ||
-                    (tokenstmt.StartsWith("delete") == true))
+                if (tokenstmt.StartsWith("insert") ||
+                    tokenstmt.StartsWith("update") ||
+                    tokenstmt.StartsWith("delete"))
                 {
                     // Get the following word
                     idx = tokenstmt.CurrentPosition;

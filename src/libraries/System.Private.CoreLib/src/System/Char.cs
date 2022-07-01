@@ -1165,9 +1165,6 @@ namespace System
         // IBinaryInteger
         //
 
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
-        static (char Quotient, char Remainder) IBinaryInteger<char>.DivRem(char left, char right) => ((char, char))Math.DivRem(left, right);
-
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static char IBinaryInteger<char>.LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
@@ -1229,6 +1226,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static char IBinaryNumber<char>.AllBitsSet => (char)0xFFFF;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         static bool IBinaryNumber<char>.IsPow2(char value) => ushort.IsPow2(value);
 
@@ -1284,9 +1284,6 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static char IDivisionOperators<char, char, char>.operator /(char left, char right) => (char)(left / right);
 
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static char IDivisionOperators<char, char, char>.operator checked /(char left, char right) => (char)(left / right);
-
         //
         // IEqualityOperators
         //
@@ -1340,31 +1337,6 @@ namespace System
 
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
         static char IMultiplyOperators<char, char, char>.operator checked *(char left, char right) => checked((char)(left * right));
-
-        //
-        // INumber
-        //
-
-        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        static char INumber<char>.Clamp(char value, char min, char max) => (char)Math.Clamp(value, min, max);
-
-        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        static char INumber<char>.CopySign(char value, char sign) => value;
-
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        static char INumber<char>.Max(char x, char y) => (char)Math.Max(x, y);
-
-        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
-        static char INumber<char>.MaxNumber(char x, char y) => (char)Math.Max(x, y);
-
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        static char INumber<char>.Min(char x, char y) => (char)Math.Min(x, y);
-
-        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
-        static char INumber<char>.MinNumber(char x, char y) => (char)Math.Min(x, y);
-
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static int INumber<char>.Sign(char value) => (value == 0) ? 0 : 1;
 
         //
         // INumberBase

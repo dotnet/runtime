@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.OleDb
 {
     internal sealed class RowBinding : System.Data.ProviderBase.DbBuffer
@@ -151,7 +149,7 @@ namespace System.Data.OleDb
             for (int indexWithinAccessor = 0; indexWithinAccessor < columns.Length; ++indexWithinAccessor)
             {
                 int index = indexStart + indexWithinAccessor;
-                OleDbParameter? parameter = ((null != parameters) ? parameters[index] : null);
+                OleDbParameter? parameter = parameters?[index];
                 columns[indexWithinAccessor] = new ColumnBinding(
                     dataReader!, index, indexForAccessor, indexWithinAccessor,
                     parameter, this, bindings, dbbindings[indexWithinAccessor], _headerLength,
@@ -191,7 +189,7 @@ namespace System.Data.OleDb
                 }
             }
 
-            return ((null != value) ? value : DBNull.Value);
+            return value ?? DBNull.Value;
         }
 
         // translate to native

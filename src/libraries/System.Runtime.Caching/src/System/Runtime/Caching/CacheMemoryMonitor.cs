@@ -175,7 +175,7 @@ namespace System.Runtime.Caching
 
                 // increment the index (it's either 1 or 0)
                 Debug.Assert(SAMPLE_COUNT == 2);
-                _idx = _idx ^ 1;
+                _idx ^= 1;
                 // remember the sample time
                 _cacheSizeSampleTimes[_idx] = DateTime.UtcNow;
                 // remember the sample value

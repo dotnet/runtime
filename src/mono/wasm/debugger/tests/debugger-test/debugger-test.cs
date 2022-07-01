@@ -996,6 +996,8 @@ public class TestHotReloadUsingSDB {
 #region Default Interface Method
 public interface IDefaultInterface
 {
+    public static string defaultInterfaceMember = "defaultInterfaceMember";
+
     string DefaultMethod()
     {
         string localString = "DefaultMethod()";
@@ -1012,6 +1014,21 @@ public interface IDefaultInterface
     async System.Threading.Tasks.Task DefaultMethodAsync()
     {
         string localString = "DefaultMethodAsync()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        await System.Threading.Tasks.Task.FromResult(0);
+    }
+    static string DefaultMethodStatic()
+    {
+        string localString = "DefaultMethodStatic()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        return $"{localString} from IDefaultInterface";
+    }
+
+    // cannot override the static method of the interface - skipping
+
+    static async System.Threading.Tasks.Task DefaultMethodAsyncStatic()
+    {
+        string localString = "DefaultMethodAsyncStatic()";
         DefaultInterfaceMethod.MethodForCallingFromDIM();
         await System.Threading.Tasks.Task.FromResult(0);
     }
@@ -1103,9 +1120,30 @@ public static class DefaultInterfaceMethod
         extendDefaultInter.NonUserCodeDefaultMethod(extendDefaultInter.BoundaryBp);
     }
 
+    public static void EvaluateStatic()
+    {
+        IExtendIDefaultInterface.DefaultMethodStatic();
+    }
+
+    public static async void EvaluateAsyncStatic()
+    {
+        await IExtendIDefaultInterface.DefaultMethodAsyncStatic();
+    }
+
     public static void MethodForCallingFromDIM()
     {
         string text = "a place for pausing and inspecting DIM";
     }
 }
 #endregion
+public class DebugWithoutSymbols
+{
+    public static void Run()
+    {
+        var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-pdb-deleted.dll");
+        var myType = asm.GetType("DebuggerTests.ClassWithPdbDeleted");
+        var myMethod = myType.GetConstructor(new Type[] { });
+        var exc = myMethod.Invoke(new object[]{});
+        System.Diagnostics.Debugger.Break();
+    }
+}

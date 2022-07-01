@@ -545,12 +545,15 @@ namespace System.Text.RegularExpressions.Tests
             // Lazy operator Backtracking
             yield return (@"http://([a-zA-z0-9\-]*\.?)*?(:[0-9]*)??/", "http://www.msn.com", RegexOptions.IgnoreCase, 0, 18, false, string.Empty);
 
-            // Grouping Constructs Invalid Regular Expressions
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                yield return ("(?!)", "(?!)cat", RegexOptions.None, 0, 7, false, string.Empty);
-                yield return ("(?<!)", "(?<!)cat", RegexOptions.None, 0, 8, false, string.Empty);
-            }
+            // Expressions containing Nothing (subexpressions that never match).
+            // (Lookarounds aren't supported by NonBacktracking, but optimizer reduces (?!) to Nothing, which is supported.)
+            yield return ("(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty); 
+            yield return ("(?!)|((?!))|(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty); 
+            yield return ("cat(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
+            yield return ("(?<!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
+            yield return ("(?!)|cat", "cat", RegexOptions.None, 0, 3, true, "cat");
+            yield return ("dog|(?!)|cat", "cat", RegexOptions.None, 0, 3, true, "cat");
+            yield return ("dog|cat(?!)|cat", "cat", RegexOptions.None, 0, 3, true, "cat");
 
             // Alternation construct
             foreach (string input in new[] { "abc", "def" })
@@ -1025,14 +1028,35 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
         {
-            RegexHelpers.SetSafeSizeThreshold(100_002);
-            try
+            Func<string, Task> func = static async engineStr =>
             {
-                await Match_VaryingLengthStrings(engine, RegexOptions.None, 100_000);
+                RegexEngine engine = (RegexEngine)Enum.Parse(typeof(RegexEngine), engineStr);
+
+                if (RegexHelpers.IsNonBacktracking(engine))
+                {
+                    RegexHelpers.SetSafeSizeThreshold(100_002);
+                }
+
+                try
+                {
+                    await new RegexMatchTests().Match_VaryingLengthStrings(engine, RegexOptions.None, 100_000);
+                }
+                finally
+                {
+                    if (RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        RegexHelpers.RestoreSafeSizeThresholdToDefault();
+                    }
+                }
+            };
+
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                RemoteExecutor.Invoke(func, engine.ToString()).Dispose();
             }
-            finally
+            else
             {
-                RegexHelpers.RestoreSafeSizeThresholdToDefault();
+                await func(engine.ToString());
             }
         }
 
@@ -1704,6 +1728,9 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
+#if NET7_0_OR_GREATER
+            Assert.Equal(expectedSuccessStartAt, r.IsMatch(input.AsSpan(), startat));
+#endif
 
             // Normal matching, but any match before startat is ignored.
             Match match = r.Match(input, startat);
@@ -1974,50 +2001,92 @@ namespace System.Text.RegularExpressions.Tests
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
-            RegexHelpers.SetSafeSizeThreshold(10_005);
-            Regex re;
-            try
+            Func<string, string, string, Task> func = static async (engineStr, fullpattern, fullinput) =>
             {
-                re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
-            }
-            finally
-            {
-                RegexHelpers.RestoreSafeSizeThresholdToDefault();
-            }
+                RegexEngine engine = (RegexEngine)Enum.Parse(typeof(RegexEngine), engineStr);
 
-            Assert.True(re.Match(fullinput).Success);
+                if (RegexHelpers.IsNonBacktracking(engine))
+                {
+                    RegexHelpers.SetSafeSizeThreshold(10_005);
+                }
+
+                Regex re;
+                try
+                {
+                    re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
+                }
+                finally
+                {
+                    if (RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        RegexHelpers.RestoreSafeSizeThresholdToDefault();
+                    }
+                }
+
+                Assert.True(re.Match(fullinput).Success);
+            };
+
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
+            }
+            else
+            {
+                await func(engine.ToString(), fullpattern, fullinput);
+            }
         }
 
         public static IEnumerable<object[]> StressTestDeepNestingOfLoops_TestData()
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { engine, "(", "a", ")*", RegexOptions.None, "a", 2000, 1000 };
-                yield return new object[] { engine, "(", "[aA]", ")+", RegexOptions.None, "aA", 2000, 3000 };
-                yield return new object[] { engine, "(", "ab", "){0,1}", RegexOptions.None, "ab", 2000, 1000 };
+                yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
+                yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
+                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000 };
             }
         }
 
         [OuterLoop("Can take over 10 seconds")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
-        public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, RegexOptions options, string input, int pattern_repetition, int input_repetition)
+        public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition)
         {
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
-            RegexHelpers.SetSafeSizeThreshold(int.MaxValue);
-            Regex re;
-            try
+            Func<string, string, string, Task> func = static async (engineStr, fullpattern, fullinput) =>
             {
-                re = await RegexHelpers.GetRegexAsync(engine, fullpattern, options);
-            }
-            finally
-            {
-                RegexHelpers.RestoreSafeSizeThresholdToDefault();
-            }
+                RegexEngine engine = (RegexEngine)Enum.Parse(typeof(RegexEngine), engineStr);
 
-            Assert.True(re.Match(fullinput).Success);
+                if (RegexHelpers.IsNonBacktracking(engine))
+                {
+                    RegexHelpers.SetSafeSizeThreshold(int.MaxValue);
+                }
+
+                Regex re;
+                try
+                {
+                    re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
+                }
+                finally
+                {
+                    if (RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        RegexHelpers.RestoreSafeSizeThresholdToDefault();
+                    }
+                }
+
+                Assert.True(re.Match(fullinput).Success);
+            };
+
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
+            }
+            else
+            {
+                await func(engine.ToString(), fullpattern, fullinput);
+            }
         }
 
         public static IEnumerable<object[]> StressTestNfaMode_TestData()

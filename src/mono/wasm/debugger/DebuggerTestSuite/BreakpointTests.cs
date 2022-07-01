@@ -9,12 +9,16 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
     public class BreakpointTests : DebuggerTests
     {
+        public BreakpointTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task CreateGoodBreakpoint()
         {
@@ -588,10 +592,10 @@ namespace DebuggerTests
         [InlineData(true, "RunNonUserCode", "DebuggerAttribute", 1, 867, 8)]
         [InlineData(false, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8)]
         [InlineData(true, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8)]
-        [InlineData(false, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1091, 4)]
-        [InlineData(true, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1091, 4)]
-        [InlineData(false, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1048, 4, "NonUserCodeDefaultMethod")]
-        [InlineData(true, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1097, 4)]
+        [InlineData(false, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1108, 4)]
+        [InlineData(true, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1108, 4)]
+        [InlineData(false, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1065, 4, "NonUserCodeDefaultMethod")]
+        [InlineData(true, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1114, 4)]
         public async Task StepThroughOrNonUserCodeAttributeStepInNoBp(bool justMyCodeEnabled, string evalFunName, string evalClassName, int bpLine, int line, int col, string funcName="")
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", evalClassName, evalFunName, bpLine);
@@ -821,9 +825,11 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", 1070, 1001, 999, 1003)]
-        [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", 1071, 1030, 1028, 1032)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", 37, 1014, 1012, 1016, true, "Start<IDefaultInterface/<DefaultMethodAsync>d__2>")]
+        [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", 1087, 1003, 1001, 1005)]
+        [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", 1088, 1047, 1045, 1049)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", 37, 1016, 1014, 1018, true, "Start<IDefaultInterface/<DefaultMethodAsync>d__3>")]
+        [InlineData("IDefaultInterface", "DefaultMethodStatic", "EvaluateStatic", 1124, 1022, 1020, 1024)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", 37, 1031, 1029, 1033, true, "Start<IDefaultInterface/<DefaultMethodAsyncStatic>d__5>")]
         public async Task BreakInDefaultInterfaceMethod(
             string dimClassName, string dimName, string entryMethod,  int evaluateAsPrevFrameLine, int dimAsPrevFrameLine, int functionLocationLine, int functionEndLine, bool isAsync = false, string asyncPrevFrameInDim = "")
         {

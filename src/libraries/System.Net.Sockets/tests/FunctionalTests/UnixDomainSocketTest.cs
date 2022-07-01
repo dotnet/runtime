@@ -518,6 +518,40 @@ namespace System.Net.Sockets.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        public void AbstractPathEquality()
+        {
+            string abstractPath = '\0' + Guid.NewGuid().ToString();
+            UnixDomainSocketEndPoint endPoint1 = new(abstractPath);
+            UnixDomainSocketEndPoint endPoint2 = new(abstractPath);
+            UnixDomainSocketEndPoint endPoint3 = new('\0' + Guid.NewGuid().ToString());
+
+            Assert.Equal(endPoint1, endPoint2);
+            Assert.Equal(endPoint1.GetHashCode(), endPoint2.GetHashCode());
+
+            Assert.NotEqual(endPoint1, endPoint3);
+            Assert.NotEqual(endPoint2, endPoint3);
+        }
+
+        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void FilePathEquality()
+        {
+            string path1 = "relative" + Path.DirectorySeparatorChar + "path";
+            string path2 = new(path1); // make a copy to avoid reference equality
+            string path3 = GetRandomNonExistingFilePath();
+
+            UnixDomainSocketEndPoint endPoint1 = new(path1);
+            UnixDomainSocketEndPoint endPoint2 = new(path2);
+            UnixDomainSocketEndPoint endPoint3 = new(path3);
+
+            Assert.Equal(endPoint1, endPoint2);
+            Assert.Equal(endPoint1.GetHashCode(), endPoint2.GetHashCode());
+
+            Assert.NotEqual(endPoint1, endPoint3);
+            Assert.NotEqual(endPoint2, endPoint3);
+        }
+
         private static string GetRandomNonExistingFilePath()
         {
             string result;

@@ -31,11 +31,10 @@ namespace System.Xml
 
         // UTF-8 is fastpath, so that's how these are stored
         // Compare methods adapt to Unicode.
-        private static readonly byte[] s_encodingAttr = new byte[] { (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g' };
-        private static readonly byte[] s_encodingUTF8 = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8' };
-        private static readonly byte[] s_encodingUnicode = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6' };
-        private static readonly byte[] s_encodingUnicodeLE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'l', (byte)'e' };
-        private static readonly byte[] s_encodingUnicodeBE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'b', (byte)'e' };
+        private static readonly byte[] s_encodingUTF8 = "utf-8"u8.ToArray();
+        private static readonly byte[] s_encodingUnicode = "utf-16"u8.ToArray();
+        private static readonly byte[] s_encodingUnicodeLE = "utf-16le"u8.ToArray();
+        private static readonly byte[] s_encodingUnicodeBE = "utf-16be"u8.ToArray();
 
         private SupportedEncoding _encodingCode;
         private Encoding? _encoding;
@@ -292,8 +291,7 @@ namespace System.Xml
         private void EnsureBuffers()
         {
             EnsureByteBuffer();
-            if (_chars == null)
-                _chars = new char[BufferLength];
+            _chars ??= new char[BufferLength];
         }
 
         [MemberNotNull(nameof(_bytes))]
@@ -361,7 +359,7 @@ namespace System.Xml
             for (i = encEq - 1; IsWhitespace(buffer[i]); i--) ;
 
             // Check for encoding attribute
-            if (!Compare(s_encodingAttr, buffer, i - s_encodingAttr.Length + 1))
+            if (!buffer.AsSpan(0, i + 1).EndsWith("encoding"u8))
             {
                 if (e != SupportedEncoding.UTF8 && expectedEnc == SupportedEncoding.None)
                     throw new XmlException(SR.XmlDeclarationRequired);
@@ -421,16 +419,6 @@ namespace System.Xml
                     continue;
 
                 if (key[i] != char.ToLowerInvariant((char)buffer[offset + i]))
-                    return false;
-            }
-            return true;
-        }
-
-        private static bool Compare(byte[] key, byte[] buffer, int offset)
-        {
-            for (int i = 0; i < key.Length; i++)
-            {
-                if (key[i] != buffer[offset + i])
                     return false;
             }
             return true;

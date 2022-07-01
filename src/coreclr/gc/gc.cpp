@@ -43860,11 +43860,6 @@ HRESULT GCHeap::Initialize()
     {
         gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&gc_heap::is_restricted_physical_mem);
     }
-
-#ifdef USE_REGIONS
-    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
-#endif //USE_REGIONS
-
 #ifdef HOST_64BIT
     gc_heap::heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
     gc_heap::heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
@@ -43952,6 +43947,23 @@ HRESULT GCHeap::Initialize()
     {
         return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
     }
+
+#ifdef USE_REGIONS
+    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
+    if (gc_heap::regions_range == 0)
+    {
+        if (gc_heap::heap_hard_limit)
+        {
+            gc_heap::regions_range = 2 * gc_heap::heap_hard_limit;
+        }
+        else
+        {
+            gc_heap::regions_range = max(((size_t)256 * 1024 * 1024 * 1024), (size_t)(2 * gc_heap::total_physical_mem));
+        }
+        gc_heap::regions_range = align_on_page(gc_heap::regions_range);
+    }
+    // TODO: Set config after config API is merged.
+#endif //USE_REGIONS
 
 #endif //HOST_64BIT
     GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
@@ -44544,9 +44556,25 @@ Object * GCHeap::NextObj (Object * object)
         return NULL;
     }
 
-    if ((nextobj < heap_segment_mem(hs)) ||
-        (nextobj >= heap_segment_allocated(hs) && hs != hp->ephemeral_heap_segment) ||
-        (nextobj >= hp->alloc_allocated))
+    if (nextobj < heap_segment_mem (hs))
+    {
+        return NULL;
+    }
+
+    uint8_t* saved_alloc_allocated = hp->alloc_allocated;
+    heap_segment* saved_ephemeral_heap_segment = hp->ephemeral_heap_segment;
+
+    // We still want to verify nextobj that lands between heap_segment_allocated and alloc_allocated
+    // on the ephemeral segment. In regions these 2 could be changed by another thread so we need
+    // to make sure they are still in sync by the time we check. If they are not in sync, we just 
+    // bail which means we don't validate the next object during that small window and that's fine.
+    //
+    // We also miss validating nextobj if it's in the segment that just turned into the new ephemeral 
+    // segment since we saved which is also a very small window and again that's fine.
+    if ((nextobj >= heap_segment_allocated (hs)) && 
+        ((hs != saved_ephemeral_heap_segment) || 
+         !in_range_for_segment(saved_alloc_allocated, saved_ephemeral_heap_segment) ||
+         (nextobj >= saved_alloc_allocated)))
     {
         return NULL;
     }

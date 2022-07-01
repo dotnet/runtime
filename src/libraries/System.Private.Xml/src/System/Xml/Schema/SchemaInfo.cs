@@ -70,29 +70,11 @@ namespace System.Xml.Schema
             get { return _undeclaredElementDecls; }
         }
 
-        internal Dictionary<XmlQualifiedName, SchemaEntity> GeneralEntities
-        {
-            get
-            {
-                if (_generalEntities == null)
-                {
-                    _generalEntities = new Dictionary<XmlQualifiedName, SchemaEntity>();
-                }
-                return _generalEntities;
-            }
-        }
+        internal Dictionary<XmlQualifiedName, SchemaEntity> GeneralEntities =>
+            _generalEntities ??= new Dictionary<XmlQualifiedName, SchemaEntity>();
 
-        internal Dictionary<XmlQualifiedName, SchemaEntity> ParameterEntities
-        {
-            get
-            {
-                if (_parameterEntities == null)
-                {
-                    _parameterEntities = new Dictionary<XmlQualifiedName, SchemaEntity>();
-                }
-                return _parameterEntities;
-            }
-        }
+        internal Dictionary<XmlQualifiedName, SchemaEntity> ParameterEntities =>
+            _parameterEntities ??= new Dictionary<XmlQualifiedName, SchemaEntity>();
 
         internal SchemaType SchemaType
         {
@@ -115,17 +97,8 @@ namespace System.Xml.Schema
             get { return _attributeDecls; }
         }
 
-        internal Dictionary<string, SchemaNotation> Notations
-        {
-            get
-            {
-                if (_notations == null)
-                {
-                    _notations = new Dictionary<string, SchemaNotation>();
-                }
-                return _notations;
-            }
-        }
+        internal Dictionary<string, SchemaNotation> Notations =>
+            _notations ??= new Dictionary<string, SchemaNotation>();
 
         internal int ErrorCount
         {
@@ -320,10 +293,7 @@ namespace System.Xml.Schema
             }
             else if (_schemaType != sinfo.SchemaType)
             {
-                if (eventhandler != null)
-                {
-                    eventhandler(this, new ValidationEventArgs(new XmlSchemaException(SR.Sch_MixSchemaTypes, string.Empty)));
-                }
+                eventhandler?.Invoke(this, new ValidationEventArgs(new XmlSchemaException(SR.Sch_MixSchemaTypes, string.Empty)));
                 return;
             }
 

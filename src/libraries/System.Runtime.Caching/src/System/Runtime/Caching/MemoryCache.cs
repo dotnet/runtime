@@ -149,7 +149,7 @@ namespace System.Runtime.Caching
                 {
                     CacheEntryUpdateArguments args = new CacheEntryUpdateArguments(cache, reason, entry.Key, null);
                     entry.CacheEntryUpdateCallback(args);
-                    object expensiveObject = (args.UpdatedCacheItem != null) ? args.UpdatedCacheItem.Value : null;
+                    object expensiveObject = args.UpdatedCacheItem?.Value;
                     CacheItemPolicy policy = args.UpdatedCacheItemPolicy;
                     // Only update the "expensive" object if the user returns a new object,
                     // a policy with update callback, and the change monitors haven't changed.  (Inserting
@@ -293,10 +293,7 @@ namespace System.Runtime.Caching
                 {
                     lock (s_initLock)
                     {
-                        if (s_defaultCache == null)
-                        {
-                            s_defaultCache = new MemoryCache();
-                        }
+                        s_defaultCache ??= new MemoryCache();
                     }
                 }
                 return s_defaultCache;
@@ -446,7 +443,7 @@ namespace System.Runtime.Caching
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
             MemoryCacheStore store = GetStore(cacheKey);
             MemoryCacheEntry entry = store.AddOrGetExisting(cacheKey, new MemoryCacheEntry(key, value, absExp, slidingExp, priority, changeMonitors, removedCallback, this));
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
@@ -532,7 +529,7 @@ namespace System.Runtime.Caching
                 throw new ArgumentNullException(nameof(key));
             }
             MemoryCacheEntry entry = GetEntry(key);
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         internal MemoryCacheEntry GetEntry(string key)
@@ -792,10 +789,7 @@ namespace System.Runtime.Caching
             // Ensure the sentinel depends on its updatable entry
             string[] cacheKeys = { key };
             ChangeMonitor expensiveObjectDep = CreateCacheEntryChangeMonitor(cacheKeys);
-            if (changeMonitors == null)
-            {
-                changeMonitors = new Collection<ChangeMonitor>();
-            }
+            changeMonitors ??= new Collection<ChangeMonitor>();
             changeMonitors.Add(expensiveObjectDep);
 
             // Insert sentinel entry for the updatable cache entry
@@ -833,7 +827,7 @@ namespace System.Runtime.Caching
                 return null;
             }
             MemoryCacheEntry entry = RemoveEntry(key, null, reason);
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         public override long GetCount(string regionName = null)
@@ -889,10 +883,7 @@ namespace System.Runtime.Caching
                     object value = GetInternal(key, null);
                     if (value != null)
                     {
-                        if (values == null)
-                        {
-                            values = new Dictionary<string, object>();
-                        }
+                        values ??= new Dictionary<string, object>();
                         values[key] = value;
                     }
                 }

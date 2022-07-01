@@ -1706,13 +1706,10 @@ namespace System.Diagnostics.Tracing
         private static Guid GenerateGuidFromName(string name)
         {
 #if ES_BUILD_STANDALONE
-            if (namespaceBytes == null)
-            {
-                namespaceBytes = new byte[] {
-                    0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
-                    0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
-                };
-            }
+            namespaceBytes ??= new byte[] {
+                0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
+                0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
+            };
 #else
             ReadOnlySpan<byte> namespaceBytes = new byte[] // rely on C# compiler optimization to remove byte[] allocation
             {
@@ -2206,6 +2203,9 @@ namespace System.Diagnostics.Tracing
 #if !ES_BUILD_STANDALONE
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                     Justification = "The call to TraceLoggingEventTypes with the below parameter values are trim safe")]
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
+                    Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
+                                    "constructor that requires unreferenced code. EventSource will not access this local function.")]
 #endif
                 static TraceLoggingEventTypes GetTrimSafeTraceLoggingEventTypes() =>
                     new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { typeof(string) });

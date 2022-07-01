@@ -88,7 +88,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
 
     if (*ppLocation) RETURN;
 
-    if (FastInterlockCompareExchangePointer(ppLocation, pDynMT, NULL) != NULL)
+    if (InterlockedCompareExchangeT(ppLocation, pDynMT, NULL) != NULL)
     {
         LOG((LF_BCL, LL_INFO100, "Level2 - Another thread got here first - deleting DynamicMethodTable {0x%p}...\n", pDynMT));
         RETURN;
@@ -1010,13 +1010,6 @@ void LCGMethodResolver::Destroy()
         }
     }
 
-    // Note that we need to do this before m_jitTempData is deleted
-    RecycleIndCells();
-
-    m_jitMetaHeap.Delete();
-    m_jitTempData.Delete();
-
-
     if (m_recordCodePointer)
     {
 #if defined(TARGET_AMD64)
@@ -1049,6 +1042,12 @@ void LCGMethodResolver::Destroy()
         delete m_pJumpStubCache;
         m_pJumpStubCache = NULL;
     }
+
+    // Note that we need to do this before m_jitTempData is deleted
+    RecycleIndCells();
+
+    m_jitMetaHeap.Delete();
+    m_jitTempData.Delete();
 
     if (m_managedResolver)
     {

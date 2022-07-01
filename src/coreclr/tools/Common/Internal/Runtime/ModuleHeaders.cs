@@ -15,7 +15,7 @@ namespace Internal.Runtime
         public const uint Signature = 0x00525452; // 'RTR'
 
         public const ushort CurrentMajorVersion = 6;
-        public const ushort CurrentMinorVersion = 1;
+        public const ushort CurrentMinorVersion = 2;
     }
 
 #pragma warning disable 0169
@@ -78,10 +78,10 @@ namespace Internal.Runtime
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        GCStaticDesc = 207,
+        // 207 is unused - it was used by GCStaticDesc
         ThreadStaticOffsetRegion = 208,
-        ThreadStaticGCDescRegion = 209,
-        ThreadStaticIndex = 210,
+        // 209 is unused - it was used by ThreadStaticGCDescRegion
+        // 210 is unused - it was used by ThreadStaticIndex
         // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,

@@ -1010,7 +1010,7 @@ public:
 
         strILStubCode.AppendPrintf("// Code size\t%d (0x%04x)\n", cbCode, cbCode);
         strILStubCode.AppendPrintf(".maxstack %d \n", maxStack);
-        strILStubCode.AppendPrintf(".locals %s\n", strLocalSig.GetUTF8NoConvert());
+        strILStubCode.AppendPrintf(".locals %s\n", strLocalSig.GetUTF8());
 
         m_slIL.LogILStub(jitFlags, &strILStubCode);
 
@@ -3366,7 +3366,7 @@ BOOL NDirect::MarshalingRequired(
 
             default:
             {
-                if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_FNPTR)
+                if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_PTR || type == ELEMENT_TYPE_FNPTR)
                 {
 
                     if (i > 0)
@@ -4628,8 +4628,9 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         //
         // Find method using name + signature
         //
-        StackScratchBuffer buffer;
-        LPCUTF8 szMethodNameUTF8 = methodName.GetUTF8(buffer);
+        StackSString buffer;
+        buffer.SetAndConvertToUTF8(methodName);
+        LPCUTF8 szMethodNameUTF8 = buffer.GetUTF8();
         pStubMD = MemberLoader::FindMethod(stubClassType.GetMethodTable(),
             szMethodNameUTF8,
             pStubSig,

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Mail;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -16,12 +17,14 @@ namespace Systen.Net.Mail.Tests
 {
     public class LoopbackSmtpServer : IDisposable
     {
-        private static readonly ReadOnlyMemory<byte> s_messageTerminator = new byte[] { (byte)'\r', (byte)'\n' };
-        private static readonly ReadOnlyMemory<byte> s_bodyTerminator = new byte[] { (byte)'\r', (byte)'\n', (byte)'.', (byte)'\r', (byte)'\n' };
+        private static readonly ReadOnlyMemory<byte> s_messageTerminator = "\r\n"u8.ToArray();
+        private static readonly ReadOnlyMemory<byte> s_bodyTerminator = "\r\n.\r\n"u8.ToArray();
 
         public bool ReceiveMultipleConnections = false;
         public bool SupportSmtpUTF8 = false;
         public bool AdvertiseNtlmAuthSupport = false;
+        public bool AdvertiseGssapiAuthSupport = false;
+        public NetworkCredential ExpectedGssapiCredential { get; set; }
 
         private bool _disposed = false;
         private readonly Socket _listenSocket;
@@ -114,7 +117,10 @@ namespace Systen.Net.Mail.Tests
 
                 await SendMessageAsync("250-localhost, mock server here");
                 if (SupportSmtpUTF8) await SendMessageAsync("250-SMTPUTF8");
-                await SendMessageAsync("250 AUTH PLAIN LOGIN" + (AdvertiseNtlmAuthSupport ? " NTLM" : ""));
+                await SendMessageAsync(
+                    "250 AUTH PLAIN LOGIN" +
+                    (AdvertiseNtlmAuthSupport ? " NTLM" : "") +
+                    (AdvertiseGssapiAuthSupport ? " GSSAPI" : ""));
 
                 while ((message = await ReceiveMessageAsync()) != null)
                 {
@@ -146,6 +152,44 @@ namespace Systen.Net.Mail.Tests
                             Password = Encoding.UTF8.GetString(Convert.FromBase64String(await ReceiveMessageAsync()));
                             UsernamePassword = Username + Password;
                             await SendMessageAsync("235 Authentication successful");
+                        }
+                        else if (parts[1].Equals("GSSAPI", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Debug.Assert(ExpectedGssapiCredential != null);
+                            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(ExpectedGssapiCredential) { ForceNegotiateVersion = true };
+                            FakeNegotiateServer fakeNegotiateServer = new FakeNegotiateServer(fakeNtlmServer);
+
+                            try
+                            {
+                                // Do the authentication loop
+                                byte[]? incomingBlob = Convert.FromBase64String(parts[2]);
+                                byte[]? outgoingBlob;
+                                do
+                                {
+                                    outgoingBlob = fakeNegotiateServer.GetOutgoingBlob(incomingBlob);
+                                    if (outgoingBlob != null)
+                                    {
+                                        await SendMessageAsync("334 " + Convert.ToBase64String(outgoingBlob));
+                                        incomingBlob = Convert.FromBase64String(await ReceiveMessageAsync());
+                                    }
+                                }
+                                while (!fakeNegotiateServer.IsAuthenticated);
+
+                                // Negotiate the SASL protection (no encryption and no signing)
+                                byte[] saslToken = new byte[] { 1, 0, 0, 0 };
+                                outgoingBlob = new byte[20]; // 16 bytes of NTLM signature, 4 bytes of content
+                                fakeNtlmServer.Wrap(saslToken, outgoingBlob);
+                                await SendMessageAsync("334 " + Convert.ToBase64String(outgoingBlob));
+                                incomingBlob = Convert.FromBase64String(await ReceiveMessageAsync());
+                                fakeNtlmServer.Unwrap(incomingBlob, saslToken);
+                                // TODO: Verify the token we got back
+
+                                await SendMessageAsync("235 Authentication successful");
+                            }
+                            catch (Exception e)
+                            {
+                                await SendMessageAsync("500 Unsuccessful authentication: " + e.ToString());
+                            }
                         }
                         else if (parts[1].Equals("NTLM", StringComparison.OrdinalIgnoreCase))
                         {

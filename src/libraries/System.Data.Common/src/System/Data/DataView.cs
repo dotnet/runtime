@@ -153,15 +153,8 @@ namespace System.Data
                 throw ExceptionBuilder.SetRowStateFilter();
             }
 
-            if (Sort == null)
-            {
-                Sort = string.Empty;
-            }
-
-            if (RowFilter == null)
-            {
-                RowFilter = string.Empty;
-            }
+            Sort ??= string.Empty;
+            RowFilter ??= string.Empty;
 
             DataExpression newFilter = new DataExpression(table, RowFilter);
             SetIndex(Sort, RowState, newFilter);
@@ -348,8 +341,8 @@ namespace System.Data
         {
             get
             {
-                RowPredicateFilter? filter = (GetFilter() as RowPredicateFilter);
-                return ((null != filter) ? filter._predicateFilter : null);
+                RowPredicateFilter? filter = GetFilter() as RowPredicateFilter;
+                return filter?._predicateFilter;
             }
             set
             {
@@ -1702,7 +1695,7 @@ namespace System.Data
             DataTable dt = new DataTable();
             dt.Locale = _table!.Locale;
             dt.CaseSensitive = _table.CaseSensitive;
-            dt.TableName = ((null != tableName) ? tableName : _table.TableName);
+            dt.TableName = tableName ?? _table.TableName;
             dt.Namespace = _table.Namespace;
             dt.Prefix = _table.Prefix;
 

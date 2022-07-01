@@ -150,7 +150,7 @@ namespace System
             Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
             if (status != Number.ParsingStatus.OK)
             {
-                Number.ThrowOverflowOrFormatException(status, TypeCode.UInt16);
+                Number.ThrowOverflowOrFormatException(status, s, TypeCode.UInt16);
             }
 
             if (i > MaxValue) Number.ThrowOverflowException(TypeCode.UInt16);
@@ -373,6 +373,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static ushort IBinaryNumber<ushort>.AllBitsSet => MaxValue;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(ushort value) => BitOperations.IsPow2((uint)value);
 
@@ -427,9 +430,6 @@ namespace System
 
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static ushort IDivisionOperators<ushort, ushort, ushort>.operator /(ushort left, ushort right) => (ushort)(left / right);
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static ushort IDivisionOperators<ushort, ushort, ushort>.operator checked /(ushort left, ushort right) => (ushort)(left / right);
 
         //
         // IEqualityOperators

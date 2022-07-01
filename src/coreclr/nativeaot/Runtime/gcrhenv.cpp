@@ -515,7 +515,8 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
                                     PTR_VOID safePointAddress,
                                     REGDISPLAY * pRegisterSet,
                                     void * pfnEnumCallback,
-                                    void * pvCallbackData)
+                                    void * pvCallbackData,
+                                    bool   isActiveStackFrame)
 {
     EnumGcRefContext ctx;
     ctx.pCallback = EnumGcRefsCallback;
@@ -526,7 +527,8 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
     pCodeManager->EnumGcRefs(pMethodInfo,
                              safePointAddress,
                              pRegisterSet,
-                             &ctx);
+                             &ctx,
+                             isActiveStackFrame);
 }
 
 // static
@@ -679,16 +681,8 @@ void RedhawkGCInterface::ScanStackRoots(Thread *pThread, GcScanRootFunction pfnS
 // static
 void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext)
 {
-#ifndef DACCESS_COMPILE
-    ScanRootsContext sContext;
-    sContext.m_pfnCallback = pfnScanCallback;
-    sContext.m_pContext = pContext;
-
-    GetRuntimeInstance()->EnumAllStaticGCRefs(reinterpret_cast<void*>(ScanRootsCallbackWrapper), &sContext);
-#else
     UNREFERENCED_PARAMETER(pfnScanCallback);
     UNREFERENCED_PARAMETER(pContext);
-#endif // !DACCESS_COMPILE
 }
 
 // Enumerate all the object roots located in handle tables. It is only safe to call this from the context of a

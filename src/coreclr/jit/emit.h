@@ -279,6 +279,7 @@ struct insGroup
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
 #define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
+#define IGF_HAS_REMOVABLE_JMP 0x1000 // this group ends with an unconditional jump which is a candidate for removal
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -522,7 +523,7 @@ protected:
 
     void emitRecomputeIGoffsets();
 
-    void emitDispCommentForHandle(size_t handle, GenTreeFlags flags);
+    void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
 
     /************************************************************************/
     /*          The following describes a single instruction                */
@@ -553,7 +554,7 @@ protected:
 
 #endif // TARGET_XARCH
 
-#ifdef DEBUG // This information is used in DEBUG builds to display the method name for call instructions
+#ifdef DEBUG // This information is used in DEBUG builds for additional diagnostics
 
     struct instrDesc;
 
@@ -996,7 +997,7 @@ protected:
                 case IF_LARGELDC:
                     if (isVectorRegister(idReg1()))
                     {
-                        // adrp + ldr + fmov
+                        // (adrp + ldr + fmov) or (adrp + add + ld1)
                         size = 12;
                     }
                     else
@@ -1534,13 +1535,21 @@ protected:
             BYTE* idjAddr; // address of jump ins (for patching)
         } idjTemp;
 
-        unsigned idjOffs : 30;    // Before jump emission, this is the byte offset within IG of the jump instruction.
-                                  // After emission, for forward jumps, this is the target offset -- in bytes from the
-                                  // beginning of the function -- of the target instruction of the jump, used to
-                                  // determine if this jump needs to be patched.
-        unsigned idjShort : 1;    // is the jump known to be a short  one?
-        unsigned idjKeepLong : 1; // should the jump be kept long? (used for
-                                  // hot to cold and cold to hot jumps)
+        // Before jump emission, this is the byte offset within IG of the jump instruction.
+        // After emission, for forward jumps, this is the target offset -- in bytes from the
+        // beginning of the function -- of the target instruction of the jump, used to
+        // determine if this jump needs to be patched.
+        unsigned idjOffs :
+#if defined(TARGET_XARCH)
+            29;
+        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+        // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
+#else
+            30;
+#endif
+        unsigned idjShort : 1;    // is the jump known to be a short one?
+        unsigned idjKeepLong : 1; // should the jump be kept long? (used for hot to cold and cold to hot jumps)
     };
 
 #if FEATURE_LOOP_ALIGN
@@ -1723,6 +1732,7 @@ protected:
     void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
     void emitDispIGlist(bool verbose = false);
     void emitDispGCinfo();
+    void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
     void emitDispInsAddr(BYTE* code);
@@ -2001,6 +2011,8 @@ private:
     instrDescJmp* emitJumpList;       // list of local jumps in method
     instrDescJmp* emitJumpLast;       // last of local jumps in method
     void          emitJumpDistBind(); // Bind all the local jumps in method
+    bool          emitContainsRemovableJmpCandidates;
+    void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN
     instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
@@ -2131,6 +2143,12 @@ private:
     void emitDisableGC();
     void emitEnableGC();
 #endif // !defined(JIT32_GCENCODER)
+
+#if defined(TARGET_XARCH)
+    static bool emitAlignInstHasNoCode(instrDesc* id);
+    static bool emitInstHasNoCode(instrDesc* id);
+    static bool emitJmpInstHasNoCode(instrDesc* id);
+#endif
 
     void emitGenIG(insGroup* ig);
     insGroup* emitSavIG(bool emitAdd = false);
@@ -2350,6 +2368,11 @@ public:
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
     void emitSetFrameRangeArgs(int offsLo, int offsHi);
 
+    bool emitIsWithinFrameRangeGCRs(int offs)
+    {
+        return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
+    }
+
     static instruction emitJumpKindToIns(emitJumpKind jumpKind);
     static emitJumpKind emitInsToJumpKind(instruction ins);
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);
@@ -2537,7 +2560,7 @@ public:
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
 #ifdef DEBUG
-    void emitDispDataSec(dataSecDsc* section);
+    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
 #endif
 
     /************************************************************************/

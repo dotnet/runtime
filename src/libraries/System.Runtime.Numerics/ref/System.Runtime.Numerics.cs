@@ -30,6 +30,7 @@ namespace System.Numerics
         public static System.Numerics.BigInteger One { get { throw null; } }
         public int Sign { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger,System.Numerics.BigInteger>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.BigInteger System.Numerics.IBinaryNumber<System.Numerics.BigInteger>.AllBitsSet { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger,System.Numerics.BigInteger>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.Numerics.BigInteger>.Radix { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.ISignedNumber<System.Numerics.BigInteger>.NegativeOne { get { throw null; } }
@@ -98,7 +99,7 @@ namespace System.Numerics
         public static explicit operator short (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator int (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator long (System.Numerics.BigInteger value) { throw null; }
-        public static explicit operator System.IntPtr (System.Numerics.BigInteger value) { throw null; }
+        public static explicit operator nint (System.Numerics.BigInteger value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator sbyte (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator float (System.Numerics.BigInteger value) { throw null; }
@@ -111,7 +112,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static explicit operator ulong (System.Numerics.BigInteger value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.UIntPtr (System.Numerics.BigInteger value) { throw null; }
+        public static explicit operator nuint (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (System.Numerics.Complex value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (float value) { throw null; }
         public static bool operator >(long left, System.Numerics.BigInteger right) { throw null; }
@@ -134,7 +135,7 @@ namespace System.Numerics
         public static implicit operator System.Numerics.BigInteger (short value) { throw null; }
         public static implicit operator System.Numerics.BigInteger (int value) { throw null; }
         public static implicit operator System.Numerics.BigInteger (long value) { throw null; }
-        public static implicit operator System.Numerics.BigInteger (System.IntPtr value) { throw null; }
+        public static implicit operator System.Numerics.BigInteger (nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.BigInteger (sbyte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -146,7 +147,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.BigInteger (ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Numerics.BigInteger (System.UIntPtr value) { throw null; }
+        public static implicit operator System.Numerics.BigInteger (nuint value) { throw null; }
         public static System.Numerics.BigInteger operator ++(System.Numerics.BigInteger value) { throw null; }
         public static bool operator !=(long left, System.Numerics.BigInteger right) { throw null; }
         public static bool operator !=(System.Numerics.BigInteger left, long right) { throw null; }
@@ -190,15 +191,10 @@ namespace System.Numerics
         public static System.Numerics.BigInteger RotateLeft(System.Numerics.BigInteger value, int rotateAmount) { throw null; }
         public static System.Numerics.BigInteger RotateRight(System.Numerics.BigInteger value, int rotateAmount) { throw null; }
         public static System.Numerics.BigInteger Subtract(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
-        static System.Numerics.BigInteger System.Numerics.IAdditionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked +(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetShortestBitLength() { throw null; }
         bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        static System.Numerics.BigInteger System.Numerics.IDecrementOperators<System.Numerics.BigInteger>.operator checked --(System.Numerics.BigInteger value) { throw null; }
-        static System.Numerics.BigInteger System.Numerics.IDivisionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked /(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
-        static System.Numerics.BigInteger System.Numerics.IIncrementOperators<System.Numerics.BigInteger>.operator checked ++(System.Numerics.BigInteger value) { throw null; }
-        static System.Numerics.BigInteger System.Numerics.IMultiplyOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked *(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsCanonical(System.Numerics.BigInteger value) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsComplexNumber(System.Numerics.BigInteger value) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsFinite(System.Numerics.BigInteger value) { throw null; }
@@ -223,8 +219,6 @@ namespace System.Numerics
         static System.Numerics.BigInteger System.Numerics.INumber<System.Numerics.BigInteger>.MaxNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         static System.Numerics.BigInteger System.Numerics.INumber<System.Numerics.BigInteger>.MinNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         static int System.Numerics.INumber<System.Numerics.BigInteger>.Sign(System.Numerics.BigInteger value) { throw null; }
-        static System.Numerics.BigInteger System.Numerics.ISubtractionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked -(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
-        static System.Numerics.BigInteger System.Numerics.IUnaryNegationOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked -(System.Numerics.BigInteger value) { throw null; }
         public byte[] ToByteArray() { throw null; }
         public byte[] ToByteArray(bool isUnsigned = false, bool isBigEndian = false) { throw null; }
         public override string ToString() { throw null; }
@@ -322,7 +316,7 @@ namespace System.Numerics
         public static implicit operator System.Numerics.Complex (short value) { throw null; }
         public static implicit operator System.Numerics.Complex (int value) { throw null; }
         public static implicit operator System.Numerics.Complex (long value) { throw null; }
-        public static implicit operator System.Numerics.Complex (System.IntPtr value) { throw null; }
+        public static implicit operator System.Numerics.Complex (nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.Complex (sbyte value) { throw null; }
         public static implicit operator System.Numerics.Complex (float value) { throw null; }
@@ -333,7 +327,7 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.Complex (ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Numerics.Complex (System.UIntPtr value) { throw null; }
+        public static implicit operator System.Numerics.Complex (nuint value) { throw null; }
         public static System.Numerics.Complex operator ++(System.Numerics.Complex value) { throw null; }
         public static bool operator !=(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex operator *(double left, System.Numerics.Complex right) { throw null; }
@@ -357,11 +351,6 @@ namespace System.Numerics
         public static System.Numerics.Complex Subtract(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex Subtract(System.Numerics.Complex left, double right) { throw null; }
         public static System.Numerics.Complex Subtract(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
-        static System.Numerics.Complex System.Numerics.IAdditionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>.operator checked +(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
-        static System.Numerics.Complex System.Numerics.IDecrementOperators<System.Numerics.Complex>.operator checked --(System.Numerics.Complex value) { throw null; }
-        static System.Numerics.Complex System.Numerics.IDivisionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>.operator checked /(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
-        static System.Numerics.Complex System.Numerics.IIncrementOperators<System.Numerics.Complex>.operator checked ++(System.Numerics.Complex value) { throw null; }
-        static System.Numerics.Complex System.Numerics.IMultiplyOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>.operator checked *(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.Abs(System.Numerics.Complex value) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.IsCanonical(System.Numerics.Complex value) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.IsZero(System.Numerics.Complex value) { throw null; }
@@ -373,8 +362,6 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToChecked<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToSaturating<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToTruncating<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static System.Numerics.Complex System.Numerics.ISubtractionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>.operator checked -(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
-        static System.Numerics.Complex System.Numerics.IUnaryNegationOperators<System.Numerics.Complex, System.Numerics.Complex>.operator checked -(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tan(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tanh(System.Numerics.Complex value) { throw null; }
         public override string ToString() { throw null; }

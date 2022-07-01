@@ -5,6 +5,12 @@
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+
+    <!--
+      We rely on reflection metadata for .cctor to detect if a type was preinitialized
+      and this only works if presence of code implies presence of reflection metadata.
+    -->
+    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
 
   <ItemGroup>

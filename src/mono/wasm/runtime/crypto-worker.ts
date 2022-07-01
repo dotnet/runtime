@@ -9,7 +9,7 @@ let mono_wasm_crypto: {
     worker: Worker
 } | null = null;
 
-export function dotnet_browser_can_use_simple_digest_hash(): number {
+export function dotnet_browser_can_use_subtle_crypto_impl(): number {
     return mono_wasm_crypto === null ? 0 : 1;
 }
 
@@ -30,6 +30,27 @@ export function dotnet_browser_simple_digest_hash(ver: number, input_buffer: num
     }
 
     Module.HEAPU8.set(digest, output_buffer);
+    return 1;
+}
+
+export function dotnet_browser_sign(hashAlgorithm: number, key_buffer: number, key_len: number, input_buffer: number, input_len: number, output_buffer: number, output_len: number): number {
+    mono_assert(!!mono_wasm_crypto, "subtle crypto not initialized");
+
+    const msg = {
+        func: "sign",
+        type: hashAlgorithm,
+        key: Array.from(Module.HEAPU8.subarray(key_buffer, key_buffer + key_len)),
+        data: Array.from(Module.HEAPU8.subarray(input_buffer, input_buffer + input_len))
+    };
+
+    const response = mono_wasm_crypto.channel.send_msg(JSON.stringify(msg));
+    const signResult = JSON.parse(response);
+    if (signResult.length > output_len) {
+        console.info("dotnet_browser_sign: about to throw!");
+        throw "SIGN HASH: Sign length exceeds output length: " + signResult.length + " > " + output_len;
+    }
+
+    Module.HEAPU8.set(signResult, output_buffer);
     return 1;
 }
 
@@ -65,10 +86,15 @@ class LibraryChannel {
     private comm: Int32Array;
     private msg: Uint16Array;
 
+    // LOCK states
+    private get LOCK_UNLOCKED(): number { return 0; }  // 0 means the lock is unlocked
+    private get LOCK_OWNED(): number { return 1; } // 1 means the LibraryChannel owns the lock
+
     // Index constants for the communication buffer.
     private get STATE_IDX(): number { return 0; }
     private get MSG_SIZE_IDX(): number { return 1; }
-    private get COMM_LAST_IDX(): number { return this.MSG_SIZE_IDX; }
+    private get LOCK_IDX(): number { return 2; }
+    private get COMM_LAST_IDX(): number { return this.LOCK_IDX; }
 
     // Communication states.
     private get STATE_SHUTDOWN(): number { return -1; } // Shutdown
@@ -125,6 +151,8 @@ class LibraryChannel {
         let msg_written = 0;
 
         for (; ;) {
+            this.acquire_lock();
+
             // Write the message and return how much was written.
             const wrote = this.write_to_msg(msg, msg_written, msg_len);
             msg_written += wrote;
@@ -137,6 +165,9 @@ class LibraryChannel {
 
             // Notify webworker
             Atomics.store(this.comm, this.STATE_IDX, state);
+
+            this.release_lock();
+
             Atomics.notify(this.comm, this.STATE_IDX);
 
             // The send message is complete.
@@ -172,6 +203,8 @@ class LibraryChannel {
                 state = Atomics.load(this.comm, this.STATE_IDX);
             } while (state !== this.STATE_RESP && state !== this.STATE_RESP_P);
 
+            this.acquire_lock();
+
             const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
             // Append the latest part of the message.
@@ -179,12 +212,16 @@ class LibraryChannel {
 
             // The response is complete.
             if (state === this.STATE_RESP) {
+                this.release_lock();
                 break;
             }
 
             // Reset the size and transition to await state.
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
             Atomics.store(this.comm, this.STATE_IDX, this.STATE_AWAIT);
+
+            this.release_lock();
+
             Atomics.notify(this.comm, this.STATE_IDX);
         }
 
@@ -200,6 +237,19 @@ class LibraryChannel {
         const slicedMessage: number[] = [];
         this.msg.slice(begin, end).forEach((value, index) => slicedMessage[index] = value);
         return String.fromCharCode.apply(null, slicedMessage);
+    }
+
+    private acquire_lock() {
+        while (Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED) !== this.LOCK_UNLOCKED) {
+            // empty
+        }
+    }
+
+    private release_lock() {
+        const result = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_OWNED, this.LOCK_UNLOCKED);
+        if (result !== this.LOCK_OWNED) {
+            throw "CRYPTO: LibraryChannel tried to release a lock that wasn't acquired: " + result;
+        }
     }
 
     public static create(msg_char_len: number): LibraryChannel {

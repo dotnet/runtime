@@ -96,7 +96,6 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
     EXTERN RhpGcAlloc
     EXTERN RhExceptionHandling_FailedAllocation
     EXTERN RhDebugBreak
-    EXTERN RhpWaitForSuspend2
     EXTERN RhpWaitForGC2
     EXTERN RhpReversePInvokeAttachOrTrapThread2
     EXTERN RhThrowHwEx

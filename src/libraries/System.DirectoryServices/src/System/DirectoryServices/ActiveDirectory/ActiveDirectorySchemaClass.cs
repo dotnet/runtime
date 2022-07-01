@@ -281,10 +281,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     // create a new directory entry for this class
-                    if (_schemaEntry == null)
-                    {
-                        _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
-                    }
+                    _schemaEntry ??= DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
 
                     // this will create the class and set the CN value
                     string rdn = "CN=" + _commonName;
@@ -1049,9 +1046,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (isBound)
                 {
                     // set the value on the directory entry
-                    SetProperty(PropertyManager.DefaultSecurityDescriptor, (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All));
+                    SetProperty(PropertyManager.DefaultSecurityDescriptor, value?.GetSecurityDescriptorSddlForm(AccessControlSections.All));
                 }
-                _defaultSDSddlForm = (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All);
+                _defaultSDSddlForm = value?.GetSecurityDescriptorSddlForm(AccessControlSections.All);
             }
         }
 
@@ -1119,10 +1116,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (!_propertiesFromSchemaContainerInitialized)
             {
-                if (_schemaEntry == null)
-                {
-                    _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
-                }
+                _schemaEntry ??= DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
 
                 _propertyValuesFromServer = GetPropertiesFromSchemaContainer(_context, _schemaEntry, (_isDefunctOnServer) ? _commonName! : _ldapDisplayName, _isDefunctOnServer);
                 _propertiesFromSchemaContainerInitialized = true;
@@ -1301,10 +1295,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return classes;
                 }
 
-                if (_schemaEntry == null)
-                {
-                    _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
-                }
+                _schemaEntry ??= DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
 
                 // constructing the filter
                 StringBuilder str = new StringBuilder(100);
@@ -1379,10 +1370,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return properties;
                 }
 
-                if (_schemaEntry == null)
-                {
-                    _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
-                }
+                _schemaEntry ??= DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
 
                 // constructing the filter
                 StringBuilder str = new StringBuilder(100);

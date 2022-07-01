@@ -1365,7 +1365,7 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 int numChars = RegexCharClass.GetSetChars(childStart.Str!, setChars);
                                 Debug.Assert(numChars != 0);
-                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(c => Literal(c)))}:");
+                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(Literal))}:");
                             }
                             else
                             {
@@ -2268,7 +2268,6 @@ namespace System.Text.RegularExpressions.Generator
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 // Before we handle general-purpose matching logic for nodes, handle any special-casing.
-                // -
                 if (rm.Tree.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
                     rm.Tree.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
                 {

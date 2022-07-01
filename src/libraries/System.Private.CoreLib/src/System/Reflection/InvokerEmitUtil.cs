@@ -167,33 +167,25 @@ namespace System.Reflection
         private static class Methods
         {
             private static MethodInfo? s_ByReferenceOfByte_Value;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ByReference<>))]
             public static MethodInfo ByReferenceOfByte_Value() =>
-                                      s_ByReferenceOfByte_Value ??
-                                     (s_ByReferenceOfByte_Value = typeof(ByReference<byte>).GetMethod("get_Value")!);
+                s_ByReferenceOfByte_Value ??= typeof(ByReference<byte>).GetMethod("get_Value")!;
 
             private static MethodInfo? s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ThrowHelper))]
             public static MethodInfo ThrowHelper_Throw_NullReference_InvokeNullRefReturned() =>
-                                      s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned ??
-                                     (s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned = typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.Throw_NullReference_InvokeNullRefReturned))!);
+                s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned ??= typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.Throw_NullReference_InvokeNullRefReturned))!;
 
             private static MethodInfo? s_Pointer_Box;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(Pointer))]
             public static MethodInfo Pointer_Box() =>
-                                      s_Pointer_Box ??
-                                     (s_Pointer_Box = typeof(Pointer).GetMethod(nameof(Pointer.Box), new[] { typeof(void*), typeof(Type) })!);
+                s_Pointer_Box ??= typeof(Pointer).GetMethod(nameof(Pointer.Box), new[] { typeof(void*), typeof(Type) })!;
 
             private static MethodInfo? s_Type_GetTypeFromHandle;
             public static MethodInfo Type_GetTypeFromHandle() =>
-                                      s_Type_GetTypeFromHandle ??
-                                     (s_Type_GetTypeFromHandle = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), new[] { typeof(RuntimeTypeHandle) })!);
+                s_Type_GetTypeFromHandle ??= typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), new[] { typeof(RuntimeTypeHandle) })!;
 
 #if !MONO
             private static MethodInfo? s_NextCallReturnAddress;
             public static MethodInfo NextCallReturnAddress() =>
-                                      s_NextCallReturnAddress ??
-                                     (s_NextCallReturnAddress = typeof(System.StubHelpers.StubHelpers).GetMethod(nameof(System.StubHelpers.StubHelpers.NextCallReturnAddress), BindingFlags.NonPublic | BindingFlags.Static)!);
+                s_NextCallReturnAddress ??= typeof(System.StubHelpers.StubHelpers).GetMethod(nameof(System.StubHelpers.StubHelpers.NextCallReturnAddress), BindingFlags.NonPublic | BindingFlags.Static)!;
 #endif
         }
     }

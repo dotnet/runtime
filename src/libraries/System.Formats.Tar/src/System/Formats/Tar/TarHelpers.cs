@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -19,8 +20,8 @@ namespace System.Formats.Tar
         internal const byte EqualsChar = 0x3d;
         internal const byte NewLineChar = 0xa;
 
-        internal const TarFileMode DefaultMode = // 644 in octal
-            TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.OtherRead;
+        internal const UnixFileMode DefaultMode = // 644 in octal
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
 
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
         internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
@@ -101,23 +102,66 @@ namespace System.Formats.Tar
         }
 
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
-        internal static bool IsAllNullBytes(Span<byte> buffer)
+        internal static bool IsAllNullBytes(Span<byte> buffer) =>
+            buffer.IndexOfAnyExcept((byte)0) < 0;
+
+        // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
+        internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
+            new DateTimeOffset((secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+
+        // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
+        private static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
+            new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+
+        // Converts the specified DateTimeOffset to the number of seconds that have passed since the Unix Epoch.
+        private static decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
+            ((decimal)(dateTimeOffset.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+
+        // If the specified fieldName is found in the provided dictionary and it is a valid decimal number, returns true and sets the value in 'dateTimeOffset'.
+        internal static bool TryGetDateTimeOffsetFromTimestampString(Dictionary<string, string>? dict, string fieldName, out DateTimeOffset dateTimeOffset)
         {
-            for (int i = 0; i < buffer.Length; i++)
+            dateTimeOffset = default;
+            if (dict != null &&
+                dict.TryGetValue(fieldName, out string? value) &&
+                decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch))
             {
-                if (buffer[i] != 0)
-                {
-                    return false;
-                }
+                dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
+                return true;
             }
-            return true;
+            return false;
         }
 
-        // Returns a DateTimeOffset instance representing the number of seconds that have passed since the Unix Epoch.
-        internal static DateTimeOffset GetDateTimeFromSecondsSinceEpoch(double secondsSinceUnixEpoch)
+        // Converts the specified DateTimeOffset to the string representation of seconds since the Unix Epoch.
+        internal static string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
         {
-            DateTimeOffset offset = new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
-            return offset;
+            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+
+            // Use 'G' to ensure the decimals get preserved (avoid losing precision).
+            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
+        }
+
+        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.
+        internal static bool TryGetStringAsBaseTenInteger(IReadOnlyDictionary<string, string> dict, string fieldName, out int baseTenInteger)
+        {
+            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            {
+                baseTenInteger = Convert.ToInt32(strNumber);
+                return true;
+            }
+            baseTenInteger = 0;
+            return false;
+        }
+
+        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenLong'.
+        internal static bool TryGetStringAsBaseTenLong(IReadOnlyDictionary<string, string> dict, string fieldName, out long baseTenLong)
+        {
+            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            {
+                baseTenLong = Convert.ToInt64(strNumber);
+                return true;
+            }
+            baseTenLong = 0;
+            return false;
         }
 
         // Receives a byte array that represents an ASCII string containing a number in octal base.
@@ -126,6 +170,14 @@ namespace System.Formats.Tar
         {
             string str = GetTrimmedAsciiString(buffer);
             return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt32(str, fromBase: 8);
+        }
+
+        // Receives a byte array that represents an ASCII string containing a number in octal base.
+        // Converts the array to an octal base number, then transforms it to ten base and returns it.
+        internal static long GetTenBaseLongFromOctalAsciiChars(Span<byte> buffer)
+        {
+            string str = GetTrimmedAsciiString(buffer);
+            return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt64(str, fromBase: 8);
         }
 
         // Returns the string contained in the specified buffer of bytes,
@@ -151,22 +203,6 @@ namespace System.Formats.Tar
         // removing the trailing null or space chars.
         internal static string GetTrimmedUtf8String(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.UTF8);
 
-        // Returns true if it successfully converts the specified string to a DateTimeOffset, false otherwise.
-        internal static bool TryConvertToDateTimeOffset(string value, out DateTimeOffset timestamp)
-        {
-            timestamp = default;
-            if (!string.IsNullOrEmpty(value))
-            {
-                if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double doubleTime))
-                {
-                    return false;
-                }
-
-                timestamp = GetDateTimeFromSecondsSinceEpoch(doubleTime);
-            }
-            return timestamp != default;
-        }
-
         // After the file contents, there may be zero or more null characters,
         // which exist to ensure the data is aligned to the record size. Skip them and
         // set the stream position to the first byte of the next entry.
@@ -178,8 +214,7 @@ namespace System.Formats.Tar
         }
 
         // Throws if the specified entry type is not supported for the specified format.
-        // If 'forWriting' is true, an incompatible 'Regular File' entry type is allowed. It will be converted to the compatible version before writing.
-        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarEntryFormat archiveFormat, bool forWriting)
+        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat)
         {
             switch (archiveFormat)
             {
@@ -189,10 +224,6 @@ namespace System.Formats.Tar
                         TarEntryType.HardLink or
                         TarEntryType.V7RegularFile or
                         TarEntryType.SymbolicLink)
-                    {
-                        return;
-                    }
-                    if (forWriting && entryType is TarEntryType.RegularFile)
                     {
                         return;
                     }
@@ -210,10 +241,6 @@ namespace System.Formats.Tar
                     {
                         return;
                     }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
-                    {
-                        return;
-                    }
                     break;
 
                 case TarEntryFormat.Pax:
@@ -226,13 +253,10 @@ namespace System.Formats.Tar
                         TarEntryType.RegularFile or
                         TarEntryType.SymbolicLink)
                     {
+                        // GlobalExtendedAttributes is handled via PaxGlobalExtendedAttributesEntry
+
                         // Not supported for writing - internally autogenerated:
                         // - ExtendedAttributes
-                        // - GlobalExtendedAttributes
-                        return;
-                    }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
-                    {
                         return;
                     }
                     break;
@@ -258,10 +282,6 @@ namespace System.Formats.Tar
                         // Also not supported for writing - internally autogenerated:
                         // - LongLink
                         // - LongPath
-                        return;
-                    }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
-                    {
                         return;
                     }
                     break;

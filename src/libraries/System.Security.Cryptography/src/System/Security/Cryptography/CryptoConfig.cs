@@ -338,7 +338,7 @@ namespace System.Security.Cryptography
             switch (name)
             {
 #pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
-                // hardcode mapping for SHA* algorithm names from https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptoconfig?view=net-5.0#remarks
+                // hardcode mapping for SHA* and HMAC* algorithm names from https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptoconfig?view=net-5.0#remarks
                 case "SHA":
                 case "SHA1":
                 case "System.Security.Cryptography.SHA1":
@@ -355,6 +355,35 @@ namespace System.Security.Cryptography
                 case "SHA-512":
                 case "System.Security.Cryptography.SHA512":
                     return new SHA512Managed();
+#pragma warning restore SYSLIB0021
+
+                case "System.Security.Cryptography.HMAC":
+                case "HMACSHA1":
+                case "System.Security.Cryptography.HMACSHA1":
+                case "System.Security.Cryptography.KeyedHashAlgorithm":
+                    return new HMACSHA1();
+                case "HMACSHA256":
+                case "System.Security.Cryptography.HMACSHA256":
+                    return new HMACSHA256();
+                case "HMACSHA384":
+                case "System.Security.Cryptography.HMACSHA384":
+                    return new HMACSHA384();
+                case "HMACSHA512":
+                case "System.Security.Cryptography.HMACSHA512":
+                    return new HMACSHA512();
+
+#pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
+                case "AES":
+                case "System.Security.Cryptography.AesCryptoServiceProvider":
+                    return new AesCryptoServiceProvider();
+                case "AesManaged":
+                case "System.Security.Cryptography.AesManaged":
+                    return new AesManaged();
+                case "Rijndael":
+                case "System.Security.Cryptography.Rijndael":
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
+                    return new RijndaelManaged();
+#pragma warning restore SYSLIB0022
 #pragma warning restore SYSLIB0021
             }
 

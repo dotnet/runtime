@@ -498,9 +498,8 @@ namespace System
             /// <summary>Finds the null-terminator for a string that begins at the specified position.</summary>
             private static int FindNullTerminator(byte[] buffer, int pos)
             {
-                int termPos = pos;
-                while (termPos < buffer.Length && buffer[termPos] != '\0') termPos++;
-                return termPos;
+                int i = buffer.AsSpan(pos).IndexOf((byte)'\0');
+                return i >= 0 ? pos + i : buffer.Length;
             }
         }
 
@@ -525,11 +524,7 @@ namespace System
             /// <returns>The formatted string.</returns>
             public static string Evaluate(string format, FormatParam arg)
             {
-                FormatParam[]? args = t_cachedOneElementArgsArray;
-                if (args == null)
-                {
-                    t_cachedOneElementArgsArray = args = new FormatParam[1];
-                }
+                FormatParam[] args = t_cachedOneElementArgsArray ??= new FormatParam[1];
 
                 args[0] = arg;
 
@@ -543,11 +538,7 @@ namespace System
             /// <returns>The formatted string.</returns>
             public static string Evaluate(string format, FormatParam arg1, FormatParam arg2)
             {
-                FormatParam[]? args = t_cachedTwoElementArgsArray;
-                if (args == null)
-                {
-                    t_cachedTwoElementArgsArray = args = new FormatParam[2];
-                }
+                FormatParam[] args = t_cachedTwoElementArgsArray ??= new FormatParam[2];
 
                 args[0] = arg1;
                 args[1] = arg2;
@@ -903,12 +894,12 @@ namespace System
                 if (char.IsAsciiLetterUpper(c))
                 {
                     index = c - 'A';
-                    return staticVars ?? (staticVars = new FormatParam[26]); // one slot for each letter of alphabet
+                    return staticVars ??= new FormatParam[26]; // one slot for each letter of alphabet
                 }
                 else if (char.IsAsciiLetterLower(c))
                 {
                     index = c - 'a';
-                    return dynamicVars ?? (dynamicVars = new FormatParam[26]); // one slot for each letter of alphabet
+                    return dynamicVars ??= new FormatParam[26]; // one slot for each letter of alphabet
                 }
                 else throw new InvalidOperationException(SR.IO_TermInfoInvalid);
             }

@@ -464,12 +464,12 @@ namespace System.Management
 
             //Build the flavors bitmask and call the internal Add that takes a bitmask
             int qualFlavor = 0;
-            if (isAmended) qualFlavor = (qualFlavor | (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_AMENDED);
-            if (propagatesToInstance) qualFlavor = (qualFlavor | (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_INSTANCE);
-            if (propagatesToSubclass) qualFlavor = (qualFlavor | (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_DERIVED_CLASS);
+            if (isAmended) qualFlavor |= (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_AMENDED;
+            if (propagatesToInstance) qualFlavor |= (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_INSTANCE;
+            if (propagatesToSubclass) qualFlavor |= (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_FLAG_PROPAGATE_TO_DERIVED_CLASS;
 
             // Note we use the NOT condition here since WBEM_FLAVOR_OVERRIDABLE == 0
-            if (!isOverridable) qualFlavor = (qualFlavor | (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_NOT_OVERRIDABLE);
+            if (!isOverridable) qualFlavor |= (int)tag_WBEM_FLAVOR_TYPE.WBEM_FLAVOR_NOT_OVERRIDABLE;
 
             //Try to add the qualifier to the WMI object
             int status = GetTypeQualifierSet().Put_(qualifierName, ref qualifierValue, qualFlavor);

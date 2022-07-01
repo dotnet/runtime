@@ -175,6 +175,10 @@ function(find_unwind_libs UnwindLibs)
       find_library(UNWIND_ARCH NAMES unwind-s390x)
     endif()
 
+    if(CLR_CMAKE_HOST_ARCH_POWERPC64)
+      find_library(UNWIND_ARCH NAMES unwind-ppc64le)
+    endif()
+
     if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
        set(UNWIND_LIBS ${UNWIND_ARCH})
     endif()
@@ -423,7 +427,7 @@ function(strip_symbols targetName outputFilename)
         POST_BUILD
         VERBATIM
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-unneeded ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )

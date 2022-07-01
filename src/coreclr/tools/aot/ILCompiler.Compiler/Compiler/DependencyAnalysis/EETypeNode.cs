@@ -371,14 +371,25 @@ namespace ILCompiler.DependencyAnalysis
                         if (interfaceMethod.HasInstantiation)
                             continue;
 
-                        // Static virtual methods are resolved at compile time
-                        if (interfaceMethod.Signature.IsStatic)
-                            continue;
+                        bool isStaticInterfaceMethod = interfaceMethod.Signature.IsStatic;
 
-                        MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                        MethodDesc implMethod = isStaticInterfaceMethod ?
+                            defType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :
+                            defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                         if (implMethod != null)
                         {
-                            result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                            if (isStaticInterfaceMethod)
+                            {
+                                Debug.Assert(!implMethod.IsVirtual);
+
+                                // If the interface method is used virtually, the implementation body is used
+                                result.Add(new CombinedDependencyListEntry(factory.CanonicalEntrypoint(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                            }
+                            else
+                            {
+                                // If the interface method is used virtually, the slot is used virtually
+                                result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                            }
 
                             // If any of the implemented interfaces have variance, calls against compatible interface methods
                             // could result in interface methods of this type being used (e.g. IEnumerable<object>.GetEnumerator()
@@ -386,7 +397,11 @@ namespace ILCompiler.DependencyAnalysis
                             if (isVariantInterfaceImpl)
                             {
                                 MethodDesc typicalInterfaceMethod = interfaceMethod.GetTypicalMethodDefinition();
-                                result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
+
+                                object implMethodUseNode = isStaticInterfaceMethod ?
+                                    factory.CanonicalEntrypoint(implMethod) : factory.VirtualMethodUse(implMethod);
+
+                                result.Add(new CombinedDependencyListEntry(implMethodUseNode, factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
@@ -411,8 +426,9 @@ namespace ILCompiler.DependencyAnalysis
                                 implMethod = implMethod.InstantiateSignature(defType.Instantiation, Instantiation.Empty);
 
                                 MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                                if (defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                                if (!isStaticInterfaceMethod && defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                                 {
+                                    // Canonical instance default methods need to go through a thunk that adds the right generic context
                                     defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, _type.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
@@ -757,14 +773,29 @@ namespace ILCompiler.DependencyAnalysis
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
         }
 
+        protected virtual ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
+        {
+            return factory.NecessaryTypeSymbol(((ArrayType)_type).ElementType);
+        }
+
         private ISymbolNode GetRelatedTypeNode(NodeFactory factory)
         {
             ISymbolNode relatedTypeNode = null;
 
-            if (_type.IsArray || _type.IsPointer || _type.IsByRef)
+            if (_type.IsParameterizedType)
             {
                 var parameterType = ((ParameterizedType)_type).ParameterType;
-                relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
+                if (_type.IsArray && parameterType.IsValueType && !parameterType.IsNullable)
+                {
+                    // This might be a constructed type symbol. There are APIs on Array that allow allocating element
+                    // types through runtime magic ("((Array)new NeverAllocated[1]).GetValue(0)" or IEnumerable) and we don't have
+                    // visibility into that. Conservatively assume element types of constructed arrays are also constructed.
+                    relatedTypeNode = GetNonNullableValueTypeArrayElementTypeNode(factory);
+                }
+                else
+                {
+                    relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
+                }
             }
             else
             {

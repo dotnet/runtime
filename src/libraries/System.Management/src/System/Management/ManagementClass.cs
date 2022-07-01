@@ -383,10 +383,7 @@ namespace System.Management
             {
                 Initialize(true);
 
-                if (methods == null)
-                    methods = new MethodDataCollection(this);
-
-                return methods;
+                return methods ??= new MethodDataCollection(this);
             }
         }
 
@@ -1230,7 +1227,7 @@ namespace System.Management
 
             IEnumWbemClassObject enumWbem = null;
 
-            EnumerationOptions o = (null != options) ? options : new EnumerationOptions();
+            EnumerationOptions o = options ?? new EnumerationOptions();
             //Ensure EnumerateDeep flag is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 

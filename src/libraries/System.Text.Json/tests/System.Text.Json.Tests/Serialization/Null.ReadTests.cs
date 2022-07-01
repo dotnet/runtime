@@ -188,7 +188,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static async Task ParseNullStringShouldThrowJsonExceptionAsync()
         {
-            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            using (var stream = new MemoryStream("null"u8.ToArray()))
             { 
                 await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleStruct>(stream));
 

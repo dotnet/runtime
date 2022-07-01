@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing.Imaging;
+using System.Threading;
 
 namespace System.Drawing
 {
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Drawing.Imaging;
-    using System.Threading;
-
     /// <summary>
     ///     Animates one or more images that have time-based frames.
     ///     See the ImageInfo.cs file for the helper nested ImageInfo class.
@@ -251,10 +250,7 @@ namespace System.Drawing
                 {
                     // Construct the image array
                     //
-                    if (s_imageInfoList == null)
-                    {
-                        s_imageInfoList = new List<ImageInfo>();
-                    }
+                    s_imageInfoList ??= new List<ImageInfo>();
 
                     // Add the new image
                     //

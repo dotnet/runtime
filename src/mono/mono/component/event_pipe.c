@@ -13,6 +13,9 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
+#ifdef HOST_WASM
+#include <emscripten/emscripten.h>
+#endif
 
 extern void ep_rt_mono_component_init (void);
 static bool _event_pipe_component_inited = false;
@@ -119,6 +122,7 @@ static MonoComponentEventPipe fn_table = {
 	&ep_rt_write_event_threadpool_worker_thread_start,
 	&ep_rt_write_event_threadpool_worker_thread_stop,
 	&ep_rt_write_event_threadpool_worker_thread_wait,
+	&ep_rt_write_event_threadpool_min_max_threads,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_sample,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_stats,

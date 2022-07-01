@@ -15,14 +15,14 @@ namespace Sample
         public override string Name => "AppStart";
         public override bool BrowserOnly => true;
 
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, "System.Runtime.InteropServices.JavaScript.Runtime", "System.Private.Runtime.InteropServices.JavaScript")]
-        static Type jsRuntimeType = System.Type.GetType("System.Runtime.InteropServices.JavaScript.Runtime, System.Private.Runtime.InteropServices.JavaScript", true);
-        static Type jsFunctionType = System.Type.GetType("System.Runtime.InteropServices.JavaScript.Function, System.Private.Runtime.InteropServices.JavaScript", true);
-        [DynamicDependency("InvokeJS(System.String)", "System.Runtime.InteropServices.JavaScript.Runtime", "System.Private.Runtime.InteropServices.JavaScript")]
+        // TODO reimplement this via [JSImport]!
+        static Type jsRuntimeType = System.Type.GetType("System.Runtime.InteropServices.JavaScript.Runtime, System.Runtime.InteropServices.JavaScript", true);
+        static Type jsFunctionType = System.Type.GetType("System.Runtime.InteropServices.JavaScript.Function, System.Runtime.InteropServices.JavaScript", true);
+        [DynamicDependency("InvokeJS(System.String)", "System.Runtime.InteropServices.JavaScript.Runtime", "System.Runtime.InteropServices.JavaScript")]
         static MethodInfo invokeJSMethod = jsRuntimeType.GetMethod("InvokeJS", new Type[] { typeof(string) });
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, "System.Runtime.InteropServices.JavaScript.Function", "System.Private.Runtime.InteropServices.JavaScript")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, "System.Runtime.InteropServices.JavaScript.Function", "System.Runtime.InteropServices.JavaScript")]
         static ConstructorInfo functionConstructor = jsRuntimeType.GetConstructor(new Type[] { typeof(object[]) });
-        [DynamicDependency("Call()", "System.Runtime.InteropServices.JavaScript.Function", "System.Private.Runtime.InteropServices.JavaScript")]
+        [DynamicDependency("Call()", "System.Runtime.InteropServices.JavaScript.Function", "System.Runtime.InteropServices.JavaScript")]
         static MethodInfo functionCall = jsFunctionType.GetMethod("Call", BindingFlags.Instance | BindingFlags.Public, new Type[] { });
 
         public AppStartTask()

@@ -59,11 +59,7 @@ namespace System.Threading
             {
                 if (!_isScheduled)
                 {
-                    List<TimerQueue>? timers = s_scheduledTimers;
-                    if (timers == null)
-                    {
-                        timers = InitializeScheduledTimerManager_Locked();
-                    }
+                    List<TimerQueue> timers = s_scheduledTimers ?? InitializeScheduledTimerManager_Locked();
 
                     timers.Add(this);
                     _isScheduled = true;

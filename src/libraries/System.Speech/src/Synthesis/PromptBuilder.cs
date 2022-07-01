@@ -286,7 +286,7 @@ namespace System.Speech.Synthesis
             StackElement stackElement = _elementStack.Peek();
             ValidateElement(stackElement, SsmlElement.Voice);
 
-            CultureInfo culture = voice.Culture == null ? stackElement._culture : voice.Culture;
+            CultureInfo culture = voice.Culture ?? stackElement._culture;
 
             Element startVoice = new(ElementType.StartVoice);
             startVoice._attributes = new Collection<AttributeItem>();
