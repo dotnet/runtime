@@ -275,8 +275,7 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
 CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
 
 #ifdef DEBUG
-CONFIG_STRING(WriteRichDebugInfoFile,
-              W("WriteRichDebugInfoFile")) // Write rich debug info in JSON format to this file
+CONFIG_STRING(WriteRichDebugInfoFile, W("WriteRichDebugInfoFile")) // Write rich debug info in JSON format to this file
 #endif
 
 #if FEATURE_LOOP_ALIGN

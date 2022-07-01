@@ -879,8 +879,8 @@ private:
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    InlinePolicy* m_Policy;           // policy that evaluated this inline
-    unsigned      m_TreeID;           // ID of the GenTreeCall in the parent
+    InlinePolicy* m_Policy; // policy that evaluated this inline
+    unsigned      m_TreeID; // ID of the GenTreeCall in the parent
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

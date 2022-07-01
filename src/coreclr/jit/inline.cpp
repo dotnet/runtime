@@ -1287,7 +1287,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     }
     else
     {
-        // Should only get here in debug builds/build with inline data
+// Should only get here in debug builds/build with inline data
 #if defined(DEBUG) || defined(INLINE_DATA)
         context->m_ActualCallOffset = call->gtRawILOffset;
 #endif
@@ -1311,7 +1311,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     context->m_Unboxed       = call->IsUnboxed();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    context->m_TreeID           = call->gtTreeID;
+    context->m_TreeID = call->gtTreeID;
 #endif
 
     return context;

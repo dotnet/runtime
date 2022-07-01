@@ -7684,9 +7684,9 @@ void CodeGen::genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebug
         assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
 
         ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
-        node->Method = context->GetCallee();
-        node->ILOffset = context->GetActualCallOffset();
-        node->Child = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
+        node->Method                        = context->GetCallee();
+        node->ILOffset                      = context->GetActualCallOffset();
+        node->Child                         = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
         node->Sibling = context->GetSibling() == nullptr ? 0 : context->GetSibling()->GetOrdinal();
     }
 
@@ -7714,7 +7714,7 @@ void CodeGen::genReportRichDebugInfo()
         return;
     }
 
-    unsigned numContexts = 1 + compiler->m_inlineStrategy->GetInlineCount();
+    unsigned numContexts     = 1 + compiler->m_inlineStrategy->GetInlineCount();
     unsigned numRichMappings = static_cast<unsigned>(compiler->genRichIPmappings.size());
 
     ICorDebugInfo::InlineTreeNode* inlineTree = static_cast<ICorDebugInfo::InlineTreeNode*>(
@@ -7740,9 +7740,9 @@ void CodeGen::genReportRichDebugInfo()
         ICorDebugInfo::RichOffsetMapping* mapping = &mappings[mappingIndex];
         assert(richMapping.debugInfo.IsValid());
         mapping->NativeOffset = richMapping.nativeLoc.CodeOffset(GetEmitter());
-        mapping->Inlinee = richMapping.debugInfo.GetInlineContext()->GetOrdinal();
-        mapping->ILOffset = richMapping.debugInfo.GetLocation().GetOffset();
-        mapping->Source = richMapping.debugInfo.GetLocation().EncodeSourceTypes();
+        mapping->Inlinee      = richMapping.debugInfo.GetInlineContext()->GetOrdinal();
+        mapping->ILOffset     = richMapping.debugInfo.GetLocation().GetOffset();
+        mapping->Source       = richMapping.debugInfo.GetLocation().EncodeSourceTypes();
 
         mappingIndex++;
     }
