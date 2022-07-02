@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Principal;
@@ -321,6 +322,89 @@ namespace System.Net.Security
             }
 
             return outgoingBlob;
+        }
+
+        /// <summary>
+        /// Wrap an input message with signature and optionally with an encryption.
+        /// </summary>
+        /// <param name="input">Input message to be wrapped.</param>
+        /// <param name="outputWriter">Buffer writter where the wrapped message is written.</param>
+        /// <param name="requestEncryption">Specifies whether encryption is requested.</param>
+        /// <param name="isEncrypted">Specifies whether encryption was applied in the wrapping.</param>
+        /// <returns>
+        /// <see cref="NegotiateAuthenticationStatusCode.Completed" /> on success, other
+        /// <see cref="NegotiateAuthenticationStatusCode" /> values on failure.
+        /// </returns>
+        /// <remarks>
+        /// Like the <see href="https://datatracker.ietf.org/doc/html/rfc2743#page-65">GSS_Wrap</see> API
+        /// the authentication protocol implementation may choose to override the requested value in the
+        /// requestEncryption parameter. This may result in either downgrade or upgrade of the protection
+        /// level.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted)
+        {
+            if (!IsAuthenticated || _ntAuthentication == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            return _ntAuthentication.Wrap(input, outputWriter, requestEncryption, out isEncrypted);
+        }
+
+        /// <summary>
+        /// Unwrap an input message with signature or encryption applied by the other party.
+        /// </summary>
+        /// <param name="input">Input message to be unwrapped.</param>
+        /// <param name="outputWriter">Buffer writter where the unwrapped message is written.</param>
+        /// <param name="wasEncrypted">
+        /// On output specifies whether the wrapped message had encryption applied.
+        /// </param>
+        /// <returns>
+        /// <see cref="NegotiateAuthenticationStatusCode.Completed" /> on success.
+        /// <see cref="NegotiateAuthenticationStatusCode.MessageAltered" /> if the message signature was
+        /// invalid.
+        /// <see cref="NegotiateAuthenticationStatusCode.InvalidToken" /> if the wrapped message was
+        /// in invalid format.
+        /// Other <see cref="NegotiateAuthenticationStatusCode" /> values on failure.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public NegotiateAuthenticationStatusCode Unwrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, out bool wasEncrypted)
+        {
+            if (!IsAuthenticated || _ntAuthentication == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            return _ntAuthentication.Unwrap(input, outputWriter, out wasEncrypted);
+        }
+
+        /// <summary>
+        /// Unwrap an input message with signature or encryption applied by the other party.
+        /// </summary>
+        /// <param name="input">Input message to be unwrapped. On output contains the decoded data.</param>
+        /// <param name="unwrappedOffset">Offset in the input buffer where the unwrapped message was written.</param>
+        /// <param name="unwrappedLength">Length of the unwrapped message.</param>
+        /// <param name="wasEncrypted">
+        /// On output specifies whether the wrapped message had encryption applied.
+        /// </param>
+        /// <returns>
+        /// <see cref="NegotiateAuthenticationStatusCode.Completed" /> on success.
+        /// <see cref="NegotiateAuthenticationStatusCode.MessageAltered" /> if the message signature was
+        /// invalid.
+        /// <see cref="NegotiateAuthenticationStatusCode.InvalidToken" /> if the wrapped message was
+        /// in invalid format.
+        /// Other <see cref="NegotiateAuthenticationStatusCode" /> values on failure.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public NegotiateAuthenticationStatusCode UnwrapInPlace(Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted)
+        {
+            if (!IsAuthenticated || _ntAuthentication == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            return _ntAuthentication.UnwrapInPlace(input, out unwrappedOffset, out unwrappedLength, out wasEncrypted);
         }
     }
 }
