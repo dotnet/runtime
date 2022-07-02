@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -70,6 +70,7 @@ namespace System.Text.RegularExpressions
             {
                 return null;
             }
+            builder.ValidateInvariants();
             return builder._nodes;
         }
 
@@ -428,6 +429,18 @@ namespace System.Text.RegularExpressions
         End:
             canContinue = false;
             return nodes;
+        }
+
+        [Conditional("DEBUG")]
+        private void ValidateInvariants()
+        {
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                if (_nodes[i] is { Children.Count: 0, IsMatch: false })
+                {
+                    Debug.Fail($"Node {i} has no children but it's not a match node.");
+                }
+            }
         }
 
         /// <summary>
