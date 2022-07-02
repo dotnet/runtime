@@ -774,7 +774,7 @@ namespace System.Text.RegularExpressions
                 Ldloca(inputSpan);
                 Ldloc(pos);
                 Call(s_spanSliceIntMethod);
-                Call(s_multiStringMatcherFindMethod);
+                Callvirt(s_multiStringMatcherFindMethod);
                 Stloc(i);
 
                 // if (i < 0) goto ReturnFalse;
