@@ -143,7 +143,7 @@ CrashInfo::GetAuxvEntries()
 // Get the module mappings for the core dump NT_FILE notes
 //
 bool
-CrashInfo::EnumerateModuleMappings()
+CrashInfo::EnumerateMemoryRegions()
 {
     // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says
     // about a library we are looking for. This file looks something like this:
@@ -219,7 +219,7 @@ CrashInfo::EnumerateModuleMappings()
             if (moduleName != nullptr && *moduleName == '/')
             {
                 m_moduleMappings.insert(memoryRegion);
-                ModuleMappingsCB += memoryRegion.Size();
+                m_cbModuleMappings += memoryRegion.Size();
             }
             else
             {
@@ -236,7 +236,7 @@ CrashInfo::EnumerateModuleMappings()
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings (%06llx):\n", ModuleMappingsCB / PAGE_SIZE);
+        TRACE("Module mappings (%06llx):\n", m_cbModuleMappings / PAGE_SIZE);
         for (const MemoryRegion& region : m_moduleMappings)
         {
             region.Trace();

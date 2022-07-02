@@ -98,6 +98,7 @@ public:
     inline uint64_t StartAddress() const { return m_startAddress; }
     inline uint64_t EndAddress() const { return m_endAddress; }
     inline uint64_t Size() const { return m_endAddress - m_startAddress; }
+    inline uint64_t SizeInPages() const { return Size() / PAGE_SIZE; }
     inline uint64_t Offset() const { return m_offset; }
     inline const std::string& FileName() const { return m_fileName; }
 

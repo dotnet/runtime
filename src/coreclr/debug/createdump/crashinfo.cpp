@@ -20,9 +20,9 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_signal(signal),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
-    ModuleMappingsCB(0),
-    DataTargetPagesAdded(0),
-    EnumMemoryPagesAdded(0)
+    m_cbModuleMappings(0),
+    m_dataTargetPagesAdded(0),
+    m_enumMemoryPagesAdded(0)
 {
     g_crashInfo = this;
 #ifdef __APPLE__
@@ -118,7 +118,7 @@ CrashInfo::EnumMemoryRegion(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [in] */ ULONG32 size)
 {
-    EnumMemoryPagesAdded += InsertMemoryRegion((ULONG_PTR)address, size);
+    m_enumMemoryPagesAdded += InsertMemoryRegion((ULONG_PTR)address, size);
     return S_OK;
 }
 
@@ -148,7 +148,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
         return false;
     }
     // Gather all the module memory mappings (from /dev/$pid/maps)
-    if (!EnumerateModuleMappings())
+    if (!EnumerateMemoryRegions())
     {
         return false;
     }
@@ -312,7 +312,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
 {
     if (m_pClrDataEnumRegions != nullptr && (minidumpType & MiniDumpWithFullMemory) == 0)
     {
-        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", EnumMemoryPagesAdded, DataTargetPagesAdded);
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
         // Since on both Linux and MacOS all the RW regions will be added for heap
         // dumps by createdump, the only thing differentiating a MiniDumpNormal and
@@ -337,7 +337,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
             printf_error("EnumMemoryRegions FAILED %s (%08x)\n", GetHResultString(hr), hr);
             return false;
         }
-        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED (%d %d)\n", EnumMemoryPagesAdded, DataTargetPagesAdded);
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
     }
     return true;
 }
@@ -353,7 +353,7 @@ CrashInfo::EnumerateManagedModules()
 
     if (m_pClrDataProcess != nullptr)
     {
-        TRACE("EnumerateManagedModules: Module enumeration STARTED (%d)\n", DataTargetPagesAdded);
+        TRACE("EnumerateManagedModules: Module enumeration STARTED (%d)\n", m_dataTargetPagesAdded);
 
         if (FAILED(hr = m_pClrDataProcess->StartEnumModules(&enumModules))) {
             printf_error("StartEnumModules FAILED %s (%08x)\n", GetHResultString(hr), hr);
@@ -392,7 +392,7 @@ CrashInfo::EnumerateManagedModules()
                         std::string moduleName = FormatString("%S", wszUnicodeName.GetPtr());
 
                         // Change the module mapping name
-                        ReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
+                        AddOrReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
 
                         // Add managed module info
                         AddModuleInfo(true, moduleData.LoadedPEAddress, pClrDataModule, moduleName);
@@ -413,7 +413,7 @@ CrashInfo::EnumerateManagedModules()
         if (enumModules != 0) {
             m_pClrDataProcess->EndEnumModules(enumModules);
         }
-        TRACE("EnumerateManagedModules: Module enumeration FINISHED (%d) ModuleMappings %06llx\n", DataTargetPagesAdded, ModuleMappingsCB / PAGE_SIZE);
+        TRACE("EnumerateManagedModules: Module enumeration FINISHED (%d) ModuleMappings %06llx\n", m_dataTargetPagesAdded, m_cbModuleMappings / PAGE_SIZE);
     }
     return true;
 }
@@ -424,7 +424,7 @@ CrashInfo::EnumerateManagedModules()
 bool
 CrashInfo::UnwindAllThreads()
 {
-    TRACE("UnwindAllThreads: STARTED (%d)\n", DataTargetPagesAdded);
+    TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
     ReleaseHolder<ISOSDacInterface> pSos = nullptr;
     if (m_pClrDataProcess != nullptr) {
         m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
@@ -436,7 +436,7 @@ CrashInfo::UnwindAllThreads()
             return false;
         }
     }
-    TRACE("UnwindAllThreads: FINISHED (%d)\n", DataTargetPagesAdded);
+    TRACE("UnwindAllThreads: FINISHED (%d)\n", m_dataTargetPagesAdded);
     return true;
 }
 
@@ -444,7 +444,7 @@ CrashInfo::UnwindAllThreads()
 // Replace an existing module mapping with one with a different name.
 //
 void
-CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& name)
+CrashInfo::AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& name)
 {
     // Round to page boundary (single-file managed assemblies are not page aligned)
     ULONG_PTR start = ((ULONG_PTR)baseAddress) & PAGE_MASK;
@@ -470,7 +470,7 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
         // On MacOS the assemblies are always added.
         MemoryRegion newRegion(flags, start, end, 0, name);
         m_moduleMappings.insert(newRegion);
-        ModuleMappingsCB += newRegion.Size();
+        m_cbModuleMappings += newRegion.Size();
 
         if (g_diagnostics) {
             newRegion.Trace("MODULE: ADD ");
@@ -483,11 +483,11 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
 
         // Remove and cleanup the old one
         m_moduleMappings.erase(found);
-        ModuleMappingsCB -= found->Size();
+        m_cbModuleMappings -= found->Size();
 
         // Add the new memory region.
         m_moduleMappings.insert(newRegion);
-        ModuleMappingsCB += newRegion.Size();
+        m_cbModuleMappings += newRegion.Size();
 
         if (g_diagnostics) {
             newRegion.Trace("MODULE: REPLACE ");
@@ -666,7 +666,7 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
         if (ValidRegion(region))
         {
             m_memoryRegions.insert(region);
-            return region.Size() / PAGE_SIZE;
+            return region.SizeInPages();
         }
     }
     else
@@ -683,7 +683,7 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 
     // The region overlaps/conflicts with one already in the set so add one page at a
     // time to avoid the overlapping pages.
-    uint64_t numberPages = region.Size() / PAGE_SIZE;
+    uint64_t numberPages = region.SizeInPages();
     int pagesAdded = 0;
 
     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
@@ -712,7 +712,7 @@ bool
 CrashInfo::ValidRegion(const MemoryRegion& region)
 {
     uint64_t start = region.StartAddress();
-    uint64_t numberPages = region.Size() / PAGE_SIZE;
+    uint64_t numberPages = region.SizeInPages();
     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
     {
         BYTE buffer[1];

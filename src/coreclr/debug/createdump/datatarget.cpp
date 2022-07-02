@@ -122,7 +122,7 @@ DumpDataTarget::ReadVirtual(
         *done = 0;
         return E_FAIL;
     }
-    m_crashInfo.DataTargetPagesAdded += m_crashInfo.InsertMemoryRegion(address, read);
+    m_crashInfo.m_dataTargetPagesAdded += m_crashInfo.InsertMemoryRegion(address, read);
     *done = read;
     return S_OK;
 }

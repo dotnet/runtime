@@ -160,7 +160,7 @@ CrashInfo::EnumerateMemoryRegions()
             break;
         }
     }
-    TRACE("AllMemoryRegions %06llx native ModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, ModuleMappingsCB / PAGE_SIZE);
+    TRACE("AllMemoryRegions %06llx native ModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, m_cbModuleMappings / PAGE_SIZE);
     return true;
 }
 
@@ -341,7 +341,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                 }
                 // Add this module segment to the module mappings list
                 m_moduleMappings.insert(newModule);
-                ModuleMappingsCB += newModule.Size();
+                m_cbModuleMappings += newModule.Size();
             }
             else
             {
@@ -353,7 +353,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                         newModule.Trace("VisitSegment: ");
                         existingModule->Trace(" overlapping: ");
                     }
-                    uint64_t numberPages = newModule.Size() / PAGE_SIZE;
+                    uint64_t numberPages = newModule.SizeInPages();
                     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE, offset += PAGE_SIZE)
                     {
                         MemoryRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
@@ -366,7 +366,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                                 gap.Trace("VisitSegment: *");
                             }
                             m_moduleMappings.insert(gap);
-                            ModuleMappingsCB += gap.Size();
+                            m_cbModuleMappings += gap.Size();
                         }
                     }
                 }

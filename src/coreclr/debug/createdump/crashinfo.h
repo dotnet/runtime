@@ -85,9 +85,9 @@ public:
     virtual ~CrashInfo();
 
     // Memory usage stats
-    uint64_t ModuleMappingsCB;
-    int DataTargetPagesAdded;
-    int EnumMemoryPagesAdded;
+    uint64_t m_cbModuleMappings;
+    int m_dataTargetPagesAdded;
+    int m_enumMemoryPagesAdded;
 
     bool Initialize();
     void CleanupAndResumeProcess();
@@ -148,12 +148,12 @@ private:
     bool GetDSOInfo();
     void VisitModule(uint64_t baseAddress, std::string& moduleName);
     void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
-    bool EnumerateModuleMappings();
+    bool EnumerateMemoryRegions();
 #endif
     bool InitializeDAC();
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
-    void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
+    void AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
     int InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool ValidRegion(const MemoryRegion& region);
