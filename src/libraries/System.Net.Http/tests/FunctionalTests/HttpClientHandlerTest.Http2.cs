@@ -144,10 +144,20 @@ namespace System.Net.Http.Functional.Tests
                 GoAwayFrame goAwayFrame = new GoAwayFrame(lastStreamId: 0, (int)ProtocolErrors.HTTP_1_1_REQUIRED, additionalDebugData: Array.Empty<byte>(), streamId: 0);
                 await connection.WriteFrameAsync(goAwayFrame);
 
-                var exception = await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
+                var ex = await Assert.ThrowsAnyAsync<Exception>(() => sendTask);
 
-                var protocolException = Assert.IsType<HttpProtocolException>(exception.InnerException.InnerException);
-                Assert.Equal((long)ProtocolErrors.HTTP_1_1_REQUIRED, protocolException.ErrorCode);
+                // Position of HttpProtocolException in exception hierarchy can change depending on timing.
+                var current = ex;
+                do
+                {
+                    if (current is HttpProtocolException protocolException)
+                    {
+                        Assert.Equal((long)ProtocolErrors.HTTP_1_1_REQUIRED, protocolException.ErrorCode);
+                        return;
+                    }
+                } while ((current = current.InnerException) != null);
+
+                Assert.Fail($"Couldn't find {nameof(HttpProtocolException)} with matching error code in exception: {ex}");
             }
         }
 
