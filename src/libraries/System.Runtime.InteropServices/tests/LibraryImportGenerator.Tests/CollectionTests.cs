@@ -20,6 +20,9 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
             public static partial int Sum([MarshalUsing(typeof(ListMarshaller<,>))] List<int> values, int numValues);
 
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_values")]
+            public static partial int DoubleValues([MarshalUsing(typeof(ListMarshallerWithPinning<,>))] List<BlittableIntWrapper> values, int length);
+
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
             public static partial int SumInArray([MarshalUsing(typeof(ListMarshaller<,>))] in List<int> values, int numValues);
 
@@ -46,6 +49,15 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             var list = new List<int> { 1, 5, 79, 165, 32, 3 };
             Assert.Equal(list.Sum(), NativeExportsNE.Collections.Sum(list, list.Count));
+        }
+
+        [Fact]
+        public void BlittableElementColllectionMarshalledToNativeWithPinningAsExpected()
+        {
+            var data = new List<int> { 1, 5, 79, 165, 32, 3 };
+            var list = data.Select(i => new BlittableIntWrapper { i = i }).ToList();
+            NativeExportsNE.Collections.DoubleValues(list, list.Count);
+            Assert.Equal(data.Select(i => i * 2), list.Select(wrapper => wrapper.i));
         }
 
         [Fact]

@@ -399,7 +399,17 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context)
         {
-            return Array.Empty<StatementSyntax>();
+            if (!_shape.HasFlag(MarshallerShape.StatefulPinnableReference))
+                yield break;
+
+            string unusedIdentifier = context.GetAdditionalIdentifier(info, "unused");
+            yield return FixedStatement(
+                VariableDeclaration(
+                    PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
+                    SingletonSeparatedList(
+                        VariableDeclarator(unusedIdentifier)
+                            .WithInitializer(EqualsValueClause(IdentifierName(context.GetAdditionalIdentifier(info, MarshallerIdentifier)))))),
+                EmptyStatement());
         }
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context)

@@ -723,6 +723,15 @@ public static class Marshaller
     public static Native ConvertToUnmanaged(S s, System.Span<byte> buffer) => default;
 }
 ";
+
+                public static string InPinnable = @"
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
+public static unsafe class Marshaller
+{
+    public static byte* ConvertToUnmanaged(S s) => default;
+    public static ref byte GetPinnableReference(S s) => throw null;
+}
+";
                 private static string Out = @"
 [CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
@@ -815,6 +824,9 @@ public static class Marshaller
                 public static string StackallocByValueInParameter => BasicParameterByValue("S")
                     + NonBlittableUserDefinedType()
                     + InBuffer;
+                public static string PinByValueInParameter => BasicParameterByValue("S")
+                    + NonBlittableUserDefinedType()
+                    + InPinnable;
 
                 public static string StackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
                     + NonBlittableUserDefinedType()
@@ -841,6 +853,34 @@ public static class Marshaller
     {
         public void FromManaged(S s) {}
         public Native ToUnmanaged() => default;
+    }
+}
+";
+
+                public static string InStatelessPinnable = @"
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
+public static class Marshaller
+{
+    public unsafe struct M
+    {
+        public void FromManaged(S s) {}
+        public byte* ToUnmanaged() => default;
+
+        public static ref byte GetPinnableReference(S s) => throw null;
+    }
+}
+";
+
+                public static string InPinnable = @"
+[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
+public static class Marshaller
+{
+    public unsafe struct M
+    {
+        public void FromManaged(S s) {}
+        public byte* ToUnmanaged() => default;
+
+        public ref byte GetPinnableReference() => throw null;
     }
 }
 ";
@@ -1014,6 +1054,12 @@ public static class Marshaller
                 public static string StackallocByValueInParameter => BasicParameterByValue("S")
                     + NonBlittableUserDefinedType()
                     + InBuffer;
+                public static string PinByValueInParameter => BasicParameterByValue("S")
+                    + NonBlittableUserDefinedType()
+                    + InStatelessPinnable;
+                public static string MarshallerPinByValueInParameter => BasicParameterByValue("S")
+                    + NonBlittableUserDefinedType()
+                    + InPinnable;
 
                 public static string StackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
                     + NonBlittableUserDefinedType()
@@ -1419,6 +1465,17 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
     public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(byte* unmanaged, int numElements) => throw null;
 }
 ";
+                public const string InPinnable = @"
+[CustomMarshaller(typeof(TestCollection<>), Scenario.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
+static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+{
+    public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
+    public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;
+    public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(byte* unmanaged, int numElements) => throw null;
+
+    public static ref byte GetPinnableReference(TestCollection<T> managed) => throw null;
+}
+";
                 public const string InBuffer = @"
 [CustomMarshaller(typeof(TestCollection<>), Scenario.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
 static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
@@ -1474,6 +1531,11 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
                 public static string ByValue(string elementType) => BasicParameterByValue($"TestCollection<{elementType}>", DisableRuntimeMarshalling)
                     + TestCollection()
                     + In;
+
+                public static string ByValueWithPinning<T>() => ByValueWithPinning(typeof(T).ToString());
+                public static string ByValueWithPinning(string elementType) => BasicParameterByValue($"TestCollection<{elementType}>", DisableRuntimeMarshalling)
+                    + TestCollection()
+                    + InPinnable;
 
                 public static string ByValueCallerAllocatedBuffer<T>() => ByValueCallerAllocatedBuffer(typeof(T).ToString());
                 public static string ByValueCallerAllocatedBuffer(string elementType) => BasicParameterByValue($"TestCollection<{elementType}>", DisableRuntimeMarshalling)

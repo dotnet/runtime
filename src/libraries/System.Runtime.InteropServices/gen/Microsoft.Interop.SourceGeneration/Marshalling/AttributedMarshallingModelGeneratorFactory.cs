@@ -256,6 +256,11 @@ namespace Microsoft.Interop
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
+            if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
+            {
+                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerData.MarshallerType.Syntax);
+            }
+
             return marshalInfo.IsPinnableManagedType
                 ? new PinnableManagedValueMarshaller(marshallingGenerator)
                 : marshallingGenerator;
@@ -307,6 +312,11 @@ namespace Microsoft.Interop
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
+
+            if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
+            {
+                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeSyntax);
+            }
 
             // Elements in the collection must be blittable to use the pinnable marshaller.
             return marshalInfo.IsPinnableManagedType && elementIsBlittable

@@ -176,6 +176,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedGuaranteedOnlyOutParameter };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedOnlyReturnValue };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedGuaranteedOnlyReturnValue };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.PinByValueInParameter };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.StackallocByValueInParameter };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.StackallocParametersAndModifiersNoRef };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateless.OptionalStackallocParametersAndModifiers };
@@ -188,6 +189,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedOnlyReturnValue };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedGuaranteedOnlyReturnValue };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.StackallocByValueInParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.PinByValueInParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.MarshallerPinByValueInParameter };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.StackallocParametersAndModifiersNoRef };
             yield return new[] { CodeSnippets.CustomStructMarshalling.Stateful.OptionalStackallocParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling_V1.ParametersAndModifiers };
@@ -251,6 +254,18 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueCallerAllocatedBuffer<double>() };
             yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueCallerAllocatedBuffer<IntPtr>() };
             yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueCallerAllocatedBuffer<UIntPtr>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<byte>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<sbyte>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<short>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<ushort>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<int>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<uint>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<long>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<ulong>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<float>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<double>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<IntPtr>() };
+            yield return new[] { CodeSnippets.CustomCollectionMarshalling.Stateless.ByValueWithPinning<UIntPtr>() };
             yield return new[] { CodeSnippets.CustomCollectionMarshalling_V1.ByValue<byte>() };
             yield return new[] { CodeSnippets.CustomCollectionMarshalling_V1.ByValue<sbyte>() };
             yield return new[] { CodeSnippets.CustomCollectionMarshalling_V1.ByValue<short>() };
