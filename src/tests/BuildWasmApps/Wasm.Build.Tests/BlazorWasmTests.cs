@@ -69,10 +69,10 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
-        public void Net60Projects_NativeReference(string config)
-            => BuildNet60Project(config, aot: false, expectError: true, @"<NativeFileReference Include=""native-lib.o"" />");
+        public void Net50Projects_NativeReference(string config)
+            => BuildNet50Project(config, aot: false, expectError: true, @"<NativeFileReference Include=""native-lib.o"" />");
 
-        public static TheoryData<string, bool, bool> Net60TestData = new()
+        public static TheoryData<string, bool, bool> Net50TestData = new()
         {
             { "Debug", /*aot*/ true, /*expectError*/ true },
             { "Debug", /*aot*/ false, /*expectError*/ false },
@@ -81,13 +81,13 @@ namespace Wasm.Build.Tests
         };
 
         [Theory]
-        [MemberData(nameof(Net60TestData))]
-        public void Net60Projects_AOT(string config, bool aot, bool expectError)
-            => BuildNet60Project(config, aot: aot, expectError: expectError);
+        [MemberData(nameof(Net50TestData))]
+        public void Net50Projects_AOT(string config, bool aot, bool expectError)
+            => BuildNet50Project(config, aot: aot, expectError: expectError);
 
-        private void BuildNet60Project(string config, bool aot, bool expectError, string? extraItems=null)
+        private void BuildNet50Project(string config, bool aot, bool expectError, string? extraItems=null)
         {
-            string id = $"BlazorApp_{config}_{aot}_{Path.GetRandomFileName()}";
+            string id = $"Blazor_net50_{config}_{aot}_{Path.GetRandomFileName()}";
             InitBlazorWasmProjectDir(id);
 
             string directoryBuildTargets = @"<Project>
@@ -100,9 +100,9 @@ namespace Wasm.Build.Tests
             File.WriteAllText(Path.Combine(_projectDir!, "Directory.Build.targets"), directoryBuildTargets);
 
             string logPath = Path.Combine(s_buildEnv.LogRootPath, id);
-            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "BlazorApp"), Path.Combine(_projectDir!));
+            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "Blazor_net50"), Path.Combine(_projectDir!));
 
-            string projectFile = Path.Combine(_projectDir!, "BlazorApp.csproj");
+            string projectFile = Path.Combine(_projectDir!, "Blazor_net50.csproj");
             AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
 
             string publishLogPath = Path.Combine(logPath, $"{id}.binlog");
@@ -123,7 +123,7 @@ namespace Wasm.Build.Tests
                 result.EnsureSuccessful();
                 Assert.Contains("** UsingBrowserRuntimeWorkload: 'false'", result.Output);
 
-                string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true, framework: "net6.0");
+                string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true, framework: "net5.0");
                 AssertBlazorBootJson(config, isPublish: true, binFrameworkDir: binFrameworkDir);
                 // dotnet.wasm here would be from 5.0 nuget like:
                 // /Users/radical/.nuget/packages/microsoft.netcore.app.runtime.browser-wasm/5.0.9/runtimes/browser-wasm/native/dotnet.wasm
