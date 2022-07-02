@@ -2067,9 +2067,6 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 
     _ASSERTE(pMT->IsValueType());
 
-    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-        return MarkGCField(gcPtrs, TYPE_GC_BYREF);
-
     unsigned result = 0;
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
@@ -9214,17 +9211,6 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
     TypeHandle clsHnd = TypeHandle();
     FieldDesc* field = (FieldDesc*) fieldHnd;
     CorElementType type   = field->GetFieldType();
-
-    if (type == ELEMENT_TYPE_I)
-    {
-        PTR_MethodTable enclosingMethodTable = field->GetApproxEnclosingMethodTable();
-        if (enclosingMethodTable->IsByRefLike() && enclosingMethodTable->HasSameTypeDefAs(g_pByReferenceClass))
-        {
-            _ASSERTE(field->GetOffset() == 0);
-            return CORINFO_TYPE_BYREF;
-        }
-    }
-
     if (!CorTypeInfo::IsPrimitiveType(type))
     {
         PCCOR_SIGNATURE sig;

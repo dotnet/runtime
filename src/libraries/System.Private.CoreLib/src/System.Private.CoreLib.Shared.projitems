@@ -758,7 +758,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DefaultInterpolatedStringHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ITuple.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\LifetimeAnnotationAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\LoadHint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodCodeType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplAttribute.cs" />

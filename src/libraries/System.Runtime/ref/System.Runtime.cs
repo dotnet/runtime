@@ -12538,14 +12538,6 @@ namespace System.Runtime.CompilerServices
         object? this[int index] { get; }
         int Length { get; }
     }
-    // See src\libraries\System.Private.CoreLib\src\System\Runtime\CompilerServices\LifetimeAnnotationAttribute.cs
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    internal sealed class LifetimeAnnotationAttribute : System.Attribute
-    {
-        public LifetimeAnnotationAttribute(bool isRefScoped, bool isValueScoped) { throw null; }
-        public bool IsRefScoped { get { throw null; } }
-        public bool IsValueScoped { get { throw null; } }
-    }
     public enum LoadHint
     {
         Default = 0,
@@ -12789,7 +12781,7 @@ namespace System.Runtime.CompilerServices
         public unsafe static void* AsPointer<T>(ref T value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static ref T AsRef<T>(void* source) { throw null; }
-        public static ref T AsRef<T>([System.Runtime.CompilerServices.LifetimeAnnotation(true, false)] in T source) { throw null; }
+        public static ref T AsRef<T>(scoped in T source) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }

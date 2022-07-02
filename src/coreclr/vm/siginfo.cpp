@@ -4950,12 +4950,6 @@ public:
         _ASSERTE(pMT != nullptr);
         _ASSERTE(pMT->IsByRefLike());
 
-        if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-        {
-            Report(baseOffset);
-            return;
-        }
-
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {

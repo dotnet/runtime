@@ -830,9 +830,7 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 		case MONO_MARSHAL_CONV_NONE: {
 			int t;
 
-			//XXX a byref field!?!? that's not allowed! and worse, it might miss a WB
-			g_assert (!m_type_is_byref (ftype));
-			if (ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U) {
+			if (m_type_is_byref (ftype) || ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U) {
 				mono_mb_emit_ldloc (mb, 1);
 				mono_mb_emit_ldloc (mb, 0);
 				mono_mb_emit_byte (mb, CEE_LDIND_I);

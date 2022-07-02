@@ -18,13 +18,13 @@ namespace ILCompiler.IBC
         public override string ToString()
         {
             return
-                $"""
-                FormatVersion: {FormatVersion}
-                Runtime:       {Runtime}
-                Os:            {Os}
-                Arch:          {Arch}
+$@"
+FormatVersion: {FormatVersion}
+Runtime:       {Runtime}
+Os:            {Os}
+Arch:          {Arch}
 
-                """;
+";
         }
 
         public static MibcConfig FromKeyValueMap(Dictionary<string, string> kvMap)
