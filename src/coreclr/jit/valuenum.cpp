@@ -6798,7 +6798,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
-                                                 GT_BITCAST,  // Elide sequential bitcasts
+                                                 GT_BITCAST,  // Needs to encode the target type.
 
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
