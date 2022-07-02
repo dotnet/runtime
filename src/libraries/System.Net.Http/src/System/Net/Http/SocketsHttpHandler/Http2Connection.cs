@@ -472,7 +472,14 @@ namespace System.Net.Http
                     frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
                     if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
                     {
-                        ThrowProtocolError();
+                        if (frameHeader.Type == FrameType.GoAway)
+                        {
+                            throw ProcessGoAwayFrame(frameHeader);
+                        }
+                        else
+                        {
+                            ThrowProtocolError();
+                        }
                     }
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
@@ -997,7 +1004,7 @@ namespace System.Net.Http
             http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: canRetry);
         }
 
-        private void ProcessGoAwayFrame(FrameHeader frameHeader)
+        private Exception ProcessGoAwayFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.GoAway);
 
@@ -1045,6 +1052,8 @@ namespace System.Net.Http
             {
                 s.OnReset(resetException, canRetry: true);
             }
+
+            return resetException;
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>

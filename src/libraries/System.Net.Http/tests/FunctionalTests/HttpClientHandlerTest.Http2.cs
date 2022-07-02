@@ -129,6 +129,33 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        public async Task Http2_StreamResetByServerBeforePrefix_RequestFailsWithGoawayProtocolError()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                Http2LoopbackConnection connection = await server.AcceptConnectionAsync(timeout: null);
+                _ = await connection.ReadSettingsAsync();
+
+                GoAwayFrame goAwayFrame = new GoAwayFrame(lastStreamId: 0, (int)ProtocolErrors.HTTP_1_1_REQUIRED, additionalDebugData: Array.Empty<byte>(), streamId: 0);
+                await connection.WriteFrameAsync(goAwayFrame);
+
+                // Expect client to detect that server has disconnected and throw an exception
+                var exception = await Assert.ThrowsAnyAsync<HttpRequestException>(() =>
+                    new Task[]
+                    {
+                        sendTask
+                    }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
+
+                var protocolException = Assert.IsType<HttpProtocolException>(exception.InnerException.InnerException);
+                Assert.Equal((long)ProtocolErrors.HTTP_1_1_REQUIRED, protocolException.ErrorCode);
+            }
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_NoResponseBody_Success()
