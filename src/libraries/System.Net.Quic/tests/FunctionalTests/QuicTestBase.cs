@@ -73,8 +73,6 @@ namespace System.Net.Quic.Tests
         {
             return new QuicClientConnectionOptions()
             {
-                MaxBidirectionalStreams = 1,
-                MaxUnidirectionalStreams = 1,
                 RemoteEndPoint = endpoint,
                 ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
             };
@@ -130,6 +128,10 @@ namespace System.Net.Quic.Tests
                     RemoteEndPoint = listener.LocalEndPoint,
                     ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
                 };
+                if (clientOptions.RemoteEndPoint is IPEndPoint iPEndPoint && !iPEndPoint.Equals(listener.LocalEndPoint))
+                {
+                    clientOptions.RemoteEndPoint = listener.LocalEndPoint;
+                }
                 return await CreateConnectedQuicConnection(clientOptions, listener);
             }
         }
@@ -147,6 +149,10 @@ namespace System.Net.Quic.Tests
             }
 
             clientOptions ??= CreateQuicClientOptions(listener.LocalEndPoint);
+            if (clientOptions.RemoteEndPoint is IPEndPoint iPEndPoint && !iPEndPoint.Equals(listener.LocalEndPoint))
+            {
+                clientOptions.RemoteEndPoint = listener.LocalEndPoint;
+            }
 
             QuicConnection clientConnection = null;
             ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();

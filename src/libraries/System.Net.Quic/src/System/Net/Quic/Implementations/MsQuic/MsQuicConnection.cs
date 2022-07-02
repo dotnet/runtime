@@ -33,6 +33,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         private readonly State _state = new State();
         private int _disposed;
 
+        private bool _canAccept;
+
         private IPEndPoint? _localEndPoint;
         private readonly EndPoint _remoteEndPoint;
         private SslApplicationProtocol _negotiatedAlpnProtocol;
@@ -157,6 +159,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ArgumentNullException.ThrowIfNull(options.RemoteEndPoint, nameof(options.RemoteEndPoint));
 
+            _canAccept = options.MaxBidirectionalStreams > 0 || options.MaxUnidirectionalStreams > 0;
             _remoteEndPoint = options.RemoteEndPoint;
             _configuration = SafeMsQuicConfigurationHandle.Create(options);
             _state.RemoteCertificateRequired = true;
@@ -396,6 +399,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
+            if (!_canAccept)
+            {
+                throw new InvalidOperationException(SR.net_quic_accept_not_allowed);
+            }
+
             MsQuicStream stream;
 
             try
@@ -560,13 +568,23 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.ConnectTcs.TryInitialize(out var valueTask, this, cancellationToken))
             {
-                _state.RemoteCertificateRequired = options.ServerAuthenticationOptions.ClientCertificateRequired;
-                _state.RevocationMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
-                _state.RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
-                _configuration = SafeMsQuicConfigurationHandle.Create(options, options.ServerAuthenticationOptions, targetHost);
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
-                    _state.Handle.QuicHandle,
-                    _configuration.QuicHandle));
+                _canAccept = options.MaxBidirectionalStreams > 0 || options.MaxUnidirectionalStreams > 0;
+                _state.Connection = this;
+                try
+                {
+                    _state.RemoteCertificateRequired = options.ServerAuthenticationOptions.ClientCertificateRequired;
+                    _state.RevocationMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
+                    _state.RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
+                    _configuration = SafeMsQuicConfigurationHandle.Create(options, options.ServerAuthenticationOptions, targetHost);
+                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
+                        _state.Handle.QuicHandle,
+                        _configuration.QuicHandle));
+                }
+                catch
+                {
+                    _state.Connection = null;
+                    throw;
+                }
             }
 
             return valueTask;

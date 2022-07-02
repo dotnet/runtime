@@ -109,6 +109,9 @@ namespace System.Net.Http
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
             QuicConnection connection = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
             {
+                MaxBidirectionalStreams = 0, // Set to 100 if/when support for PUSH streams is added.
+                MaxUnidirectionalStreams = 5, // Should be enough for Control and QPack streams.
+                IdleTimeout = TimeSpan.FromMinutes(2), // To align with HttpClient default timeout.
                 RemoteEndPoint = endPoint,
                 ClientAuthenticationOptions = clientAuthenticationOptions
             }, cancellationToken).ConfigureAwait(false);

@@ -36,6 +36,8 @@ namespace System.Net.Test.Common
                 {
                     var serverOptions = new QuicServerConnectionOptions()
                     {
+                        MaxBidirectionalStreams = options.MaxBidirectionalStreams,
+                        MaxUnidirectionalStreams = options.MaxUnidirectionalStreams,
                         ServerAuthenticationOptions = new SslServerAuthenticationOptions
                         {
                             EnabledSslProtocols = options.SslProtocols,
@@ -142,7 +144,7 @@ namespace System.Net.Test.Common
 
         public Http3Options()
         {
-            MaxUnidirectionalStreams = 100;
+            MaxUnidirectionalStreams = 10;
             MaxBidirectionalStreams = 100;
             Alpn = SslApplicationProtocol.Http3.ToString();
         }

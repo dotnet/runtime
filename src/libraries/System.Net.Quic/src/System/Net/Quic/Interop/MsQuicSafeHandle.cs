@@ -6,7 +6,7 @@ using Microsoft.Quic;
 
 namespace System.Net.Quic;
 
-internal abstract unsafe class MsQuicSafeHandle : SafeHandle
+internal unsafe class MsQuicSafeHandle : SafeHandle
 {
     // The index must correspond to SafeHandleType enum value and the value must correspond to MsQuic logging abbreviation string.
     // This is used for our logging that uses the same format of object identification as MsQuic to easily correlate log events.
@@ -26,7 +26,7 @@ internal abstract unsafe class MsQuicSafeHandle : SafeHandle
 
     public QUIC_HANDLE* QuicHandle => (QUIC_HANDLE*)DangerousGetHandle();
 
-    protected MsQuicSafeHandle(QUIC_HANDLE* handle, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> releaseAction, SafeHandleType safeHandleType)
+    public MsQuicSafeHandle(QUIC_HANDLE* handle, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> releaseAction, SafeHandleType safeHandleType)
         : base((IntPtr)handle, ownsHandle: true)
     {
         _releaseAction = releaseAction;

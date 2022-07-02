@@ -34,8 +34,8 @@ namespace System.Net.Quic.Tests
         {
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-            Assert.Equal(100, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
-            Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
+            Assert.Equal(0, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
+            Assert.Equal(0, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
             serverConnection.Dispose();
             clientConnection.Dispose();
         }
@@ -53,7 +53,7 @@ namespace System.Net.Quic.Tests
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
             Assert.Equal(100, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
-            Assert.Equal(100, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
+            Assert.Equal(10, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
             Assert.Equal(10, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
             Assert.Equal(20, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
             serverConnection.Dispose();
@@ -310,7 +310,6 @@ namespace System.Net.Quic.Tests
 
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(new DnsEndPoint(destination, listener.LocalEndPoint.Port));
             clientOptions.ClientAuthenticationOptions.TargetHost = expectedName;
-            clientOptions.RemoteEndPoint = new DnsEndPoint(destination, listener.LocalEndPoint.Port);
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
             Assert.Equal(expectedName, receivedHostName);
@@ -463,7 +462,19 @@ namespace System.Net.Quic.Tests
                 ? connection.OpenUnidirectionalStreamAsync()
                 : connection.OpenBidirectionalStreamAsync();
 
-            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+
+            QuicListenerOptions listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.MaxBidirectionalStreams = 1;
+                    serverOptions.MaxUnidirectionalStreams = 1;
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
 
             // Open one stream, second call should block
@@ -492,7 +503,18 @@ namespace System.Net.Quic.Tests
                 ? connection.OpenUnidirectionalStreamAsync(token)
                 : connection.OpenBidirectionalStreamAsync(token);
 
-            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            QuicListenerOptions listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.MaxBidirectionalStreams = 1;
+                    serverOptions.MaxUnidirectionalStreams = 1;
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
 
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -551,7 +573,18 @@ namespace System.Net.Quic.Tests
                 ? connection.OpenUnidirectionalStreamAsync(token)
                 : connection.OpenBidirectionalStreamAsync(token);
 
-            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            QuicListenerOptions listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.MaxBidirectionalStreams = 1;
+                    serverOptions.MaxUnidirectionalStreams = 1;
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
 
             // Open one stream, second call should block

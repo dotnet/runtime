@@ -256,7 +256,10 @@ namespace System.Net.Quic.Tests
         public async Task TestStreams()
         {
             await using QuicListener listener = await CreateQuicListener();
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
+            var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.MaxBidirectionalStreams = 1;
+            clientOptions.MaxUnidirectionalStreams = 1;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
             using (clientConnection)
             using (serverConnection)
             {
