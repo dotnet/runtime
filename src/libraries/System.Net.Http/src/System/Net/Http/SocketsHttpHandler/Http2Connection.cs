@@ -474,7 +474,8 @@ namespace System.Net.Http
                     {
                         if (frameHeader.Type == FrameType.GoAway)
                         {
-                            throw ProcessGoAwayFrame(frameHeader);
+                            Http2ProtocolErrorCode errorCode = ProcessGoAwayFrame(frameHeader);
+                            ThrowProtocolError(errorCode);
                         }
                         else
                         {
@@ -1004,7 +1005,7 @@ namespace System.Net.Http
             http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: canRetry);
         }
 
-        private Exception ProcessGoAwayFrame(FrameHeader frameHeader)
+        private Http2ProtocolErrorCode ProcessGoAwayFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.GoAway);
 
@@ -1053,7 +1054,7 @@ namespace System.Net.Http
                 s.OnReset(resetException, canRetry: true);
             }
 
-            return resetException;
+            return errorCode;
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>
