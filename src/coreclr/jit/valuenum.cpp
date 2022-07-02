@@ -6798,6 +6798,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
+                                                 GT_BITCAST,  // Elide sequential bitcasts
 
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
@@ -8737,10 +8738,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberCastTree(tree);
         }
-        else if (tree->OperGet() == GT_BITCAST)
-        {
-            fgValueNumberBitCast(tree);
-        }
         else if (tree->OperGet() == GT_INTRINSIC)
         {
             fgValueNumberIntrinsic(tree);
@@ -8938,6 +8935,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             vnStore->VNPUniqueWithExc(tree->TypeGet(),
                                                       vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
                         break;
+
+                    case GT_BITCAST:
+                    {
+                        fgValueNumberBitCast(tree);
+                        break;
+                    }
 
                     default:
                         assert(!"Unhandled node in fgValueNumberTree");
@@ -9487,16 +9490,6 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     tree->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 }
 
-void Compiler::fgValueNumberBitCast(GenTree* tree)
-{
-    assert(tree->OperGet() == GT_BITCAST);
-
-    ValueNumPair srcVNPair  = tree->gtGetOp1()->gtVNPair;
-    var_types    castToType = tree->TypeGet();
-
-    tree->gtVNPair = vnStore->VNPairForBitCast(srcVNPair, castToType);
-}
-
 // Compute the ValueNumber for a cast operation
 ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   var_types castToType,
@@ -9552,6 +9545,29 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
 }
 
 //------------------------------------------------------------------------
+// fgValueNumberBitCast: Value number a bitcast.
+//
+// Arguments:
+//    tree - The tree performing the bitcast
+//
+void Compiler::fgValueNumberBitCast(GenTree* tree)
+{
+    assert(tree->OperGet() == GT_BITCAST);
+
+    ValueNumPair srcVNPair  = tree->gtGetOp1()->gtVNPair;
+    var_types    castToType = tree->TypeGet();
+
+    ValueNumPair srcNormVNPair;
+    ValueNumPair srcExcVNPair;
+    vnStore->VNPUnpackExc(srcVNPair, &srcNormVNPair, &srcExcVNPair);
+
+    ValueNumPair resultNormVNPair = vnStore->VNPairForBitCast(srcNormVNPair, castToType);
+    ValueNumPair resultExcVNPair  = srcExcVNPair;
+
+    tree->gtVNPair = vnStore->VNPWithExc(resultNormVNPair, resultExcVNPair);
+}
+
+//------------------------------------------------------------------------
 // VNForBitCast: Get the VN representing bitwise reinterpretation of types.
 //
 // Arguments:
@@ -9604,19 +9620,22 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
 
     ValueNum resultNormVN = VNForFunc(castToType, VNF_BitCast, srcNormVN, VNForIntCon(castToType));
     ValueNum resultExcVN  = srcExcVN;
-    
+
     return VNWithExc(resultNormVN, resultExcVN);
 }
 
-// Compute the ValueNumberPair for a bitcast operation
+//------------------------------------------------------------------------
+// VNPairForBitCast: VNForBitCast applied to a ValueNumPair.
+//
 ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType)
 {
-    ValueNum srcLibVN     = srcVNPair.GetLiberal();
-    ValueNum srcConVN     = srcVNPair.GetConservative();
+    ValueNum srcLibVN = srcVNPair.GetLiberal();
+    ValueNum srcConVN = srcVNPair.GetConservative();
+
     ValueNum bitCastLibVN = VNForBitCast(srcLibVN, castToType);
     ValueNum bitCastConVN = VNForBitCast(srcConVN, castToType);
 
-    return {bitCastLibVN, bitCastConVN};
+    return ValueNumPair(bitCastLibVN, bitCastConVN);
 }
 
 void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc)

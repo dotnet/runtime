@@ -4919,7 +4919,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (op1->IsCnsFltOrDbl())
                 {
                     double f64Cns = op1->AsDblCon()->gtDconVal;
-                    retNode = gtNewLconNode(*(int64_t*)&f64Cns);
+                    retNode = gtNewLconNode(*reinterpret_cast<int64_t*>(&f64Cns));
                 }
 #if TARGET_64BIT
                 else
@@ -4944,7 +4944,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (op1->IsIntegralConst())
                 {
                     int32_t i32Cns = (int32_t)op1->AsIntConCommon()->IconValue();
-                    retNode = gtNewDconNode(*(float*)&i32Cns, TYP_FLOAT);
+                    retNode = gtNewDconNode(*reinterpret_cast<float*>(&i32Cns), TYP_FLOAT);
                 }
                 else
                 {
@@ -4961,7 +4961,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (op1->IsIntegralConst())
                 {
                     int64_t i64Cns = op1->AsIntConCommon()->LngValue();
-                    retNode = gtNewDconNode(*(double*)&i64Cns);
+                    retNode = gtNewDconNode(*reinterpret_cast<double*>(&i64Cns));
                 }
 #if TARGET_64BIT
                 else
@@ -4981,7 +4981,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (op1->IsCnsFltOrDbl())
                 {
                     float f32Cns = (float)op1->AsDblCon()->gtDconVal;
-                    retNode = gtNewIconNode(*(int32_t*)&f32Cns);
+                    retNode = gtNewIconNode(*reinterpret_cast<int32_t*>(&f32Cns));
                 }
                 else
                 {
