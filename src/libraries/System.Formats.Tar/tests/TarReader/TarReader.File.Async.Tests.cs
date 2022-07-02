@@ -5,11 +5,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public class TarReader_File_Tests : TarReader_File_Tests_Base
+    public class TarReader_File_Async_Tests : TarReader_File_Tests_Async_Base
     {
         [Theory]
         [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
@@ -17,8 +18,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_File(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_File_Internal(format, testFormat);
+        public Task Read_Archive_File_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_File_Async_Internal(format, testFormat);
 
         [Theory]
         [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
@@ -26,8 +27,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_File_HardLink(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_File_HardLink_Internal(format, testFormat);
+        public Task Read_Archive_File_HardLink_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_File_HardLink_Async_Internal(format, testFormat);
 
         [Theory]
         [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
@@ -35,8 +36,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_File_SymbolicLink(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_File_SymbolicLink_Internal(format, testFormat);
+        public Task Read_Archive_File_SymbolicLink_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_File_SymbolicLink_Async_Internal(format, testFormat);
 
         [Theory]
         [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
@@ -44,8 +45,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_Folder_File(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_Folder_File_Internal(format, testFormat);
+        public Task Read_Archive_Folder_File_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_Folder_File_Async_Internal(format, testFormat);
 
         [Theory]
         [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
@@ -53,8 +54,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_Folder_File_Utf8(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_Folder_File_Utf8_Internal(format, testFormat);
+        public Task Read_Archive_Folder_File_Utf8_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_Folder_File_Utf8_Async_Internal(format, testFormat);
 
         [Theory]
         [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
@@ -62,8 +63,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_Folder_Subfolder_File(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_Folder_Subfolder_File_Internal(format, testFormat);
+        public Task Read_Archive_Folder_Subfolder_File_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_Folder_Subfolder_File_Async_Internal(format, testFormat);
 
         [Theory]
         [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
@@ -71,8 +72,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_FolderSymbolicLink_Folder_Subfolder_File(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_FolderSymbolicLink_Folder_Subfolder_File_Internal(format, testFormat);
+        public Task Read_Archive_FolderSymbolicLink_Folder_Subfolder_File_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_FolderSymbolicLink_Folder_Subfolder_File_Async_Internal(format, testFormat);
 
         [Theory]
         [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
@@ -80,8 +81,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_Many_Small_Files(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_Many_Small_Files_Internal(format, testFormat);
+        public Task Read_Archive_Many_Small_Files_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_Many_Small_Files_Async_Internal(format, testFormat);
 
         [Theory]
         // V7 does not support longer filenames
@@ -89,8 +90,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_LongPath_Splitable_Under255(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_LongPath_Splitable_Under255_Internal(format, testFormat);
+        public Task Read_Archive_LongPath_Splitable_Under255_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_LongPath_Splitable_Under255_Async_Internal(format, testFormat);
 
         [Theory]
         // V7 does not support block devices, character devices or fifos
@@ -98,31 +99,31 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_SpecialFiles(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_SpecialFiles_Internal(format, testFormat);
+        public Task Read_Archive_SpecialFiles_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_SpecialFiles_Async_Internal(format, testFormat);
 
         [Theory]
         // Neither V7 not Ustar can handle links with long target filenames
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_File_LongSymbolicLink(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_File_LongSymbolicLink_Internal(format, testFormat);
+        public Task Read_Archive_File_LongSymbolicLink_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_File_LongSymbolicLink_Async_Internal(format, testFormat);
 
         [Theory]
         // Neither V7 not Ustar can handle a path that does not have separators that can be split under 100 bytes
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_LongFileName_Over100_Under255(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_LongFileName_Over100_Under255_Internal(format, testFormat);
+        public Task Read_Archive_LongFileName_Over100_Under255_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_LongFileName_Over100_Under255_Async_Internal(format, testFormat);
 
         [Theory]
         // Neither V7 not Ustar can handle path lenghts waaaay beyond name+prefix length
         [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
         [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_LongPath_Over255(TarEntryFormat format, TestTarFormat testFormat) =>
-            Read_Archive_LongPath_Over255_Internal(format, testFormat);
+        public Task Read_Archive_LongPath_Over255_Async(TarEntryFormat format, TestTarFormat testFormat) =>
+            Read_Archive_LongPath_Over255_Async_Internal(format, testFormat);
     }
 }
