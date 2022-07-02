@@ -474,7 +474,7 @@ namespace System.Net.Http
                     {
                         if (frameHeader.Type == FrameType.GoAway)
                         {
-                            Http2ProtocolErrorCode errorCode = ProcessGoAwayFrame(frameHeader);
+                            var (_, errorCode) = ReadGoAwayFrame(frameHeader);
                             ThrowProtocolError(errorCode);
                         }
                         else
@@ -1007,23 +1007,7 @@ namespace System.Net.Http
 
         private Http2ProtocolErrorCode ProcessGoAwayFrame(FrameHeader frameHeader)
         {
-            Debug.Assert(frameHeader.Type == FrameType.GoAway);
-
-            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
-            {
-                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
-            }
-
-            if (frameHeader.StreamId != 0)
-            {
-                ThrowProtocolError();
-            }
-
-            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
-            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
-            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
-
-            _incomingBuffer.Discard(frameHeader.PayloadLength);
+            var (lastStreamId, errorCode) = ReadGoAwayFrame(frameHeader);
 
             Debug.Assert(lastStreamId >= 0);
             Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode);
@@ -1055,6 +1039,29 @@ namespace System.Net.Http
             }
 
             return errorCode;
+        }
+
+        private (int lastStreamId, Http2ProtocolErrorCode errorCode) ReadGoAwayFrame(FrameHeader frameHeader)
+        {
+            Debug.Assert(frameHeader.Type == FrameType.GoAway);
+
+            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
+            {
+                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
+            }
+
+            if (frameHeader.StreamId != 0)
+            {
+                ThrowProtocolError();
+            }
+
+            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
+            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
+            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
+
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
+
+            return (lastStreamId, errorCode);
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>
