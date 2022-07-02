@@ -79,10 +79,9 @@ HRESULT HandlesProfiler::GarbageCollectionStarted(int cGenerations, BOOL generat
 HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
 {
     // Create handles for TestClassForWeakHandle, TestClassForStrongHandle and TestClassForPinnedHandle instances
-    auto typeNameString = GetClassIDName(classId);
-    auto* typeName = typeNameString.ToCStr();
+    String typeName = GetClassIDName(classId);
     HRESULT hr = S_OK;
-    if (wcscmp(typeName, WCHAR("Profiler.Tests.TestClassForWeakHandle")) == 0)
+    if (typeName == WCHAR("Profiler.Tests.TestClassForWeakHandle"))
     {
         hr = pCorProfilerInfo->CreateHandle(objectId, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK, &_weakHandle);
         if (FAILED(hr))
@@ -92,7 +91,7 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
         }
     }
     else
-    if (wcscmp(typeName, WCHAR("Profiler.Tests.TestClassForStrongHandle")) == 0)
+    if (typeName == WCHAR("Profiler.Tests.TestClassForStrongHandle"))
     {
         hr = pCorProfilerInfo->CreateHandle(objectId, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_STRONG, &_strongHandle);
         if (FAILED(hr))
@@ -102,7 +101,7 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
         }
     }
     else
-    if (wcscmp(typeName, WCHAR("Profiler.Tests.TestClassForPinnedHandle")) == 0)
+    if (typeName == WCHAR("Profiler.Tests.TestClassForPinnedHandle"))
     {
         hr = pCorProfilerInfo->CreateHandle(objectId, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_PINNED, &_pinnedHandle);
         if (FAILED(hr))
