@@ -8316,7 +8316,7 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
-// IsFloatNaN: returns true if this is exactly a const float value representing AllBitsSet
+// IsFloatAllBitsSet: returns true if this is exactly a const float value representing AllBitsSet.
 //
 // Returns:
 //     True if this represents a const floating-point value representing AllBitsSet.
