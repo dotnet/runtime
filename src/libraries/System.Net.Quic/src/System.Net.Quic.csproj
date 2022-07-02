@@ -119,6 +119,7 @@
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />

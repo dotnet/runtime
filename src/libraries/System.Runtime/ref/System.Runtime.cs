@@ -2592,11 +2592,9 @@ namespace System
         public static System.GCNotificationStatus WaitForFullGCComplete(System.TimeSpan timeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
 
-        /// <summary>
-        /// Gets the total amount of time paused in GC since the beginning of the process.
-        /// </summary>
-        /// <returns> The total amount of time paused in GC since the beginning of the process.</returns>
         public static TimeSpan GetTotalPauseDuration() { return TimeSpan.Zero; }
+
+        public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
     }
 
     /// <summary>Specifies the behavior for a forced garbage collection.</summary>
@@ -3805,7 +3803,7 @@ namespace System
     public partial interface IParsable<TSelf> where TSelf : System.IParsable<TSelf>
     {
         static abstract TSelf Parse(string s, System.IFormatProvider? provider);
-        static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out TSelf result);
+        static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
     }
     public partial interface IProgress<in T>
     {
@@ -3818,7 +3816,7 @@ namespace System
     public partial interface ISpanParsable<TSelf> : System.IParsable<TSelf> where TSelf : System.ISpanParsable<TSelf>
     {
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider);
-        static abstract bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out TSelf result);
+        static abstract bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
     }
     public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {

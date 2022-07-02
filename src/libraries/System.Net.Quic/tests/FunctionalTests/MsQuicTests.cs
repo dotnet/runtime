@@ -255,14 +255,18 @@ namespace System.Net.Quic.Tests
             serverConnection.Dispose();
         }
 
-        [Fact]
-        public async Task ConnectWithIpSetsSni()
+        [Theory]
+        [InlineData("127.0.0.1")]
+        [InlineData("localhost")]
+        public async Task ConnectWithIpSetsSni(string destination)
         {
             X509Certificate2 certificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
             string expectedName = "foobar";
             string? receivedHostName = null;
 
             var listenerOptions = CreateQuicListenerOptions();
+            // loopback may resolve to IPv6
+            listenerOptions.ListenEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
             listenerOptions.ServerAuthenticationOptions.ServerCertificate = null;
             listenerOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, hostName) =>
             {
@@ -274,7 +278,7 @@ namespace System.Net.Quic.Tests
 
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
             clientOptions.ClientAuthenticationOptions.TargetHost = expectedName;
-            clientOptions.RemoteEndPoint = new DnsEndPoint("127.0.0.1", listener.ListenEndPoint.Port);
+            clientOptions.RemoteEndPoint = new DnsEndPoint(destination, listener.ListenEndPoint.Port);
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
             Assert.Equal(expectedName, receivedHostName);

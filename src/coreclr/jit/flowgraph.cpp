@@ -1894,7 +1894,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
         {
             // have to insert this immediately before the GT_RETURN so we transform:
             // ret(...) ->
-            // ret(comma(comma(tmp=...,call mon_exit), tmp)
+            // ret(comma(comma(tmp=...,call mon_exit), tmp))
             //
             //
             // Before morph stage, it is possible to have a case of GT_RETURN(TYP_LONG, op1) where op1's type is
@@ -3114,6 +3114,45 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
     assert(fgLastBB->bbNext == nullptr);
 
     return fgLastBB;
+}
+
+//------------------------------------------------------------------------------
+// fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
+//
+// Arguments:
+//    block - Basic block to get a dominator for
+//
+// Return Value:
+//    Basic block that dominates this block
+//
+BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
+{
+    assert(fgDomsComputed);
+    BasicBlock* lastReachablePred = nullptr;
+
+    // Check if we have unreachable preds
+    for (const flowList* predEdge : block->PredEdges())
+    {
+        BasicBlock* predBlock = predEdge->getBlock();
+        if (predBlock == block)
+        {
+            continue;
+        }
+
+        // We check pred's count of InEdges - it's quite conservative.
+        // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
+        if (predBlock->countOfInEdges() > 0)
+        {
+            if (lastReachablePred != nullptr)
+            {
+                // More than one of "reachable" preds - return cached result
+                return block->bbIDom;
+            }
+            lastReachablePred = predBlock;
+        }
+    }
+
+    return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
 }
 
 /*****************************************************************************************************

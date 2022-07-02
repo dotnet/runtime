@@ -149,14 +149,6 @@ PTR_RuntimeInstance GetRuntimeInstance()
     return g_pTheRuntimeInstance;
 }
 
-void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackData)
-{
-    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
-    {
-        iter->m_pTypeManager->EnumStaticGCRefs(pfnCallback, pvCallbackData);
-    }
-}
-
 RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 {
     return dac_cast<DPTR(OsModuleList)>(dac_cast<TADDR>(this) + offsetof(RuntimeInstance, m_OsModuleList));

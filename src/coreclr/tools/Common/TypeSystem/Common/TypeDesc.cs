@@ -285,6 +285,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsTypedReference
+        {
+            get
+            {
+                return this.IsWellKnownType(WellKnownType.TypedReference);
+            }
+        }
+
         /// <summary>
         /// Gets a value indicating whether this is a generic definition, or
         /// an instance of System.Nullable`1.

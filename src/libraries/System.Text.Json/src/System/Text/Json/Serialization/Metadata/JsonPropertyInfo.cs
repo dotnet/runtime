@@ -36,14 +36,14 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract JsonConverter EffectiveConverter { get; set; }
 
         /// <summary>
-        /// Custom converter override at the property level, equivalent to JsonConverterAttribute annotation
+        /// Custom converter override at the property level, equivalent to <see cref="JsonConverterAttribute" /> annotation.
         /// </summary>
         public JsonConverter? CustomConverter
         {
             get => _customConverter;
             set
             {
-                CheckMutable();
+                VerifyMutable();
                 _customConverter = value;
             }
         }
@@ -51,8 +51,11 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonConverter? _customConverter;
 
         /// <summary>
-        /// Getter delegate. Property cannot be serialized without it.
+        /// Gets or sets a getter delegate for the property.
         /// </summary>
+        /// <remarks>
+        /// Setting to <see langword="null"/> will result in the property being skipped on serialization.
+        /// </remarks>
         public Func<object, object?>? Get
         {
             get => _untypedGet;
@@ -60,8 +63,11 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Setter delegate. Property cannot be deserialized without it.
+        /// Gets or sets a setter delegate for the property.
         /// </summary>
+        /// <remarks>
+        /// Setting to <see langword="null"/> will result in the property being skipped on deserialization.
+        /// </remarks>
         public Action<object, object?>? Set
         {
             get => _untypedSet;
@@ -75,15 +81,22 @@ namespace System.Text.Json.Serialization.Metadata
         private protected abstract void SetSetter(Delegate? setter);
 
         /// <summary>
-        /// Decides if property with given declaring object and property value should be serialized.
-        /// If not set it is equivalent to always returning true.
+        /// Gets or sets a predicate deciding whether the current property value should be serialized.
         /// </summary>
+        /// <remarks>
+        /// The first parameter denotes the parent object, the second parameter denotes the property value.
+        ///
+        /// Setting the predicate to <see langword="null"/> is equivalent to always serializing the property value.
+        ///
+        /// When serializing using <see cref="DefaultJsonTypeInfoResolver"/>, the value of
+        /// <see cref="JsonIgnoreAttribute.Condition"/> will map to this predicate.
+        /// </remarks>
         public Func<object, object?, bool>? ShouldSerialize
         {
             get => _shouldSerialize;
             set
             {
-                CheckMutable();
+                VerifyMutable();
                 _shouldSerialize = value;
                 // By default we will go through faster path (not using delegate) and use IgnoreCondition
                 // If users sets it explicitly we always go through delegate
@@ -116,11 +129,11 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Type associated with JsonPropertyInfo
+        /// Gets the type of the current property metadata.
         /// </summary>
         public Type PropertyType { get; private protected set; } = null!;
 
-        private protected void CheckMutable()
+        private protected void VerifyMutable()
         {
             if (_isConfigured)
             {
@@ -184,13 +197,13 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(MemberInfo != null);
             DeterminePropertyName();
 
-            JsonPropertyOrderAttribute? orderAttr = GetAttribute<JsonPropertyOrderAttribute>(MemberInfo);
+            JsonPropertyOrderAttribute? orderAttr = MemberInfo.GetCustomAttribute<JsonPropertyOrderAttribute>(inherit: false);
             if (orderAttr != null)
             {
                 Order = orderAttr.Order;
             }
 
-            JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
+            JsonNumberHandlingAttribute? attribute = MemberInfo.GetCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             NumberHandling = attribute?.Handling;
         }
 
@@ -200,7 +213,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             ClrName = MemberInfo.Name;
 
-            JsonPropertyNameAttribute? nameAttribute = GetAttribute<JsonPropertyNameAttribute>(MemberInfo);
+            JsonPropertyNameAttribute? nameAttribute = MemberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
             if (nameAttribute != null)
             {
                 string name = nameAttribute.Name;
@@ -428,11 +441,6 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
-        internal static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
-        {
-            return (TAttribute?)memberInfo.GetCustomAttribute(typeof(TAttribute), inherit: false);
-        }
-
         internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         internal abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
@@ -486,17 +494,19 @@ namespace System.Text.Json.Serialization.Metadata
         // 3) EscapedNameSection. The escaped verson of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
 
         /// <summary>
-        /// The name of the property.
-        /// It is either the actual .NET property name,
-        /// the value specified in JsonPropertyNameAttribute,
-        /// or the value returned from PropertyNamingPolicy.
+        /// Gets or sets the JSON property name used when serializing the property.
         /// </summary>
+        /// <remarks>
+        /// This typically reflects the underlying .NET member name,
+        /// the name derived from <see cref="JsonSerializerOptions.PropertyNamingPolicy" />,
+        /// or the value specified in <see cref="JsonPropertyNameAttribute" />,
+        /// </remarks>
         public string Name
         {
             get => _name;
             set
             {
-                CheckMutable();
+                VerifyMutable();
 
                 if (value == null)
                 {
@@ -525,9 +535,23 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonSerializerOptions Options { get; internal set; } = null!; // initialized in Init method
 
         /// <summary>
-        /// The property order.
+        /// Gets or sets the serialization order for the current property.
         /// </summary>
-        internal int Order { get; set; }
+        /// <remarks>
+        /// When using <see cref="DefaultJsonTypeInfoResolver"/>, properties annotated
+        /// with the <see cref="JsonPropertyOrderAttribute"/> will map to this value.
+        /// </remarks>
+        internal int Order
+        {
+            get => _order;
+            set
+            {
+                VerifyMutable();
+                _order = value;
+            }
+        }
+
+        private int _order;
 
         internal bool ReadJsonAndAddExtensionProperty(
             object obj,
@@ -594,7 +618,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
-            Debug.Assert(this == state.Current.JsonTypeInfo.DataExtensionProperty);
+            Debug.Assert(this == state.Current.JsonTypeInfo.ExtensionDataProperty);
 
             if (JsonTypeInfo.ElementType == JsonTypeInfo.ObjectType && reader.TokenType == JsonTokenType.Null)
             {
@@ -695,7 +719,7 @@ namespace System.Text.Json.Serialization.Metadata
             get => _numberHandling;
             set
             {
-                CheckMutable();
+                VerifyMutable();
                 _numberHandling = value;
             }
         }

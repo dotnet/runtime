@@ -134,6 +134,10 @@ namespace System.Linq
         public static System.Linq.IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
         public static System.Linq.IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector) { throw null; }
         public static System.Linq.IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, TKey>> keySelector, System.Collections.Generic.IComparer<TKey>? comparer) { throw null; }
+        public static System.Linq.IOrderedQueryable<T> OrderDescending<T>(this System.Linq.IQueryable<T> source) { throw null; }
+        public static System.Linq.IOrderedQueryable<T> OrderDescending<T>(this System.Linq.IQueryable<T> source, System.Collections.Generic.IComparer<T> comparer) { throw null; }
+        public static System.Linq.IOrderedQueryable<T> Order<T>(this System.Linq.IQueryable<T> source) { throw null; }
+        public static System.Linq.IOrderedQueryable<T> Order<T>(this System.Linq.IQueryable<T> source, System.Collections.Generic.IComparer<T> comparer) { throw null; }
         public static System.Linq.IQueryable<TSource> Prepend<TSource>(this System.Linq.IQueryable<TSource> source, TSource element) { throw null; }
         public static System.Linq.IQueryable<TSource> Reverse<TSource>(this System.Linq.IQueryable<TSource> source) { throw null; }
         public static System.Linq.IQueryable<TResult> SelectMany<TSource, TResult>(this System.Linq.IQueryable<TSource> source, System.Linq.Expressions.Expression<System.Func<TSource, System.Collections.Generic.IEnumerable<TResult>>> selector) { throw null; }

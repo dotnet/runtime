@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using Xunit.Sdk;
+using Xunit.Abstractions;
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 
@@ -16,6 +16,8 @@ namespace DebuggerTests
 
     public class MiscTests : DebuggerTests
     {
+        public MiscTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
         [Fact]
         public void CheckThatAllSourcesAreSent()
@@ -525,7 +527,7 @@ namespace DebuggerTests
                 $"'{entry_method_name}'," +
                 (call_other ? "true" : "false") +
                 "); }, 1);";
-            Console.WriteLine($"{eval_expr}");
+            _testOutput.WriteLine($"{eval_expr}");
 
             var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, invoke_async ? "MoveNext" : method_name);
 
@@ -971,6 +973,28 @@ namespace DebuggerTests
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 "Evaluate");
+        }
+
+        [Fact] 
+        public async Task InspectPropertiesOfObjectFromLibraryWithPdbDeleted()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] DebugWithoutSymbols:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1146, 8,
+                "Run",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var exc_props = await GetObjectOnFrame(pause_location["callFrames"][0], "exc");
+                    await CheckProps(exc_props, new
+                    {
+                        propA = TNumber(10),
+                        propB = TNumber(20),
+                        propC = TNumber(30)
+                    }, "exc");
+                }
+            );
         }
     }
 }
