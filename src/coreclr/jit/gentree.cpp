@@ -18324,7 +18324,9 @@ FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fiel
     assert(JitTls::GetCompiler()->eeIsFieldStatic(fieldHnd) == IsStaticField());
     if (fieldKind == FieldKind::Instance)
     {
-        assert(static_cast<ssize_t>(JitTls::GetCompiler()->info.compCompHnd->getFieldOffset(fieldHnd)) == offset);
+        // TODO: enable this assert. At the time of writing, crossgen2 had a bug where the value "getFieldOffset"
+        // would return for fields with an offset unknown at compile time was incorrect (not zero).
+        // assert(static_cast<ssize_t>(JitTls::GetCompiler()->info.compCompHnd->getFieldOffset(fieldHnd)) == offset);
     }
 }
 
