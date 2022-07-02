@@ -19,19 +19,19 @@
 
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
-    <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" Private="true"/>
-    <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" Private="true" />
+    <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" ReferenceOutputAssembly="false" Private="true" />
     <!-- loaded by *tests*, and not the test app -->
-    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" SkipUseReferenceAssembly="true" Private="true" />
+    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" ReferenceOutputAssembly="false" Private="true" />
 
     <!-- These are only loaded dynamically -->
-    <_AssemblyOnlyInVFS Include="lazy-debugger-test" />
-    <_AssemblyOnlyInVFS Include="debugger-test-with-full-debug-type" />
-    <_AssemblyOnlyInVFS Include="debugger-test-with-pdb-deleted" />
-    <_AssemblyOnlyInVFS Include="debugger-test-without-debug-symbols" />
-    <_AssemblyOnlyInVFS Include="library-dependency-debugger-test1" />
-    <_AssemblyOnlyInVFS Include="library-dependency-debugger-test2" />
-    <ProjectReference Include="@(_AssemblyOnlyInVFS -> '../%(Identity)/%(Identity).csproj')" SkipUseReferenceAssembly="true" />
+    <_AssemblyForDynamicLoading Include="lazy-debugger-test" />
+    <_AssemblyForDynamicLoading Include="debugger-test-with-full-debug-type" />
+    <_AssemblyForDynamicLoading Include="debugger-test-with-pdb-deleted" />
+    <_AssemblyForDynamicLoading Include="debugger-test-without-debug-symbols" />
+    <_AssemblyForDynamicLoading Include="library-dependency-debugger-test1" />
+    <_AssemblyForDynamicLoading Include="library-dependency-debugger-test2" />
+    <ProjectReference Include="@(_AssemblyForDynamicLoading -> '../%(Identity)/%(Identity).csproj')" ReferenceOutputAssembly="false" Private="true" />
   </ItemGroup>
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="Build">
@@ -55,9 +55,12 @@
       <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
 
       <!-- Assemblies only dynamically loaded -->
-      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\%(_AssemblyOnlyInVFS.Identity).dll" />
+      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\%(_AssemblyForDynamicLoading.Identity).dll" />
 
+      <WasmExtraFilesToDeploy Include="$(OutDir)\%(_AssemblyForDynamicLoading.Identity).*" />
+      <WasmExtraFilesToDeploy Include="$(OutDir)\lazy-debugger-test-embedded.*" />
       <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
+
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
     </ItemGroup>
