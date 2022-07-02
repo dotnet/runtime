@@ -42,6 +42,8 @@ namespace System.Text.RegularExpressions
 
         private delegate int OneToOneNodeMapping<T>(TrieBuilder builder, int nodeIndex, T state, out bool canContinue);
 
+        private delegate NodeCollection ManyToManyNodeMapping<T>(TrieBuilder builder, NodeCollection nodes, T state, out bool canContinue);
+
         public TrieBuilder(RegexNode regexNode)
         {
 #if !REGEXGENERATOR
@@ -89,12 +91,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
         /// <param name="nodes">The input <see cref="NodeCollection"/>.</param>
-        /// <param name="state">A parameter passed to <paramref name="func"/>.</param>
-        /// <param name="func">A function that accepts this trie, a node index of <paramref name="nodes"/>,
+        /// <param name="state">A parameter passed to <paramref name="fAdd"/>.</param>
+        /// <param name="fAdd">A function that accepts this trie, a node index of <paramref name="nodes"/>,
         /// <paramref name="state"/>, and returns a new node index. Typically it would call either
         /// <see cref="Add(TrieBuilder, int, char, out bool)"/> or <see cref="Add(TrieBuilder, int, string, out bool)"/>.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can continue past this transformation.</param>
-        private NodeCollection AddOneToOneHelper<T>(NodeCollection nodes, T state, OneToOneNodeMapping<T> func, out bool canContinue)
+        private NodeCollection AddOneToOneHelper<T>(NodeCollection nodes, T state, OneToOneNodeMapping<T> fAdd, out bool canContinue)
         {
             int count = nodes.Count;
             switch (count)
@@ -103,7 +105,7 @@ namespace System.Text.RegularExpressions
                     canContinue = false;
                     return NodeCollection.Empty;
                 case 1:
-                    int newNode = func(this, nodes[0], state, out canContinue);
+                    int newNode = fAdd(this, nodes[0], state, out canContinue);
                     return new NodeCollection(newNode);
                 default:
                     canContinue = false;
@@ -115,7 +117,7 @@ namespace System.Text.RegularExpressions
                     List<int> result = new List<int>(count);
                     for (int i = 0; i < count; i++)
                     {
-                        newNode = func(this, nodes[i], state, out bool canContinueInner);
+                        newNode = fAdd(this, nodes[i], state, out bool canContinueInner);
                         if (!visited.Add(newNode))
                         {
                             continue;
@@ -267,6 +269,60 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
+        /// A helper method that applies a one-to-one transformation in a <see cref="NodeCollection"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of <paramref name="state"/>.</typeparam>
+        /// <param name="nodes">The input <see cref="NodeCollection"/>.</param>
+        /// <param name="regexNode">The <see cref="RegexNode"/> of the loop.</param>
+        /// <param name="state">A parameter passed to <paramref name="fAdd"/>.</param>
+        /// <param name="fAdd">A function that accepts this trie builder, <paramref name="nodes"/>,
+        /// <paramref name="state"/>, and returns a new node collection.</param>
+        /// <param name="canContinue">Returns whether the traversal algorithm can continue past this transformation.</param>
+        private NodeCollection AddLoopHelper<T>(NodeCollection nodes, RegexNode regexNode, T state, ManyToManyNodeMapping<T> fAdd, out bool canContinue)
+        {
+            switch (regexNode.M, regexNode.N)
+            {
+                case (0, 1):
+                    // We can process patterns of the form "x?" by handling if x was present and if it was not.
+                    // We first add it to the trie.
+                    NodeCollection resultIfExists = fAdd(this, nodes, state, out bool canContinueIfExists);
+                    // We can always continue by taking the case of x not being present.
+                    canContinue = true;
+                    if (canContinueIfExists)
+                    {
+                        // If x continues we combine the node collections both with and without x.
+                        return new NodeCollection(new NodeCollection[] { nodes, resultIfExists });
+                    }
+                    else
+                    {
+                        // If x doesn't continue, we accept the node collection with it, and return the one without it.
+                        AcceptMatches(resultIfExists);
+                        return nodes;
+                    }
+                case (0, _):
+                    // min being 0 means that the loop is of the form x* or x{0,k}.
+                    // We can't extract a fixed part from that so we can't continue.
+                    canContinue = false;
+                    return nodes;
+                case (int min, int max):
+                    // a{3,} for example is equivalent to aaaa*. The first three a's can be
+                    // added to the trie.
+                    canContinue = true;
+                    for (int i = 0; i < max && canContinue; i++)
+                    {
+                        nodes = fAdd(this, nodes, state, out canContinue);
+                    }
+                    // If we managed to walk through all repetitions and the loop's count is fixed
+                    // (like a{3}), we can continue past it. If it isn't we would have to handle all
+                    // repetition cases (like aaaa, aaaaa and aaaaaa if we had a{3,6}); doesn't seem
+                    // a good idea, it is prone to exploding the trie node count, and the trie is used
+                    // for fixed patterns.
+                    canContinue &= min == max;
+                    return nodes;
+            }
+        }
+
+        /// <summary>
         /// Adds the fixed part of the given <see cref="RegexNode"/> after the nodes in the given <see cref="NodeCollection"/>.
         /// </summary>
         /// <param name="nodes">The collection of nodes.</param>
@@ -313,59 +369,23 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Set:
                     return AddSet(nodes, regexNode.Str!, out canContinue);
                 case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
-                    // These remarks also apply to the rest of the loop types.
-                    int min = regexNode.M;
-                    int max = regexNode.N;
-                    // min being 0 means that the loop is of the form x*.
-                    // We can't extract a fixed part from that so the traversal stops here.
-                    if (min == 0)
+                    static NodeCollection AddCharHelper(TrieBuilder builder, NodeCollection nodes, char c, out bool canContinue)
                     {
-                        goto End;
+                        return builder.Add(nodes, c, out canContinue);
                     }
-                    // a{3,} for example is equivalent to aaaa*. The first three a's can be
-                    // added to the trie.
-                    canContinue = true;
-                    for (int i = 0; i < min && canContinue; i++)
-                    {
-                        nodes = Add(nodes, regexNode.Ch, out canContinue);
-                    }
-                    // If the repetition count is fixed (like a{3}), we can continue past it.
-                    // If it isn't we would have to handle all repetition cases (like aaaa,
-                    // aaaaa and aaaaaa if we had a{3,6}); let's not do that yet.
-                    canContinue = min == max;
-                    return nodes;
+                    return AddLoopHelper(nodes, regexNode, regexNode.Ch, AddCharHelper, out canContinue);
                 case RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy:
-                    min = regexNode.M;
-                    max = regexNode.N;
-                    if (min == 0)
+                    static NodeCollection AddSetHelper(TrieBuilder builder, NodeCollection nodes, string setString, out bool canContinue)
                     {
-                        goto End;
+                        return builder.AddSet(nodes, setString, out canContinue);
                     }
-                    canContinue = true;
-                    for (int i = 0; i < min && canContinue; i++)
-                    {
-                        nodes = AddSet(nodes, regexNode.Str!, out canContinue);
-                    }
-                    // Traversing items of set loops (and the more general kinds of loops below) might
-                    // signal us that we should stop. So to continue we need both to successfully pass
-                    // through all counts of the loops, and the loop's count to be fixed.
-                    canContinue &= min == max;
-                    return nodes;
+                    return AddLoopHelper(nodes, regexNode, regexNode.Str!, AddSetHelper, out canContinue);
                 case RegexNodeKind.Loop or RegexNodeKind.Lazyloop:
-                    min = regexNode.M;
-                    max = regexNode.N;
-                    RegexNode loopItem = regexNode.Child(0);
-                    if (min == 0)
+                    static NodeCollection AddRegexNodeHelper(TrieBuilder builder, NodeCollection nodes, RegexNode regexNode, out bool canContinue)
                     {
-                        goto End;
+                        return builder.Add(nodes, regexNode, out canContinue);
                     }
-                    canContinue = true;
-                    for (int i = 0; i < min && canContinue; i++)
-                    {
-                        nodes = Add(nodes, loopItem, out canContinue);
-                    }
-                    canContinue &= min == max;
-                    return nodes;
+                    return AddLoopHelper(nodes, regexNode, regexNode, AddRegexNodeHelper, out canContinue);
                 case RegexNodeKind.Concatenate:
                     int childCount = regexNode.ChildCount();
                     canContinue = true;
