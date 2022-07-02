@@ -42,6 +42,14 @@ namespace System.Net.Quic.Tests
             return true;
         }
 
+        public QuicServerConnectionOptions CreateQuicServerOptions()
+        {
+            return new QuicServerConnectionOptions()
+            {
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+            };
+        }
+
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
@@ -61,18 +69,20 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        public QuicClientConnectionOptions CreateQuicClientOptions()
+        public QuicClientConnectionOptions CreateQuicClientOptions(EndPoint endpoint)
         {
             return new QuicClientConnectionOptions()
             {
+                MaxBidirectionalStreams = 1,
+                MaxUnidirectionalStreams = 1,
+                RemoteEndPoint = endpoint,
                 ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
             };
         }
 
         internal ValueTask<QuicConnection> CreateQuicConnection(IPEndPoint endpoint)
         {
-            var options = CreateQuicClientOptions();
-            options.RemoteEndPoint = endpoint;
+            var options = CreateQuicClientOptions(endpoint);
             return CreateQuicConnection(options);
         }
 
@@ -86,16 +96,14 @@ namespace System.Net.Quic.Tests
             return new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
             };
         }
 
         internal ValueTask<QuicListener> CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
         {
             var options = CreateQuicListenerOptions();
-            options.MaxUnidirectionalStreams = maxUnidirectionalStreams;
-            options.MaxBidirectionalStreams = maxBidirectionalStreams;
-
             return CreateQuicListener(options);
         }
 
@@ -104,7 +112,8 @@ namespace System.Net.Quic.Tests
             var options = new QuicListenerOptions()
             {
                 ListenEndPoint = endpoint,
-                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
             };
             return CreateQuicListener(options);
         }
@@ -114,13 +123,13 @@ namespace System.Net.Quic.Tests
         internal Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicListener listener) => CreateConnectedQuicConnection(null, listener);
         internal async Task<(QuicConnection, QuicConnection)> CreateConnectedQuicConnection(QuicClientConnectionOptions? clientOptions, QuicListenerOptions listenerOptions)
         {
-            using (QuicListener listener = await CreateQuicListener(listenerOptions))
+            await using (QuicListener listener = await CreateQuicListener(listenerOptions))
             {
                 clientOptions ??= new QuicClientConnectionOptions()
                 {
+                    RemoteEndPoint = listener.LocalEndPoint,
                     ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
                 };
-                clientOptions.RemoteEndPoint = listener.ListenEndPoint;
                 return await CreateConnectedQuicConnection(clientOptions, listener);
             }
         }
@@ -137,11 +146,7 @@ namespace System.Net.Quic.Tests
                 disposeListener = true;
             }
 
-            clientOptions ??= CreateQuicClientOptions();
-            if (clientOptions.RemoteEndPoint == null)
-            {
-                clientOptions.RemoteEndPoint = listener.ListenEndPoint;
-            }
+            clientOptions ??= CreateQuicClientOptions(listener.LocalEndPoint);
 
             QuicConnection clientConnection = null;
             ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
@@ -171,7 +176,7 @@ namespace System.Net.Quic.Tests
             QuicConnection serverConnection = await serverTask.ConfigureAwait(false);
             if (disposeListener)
             {
-                listener.Dispose();
+                await listener.DisposeAsync();
             }
 
             Assert.True(serverConnection.Connected);
@@ -215,7 +220,7 @@ namespace System.Net.Quic.Tests
             const long ClientCloseErrorCode = 11111;
             const long ServerCloseErrorCode = 22222;
 
-            using QuicListener listener = await CreateQuicListener(listenerOptions ?? CreateQuicListenerOptions());
+            await using QuicListener listener = await CreateQuicListener(listenerOptions ?? CreateQuicListenerOptions());
 
             using var serverFinished = new SemaphoreSlim(0);
             using var clientFinished = new SemaphoreSlim(0);

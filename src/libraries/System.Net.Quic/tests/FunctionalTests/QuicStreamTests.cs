@@ -255,15 +255,15 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task TestStreams()
         {
-            using QuicListener listener = await CreateQuicListener();
+            await using QuicListener listener = await CreateQuicListener();
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
             using (clientConnection)
             using (serverConnection)
             {
                 Assert.True(clientConnection.Connected);
                 Assert.True(serverConnection.Connected);
-                Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
-                Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+                Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
+                Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
                 Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
 
                 await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
