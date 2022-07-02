@@ -75,24 +75,12 @@ mono_type_is_native_blittable (MonoType *t)
 MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	const char* cmethod_klass_name_space = m_class_get_name_space (cmethod->klass);
-	const char* cmethod_klass_name = m_class_get_name (cmethod->klass);
-	MonoImage *cmethod_klass_image = m_class_get_image (cmethod->klass);
-	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;
 	MonoInst *ins = NULL;
 
 	/* Required intrinsics are always used even with -O=-intrins */
-	if (in_corlib &&
-		!strcmp (cmethod_klass_name_space, "System") &&
-		!strcmp (cmethod_klass_name, "ByReference")) {
-		/* public ByReference(ref T value) */
-		g_assert (fsig->hasthis && fsig->param_count == 1);
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [0]->dreg, 0, args [1]->dreg);
-		return ins;
-	}
 
 	if (!(cfg->opt & MONO_OPT_INTRINS))
-		return NULL;
+		return ins;
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
@@ -102,7 +90,7 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	}
 #endif
 
-	return NULL;
+	return ins;
 }
 
 static MonoInst*

@@ -5549,18 +5549,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 				td->last_ins->info.call_args = call_args;
 			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
-					!strcmp (m_class_get_name (m->klass), "ByReference") &&
-					!strcmp (m->name, ".ctor")) {
-				/* public ByReference(ref T value) */
-				MONO_PROFILER_RAISE (inline_method, (td->rtm->method, m));
-				g_assert (csignature->hasthis && csignature->param_count == 1);
-				td->sp--;
-				/* We already have the vt on top of the stack. Just do a dummy mov that should be optimized out */
-				interp_add_ins (td, MINT_MOV_P);
-				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-				push_type_vt (td, klass, mono_class_value_size (klass, NULL));
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 					(!strcmp (m_class_get_name (m->klass), "Span`1") ||
 					!strcmp (m_class_get_name (m->klass), "ReadOnlySpan`1")) &&
 					csignature->param_count == 2 &&
