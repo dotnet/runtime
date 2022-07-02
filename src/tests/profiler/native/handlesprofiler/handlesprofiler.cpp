@@ -32,7 +32,7 @@ HRESULT HandlesProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_OBJECT_ALLOCATED, COR_PRF_HIGH_BASIC_GC)))
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_ENABLE_OBJECT_ALLOCATED || COR_PRF_MONITOR_OBJECT_ALLOCATED, COR_PRF_HIGH_BASIC_GC | COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED | COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED)))
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
@@ -80,7 +80,13 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
 {
     // Create handles for TestClassForWeakHandle, TestClassForStrongHandle and TestClassForPinnedHandle instances
     String typeName = GetClassIDName(classId);
+    //wprintf(L"HandlesProfiler::ObjectAllocated: + %s\n", typeName.ToCStr());
+
     HRESULT hr = S_OK;
+    if (typeName == WCHAR("Profiler.Tests.HandlesTests.Objects"))
+    {
+        printf("HandlesProfiler::ObjectAllocated: objects holder\n");
+    }
     if (typeName == WCHAR("Profiler.Tests.TestClassForWeakHandle"))
     {
         hr = pCorProfilerInfo->CreateHandle(objectId, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK, &_weakHandle);
@@ -115,31 +121,38 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
 
 void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
 {
-        ObjectID objectId{0};
-        HRESULT hr = pCorProfilerInfo->GetObjectIDFromHandle(handle, &objectId);
-        if (FAILED(hr))
+    if (handle == NULL)
+    {
+        _failures++;
+        printf("HandlesProfiler::CheckIfAlive: FAIL: null handle.\n");
+        return;
+    }
+
+    ObjectID objectId{0};
+    HRESULT hr = pCorProfilerInfo->GetObjectIDFromHandle(handle, &objectId);
+    if (FAILED(hr))
+    {
+        _failures++;
+        printf("HandlesProfiler::CheckIfAlive: FAIL: GetObjectIDFromHandle failed.\n");
+        return;
+    }
+
+    if (shouldBeAlive)
+    {
+        if (objectId == NULL)
         {
             _failures++;
-            printf("HandlesProfiler::CheckIfAlive: FAIL: GetObjectIDFromHandle failed.\n");
-            return;
+            printf("HandlesProfiler::CheckIfAlive: FAIL: the object should be alive.\n");
         }
-
-        if (shouldBeAlive)
+    }
+    else
+    {
+        if (objectId != NULL)
         {
-            if (objectId == NULL)
-            {
-                _failures++;
-                printf("HandlesProfiler::CheckIfAlive: FAIL: the object should be alive.\n");
-            }
+            _failures++;
+            printf("HandlesProfiler::CheckIfAlive: FAIL: the object should not be alive anymore.\n");
         }
-        else
-        {
-            if (objectId != NULL)
-            {
-                _failures++;
-                printf("HandlesProfiler::CheckIfAlive: FAIL: the object should not be alive anymore.\n");
-            }
-        }
+    }
 }
 
 HRESULT HandlesProfiler::GarbageCollectionFinished()
@@ -164,6 +177,19 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
     else
     if (_gcCount == 2)
     {
+        if (_strongHandle == NULL)
+        {
+            _failures++;
+            printf("HandlesProfiler::GarbageCollectionFinished: FAIL: null strong handle.\n");
+            return S_OK;
+        }
+        if (_pinnedHandle == NULL)
+        {
+            _failures++;
+            printf("HandlesProfiler::GarbageCollectionFinished: FAIL: null pinned handle.\n");
+            return S_OK;
+        }
+
         // Destroy strong and pinned handles so next GC will release the objects
         HRESULT hr = pCorProfilerInfo->DestroyHandle(_strongHandle);
         if (FAILED(hr))

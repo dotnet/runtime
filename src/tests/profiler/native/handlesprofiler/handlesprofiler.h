@@ -11,7 +11,10 @@ public:
     HandlesProfiler() : Profiler(),
         _gcCount(0),
         _failures(0),
-        _isInduced(false)
+        _isInduced(false),
+        _weakHandle(NULL),
+        _strongHandle(NULL),
+        _pinnedHandle(NULL)
     {}
 
 	static GUID GetClsid();

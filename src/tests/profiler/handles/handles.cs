@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Profiler.Tests
@@ -9,19 +10,45 @@ namespace Profiler.Tests
     class TestClassForWeakHandle
     {
         public static int id;
+        public string Tag { get; set; }
+
+        public TestClassForWeakHandle(string tag)
+        {
+            Tag = $"{id}-{tag}";
+        }
     }
     class TestClassForStrongHandle
     {
         public static int id;
+        public string Tag = string.Empty;
+
+        public TestClassForStrongHandle(string tag)
+        {
+            Tag = $"{id}-{tag}";
+        }
     }
     class TestClassForPinnedHandle
     {
         public static int id;
+        public string Tag = string.Empty;
+
+        public TestClassForPinnedHandle(string tag)
+        {
+            Tag = $"{id}-{tag}";
+        }
     }
 
     class HandlesTests
     {
+        class Objects
+        {
+            public TestClassForWeakHandle _weak;
+            public TestClassForStrongHandle _strong;
+            public TestClassForPinnedHandle _pinned;
+        }
+
         static readonly Guid HandlesProfilerGuid = new Guid("A0F96622-522D-4654-AA56-BF421E79B210");
+
 
         // The goal of this test is to validate the ICorProfilerInfo13 handle management methods:
         //   CreateHandle (weak, strong, pinned)
@@ -40,24 +67,38 @@ namespace Profiler.Tests
         //   6. A gen2 is triggered.
         //   7. HandlesProfiler ensures that no more instances are alive.
         //
-        public static void DoWork() 
+        public static void DoWork(object parameter)
         {
-            // Ensure types are loaded by CLR before creating any instance
-            TestClassForWeakHandle.id = 1;
-            TestClassForStrongHandle.id = 2;
-            TestClassForPinnedHandle.id = 3;
+            Objects objects = parameter as Objects;
 
-            AllocateInstances();
+            AllocateInstances(objects);
+            Console.WriteLine($"weak = {objects._weak.Tag}");
+            objects._weak = null;
+            Console.WriteLine($"strong = {objects._strong.Tag}");
+            objects._strong = null;
+            Console.WriteLine($"weak = {objects._pinned.Tag}");
+            objects._pinned = null;
+
+            Console.WriteLine("Collection #0");
             GC.Collect(0);
+
+            Console.WriteLine("Collection #1");
             GC.Collect(1);
+
+            Console.WriteLine("Collection #2");
             GC.Collect(2);
         }
 
-        private static void AllocateInstances()
+        private static void AllocateInstances(Objects objects)
         {
-            var w = new TestClassForWeakHandle();
-            var s = new TestClassForStrongHandle();
-            var p = new TestClassForPinnedHandle();
+            Console.WriteLine("Allocating Weak");
+            objects._weak = new TestClassForWeakHandle("W");
+
+            Console.WriteLine("Allocating Strong");
+            objects._strong = new TestClassForStrongHandle("S");
+
+            Console.WriteLine("Allocating Pinned");
+            objects._pinned = new TestClassForPinnedHandle("P");
         }
 
         public static int RunTest(String[] args) 
@@ -70,9 +111,16 @@ namespace Profiler.Tests
 
             Console.WriteLine("Handles started. Control-C to exit");
 
-            Thread myThread = new Thread(new ThreadStart(DoWork));
+            Thread myThread = new Thread(new ParameterizedThreadStart(DoWork));
             myThread.Name = "TestWorker";
-            myThread.Start();
+
+            // Ensure types are loaded by CLR before creating any instance
+            TestClassForWeakHandle.id = 1;
+            TestClassForStrongHandle.id = 2;
+            TestClassForPinnedHandle.id = 3;
+            Objects objects = new Objects();
+
+            myThread.Start(objects);
             Console.WriteLine("Worker thread started");
 
             myThread.Join();
