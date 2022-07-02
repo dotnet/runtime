@@ -1001,8 +1001,6 @@ public:
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
-    typeInfo lvVerTypeInfo; // type info needed for verification
-
     // class handle for the local or null if not known or not a class,
     // for a struct handle use `GetStructHnd()`.
     CORINFO_CLASS_HANDLE lvClassHnd;
@@ -3297,7 +3295,7 @@ public:
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
     CORINFO_CLASS_HANDLE lvaGetStruct(unsigned varNum);
-    void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck, bool setTypeInfo = true);
+    void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck);
     void lvaSetStructUsedAsVarArg(unsigned varNum);
 
     // If the local is TYP_REF, set or update the associated class information.
@@ -4112,11 +4110,7 @@ private:
 
     void impPushVar(GenTree* op, typeInfo tiRetVal);
     GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
-    void impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal);
-    void impLoadVar(unsigned lclNum, IL_OFFSET offset)
-    {
-        impLoadVar(lclNum, offset, lvaGetDesc(lclNum)->lvVerTypeInfo);
-    }
+    void impLoadVar(unsigned lclNum, IL_OFFSET offset);
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
@@ -10227,6 +10221,7 @@ public:
 
     void verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
     void verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
+    typeInfo verMakeTypeInfoForLocal(unsigned lclNum);
     typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd,
                              bool bashStructToRef = false); // converts from jit type representation to typeInfo
     typeInfo verMakeTypeInfo(CorInfoType          ciType,
