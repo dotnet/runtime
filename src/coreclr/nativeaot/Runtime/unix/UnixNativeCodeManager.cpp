@@ -372,6 +372,11 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #endif // TARGET_ARM || TARGET_ARM64
     GcInfoDecoder decoder(GCInfoToken(p), flags);
 
+    // TODO: add support for multireg returns
+    ReturnKind rk = decoder.GetReturnKind();
+    if (rk > ReturnKind::RT_ByRef)
+        return false;
+
     GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
 
     // Unwind the current method context to the caller's context to get its stack pointer
