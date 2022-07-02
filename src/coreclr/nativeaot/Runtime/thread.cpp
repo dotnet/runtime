@@ -612,7 +612,7 @@ void Thread::Hijack()
     ASSERT(ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread());
     ASSERT_MSG(ThreadStore::GetSuspendingThread() != this, "You may not hijack a thread from itself.");
 
-    if (m_hPalThread != INVALID_HANDLE_VALUE)
+    if (m_hPalThread == INVALID_HANDLE_VALUE)
     {
         // cannot proceed
         return;

@@ -80,6 +80,7 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
 {
     NewHolder<ThreadStore> pNewThreadStore = new (nothrow) ThreadStore();
     if (NULL == pNewThreadStore)
+        return NULL;
 
     if (!PalRegisterHijackCallback(Thread::HijackCallback))
         return NULL;
