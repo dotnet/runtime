@@ -5824,6 +5824,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			int obj_size = mono_class_value_size (klass, NULL);
 			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
 
+			if (m_type_is_byref (ftype)) {
+				// if it's a ref field in a struct, pretend its an unmanaged pointer
+				mt = MINT_TYPE_I;
+				field_size = SIZEOF_VOID_P;
+				field_klass = mono_defaults.int_class; // hack
+			}
 			{
 				if (is_static) {
 					td->sp--;
