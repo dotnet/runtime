@@ -18321,8 +18321,11 @@ FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fiel
     assert((handleValue & FIELD_KIND_MASK) == 0);
     m_fieldHandleAndKind = handleValue | static_cast<uintptr_t>(fieldKind);
 
-    // TODO-PhysicalVN: assert that "offset" is correct.
     assert(JitTls::GetCompiler()->eeIsFieldStatic(fieldHnd) == IsStaticField());
+    if (fieldKind == FieldKind::Instance)
+    {
+        assert(static_cast<ssize_t>(JitTls::GetCompiler()->info.compCompHnd->getFieldOffset(fieldHnd)) == offset);
+    }
 }
 
 #ifdef FEATURE_SIMD
