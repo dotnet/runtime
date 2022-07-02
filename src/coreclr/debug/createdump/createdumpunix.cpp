@@ -3,7 +3,7 @@
 
 #include "createdump.h"
 
-#if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64))
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
 long g_pageSize = 0;
 #endif
 
