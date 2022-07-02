@@ -47,6 +47,11 @@ namespace Microsoft.NET.HostModel.Bundle
                 BundleMajorVersion = 6u;
                 DefaultOptions = BundleOptions.None;
             }
+            else if (FrameworkVersion.Major == 3 && (FrameworkVersion.Minor == 0 || FrameworkVersion.Minor == 1))
+            {
+                BundleMajorVersion = 1u;
+                DefaultOptions = BundleOptions.BundleAllContent;
+            }
             else
             {
                 throw new ArgumentException($"Invalid input: Unsupported Target Framework Version {targetFrameworkVersion}");
