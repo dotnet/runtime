@@ -17532,6 +17532,15 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
     return morphed;
 }
 
+//------------------------------------------------------------------------
+// Compiler::MorphMDArrayTempCache::TempList::GetTemp: return a local variable number to use as a temporary variable
+// in multi-dimensional array operation expansion.
+//
+// A temp is either re-used from the cache, or allocated and added to the cache.
+//
+// Returns:
+//      A local variable temp number.
+//
 unsigned Compiler::MorphMDArrayTempCache::TempList::GetTemp()
 {
     if (m_nextAvail != nullptr)
@@ -17553,6 +17562,16 @@ unsigned Compiler::MorphMDArrayTempCache::TempList::GetTemp()
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::MorphMDArrayTempCache::GrabTemp: return a local variable number to use as a temporary variable
+// in multi-dimensional array operation expansion.
+//
+// Arguments:
+//      type - type of temp to get
+//
+// Returns:
+//      A local variable temp number.
+//
 unsigned Compiler::MorphMDArrayTempCache::GrabTemp(var_types type)
 {
     switch (genActualType(type))
@@ -17574,6 +17593,7 @@ unsigned Compiler::MorphMDArrayTempCache::GrabTemp(var_types type)
 // See the comment for `fgMorphArrayOps()` for more details of the transformation.
 //
 // Arguments:
+//      pTempCache - pointer to the temp locals cache
 //      block - BasicBlock where the statement lives
 //      stmt - statement to walk
 //
@@ -17887,6 +17907,12 @@ PhaseStatus Compiler::fgMorphArrayOps()
         JITDUMP("No multi-dimensional array references in the function\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    // Maintain a cache of temp locals to use when we need a temp for this transformation. After each statement,
+    // reset the cache, meaning we can re-use any of the temps previously allocated. The idea here is to avoid
+    // creating too many temporaries, since the JIT has a limit on the number of tracked locals. A temp created
+    // here in one statement will have a distinct lifetime from a temp created in another statement, so register
+    // allocation is not constrained.
 
     bool                  changed = false;
     MorphMDArrayTempCache mdArrayTempCache(this);

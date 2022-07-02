@@ -4546,6 +4546,13 @@ public:
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
+    //------------------------------------------------------------------------------------------------------------
+    // MorphMDArrayTempCache: a simple cache of compiler temporaries in the local variable table, used to minimize
+    // the number of locals allocated when doing early multi-dimensional array operation expansion. Two types of
+    // temps are created and cached (due to the two types of temps needed by the MD array expansion): TYP_INT and
+    // TYP_REF. `GrabTemp` either returns an available temp from the cache or allocates a new temp and returns it
+    // after adding it to the cache. `Reset` makes all the temps in the cache available for subsequent re-use.
+    //
     class MorphMDArrayTempCache
     {
     private:
