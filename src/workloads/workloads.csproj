@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">net7.0</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
-    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(DotNetBuildFromSource)' == 'true'">net6.0</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
+    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(DotNetBuildFromSource)' == 'true'">net7.0</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
     <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
     <MicrosoftDotNetBuildTasksInstallersTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.installers\$(MicrosoftDotNetBuildTasksInstallersVersion)\tools\$(MicrosoftDotNetBuildTasksInstallersTaskTargetFramework)\Microsoft.DotNet.Build.Tasks.Installers.dll</MicrosoftDotNetBuildTasksInstallersTaskAssembly>
   </PropertyGroup>
