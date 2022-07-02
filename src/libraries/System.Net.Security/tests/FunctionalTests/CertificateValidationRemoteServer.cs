@@ -11,6 +11,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -133,6 +134,62 @@ namespace System.Net.Security.Tests
             // this test runs.
             return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext: null);
         }
+
+#if WINDOWS
+        [Theory]
+        [OuterLoop("Uses external servers")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(X509RevocationMode.Offline)]
+        [InlineData(X509RevocationMode.Online)]
+        [InlineData(X509RevocationMode.NoCheck)]
+        public Task ConnectWithRevocation_RemoteServer_StapledOcsp_FromWindows(X509RevocationMode revocationMode)
+        {
+            // This test could ideally end at the Client Hello, because it really only wants to
+            // ensure that the status_request extension was asserted.  Since the SslStream tests
+            // do not currently attempt to intercept and inspect the Client Hello, this test
+            // obtains the data indirectly: by talking to a host known to do OCSP Server Stapling
+            // with revocation in Offline mode.
+            // Unfortunately, this test will fail if the remote host stops doing server stapling,
+            // but it's the best we can do right now.
+
+            string serverName = Configuration.Http.Http2Host;
+
+            SslClientAuthenticationOptions clientOpts = new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                RemoteCertificateValidationCallback = CertificateValidationCallback,
+                CertificateRevocationCheckMode = revocationMode,
+            };
+
+            return EndToEndHelper(clientOpts);
+
+            static bool CertificateValidationCallback(
+                object sender,
+                X509Certificate? certificate,
+                X509Chain? chain,
+                SslPolicyErrors sslPolicyErrors)
+            {
+                Assert.NotNull(certificate);
+
+                using (SafeCertContextHandle ctx = new SafeCertContextHandle(certificate.Handle, ownsHandle: false))
+                {
+                    bool hasStapledOcsp =
+                        ctx.CertHasProperty(Interop.Crypt32.CertContextPropId.CERT_OCSP_RESPONSE_PROP_ID);
+
+                    if (((SslStream)sender).CheckCertRevocationStatus)
+                    {
+                        Assert.True(hasStapledOcsp, "Cert has stapled OCSP data");
+                    }
+                    else
+                    {
+                        Assert.False(hasStapledOcsp, "Cert has stapled OCSP data");
+                    }
+                }
+
+                return true;
+            }
+        }
+#endif
 
         private async Task ConnectWithRevocation_WithCallback_Core(
             X509RevocationMode revocationMode,
@@ -313,6 +370,27 @@ namespace System.Net.Security.Tests
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
                 {
                     await sslStream.AuthenticateAsClientAsync(host);
+                }
+            }
+        }
+
+        private async Task EndToEndHelper(SslClientAuthenticationOptions clientOptions)
+        {
+            using (var client = new TcpClient())
+            {
+                try
+                {
+                    await client.ConnectAsync(clientOptions.TargetHost, 443);
+                }
+                catch (Exception ex)
+                {
+                    // if we cannot connect skip the test instead of failing.
+                    throw new SkipTestException($"Unable to connect to '{clientOptions.TargetHost}': {ex.Message}");
+                }
+
+                using (SslStream sslStream = new SslStream(client.GetStream()))
+                {
+                    await sslStream.AuthenticateAsClientAsync(clientOptions);
                 }
             }
         }
