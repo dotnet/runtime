@@ -12,7 +12,7 @@ public sealed partial class QuicListener
 {
     private sealed class PendingConnection : IAsyncDisposable
     {
-        private static readonly TimeSpan _handshakeTimeout = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan s_handshakeTimeout = TimeSpan.FromSeconds(10);
 
         private readonly TaskCompletionSource<QuicConnection?> _finishHandshakeTask;
         private readonly CancellationTokenSource _cancellationTokenSource;
@@ -27,8 +27,8 @@ public sealed partial class QuicListener
         {
             try
             {
-                _cancellationTokenSource.CancelAfter(_handshakeTimeout);
-                var options = await connectionOptionsCallback(connection, clientHello, _cancellationTokenSource.Token).ConfigureAwait(false);
+                _cancellationTokenSource.CancelAfter(s_handshakeTimeout);
+                QuicServerConnectionOptions options = await connectionOptionsCallback(connection, clientHello, _cancellationTokenSource.Token).ConfigureAwait(false);
                 await connection.FinishHandshakeAsync(options, clientHello.ServerName, _cancellationTokenSource.Token).ConfigureAwait(false);
                 _finishHandshakeTask.SetResult(connection);
             }

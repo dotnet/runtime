@@ -50,7 +50,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             options.ListenBacklog = 512;
         }
 
-        var listener = new QuicListener(options);
+        QuicListener listener = new QuicListener(options);
 
         if (NetEventSource.Log.IsEnabled())
         {
@@ -94,7 +94,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
     private unsafe QuicListener(QuicListenerOptions options)
     {
-        var context = GCHandle.Alloc(this, GCHandleType.Weak);
+        GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
         try
         {
             QUIC_HANDLE* handle;
@@ -149,7 +149,7 @@ public sealed partial class QuicListener : IAsyncDisposable
                 PendingConnection pendingConnection = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
                 await using (pendingConnection.ConfigureAwait(false))
                 {
-                    var connection = await pendingConnection.FinishHandshakeAsync(cancellationToken).ConfigureAwait(false);
+                    QuicConnection? connection = await pendingConnection.FinishHandshakeAsync(cancellationToken).ConfigureAwait(false);
                     // Handshake failed, discard this connection and try to get another from the queue.
                     if (connection is null)
                     {
@@ -174,14 +174,14 @@ public sealed partial class QuicListener : IAsyncDisposable
             ref var data = ref listenerEvent.NEW_CONNECTION;
 
             // Check if there's capacity to have another connection waiting to be accepted.
-            var pendingConnection = new PendingConnection();
+            PendingConnection pendingConnection = new PendingConnection();
             if (!_acceptQueue.Writer.TryWrite(pendingConnection))
             {
                 return QUIC_STATUS_CONNECTION_REFUSED;
             }
 
-            var connection = new QuicConnection(new MsQuicConnection(data.Connection, data.Info));
-            var clientHello = new SslClientHelloInfo(Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength), SslProtocols.Tls13);
+            QuicConnection connection = new QuicConnection(new MsQuicConnection(data.Connection, data.Info));
+            SslClientHelloInfo clientHello = new SslClientHelloInfo(Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength), SslProtocols.Tls13);
 
             // Kicks off the rest of the handshake in the background.
             pendingConnection.StartHandshake(connection, clientHello, _connectionOptionsCallback);
@@ -244,6 +244,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             throw new ObjectDisposedException(nameof(QuicListener));
         }
     }
+
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -252,7 +253,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
 
         // Check if the listener has been shut down and if not, shut it down.
-        if (_shutdownTcs.TryInitialize(out var valueTask, this))
+        if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {
             unsafe
             {
@@ -265,7 +266,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
         // Flush the queue and dispose all remaining connections.
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
-        while (_acceptQueue.Reader.TryRead(out var pendingConnection))
+        while (_acceptQueue.Reader.TryRead(out PendingConnection? pendingConnection))
         {
             await pendingConnection.DisposeAsync().ConfigureAwait(false);
         }

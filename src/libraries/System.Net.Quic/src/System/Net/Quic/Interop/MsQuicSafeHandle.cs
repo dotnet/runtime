@@ -10,7 +10,7 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
 {
     // The index must correspond to SafeHandleType enum value and the value must correspond to MsQuic logging abbreviation string.
     // This is used for our logging that uses the same format of object identification as MsQuic to easily correlate log events.
-    private static readonly string[] TypeName = new string[]
+    private static readonly string[] s_typeName = new string[]
     {
         " reg",
         "cnfg",
@@ -30,7 +30,7 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
         : base((IntPtr)handle, ownsHandle: true)
     {
         _releaseAction = releaseAction;
-        _traceId = $"[{TypeName[(int)safeHandleType]}][0x{DangerousGetHandle():X11}]";
+        _traceId = $"[{s_typeName[(int)safeHandleType]}][0x{DangerousGetHandle():X11}]";
 
         if (NetEventSource.Log.IsEnabled())
         {

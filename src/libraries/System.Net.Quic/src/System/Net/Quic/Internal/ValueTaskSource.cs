@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -14,7 +15,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
 {
     // None -> [TryInitialize] -> Awaiting -> [TrySetResult|TrySetException] -> Completed
     // None -> [TrySetResult|TrySetException] -> Completed
-    private enum State
+    private enum State : byte
     {
         None,
         Awaiting,
@@ -34,16 +35,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
         _keepAlive = default;
     }
 
-    public bool IsCompleted
-    {
-        get
-        {
-            lock (this)
-            {
-                return _state == State.Completed;
-            }
-        }
-    }
+    public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;
 
     public bool TryInitialize(out ValueTask valueTask, object? keepAlive = null, CancellationToken cancellationToken = default)
     {
@@ -60,13 +52,13 @@ internal sealed class ValueTaskSource : IValueTaskSource
                 {
                     _cancellationRegistration = cancellationToken.UnsafeRegister(static (obj, cancellationToken) =>
                     {
-                        var parent = (ValueTaskSource)obj!;
+                        ValueTaskSource parent = (ValueTaskSource)obj!;
                         parent.TrySetException(new OperationCanceledException(cancellationToken));
                     }, this);
                 }
             }
 
-            var state = _state;
+            State state = _state;
 
             // If we're the first here and we will return true.
             if (state == State.None)
@@ -96,7 +88,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
             {
                 try
                 {
-                    var state = _state;
+                    State state = _state;
 
                     if (state != State.Completed)
                     {
