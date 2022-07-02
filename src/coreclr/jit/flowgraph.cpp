@@ -3116,6 +3116,45 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
     return fgLastBB;
 }
 
+//------------------------------------------------------------------------------
+// fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
+//
+// Arguments:
+//    block - Basic block to get a dominator for
+//
+// Return Value:
+//    Basic block that dominates this block
+//
+BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
+{
+    assert(fgDomsComputed);
+    BasicBlock* lastReachablePred = nullptr;
+
+    // Check if we have unreachable preds
+    for (const flowList* predEdge : block->PredEdges())
+    {
+        BasicBlock* predBlock = predEdge->getBlock();
+        if (predBlock == block)
+        {
+            continue;
+        }
+
+        // We check pred's count of InEdges - it's quite conservative.
+        // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
+        if (predBlock->countOfInEdges() > 0)
+        {
+            if (lastReachablePred != nullptr)
+            {
+                // More than one of "reachable" preds - return cached result
+                return block->bbIDom;
+            }
+            lastReachablePred = predBlock;
+        }
+    }
+
+    return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
+}
+
 /*****************************************************************************************************
  *
  *  Function to return the first basic block after the main part of the function. With funclets, it is
