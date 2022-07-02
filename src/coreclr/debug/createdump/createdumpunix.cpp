@@ -74,7 +74,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     if (!dumpWriter.WriteDump())
     {
-        printf_error( "Writing dump FAILED\n");
+        printf_error("Writing dump FAILED\n");
 
         // Delete the partial dump file on error
         remove(dumpPath.c_str());
