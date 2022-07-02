@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Tries to create a trie from the leading fixed part of a <see cref="RegexNode"/>.
         /// </summary>
-        public static bool TryCreateFromPrefix(RegexNode regexNode, [NotNullWhen(true)] out List<TrieNode>? trie)
+        public static List<TrieNode>? CreateFromPrefixIfPossible(RegexNode regexNode)
         {
             TrieBuilder builder = new TrieBuilder(regexNode);
             NodeCollection matchNodes = builder.Add(new NodeCollection(TrieNode.Root), regexNode, out _);
@@ -67,11 +67,9 @@ namespace System.Text.RegularExpressions
             // in the trie (for example in a*|b|c, the trie will have b and c but not a) so we cannot use it either.
             if (builder._nodes.Count == 1 || builder._nodes[TrieNode.Root].IsMatch)
             {
-                trie = null;
-                return false;
+                return null;
             }
-            trie = builder._nodes;
-            return true;
+            return builder._nodes;
         }
 
         /// <summary>

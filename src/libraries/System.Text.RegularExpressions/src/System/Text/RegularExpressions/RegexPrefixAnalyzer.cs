@@ -30,7 +30,7 @@ namespace System.Text.RegularExpressions
                 return (FindPrefix(node), null);
             }
 
-            if (TrieBuilder.TryCreateFromPrefix(node, out List<TrieNode>? trie))
+            if (TrieBuilder.CreateFromPrefixIfPossible(node) is List<TrieNode> trie)
             {
                 if (trie.GetMatchCount() < MinMultiPrefixes)
                 {
