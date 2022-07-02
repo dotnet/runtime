@@ -5819,17 +5819,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			mono_class_init_internal (klass);
 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
-			mt = mint_type (m_class_get_byval_arg (field_klass));
+			mt = mint_type (ftype);
 			int field_size = mono_class_value_size (field_klass, NULL);
 			int obj_size = mono_class_value_size (klass, NULL);
 			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
 
-			if (m_type_is_byref (ftype)) {
-				// if it's a ref field in a struct, pretend its an unmanaged pointer
-				mt = MINT_TYPE_I;
-				field_size = SIZEOF_VOID_P;
-				field_klass = mono_defaults.int_class; // hack
-			}
 			{
 				if (is_static) {
 					td->sp--;
