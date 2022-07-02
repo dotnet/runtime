@@ -1005,7 +1005,7 @@ namespace System.Net.Http
             http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: canRetry);
         }
 
-        private Http2ProtocolErrorCode ProcessGoAwayFrame(FrameHeader frameHeader)
+        private void ProcessGoAwayFrame(FrameHeader frameHeader)
         {
             var (lastStreamId, errorCode) = ReadGoAwayFrame(frameHeader);
 
@@ -1037,8 +1037,6 @@ namespace System.Net.Http
             {
                 s.OnReset(resetException, canRetry: true);
             }
-
-            return errorCode;
         }
 
         private (int lastStreamId, Http2ProtocolErrorCode errorCode) ReadGoAwayFrame(FrameHeader frameHeader)
