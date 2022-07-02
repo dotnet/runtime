@@ -144,12 +144,7 @@ namespace System.Net.Http.Functional.Tests
                 GoAwayFrame goAwayFrame = new GoAwayFrame(lastStreamId: 0, (int)ProtocolErrors.HTTP_1_1_REQUIRED, additionalDebugData: Array.Empty<byte>(), streamId: 0);
                 await connection.WriteFrameAsync(goAwayFrame);
 
-                // Expect client to detect that server has disconnected and throw an exception
-                var exception = await Assert.ThrowsAnyAsync<HttpRequestException>(() =>
-                    new Task[]
-                    {
-                        sendTask
-                    }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
+                var exception = await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
 
                 var protocolException = Assert.IsType<HttpProtocolException>(exception.InnerException.InnerException);
                 Assert.Equal((long)ProtocolErrors.HTTP_1_1_REQUIRED, protocolException.ErrorCode);
