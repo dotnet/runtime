@@ -5509,6 +5509,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
         case CORINFO_HELP_ASSIGN_BYREF:       // Not strictly needed as we don't make a GT_CALL with this
         case CORINFO_HELP_SETFIELDOBJ:
         case CORINFO_HELP_ARRADDR_ST:
+        case CORINFO_HELP_ARRADDR_ST_I_IMPL:
 
             return CALLINT_REF_INDIRS;
 

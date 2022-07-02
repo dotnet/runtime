@@ -10110,6 +10110,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_LDELEMA_REF:
+        case CORINFO_HELP_LDELEMA_REF_I_IMPL:
             vnf = VNF_LdElemA;
             break;
 

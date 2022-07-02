@@ -447,6 +447,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ARRADDR_ST,        // assign to element of object array with type-checking
     CORINFO_HELP_LDELEMA_REF,       // does a precise type comparision and returns address
 
+    CORINFO_HELP_ARRADDR_ST_I_IMPL,        // assign to element of object array with type-checking (Native int index parameter)
+    CORINFO_HELP_LDELEMA_REF_I_IMPL,       // does a precise type comparision and returns address (Native int index parameter)
+
     /* Exceptions */
 
     CORINFO_HELP_THROW,             // Throw an exception object

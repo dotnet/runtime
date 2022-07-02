@@ -13717,7 +13717,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTree* type  = op1;
                     GenTree* index = impPopStack().val;
                     GenTree* arr   = impPopStack().val;
-                    op1            = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
+#ifdef TARGET_64BIT
+                    // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case that the index
+                    // is a native int on a 64-bit platform, we will need to use a helper that can process the wider value.
+                    if (index->TypeGet() == TYP_I_IMPL)
+                    {
+                        op1 = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF_I_IMPL, TYP_BYREF, arr, index, type);
+                    }
+                    else
+#endif // TARGET_64BIT
+                    {
+                        op1 = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
+                    }
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -13859,7 +13870,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impPopStack(3);
 
                 // Else call a helper function to do the assignment
-                op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+#ifdef TARGET_64BIT
+                // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case that the index
+                // is a native int on a 64-bit platform, we will need to use a helper that can process the wider value.
+                if (index->TypeGet() == TYP_I_IMPL)
+                {
+                    op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST_I_IMPL, TYP_VOID, array, index, value);
+                }
+                else
+#endif // TARGET_64BIT
+                {
+                    op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+                }
                 goto SPILL_APPEND;
             }
 

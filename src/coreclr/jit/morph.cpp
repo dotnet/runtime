@@ -8426,7 +8426,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
     if (opts.OptimizationEnabled() && (call->gtCallType == CT_HELPER) &&
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST)))
+        ((call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST))
+#ifdef TARGET_64BIT
+        || (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ARRADDR_ST_I_IMPL))
+#endif
+        ))
     {
         assert(call->gtArgs.CountArgs() == 3);
         GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();

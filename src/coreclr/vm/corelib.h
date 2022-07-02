@@ -1228,6 +1228,10 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_Ptr
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_Int_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_Int_PtrVoid_RetRefObj)
+#ifdef TARGET_64BIT
+DEFINE_METHOD(CASTHELPERS, STELEMREF_NINT,   StelemRefNint,               SM_Array_IntPtr_Obj_RetVoid)
+DEFINE_METHOD(CASTHELPERS, LDELEMAREF_NINT,  LdelemaRefNint,              SM_Array_IntPtr_PtrVoid_RetRefObj)
+#endif
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
