@@ -4477,6 +4477,7 @@ namespace System
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public ReadOnlySpan(T[]? array) { throw null; }
         public ReadOnlySpan(T[]? array, int start, int length) { throw null; }
+        public ReadOnlySpan(in T reference) { throw null; }
         public static System.ReadOnlySpan<T> Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public ref readonly T this[int index] { get { throw null; } }
@@ -4894,6 +4895,7 @@ namespace System
         public unsafe Span(void* pointer, int length) { throw null; }
         public Span(T[]? array) { throw null; }
         public Span(T[]? array, int start, int length) { throw null; }
+        public Span(ref T reference) { throw null; }
         public static System.Span<T> Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public ref T this[int index] { get { throw null; } }

@@ -73,7 +73,7 @@ namespace System.Text.Json
         /// Returns the total amount of bytes consumed by the <see cref="Utf8JsonReader"/> so far
         /// for the current instance of the <see cref="Utf8JsonReader"/> with the given UTF-8 encoded input text.
         /// </summary>
-        public long BytesConsumed
+        public readonly long BytesConsumed
         {
             get
             {
@@ -101,7 +101,7 @@ namespace System.Text.Json
         /// Tracks the recursive depth of the nested objects / arrays within the JSON text
         /// processed so far. This provides the depth of the current token.
         /// </summary>
-        public int CurrentDepth
+        public readonly int CurrentDepth
         {
             get
             {
@@ -120,7 +120,7 @@ namespace System.Text.Json
         /// <summary>
         /// Gets the type of the last processed JSON token in the UTF-8 encoded JSON text.
         /// </summary>
-        public JsonTokenType TokenType => _tokenType;
+        public readonly JsonTokenType TokenType => _tokenType;
 
         /// <summary>
         /// Lets the caller know which of the two 'Value' properties to read to get the
@@ -142,7 +142,7 @@ namespace System.Text.Json
         /// True when the reader was constructed with the input span containing the entire data to process.
         /// False when the reader was constructed knowing that the input span may contain partial data with more data to follow.
         /// </summary>
-        public bool IsFinalBlock => _isFinalBlock;
+        public readonly bool IsFinalBlock => _isFinalBlock;
 
         /// <summary>
         /// Gets the value of the last processed token as a ReadOnlySpan&lt;byte&gt; slice
@@ -163,7 +163,7 @@ namespace System.Text.Json
         /// input ReadOnlySequence&lt;byte&gt;. If the <see cref="Utf8JsonReader"/> was constructed
         /// with a ReadOnlySpan&lt;byte&gt; instead, this will always return a default <see cref="SequencePosition"/>.
         /// </summary>
-        public SequencePosition Position
+        public readonly SequencePosition Position
         {
             get
             {
@@ -183,7 +183,7 @@ namespace System.Text.Json
         /// across async/await boundaries and hence this type is required to provide support for reading
         /// in more data asynchronously before continuing with a new instance of the <see cref="Utf8JsonReader"/>.
         /// </summary>
-        public JsonReaderState CurrentState => new JsonReaderState
+        public readonly JsonReaderState CurrentState => new JsonReaderState
         {
             _lineNumber = _lineNumber,
             _bytePositionInLine = _bytePositionInLine,
@@ -432,7 +432,7 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(ReadOnlySpan<byte> utf8Text)
+        public readonly bool ValueTextEquals(ReadOnlySpan<byte> utf8Text)
         {
             if (!IsTokenTypeString(TokenType))
             {
@@ -462,13 +462,13 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(string? text)
+        public readonly bool ValueTextEquals(string? text)
         {
             return ValueTextEquals(text.AsSpan());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TextEqualsHelper(ReadOnlySpan<byte> otherUtf8Text)
+        private readonly bool TextEqualsHelper(ReadOnlySpan<byte> otherUtf8Text)
         {
             if (HasValueSequence)
             {
@@ -503,7 +503,7 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(ReadOnlySpan<char> text)
+        public readonly bool ValueTextEquals(ReadOnlySpan<char> text)
         {
             if (!IsTokenTypeString(TokenType))
             {
@@ -517,7 +517,7 @@ namespace System.Text.Json
 
             byte[]? otherUtf8TextArray = null;
 
-            Span<byte> otherUtf8Text;
+            scoped Span<byte> otherUtf8Text;
 
             int length = checked(text.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
@@ -529,11 +529,7 @@ namespace System.Text.Json
             else
             {
                 // Cannot create a span directly since it gets passed to instance methods on a ref struct.
-                unsafe
-                {
-                    byte* ptr = stackalloc byte[JsonConstants.StackallocByteThreshold];
-                    otherUtf8Text = new Span<byte>(ptr, JsonConstants.StackallocByteThreshold);
-                }
+                otherUtf8Text = stackalloc byte[JsonConstants.StackallocByteThreshold];
             }
 
             ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(text);
@@ -561,7 +557,7 @@ namespace System.Text.Json
             return result;
         }
 
-        private bool CompareToSequence(ReadOnlySpan<byte> other)
+        private readonly bool CompareToSequence(ReadOnlySpan<byte> other)
         {
             Debug.Assert(HasValueSequence);
 
@@ -597,7 +593,7 @@ namespace System.Text.Json
             return true;
         }
 
-        private bool UnescapeAndCompare(ReadOnlySpan<byte> other)
+        private readonly bool UnescapeAndCompare(ReadOnlySpan<byte> other)
         {
             Debug.Assert(!HasValueSequence);
             ReadOnlySpan<byte> localSpan = ValueSpan;
@@ -618,7 +614,7 @@ namespace System.Text.Json
             return JsonReaderHelper.UnescapeAndCompare(localSpan.Slice(idx), other.Slice(idx));
         }
 
-        private bool UnescapeSequenceAndCompare(ReadOnlySpan<byte> other)
+        private readonly bool UnescapeSequenceAndCompare(ReadOnlySpan<byte> other)
         {
             Debug.Assert(HasValueSequence);
             Debug.Assert(!ValueSequence.IsSingleSegment);
@@ -683,7 +679,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool MatchNotPossible(int charTextLength)
+        private readonly bool MatchNotPossible(int charTextLength)
         {
             if (HasValueSequence)
             {
@@ -714,7 +710,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool MatchNotPossibleSequence(int charTextLength)
+        private readonly bool MatchNotPossibleSequence(int charTextLength)
         {
             long sourceLength = ValueSequence.Length;
 

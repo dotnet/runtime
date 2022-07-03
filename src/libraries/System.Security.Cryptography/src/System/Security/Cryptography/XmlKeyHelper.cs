@@ -98,8 +98,7 @@ namespace System.Security.Cryptography
             // .NET Framework compat
             if (value == 0)
             {
-                Span<byte> single = stackalloc byte[1];
-                single[0] = 0;
+                Span<byte> single = stackalloc byte[1] { 0 };
                 WriteCryptoBinary(name, single, builder);
                 return;
             }
