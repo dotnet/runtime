@@ -754,13 +754,9 @@ Module *MethodDesc::GetDefiningModuleForOpenMethod()
     Instantiation inst = GetMethodInstantiation();
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
-        // Encoded types are never open
-        if (!inst[i].IsEncodedFixup())
-        {
-            pModule = inst[i].GetDefiningModuleForOpenType();
-            if (pModule != NULL)
-                return pModule;
-        }
+        pModule = inst[i].GetDefiningModuleForOpenType();
+        if (pModule != NULL)
+            return pModule;
     }
 
     return NULL;
@@ -848,7 +844,7 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
     // only have two possibilites: the field already lies on a dword boundary or it's precisely one word out.
-    DWORD* pdwFlags = (DWORD*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -868,9 +864,9 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #endif
 
     if (fSet)
-        FastInterlockOr(pdwFlags, dwMask);
+        InterlockedOr(pdwFlags, dwMask);
     else
-        FastInterlockAnd(pdwFlags, ~dwMask);
+        InterlockedAnd(pdwFlags, ~dwMask);
 
     return wOldState;
 }
@@ -886,7 +882,7 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
     // only have two possibilites: the field already lies on a dword boundary or it's precisely one word out.
-    DWORD* pdwFlags = (DWORD*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -906,9 +902,9 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #endif
 
     if (fSet)
-        FastInterlockOr(pdwFlags, dwMask);
+        InterlockedOr(pdwFlags, dwMask);
     else
-        FastInterlockAnd(pdwFlags, ~dwMask);
+        InterlockedAnd(pdwFlags, ~dwMask);
 
     return wOldState;
 }
@@ -2121,6 +2117,13 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
             return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
         }
 
+        // Is it an FCALL?
+        MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
+        if (pFCallMD != NULL)
+        {
+            return pFCallMD;
+        }
+
         return NULL;
     }
 
@@ -2154,11 +2157,6 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
         RETURN(pMD);
 
     pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    // Is it an FCALL?
-    pMD = ECall::MapTargetBackToMethod(entryPoint);
     if (pMD != NULL)
         RETURN(pMD);
 
@@ -2961,19 +2959,19 @@ void MethodDesc::InterlockedUpdateFlags2(BYTE bMask, BOOL fSet)
 {
     WRAPPER_NO_CONTRACT;
 
-    ULONG* pLong = (ULONG*)(&m_bFlags2 - 3);
+    LONG* pLong = (LONG*)(&m_bFlags2 - 3);
     static_assert_no_msg(offsetof(MethodDesc, m_bFlags2) % sizeof(LONG) == 3);
 
 #if BIGENDIAN
     if (fSet)
-        FastInterlockOr(pLong, (ULONG)bMask);
+        InterlockedOr(pLong, (ULONG)bMask);
     else
-        FastInterlockAnd(pLong, ~(ULONG)bMask);
+        InterlockedAnd(pLong, ~(ULONG)bMask);
 #else // !BIGENDIAN
     if (fSet)
-        FastInterlockOr(pLong, (ULONG)bMask << (3 * 8));
+        InterlockedOr(pLong, (LONG)bMask << (3 * 8));
     else
-        FastInterlockAnd(pLong, ~((ULONG)bMask << (3 * 8)));
+        InterlockedAnd(pLong, ~((LONG)bMask << (3 * 8)));
 #endif // !BIGENDIAN
 }
 
@@ -3009,7 +3007,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
         AllocMemTracker amt;
         Precode* pPrecode = Precode::Allocate(requiredType, this, GetLoaderAllocator(), &amt);
 
-        if (FastInterlockCompareExchangePointer(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
+        if (InterlockedCompareExchangeT(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
             amt.SuppressRelease();
     }
 
@@ -3300,7 +3298,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 
         expected = *pSlot;
 
-        return FastInterlockCompareExchangePointer(reinterpret_cast<TADDR*>(pSlot),
+        return InterlockedCompareExchangeT(reinterpret_cast<TADDR*>(pSlot),
             (TADDR&)addr, (TADDR&)expected) == (TADDR&)expected;
     }
 
@@ -3337,7 +3335,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     PCODE pExpected = GetTemporaryEntryPoint();
     PTR_PCODE pSlot = GetAddrOfSlot();
 
-    BOOL fResult = FastInterlockCompareExchangePointer(pSlot, addr, pExpected) == pExpected;
+    BOOL fResult = InterlockedCompareExchangeT(pSlot, addr, pExpected) == pExpected;
 
     InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint, TRUE);
 
@@ -3423,7 +3421,7 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
     ((WORD*)&dwMask)[0] |= wFlags;
 
     // Now, slam all 32 bits atomically.
-    FastInterlockOr((DWORD*)pFlags, dwMask);
+    InterlockedOr((LONG*)pFlags, dwMask);
 }
 
 
@@ -4024,7 +4022,7 @@ void ComPlusCallMethodDesc::InitRetThunk()
 
     LPVOID pRetThunk = ComPlusCall::GetRetThunk(numStackBytes);
 
-    FastInterlockCompareExchangePointer<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
+    InterlockedCompareExchangeT<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
 #endif // TARGET_X86
 }
 #endif //!DACCESS_COMPILE

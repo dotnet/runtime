@@ -11,9 +11,12 @@ namespace System.Resources
     .Extensions
 #endif
 {
+#pragma warning disable IDE0065
 #if RESOURCES_EXTENSIONS
     using ResourceReader = DeserializingResourceReader;
 #endif
+#pragma warning restore IDE0065
+
     // A RuntimeResourceSet stores all the resources defined in one
     // particular CultureInfo, with some loading optimizations.
     //

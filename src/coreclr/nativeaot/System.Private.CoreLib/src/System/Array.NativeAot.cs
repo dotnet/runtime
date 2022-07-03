@@ -897,7 +897,7 @@ namespace System
                     throw new OverflowException();
                 if (length > MaxLength)
                     maxArrayDimensionLengthOverflow = true;
-                totalLength = totalLength * (ulong)length;
+                totalLength *= (ulong)length;
                 if (totalLength > int.MaxValue)
                     throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
             }
@@ -953,6 +953,22 @@ namespace System
             if (dimension != 0)
                 throw new IndexOutOfRangeException();
             return Length - 1;
+        }
+
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            if (!IsSzArray)
+            {
+                ref int bounds = ref GetRawMultiDimArrayBounds();
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
+
+            if ((uint)rawIndex >= NativeLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
         }
 
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)

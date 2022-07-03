@@ -115,6 +115,13 @@ CorInfoInline interceptor_ICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /*
     return temp;
 }
 
+void interceptor_ICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                                     CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    mc->cr->AddCall("beginInlining");
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
 // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
 // JIT.
@@ -1937,6 +1944,12 @@ bool interceptor_ICJI::logMsg(unsigned level, const char* fmt, va_list args)
 int interceptor_ICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
 {
     mc->cr->AddCall("doAssert");
+
+    m_compiler->finalizeAndCommitCollection(mc, CORJIT_INTERNALERROR, nullptr, 0);
+    // The following assert may not always fail fast, so make sure we do not
+    // save the collection twice if it throws an unwindable exception.
+    m_savedCollectionEarly = true;
+
     return original_ICorJitInfo->doAssert(szFile, iLine, szExpr);
 }
 
@@ -2027,14 +2040,4 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
 bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
-}
-
-bool interceptor_ICJI::doesFieldBelongToClass(
-    CORINFO_FIELD_HANDLE fldHnd,
-    CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("doesFieldBelongToClass");
-    bool result = original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
-    mc->recDoesFieldBelongToClass(fldHnd, cls, result);
-    return result;
 }

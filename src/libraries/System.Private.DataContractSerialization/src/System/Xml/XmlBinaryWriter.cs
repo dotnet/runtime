@@ -567,7 +567,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteText(string value)
+        public override unsafe void WriteText(string value)
         {
             if (_inAttribute)
             {
@@ -589,7 +589,10 @@ namespace System.Xml
             }
         }
 
-        private unsafe void WriteText(Span<char> chars)
+      public override unsafe void WriteText(char[] chars, int offset, int count)
+         => WriteText(chars.AsSpan(offset, count));
+
+      private unsafe void WriteText(Span<char> chars)
         {
             if (_inAttribute)
             {
@@ -609,11 +612,6 @@ namespace System.Xml
                     WriteEmptyText();
                 }
             }
-        }
-
-        public unsafe override void WriteText(char[] chars, int offset, int count)
-        {
-            WriteText(chars.AsSpan(offset, count));
         }
 
         public override void WriteText(byte[] chars, int charOffset, int charCount)
@@ -756,12 +754,12 @@ namespace System.Xml
             switch (dt.Kind)
             {
                 case DateTimeKind.Local:
-                    temp = temp | -9223372036854775808L; // 0x8000000000000000
-                    temp = temp | dt.ToUniversalTime().Ticks;
+                    temp |= -9223372036854775808L; // 0x8000000000000000
+                    temp |= dt.ToUniversalTime().Ticks;
                     break;
                 case DateTimeKind.Utc:
-                    temp = temp | 0x4000000000000000L;
-                    temp = temp | dt.Ticks;
+                    temp |= 0x4000000000000000L;
+                    temp |= dt.Ticks;
                     break;
                 case DateTimeKind.Unspecified:
                     temp = dt.Ticks;

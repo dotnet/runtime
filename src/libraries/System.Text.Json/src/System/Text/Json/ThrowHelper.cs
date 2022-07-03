@@ -35,6 +35,18 @@ namespace System.Text.Json
             throw GetArgumentOutOfRangeException(parameterName, SR.CommentHandlingMustBeValid);
         }
 
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_ArrayIndexNegative(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArrayIndexNegative);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_ArrayTooSmall(string paramName)
+        {
+            throw new ArgumentException(SR.ArrayTooSmall, paramName);
+        }
+
         private static ArgumentException GetArgumentException(string message)
         {
             return new ArgumentException(message);
@@ -628,6 +640,7 @@ namespace System.Text.Json
                 case DataType.DateOnly:
                 case DataType.DateTime:
                 case DataType.DateTimeOffset:
+                case DataType.TimeOnly:
                 case DataType.TimeSpan:
                 case DataType.Guid:
                 case DataType.Version:
@@ -723,6 +736,7 @@ namespace System.Text.Json
         DateOnly,
         DateTime,
         DateTimeOffset,
+        TimeOnly,
         TimeSpan,
         Base64String,
         Guid,

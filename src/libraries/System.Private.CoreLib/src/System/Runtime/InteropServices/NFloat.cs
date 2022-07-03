@@ -24,6 +24,7 @@ namespace System.Runtime.InteropServices
     /// <summary>Defines an immutable value type that represents a floating type that has the same size as the native integer size.</summary>
     /// <remarks>It is meant to be used as an exchange type at the managed/unmanaged boundary to accurately represent in managed code unmanaged APIs that use a type alias for C or C++'s <c>float</c> on 32-bit platforms or <c>double</c> on 64-bit platforms, such as the CGFloat type in libraries provided by Apple.</remarks>
     [Intrinsic]
+    [NonVersionable] // This only applies to field layout
     public readonly struct NFloat
         : IBinaryFloatingPointIeee754<NFloat>,
           IMinMaxValue<NFloat>
@@ -253,11 +254,25 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         public static explicit operator byte(NFloat value) => (byte)(value._value);
 
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="byte" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="byte" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="byte" />.</exception>
+        [NonVersionable]
+        public static explicit operator checked byte(NFloat value) => checked((byte)(value._value));
+
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="char" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="char" /> value.</returns>
         [NonVersionable]
         public static explicit operator char(NFloat value) => (char)(value._value);
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="char" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="char" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="char" />.</exception>
+        [NonVersionable]
+        public static explicit operator checked char(NFloat value) => checked((char)(value._value));
 
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="decimal" /> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -265,11 +280,24 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         public static explicit operator decimal(NFloat value) => (decimal)(value._value);
 
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="Half" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="Half" /> value.</returns>
+        [NonVersionable]
+        public static explicit operator Half(NFloat value) => (Half)(value._value);
+
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="short" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
         [NonVersionable]
         public static explicit operator short(NFloat value) => (short)(value._value);
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="short" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="short" />.</exception>
+        [NonVersionable]
+        public static explicit operator checked short(NFloat value) => checked((short)(value._value));
 
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="int" /> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -277,17 +305,51 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         public static explicit operator int(NFloat value) => (int)(value._value);
 
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="int" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="int" />.</exception>
+        [NonVersionable]
+        public static explicit operator checked int(NFloat value) => checked((int)(value._value));
+
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="long" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
         [NonVersionable]
         public static explicit operator long(NFloat value) => (long)(value._value);
 
-        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="System.IntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="long" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.IntPtr" /> value.</returns>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="long" />.</exception>
+        [NonVersionable]
+        public static explicit operator checked long(NFloat value) => checked((long)(value._value));
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="Int128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="Int128" /> value.</returns>
+        [NonVersionable]
+        public static explicit operator Int128(NFloat value) => (Int128)(value._value);
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="Int128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="Int128" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
+        [NonVersionable]
+        public static explicit operator checked Int128(NFloat value) => checked((Int128)(value._value));
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="IntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
         [NonVersionable]
         public static explicit operator nint(NFloat value) => (nint)(value._value);
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="IntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="IntPtr" />.</exception>
+        [NonVersionable]
+        public static explicit operator checked nint(NFloat value) => checked((nint)(value._value));
 
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="sbyte" /> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -295,6 +357,14 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         [CLSCompliant(false)]
         public static explicit operator sbyte(NFloat value) => (sbyte)(value._value);
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="sbyte" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="sbyte" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="sbyte" />.</exception>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator checked sbyte(NFloat value) => checked((sbyte)(value._value));
 
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="float" /> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -309,12 +379,28 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static explicit operator ushort(NFloat value) => (ushort)(value._value);
 
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="ushort" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ushort" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="ushort" />.</exception>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator checked ushort(NFloat value) => checked((ushort)(value._value));
+
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="uint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
         [NonVersionable]
         [CLSCompliant(false)]
         public static explicit operator uint(NFloat value) => (uint)(value._value);
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="uint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="uint" />.</exception>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator checked uint(NFloat value) => checked((uint)(value._value));
 
         /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="ulong" /> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -323,12 +409,43 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static explicit operator ulong(NFloat value) => (ulong)(value._value);
 
-        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="System.UIntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="ulong" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="System.UIntPtr" /> value.</returns>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="ulong" />.</exception>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator checked ulong(NFloat value) => checked((ulong)(value._value));
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="UInt128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UInt128" /> value.</returns>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator UInt128(NFloat value) => (UInt128)(value._value);
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="UInt128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UInt128" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator checked UInt128(NFloat value) => checked((UInt128)(value._value));
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="UIntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
         [NonVersionable]
         [CLSCompliant(false)]
         public static explicit operator nuint(NFloat value) => (nuint)(value._value);
+
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="UIntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UIntPtr" />.</exception>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator checked nuint(NFloat value) => checked((nuint)(value._value));
 
         //
         // Implicit Convert To NFloat
@@ -345,6 +462,12 @@ namespace System.Runtime.InteropServices
         /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
         [NonVersionable]
         public static implicit operator NFloat(char value) => new NFloat((NativeType)value);
+
+        /// <summary>Implicitly converts a <see cref="Half" /> value to its nearest representable native-sized floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
+        [NonVersionable]
+        public static implicit operator NFloat(Half value) => (NFloat)(float)value;
 
         /// <summary>Implicitly converts a <see cref="short" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -363,6 +486,20 @@ namespace System.Runtime.InteropServices
         /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
         [NonVersionable]
         public static implicit operator NFloat(long value) => new NFloat((NativeType)value);
+
+        /// <summary>Explicitly converts a <see cref="Int128" /> to its nearest representable native-sized floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
+        [NonVersionable]
+        public static explicit operator NFloat(Int128 value)
+        {
+            if (Int128.IsNegative(value))
+            {
+                value = -value;
+                return -(NFloat)(UInt128)(value);
+            }
+            return (NFloat)(UInt128)(value);
+        }
 
         /// <summary>Implicitly converts a <see cref="System.IntPtr" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -403,6 +540,13 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         [CLSCompliant(false)]
         public static implicit operator NFloat(ulong value) => new NFloat((NativeType)value);
+
+        /// <summary>Explicitly converts <see cref="UInt128"/> to its nearest representable native-sized floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator NFloat(UInt128 value) => (NFloat)(double)(value);
 
         /// <summary>Implicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -717,13 +861,6 @@ namespace System.Runtime.InteropServices
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) => _value.TryFormat(destination, out charsWritten, format, provider);
 
         //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static NFloat IAdditionOperators<NFloat, NFloat, NFloat>.operator checked +(NFloat left, NFloat right) => left + right;
-
-        //
         // IAdditiveIdentity
         //
 
@@ -799,20 +936,6 @@ namespace System.Runtime.InteropServices
             return new NFloat(result);
 #endif
         }
-
-        //
-        // IDecrementOperators
-        //
-
-        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        static NFloat IDecrementOperators<NFloat>.operator checked --(NFloat value) => --value;
-
-        //
-        // IDivisionOperators
-        //
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static NFloat IDivisionOperators<NFloat, NFloat, NFloat>.operator checked /(NFloat left, NFloat right) => left / right;
 
         //
         // IExponentialFunctions
@@ -1054,13 +1177,6 @@ namespace System.Runtime.InteropServices
         public static NFloat Tanh(NFloat x) => new NFloat(NativeType.Tanh(x._value));
 
         //
-        // IIncrementOperators
-        //
-
-        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        static NFloat IIncrementOperators<NFloat>.operator checked ++(NFloat value) => ++value;
-
-        //
         // ILogarithmicFunctions
         //
 
@@ -1090,13 +1206,6 @@ namespace System.Runtime.InteropServices
         static NFloat IMultiplicativeIdentity<NFloat, NFloat>.MultiplicativeIdentity => new NFloat(NativeType.MultiplicativeIdentity);
 
         //
-        // IMultiplyOperators
-        //
-
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static NFloat IMultiplyOperators<NFloat, NFloat, NFloat>.operator checked *(NFloat left, NFloat right) => left * right;
-
-        //
         // INumber
         //
 
@@ -1104,7 +1213,7 @@ namespace System.Runtime.InteropServices
         public static NFloat Clamp(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.Clamp(value._value, min._value, max._value));
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static NFloat CopySign(NFloat x, NFloat y) => new NFloat(NativeType.CopySign(x._value, y._value));
+        public static NFloat CopySign(NFloat value, NFloat sign) => new NFloat(NativeType.CopySign(value._value, sign._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static NFloat Max(NFloat x, NFloat y) => new NFloat(NativeType.Max(x._value, y._value));
@@ -1136,94 +1245,6 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static NFloat Abs(NFloat value) => new NFloat(NativeType.Abs(value._value));
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NFloat CreateChecked<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            return CreateSaturating(value);
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NFloat CreateSaturating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (NFloat)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (NFloat)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (NFloat)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                return (NFloat)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NFloat CreateTruncating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            return CreateChecked(value);
-        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<NFloat>.IsCanonical(NFloat value) => true;
@@ -1264,13 +1285,399 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         public static NFloat MinMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinMagnitudeNumber(x._value, y._value));
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out NFloat result)
+        static bool INumberBase<NFloat>.TryConvertFromChecked<TOther>(TOther value, out NFloat result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<NFloat>.TryConvertFromSaturating<TOther>(TOther value, out NFloat result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<NFloat>.TryConvertFromTruncating<TOther>(TOther value, out NFloat result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        private static bool TryConvertFrom<TOther>(TOther value, out NFloat result)
             where TOther : INumberBase<TOther>
         {
-            result = CreateSaturating(value);
-            return true;
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
+                result = (NFloat)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = (NFloat)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = (NFloat)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualValue = (nint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = (NFloat)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = checked((byte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = checked((char)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = checked((decimal)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = checked((short)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = checked((int)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = checked((long)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = checked((Int128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = checked((nint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = checked((sbyte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = checked((ushort)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = checked((uint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = checked((ulong)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = checked((UInt128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        private static bool TryConvertTo<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                    (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (value >= char.MaxValue) ? char.MaxValue :
+                                    (value <= char.MinValue) ? char.MinValue : (char)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value >= +79228162514264337593543950336.0f) ? decimal.MaxValue :
+                                       (value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = (value >= short.MaxValue) ? short.MaxValue :
+                                     (value <= short.MinValue) ? short.MinValue : (short)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = (value >= int.MaxValue) ? int.MaxValue :
+                                   (value <= int.MinValue) ? int.MinValue : (int)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (value >= long.MaxValue) ? long.MaxValue :
+                                    (value <= long.MinValue) ? long.MinValue : (long)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = (value >= +170141183460469231731687303715884105727.0) ? Int128.MaxValue :
+                                      (value <= -170141183460469231731687303715884105728.0) ? Int128.MinValue : (Int128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = (value >= nint.MaxValue) ? nint.MaxValue :
+                                    (value <= nint.MinValue) ? nint.MinValue : (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = (value >= sbyte.MaxValue) ? sbyte.MaxValue :
+                                     (value <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
+                                      (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                    (value <= uint.MinValue) ? uint.MinValue : (uint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value <= ulong.MinValue) ? ulong.MinValue :
+                                     IsNaN(value) ? 0 : (ulong)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value >= 340282366920938463463374607431768211455.0) ? UInt128.MaxValue :
+                                       (value <= 0.0) ? UInt128.MinValue : (UInt128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+#if TARGET_32BIT
+                nuint actualResult = (value >= uint.MaxValue) ? unchecked((nuint)uint.MaxValue) :
+                                     (value <= uint.MinValue) ? unchecked((nuint)uint.MinValue) : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#else
+                nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
+                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#endif
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
         }
 
         //
@@ -1293,14 +1700,14 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static NFloat Cbrt(NFloat x) => new NFloat(NativeType.Cbrt(x._value));
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static NFloat Hypot(NFloat x, NFloat y) => new NFloat(NativeType.Hypot(x._value, y._value));
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static NFloat Hypot(NFloat x, NFloat y) => new NFloat(NativeType.Hypot(x._value, y._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
+        public static NFloat Root(NFloat x, int n) => new NFloat(NativeType.Root(x._value, n));
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static NFloat Sqrt(NFloat x) => new NFloat(NativeType.Sqrt(x._value));
-
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
-        // public static NFloat Root(NFloat x, NFloat n) => new NFloat(NativeType.Root(x._value, n._value));
 
         //
         // ISignedNumber
@@ -1320,21 +1727,20 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out NFloat result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static NFloat ISubtractionOperators<NFloat, NFloat, NFloat>.operator checked -(NFloat left, NFloat right) => left - right;
-
-        //
         // ITrigonometricFunctions
         //
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static NFloat Acos(NFloat x) => new NFloat(NativeType.Acos(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static NFloat AcosPi(NFloat x) => new NFloat(NativeType.AcosPi(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static NFloat Asin(NFloat x) => new NFloat(NativeType.Asin(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static NFloat AsinPi(NFloat x) => new NFloat(NativeType.AsinPi(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static NFloat Atan(NFloat x) => new NFloat(NativeType.Atan(x._value));
@@ -1342,8 +1748,17 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
         public static NFloat Atan2(NFloat y, NFloat x) => new NFloat(NativeType.Atan2(y._value, x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static NFloat Atan2Pi(NFloat y, NFloat x) => new NFloat(NativeType.Atan2Pi(y._value, x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static NFloat AtanPi(NFloat x) => new NFloat(NativeType.AtanPi(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static NFloat Cos(NFloat x) => new NFloat(NativeType.Cos(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static NFloat CosPi(NFloat x) => new NFloat(NativeType.CosPi(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static NFloat Sin(NFloat x) => new NFloat(NativeType.Sin(x._value));
@@ -1355,35 +1770,13 @@ namespace System.Runtime.InteropServices
             return (new NFloat(sin), new NFloat(cos));
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static NFloat SinPi(NFloat x) => new NFloat(NativeType.SinPi(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static NFloat Tan(NFloat x) => new NFloat(NativeType.Tan(x._value));
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
-        // public static NFloat AcosPi(NFloat x) => new NFloat(NativeType.AcosPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
-        // public static NFloat AsinPi(NFloat x) => new NFloat(NativeType.AsinPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
-        // public static NFloat AtanPi(NFloat x) => new NFloat(NativeType.AtanPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
-        // public static NFloat Atan2Pi(NFloat y, NFloat x) => new NFloat(NativeType.Atan2Pi(y._value, x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
-        // public static NFloat CosPi(NFloat x) => new NFloat(NativeType.CosPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
-        // public static NFloat SinPi(NFloat x) => new NFloat(NativeType.SinPi(x._value, y._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
-        // public static NFloat TanPi(NFloat x) => new NFloat(NativeType.TanPi(x._value, y._value));
-
-        //
-        // IUnaryNegationOperators
-        //
-
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static NFloat IUnaryNegationOperators<NFloat, NFloat>.operator checked -(NFloat value) => -value;
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static NFloat TanPi(NFloat x) => new NFloat(NativeType.TanPi(x._value));
     }
 }

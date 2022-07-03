@@ -12,7 +12,7 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
-    <Target Name="GenerateReproProjectResponseFile"
+  <Target Name="GenerateReproProjectResponseFile"
           AfterTargets="Build"
           Condition="'$(BuildingInsideVisualStudio)' != 'true'">
 

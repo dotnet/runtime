@@ -618,7 +618,7 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
 
     RVA rva = pNativeImage->GetDataRva(ptr);
 
-    PTR_CORCOMPILE_IMPORT_SECTION pImportSection = pZapModule->GetImportSectionForRVA(rva);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection = pZapModule->GetImportSectionForRVA(rva);
     if (pImportSection == NULL)
         return NULL;
 

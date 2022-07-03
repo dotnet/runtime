@@ -70,7 +70,7 @@ __declspec(noinline) __inline bool __stdcall
 
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) (Context.IsEnabled && RhEventTracingEnabled(&Context, &EventDescriptor))
 
-extern "C" __declspec(selectany) const GUID MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER = {0x1095638c, 0x8748, 0x4c7a, {0xb3, 0x9e, 0xba, 0xea, 0x27, 0xb9, 0xc5, 0x89}};
+extern "C" __declspec(selectany) const GUID MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER = {0x1095638c, 0x8748, 0x4c7a, {0xb3, 0x9e, 0xba, 0xea, 0x27, 0xb9, 0xc5, 0x89}};
 
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR BGC1stConEnd = {0xd, 0x0, 0x10, 0x4, 0x1b, 0x1, 0x8000000000000001};
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR BGC1stNonConEnd = {0xc, 0x0, 0x10, 0x4, 0x1a, 0x1, 0x8000000000000001};
@@ -101,67 +101,67 @@ extern "C" __declspec(selectany) const EVENT_DESCRIPTOR PrvGCMarkStackRoots_V1 =
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR PrvSetGCHandle = {0xc2, 0x0, 0x10, 0x5, 0x2a, 0x1, 0x8000000000004000};
 
 extern "C" __declspec(selectany) REGHANDLE Microsoft_Windows_Redhawk_GC_PrivateHandle;
-extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context;
+extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context;
 
-#define RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Private() do { PalEventRegister(&MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER, RhEtwControlCallback, &MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context, &Microsoft_Windows_Redhawk_GC_PrivateHandle); } while (false)
+#define RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Private() do { PalEventRegister(&MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER, RhEtwControlCallback, &MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context, &Microsoft_Windows_Redhawk_GC_PrivateHandle); } while (false)
 #define RH_ETW_UNREGISTER_Microsoft_Windows_Redhawk_GC_Private() do { PalEventUnregister(Microsoft_Windows_Redhawk_GC_PrivateHandle); } while (false)
 
-#define FireEtwBGC1stConEnd(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC1stConEnd)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC1stConEnd, ClrInstanceID) : 0
+#define FireEtwBGC1stConEnd(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC1stConEnd)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC1stConEnd, ClrInstanceID) : 0
 
-#define FireEtwBGC1stNonConEnd(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC1stNonConEnd)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC1stNonConEnd, ClrInstanceID) : 0
+#define FireEtwBGC1stNonConEnd(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC1stNonConEnd)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC1stNonConEnd, ClrInstanceID) : 0
 
-#define FireEtwBGC2ndConBegin(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndConBegin)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndConBegin, ClrInstanceID) : 0
+#define FireEtwBGC2ndConBegin(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndConBegin)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndConBegin, ClrInstanceID) : 0
 
-#define FireEtwBGC2ndConEnd(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndConEnd)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndConEnd, ClrInstanceID) : 0
+#define FireEtwBGC2ndConEnd(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndConEnd)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndConEnd, ClrInstanceID) : 0
 
-#define FireEtwBGC2ndNonConBegin(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndNonConBegin)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndNonConBegin, ClrInstanceID) : 0
+#define FireEtwBGC2ndNonConBegin(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndNonConBegin)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndNonConBegin, ClrInstanceID) : 0
 
-#define FireEtwBGC2ndNonConEnd(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndNonConEnd)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndNonConEnd, ClrInstanceID) : 0
+#define FireEtwBGC2ndNonConEnd(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndNonConEnd)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGC2ndNonConEnd, ClrInstanceID) : 0
 
-#define FireEtwBGCAllocWaitBegin(Reason, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCAllocWaitBegin)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCAllocWait(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCAllocWaitBegin, Reason, ClrInstanceID) : 0
+#define FireEtwBGCAllocWaitBegin(Reason, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCAllocWaitBegin)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCAllocWait(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCAllocWaitBegin, Reason, ClrInstanceID) : 0
 
-#define FireEtwBGCAllocWaitEnd(Reason, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCAllocWaitEnd)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCAllocWait(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCAllocWaitEnd, Reason, ClrInstanceID) : 0
+#define FireEtwBGCAllocWaitEnd(Reason, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCAllocWaitEnd)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCAllocWait(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCAllocWaitEnd, Reason, ClrInstanceID) : 0
 
-#define FireEtwBGCBegin(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCBegin)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCBegin, ClrInstanceID) : 0
+#define FireEtwBGCBegin(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCBegin)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCBegin, ClrInstanceID) : 0
 
-#define FireEtwBGCDrainMark(Objects, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCDrainMark)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCDrainMark(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCDrainMark, Objects, ClrInstanceID) : 0
+#define FireEtwBGCDrainMark(Objects, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCDrainMark)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCDrainMark(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCDrainMark, Objects, ClrInstanceID) : 0
 
-#define FireEtwBGCOverflow(Min, Max, Objects, IsLarge, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCOverflow)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCOverflow(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCOverflow, Min, Max, Objects, IsLarge, ClrInstanceID) : 0
+#define FireEtwBGCOverflow(Min, Max, Objects, IsLarge, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCOverflow)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCOverflow(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCOverflow, Min, Max, Objects, IsLarge, ClrInstanceID) : 0
 
-#define FireEtwBGCPlanEnd(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCPlanEnd)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCPlanEnd, ClrInstanceID) : 0
+#define FireEtwBGCPlanEnd(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCPlanEnd)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCPlanEnd, ClrInstanceID) : 0
 
-#define FireEtwBGCRevisit(Pages, Objects, IsLarge, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCRevisit)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCRevisit(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCRevisit, Pages, Objects, IsLarge, ClrInstanceID) : 0
+#define FireEtwBGCRevisit(Pages, Objects, IsLarge, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCRevisit)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCRevisit(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCRevisit, Pages, Objects, IsLarge, ClrInstanceID) : 0
 
-#define FireEtwBGCSweepEnd(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCSweepEnd)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCSweepEnd, ClrInstanceID) : 0
+#define FireEtwBGCSweepEnd(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCSweepEnd)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PrivateHandle, &BGCSweepEnd, ClrInstanceID) : 0
 
-#define FireEtwGCFullNotify_V1(GenNumber, IsAlloc, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCFullNotify_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCFullNotify_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCFullNotify_V1, GenNumber, IsAlloc, ClrInstanceID) : 0
+#define FireEtwGCFullNotify_V1(GenNumber, IsAlloc, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCFullNotify_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCFullNotify_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCFullNotify_V1, GenNumber, IsAlloc, ClrInstanceID) : 0
 
-#define FireEtwGCGlobalHeapHistory_V1(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCGlobalHeapHistory_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCGlobalHeap_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCGlobalHeapHistory_V1, FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID) : 0
+#define FireEtwGCGlobalHeapHistory_V1(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCGlobalHeapHistory_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCGlobalHeap_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCGlobalHeapHistory_V1, FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID) : 0
 
-#define FireEtwGCJoin_V1(Heap, JoinTime, JoinType, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCJoin_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCJoin_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCJoin_V1, Heap, JoinTime, JoinType, ClrInstanceID) : 0
+#define FireEtwGCJoin_V1(Heap, JoinTime, JoinType, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCJoin_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCJoin_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCJoin_V1, Heap, JoinTime, JoinType, ClrInstanceID) : 0
 
-#define FireEtwGCOptimized_V1(DesiredAllocation, NewAllocation, GenerationNumber, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCOptimized_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCOptimized_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCOptimized_V1, DesiredAllocation, NewAllocation, GenerationNumber, ClrInstanceID) : 0
+#define FireEtwGCOptimized_V1(DesiredAllocation, NewAllocation, GenerationNumber, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCOptimized_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCOptimized_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCOptimized_V1, DesiredAllocation, NewAllocation, GenerationNumber, ClrInstanceID) : 0
 
-#define FireEtwGCPerHeapHistory() (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory)) ? TemplateEventDescriptor(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory) : 0
+#define FireEtwGCPerHeapHistory() (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory)) ? TemplateEventDescriptor(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory) : 0
 
-#define FireEtwGCSettings(SegmentSize, LargeObjectSegmentSize, ServerGC) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCSettings)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCSettings(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCSettings, SegmentSize, LargeObjectSegmentSize, ServerGC) : 0
+#define FireEtwGCSettings(SegmentSize, LargeObjectSegmentSize, ServerGC) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCSettings)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCSettings(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCSettings, SegmentSize, LargeObjectSegmentSize, ServerGC) : 0
 
-#define FireEtwPinPlugAtGCTime(PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PinPlugAtGCTime)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PinPlugAtGCTime(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PinPlugAtGCTime, PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID) : 0
+#define FireEtwPinPlugAtGCTime(PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PinPlugAtGCTime)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PinPlugAtGCTime(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PinPlugAtGCTime, PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID) : 0
 
-#define FireEtwPrvDestroyGCHandle(HandleID, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvDestroyGCHandle)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvDestroyGCHandle(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvDestroyGCHandle, HandleID, ClrInstanceID) : 0
+#define FireEtwPrvDestroyGCHandle(HandleID, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvDestroyGCHandle)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvDestroyGCHandle(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvDestroyGCHandle, HandleID, ClrInstanceID) : 0
 
-#define FireEtwPrvGCMarkCards_V1(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkCards_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvGCMark_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkCards_V1, HeapNum, ClrInstanceID) : 0
+#define FireEtwPrvGCMarkCards_V1(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkCards_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvGCMark_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkCards_V1, HeapNum, ClrInstanceID) : 0
 
-#define FireEtwPrvGCMarkFinalizeQueueRoots_V1(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkFinalizeQueueRoots_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvGCMark_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkFinalizeQueueRoots_V1, HeapNum, ClrInstanceID) : 0
+#define FireEtwPrvGCMarkFinalizeQueueRoots_V1(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkFinalizeQueueRoots_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvGCMark_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkFinalizeQueueRoots_V1, HeapNum, ClrInstanceID) : 0
 
-#define FireEtwPrvGCMarkHandles_V1(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkHandles_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvGCMark_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkHandles_V1, HeapNum, ClrInstanceID) : 0
+#define FireEtwPrvGCMarkHandles_V1(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkHandles_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvGCMark_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkHandles_V1, HeapNum, ClrInstanceID) : 0
 
-#define FireEtwPrvGCMarkStackRoots_V1(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkStackRoots_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvGCMark_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkStackRoots_V1, HeapNum, ClrInstanceID) : 0
+#define FireEtwPrvGCMarkStackRoots_V1(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkStackRoots_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvGCMark_V1(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvGCMarkStackRoots_V1, HeapNum, ClrInstanceID) : 0
 
-#define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvSetGCHandle)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvSetGCHandle(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvSetGCHandle, HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) : 0
+#define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvSetGCHandle)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvSetGCHandle(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PrvSetGCHandle, HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) : 0
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCAllocWait(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Reason, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCAllocWait(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Reason, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &Reason, sizeof(uint32_t));
@@ -170,7 +170,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCAllocWait(REGHANDLE Re
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCDrainMark(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Objects, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCDrainMark(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Objects, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &Objects, sizeof(uint64_t));
@@ -179,7 +179,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCDrainMark(REGHANDLE Re
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCOverflow(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Min, uint64_t Max, uint64_t Objects, uint32_t IsLarge, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCOverflow(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Min, uint64_t Max, uint64_t Objects, uint32_t IsLarge, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[5];
     EventDataDescCreate(&EventData[0], &Min, sizeof(uint64_t));
@@ -191,7 +191,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCOverflow(REGHANDLE Reg
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCRevisit(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Pages, uint64_t Objects, uint32_t IsLarge, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_BGCRevisit(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Pages, uint64_t Objects, uint32_t IsLarge, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[4];
     EventDataDescCreate(&EventData[0], &Pages, sizeof(uint64_t));
@@ -202,7 +202,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_BGCRevisit(REGHANDLE RegH
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCFullNotify_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t GenNumber, uint32_t IsAlloc, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCFullNotify_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t GenNumber, uint32_t IsAlloc, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[3];
     EventDataDescCreate(&EventData[0], &GenNumber, sizeof(uint32_t));
@@ -212,7 +212,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCFullNotify_V1(REGHANDLE
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCGlobalHeap_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t FinalYoungestDesired, int32_t NumHeaps, uint32_t CondemnedGeneration, uint32_t Gen0ReductionCount, uint32_t Reason, uint32_t GlobalMechanisms, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCGlobalHeap_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t FinalYoungestDesired, int32_t NumHeaps, uint32_t CondemnedGeneration, uint32_t Gen0ReductionCount, uint32_t Reason, uint32_t GlobalMechanisms, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[7];
     EventDataDescCreate(&EventData[0], &FinalYoungestDesired, sizeof(uint64_t));
@@ -226,7 +226,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCGlobalHeap_V1(REGHANDLE
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCJoin_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Heap, uint32_t JoinTime, uint32_t JoinType, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCJoin_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Heap, uint32_t JoinTime, uint32_t JoinType, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[4];
     EventDataDescCreate(&EventData[0], &Heap, sizeof(uint32_t));
@@ -237,7 +237,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCJoin_V1(REGHANDLE RegHa
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCNoUserData(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[1];
     EventDataDescCreate(&EventData[0], &ClrInstanceID, sizeof(uint16_t));
@@ -245,7 +245,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCNoUserData(REGHANDLE Re
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCOptimized_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t DesiredAllocation, uint64_t NewAllocation, uint32_t GenerationNumber, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCOptimized_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t DesiredAllocation, uint64_t NewAllocation, uint32_t GenerationNumber, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[4];
     EventDataDescCreate(&EventData[0], &DesiredAllocation, sizeof(uint64_t));
@@ -256,7 +256,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCOptimized_V1(REGHANDLE 
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCSettings(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t SegmentSize, uint64_t LargeObjectSegmentSize, UInt32_BOOL ServerGC)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCSettings(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t SegmentSize, uint64_t LargeObjectSegmentSize, UInt32_BOOL ServerGC)
 {
     EVENT_DATA_DESCRIPTOR EventData[3];
     EventDataDescCreate(&EventData[0], &SegmentSize, sizeof(uint64_t));
@@ -266,7 +266,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_GCSettings(REGHANDLE RegH
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PinPlugAtGCTime(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* PlugStart, void* PlugEnd, void* GapBeforeSize, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PinPlugAtGCTime(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* PlugStart, void* PlugEnd, void* GapBeforeSize, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[4];
     EventDataDescCreate(&EventData[0], &PlugStart, sizeof(void*));
@@ -277,7 +277,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PinPlugAtGCTime(REGHANDLE
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvDestroyGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvDestroyGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &HandleID, sizeof(void*));
@@ -286,7 +286,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvDestroyGCHandle(REGHAN
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvGCMark_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t HeapNum, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvGCMark_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t HeapNum, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &HeapNum, sizeof(uint32_t));
@@ -295,7 +295,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvGCMark_V1(REGHANDLE Re
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvSetGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, void* ObjectID, uint32_t Kind, uint32_t Generation, uint64_t AppDomainID, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PrvSetGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, void* ObjectID, uint32_t Kind, uint32_t Generation, uint64_t AppDomainID, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], &HandleID, sizeof(void*));
@@ -307,7 +307,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_PrvSetGCHandle(REGHANDLE 
     return PalEventWrite(RegHandle, Descriptor, 6, EventData);
 }
 
-extern "C" __declspec(selectany) const GUID MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER = {0x47c3ba0c, 0x77f1, 0x4eb0, {0x8d, 0x4d, 0xae, 0xf4, 0x47, 0xf1, 0x6a, 0x85}};
+extern "C" __declspec(selectany) const GUID MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER = {0x47c3ba0c, 0x77f1, 0x4eb0, {0x8d, 0x4d, 0xae, 0xf4, 0x47, 0xf1, 0x6a, 0x85}};
 
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR BulkType = {0xf, 0x0, 0x10, 0x4, 0xa, 0x15, 0x8000000000080000};
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR DestroyGCHandle = {0x1f, 0x0, 0x10, 0x4, 0x22, 0x1, 0x8000000000000002};
@@ -349,89 +349,89 @@ extern "C" __declspec(selectany) const EVENT_DESCRIPTOR ModuleLoad_V2 = {0x98, 0
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR SetGCHandle = {0x1e, 0x0, 0x10, 0x4, 0x21, 0x1, 0x8000000000000002};
 
 extern "C" __declspec(selectany) REGHANDLE Microsoft_Windows_Redhawk_GC_PublicHandle;
-extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context;
+extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context;
 
-#define RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public() do { PalEventRegister(&MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER, RhEtwControlCallback, &MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context, &Microsoft_Windows_Redhawk_GC_PublicHandle); } while (false)
+#define RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public() do { PalEventRegister(&MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER, RhEtwControlCallback, &MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context, &Microsoft_Windows_Redhawk_GC_PublicHandle); } while (false)
 #define RH_ETW_UNREGISTER_Microsoft_Windows_Redhawk_GC_Public() do { PalEventUnregister(Microsoft_Windows_Redhawk_GC_PublicHandle); } while (false)
 
-#define FireEtwBulkType(Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &BulkType)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_BulkType(Microsoft_Windows_Redhawk_GC_PublicHandle, &BulkType, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwBulkType(Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &BulkType)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_BulkType(Microsoft_Windows_Redhawk_GC_PublicHandle, &BulkType, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwDestroyGCHandle(HandleID, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &DestroyGCHandle)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_DestroyGCHandle(Microsoft_Windows_Redhawk_GC_PublicHandle, &DestroyGCHandle, HandleID, ClrInstanceID) : 0
+#define FireEtwDestroyGCHandle(HandleID, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &DestroyGCHandle)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_DestroyGCHandle(Microsoft_Windows_Redhawk_GC_PublicHandle, &DestroyGCHandle, HandleID, ClrInstanceID) : 0
 
-#define FireEtwExceptionThrown_V1(ExceptionType, ExceptionMessage, ExceptionEIP, ExceptionHRESULT, ExceptionFlags, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &ExceptionThrown_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Exception(Microsoft_Windows_Redhawk_GC_PublicHandle, &ExceptionThrown_V1, ExceptionType, ExceptionMessage, ExceptionEIP, ExceptionHRESULT, ExceptionFlags, ClrInstanceID) : 0
+#define FireEtwExceptionThrown_V1(ExceptionType, ExceptionMessage, ExceptionEIP, ExceptionHRESULT, ExceptionFlags, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &ExceptionThrown_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Exception(Microsoft_Windows_Redhawk_GC_PublicHandle, &ExceptionThrown_V1, ExceptionType, ExceptionMessage, ExceptionEIP, ExceptionHRESULT, ExceptionFlags, ClrInstanceID) : 0
 
-#define FireEtwGCAllocationTick_V1(AllocationAmount, AllocationKind, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V1, AllocationAmount, AllocationKind, ClrInstanceID) : 0
+#define FireEtwGCAllocationTick_V1(AllocationAmount, AllocationKind, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCAllocationTick_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V1, AllocationAmount, AllocationKind, ClrInstanceID) : 0
 
-#define FireEtwGCAllocationTick_V2(AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V2)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V2, AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex) : 0
+#define FireEtwGCAllocationTick_V2(AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V2)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCAllocationTick_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V2, AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex) : 0
 
-#define FireEtwGCAllocationTick_V3(AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex, Address) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V3)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V3(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V3, AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex, Address) : 0
+#define FireEtwGCAllocationTick_V3(AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex, Address) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V3)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCAllocationTick_V3(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCAllocationTick_V3, AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex, Address) : 0
 
-#define FireEtwGCBulkEdge(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkEdge)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkEdge(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkEdge, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwGCBulkEdge(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkEdge)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkEdge(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkEdge, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwGCBulkMovedObjectRanges(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkMovedObjectRanges)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkMovedObjectRanges(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkMovedObjectRanges, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwGCBulkMovedObjectRanges(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkMovedObjectRanges)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkMovedObjectRanges(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkMovedObjectRanges, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwGCBulkNode(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkNode)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkNode(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkNode, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwGCBulkNode(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkNode)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkNode(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkNode, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwGCBulkRCW(Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRCW)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRCW(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRCW, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwGCBulkRCW(Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRCW)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRCW(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRCW, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwGCBulkRootCCW(Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootCCW)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootCCW(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootCCW, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwGCBulkRootCCW(Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootCCW)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootCCW(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootCCW, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwGCBulkRootConditionalWeakTableElementEdge(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootConditionalWeakTableElementEdge)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootConditionalWeakTableElementEdge(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootConditionalWeakTableElementEdge, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwGCBulkRootConditionalWeakTableElementEdge(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootConditionalWeakTableElementEdge)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootConditionalWeakTableElementEdge(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootConditionalWeakTableElementEdge, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwGCBulkRootEdge(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootEdge)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootEdge(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootEdge, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwGCBulkRootEdge(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootEdge)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootEdge(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkRootEdge, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwGCBulkSurvivingObjectRanges(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkSurvivingObjectRanges)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkSurvivingObjectRanges(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkSurvivingObjectRanges, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
+#define FireEtwGCBulkSurvivingObjectRanges(Index, Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkSurvivingObjectRanges)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkSurvivingObjectRanges(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCBulkSurvivingObjectRanges, Index, Count, ClrInstanceID, Values_Len_, Values) : 0
 
-#define FireEtwGCCreateConcurrentThread_V1(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCCreateConcurrentThread_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCCreateConcurrentThread(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCCreateConcurrentThread_V1, ClrInstanceID) : 0
+#define FireEtwGCCreateConcurrentThread_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCCreateConcurrentThread_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCCreateConcurrentThread(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCCreateConcurrentThread_V1, ClrInstanceID) : 0
 
-#define FireEtwGCCreateSegment_V1(Address, Size, Type, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCCreateSegment_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCCreateSegment_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCCreateSegment_V1, Address, Size, Type, ClrInstanceID) : 0
+#define FireEtwGCCreateSegment_V1(Address, Size, Type, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCCreateSegment_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCCreateSegment_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCCreateSegment_V1, Address, Size, Type, ClrInstanceID) : 0
 
-#define FireEtwGCEnd_V1(Count, Depth, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCEnd_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCEnd_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCEnd_V1, Count, Depth, ClrInstanceID) : 0
+#define FireEtwGCEnd_V1(Count, Depth, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCEnd_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCEnd_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCEnd_V1, Count, Depth, ClrInstanceID) : 0
 
-#define FireEtwGCFreeSegment_V1(Address, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCFreeSegment_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCFreeSegment_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCFreeSegment_V1, Address, ClrInstanceID) : 0
+#define FireEtwGCFreeSegment_V1(Address, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCFreeSegment_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCFreeSegment_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCFreeSegment_V1, Address, ClrInstanceID) : 0
 
-#define FireEtwGCGenerationRange(Generation, RangeStart, RangeUsedLength, RangeReservedLength, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCGenerationRange)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCGenerationRange(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCGenerationRange, Generation, RangeStart, RangeUsedLength, RangeReservedLength, ClrInstanceID) : 0
+#define FireEtwGCGenerationRange(Generation, RangeStart, RangeUsedLength, RangeReservedLength, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCGenerationRange)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCGenerationRange(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCGenerationRange, Generation, RangeStart, RangeUsedLength, RangeReservedLength, ClrInstanceID) : 0
 
-#define FireEtwGCGlobalHeapHistory_V2(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCGlobalHeapHistory_V2)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCGlobalHeap_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCGlobalHeapHistory_V2, FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) : 0
+#define FireEtwGCGlobalHeapHistory_V2(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCGlobalHeapHistory_V2)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCGlobalHeap_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCGlobalHeapHistory_V2, FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) : 0
 
-#define FireEtwGCHeapStats_V1(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCHeapStats_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCHeapStats_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCHeapStats_V1, GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount, ClrInstanceID) : 0
+#define FireEtwGCHeapStats_V1(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCHeapStats_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCHeapStats_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCHeapStats_V1, GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount, ClrInstanceID) : 0
 
-#define FireEtwGCJoin_V2(Heap, JoinTime, JoinType, ClrInstanceID, JoinID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCJoin_V2)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCJoin_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCJoin_V2, Heap, JoinTime, JoinType, ClrInstanceID, JoinID) : 0
+#define FireEtwGCJoin_V2(Heap, JoinTime, JoinType, ClrInstanceID, JoinID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCJoin_V2)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCJoin_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCJoin_V2, Heap, JoinTime, JoinType, ClrInstanceID, JoinID) : 0
 
-#define FireEtwGCMarkFinalizeQueueRoots(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkFinalizeQueueRoots)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMark(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkFinalizeQueueRoots, HeapNum, ClrInstanceID) : 0
+#define FireEtwGCMarkFinalizeQueueRoots(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkFinalizeQueueRoots)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCMark(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkFinalizeQueueRoots, HeapNum, ClrInstanceID) : 0
 
-#define FireEtwGCMarkHandles(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkHandles)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMark(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkHandles, HeapNum, ClrInstanceID) : 0
+#define FireEtwGCMarkHandles(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkHandles)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCMark(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkHandles, HeapNum, ClrInstanceID) : 0
 
-#define FireEtwGCMarkOlderGenerationRoots(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkOlderGenerationRoots)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMark(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkOlderGenerationRoots, HeapNum, ClrInstanceID) : 0
+#define FireEtwGCMarkOlderGenerationRoots(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkOlderGenerationRoots)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCMark(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkOlderGenerationRoots, HeapNum, ClrInstanceID) : 0
 
-#define FireEtwGCMarkStackRoots(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkStackRoots)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMark(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkStackRoots, HeapNum, ClrInstanceID) : 0
+#define FireEtwGCMarkStackRoots(HeapNum, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkStackRoots)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCMark(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkStackRoots, HeapNum, ClrInstanceID) : 0
 
-#define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkWithType)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMarkWithType(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkWithType, HeapNum, ClrInstanceID, Type, Bytes) : 0
+#define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkWithType)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCMarkWithType(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCMarkWithType, HeapNum, ClrInstanceID, Type, Bytes) : 0
 
-#define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCPerHeapHistory_V3)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCPerHeapHistory_V3, ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) : 0
+#define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCPerHeapHistory_V3)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCPerHeapHistory_V3, ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) : 0
 
-#define FireEtwGCRestartEEBegin_V1(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEBegin_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEBegin_V1, ClrInstanceID) : 0
+#define FireEtwGCRestartEEBegin_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEBegin_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEBegin_V1, ClrInstanceID) : 0
 
-#define FireEtwGCRestartEEEnd_V1(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEEnd_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEEnd_V1, ClrInstanceID) : 0
+#define FireEtwGCRestartEEEnd_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEEnd_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEEnd_V1, ClrInstanceID) : 0
 
-#define FireEtwGCStart_V1(Count, Depth, Reason, Type, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCStart_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V1, Count, Depth, Reason, Type, ClrInstanceID) : 0
+#define FireEtwGCStart_V1(Count, Depth, Reason, Type, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCStart_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V1, Count, Depth, Reason, Type, ClrInstanceID) : 0
 
-#define FireEtwGCStart_V2(Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V2)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCStart_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V2, Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) : 0
+#define FireEtwGCStart_V2(Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V2)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCStart_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V2, Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) : 0
 
-#define FireEtwGCSuspendEEBegin_V1(Reason, Count, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEBegin_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCSuspendEE_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEBegin_V1, Reason, Count, ClrInstanceID) : 0
+#define FireEtwGCSuspendEEBegin_V1(Reason, Count, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEBegin_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCSuspendEE_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEBegin_V1, Reason, Count, ClrInstanceID) : 0
 
-#define FireEtwGCSuspendEEEnd_V1(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEEnd_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEEnd_V1, ClrInstanceID) : 0
+#define FireEtwGCSuspendEEEnd_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEEnd_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEEnd_V1, ClrInstanceID) : 0
 
-#define FireEtwGCTerminateConcurrentThread_V1(ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTerminateConcurrentThread_V1)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCTerminateConcurrentThread(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTerminateConcurrentThread_V1, ClrInstanceID) : 0
+#define FireEtwGCTerminateConcurrentThread_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTerminateConcurrentThread_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCTerminateConcurrentThread(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTerminateConcurrentThread_V1, ClrInstanceID) : 0
 
-#define FireEtwGCTriggered(Reason, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTriggered)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCTriggered(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTriggered, Reason, ClrInstanceID) : 0
+#define FireEtwGCTriggered(Reason, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTriggered)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCTriggered(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTriggered, Reason, ClrInstanceID) : 0
 
-#define FireEtwModuleLoad_V2(ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath, ClrInstanceID, ManagedPdbSignature, ManagedPdbAge, ManagedPdbBuildPath, NativePdbSignature, NativePdbAge, NativePdbBuildPath) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &ModuleLoad_V2)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_ModuleLoadUnload_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &ModuleLoad_V2, ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath, ClrInstanceID, ManagedPdbSignature, ManagedPdbAge, ManagedPdbBuildPath, NativePdbSignature, NativePdbAge, NativePdbBuildPath) : 0
+#define FireEtwModuleLoad_V2(ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath, ClrInstanceID, ManagedPdbSignature, ManagedPdbAge, ManagedPdbBuildPath, NativePdbSignature, NativePdbAge, NativePdbBuildPath) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &ModuleLoad_V2)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_ModuleLoadUnload_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &ModuleLoad_V2, ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath, ClrInstanceID, ManagedPdbSignature, ManagedPdbAge, ManagedPdbBuildPath, NativePdbSignature, NativePdbAge, NativePdbBuildPath) : 0
 
-#define FireEtwSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) (MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &SetGCHandle)) ? Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_SetGCHandle(Microsoft_Windows_Redhawk_GC_PublicHandle, &SetGCHandle, HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) : 0
+#define FireEtwSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &SetGCHandle)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_SetGCHandle(Microsoft_Windows_Redhawk_GC_PublicHandle, &SetGCHandle, HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) : 0
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_BulkType(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_BulkType(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[11];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -441,7 +441,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_BulkType(REGHANDLE RegHand
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_DestroyGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_DestroyGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &HandleID, sizeof(void*));
@@ -450,7 +450,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_DestroyGCHandle(REGHANDLE 
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Exception(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, LPCWSTR ExceptionType, LPCWSTR ExceptionMessage, void* ExceptionEIP, uint32_t ExceptionHRESULT, uint16_t ExceptionFlags, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Exception(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, LPCWSTR ExceptionType, LPCWSTR ExceptionMessage, void* ExceptionEIP, uint32_t ExceptionHRESULT, uint16_t ExceptionFlags, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], (ExceptionType != NULL) ? ExceptionType : L"", (ExceptionType != NULL) ? (ULONG)((wcslen(ExceptionType) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L""));
@@ -463,7 +463,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Exception(REGHANDLE RegHan
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t AllocationAmount, uint32_t AllocationKind, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCAllocationTick_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t AllocationAmount, uint32_t AllocationKind, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[3];
     EventDataDescCreate(&EventData[0], &AllocationAmount, sizeof(uint32_t));
@@ -473,7 +473,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V1(REGHAN
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t AllocationAmount, uint32_t AllocationKind, uint16_t ClrInstanceID, uint64_t AllocationAmount64, void* TypeID, LPCWSTR TypeName, uint32_t HeapIndex)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCAllocationTick_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t AllocationAmount, uint32_t AllocationKind, uint16_t ClrInstanceID, uint64_t AllocationAmount64, void* TypeID, LPCWSTR TypeName, uint32_t HeapIndex)
 {
     EVENT_DATA_DESCRIPTOR EventData[7];
     EventDataDescCreate(&EventData[0], &AllocationAmount, sizeof(uint32_t));
@@ -487,7 +487,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V2(REGHAN
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V3(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t AllocationAmount, uint32_t AllocationKind, uint16_t ClrInstanceID, uint64_t AllocationAmount64, void* TypeID, LPCWSTR TypeName, uint32_t HeapIndex, void* Address)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCAllocationTick_V3(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t AllocationAmount, uint32_t AllocationKind, uint16_t ClrInstanceID, uint64_t AllocationAmount64, void* TypeID, LPCWSTR TypeName, uint32_t HeapIndex, void* Address)
 {
     EVENT_DATA_DESCRIPTOR EventData[8];
     EventDataDescCreate(&EventData[0], &AllocationAmount, sizeof(uint32_t));
@@ -502,7 +502,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCAllocationTick_V3(REGHAN
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -513,7 +513,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkEdge(REGHANDLE RegHa
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkMovedObjectRanges(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkMovedObjectRanges(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[7];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -524,7 +524,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkMovedObjectRanges(RE
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkNode(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkNode(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[8];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -535,7 +535,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkNode(REGHANDLE RegHa
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRCW(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRCW(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[9];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -545,7 +545,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRCW(REGHANDLE RegHan
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootCCW(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootCCW(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[10];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -555,7 +555,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootCCW(REGHANDLE Re
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootConditionalWeakTableElementEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootConditionalWeakTableElementEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[7];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -566,7 +566,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootConditionalWeakT
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkRootEdge(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[8];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -577,7 +577,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkRootEdge(REGHANDLE R
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkSurvivingObjectRanges(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCBulkSurvivingObjectRanges(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Index, uint32_t Count, uint16_t ClrInstanceID, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], &Index, sizeof(uint32_t));
@@ -588,7 +588,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCBulkSurvivingObjectRange
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCCreateConcurrentThread(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCCreateConcurrentThread(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[1];
     EventDataDescCreate(&EventData[0], &ClrInstanceID, sizeof(uint16_t));
@@ -596,7 +596,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCCreateConcurrentThread(R
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCCreateSegment_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Address, uint64_t Size, uint32_t Type, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCCreateSegment_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Address, uint64_t Size, uint32_t Type, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[4];
     EventDataDescCreate(&EventData[0], &Address, sizeof(uint64_t));
@@ -607,7 +607,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCCreateSegment_V1(REGHAND
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCEnd_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint32_t Depth, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCEnd_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint32_t Depth, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[3];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -617,7 +617,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCEnd_V1(REGHANDLE RegHand
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCFreeSegment_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Address, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCFreeSegment_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t Address, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &Address, sizeof(uint64_t));
@@ -626,7 +626,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCFreeSegment_V1(REGHANDLE
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCGenerationRange(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint8_t Generation, void* RangeStart, uint64_t RangeUsedLength, uint64_t RangeReservedLength, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCGenerationRange(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint8_t Generation, void* RangeStart, uint64_t RangeUsedLength, uint64_t RangeReservedLength, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[5];
     EventDataDescCreate(&EventData[0], &Generation, sizeof(uint8_t));
@@ -638,7 +638,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCGenerationRange(REGHANDL
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCGlobalHeap_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t FinalYoungestDesired, int32_t NumHeaps, uint32_t CondemnedGeneration, uint32_t Gen0ReductionCount, uint32_t Reason, uint32_t GlobalMechanisms, uint16_t ClrInstanceID, uint32_t PauseMode, uint32_t MemoryPressure)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCGlobalHeap_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t FinalYoungestDesired, int32_t NumHeaps, uint32_t CondemnedGeneration, uint32_t Gen0ReductionCount, uint32_t Reason, uint32_t GlobalMechanisms, uint16_t ClrInstanceID, uint32_t PauseMode, uint32_t MemoryPressure)
 {
     EVENT_DATA_DESCRIPTOR EventData[9];
     EventDataDescCreate(&EventData[0], &FinalYoungestDesired, sizeof(uint64_t));
@@ -654,7 +654,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCGlobalHeap_V2(REGHANDLE 
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCHeapStats_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t GenerationSize0, uint64_t TotalPromotedSize0, uint64_t GenerationSize1, uint64_t TotalPromotedSize1, uint64_t GenerationSize2, uint64_t TotalPromotedSize2, uint64_t GenerationSize3, uint64_t TotalPromotedSize3, uint64_t FinalizationPromotedSize, uint64_t FinalizationPromotedCount, uint32_t PinnedObjectCount, uint32_t SinkBlockCount, uint32_t GCHandleCount, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCHeapStats_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t GenerationSize0, uint64_t TotalPromotedSize0, uint64_t GenerationSize1, uint64_t TotalPromotedSize1, uint64_t GenerationSize2, uint64_t TotalPromotedSize2, uint64_t GenerationSize3, uint64_t TotalPromotedSize3, uint64_t FinalizationPromotedSize, uint64_t FinalizationPromotedCount, uint32_t PinnedObjectCount, uint32_t SinkBlockCount, uint32_t GCHandleCount, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[14];
     EventDataDescCreate(&EventData[0], &GenerationSize0, sizeof(uint64_t));
@@ -675,7 +675,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCHeapStats_V1(REGHANDLE R
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCJoin_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Heap, uint32_t JoinTime, uint32_t JoinType, uint16_t ClrInstanceID, uint32_t JoinID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCJoin_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Heap, uint32_t JoinTime, uint32_t JoinType, uint16_t ClrInstanceID, uint32_t JoinID)
 {
     EVENT_DATA_DESCRIPTOR EventData[5];
     EventDataDescCreate(&EventData[0], &Heap, sizeof(uint32_t));
@@ -687,7 +687,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCJoin_V2(REGHANDLE RegHan
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMark(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t HeapNum, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCMark(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t HeapNum, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &HeapNum, sizeof(uint32_t));
@@ -696,7 +696,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMark(REGHANDLE RegHandle
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMarkWithType(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t HeapNum, uint16_t ClrInstanceID, uint32_t Type, uint64_t Bytes)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCMarkWithType(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t HeapNum, uint16_t ClrInstanceID, uint32_t Type, uint64_t Bytes)
 {
     EVENT_DATA_DESCRIPTOR EventData[4];
     EventDataDescCreate(&EventData[0], &HeapNum, sizeof(uint32_t));
@@ -707,7 +707,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCMarkWithType(REGHANDLE R
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCNoUserData(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[1];
     EventDataDescCreate(&EventData[0], &ClrInstanceID, sizeof(uint16_t));
@@ -715,7 +715,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCNoUserData(REGHANDLE Reg
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID, void* FreeListAllocated, void* FreeListRejected, void* EndOfSegAllocated, void* CondemnedAllocated, void* PinnedAllocated, void* PinnedAllocatedAdvance, uint32_t RunningFreeListEfficiency, uint32_t CondemnReasons0, uint32_t CondemnReasons1, uint32_t CompactMechanisms, uint32_t ExpandMechanisms, uint32_t HeapIndex, void* ExtraGen0Commit, uint32_t Count, ULONG Values_Len_, const PVOID Values)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID, void* FreeListAllocated, void* FreeListRejected, void* EndOfSegAllocated, void* CondemnedAllocated, void* PinnedAllocated, void* PinnedAllocatedAdvance, uint32_t RunningFreeListEfficiency, uint32_t CondemnReasons0, uint32_t CondemnReasons1, uint32_t CompactMechanisms, uint32_t ExpandMechanisms, uint32_t HeapIndex, void* ExtraGen0Commit, uint32_t Count, ULONG Values_Len_, const PVOID Values)
 {
     EVENT_DATA_DESCRIPTOR EventData[26];
     EventDataDescCreate(&EventData[0], &ClrInstanceID, sizeof(uint16_t));
@@ -738,7 +738,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(REGHAN
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCStart_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint32_t Depth, uint32_t Reason, uint32_t Type, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCStart_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint32_t Depth, uint32_t Reason, uint32_t Type, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[5];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -750,7 +750,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCStart_V1(REGHANDLE RegHa
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCStart_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint32_t Depth, uint32_t Reason, uint32_t Type, uint16_t ClrInstanceID, uint64_t ClientSequenceNumber)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCStart_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Count, uint32_t Depth, uint32_t Reason, uint32_t Type, uint16_t ClrInstanceID, uint64_t ClientSequenceNumber)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], &Count, sizeof(uint32_t));
@@ -763,7 +763,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCStart_V2(REGHANDLE RegHa
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCSuspendEE_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Reason, uint32_t Count, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCSuspendEE_V1(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Reason, uint32_t Count, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[3];
     EventDataDescCreate(&EventData[0], &Reason, sizeof(uint32_t));
@@ -773,7 +773,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCSuspendEE_V1(REGHANDLE R
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCTerminateConcurrentThread(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCTerminateConcurrentThread(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[1];
     EventDataDescCreate(&EventData[0], &ClrInstanceID, sizeof(uint16_t));
@@ -781,7 +781,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCTerminateConcurrentThrea
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCTriggered(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Reason, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCTriggered(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint32_t Reason, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[2];
     EventDataDescCreate(&EventData[0], &Reason, sizeof(uint32_t));
@@ -790,7 +790,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_GCTriggered(REGHANDLE RegH
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_ModuleLoadUnload_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t ModuleID, uint64_t AssemblyID, uint32_t ModuleFlags, uint32_t Reserved1, LPCWSTR ModuleILPath, LPCWSTR ModuleNativePath, uint16_t ClrInstanceID, const GUID* ManagedPdbSignature, uint32_t ManagedPdbAge, LPCWSTR ManagedPdbBuildPath, const GUID* NativePdbSignature, uint32_t NativePdbAge, LPCWSTR NativePdbBuildPath)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_ModuleLoadUnload_V2(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, uint64_t ModuleID, uint64_t AssemblyID, uint32_t ModuleFlags, uint32_t Reserved1, LPCWSTR ModuleILPath, LPCWSTR ModuleNativePath, uint16_t ClrInstanceID, const GUID* ManagedPdbSignature, uint32_t ManagedPdbAge, LPCWSTR ManagedPdbBuildPath, const GUID* NativePdbSignature, uint32_t NativePdbAge, LPCWSTR NativePdbBuildPath)
 {
     EVENT_DATA_DESCRIPTOR EventData[13];
     EventDataDescCreate(&EventData[0], &ModuleID, sizeof(uint64_t));
@@ -810,7 +810,7 @@ Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_ModuleLoadUnload_V2(REGHAN
 }
 
 RH_ETW_INLINE uint32_t
-Template_MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_SetGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, void* ObjectID, uint32_t Kind, uint32_t Generation, uint64_t AppDomainID, uint16_t ClrInstanceID)
+Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_SetGCHandle(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor, void* HandleID, void* ObjectID, uint32_t Kind, uint32_t Generation, uint64_t AppDomainID, uint16_t ClrInstanceID)
 {
     EVENT_DATA_DESCRIPTOR EventData[6];
     EventDataDescCreate(&EventData[0], &HandleID, sizeof(void*));

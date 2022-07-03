@@ -212,10 +212,13 @@ namespace Microsoft.Interop
             {
                 return CreateNativeCollectionMarshaller(info, context, collectionMarshallingInfo, marshallingStrategy);
             }
-
-            if (marshalInfo.NativeValueType is not null)
+            else if (marshalInfo.NativeValueType is not null)
             {
-                marshallingStrategy = DecorateWithTwoStageMarshallingStrategy(marshalInfo, marshallingStrategy);
+                marshallingStrategy = new CustomNativeTypeWithToFromNativeValueMarshalling(marshallingStrategy, marshalInfo.NativeValueType.Syntax);
+                if (marshalInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.NativeType) && marshalInfo.MarshallingFeatures.HasFlag(CustomTypeMarshallerFeatures.TwoStageMarshalling))
+                {
+                    marshallingStrategy = new PinnableMarshallerTypeMarshalling(marshallingStrategy);
+                }
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
@@ -283,18 +286,6 @@ namespace Microsoft.Interop
             }
         }
 
-        private static ICustomNativeTypeMarshallingStrategy DecorateWithTwoStageMarshallingStrategy(NativeMarshallingAttributeInfo marshalInfo, ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller)
-        {
-            TypeSyntax nativeValueTypeSyntax = marshalInfo.NativeValueType!.Syntax;
-
-            if (marshalInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.NativeType) && marshalInfo.MarshallingFeatures.HasFlag(CustomTypeMarshallerFeatures.TwoStageMarshalling))
-            {
-                return new PinnableMarshallerTypeMarshalling(nativeTypeMarshaller, nativeValueTypeSyntax);
-            }
-
-            return new CustomNativeTypeWithToFromNativeValueMarshalling(nativeTypeMarshaller, nativeValueTypeSyntax);
-        }
-
         private IMarshallingGenerator CreateNativeCollectionMarshaller(
             TypePositionInfo info,
             StubCodeContext context,
@@ -314,8 +305,8 @@ namespace Microsoft.Interop
             }
 
             bool enableArrayPinning = elementMarshaller is BlittableMarshaller;
-            bool treatAsBlittable = enableArrayPinning || elementMarshaller is Utf16CharMarshaller;
-            if (treatAsBlittable)
+            bool treatElementAsBlittable = enableArrayPinning || elementMarshaller is Utf16CharMarshaller;
+            if (treatElementAsBlittable)
             {
                 marshallingStrategy = new LinearCollectionWithBlittableElementsMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax, numElementsExpression);
             }
@@ -324,10 +315,10 @@ namespace Microsoft.Interop
                 marshallingStrategy = new LinearCollectionWithNonBlittableElementsMarshalling(marshallingStrategy, elementMarshaller, elementInfo, numElementsExpression);
             }
 
-            // Explicitly insert the Value property handling here (before numElements handling) so that the numElements handling will be emitted before the Value property handling in unmarshalling.
-            if (collectionInfo.NativeValueType is not null)
+            marshallingStrategy = new CustomNativeTypeWithToFromNativeValueMarshalling(marshallingStrategy, collectionInfo.NativeValueType.Syntax);
+            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.NativeType) && collectionInfo.MarshallingFeatures.HasFlag(CustomTypeMarshallerFeatures.TwoStageMarshalling))
             {
-                marshallingStrategy = DecorateWithTwoStageMarshallingStrategy(collectionInfo, marshallingStrategy);
+                marshallingStrategy = new PinnableMarshallerTypeMarshalling(marshallingStrategy);
             }
 
             TypeSyntax nativeElementType = elementMarshaller.AsNativeType(elementInfo);
@@ -339,13 +330,14 @@ namespace Microsoft.Interop
             {
                 return new ArrayMarshaller(
                     new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: true),
-                    collectionInfo.ElementType.Syntax,
+                    elementInfo,
                     enableArrayPinning);
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
-            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType))
+            // Elements in the collection must be blittable to use the pinnable marshaller.
+            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType) && treatElementAsBlittable)
             {
                 return new PinnableManagedValueMarshaller(marshallingGenerator);
             }

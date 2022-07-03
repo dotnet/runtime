@@ -227,4 +227,57 @@ namespace SharedTypes
             Marshal.FreeCoTaskMem(allocatedMemory);
         }
     }
+
+    [NativeMarshalling(typeof(WrappedListMarshaller<>))]
+    public struct WrappedList<T>
+    {
+        public WrappedList(List<T> list)
+        {
+            Wrapped = list;
+        }
+
+        public List<T> Wrapped { get; }
+
+        public ref T GetPinnableReference() => ref CollectionsMarshal.AsSpan(Wrapped).GetPinnableReference();
+    }
+
+    [CustomTypeMarshaller(typeof(WrappedList<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 0x200)]
+    public unsafe ref struct WrappedListMarshaller<T>
+    {
+        private ListMarshaller<T> _marshaller;
+
+        public WrappedListMarshaller(int sizeOfNativeElement)
+            : this()
+        {
+            this._marshaller = new ListMarshaller<T>(sizeOfNativeElement);
+        }
+
+        public WrappedListMarshaller(WrappedList<T> managed, int sizeOfNativeElement)
+            : this(managed, Span<byte>.Empty, sizeOfNativeElement)
+        {
+        }
+
+        public WrappedListMarshaller(WrappedList<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
+        {
+            this._marshaller = new ListMarshaller<T>(managed.Wrapped, stackSpace, sizeOfNativeElement);
+        }
+
+        public ReadOnlySpan<T> GetManagedValuesSource() => _marshaller.GetManagedValuesSource();
+
+        public Span<T> GetManagedValuesDestination(int length) => _marshaller.GetManagedValuesDestination(length);
+
+        public Span<byte> GetNativeValuesDestination() => _marshaller.GetNativeValuesDestination();
+
+        public ReadOnlySpan<byte> GetNativeValuesSource(int length) => _marshaller.GetNativeValuesSource(length);
+
+        public ref byte GetPinnableReference() => ref _marshaller.GetPinnableReference();
+
+        public byte* ToNativeValue() => _marshaller.ToNativeValue();
+
+        public void FromNativeValue(byte* value) => _marshaller.FromNativeValue(value);
+
+        public WrappedList<T> ToManaged() => new(_marshaller.ToManaged());
+
+        public void FreeNative() => _marshaller.FreeNative();
+    }
 }

@@ -499,7 +499,7 @@ namespace System.IO
         // _strategy can be null only when ctor has thrown
         protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
-        public async override ValueTask DisposeAsync()
+        public override async ValueTask DisposeAsync()
         {
             await _strategy.DisposeAsync().ConfigureAwait(false);
             Dispose(false);

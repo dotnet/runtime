@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private const string SystemCollectionsImmutableFileVersion = "88.2.3.4";
         private const string SystemCollectionsImmutableAssemblyVersion = "88.0.1.2";
 
-        private readonly string _currentWorkingDir;
+        private readonly TestArtifact _baseDirArtifact;
         private readonly string _builtSharedFxDir;
         private readonly string _builtSharedUberFxDir;
         private readonly string _fxBaseDir;
@@ -34,13 +34,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // The dotnetLightupSharedFxLookup dir will contain some folders and files that will be necessary to perform the tests
             string sharedLookupDir = Path.Combine(artifactsDir, "dotnetLightupSharedFxLookup");
-            _currentWorkingDir = SharedFramework.CalculateUniqueTestDirectory(sharedLookupDir);
-            _fxBaseDir = Path.Combine(_currentWorkingDir, "shared", "Microsoft.NETCore.App");
-            _uberFxBaseDir = Path.Combine(_currentWorkingDir, "shared", "Microsoft.UberFramework");
+            _baseDirArtifact = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(sharedLookupDir));
+            _fxBaseDir = Path.Combine(_baseDirArtifact.Location, "shared", "Microsoft.NETCore.App");
+            _uberFxBaseDir = Path.Combine(_baseDirArtifact.Location, "shared", "Microsoft.UberFramework");
 
-            SharedFramework.CopyDirectory(builtDotnet, _currentWorkingDir);
+            SharedFramework.CopyDirectory(builtDotnet, _baseDirArtifact.Location);
 
-            var repoDirectories = new RepoDirectoriesProvider(builtDotnet: _currentWorkingDir);
+            var repoDirectories = new RepoDirectoriesProvider(builtDotnet: _baseDirArtifact.Location);
             GlobalLightupClientFixture = new TestProjectFixture("LightupClient", repoDirectories)
                 .EnsureRestored()
                 .BuildProject();
@@ -55,11 +55,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void Dispose()
         {
             GlobalLightupClientFixture.Dispose();
-
-            if (!TestProject.PreserveTestRuns())
-            {
-                Directory.Delete(_currentWorkingDir, true);
-            }
+            _baseDirArtifact.Dispose();
         }
 
         // Attempt to run the app with lightup deps.json specified but lightup library missing in the expected

@@ -300,7 +300,7 @@ publish:
 	} else {
 		uint8_t *bitmap;
 		int bsize;
-		klass->interface_offsets_count = interface_offsets_count;
+		klass->interface_offsets_count = GINT_TO_UINT16 (interface_offsets_count);
 		klass->interfaces_packed = (MonoClass **)mono_class_alloc (klass, sizeof (MonoClass*) * interface_offsets_count);
 		klass->interface_offsets_packed = (guint16 *)mono_class_alloc (klass, sizeof (guint16) * interface_offsets_count);
 		bsize = (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0);
@@ -313,7 +313,7 @@ publish:
 			guint32 id = interfaces_full [i]->interface_id;
 			bitmap [id >> 3] |= (1 << (id & 7));
 			klass->interfaces_packed [i] = interfaces_full [i];
-			klass->interface_offsets_packed [i] = interface_offsets_full [i];
+			klass->interface_offsets_packed [i] = GINT_TO_UINT16 (interface_offsets_full [i]);
 		}
 #ifdef COMPRESSED_INTERFACE_BITMAP
 		i = mono_compress_bitmap (NULL, bitmap, bsize);

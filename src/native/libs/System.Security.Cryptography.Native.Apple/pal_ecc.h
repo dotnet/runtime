@@ -23,4 +23,4 @@ Get the keysize, in bits, of an ECC key.
 
 Returns the keysize, in bits, of the ECC key, or 0 on error.
 */
-PALEXPORT uint64_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey);
+PALEXPORT int32_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey);

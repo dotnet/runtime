@@ -427,9 +427,6 @@ namespace System
                     }
                 }
 
-                if (result == NullByRefValueSentinel)
-                    throw new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
-
                 return result;
             }
         }
@@ -669,19 +666,6 @@ namespace System
                         }
                     }
                 }
-            }
-        }
-
-        private static volatile object _nullByRefValueSentinel;
-        public static object NullByRefValueSentinel
-        {
-            get
-            {
-                if (_nullByRefValueSentinel == null)
-                {
-                    Interlocked.CompareExchange(ref _nullByRefValueSentinel, new object(), null);
-                }
-                return _nullByRefValueSentinel;
             }
         }
     }

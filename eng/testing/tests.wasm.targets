@@ -5,6 +5,10 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
+    <SuppressTrimAnalysisWarnings Condition="'$(EnableAggressiveTrimming)' == 'true'">true</SuppressTrimAnalysisWarnings>
+    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
+    <NoWarn Condition="'$(EnableAggressiveTrimming)' == 'true'">$(NoWarn);IL2118</NoWarn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
@@ -26,6 +30,7 @@
     <_WasmMainJSFileName Condition="'$(WasmMainJSPath)' != ''">$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
     <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
+    <_UseWasmSymbolicator Condition="'$(TestTrimming)' != 'true'">true</_UseWasmSymbolicator>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -38,7 +43,7 @@
     <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
   </ItemGroup>
 
-  <!-- 
+  <!--
     This is running during compile time and therefore $(Scenario) is empty, unless the specific project sets it.
     Any settings in the project file could be replaced on Helix.
     See also eng\testing\WasmRunnerTemplate.sh
@@ -72,7 +77,10 @@
 
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
+    <_XHarnessArgs Condition="('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true') and '$(_XHarnessArs.Contains(&quot;--web-server-use-cop&quot;)' != 'true'">$(_XHarnessArgs) --web-server-use-cop</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) -s dotnet.js.symbols</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbol-patterns wasm-symbol-patterns.txt</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
@@ -129,6 +137,9 @@
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
+
+    <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
+    <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />
   </ItemGroup>
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
@@ -291,5 +302,9 @@
       <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
       <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="DeployHelixTargetsFile" AfterTargets="ArchiveTests" Condition="'$(HelixTargetsFile)' != ''">
+    <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
   </Target>
 </Project>

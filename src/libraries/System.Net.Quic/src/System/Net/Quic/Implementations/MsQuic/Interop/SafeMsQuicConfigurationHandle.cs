@@ -26,32 +26,50 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             if (options.ClientAuthenticationOptions != null)
             {
+                SslClientAuthenticationOptions clientAuthenticationOptions = options.ClientAuthenticationOptions;
+
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
-                if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
+                if (clientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(clientAuthenticationOptions.EncryptionPolicy)));
                 }
 #pragma warning restore SYSLIB0040
 
-                if (options.ClientAuthenticationOptions.ClientCertificates != null)
+                if (clientAuthenticationOptions.LocalCertificateSelectionCallback != null)
                 {
-                    foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
+                    X509Certificate? cert = clientAuthenticationOptions.LocalCertificateSelectionCallback(
+                        options,
+                        clientAuthenticationOptions.TargetHost ?? string.Empty,
+                        clientAuthenticationOptions.ClientCertificates ?? new X509CertificateCollection(),
+                        null,
+                        Array.Empty<string>());
+
+                    if (cert is X509Certificate2 cert2 && cert2.Handle != IntPtr.Zero && cert2.HasPrivateKey)
                     {
-                        try
+                        certificate = cert;
+                    }
+                }
+                else if (clientAuthenticationOptions.ClientCertificates != null)
+                {
+                    foreach (X509Certificate cert in clientAuthenticationOptions.ClientCertificates)
+                    {
+
+                        if (cert is X509Certificate2 cert2 && cert2.Handle != IntPtr.Zero && cert2.HasPrivateKey)
                         {
-                            if (((X509Certificate2)cert).HasPrivateKey)
-                            {
-                                // Pick first certificate with private key.
-                                certificate = cert;
-                                break;
-                            }
+                            // Pick first certificate with private key.
+                            certificate = cert;
+                            break;
                         }
-                        catch { }
                     }
                 }
             }
 
-            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT | QUIC_CREDENTIAL_FLAGS.USE_SUPPLIED_CREDENTIALS, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols, options.ClientAuthenticationOptions?.CipherSuitesPolicy);
+            QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.CLIENT;
+            if (OperatingSystem.IsWindows())
+            {
+                flags |= QUIC_CREDENTIAL_FLAGS.USE_SUPPLIED_CREDENTIALS;
+            }
+            return Create(options, flags, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols, options.ClientAuthenticationOptions?.CipherSuitesPolicy);
         }
 
         public static SafeMsQuicConfigurationHandle Create(QuicOptions options, SslServerAuthenticationOptions? serverAuthenticationOptions, string? targetHost = null)
@@ -102,7 +120,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 throw new Exception("MaxBidirectionalStreams overflow.");
             }
 
-            if ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0)
+            bool isServer = (flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0;
+            if (isServer)
             {
                 if (certificate == null && certificateContext == null)
                 {
@@ -223,9 +242,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 }
 
 #if TARGET_WINDOWS
-                if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && MsQuicApi.Tls13MayBeDisabled)
+                if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && (isServer ? MsQuicApi.Tls13ServerMayBeDisabled : MsQuicApi.Tls13ClientMayBeDisabled))
                 {
-                    throw new MsQuicException(status, SR.net_ssl_app_protocols_invalid);
+                    throw new MsQuicException(status, SR.net_quic_tls_version_notsupported);
                 }
 #endif
 

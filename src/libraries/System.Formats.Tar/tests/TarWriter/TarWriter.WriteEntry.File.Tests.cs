@@ -44,7 +44,7 @@ namespace System.Formats.Tar.Tests
             File.Create(file2Path).Dispose();
 
             using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 writer.WriteEntry(file1Path, null);
                 writer.WriteEntry(file2Path, string.Empty);
@@ -65,12 +65,13 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69474", TestPlatforms.Linux)]
         [Theory]
-        [InlineData(TarFormat.V7)]
-        [InlineData(TarFormat.Ustar)]
-        [InlineData(TarFormat.Pax)]
-        [InlineData(TarFormat.Gnu)]
-        public void Add_File(TarFormat format)
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Add_File(TarEntryFormat format)
         {
             using TempDirectory root = new TempDirectory();
             string fileName = "file.txt";
@@ -91,12 +92,11 @@ namespace System.Formats.Tar.Tests
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                Assert.Equal(TarFormat.Unknown, reader.Format);
                 TarEntry entry = reader.GetNextEntry();
                 Assert.NotNull(entry);
-                Assert.Equal(format, reader.Format);
+                Assert.Equal(format, entry.Format);
                 Assert.Equal(fileName, entry.Name);
-                TarEntryType expectedEntryType = format is TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                TarEntryType expectedEntryType = format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
                 Assert.Equal(expectedEntryType, entry.EntryType);
                 Assert.True(entry.Length > 0);
                 Assert.NotNull(entry.DataStream);
@@ -114,15 +114,15 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarFormat.V7, false)]
-        [InlineData(TarFormat.V7, true)]
-        [InlineData(TarFormat.Ustar, false)]
-        [InlineData(TarFormat.Ustar, true)]
-        [InlineData(TarFormat.Pax, false)]
-        [InlineData(TarFormat.Pax, true)]
-        [InlineData(TarFormat.Gnu, false)]
-        [InlineData(TarFormat.Gnu, true)]
-        public void Add_Directory(TarFormat format, bool withContents)
+        [InlineData(TarEntryFormat.V7, false)]
+        [InlineData(TarEntryFormat.V7, true)]
+        [InlineData(TarEntryFormat.Ustar, false)]
+        [InlineData(TarEntryFormat.Ustar, true)]
+        [InlineData(TarEntryFormat.Pax, false)]
+        [InlineData(TarEntryFormat.Pax, true)]
+        [InlineData(TarEntryFormat.Gnu, false)]
+        [InlineData(TarEntryFormat.Gnu, true)]
+        public void Add_Directory(TarEntryFormat format, bool withContents)
         {
             using TempDirectory root = new TempDirectory();
             string dirName = "dir";
@@ -145,9 +145,8 @@ namespace System.Formats.Tar.Tests
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                Assert.Equal(TarFormat.Unknown, reader.Format);
                 TarEntry entry = reader.GetNextEntry();
-                Assert.Equal(format, reader.Format);
+                Assert.Equal(format, entry.Format);
 
                 Assert.NotNull(entry);
                 Assert.Equal(dirName, entry.Name);
@@ -161,15 +160,15 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [InlineData(TarFormat.V7, false)]
-        [InlineData(TarFormat.V7, true)]
-        [InlineData(TarFormat.Ustar, false)]
-        [InlineData(TarFormat.Ustar, true)]
-        [InlineData(TarFormat.Pax, false)]
-        [InlineData(TarFormat.Pax, true)]
-        [InlineData(TarFormat.Gnu, false)]
-        [InlineData(TarFormat.Gnu, true)]
-        public void Add_SymbolicLink(TarFormat format, bool createTarget)
+        [InlineData(TarEntryFormat.V7, false)]
+        [InlineData(TarEntryFormat.V7, true)]
+        [InlineData(TarEntryFormat.Ustar, false)]
+        [InlineData(TarEntryFormat.Ustar, true)]
+        [InlineData(TarEntryFormat.Pax, false)]
+        [InlineData(TarEntryFormat.Pax, true)]
+        [InlineData(TarEntryFormat.Gnu, false)]
+        [InlineData(TarEntryFormat.Gnu, true)]
+        public void Add_SymbolicLink(TarEntryFormat format, bool createTarget)
         {
             using TempDirectory root = new TempDirectory();
             string targetName = "file.txt";
@@ -194,9 +193,8 @@ namespace System.Formats.Tar.Tests
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                Assert.Equal(TarFormat.Unknown, reader.Format);
                 TarEntry entry = reader.GetNextEntry();
-                Assert.Equal(format, reader.Format);
+                Assert.Equal(format, entry.Format);
 
                 Assert.NotNull(entry);
                 Assert.Equal(linkName, entry.Name);
@@ -210,46 +208,22 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Add_PaxGlobalExtendedAttributes_NoEntries(bool withAttributes)
+        partial void VerifyPlatformSpecificMetadata(string filePath, TarEntry entry);
+
+        protected void VerifyPaxTimestamps(PaxTarEntry pax)
         {
-            using MemoryStream archive = new MemoryStream();
+            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 4);
+            Assert.Contains(PaxEaName, pax.ExtendedAttributes);
 
-            Dictionary<string, string> globalExtendedAttributes = new Dictionary<string, string>();
-
-            if (withAttributes)
-            {
-                globalExtendedAttributes.Add("hello", "world");
-            }
-
-            using (TarWriter writer = new TarWriter(archive, globalExtendedAttributes, leaveOpen: true))
-            {
-            } // Dispose with no entries
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
-            {
-                // Unknown until reading first entry
-                Assert.Equal(TarFormat.Unknown, reader.Format);
-                Assert.Null(reader.GlobalExtendedAttributes);
-
-                Assert.Null(reader.GetNextEntry());
-
-                Assert.Equal(TarFormat.Pax, reader.Format);
-                Assert.NotNull(reader.GlobalExtendedAttributes);
-
-                int expectedCount = withAttributes ? 1 : 0;
-                Assert.Equal(expectedCount, reader.GlobalExtendedAttributes.Count);
-
-                if (expectedCount > 0)
-                {
-                    Assert.Equal("world", reader.GlobalExtendedAttributes["hello"]);
-                }
-            }
+            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
         }
 
-        partial void VerifyPlatformSpecificMetadata(string filePath, TarEntry entry);
+        protected void VerifyGnuTimestamps(GnuTarEntry gnu)
+        {
+            Assert.True(gnu.AccessTime > DateTimeOffset.UnixEpoch);
+            Assert.True(gnu.ChangeTime > DateTimeOffset.UnixEpoch);
+        }
     }
 }

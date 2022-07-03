@@ -28,6 +28,7 @@ import {
     mono_wasm_symbolicate_string,
     mono_wasm_stringify_as_error_with_stack,
     mono_wasm_debugger_attached,
+    mono_wasm_set_entrypoint_breakpoint,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule, is_nullish } from "./types";
@@ -68,7 +69,11 @@ import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { diagnostics } from "./diagnostics";
-import { dotnet_browser_can_use_simple_digest_hash, dotnet_browser_simple_digest_hash } from "./crypto-worker";
+import {
+    dotnet_browser_can_use_subtle_crypto_impl,
+    dotnet_browser_simple_digest_hash,
+    dotnet_browser_sign
+} from "./crypto-worker";
 
 const MONO = {
     // current "public" MONO API
@@ -342,6 +347,7 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
+    mono_wasm_set_entrypoint_breakpoint,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args_ref,
@@ -368,8 +374,9 @@ export const __linker_exports: any = {
     mono_wasm_get_icudt_name,
 
     // pal_crypto_webworker.c
+    dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_can_use_simple_digest_hash,
+    dotnet_browser_sign
 };
 
 const INTERNAL: any = {

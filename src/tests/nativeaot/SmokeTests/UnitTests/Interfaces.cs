@@ -43,6 +43,7 @@ public class Interfaces
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
         TestStaticInterfaceMethods.Run();
+        TestSimpleStaticDefaultInterfaceMethods.Run();
 
         return Pass;
     }
@@ -1018,6 +1019,79 @@ public class Interfaces
             TestVariantInterface<GenericVariantWithHiddenDerived<Base>, Mid>("GenericVariantWithHiddenDerived.WhichMethod(Base)");
             TestVariantInterface<GenericVariantWithHiddenDerived<Mid>, Mid>("GenericVariantWithHiddenDerived.WhichMethod(Mid)");
             TestVariantInterface<GenericVariantWithHiddenDerived<Derived>, Mid>("GenericVariantWithHiddenBase.WhichMethod(Mid)");
+        }
+    }
+
+    class TestSimpleStaticDefaultInterfaceMethods
+    {
+        interface IFoo
+        {
+            static virtual string GetCookie() => nameof(IFoo);
+        }
+
+        struct StructFooWithDefault : IFoo { }
+
+        struct StructFooWithExplicit : IFoo
+        {
+            public static string GetCookie() => nameof(StructFooWithExplicit);
+        }
+
+        class ClassFooWithDefault : IFoo { }
+
+        class ClassFooWithExplicit : IFoo
+        {
+            public static string GetCookie() => nameof(ClassFooWithExplicit);
+        }
+
+        interface IFoo<T>
+        {
+            static virtual string GetCookie() => $"IFoo<{typeof(T).Name}>";
+        }
+
+        struct StructFooWithDefault<T> : IFoo<T> { }
+
+        struct StructFooWithExplicit<T> : IFoo<T>
+        {
+            public static string GetCookie() => $"StructFooWithExplicit<{typeof(T).Name}>";
+        }
+
+        class ClassFooWithDefault<T> : IFoo<T> { }
+
+        class ClassFooWithExplicit<T> : IFoo<T>
+        {
+            public static string GetCookie() => $"ClassFooWithExplicit<{typeof(T).Name}>";
+        }
+
+        class Atom { }
+
+        static string GetCookie<T>() where T : IFoo => T.GetCookie();
+        static string GetCookie<T, U>() where T : IFoo<U> => T.GetCookie();
+
+        public static void Run()
+        {
+            if (GetCookie<StructFooWithDefault>() != "IFoo")
+                throw new Exception();
+
+            if (GetCookie<StructFooWithExplicit>() != "StructFooWithExplicit")
+                throw new Exception();
+
+            if (GetCookie<ClassFooWithDefault>() != "IFoo")
+                throw new Exception();
+
+            if (GetCookie<ClassFooWithExplicit>() != "ClassFooWithExplicit")
+                throw new Exception();
+
+            if (GetCookie<StructFooWithDefault<Atom>, Atom>() != "IFoo<Atom>")
+                throw new Exception();
+
+            if (GetCookie<StructFooWithExplicit<Atom>, Atom>() != "StructFooWithExplicit<Atom>")
+                throw new Exception();
+
+            if (GetCookie<ClassFooWithDefault<Atom>, Atom>() != "IFoo<Atom>")
+                throw new Exception();
+
+            if (GetCookie<ClassFooWithExplicit<Atom>, Atom>() != "ClassFooWithExplicit<Atom>")
+                throw new Exception();
         }
     }
 }

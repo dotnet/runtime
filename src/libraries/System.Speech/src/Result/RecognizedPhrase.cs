@@ -744,7 +744,7 @@ namespace System.Speech.Recognition
 
             // find the grammar for this rule. If the grammar does not belong to any existing ruleref then
             // it must be local.
-            Grammar ruleRef = grammar != null ? grammar.Find(name) : null;
+            Grammar ruleRef = grammar?.Find(name);
             if (ruleRef != null)
             {
                 grammar = ruleRef;

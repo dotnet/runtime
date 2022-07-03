@@ -105,15 +105,10 @@ private:
 
   protected:
     class Index;
-    class UIndex;
 
     friend class Index;
-    friend class UIndex;
 
   public:
-
-    // UIterator is character-level assignable.
-    class UIterator;
 
     // CIterators/Iterator'string must be modified by SString APIs.
     class CIterator;
@@ -325,53 +320,6 @@ private:
     // CIterator and Iterator are cheap to create, but allow only read-only
     // access to the string.
     //
-    // UIterator forces a unicode conversion, but allows
-    // assignment to individual string characters.  They are also a bit more
-    // efficient once created.
-
-    // ------------------------------------------------------------------
-    // UIterator:
-    // ------------------------------------------------------------------
-
- protected:
-
-    class EMPTY_BASES_DECL UIndex : public SBuffer::Index
-    {
-        friend class SString;
-        friend class Indexer<WCHAR, UIterator>;
-
-      protected:
-
-        UIndex();
-        UIndex(SString *string, SCOUNT_T index);
-        WCHAR &GetAt(SCOUNT_T delta) const;
-        void Skip(SCOUNT_T delta);
-        SCOUNT_T Subtract(const UIndex &i) const;
-        CHECK DoCheck(SCOUNT_T delta) const;
-
-        WCHAR *GetUnicode() const;
-    };
-
- public:
-
-    class EMPTY_BASES_DECL UIterator : public UIndex, public Indexer<WCHAR, UIterator>
-    {
-        friend class SString;
-
-    public:
-        UIterator()
-        {
-        }
-
-        UIterator(SString *string, int index)
-          : UIndex(string, index)
-        {
-        }
-    };
-
-    UIterator BeginUnicode();
-    UIterator EndUnicode();
-
     // For CIterator & Iterator, we try our best to iterate the string without
     // modifying it. (Currently, we do require an ASCII or Unicode string
     // for simple WCHAR retrival, but you could imagine being more flexible
@@ -651,16 +599,12 @@ private:
     // preferred in this case.
     void Printf(const CHAR *format, ...);
     void VPrintf(const CHAR *format, va_list args);
-
-    void Printf(const WCHAR *format, ...);
-    void VPrintf(const WCHAR *format, va_list args);
-
     void AppendPrintf(const CHAR *format, ...);
     void AppendVPrintf(const CHAR *format, va_list args);
 
-    void AppendPrintf(const WCHAR *format, ...);
-    void AppendVPrintf(const WCHAR *format, va_list args);
+    void Printf(const WCHAR *format, ...);
 
+public:
     BOOL LoadResource(CCompRC::ResourceCategory eCategory, int resourceID);
     HRESULT LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID);
     HRESULT LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID);

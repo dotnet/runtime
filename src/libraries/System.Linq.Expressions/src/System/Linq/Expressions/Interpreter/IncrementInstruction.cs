@@ -157,14 +157,14 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!type.IsEnum);
             return type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new IncrementInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new IncrementInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new IncrementInt64()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new IncrementUInt16()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new IncrementUInt32()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new IncrementUInt64()),
-                TypeCode.Single => s_Single ?? (s_Single = new IncrementSingle()),
-                TypeCode.Double => s_Double ?? (s_Double = new IncrementDouble()),
+                TypeCode.Int16 => s_Int16 ??= new IncrementInt16(),
+                TypeCode.Int32 => s_Int32 ??= new IncrementInt32(),
+                TypeCode.Int64 => s_Int64 ??= new IncrementInt64(),
+                TypeCode.UInt16 => s_UInt16 ??= new IncrementUInt16(),
+                TypeCode.UInt32 => s_UInt32 ??= new IncrementUInt32(),
+                TypeCode.UInt64 => s_UInt64 ??= new IncrementUInt64(),
+                TypeCode.Single => s_Single ??= new IncrementSingle(),
+                TypeCode.Double => s_Double ??= new IncrementDouble(),
                 _ => throw ContractUtils.Unreachable,
             };
         }

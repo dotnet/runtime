@@ -278,27 +278,28 @@ namespace BinderTracing
                     result = Result::IncompatibleVersion;
 
                     {
-                        errorMsg.Set(W("Requested version"));
+                        SString errorMsgUtf8(SString::Utf8, "Requested version");
                         if (m_assemblyNameObject != nullptr)
                         {
                             const auto &reqVersion = m_assemblyNameObject->GetVersion();
-                            errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                            errorMsgUtf8.AppendPrintf(" %d.%d.%d.%d",
                                 reqVersion->GetMajor(),
                                 reqVersion->GetMinor(),
                                 reqVersion->GetBuild(),
                                 reqVersion->GetRevision());
                         }
 
-                        errorMsg.Append(W(" is incompatible with found version"));
+                        errorMsgUtf8.AppendUTF8(" is incompatible with found version");
                         if (resultAssembly != nullptr)
                         {
                             const auto &foundVersion = resultAssembly->GetAssemblyName()->GetVersion();
-                            errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                            errorMsgUtf8.AppendPrintf(" %d.%d.%d.%d",
                                 foundVersion->GetMajor(),
                                 foundVersion->GetMinor(),
                                 foundVersion->GetBuild(),
                                 foundVersion->GetRevision());
                         }
+                        errorMsg.Set(errorMsgUtf8.GetUnicode());
                     }
                     break;
 
@@ -306,7 +307,11 @@ namespace BinderTracing
                     result = Result::MismatchedAssemblyName;
                     errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_assemblyName.GetUnicode());
                     if (resultAssembly != nullptr)
-                        errorMsg.AppendPrintf(W(" '%s'"), resultAssemblyName.GetUnicode());
+                    {
+                        errorMsg.Append(W(" '"));
+                        errorMsg.Append(resultAssemblyName.GetUnicode());
+                        errorMsg.Append(W("'"));
+                    }
 
                     break;
 

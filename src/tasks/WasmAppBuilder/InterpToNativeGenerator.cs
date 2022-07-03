@@ -127,7 +127,7 @@ internal sealed class InterpToNativeGenerator
 
         w.WriteLine("};");
 
-        w.WriteLine($"unsigned int interp_to_native_signatures_count = {signatures.Length};");
+        w.WriteLine($"static unsigned int interp_to_native_signatures_count = {signatures.Length};");
         w.WriteLine();
         w.WriteLine("""
         static int

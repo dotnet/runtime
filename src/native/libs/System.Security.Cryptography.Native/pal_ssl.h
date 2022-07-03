@@ -406,6 +406,11 @@ Sets the specified encryption policy on the SSL_CTX.
 PALEXPORT int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
 
 /*
+Activates the default OCSP stapling callback.
+*/
+PALEXPORT void CryptoNative_SslCtxSetDefaultOcspCallback(SSL_CTX* ctx);
+
+/*
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
 */
 PALEXPORT int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites);
@@ -493,3 +498,8 @@ PALEXPORT const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t c
 Checks if given protocol version is supported.
 */
 PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
+
+/*
+Staples an encoded OCSP response onto the TLS session
+*/
+PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);

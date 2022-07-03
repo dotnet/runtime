@@ -1137,7 +1137,7 @@ namespace System.Reflection
             return result;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:MethodParameterDoesntMeetThisParameterRequirements",
             Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
                             "attribute instantiation which is present in the code linker has analyzed." +
                             "As such the reflection usage in this method will never fail as those methods/fields will be present.")]

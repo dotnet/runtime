@@ -902,9 +902,8 @@ inline GenTree* Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, Ge
  *  that may need to be fixed up).
  */
 
-inline GenTree* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields)
+inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields)
 {
-    GenTree* node;
     assert((flags & (GTF_ICON_HDL_MASK | GTF_ICON_FIELD_OFF)) != 0);
 
     // Interpret "fields == NULL" as "not a field."
@@ -913,6 +912,7 @@ inline GenTree* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, 
         fields = FieldSeqStore::NotAField();
     }
 
+    GenTreeIntCon* node;
 #if defined(LATE_DISASM)
     node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
 #else
@@ -1123,19 +1123,16 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
         varDsc->lvFieldAccessed = 1;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-        // These structs are passed by reference and can easily become global
-        // references if those references are exposed. We clear out
-        // address-exposure information for these parameters when they are
-        // converted into references in fgRetypeImplicitByRefArgs() so we do
-        // not have the necessary information in morph to know if these
-        // indirections are actually global references, so we have to be
-        // conservative here.
-        if (varDsc->lvIsParam)
+
+        if (lvaIsImplicitByRefLocal(lvaGetLclNum(varDsc)))
         {
+            // These structs are passed by reference and can easily become global references if those
+            // references are exposed. We clear out address-exposure information for these parameters
+            // when they are converted into references in fgRetypeImplicitByRefArgs() so we do not have
+            // the necessary information in morph to know if these indirections are actually global
+            // references, so we have to be conservative here.
             fieldNode->gtFlags |= GTF_GLOB_REF;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     }
     else
     {
@@ -1145,16 +1142,48 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
     return fieldNode;
 }
 
-/*****************************************************************************
- *
- *  A little helper to create an array index node.
- */
-
-inline GenTree* Compiler::gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp)
+inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
+                                                  GenTree*             indexOp,
+                                                  var_types            elemType,
+                                                  CORINFO_CLASS_HANDLE elemClassHandle,
+                                                  unsigned             firstElemOffset,
+                                                  unsigned             lengthOffset)
 {
-    GenTreeIndex* gtIndx = new (this, GT_INDEX) GenTreeIndex(typ, arrayOp, indexOp, genTypeSize(typ));
+    unsigned elemSize =
+        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
 
-    return gtIndx;
+    GenTreeIndexAddr* indexAddr = new (this, GT_INDEX_ADDR)
+        GenTreeIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, elemSize, lengthOffset, firstElemOffset);
+
+    return indexAddr;
+}
+
+inline GenTreeIndexAddr* Compiler::gtNewArrayIndexAddr(GenTree*             arrayOp,
+                                                       GenTree*             indexOp,
+                                                       var_types            elemType,
+                                                       CORINFO_CLASS_HANDLE elemClassHandle)
+{
+    unsigned lengthOffset    = OFFSETOF__CORINFO_Array__length;
+    unsigned firstElemOffset = OFFSETOF__CORINFO_Array__data;
+
+    return gtNewIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, firstElemOffset, lengthOffset);
+}
+
+inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
+{
+    GenTreeIndir* index;
+    if (varTypeIsStruct(indexAddr->gtElemType))
+    {
+        index = gtNewObjNode(indexAddr->gtStructElemClass, indexAddr);
+    }
+    else
+    {
+        index = gtNewIndir(indexAddr->gtElemType, indexAddr);
+    }
+
+    index->gtFlags |= GTF_GLOB_REF;
+
+    return index;
 }
 
 //------------------------------------------------------------------------------
@@ -1338,6 +1367,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     {
         case GT_CNS_INT:
             AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            INDEBUG(AsIntCon()->gtTargetHandle = 0);
             break;
 #if defined(TARGET_ARM)
         case GT_MUL_LONG:
@@ -1348,7 +1378,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 #endif
         case GT_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
-            AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+            AsLclFld()->SetLayout(nullptr);
             break;
 
         case GT_CALL:
@@ -1847,10 +1877,10 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
             bool doubleWeight = lvIsTemp;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if FEATURE_IMPLICIT_BYREFS
             // and, for the time being, implicit byref params
             doubleWeight |= lvIsImplicitByRef;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // FEATURE_IMPLICIT_BYREFS
 
             if (doubleWeight && (weight * 2 > weight))
             {
@@ -4202,6 +4232,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+        case GT_CNS_VEC:
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:

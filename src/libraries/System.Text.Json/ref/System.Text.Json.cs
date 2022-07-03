@@ -357,6 +357,13 @@ namespace System.Text.Json
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver TypeInfoResolver
+        {
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
+            [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+            get { throw null; }
+            set { }
+        }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
         public void AddContext<TContext>() where TContext : System.Text.Json.Serialization.JsonSerializerContext, new() { }
@@ -950,12 +957,13 @@ namespace System.Text.Json.Serialization
         public string? TypeInfoPropertyName { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonSourceGenerationMode GenerationMode { get { throw null; } set { } }
     }
-    public abstract partial class JsonSerializerContext
+    public abstract partial class JsonSerializerContext : System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver
     {
         protected JsonSerializerContext(System.Text.Json.JsonSerializerOptions? options) { }
         protected abstract System.Text.Json.JsonSerializerOptions? GeneratedSerializerOptions { get; }
         public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
         public abstract System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type);
+        System.Text.Json.Serialization.Metadata.JsonTypeInfo System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = false)]
     public sealed partial class JsonSourceGenerationOptionsAttribute : System.Text.Json.Serialization.JsonAttribute
@@ -1044,6 +1052,20 @@ namespace System.Text.Json.Serialization
 }
 namespace System.Text.Json.Serialization.Metadata
 {
+    public class DefaultJsonTypeInfoResolver : System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver
+    {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        public DefaultJsonTypeInfoResolver() { }
+
+        public virtual System.Text.Json.Serialization.Metadata.JsonTypeInfo GetTypeInfo(System.Type type, System.Text.Json.JsonSerializerOptions options) { throw null; }
+
+        public System.Collections.Generic.IList<System.Action<System.Text.Json.Serialization.Metadata.JsonTypeInfo>> Modifiers { get; }
+    }
+    public interface IJsonTypeInfoResolver
+    {
+        System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type, System.Text.Json.JsonSerializerOptions options);
+    }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class JsonCollectionInfoValues<TCollection>
     {
@@ -1116,6 +1138,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<T> GetUnsupportedTypeConverter<T>() { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<T> GetEnumConverter<T>(System.Text.Json.JsonSerializerOptions options) where T : struct { throw null; }
         public static System.Text.Json.Serialization.JsonConverter<T?> GetNullableConverter<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> underlyingTypeInfo) where T : struct { throw null; }
+        public static System.Text.Json.Serialization.JsonConverter<T?> GetNullableConverter<T>(System.Text.Json.JsonSerializerOptions options) where T : struct { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class JsonObjectInfoValues<T>
@@ -1138,10 +1161,17 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Type ParameterType { get { throw null; } init { } }
         public int Position { get { throw null; } init { } }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class JsonPropertyInfo
     {
         internal JsonPropertyInfo() { }
+        public System.Text.Json.Serialization.JsonConverter? CustomConverter { get { throw null; } set { } }
+        public System.Func<object, object?>? Get { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
+        public System.Type PropertyType { get { throw null; } }
+        public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
+        public System.Action<object, object?>? Set { get { throw null; } set { } }
+        public System.Func<object, object?, bool>? ShouldSerialize { get { throw null; } set { } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class JsonPropertyInfoValues<T>
@@ -1162,15 +1192,40 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo PropertyTypeInfo { get { throw null; } init { } }
         public System.Action<object, T?>? Setter { get { throw null; } init { } }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public partial class JsonTypeInfo
+    public static class JsonTypeInfoResolver
+    {
+        public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver Combine(params System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver[] resolvers) { throw null; }
+    }
+    public abstract partial class JsonTypeInfo
     {
         internal JsonTypeInfo() { }
+        public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
+        public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.JsonPropertyInfo> Properties { get { throw null; } }
+        public System.Type Type { get { throw null; } }
+        public System.Text.Json.Serialization.JsonConverter Converter { get { throw null; } }
+        public System.Func<object>? CreateObject { get { throw null; } set { } }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfoKind Kind { get { throw null; } }
+        public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use generic overload or System.Text.Json source generation for native AOT applications.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use generic overload or System.Text.Json source generation for native AOT applications.")]
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateJsonTypeInfo<T>(System.Text.Json.JsonSerializerOptions options) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use generic overload or System.Text.Json source generation for native AOT applications.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use generic overload or System.Text.Json source generation for native AOT applications.")]
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo CreateJsonTypeInfo(System.Type type, System.Text.Json.JsonSerializerOptions options) { throw null; }
+        public JsonPropertyInfo CreateJsonPropertyInfo(Type propertyType, string name) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class JsonTypeInfo<T> : System.Text.Json.Serialization.Metadata.JsonTypeInfo
     {
         internal JsonTypeInfo() { }
+        public new System.Func<T>? CreateObject { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public System.Action<System.Text.Json.Utf8JsonWriter, T>? SerializeHandler { get { throw null; } }
+    }
+    public enum JsonTypeInfoKind
+    {
+        None = 0,
+        Object = 1,
+        Enumerable = 2,
+        Dictionary = 3
     }
 }
