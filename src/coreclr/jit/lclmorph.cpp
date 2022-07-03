@@ -192,28 +192,26 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         }
 
         //------------------------------------------------------------------------
-        // Field: Produce a location value from an address value.
+        // AddOffset: Produce an address value from an address value.
         //
         // Arguments:
-        //    val - the input value
-        //    field - the FIELD node that uses the input address value
-        //    compiler - the compiler instance
+        //    val       - the input value
+        //    addOffset - the offset to add
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
-        //    cannot be consumed because it is itself a location or because
+        //    cannot be consumed because it is not an address or because
         //    the offset overflowed. In this case the caller is expected
         //    to escape the input value.
         //
         // Notes:
         //   - LOCATION(lclNum, offset) => not representable, must escape
-        //   - ADDRESS(lclNum, offset) => LOCATION(lclNum, offset + field.Offset)
-        //     if the offset overflows then location is not representable, must escape
+        //   - ADDRESS(lclNum, offset) => ADDRESS(lclNum, offset + offs)
         //   - UNKNOWN => UNKNOWN
         //
-        bool Field(Value& val, GenTreeField* field, Compiler* compiler)
+        bool AddOffset(Value& val, unsigned addOffset)
         {
-            assert(!IsLocation() && !IsAddress());
+            assert(!IsAddress() && !IsLocation());
 
             if (val.IsLocation())
             {
@@ -222,16 +220,16 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
             if (val.IsAddress())
             {
-                ClrSafeInt<unsigned> newOffset =
-                    ClrSafeInt<unsigned>(val.m_offset) + ClrSafeInt<unsigned>(field->gtFldOffset);
+                ClrSafeInt<unsigned> newOffset = ClrSafeInt<unsigned>(val.m_offset) + ClrSafeInt<unsigned>(addOffset);
 
                 if (newOffset.IsOverflow())
                 {
                     return false;
                 }
 
-                m_lclNum = val.m_lclNum;
-                m_offset = newOffset.Value();
+                m_lclNum  = val.m_lclNum;
+                m_offset  = newOffset.Value();
+                m_address = true;
             }
 
             INDEBUG(val.Consume();)
@@ -242,35 +240,33 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         // Indir: Produce a location value from an address value.
         //
         // Arguments:
-        //    val - the input value
+        //    val       - the input value
+        //    addOffset - the offset to add
+        //    field     - the FIELD node that uses the input address value
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
-        //    cannot be consumed because it is itself a location. In this
-        //    case the caller is expected to escape the input value.
+        //    cannot be consumed because it is itsef a location or because
+        //    the offset overflowed. In this case the caller is expected
+        //    to escape the input value.
         //
         // Notes:
         //   - LOCATION(lclNum, offset) => not representable, must escape
-        //   - ADDRESS(lclNum, offset) => LOCATION(lclNum, offset)
+        //   - ADDRESS(lclNum, offset) => LOCATION(lclNum, offset + addOffset)
+        //     if the offset overflows then location is not representable, must escape
         //   - UNKNOWN => UNKNOWN
         //
-        bool Indir(Value& val)
+        bool Indir(Value& val, unsigned addOffset = 0)
         {
             assert(!IsLocation() && !IsAddress());
 
-            if (val.IsLocation())
+            if (AddOffset(val, addOffset))
             {
-                return false;
+                m_address = false;
+                return true;
             }
 
-            if (val.IsAddress())
-            {
-                m_lclNum = val.m_lclNum;
-                m_offset = val.m_offset;
-            }
-
-            INDEBUG(val.Consume();)
-            return true;
+            return false;
         }
 
 #ifdef DEBUG
@@ -464,8 +460,28 @@ public:
                 PopValue();
                 break;
 
+            case GT_FIELD_ADDR:
+                if (node->AsField()->IsInstance())
+                {
+                    assert(TopValue(1).Node() == node);
+                    assert(TopValue(0).Node() == node->AsField()->GetFldObj());
+
+                    if (!TopValue(1).AddOffset(TopValue(0), node->AsField()->gtFldOffset))
+                    {
+                        // The field object did not represent an address, or the latter overflowed.
+                        EscapeValue(TopValue(0), node);
+                    }
+
+                    PopValue();
+                }
+                else
+                {
+                    assert(TopValue(0).Node() == node);
+                }
+                break;
+
             case GT_FIELD:
-                if (node->AsField()->GetFldObj() != nullptr)
+                if (node->AsField()->IsInstance())
                 {
                     assert(TopValue(1).Node() == node);
                     assert(TopValue(0).Node() == node->AsField()->GetFldObj());
@@ -475,10 +491,10 @@ public:
                         // Volatile indirections must not be removed so the address, if any, must be escaped.
                         EscapeValue(TopValue(0), node);
                     }
-                    else if (!TopValue(1).Field(TopValue(0), node->AsField(), m_compiler))
+                    else if (!TopValue(1).Indir(TopValue(0), node->AsField()->gtFldOffset))
                     {
-                        // Either the address comes from a location value (e.g. FIELD(IND(...)))
-                        // or the field offset has overflowed.
+                        // Either the address comes from a location value (e.g. FIELD(IND(...))) or the field
+                        // offset has overflowed.
                         EscapeValue(TopValue(0), node);
                     }
 
