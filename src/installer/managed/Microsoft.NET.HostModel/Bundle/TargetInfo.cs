@@ -33,7 +33,7 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             OS = os ?? HostOS;
             Arch = arch ?? RuntimeInformation.OSArchitecture;
-            FrameworkVersion = targetFrameworkVersion ?? new Version(7, 0);
+            FrameworkVersion = targetFrameworkVersion ?? new Version(6, 0);
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
 
