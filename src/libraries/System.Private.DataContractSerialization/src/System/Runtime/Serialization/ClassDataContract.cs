@@ -62,11 +62,13 @@ namespace System.Runtime.Serialization
         internal ClassDataContract? BaseContract
         {
             get { return _helper.BaseContract; }
+            set { _helper.BaseContract = value; }
         }
 
         internal List<DataMember>? Members
         {
             get { return _helper.Members; }
+            set { _helper.Members = value; }
         }
 
         public XmlDictionaryString?[]? ChildElementNamespaces
@@ -123,6 +125,7 @@ namespace System.Runtime.Serialization
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get { return _helper.KnownDataContracts; }
+            set { _helper.KnownDataContracts = value; }
         }
 
         internal override bool IsISerializable
@@ -173,7 +176,7 @@ namespace System.Runtime.Serialization
         internal bool CreateNewInstanceViaDefaultConstructor([NotNullWhen(true)] out object? obj)
         {
             ConstructorInfo? ci = GetNonAttributedTypeConstructor();
-            if (ci == null)
+            if (ci == null || UnderlyingType == Globals.TypeOfSchemaTypePlaceholder)
             {
                 obj = null;
                 return false;
@@ -195,6 +198,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlFormatClassWriterDelegate CreateXmlFormatWriterDelegate()
         {
+            Debug.Assert(UnderlyingType != Globals.TypeOfSchemaTypePlaceholder);
             return new XmlFormatWriterGenerator().GenerateClassWriter(this);
         }
 
@@ -222,6 +226,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlFormatClassReaderDelegate CreateXmlFormatReaderDelegate()
         {
+            Debug.Assert(UnderlyingType != Globals.TypeOfSchemaTypePlaceholder);
             return new XmlFormatReaderGenerator().GenerateClassReader(this);
         }
 
@@ -1162,6 +1167,7 @@ namespace System.Runtime.Serialization
             internal List<DataMember>? Members
             {
                 get { return _members; }
+                set { _members = value; }
             }
 
             internal MethodInfo? OnSerializing
@@ -1350,6 +1356,74 @@ namespace System.Runtime.Serialization
                 }
 
                 internal static DataMemberConflictComparer Singleton = new DataMemberConflictComparer();
+            }
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        {
+            Type type = UnderlyingType;
+            if (!type.IsGenericType || !type.ContainsGenericParameters)
+                return this;
+
+            lock (this)
+            {
+                DataContract? boundContract;
+                if (boundContracts.TryGetValue(this, out boundContract))
+                    return boundContract;
+
+                XmlQualifiedName stableName;
+                object[] genericParams;
+                Type boundType;
+                if (type.IsGenericTypeDefinition)
+                {
+                    stableName = this.StableName;
+                    genericParams = paramContracts;
+
+                    // NOTE TODO smolloy - this type-binding ('boundType') stuff is new. We did not do this in NetFx. We used to use default constructors. But default
+                    // constructors for DataContracts runs afoul of requiring an underlying type. Our web of nullable notations make it hard to get around.
+                    // But it also allows us to feel good about using .UnderlyingType from matching parameter contracts.
+                    Type[] underlyingParamTypes = new Type[paramContracts.Length];
+                    for (int i = 0; i < paramContracts.Length; i++)
+                        underlyingParamTypes[i] = paramContracts[i].UnderlyingType;
+                    boundType = type.MakeGenericType(underlyingParamTypes);
+                }
+                else
+                {
+                    //partial Generic: Construct stable name from its open generic type definition
+                    stableName = DataContract.GetStableName(type.GetGenericTypeDefinition());
+                    Type[] paramTypes = type.GetGenericArguments();
+                    genericParams = new object[paramTypes.Length];
+                    for (int i = 0; i < paramTypes.Length; i++)
+                    {
+                        Type paramType = paramTypes[i];
+                        if (paramType.IsGenericParameter)
+                        {
+                            genericParams[i] = paramContracts[paramType.GenericParameterPosition];
+                            paramTypes[i] = paramContracts[paramType.GenericParameterPosition].UnderlyingType;
+                        }
+                        else
+                        {
+                            genericParams[i] = paramType;
+                        }
+                    }
+                    boundType = type.MakeGenericType(paramTypes);
+                }
+                ClassDataContract boundClassContract = new ClassDataContract(boundType);
+                boundContracts.Add(this, boundClassContract);
+                boundClassContract.StableName = CreateQualifiedName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(stableName.Name), new GenericNameProvider(DataContract.GetClrTypeFullName(this.UnderlyingType), genericParams)), stableName.Namespace);
+                if (BaseContract != null)
+                    boundClassContract.BaseContract = (ClassDataContract)BaseContract.BindGenericParameters(paramContracts, boundContracts);
+                boundClassContract.IsISerializable = this.IsISerializable;
+                boundClassContract.IsValueType = this.IsValueType;
+                boundClassContract.IsReference = this.IsReference;
+                if (Members != null)
+                {
+                    boundClassContract.Members = new List<DataMember>(Members.Count);
+                    foreach (DataMember member in Members)
+                        boundClassContract.Members.Add(member.BindGenericParameters(paramContracts, boundContracts));
+                }
+                return boundClassContract;
             }
         }
 

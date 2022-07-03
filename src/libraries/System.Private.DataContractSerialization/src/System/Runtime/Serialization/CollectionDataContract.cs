@@ -98,6 +98,12 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal CollectionDataContract(Type type, CollectionKind kind) : base(new CollectionDataContractCriticalHelper(type, kind))
+        {
+            InitCollectionDataContract(this);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private CollectionDataContract(Type type, CollectionKind kind, Type itemType, MethodInfo getEnumeratorMethod, string? serializationExceptionMessage, string? deserializationExceptionMessage)
                     : base(new CollectionDataContractCriticalHelper(type, kind, itemType, getEnumeratorMethod, serializationExceptionMessage, deserializationExceptionMessage))
         {
@@ -546,6 +552,16 @@ namespace System.Runtime.Serialization
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.SupportForMultidimensionalArraysNotPresent));
                 this.StableName = DataContract.GetStableName(type);
                 Init(CollectionKind.Array, type.GetElementType(), null);
+            }
+
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            internal CollectionDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
+                Type type,
+                CollectionKind kind) : base(type)
+            {
+                StableName = DataContract.GetStableName(type);  // TODO smolloy - Not sure how much sense this makes with a dummy type
+                Init(kind, type.GetElementType(), null);
             }
 
             // array
@@ -1380,6 +1396,37 @@ namespace System.Runtime.Serialization
                 }
             }
             return false;
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        {
+            DataContract boundContract;
+            if (boundContracts.TryGetValue(this, out boundContract!))
+                return boundContract;
+
+            // NOTE TODO smolloy - this type-binding ('boundType') stuff is new. We did not do this in NetFx. We used to use default constructors. But default
+            // constructors for DataContracts runs afoul of requiring an underlying type. Our web of nullable notations make it hard to get around.
+            // But it also allows us to feel good about using .UnderlyingType from matching parameter contracts.
+            Type type = UnderlyingType;
+            Type[] paramTypes = type.GetGenericArguments();
+            for (int i = 0; i < paramTypes.Length; i++)
+            {
+                if (paramTypes[i].IsGenericParameter)
+                    paramTypes[i] = paramContracts[paramTypes[i].GenericParameterPosition].UnderlyingType;
+            }
+            Type boundType = type.MakeGenericType(paramTypes);
+
+            CollectionDataContract boundCollectionContract = new CollectionDataContract(boundType);
+            boundContracts.Add(this, boundCollectionContract);
+            boundCollectionContract.ItemContract = this.ItemContract.BindGenericParameters(paramContracts, boundContracts);
+            boundCollectionContract.IsItemTypeNullable = !boundCollectionContract.ItemContract.IsValueType;
+            boundCollectionContract.ItemName = ItemNameSetExplicit ? this.ItemName : boundCollectionContract.ItemContract.StableName.Name;
+            boundCollectionContract.KeyName = this.KeyName;
+            boundCollectionContract.ValueName = this.ValueName;
+            boundCollectionContract.StableName = CreateQualifiedName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(this.StableName.Name), new GenericNameProvider(DataContract.GetClrTypeFullName(this.UnderlyingType), paramContracts)),
+                IsCollectionDataContract(UnderlyingType) ? this.StableName.Namespace : DataContract.GetCollectionNamespace(boundCollectionContract.ItemContract.StableName.Namespace));
+            return boundCollectionContract;
         }
 
         internal override DataContract GetValidContract(bool verifyConstructor = false)

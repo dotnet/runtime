@@ -212,6 +212,16 @@ namespace System.Runtime.Serialization
             { _helper.StableName = value; }
         }
 
+        internal GenericInfo? GenericInfo
+        {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            get
+            { return _helper.GenericInfo; }
+
+            set
+            { _helper.GenericInfo = value; }
+        }
+
         internal virtual DataContractDictionary? KnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -284,6 +294,12 @@ namespace System.Runtime.Serialization
                 writer.WriteStartElement(Globals.SerPrefix, name, ns);
             else
                 writer.WriteStartElement(name, ns);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal virtual DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        {
+            return this;
         }
 
         internal virtual DataContract GetValidContract(bool verifyConstructor = false)
@@ -1495,6 +1511,26 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal XmlQualifiedName GetArrayTypeName(bool isNullable)
+        {
+            XmlQualifiedName itemName;
+            if (this.IsValueType && isNullable)
+            {
+                GenericInfo genericInfo = new GenericInfo(DataContract.GetStableName(Globals.TypeOfNullable), Globals.TypeOfNullable.FullName!);
+                genericInfo.Add(new GenericInfo(this.StableName, null));
+                genericInfo.AddToLevel(0, 1);
+                itemName = genericInfo.GetExpandedStableName();
+            }
+            else
+            {
+                itemName = this.StableName;
+            }
+            string ns = GetCollectionNamespace(itemName.Namespace);
+            string name = Globals.ArrayPrefix + itemName.Name;
+            return new XmlQualifiedName(name, ns);
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlQualifiedName GetDefaultStableName(Type type)
         {
             return CreateQualifiedName(GetDefaultStableLocalName(type), GetDefaultStableNamespace(type));
@@ -2376,6 +2412,8 @@ namespace System.Runtime.Serialization
         }
     }
 
+    // TODO smolloy - This class looks like it came back in the re-alignment... but much of it is unused in-box. After reworking schema
+    // import/export, check back on this and see if there are still unused methods that can go away.
     internal sealed class GenericInfo : IGenericNameProvider
     {
         private string? _genericTypeName;

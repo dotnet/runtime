@@ -22,6 +22,11 @@ namespace System.Runtime.Serialization
             _helper = new CriticalHelper(memberInfo);
         }
 
+        internal DataMember(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, int order)
+        {
+            _helper = new CriticalHelper(memberTypeContract, name, isNullable, isRequired, emitDefaultValue, order);
+        }
+
         internal MemberInfo MemberInfo
         {
             get
@@ -145,6 +150,17 @@ namespace System.Runtime.Serialization
                 _emitDefaultValue = Globals.DefaultEmitDefaultValue;
                 _memberInfo = memberInfo;
                 _memberPrimitiveContract = PrimitiveDataContract.NullContract;
+            }
+
+            internal CriticalHelper(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, int order)
+            {
+                _memberTypeContract = memberTypeContract;
+                _name = name;
+                _isNullable = isNullable;
+                _isRequired = isRequired;
+                _emitDefaultValue = emitDefaultValue;
+                _order = order;
+                _memberInfo = memberTypeContract.UnderlyingType;
             }
 
             internal MemberInfo MemberInfo
@@ -307,6 +323,19 @@ namespace System.Runtime.Serialization
                 }
             }
             return false;
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal DataMember BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        {
+            DataContract memberTypeContract = MemberTypeContract.BindGenericParameters(paramContracts, boundContracts);
+            DataMember boundDataMember = new DataMember(memberTypeContract,
+                Name,
+                !memberTypeContract.IsValueType,
+                IsRequired,
+                EmitDefaultValue,
+                Order);
+            return boundDataMember;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

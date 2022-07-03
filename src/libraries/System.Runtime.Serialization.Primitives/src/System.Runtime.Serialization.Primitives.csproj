@@ -11,6 +11,7 @@
     <Compile Include="System\Runtime\Serialization\EnumMemberAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\IgnoreDataMemberAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\InvalidDataContractException.cs" />
+    <Compile Include="System\Runtime\Serialization\ISerializationExtendedSurrogateProvider.cs" />
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider.cs" />
     <Compile Include="System\Runtime\Serialization\KnownTypeAttribute.cs" />
     <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />

@@ -51,5 +51,11 @@ namespace System.Runtime.Serialization
                 get { return _parameterPosition; }
             }
         }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        {
+            return paramContracts[ParameterPosition];
+        }
     }
 }

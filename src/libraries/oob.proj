@@ -55,6 +55,7 @@
                                     System.Composition.Runtime;
                                     System.Composition.TypedParts;
                                     System.Configuration.ConfigurationManager;
+						System.Runtime.Serialization.Schema;
                                     System.Speech;
                                     Microsoft.Extensions.DependencyInjection.Specification.Tests" />
 

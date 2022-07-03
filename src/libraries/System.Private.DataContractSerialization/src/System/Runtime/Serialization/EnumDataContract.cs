@@ -26,6 +26,11 @@ namespace System.Runtime.Serialization
             _helper = (base.Helper as EnumDataContractCriticalHelper)!;
         }
 
+        internal static Type? GetBaseType(XmlQualifiedName baseContractName)
+        {
+            return EnumDataContractCriticalHelper.GetBaseType(baseContractName);
+        }
+
         public XmlQualifiedName BaseContractName
         {
             get => _helper.BaseContractName;

@@ -129,7 +129,7 @@ namespace System.Runtime.Serialization
                 XmlSchemaElement element = new XmlSchemaElement();
                 element.Name = dataMember.Name;
                 XmlElement? actualTypeElement = null;
-                DataContract memberTypeContract = DataContractSet.GetMemberTypeDataContract(dataMember);
+                DataContract memberTypeContract = _dataContractSet.GetMemberTypeDataContract(dataMember);
                 if (CheckIfMemberHasConflict(dataMember))
                 {
                     element.SchemaTypeName = AnytypeQualifiedName;
@@ -329,10 +329,25 @@ namespace System.Runtime.Serialization
             return typeElement;
         }
 
-        private static XmlElement? ExportSurrogateData(object key)
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private XmlElement? ExportSurrogateData(object key)
         {
-            // IDataContractSurrogate is not available on NetCore.
-            return null;
+            object? surrogateData = _dataContractSet.GetSurrogateData(key);
+            if (surrogateData == null)
+                return null;
+            StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
+            XmlWriterSettings writerSettings = new XmlWriterSettings();
+            writerSettings.OmitXmlDeclaration = true;
+            XmlWriter xmlWriter = XmlWriter.Create(stringWriter, writerSettings);
+            Collection<Type> knownTypes = new Collection<Type>();
+            if (_dataContractSet.SerializationExtendedSurrogateProvider != null)
+                DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
+            DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject,
+                SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes, int.MaxValue,
+                ignoreExtensionDataObject: false, preserveObjectReferences: true);
+            serializer.WriteObject(xmlWriter, surrogateData);
+            xmlWriter.Flush();
+            return (XmlElement?)XmlDoc.ReadNode(XmlReader.Create(new StringReader(stringWriter.ToString())));
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -363,7 +378,7 @@ namespace System.Runtime.Serialization
                 {
                     XmlSchemaElement keyValueElement = new XmlSchemaElement();
                     keyValueElement.Name = dataMember.Name;
-                    SetElementType(keyValueElement, DataContractSet.GetMemberTypeDataContract(dataMember), schema);
+                    SetElementType(keyValueElement, _dataContractSet.GetMemberTypeDataContract(dataMember), schema);
                     SchemaHelper.AddElementForm(keyValueElement, schema);
                     if (dataMember.IsNullable)
                         keyValueElement.IsNillable = true;
@@ -377,7 +392,7 @@ namespace System.Runtime.Serialization
             {
                 if (collectionDataContract.IsItemTypeNullable)
                     element.IsNillable = true;
-                DataContract itemContract = DataContractSet.GetItemTypeDataContract(collectionDataContract);
+                DataContract itemContract = _dataContractSet.GetItemTypeDataContract(collectionDataContract);
                 SetElementType(element, itemContract, schema);
             }
             SchemaHelper.AddElementForm(element, schema);
@@ -396,6 +411,7 @@ namespace System.Runtime.Serialization
             return isDictionaryElement;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportEnumDataContract(EnumDataContract enumDataContract, XmlSchema schema)
         {
             XmlSchemaSimpleType type = new XmlSchemaSimpleType();

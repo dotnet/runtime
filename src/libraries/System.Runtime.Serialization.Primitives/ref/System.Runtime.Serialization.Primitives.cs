@@ -3,6 +3,8 @@
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
+using System.Collections.ObjectModel;
+using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
@@ -75,6 +77,13 @@ namespace System.Runtime.Serialization
         object GetDeserializedObject(object obj, System.Type targetType);
         object GetObjectToSerialize(object obj, System.Type targetType);
         System.Type GetSurrogateType(System.Type type);
+    }
+    public interface ISerializationExtendedSurrogateProvider : ISerializationSurrogateProvider
+    {
+        object? GetCustomDataToExport(MemberInfo memberInfo, Type dataContractType);
+        object? GetCustomDataToExport(Type clrType, Type dataContractType);
+        void GetKnownCustomDataTypes(Collection<Type> customDataTypes);
+        Type? GetReferencedTypeOnImport(string typeName, string typeNamespace, object? customData);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=true, AllowMultiple=true)]
     public sealed partial class KnownTypeAttribute : System.Attribute
