@@ -178,7 +178,7 @@ namespace System.Text.RegularExpressions
                     Parent = nodeIndex,
                     AccessingCharacter = c,
                     Depth = node.Depth + 1,
-#if DEBUG
+#if DEBUG || REGEXGENERATOR
                     Path = node.Path + c
 #endif
                 };

@@ -171,16 +171,16 @@ namespace System.Text.RegularExpressions.Generator
 
         private const string TrieFieldName = "s_trie";
 
-        private static void EmitTrie(IndentedTextWriter writer, List<TrieNode> trie)
+        private static void EmitTrie(IndentedTextWriter writer, ReadOnlySpan<TrieNodeWithLinks> trie)
         {
             writer.Indent++;
             writer.WriteLine($"// A trie that is used to optimize <see cref=\"TryFindNextPossibleStartingPosition\"/>.");
             writer.WriteLine($"internal static readonly {HelpersTypeName}.TrieNode[] {TrieFieldName} = new {HelpersTypeName}.TrieNode[]");
             writer.WriteLine($"{{");
-            for (int i = 0; i < trie.Count; i++)
+            for (int i = 0; i < trie.Length; i++)
             {
-                TrieNode node = trie[i];
-                writer.WriteLine($"    // {Literal(node.GetPath(trie))}");
+                ref readonly TrieNodeWithLinks node = ref trie[i];
+                writer.WriteLine($"    // {Literal(node.Path)}");
                 writer.WriteLine($"    new {HelpersTypeName}.TrieNode()");
                 writer.WriteLine($"    {{");
                 switch (node.Children.Count)
@@ -202,9 +202,9 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"        }},");
                         break;
                 }
-                writer.WriteLine($"        {nameof(TrieNode.SuffixLink)} = {node.SuffixLink},");
-                writer.WriteLine($"        {nameof(TrieNode.MatchLength)} = {node.MatchLength}");
-                writer.WriteLine($"    }}{(i == trie.Count - 1 ? "" : ",")}");
+                writer.WriteLine($"        {nameof(TrieNodeWithLinks.SuffixLink)} = {node.SuffixLink},");
+                writer.WriteLine($"        {nameof(TrieNodeWithLinks.MatchLength)} = {node.MatchLength}");
+                writer.WriteLine($"    }}{(i == trie.Length - 1 ? "" : ",")}");
             }
             writer.WriteLine($"}};");
             writer.Indent--;
@@ -866,7 +866,7 @@ namespace System.Text.RegularExpressions.Generator
 
             void EmitMultiStringSearch()
             {
-                int matchCount = regexTree.FindOptimizations.PrefixMatcher.Trie.GetMatchCount();
+                int matchCount = regexTree.FindOptimizations.PrefixMatcher.GetMatchCount();
                 writer.WriteLine($"// The pattern starts with one of {matchCount} literals. Search for all of them together using a trie.");
                 writer.WriteLine($"// If none of them can be found, there's no match.");
                 writer.WriteLine($"int i = {HelpersTypeName}.TrieSearch({TrieFieldName}, inputSpan.Slice(pos));");
