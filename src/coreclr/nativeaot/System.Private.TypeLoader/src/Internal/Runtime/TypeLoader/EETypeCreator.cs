@@ -735,6 +735,8 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(nonGcStaticData);
                     if (writableDataPtr != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(writableDataPtr);
+                    if (threadStaticIndex != IntPtr.Zero)
+                        MemoryHelpers.FreeMemory(threadStaticIndex);
                 }
             }
         }

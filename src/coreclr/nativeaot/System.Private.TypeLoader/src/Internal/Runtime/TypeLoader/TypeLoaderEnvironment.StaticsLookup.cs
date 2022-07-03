@@ -224,10 +224,10 @@ namespace Internal.Runtime.TypeLoader
             return result;
         }
 
-        public void RegisterDynamicThreadStaticsInfo(RuntimeTypeHandle runtimeTypeHandle, uint offsetValue, int storageSize, IntPtr gcDesc)
+        public void RegisterDynamicThreadStaticsInfo(RuntimeTypeHandle runtimeTypeHandle, uint offsetValue, IntPtr gcDesc)
         {
             bool registered = false;
-            Debug.Assert(offsetValue != 0 && storageSize > 0 && runtimeTypeHandle.IsDynamicType());
+            Debug.Assert(offsetValue != 0 && runtimeTypeHandle.IsDynamicType());
 
             IntPtr typeManager = runtimeTypeHandle.GetTypeManager().GetIntPtrUNSAFE();
 
