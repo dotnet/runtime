@@ -674,15 +674,11 @@ private:
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
         // overwriting these extra 4 bytes corrupts some data (such as a saved register) that leads
         // to A/V. Whereas previously the JIT64 codegen did not lead to an A/V.
-        if (!varDsc->lvIsParam && !varDsc->lvIsStructField && (genActualType(varDsc->TypeGet()) == TYP_INT))
+        if (user->IsCall() && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc))
         {
-            // TODO-Cleanup: This should simply check if the user is a call node, not if a call ancestor exists.
-            if (Compiler::gtHasCallOnStack(&m_ancestors))
-            {
-                varDsc->lvQuirkToLong = true;
-                JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
-                        varTypeName(varDsc->TypeGet()));
-            }
+            varDsc->lvQuirkToLong = true;
+            JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
+                    varTypeName(varDsc->TypeGet()));
         }
 #endif // TARGET_64BIT
 
