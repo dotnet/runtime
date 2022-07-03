@@ -95,6 +95,10 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
             _failures++;
             printf("HandlesProfiler::ObjectAllocated: FAIL: CreateHandle failed for weak handle.\n");
         }
+        else
+        {
+            printf("HandlesProfiler::ObjectAllocated: weak handle created.\n");
+        }
     }
     else
     if (typeName == WCHAR("Profiler.Tests.TestClassForStrongHandle"))
@@ -105,6 +109,10 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
             _failures++;
             printf("HandlesProfiler::ObjectAllocated: FAIL: CreateHandle failed for strong handle.\n");
         }
+        else
+        {
+            printf("HandlesProfiler::ObjectAllocated: strong handle created.\n");
+        }
     }
     else
     if (typeName == WCHAR("Profiler.Tests.TestClassForPinnedHandle"))
@@ -114,6 +122,10 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
         {
             _failures++;
             printf("HandlesProfiler::ObjectAllocated: FAIL: CreateHandle failed for pinned handle.\n");
+        }
+        else
+        {
+            printf("HandlesProfiler::ObjectAllocated: pinned handle created.\n");
         }
     }
     return S_OK;
@@ -144,6 +156,10 @@ void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
             _failures++;
             printf("HandlesProfiler::CheckIfAlive: FAIL: the object should be alive.\n");
         }
+        else
+        {
+            printf("HandlesProfiler::CheckIfAlive: object alive as expected.\n");
+        }
     }
     else
     {
@@ -151,6 +167,10 @@ void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
         {
             _failures++;
             printf("HandlesProfiler::CheckIfAlive: FAIL: the object should not be alive anymore.\n");
+        }
+        else
+        {
+            printf("HandlesProfiler::CheckIfAlive: object not alive as expected.\n");
         }
     }
 }
@@ -197,12 +217,20 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
             _failures++;
             printf("HandlesProfiler::GarbageCollectionFinished: FAIL: DestroyHandle failed for strong handle.\n");
         }
+        else
+        {
+            printf("HandlesProfiler::GarbageCollectionFinished: strong handle destroyed.\n");
+        }
 
         hr = pCorProfilerInfo->DestroyHandle(_pinnedHandle);
         if (FAILED(hr))
         {
             _failures++;
             printf("HandlesProfiler::GarbageCollectionFinished: FAIL: DestroyHandle failed for pinned handle.\n");
+        }
+        else
+        {
+            printf("HandlesProfiler::GarbageCollectionFinished: pinned handle destroyed.\n");
         }
     }
     else
