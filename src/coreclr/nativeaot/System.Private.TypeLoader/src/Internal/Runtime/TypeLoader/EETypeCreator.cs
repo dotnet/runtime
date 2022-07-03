@@ -647,22 +647,11 @@ namespace Internal.Runtime.TypeLoader
                     // create GC desc
                     if (state.GcDataSize != 0 && state.GcStaticDesc == IntPtr.Zero)
                     {
-                        if (state.GcStaticEEType != IntPtr.Zero)
-                        {
-                            // Statics are allocated on GC heap
-                            object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticEEType)->ToRuntimeTypeHandle());
-                            gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
-
-                            pEEType->DynamicGcStaticsData = gcStaticData;
-                        }
-                        else
-                        {
-                            int cbStaticGCDesc;
-                            state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
+                        int cbStaticGCDesc;
+                        state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
 #if GENERICS_FORCE_USG
-                            TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
+                        TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
 #endif
-                        }
                     }
 
                     if (state.ThreadDataSize != 0 && state.ThreadStaticDesc == IntPtr.Zero)
@@ -700,6 +689,15 @@ namespace Internal.Runtime.TypeLoader
                     *(IntPtr*)threadStaticIndex = pEEType->PointerToTypeManager;
                     *(((IntPtr*)threadStaticIndex) + 1) = (IntPtr)state.ThreadStaticOffset;
                     pEEType->DynamicThreadStaticsIndex = threadStaticIndex;
+                }
+
+                if (!isGenericEETypeDef && state.GcDataSize != 0)
+                {
+                    // Statics are allocated on GC heap
+                    object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
+                    gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
+
+                    pEEType->DynamicGcStaticsData = gcStaticData;
                 }
 
                 if (state.Dictionary != null)

@@ -953,7 +953,7 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type.GetClosestDefType()));
-            staticsBagKind = BagElementKind.GcStaticEEType;
+            staticsBagKind = BagElementKind.GcStaticDesc;
 
             return symbol;
         }
