@@ -589,10 +589,10 @@ namespace System.Xml
             }
         }
 
-      public override unsafe void WriteText(char[] chars, int offset, int count)
-         => WriteText(chars.AsSpan(offset, count));
+        public override unsafe void WriteText(char[] chars, int offset, int count)
+           => WriteText(chars.AsSpan(offset, count));
 
-      private unsafe void WriteText(Span<char> chars)
+        private unsafe void WriteText(Span<char> chars)
         {
             if (_inAttribute)
             {
@@ -725,7 +725,7 @@ namespace System.Xml
             }
             else
             {
-                WriteTextNodeRaw(XmlBinaryNodeType.FloatText, f);
+                WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, f);
             }
         }
 
@@ -738,7 +738,7 @@ namespace System.Xml
             }
             else
             {
-                WriteTextNodeRaw(XmlBinaryNodeType.DoubleText, d);
+                WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, d);
             }
         }
 
@@ -1135,128 +1135,156 @@ namespace System.Xml
             _writer.WriteArray(nodeType, count, bytes);
         }
 
+        private static void CheckArray(Array array, int offset, int count)
+        {
+            ArgumentNullException.ThrowIfNull(array);
+
+            if (offset < 0)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
+            if (offset > array.Length)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length)));
+            if (count < 0)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
+            if (count > array.Length - offset)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
+        }
+
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<bool, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<bool, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, bool[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<bool, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<bool, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, short[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<short, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<short, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, short[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<short, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<short, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, int[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<int, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<int, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, int[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<int, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<int, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, long[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<long, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<long, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, long[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<long, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<long, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, float[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<float, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<float, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, float[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<float, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<float, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, double[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<double, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<double, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, double[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<double, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<double, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, decimal[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<decimal, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<decimal, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, decimal[] array, int offset, int count)
         {
-            var bytes = MemoryMarshal.Cast<decimal, byte>(array.AsSpan(offset, count));
+            CheckArray(array, offset, count);
             if (count > 0)
             {
+                var bytes = MemoryMarshal.Cast<decimal, byte>(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
             }
         }
