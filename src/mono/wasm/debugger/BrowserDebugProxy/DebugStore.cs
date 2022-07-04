@@ -806,7 +806,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal int PdbAge { get; }
         internal System.Guid PdbGuid { get; }
         internal string PdbName { get; }
-        internal bool PdbInformationAvailable { get; }
+        internal bool CodeViewInformationAvailable { get; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
@@ -829,11 +829,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (entries.Length > 0)
             {
                 var codeView = entries[0];
-                CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
-                PdbAge = codeViewData.Age;
-                PdbGuid = codeViewData.Guid;
-                PdbName = codeViewData.Path;
-                PdbInformationAvailable = true;
+                if (codeView.Type == DebugDirectoryEntryType.CodeView)
+                {
+                    CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
+                    PdbAge = codeViewData.Age;
+                    PdbGuid = codeViewData.Guid;
+                    PdbName = codeViewData.Path;
+                    CodeViewInformationAvailable = true;
+                }
             }
             asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
             var asmDef = asmMetadataReader.GetAssemblyDefinition();
