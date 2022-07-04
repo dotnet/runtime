@@ -12889,15 +12889,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // math INTRINSICSs into calls...).
         if ((multiplierValue == 2.0) && (op1->IsLocal() || (fgOrder == FGOrderLinear)))
         {
-            if (op1->IsInvariant() || op1->IsLocal())
-            {
-                op2 = gtCloneExpr(op1);
-            }
-            else
-            {
-                op2 = fgInsertCommaFormTemp(&op1);
-            }
-
+            op2          = fgMakeMultiUse(&op1);
             GenTree* add = gtNewOperNode(GT_ADD, mul->TypeGet(), op1, op2);
             INDEBUG(add->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
