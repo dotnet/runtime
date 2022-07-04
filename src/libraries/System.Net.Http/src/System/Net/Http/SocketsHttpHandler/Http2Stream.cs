@@ -636,7 +636,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (_response.RequestMessage != null && _response.RequestMessage.IsWebSocketH2Request() && statusCode == 200)
+                        if (statusCode == 200 && _response.RequestMessage!.IsWebSocketH2Request())
                         {
                             _webSocketEstablished = true;
                         }
@@ -1444,15 +1444,14 @@ namespace System.Net.Http
 
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
 
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
+                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
 
             private sealed class Http2WriteStream : Http2ReadWriteStream
             {
-
                 public long BytesWritten { get; private set; }
 
-                public long ContentLength { get; private set; }
+                public long ContentLength { get; }
 
                 public Http2WriteStream(Http2Stream http2Stream, long contentLength) : base(http2Stream)
                 {
