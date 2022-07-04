@@ -72,11 +72,10 @@ namespace System.IO
             return (uint)((value | 0x20) - 'a') <= (uint)('z' - 'a');
         }
 
-        internal static bool EndsWithPeriodOrSpace(string? path) =>
-            !string.IsNullOrEmpty(path) && EndsWithPeriodOrSpaceSlim(path);
-
-        internal static bool EndsWithPeriodOrSpaceSlim(string path)
+        internal static bool EndsWithPeriodOrSpace(string path)
         {
+            if (string.IsNullOrEmpty(path))
+                return false;
             char c = path[path.Length - 1];
             return c == ' ' || c == '.';
         }
@@ -91,7 +90,7 @@ namespace System.IO
         [return: NotNullIfNotNull("path")]
         internal static string? EnsureExtendedPrefixIfNeeded(string? path)
         {
-            if (path != null && (path.Length >= MaxShortPath || EndsWithPeriodOrSpaceSlim(path)))
+            if (path != null && (path.Length >= MaxShortPath || EndsWithPeriodOrSpace(path)))
             {
                 return EnsureExtendedPrefix(path);
             }
