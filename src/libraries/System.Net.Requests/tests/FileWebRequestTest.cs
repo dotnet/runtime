@@ -88,7 +88,6 @@ namespace System.Net.Tests
         public abstract Task<Stream> GetRequestStreamAsync(WebRequest request);
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task ReadFile_ContainsExpectedContent()
         {
             string path = Path.GetTempFileName();
@@ -126,7 +125,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task WriteFile_ContainsExpectedContent()
         {
             string path = Path.GetTempFileName();
@@ -153,7 +151,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task WriteThenReadFile_WriteAccessResultsInNullResponseStream()
         {
             string path = Path.GetTempFileName();
@@ -186,7 +183,6 @@ namespace System.Net.Tests
         protected virtual bool EnableConcurrentReadWriteTests => true;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37087", TestPlatforms.Android)]
         public async Task RequestAfterResponse_throws()
         {
             string path = Path.GetTempFileName();
