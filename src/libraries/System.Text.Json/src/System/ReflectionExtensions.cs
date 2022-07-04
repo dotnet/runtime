@@ -43,5 +43,24 @@ namespace System.Text.Json.Reflection
 
         private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)
             => constructorInfo.GetCustomAttribute<JsonConstructorAttribute>() != null;
+
+        public static TAttribute? GetUniqueCustomAttribute<TAttribute>(this MemberInfo memberInfo, bool inherit)
+            where TAttribute : Attribute
+        {
+            object[] attributes = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit);
+
+            if (attributes.Length == 0)
+            {
+                return null;
+            }
+
+            if (attributes.Length == 1)
+            {
+                return (TAttribute)attributes[0];
+            }
+
+            ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(typeof(TAttribute), memberInfo);
+            return null;
+        }
     }
 }

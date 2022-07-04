@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -18,13 +17,7 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonSerializerOptions options)
-            : this(
-                  GetEffectiveConverter(
-                    typeof(T),
-                    parentClassType: null, // A TypeInfo never has a "parent" class.
-                    memberInfo: null, // A TypeInfo never has a "parent" property.
-                    options),
-                  options)
+            : this(options.GetConverterForType(typeof(T)), options)
         {
         }
 
@@ -67,34 +60,32 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            const BindingFlags bindingFlags =
+            const BindingFlags BindingFlags =
                 BindingFlags.Instance |
                 BindingFlags.Public |
                 BindingFlags.NonPublic |
                 BindingFlags.DeclaredOnly;
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
-            PropertyInfo[] properties = Type.GetProperties(bindingFlags);
             bool propertyOrderSpecified = false;
 
-            // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
-            //  is finished initializing and added to the cache on JsonSerializerOptions.
-            // Default 'capacity' to the common non-polymorphic + property case.
-            PropertyCache = CreatePropertyCache(capacity: properties.Length);
-
-            // We start from the most derived type.
-            Type? currentType = Type;
-
-            while (true)
+            // Walk through the inheritance hierarchy, starting from the most derived type upward.
+            for (Type? currentType = Type; currentType != null; currentType = currentType.BaseType)
             {
+                PropertyInfo[] properties = currentType.GetProperties(BindingFlags);
+
+                // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
+                // is finished initializing and added to the cache in JsonSerializerOptions.
+                // Default 'capacity' to the common non-polymorphic + property case.
+                PropertyCache ??= CreatePropertyCache(capacity: properties.Length);
+
                 foreach (PropertyInfo propertyInfo in properties)
                 {
-                    bool isVirtual = propertyInfo.IsVirtual();
                     string propertyName = propertyInfo.Name;
 
                     // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
                     if (propertyInfo.GetIndexParameters().Length > 0 ||
-                        PropertyIsOverridenAndIgnored(propertyName, propertyInfo.PropertyType, isVirtual, ignoredMembers))
+                        PropertyIsOverridenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), ignoredMembers))
                     {
                         continue;
                     }
@@ -104,11 +95,8 @@ namespace System.Text.Json.Serialization.Metadata
                         propertyInfo.SetMethod?.IsPublic == true)
                     {
                         CacheMember(
-                            currentType,
-                            propertyInfo.PropertyType,
-                            propertyInfo,
-                            isVirtual,
-                            NumberHandling,
+                            typeToConvert: propertyInfo.PropertyType,
+                            memberInfo: propertyInfo,
                             ref propertyOrderSpecified,
                             ref ignoredMembers);
                     }
@@ -123,7 +111,7 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
+                foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlags))
                 {
                     string fieldName = fieldInfo.Name;
 
@@ -139,11 +127,8 @@ namespace System.Text.Json.Serialization.Metadata
                         if (hasJsonInclude || Options.IncludeFields)
                         {
                             CacheMember(
-                                currentType,
-                                fieldInfo.FieldType,
-                                fieldInfo,
-                                isVirtual: false,
-                                NumberHandling,
+                                typeToConvert: fieldInfo.FieldType,
+                                memberInfo: fieldInfo,
                                 ref propertyOrderSpecified,
                                 ref ignoredMembers);
                         }
@@ -158,15 +143,9 @@ namespace System.Text.Json.Serialization.Metadata
                         // Non-public fields should not be included for (de)serialization.
                     }
                 }
+            }
 
-                currentType = currentType.BaseType;
-                if (currentType == null)
-                {
-                    break;
-                }
-
-                properties = currentType.GetProperties(bindingFlags);
-            };
+            Debug.Assert(PropertyCache != null);
 
             if (propertyOrderSpecified)
             {
@@ -175,21 +154,12 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private void CacheMember(
-            Type declaringType,
-            Type memberType,
+            Type typeToConvert,
             MemberInfo memberInfo,
-            bool isVirtual,
-            JsonNumberHandling? typeNumberHandling,
             ref bool propertyOrderSpecified,
             ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
-            bool hasExtensionAttribute = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
-            if (hasExtensionAttribute && ExtensionDataProperty != null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
-            }
-
-            JsonPropertyInfo? jsonPropertyInfo = AddProperty(memberInfo, memberType, declaringType, isVirtual, Options);
+            JsonPropertyInfo? jsonPropertyInfo = AddProperty(typeToConvert, memberInfo, Options);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -197,34 +167,24 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             Debug.Assert(jsonPropertyInfo.Name != null);
-
-            if (hasExtensionAttribute)
-            {
-                Debug.Assert(ExtensionDataProperty == null);
-                ExtensionDataProperty = jsonPropertyInfo;
-            }
-            else
-            {
-                CacheMember(jsonPropertyInfo, PropertyCache, ref ignoredMembers);
-                propertyOrderSpecified |= jsonPropertyInfo.Order != 0;
-            }
+            Debug.Assert(PropertyCache != null);
+            CacheMember(jsonPropertyInfo, PropertyCache, ref ignoredMembers);
+            propertyOrderSpecified |= jsonPropertyInfo.Order != 0;
         }
 
         private JsonPropertyInfo? AddProperty(
+            Type typeToConvert,
             MemberInfo memberInfo,
-            Type memberType,
-            Type parentClassType,
-            bool isVirtual,
             JsonSerializerOptions options)
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
-            if (IsInvalidForSerialization(memberType))
+            if (IsInvalidForSerialization(typeToConvert))
             {
                 if (ignoreCondition == JsonIgnoreCondition.Always)
                     return null;
 
-                ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(memberType, parentClassType, memberInfo);
+                ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(typeToConvert, memberInfo.DeclaringType, memberInfo);
             }
 
             JsonConverter? customConverter;
@@ -232,34 +192,27 @@ namespace System.Text.Json.Serialization.Metadata
 
             try
             {
-                converter = GetConverter(
-                memberType,
-                parentClassType,
-                memberInfo,
-                options,
-                out customConverter);
+                converter = GetConverterFromMember(
+                    typeToConvert,
+                    memberInfo,
+                    options,
+                    out customConverter);
             }
             catch (InvalidOperationException) when (ignoreCondition == JsonIgnoreCondition.Always)
             {
                 return null;
             }
 
-            return CreateProperty(
-                declaredPropertyType: memberType,
-                memberInfo,
-                parentClassType,
-                isVirtual,
-                converter,
-                options,
-                ignoreCondition,
-                customConverter: customConverter);
+            JsonPropertyInfo jsonPropertyInfo = CreateProperty(typeToConvert, converter);
+            jsonPropertyInfo.IgnoreCondition = ignoreCondition;
+            jsonPropertyInfo.CustomConverter = customConverter;
+            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo);
+            return jsonPropertyInfo;
         }
 
         private static JsonNumberHandling? GetNumberHandlingForType(Type type)
         {
-            var numberHandlingAttribute =
-                (JsonNumberHandlingAttribute?)JsonSerializerOptions.GetAttributeThatCanHaveMultiple(type, typeof(JsonNumberHandlingAttribute));
-
+            JsonNumberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             return numberHandlingAttribute?.Handling;
         }
 
