@@ -1039,6 +1039,10 @@ void SystemDomain::Attach()
     // Each domain gets its own ReJitManager, and ReJitManager has its own static
     // initialization to run
     ReJitManager::InitStatic();
+
+#ifdef FEATURE_READYTORUN
+    InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 }
 
 
@@ -1357,12 +1361,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // load due to a method call, which the debugger cannot handle, so we pre-load
     // the SZArrayHelper class here.
     g_pSZArrayHelperClass = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
-
-    // Load ByReference class
-    //
-    // NOTE: ByReference<T> must be the first by-ref-like system type to be loaded,
-    //       because MethodTable::ClassifyEightBytesWithManagedLayout depends on it.
-    g_pByReferenceClass = CoreLibBinder::GetClass(CLASS__BYREFERENCE);
 
     // Load Nullable class
     g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);

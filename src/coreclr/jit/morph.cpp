@@ -1500,14 +1500,6 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg)
         {
             // We are passing this struct by value in multiple registers and/or on stack.
             argNode = comp->gtNewLclvNode(lclNum, argType);
-
-#ifndef TARGET_XARCH
-            // ARM/ARM64/LoongArch64 backends do not support LCL_VARs as sources of some stack args.
-            // Wrap it in an "OBJ(ADDR(...))". TODO-ADDR: delete this code once all backends support
-            // LCL_VAR stack args.
-            argNode = comp->gtNewOperNode(GT_ADDR, TYP_BYREF, argNode);
-            argNode = comp->gtNewObjNode(varDsc->GetLayout(), argNode);
-#endif // !TARGET_XARCH
         }
     }
     else
@@ -3694,35 +3686,18 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         {
             lcl = actualArg->AsLclVar();
         }
-        if (lcl != nullptr)
+        if ((lcl != nullptr) && (lvaGetPromotionType(lcl->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
         {
-            if (lvaGetPromotionType(lcl->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT)
+            if (argNode->OperIs(GT_LCL_VAR) ||
+                ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout()))
             {
-                if (argNode->OperIs(GT_LCL_VAR) ||
-                    ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout()))
-                {
-                    argNode = fgMorphLclArgToFieldlist(lcl);
-                }
-                else
-                {
-                    // Set DNER to block independent promotion.
-                    lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
-                }
+                argNode = fgMorphLclArgToFieldlist(lcl);
             }
-#ifdef TARGET_LOONGARCH64
-            else if (argNode->TypeGet() == TYP_STRUCT)
+            else
             {
-                // LoongArch64 backend does not support local nodes as sources of some stack args.
-                if (!actualArg->OperIs(GT_OBJ))
-                {
-                    // Create an Obj of the temp to use it as a call argument.
-                    argNode = gtNewOperNode(GT_ADDR, TYP_I_IMPL, argNode);
-                    argNode = gtNewObjNode(lvaGetStruct(lcl->GetLclNum()), argNode);
-                }
-                // Its fields will need to be accessed by address.
+                // Set DNER to block independent promotion.
                 lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
             }
-#endif // TARGET_LOONGARCH64
         }
 
         return argNode;

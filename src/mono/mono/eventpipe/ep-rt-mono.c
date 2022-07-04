@@ -150,7 +150,7 @@ typedef struct _EventPipeSampleProfileStackWalkData {
 } EventPipeSampleProfileStackWalkData;
 
 // Rundown flags.
-#define RUNTIME_SKU_CORECLR 0x2
+#define RUNTIME_SKU_MONO 0x4
 #define METHOD_FLAGS_DYNAMIC_METHOD 0x1
 #define METHOD_FLAGS_GENERIC_METHOD 0x2
 #define METHOD_FLAGS_SHARED_GENERIC_METHOD 0x4
@@ -2801,7 +2801,7 @@ ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkp
 
 	FireEtwRuntimeInformationDCStart (
 		clr_instance_get_id (),
-		RUNTIME_SKU_CORECLR,
+		RUNTIME_SKU_MONO,
 		RuntimeProductMajorVersion,
 		RuntimeProductMinorVersion,
 		RuntimeProductPatchVersion,

@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests that are independent of the archive format.
-    public class TarWriter_WriteEntry_Tests : TarTestsBase
+    public class TarWriter_WriteEntry_Tests : TarWriter_WriteEntry_Base
     {
         [Fact]
         public void WriteEntry_AfterDispose_Throws()
@@ -29,9 +29,9 @@ namespace System.Formats.Tar.Tests
 
             using MemoryStream destination = new MemoryStream();
 
-            using (TarReader reader = new TarReader(unseekable))
+            using (TarReader reader1 = new TarReader(unseekable))
             {
-                TarEntry entry = reader.GetNextEntry();
+                TarEntry entry = reader1.GetNextEntry();
                 Assert.NotNull(entry);
                 Assert.NotNull(entry.DataStream);
                 entry.DataStream.ReadByte(); // Advance one byte, now the expected string would be "ello file"
@@ -43,9 +43,9 @@ namespace System.Formats.Tar.Tests
             }
 
             destination.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(destination))
+            using (TarReader reader2 = new TarReader(destination))
             {
-                TarEntry entry = reader.GetNextEntry();
+                TarEntry entry = reader2.GetNextEntry();
                 Assert.NotNull(entry);
                 Assert.NotNull(entry.DataStream);
 
@@ -88,6 +88,78 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Write_RegularFileEntry_In_V7Writer(TarEntryFormat entryFormat)
+        {
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.V7, leaveOpen: true))
+            {
+                TarEntry entry = entryFormat switch
+                {
+                    TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    TarEntryFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
+                    _ => throw new FormatException($"Unexpected format: {entryFormat}")
+                };
+
+                // Should be written in the format of the entry
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archive))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(entryFormat, entry.Format);
+
+                switch (entryFormat)
+                {
+                    case TarEntryFormat.Ustar:
+                        Assert.True(entry is UstarTarEntry);
+                        break;
+                    case TarEntryFormat.Pax:
+                        Assert.True(entry is PaxTarEntry);
+                        break;
+                    case TarEntryFormat.Gnu:
+                        Assert.True(entry is GnuTarEntry);
+                        break;
+                }
+
+                Assert.Null(reader.GetNextEntry());
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Write_V7RegularFileEntry_In_OtherFormatsWriter(TarEntryFormat writerFormat)
+        {
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, format: writerFormat, leaveOpen: true))
+            {
+                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+
+                // Should be written in the format of the entry
+                writer.WriteEntry(entry);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archive))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(TarEntryFormat.V7, entry.Format);
+                Assert.True(entry is V7TarEntry);
+
+                Assert.Null(reader.GetNextEntry());
+            }
+        }
+
+        [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
@@ -106,13 +178,13 @@ namespace System.Formats.Tar.Tests
                 PaxGlobalExtendedAttributesTarEntry gea1 = new PaxGlobalExtendedAttributesTarEntry(attrs);
                 writer.WriteEntry(gea1);
 
-                TarEntry entry1 = ConstructEntry(format, "dir1");
+                TarEntry entry1 = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir1");
                 writer.WriteEntry(entry1);
 
                 PaxGlobalExtendedAttributesTarEntry gea2 = new PaxGlobalExtendedAttributesTarEntry(attrs);
                 writer.WriteEntry(gea2);
 
-                TarEntry entry2 = ConstructEntry(format, "dir2");
+                TarEntry entry2 = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory,  "dir2");
                 writer.WriteEntry(entry2);
             }
 
@@ -121,9 +193,9 @@ namespace System.Formats.Tar.Tests
             using (TarReader reader = new TarReader(archiveStream, leaveOpen: false))
             {
                 VerifyGlobalExtendedAttributesEntry(reader.GetNextEntry(), attrs);
-                VerifyDirEntry(reader.GetNextEntry(), format, "dir1");
+                VerifyDirectory(reader.GetNextEntry(), format, "dir1");
                 VerifyGlobalExtendedAttributesEntry(reader.GetNextEntry(), attrs);
-                VerifyDirEntry(reader.GetNextEntry(), format, "dir2");
+                VerifyDirectory(reader.GetNextEntry(), format, "dir2");
                 Assert.Null(reader.GetNextEntry());
             }
         }
@@ -225,37 +297,6 @@ namespace System.Formats.Tar.Tests
                     Assert.NotEqual(overLimitTimestamp, gnuReadEntry.AccessTime);
                     Assert.NotEqual(overLimitTimestamp, gnuReadEntry.ChangeTime);
                 }
-            }
-        }
-
-        private TarEntry ConstructEntry(TarEntryFormat format, string name) =>
-            format switch
-            {
-                TarEntryFormat.V7 => new V7TarEntry(TarEntryType.Directory, name),
-                TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.Directory, name),
-                TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.Directory, name),
-                TarEntryFormat.Gnu => new GnuTarEntry(TarEntryType.Directory, name),
-                _ => throw new Exception($"Unexpected format {format}"),
-            };
-
-        private void VerifyDirEntry(TarEntry entry, TarEntryFormat format, string name)
-        {
-            Assert.NotNull(entry);
-            Assert.Equal(format, entry.Format);
-            Assert.Equal(TarEntryType.Directory, entry.EntryType);
-            Assert.Equal(name, entry.Name);
-        }
-
-        private void VerifyGlobalExtendedAttributesEntry(TarEntry entry, Dictionary<string, string> attrs)
-        {
-            PaxGlobalExtendedAttributesTarEntry gea = entry as PaxGlobalExtendedAttributesTarEntry;
-            Assert.NotNull(gea);
-            Assert.Equal(attrs.Count, gea.GlobalExtendedAttributes.Count);
-
-            foreach ((string key, string value) in attrs)
-            {
-                Assert.Contains(key, gea.GlobalExtendedAttributes);
-                Assert.Equal(value, gea.GlobalExtendedAttributes[key]);
             }
         }
     }

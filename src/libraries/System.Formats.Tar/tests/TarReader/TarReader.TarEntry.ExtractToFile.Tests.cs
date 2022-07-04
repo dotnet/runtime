@@ -6,10 +6,10 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarReader_ExtractToFile_Tests : TarTestsBase
+    public partial class TarReader_TarEntry_ExtractToFile_Tests : TarTestsBase
     {
         [Fact]
-        public void ExtractEntriesWithSlashDotPrefix()
+        public void EntriesWithSlashDotPrefix()
         {
             using TempDirectory root = new TempDirectory();
 
@@ -33,6 +33,5 @@ namespace System.Formats.Tar.Tests
                 }
             }
         }
-
     }
 }

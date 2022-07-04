@@ -218,7 +218,7 @@ export function getF64(offset: _MemOffset): number {
 
 let max_int64_big: BigInt;
 let min_int64_big: BigInt;
-export function afterUpdateGlobalBufferAndViews(buffer: Buffer): void {
+export function afterUpdateGlobalBufferAndViews(buffer: ArrayBufferLike): void {
     if (is_bigint_supported) {
         max_int64_big = BigInt("9223372036854775807");
         min_int64_big = BigInt("-9223372036854775808");

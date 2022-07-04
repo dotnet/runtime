@@ -10,12 +10,12 @@ namespace System.Text.Json
     {
         private ValueCollection? _valueCollection;
 
-        public ICollection<T?> GetValueCollection()
+        public ICollection<T> GetValueCollection()
         {
             return _valueCollection ??= new ValueCollection(this);
         }
 
-        private sealed class ValueCollection : ICollection<T?>
+        private sealed class ValueCollection : ICollection<T>
         {
             private readonly JsonPropertyDictionary<T> _parent;
 
@@ -30,26 +30,26 @@ namespace System.Text.Json
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                foreach (KeyValuePair<string, T?> item in _parent)
+                foreach (KeyValuePair<string, T> item in _parent)
                 {
                     yield return item.Value;
                 }
             }
 
-            public void Add(T? jsonNode) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
+            public void Add(T jsonNode) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
             public void Clear() => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
-            public bool Contains(T? jsonNode) => _parent.ContainsValue(jsonNode);
+            public bool Contains(T jsonNode) => _parent.ContainsValue(jsonNode);
 
-            public void CopyTo(T?[] nodeArray, int index)
+            public void CopyTo(T[] nodeArray, int index)
             {
                 if (index < 0)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(index));
                 }
 
-                foreach (KeyValuePair<string, T?> item in _parent)
+                foreach (KeyValuePair<string, T> item in _parent)
                 {
                     if (index >= nodeArray.Length)
                     {
@@ -60,15 +60,15 @@ namespace System.Text.Json
                 }
             }
 
-            public IEnumerator<T?> GetEnumerator()
+            public IEnumerator<T> GetEnumerator()
             {
-                foreach (KeyValuePair<string, T?> item in _parent)
+                foreach (KeyValuePair<string, T> item in _parent)
                 {
                     yield return item.Value;
                 }
             }
 
-            bool ICollection<T?>.Remove(T? node) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            bool ICollection<T>.Remove(T node) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
         }
     }
 }

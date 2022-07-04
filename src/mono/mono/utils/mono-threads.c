@@ -31,6 +31,7 @@
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-threads-wasm.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/w32api.h>
 #include <glib.h>
@@ -551,6 +552,10 @@ register_thread (MonoThreadInfo *info)
 	result = mono_thread_info_insert (info);
 	g_assert (result);
 	mono_thread_info_suspend_unlock ();
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_attached ();
+#endif
 
 	return TRUE;
 }
