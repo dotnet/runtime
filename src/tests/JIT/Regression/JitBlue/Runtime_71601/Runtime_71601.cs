@@ -28,7 +28,20 @@ public class Runtime_71601
         Wrap a = p.FieldTwo;
         Wrap b = WrapTuple.GetFieldTwo(ref p);
 
-        return a.Value != b.Value;
+        if (a.Value != b.Value)
+        {
+            return true;
+        }
+
+        a = p.FieldOne;
+        b = WrapTuple.GetFieldOne(ref p);
+
+        if (a.Value != b.Value)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -38,7 +51,19 @@ public class Runtime_71601
         Wrap a = p.FieldTwo;
         WrapTuple.GetFieldTwo(ref p) = a;
 
-        return a.Value == p.FieldOne.Value;
+        if (a.Value == p.FieldOne.Value)
+        {
+            return true;
+        }
+
+        WrapTuple.GetFieldOne(ref p) = a;
+
+        if (a.Value != p.FieldOne.Value)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     struct WrapTuple
@@ -46,6 +71,7 @@ public class Runtime_71601
         public Wrap FieldOne;
         public Wrap FieldTwo;
 
+        public static ref Wrap GetFieldOne(ref WrapTuple t) => ref Unsafe.Add(ref t.FieldTwo, -1);
         public static ref Wrap GetFieldTwo(ref WrapTuple t) => ref Unsafe.Add(ref t.FieldOne, 1);
     }
 
