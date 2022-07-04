@@ -346,7 +346,7 @@ namespace System.Text.RegularExpressions
                     // a{3,} for example is equivalent to aaaa*. The first three a's can be
                     // added to the trie.
                     canContinue = true;
-                    for (int i = 0; i < max - 1 && canContinue; i++)
+                    for (int i = 0; i < min - 1 && canContinue; i++)
                     {
                         nodes = fAdd(ref this, nodes, state, false, out canContinue);
                     }
@@ -427,7 +427,7 @@ namespace System.Text.RegularExpressions
                     {
                         return builder.Add(nodes, regexNode, isFinal, out canContinue);
                     }
-                    return AddLoopHelper(nodes, regexNode, regexNode, AddRegexNodeHelper, isFinal, out canContinue);
+                    return AddLoopHelper(nodes, regexNode, regexNode.Child(0), AddRegexNodeHelper, isFinal, out canContinue);
                 case RegexNodeKind.Concatenate:
                     int childCount = regexNode.ChildCount();
                     canContinue = true;
