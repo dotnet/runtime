@@ -3,10 +3,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -51,26 +52,28 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
-        internal JsonPropertyInfo CreateProperty(Type propertyType, JsonConverter converter)
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, JsonConverter converter)
         {
-            // Create the JsonPropertyInfo instance.
-            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo(declaringTypeInfo: this, propertyType, Options);
-            jsonPropertyInfo.DefaultConverterForType = converter;
-            jsonPropertyInfo.ConverterStrategy = converter.ConverterStrategy;
-            return jsonPropertyInfo;
+            Debug.Assert(propertyType.IsInSubtypeRelationshipWith(converter.TypeToConvert));
+
+            if (converter.TypeToConvert == propertyType)
+            {
+                // For the vast majority of use cases, the converter type matches the property type.
+                // Avoid reflection-based initialization by delegating JsonPropertyInfo<T> construction to the converter itself.
+                return converter.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+            }
+
+            s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
+            MethodInfo factoryInfo = s_createJsonPropertyInfo.MakeGenericMethod(propertyType);
+            return (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
         }
 
-        /// <summary>
-        /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// See <seealso cref="PropertyInfoForTypeInfo"/>.
-        /// </summary>
-        private JsonPropertyInfo CreatePropertyInfoForTypeInfo(JsonTypeInfo jsonTypeInfo, JsonConverter converter)
-        {
-            JsonPropertyInfo jsonPropertyInfo = CreateProperty(jsonTypeInfo.Type, converter: converter);
-            jsonPropertyInfo.JsonTypeInfo = jsonTypeInfo;
-            jsonPropertyInfo.IsForTypeInfo = true;
-            return jsonPropertyInfo;
-        }
+        private static JsonPropertyInfo CreateJsonPropertyInfo<T>(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
+            => new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options);
+
+        private static MethodInfo? s_createJsonPropertyInfo;
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

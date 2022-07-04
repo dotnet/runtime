@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -15,25 +14,12 @@ namespace System.Text.Json.Serialization.Metadata
     /// or a type's converter, if the current instance is a <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
-        /// <summary>
-        /// Returns true if the property's converter is external (a user's custom converter)
-        /// and the type to convert is not the same as the declared property type (polymorphic).
-        /// Used to determine whether to perform additional validation on the value returned by the
-        /// converter on deserialization.
-        /// </summary>
-        private bool _converterIsExternalAndPolymorphic;
-
-        // Since a converter's TypeToConvert (which is the T value in this type) can be different than
-        // the property's type, we track that and whether the property type can be null.
-        private readonly bool _propertyTypeEqualsTypeToConvert;
-
         private Func<object, T>? _typedGet;
         private Action<object, T>? _typedSet;
 
-        internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? parentTypeInfo, JsonSerializerOptions options)
-            : base(declaringType, propertyType, parentTypeInfo, options)
+        internal JsonPropertyInfo(Type declaringType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
+            : base(declaringType, propertyType: typeof(T), declaringTypeInfo, options)
         {
-            _propertyTypeEqualsTypeToConvert = propertyType == typeof(T);
         }
 
         internal new Func<object, T>? Get
@@ -97,6 +83,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         internal override object? DefaultValue => default(T);
+        internal override bool PropertyTypeCanBeNull => default(T) is null;
 
         internal JsonConverter<T> TypedEffectiveConverter { get; private set; } = null!;
 
@@ -147,8 +134,8 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal JsonPropertyInfo(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
-            : this(propertyInfo.DeclaringType, propertyType: typeof(T), parentTypeInfo: null, options)
+        internal JsonPropertyInfo(JsonPropertyInfoValues<T> propertyInfo, JsonSerializerOptions options)
+            : this(propertyInfo.DeclaringType, declaringTypeInfo: null, options)
         {
             string? name;
 
@@ -178,14 +165,8 @@ namespace System.Text.Json.Serialization.Metadata
             SrcGen_IsPublic = propertyInfo.IsPublic;
             SrcGen_HasJsonInclude = propertyInfo.HasJsonInclude;
             IsExtensionData = propertyInfo.IsExtensionData;
-
-            JsonTypeInfo? propertyTypeInfo = propertyInfo.PropertyTypeInfo;
-
-            JsonConverter<T>? typedCustomConverter = propertyInfo.Converter;
-            CustomConverter = typedCustomConverter;
-
-            JsonConverter<T>? typedNonCustomConverter = propertyTypeInfo?.Converter as JsonConverter<T>;
-            DefaultConverterForType = typedNonCustomConverter;
+            DefaultConverterForType = propertyInfo.PropertyTypeInfo?.Converter as JsonConverter<T>;
+            CustomConverter = propertyInfo.Converter;
 
             IgnoreCondition = propertyInfo.IgnoreCondition;
             if (IgnoreCondition != JsonIgnoreCondition.Always)
@@ -194,18 +175,8 @@ namespace System.Text.Json.Serialization.Metadata
                 Set = propertyInfo.Setter;
             }
 
-            JsonTypeInfo = propertyTypeInfo;
+            JsonTypeInfo = propertyInfo.PropertyTypeInfo;
             NumberHandling = propertyInfo.NumberHandling;
-        }
-
-        internal override void Configure()
-        {
-            base.Configure();
-
-            if (!IsForTypeInfo && !IsIgnored)
-            {
-                _converterIsExternalAndPolymorphic = !EffectiveConverter.IsInternalConverter && PropertyType != EffectiveConverter.TypeToConvert;
-            }
         }
 
         private protected override void DetermineEffectiveConverter()
@@ -217,28 +188,12 @@ namespace System.Text.Json.Serialization.Metadata
                 JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(customConverter, PropertyType);
             }
 
-            JsonConverter effectiveConverter = customConverter ?? DefaultConverterForType ?? Options.GetConverterFromTypeInfo(PropertyType);
-            if (effectiveConverter.TypeToConvert == PropertyType)
-            {
-                EffectiveConverter = effectiveConverter;
-            }
-            else
-            {
-                EffectiveConverter = effectiveConverter.CreateCastingConverter<T>();
-            }
+            JsonConverter converter = customConverter ?? DefaultConverterForType ?? Options.GetConverterFromTypeInfo(PropertyType);
+            TypedEffectiveConverter = converter is JsonConverter<T> typedConv ? typedConv : converter.CreateCastingConverter<T>();
+            ConverterStrategy = TypedEffectiveConverter.ConverterStrategy;
         }
 
-        internal override JsonConverter EffectiveConverter
-        {
-            get
-            {
-                return TypedEffectiveConverter;
-            }
-            set
-            {
-                TypedEffectiveConverter = (JsonConverter<T>)value;
-            }
-        }
+        internal override JsonConverter EffectiveConverter => TypedEffectiveConverter;
 
         internal override object? GetValueAsObject(object obj)
         {
@@ -283,23 +238,9 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (!PropertyTypeCanBeNull)
                 {
-                    if (_propertyTypeEqualsTypeToConvert)
+                    if (EqualityComparer<T>.Default.Equals(default, value))
                     {
-                        // The converter and property types are the same, so we can use T for EqualityComparer<>.
-                        if (EqualityComparer<T>.Default.Equals(default, value))
-                        {
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        Debug.Assert(JsonTypeInfo.Type == PropertyType);
-
-                        // Use a late-bound call to EqualityComparer<DeclaredPropertyType>.
-                        if (JsonTypeInfo.DefaultValueHolder.IsDefaultValue(value))
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
             }
@@ -417,24 +358,6 @@ namespace System.Text.Json.Serialization.Metadata
                     success = TypedEffectiveConverter.TryRead(ref reader, PropertyType, Options, ref state, out T? value);
                     if (success)
                     {
-#if !DEBUG
-                        if (_converterIsExternalAndPolymorphic)
-#endif
-                        {
-                            if (value != null)
-                            {
-                                Type typeOfValue = value.GetType();
-                                if (!PropertyType.IsAssignableFrom(typeOfValue))
-                                {
-                                    ThrowHelper.ThrowInvalidCastException_DeserializeUnableToAssignValue(typeOfValue, PropertyType);
-                                }
-                            }
-                            else if (!PropertyTypeCanBeNull)
-                            {
-                                ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(PropertyType);
-                            }
-                        }
-
                         Set!(obj, value!);
                     }
                 }
@@ -500,14 +423,7 @@ namespace System.Text.Json.Serialization.Metadata
                     goto case JsonIgnoreCondition.WhenWritingDefault;
                 case JsonIgnoreCondition.WhenWritingDefault:
                     {
-                        if (_propertyTypeEqualsTypeToConvert)
-                        {
-                            return ShouldSerializeIgnoreConditionWhenWritingDefaultPropertyTypeEqualsTypeToConvert;
-                        }
-                        else
-                        {
-                            return ShouldSerializeIgnoreConditionWhenWritingDefaultPropertyTypeNotEqualsTypeToConvert;
-                        }
+                        return ShouldSerializeIgnoreConditionWhenWritingDefaultPropertyTypeEqualsTypeToConvert;
                     }
                 default:
                     Debug.Fail($"Unknown value of JsonIgnoreCondition '{ignoreCondition}'");
@@ -515,9 +431,9 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal static bool ShouldSerializeIgnoreConditionAlways(object obj, object? value) => false;
-        internal static bool ShouldSerializeIgnoreConditionNever(object obj, object? value) => true;
-        internal static bool ShouldSerializeIgnoreConditionWhenWritingDefaultPropertyTypeEqualsTypeToConvert(object obj, object? value)
+        private static bool ShouldSerializeIgnoreConditionAlways(object obj, object? value) => false;
+        private static bool ShouldSerializeIgnoreConditionNever(object obj, object? value) => true;
+        private static bool ShouldSerializeIgnoreConditionWhenWritingDefaultPropertyTypeEqualsTypeToConvert(object obj, object? value)
         {
             if (value == null)
             {
@@ -526,17 +442,6 @@ namespace System.Text.Json.Serialization.Metadata
 
             T typedValue = (T)value;
             return !EqualityComparer<T>.Default.Equals(default, typedValue);
-        }
-
-        internal bool ShouldSerializeIgnoreConditionWhenWritingDefaultPropertyTypeNotEqualsTypeToConvert(object obj, object? value)
-        {
-            if (value == null)
-            {
-                return false;
-            }
-
-            Debug.Assert(JsonTypeInfo.Type == PropertyType);
-            return !JsonTypeInfo.DefaultValueHolder.IsDefaultValue(value);
         }
     }
 }

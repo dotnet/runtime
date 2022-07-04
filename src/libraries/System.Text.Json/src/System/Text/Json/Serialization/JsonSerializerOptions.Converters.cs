@@ -195,8 +195,7 @@ namespace System.Text.Json
 
             Type converterTypeToConvert = converter.TypeToConvert;
 
-            if (!converterTypeToConvert.IsAssignableFromInternal(typeToConvert)
-                && !typeToConvert.IsAssignableFromInternal(converterTypeToConvert))
+            if (!converterTypeToConvert.IsInSubtypeRelationshipWith(typeToConvert))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }

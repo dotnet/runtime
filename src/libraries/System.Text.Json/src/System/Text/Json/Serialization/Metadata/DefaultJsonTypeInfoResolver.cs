@@ -40,12 +40,12 @@ namespace System.Text.Json.Serialization.Metadata
         {
             if (type == null)
             {
-                throw new ArgumentNullException(nameof(type));
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
             }
 
             if (options == null)
             {
-                throw new ArgumentNullException(nameof(options));
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
             _mutable = false;
