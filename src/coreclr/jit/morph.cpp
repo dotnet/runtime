@@ -1843,7 +1843,7 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType
 
     if (tree->IsInvariant() || tree->OperIsLocal())
     {
-        return gtClone(tree);
+        return gtCloneExpr(tree);
     }
 
     return fgInsertCommaFormTemp(pOp, structType);
