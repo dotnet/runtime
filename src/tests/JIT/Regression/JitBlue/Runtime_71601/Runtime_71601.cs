@@ -13,6 +13,11 @@ public class Runtime_71601
             return 101;
         }
 
+        if (ProblemWithPrimitiveDst())
+        {
+            return 102;
+        }
+
         return 100;
     }
 
@@ -24,6 +29,16 @@ public class Runtime_71601
         Wrap b = WrapTuple.GetFieldTwo(ref p);
 
         return a.Value != b.Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ProblemWithPrimitiveDst()
+    {
+        WrapTuple p = new WrapTuple { FieldOne = { Value = 1 }, FieldTwo = { Value = 2 } };
+        Wrap a = p.FieldTwo;
+        WrapTuple.GetFieldTwo(ref p) = a;
+
+        return a.Value == p.FieldOne.Value;
     }
 
     struct WrapTuple
