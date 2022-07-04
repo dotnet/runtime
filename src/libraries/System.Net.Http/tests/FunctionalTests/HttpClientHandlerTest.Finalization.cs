@@ -26,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task IncompleteResponseStream_ResponseDropped_CancelsRequestToServer()
         {
             using (HttpClient client = CreateHttpClient())

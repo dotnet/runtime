@@ -890,7 +890,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsync_NoTrailingHeaders_EmptyCollection()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -919,7 +918,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         [InlineData(true)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted(bool responseHasContentLength)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -956,7 +954,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsync_TrailerHeaders_TrailingPseudoHeadersThrow()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -981,7 +978,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         [InlineData(true)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsyncResponseHeadersReadOption_TrailingHeaders_Available(bool responseHasContentLength)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1033,7 +1029,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsync_TrailerHeaders_TrailingHeaderNoBody()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1058,7 +1053,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsync_TrailingHeaders_NoData_EmptyResponseObserved()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1538,7 +1532,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("PooledConnectionLifetime")]
         [InlineData("PooledConnectionIdleTimeout")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_SmallConnectionTimeout_SubsequentRequestUsesDifferentConnection(string timeoutPropertyName)
         {
             await Http2LoopbackServerFactory.CreateServerAsync(async (server, url) =>
@@ -1625,7 +1618,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public void HandlerDroppedWithoutDisposal_NotKeptAlive()
         {
             var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -2223,7 +2215,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_SufficientConnectionsCreated()
         {
             // This is equal to Http2Connection.InitialMaxConcurrentStreams, which is the limit we impose before we have received the peer's initial SETTINGS frame.
@@ -2317,7 +2308,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             const int MaxConcurrentStreams = 2;
@@ -2377,7 +2367,6 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(nameof(SupportsAlpn))]
         [OuterLoop("Incurs long delay")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
         {
             const int MaxConcurrentStreams = 2;
@@ -2542,7 +2531,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectCallback_ContextHasCorrectProperties_Success(bool syncRequest, bool syncCallback)
         {
             if (syncRequest && UseVersion > HttpVersion.Version11)
@@ -2602,7 +2590,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectCallback_BindLocalAddress_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -2637,7 +2624,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectCallback_UseMemoryBuffer_Success(bool useSsl)
         {
             (Stream clientStream, Stream serverStream) = ConnectedStreams.CreateBidirectional();
@@ -2676,7 +2662,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/44183", TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -2726,7 +2711,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectCallback_ConnectionPrefix_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -2856,7 +2840,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectCallback_SslStream_OK(bool useSslStream)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -2905,7 +2888,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectCallback_DerivedSslStream_OK()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -2950,7 +2932,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ConnectCallback_NoAlpn_OK()
         {
             // Create HTTP 1.1 loopback. Http2 should downgrade
@@ -3161,7 +3142,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PlaintextStreamFilter_SimpleDelegatingStream_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -3205,7 +3185,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PlaintextStreamFilter_ConnectionPrefix_Success(bool useSsl)
         {
             byte[] RequestPrefix = "request prefix\r\n"u8.ToArray();
@@ -3286,7 +3265,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PlaintextStreamFilter_ExceptionDuringCallback_ThrowsHttpRequestExceptionWithInnerException(bool useSsl)
         {
             Exception e = new Exception("hello!");
@@ -3328,7 +3306,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PlaintextStreamFilter_ReturnsNull_ThrowsHttpRequestException(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -3373,7 +3350,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PlaintextStreamFilter_CustomStream_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
@@ -3421,7 +3397,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PlaintextStreamFilter_Logging_Success(bool useSsl)
         {
             bool log = int.TryParse(Environment.GetEnvironmentVariable("DOTNET_TEST_SOCKETSHTTPHANDLERLOG"), out int value) && value == 1;
@@ -3663,7 +3638,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1, 0)]
         [InlineData(1, 2)]
         [InlineData(2, 1)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ContentLength_DoesNotMatchRequestContentLength_Throws(int contentLength, int bytesSent)
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>

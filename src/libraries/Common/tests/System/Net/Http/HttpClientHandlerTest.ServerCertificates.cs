@@ -282,7 +282,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate")]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
             const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
@@ -306,7 +306,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate")]
         public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

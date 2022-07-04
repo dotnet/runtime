@@ -80,7 +80,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         [SkipOnPlatform(TestPlatforms.Browser, "ConnectCallback is not supported on Browser")]
         public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
@@ -226,7 +225,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ZeroByteRead_BlocksUntilDataIsAvailable(bool async)
         {
             var zeroByteReadIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

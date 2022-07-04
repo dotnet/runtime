@@ -40,7 +40,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAlivePingDelay_Infinite_NoKeepAlivePingIsSent()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -101,7 +100,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpKeepAlivePingPolicy.Always)]
         [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAliveConfigured_KeepAlivePingsAreSentAccordingToPolicy(HttpKeepAlivePingPolicy policy)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -181,7 +179,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAliveConfigured_NoPingResponseDuringActiveStream_RequestShouldFail()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -232,7 +229,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task HttpKeepAlivePingPolicy_Always_NoPingResponseBetweenStreams_SecondRequestShouldFail()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>

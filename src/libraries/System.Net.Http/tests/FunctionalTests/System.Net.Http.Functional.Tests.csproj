@@ -6,7 +6,16 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
+    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
   </PropertyGroup>
+  
+  <!-- TMP: https://github.com/dotnet/runtime-assets/pull/251 -->
+  <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+    <None Include="$(MSBuildProjectDirectory)\res\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

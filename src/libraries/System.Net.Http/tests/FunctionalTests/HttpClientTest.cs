@@ -1188,7 +1188,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(

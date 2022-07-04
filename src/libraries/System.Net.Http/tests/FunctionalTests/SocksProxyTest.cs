@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,14 +26,18 @@ namespace System.Net.Http.Functional.Tests
             from host in Hosts(scheme)
             select new object[] { scheme, useSsl, useAuth, host };
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(TestLoopbackAsync_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task TestLoopbackAsync(string scheme, bool useSsl, bool useAuth, string host)
         {
             if (useSsl && UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
             {
                 return;
+            }
+
+            if (PlatformDetection.IsAndroid && useSsl && host == "::1")
+            {
+                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
             }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(
