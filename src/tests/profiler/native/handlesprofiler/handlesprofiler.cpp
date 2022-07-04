@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "handlesprofiler.h"
+#include <iostream>
+
+using std::wcout;
+using std::endl;
 
 GUID HandlesProfiler::GetClsid()
 {
@@ -158,7 +162,19 @@ void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
         }
         else
         {
-            printf("HandlesProfiler::CheckIfAlive: object alive as expected.\n");
+            printf("HandlesProfiler::CheckIfAlive: object alive as expected ");
+            ClassID classId{0};
+            hr = pCorProfilerInfo->GetClassFromObject(objectId, &classId);
+            if (FAILED(hr))
+            {
+                _failures++;
+                printf("(FAIL: impossible to get class from object).\n");
+            }
+            else
+            {
+                String typeName = GetClassIDName(classId);
+                wcout << typeName.ToWString() << std::endl;
+            }
         }
     }
     else

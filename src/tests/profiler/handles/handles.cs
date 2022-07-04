@@ -45,6 +45,13 @@ namespace Profiler.Tests
             public TestClassForWeakHandle _weak;
             public TestClassForStrongHandle _strong;
             public TestClassForPinnedHandle _pinned;
+
+            // These objects will be allocated AFTER test objects.
+            // It is expected that after a compacting GC, they should be copied over
+            // previously allocated test objects that are no more referenced by handles.
+            public string _afterWeak;
+            public string _aferStrong;
+            public string _afterPinned;
         }
 
         static readonly Guid HandlesProfilerGuid = new Guid("A0F96622-522D-4654-AA56-BF421E79B210");
@@ -99,6 +106,10 @@ namespace Profiler.Tests
 
             Console.WriteLine("Allocating Pinned");
             objects._pinned = new TestClassForPinnedHandle("P");
+
+            objects._afterWeak = "after weak-" + Environment.ProcessId;
+            objects._aferStrong = "after strong-" + Environment.ProcessId;
+            objects._afterPinned = "after pinned-" + Environment.ProcessId;
         }
 
         public static int RunTest(String[] args) 
