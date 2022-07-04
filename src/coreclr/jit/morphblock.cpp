@@ -192,12 +192,10 @@ void MorphInitBlockHelper::PrepareDst()
     if (m_dst->IsLocal())
     {
         m_dstLclNode   = m_dst->AsLclVarCommon();
-        m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNode);
         m_dstLclOffset = m_dstLclNode->GetLclOffs();
 
         if (m_dst->TypeIs(TYP_STRUCT))
         {
-            assert(m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize);
             m_blockLayout = m_dstLclNode->GetLayout(m_comp);
         }
     }
@@ -212,9 +210,19 @@ void MorphInitBlockHelper::PrepareDst()
         ssize_t dstLclOffset = 0;
         if (dstAddr->DefinesLocalAddr(&m_dstLclNode, &dstLclOffset))
         {
-            // Note that lclNode can be a field, like `BLK<4> struct(ADD(ADDR(LCL_FLD int), CNST_INT))`.
-            m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNode);
-            m_dstLclOffset = static_cast<unsigned>(dstLclOffset);
+            // Treat out-of-bounds access to locals opaquely to simplify downstream logic.
+            unsigned dstLclSize = m_comp->lvaLclExactSize(m_dstLclNode->GetLclNum());
+
+            if (!FitsIn<unsigned>(dstLclOffset) ||
+                ((static_cast<uint64_t>(dstLclOffset) + m_dst->AsIndir()->Size()) > dstLclSize))
+            {
+                assert(m_comp->lvaGetDesc(m_dstLclNode)->IsAddressExposed());
+                m_dstLclNode = nullptr;
+            }
+            else
+            {
+                m_dstLclOffset = static_cast<unsigned>(dstLclOffset);
+            }
         }
 
         if (m_dst->TypeIs(TYP_STRUCT))
@@ -236,6 +244,10 @@ void MorphInitBlockHelper::PrepareDst()
     if (m_dstLclNode != nullptr)
     {
         m_dstLclNum = m_dstLclNode->GetLclNum();
+        m_dstVarDsc = m_comp->lvaGetDesc(m_dstLclNum);
+
+        assert((m_dstVarDsc->TypeGet() != TYP_STRUCT) ||
+               (m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize));
 
         // Kill everything about m_dstLclNum (and its field locals)
         if (m_comp->optLocalAssertionProp && (m_comp->optAssertionCount > 0))
