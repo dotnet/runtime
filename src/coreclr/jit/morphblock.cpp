@@ -566,7 +566,18 @@ void MorphCopyBlockHelper::PrepareSrc()
         ssize_t srcLclOffset = 0;
         if (m_src->AsIndir()->Addr()->DefinesLocalAddr(&m_srcLclNode, &srcLclOffset))
         {
-            m_srcLclOffset = static_cast<unsigned>(srcLclOffset);
+            // Treat out-of-bounds access to locals opaquely to simplify downstream logic.
+            unsigned srcLclSize = m_comp->lvaLclExactSize(m_srcLclNode->GetLclNum());
+
+            if (!FitsIn<unsigned>(srcLclOffset) || ((static_cast<uint64_t>(srcLclOffset) + m_blockSize) > srcLclSize))
+            {
+                assert(m_comp->lvaGetDesc(m_srcLclNode)->IsAddressExposed());
+                m_srcLclNode = nullptr;
+            }
+            else
+            {
+                m_srcLclOffset = static_cast<unsigned>(srcLclOffset);
+            }
         }
     }
 
