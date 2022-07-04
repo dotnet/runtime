@@ -91,6 +91,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"ab|(abc)|(abcd)", RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
         [InlineData(@"ab(?=cd)", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
         [InlineData(@"ab(?=cd)", RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
+        [InlineData(@"ab(c|d|e|f|g)?", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
         public void LeadingPrefix(string pattern, RegexOptions options, int expectedMode, string expectedPrefix)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, options);
@@ -139,6 +140,20 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal((FindNextStartingPositionMode)expectedMode, opts.FindMode);
             Assert.Equal(expectedString, opts.FixedDistanceLiteral.String);
             Assert.Equal(distance, opts.FixedDistanceLiteral.Distance);
+        }
+
+        [Theory]
+        [InlineData(@"monday|tuesday|wednesday|thursday|friday|saturday|sunday", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 7, 49)]
+        [InlineData(@"a(b|c+|d)?(e|f+|g)h", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 10, 20)]
+        [InlineData(@"a{20}|b|c|d|e", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 5, 17)]
+        public void LeadingMultiString(string pattern, RegexOptions options, int expectedMode, int expectedMatchCount, int expectedTrieNodeCount)
+        {
+            RegexFindOptimizations opts = ComputeOptimizations(pattern, options);
+            Assert.Equal((FindNextStartingPositionMode)expectedMode, opts.FindMode);
+            MultiStringMatcher prefixMatcher = opts.PrefixMatcher;
+            Assert.NotNull(prefixMatcher);
+            Assert.Equal(expectedMatchCount, prefixMatcher.GetMatchCount());
+            Assert.Equal(expectedTrieNodeCount, prefixMatcher.Trie.Length);
         }
 
         private static RegexFindOptimizations ComputeOptimizations(string pattern, RegexOptions options)
