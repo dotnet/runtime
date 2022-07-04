@@ -32,7 +32,7 @@ namespace System.Text.RegularExpressions
 
             if (TrieBuilder.CreateFromPrefixIfPossible(node) is List<TrieNode> trie)
             {
-                if (trie.GetMatchCount() < MinMultiPrefixes)
+                if (!IsTrieSuitable(trie))
                 {
                     return (FindPrefix(node), null);
                 }
@@ -42,6 +42,54 @@ namespace System.Text.RegularExpressions
                 }
             }
             return (null, null);
+
+            static bool TrieStartsWithMatch(List<TrieNode> trie)
+            {
+                TrieNode currentNode = trie[TrieNode.Root];
+                while (true)
+                {
+                    if (currentNode.IsMatch)
+                    {
+                        return true;
+                    }
+                    Dictionary<char, int> children = currentNode.Children;
+                    if (children.Count != 1)
+                    {
+                        return false;
+                    }
+                    foreach (KeyValuePair<char, int> kvp in children)
+                    {
+                        currentNode = trie[kvp.Value];
+                        break;
+                    }
+                }
+            }
+
+            // Judging from a trie, guesses whether using the Aho-Corasick algorithm
+            // on it during regex matching would be profitable.
+            static bool IsTrieSuitable(List<TrieNode> trie)
+            {
+                // If the trie has a path of nodes with one child that starts from
+                // the root and leads to a match node it means that all words of the
+                // trie start with the same prefix that is also a match.
+                // LeadingString would be sufficient. The trie builder might catch
+                // these cases but not always.
+                if (TrieStartsWithMatch(trie))
+                {
+                    return false;
+                }
+
+                int matchCount = trie.GetMatchCount();
+                // If the trie's match nodes are less than a certain number, or all but
+                // the root are match nodes (which indicates patterns like "[a-m]x*"),
+                // Aho-Corasick would not make a difference.
+                if (matchCount < MinMultiPrefixes || matchCount == trie.Count - 1)
+                {
+                    return false;
+                }
+
+                return true;
+            }
         }
 
         /// <summary>Computes the leading substring in <paramref name="node"/>; may be empty.</summary>
