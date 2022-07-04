@@ -39,9 +39,9 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private const int DepthLimit = 12;
 
-        private delegate int OneToOneNodeMapping<T>(ref TrieBuilder builder, int nodeIndex, T state, out bool canContinue);
+        private delegate int OneToOneNodeMapping<T>(ref TrieBuilder builder, int nodeIndex, T state, bool isFinal, out bool canContinue);
 
-        private delegate NodeCollection ManyToManyNodeMapping<T>(ref TrieBuilder builder, NodeCollection nodes, T state, out bool canContinue);
+        private delegate NodeCollection ManyToManyNodeMapping<T>(ref TrieBuilder builder, NodeCollection nodes, T state, bool isFinal, out bool canContinue);
 
         public TrieBuilder(RegexNode regexNode)
         {
@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions
         public static List<TrieNode>? CreateFromPrefixIfPossible(RegexNode regexNode)
         {
             TrieBuilder builder = new TrieBuilder(regexNode);
-            NodeCollection matchNodes = builder.Add(new NodeCollection(TrieNode.Root), regexNode, out _);
+            NodeCollection matchNodes = builder.Add(new NodeCollection(TrieNode.Root), regexNode, isFinal: true, out _);
             builder.AcceptMatches(matchNodes);
 
             // If we still have one trie node -the root one-, the regex node has no fixed leading part
@@ -94,9 +94,10 @@ namespace System.Text.RegularExpressions
         /// <param name="state">A parameter passed to <paramref name="fAdd"/>.</param>
         /// <param name="fAdd">A function that accepts this trie, a node index of <paramref name="nodes"/>,
         /// <paramref name="state"/>, and returns a new node index. Typically it would call either
-        /// <see cref="Add(ref TrieBuilder, int, char, out bool)"/> or <see cref="Add(ref TrieBuilder, int, string, out bool)"/>.</param>
+        /// <see cref="Add(ref TrieBuilder, int, char, bool, out bool)"/> or <see cref="Add(ref TrieBuilder, int, string, bool, out bool)"/>.</param>
+        /// <param name="isFinal">Whether we are at the end of the traversal algorithm.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can continue past this transformation.</param>
-        private NodeCollection AddOneToOneHelper<T>(NodeCollection nodes, T state, OneToOneNodeMapping<T> fAdd, out bool canContinue)
+        private NodeCollection AddOneToOneHelper<T>(NodeCollection nodes, T state, OneToOneNodeMapping<T> fAdd, bool isFinal, out bool canContinue)
         {
             int count = nodes.Count;
             switch (count)
@@ -105,7 +106,7 @@ namespace System.Text.RegularExpressions
                     canContinue = false;
                     return NodeCollection.Empty;
                 case 1:
-                    int newNode = fAdd(ref this, nodes[0], state, out canContinue);
+                    int newNode = fAdd(ref this, nodes[0], state, isFinal, out canContinue);
                     return new NodeCollection(newNode);
                 default:
                     canContinue = false;
@@ -117,7 +118,7 @@ namespace System.Text.RegularExpressions
                     List<int> result = new List<int>(count);
                     for (int i = 0; i < count; i++)
                     {
-                        newNode = fAdd(ref this, nodes[i], state, out bool canContinueInner);
+                        newNode = fAdd(ref this, nodes[i], state, isFinal, out bool canContinueInner);
                         if (!visited.Add(newNode))
                         {
                             continue;
@@ -142,12 +143,13 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="nodes">The collection of nodes</param>
         /// <param name="c">The character to add.</param>
+        /// <param name="isFinal">Whether we are at the end of the traversal algorithm.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past the character.</param>
         /// <returns>The collection of node indices that each node of
         /// <paramref name="nodes"/> leads to, at <paramref name="c"/>.</returns>
-        private NodeCollection Add(NodeCollection nodes, char c, out bool canContinue)
+        private NodeCollection Add(NodeCollection nodes, char c, bool isFinal, out bool canContinue)
         {
-            return AddOneToOneHelper(nodes, c, Add, out canContinue);
+            return AddOneToOneHelper(nodes, c, Add, isFinal, out canContinue);
         }
 
         /// <summary>
@@ -156,14 +158,30 @@ namespace System.Text.RegularExpressions
         /// <param name="builder">The <see cref="TrieBuilder"/> <paramref name="nodeIndex"/> belongs to.</param>
         /// <param name="nodeIndex">The node's index.</param>
         /// <param name="c">The character to add.</param>
+        /// <param name="isFinal">Whether we are at the end of the traversal algorithm.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past the character.</param>
         /// <returns>The index of the node that <paramref name="nodeIndex"/>
         /// leads to, at <paramref name="c"/>.</returns>
-        private static int Add(ref TrieBuilder builder, int nodeIndex, char c, out bool canContinue)
+        private static int Add(ref TrieBuilder builder, int nodeIndex, char c, bool isFinal, out bool canContinue)
         {
             List<TrieNode> nodes = builder._nodes;
             TrieNode node = nodes[nodeIndex];
-            if (builder.IsNodeLimitReached || node.Depth >= DepthLimit)
+            if (builder.IsNodeLimitReached
+                || node.Depth >= DepthLimit
+                // Since we don't care which word we matched and return only the starting index of the leftmost match,
+                // we don't have to add children after matching nodes. For example a trie for "the|their|them|they"
+                // will just need to match "the".
+                // And that's why we pass the isFinal parameter around. Without that, the nodes for each alternation
+                // case would not be marked as matches, until all of them were processed. But now the algorithm knows
+                // that nothing would come after this alternation, and can immediately mark "the" as matching, preventing
+                // the other cases from being added.
+                // We could have cleared the children from matching nodes and remove unreachable nodes after the traversal,
+                // but that would be a waste of potential since the nodes we added and then removed still counted to the node
+                // limit.
+                // Patterns like "a(b|c*)" would still create unnecessary nodes because "a" would not be added as a match until
+                // it was too late, so we still might need to remove unreachable nodes afterwards. Not making them count towards
+                // the node limit is not something easy though.
+                || node.IsMatch)
             {
                 canContinue = false;
                 return nodeIndex;
@@ -178,6 +196,7 @@ namespace System.Text.RegularExpressions
                     Parent = nodeIndex,
                     AccessingCharacter = c,
                     Depth = node.Depth + 1,
+                    IsMatch = isFinal,
 #if DEBUG || REGEXGENERATOR
                     Path = node.Path + c
 #endif
@@ -185,6 +204,10 @@ namespace System.Text.RegularExpressions
 
                 node.Children.Add(c, nextNodeIndex);
                 nodes.Add(newNode);
+            }
+            else
+            {
+                nodes[nextNodeIndex].IsMatch |= isFinal;
             }
             canContinue = true;
             return nextNodeIndex;
@@ -195,12 +218,13 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="nodes">The collection of nodes</param>
         /// <param name="s">The string to add.</param>
+        /// <param name="isFinal">Whether we are at the end of the traversal algorithm.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past the string.</param>
         /// <returns>The collection of node indices that each node of
         /// <paramref name="nodes"/> leads to, at <paramref name="s"/>.</returns>
-        private NodeCollection Add(NodeCollection nodes, string s, out bool canContinue)
+        private NodeCollection Add(NodeCollection nodes, string s, bool isFinal, out bool canContinue)
         {
-            return AddOneToOneHelper(nodes, s, Add, out canContinue);
+            return AddOneToOneHelper(nodes, s, Add, isFinal, out canContinue);
         }
 
         /// <summary>
@@ -209,15 +233,23 @@ namespace System.Text.RegularExpressions
         /// <param name="builder">The <see cref="TrieBuilder"/> <paramref name="nodeIndex"/> belongs to.</param>
         /// <param name="nodeIndex">The node's index.</param>
         /// <param name="s">The character to add.</param>
+        /// <param name="isFinal">Whether we are at the end of the traversal algorithm.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past the string.</param>
         /// <returns>The index of the node that <paramref name="nodeIndex"/>
         /// leads to, at <paramref name="s"/>.</returns>
-        private static int Add(ref TrieBuilder builder, int nodeIndex, string s, out bool canContinue)
+        private static int Add(ref TrieBuilder builder, int nodeIndex, string s, bool isFinal, out bool canContinue)
         {
             canContinue = true;
-            for (int i = 0; i < s.Length && canContinue; i++)
+            if (s.Length > 0)
             {
-                nodeIndex = Add(ref builder, nodeIndex, s[i], out canContinue);
+                for (int i = 0; i < s.Length - 1 && canContinue; i++)
+                {
+                    nodeIndex = Add(ref builder, nodeIndex, s[i], false, out canContinue);
+                }
+                if (canContinue)
+                {
+                    nodeIndex = Add(ref builder, nodeIndex, s[s.Length - 1], isFinal, out canContinue);
+                }
             }
             return nodeIndex;
         }
@@ -227,10 +259,11 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="nodes">The collection of nodes.</param>
         /// <param name="setString">A string that describes the set.</param>
+        /// <param name="isFinal">Whether we are at the end of the traversal algorithm.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past the set.</param>
-        /// <returns>The collection of node indices that were created after <see cref="Add(ref TrieBuilder, int, char, out bool)"/>ing each
+        /// <returns>The collection of node indices that were created after <see cref="Add(ref TrieBuilder, int, char, bool, out bool)"/>ing each
         /// node of <paramref name="nodes"/>.</returns>
-        private NodeCollection AddSet(NodeCollection nodes, string setString, out bool canContinue)
+        private NodeCollection AddSet(NodeCollection nodes, string setString, bool isFinal, out bool canContinue)
         {
             Span<char> set = stackalloc char[SetLimit];
             int setLength = RegexCharClass.GetSetChars(setString, set);
@@ -246,14 +279,15 @@ namespace System.Text.RegularExpressions
             // we don't need to increase the branching depth.
             if (setLength == 1)
             {
-                return Add(nodes, set[0], out canContinue);
+                return Add(nodes, set[0], isFinal, out canContinue);
             }
+
             canContinue = false;
             NodeCollection[] results = new NodeCollection[setLength];
             for (int i = 0; i < setLength; i++)
             {
-                NodeCollection result = Add(nodes, set[i], out bool canContinueInner);
-                // See comments in handling RegexNodeKind.Alternate below, to understand how it works.
+                NodeCollection result = Add(nodes, set[i], isFinal, out bool canContinueInner);
+                // See comments in handling RegexNodeKind.Alternate below, for an explanation on how it works.
                 if (canContinueInner)
                 {
                     results[i] = result;
@@ -277,15 +311,19 @@ namespace System.Text.RegularExpressions
         /// <param name="state">A parameter passed to <paramref name="fAdd"/>.</param>
         /// <param name="fAdd">A function that accepts this trie builder, <paramref name="nodes"/>,
         /// <paramref name="state"/>, and returns a new node collection.</param>
+        /// <param name="isFinal">Whether we are at the end of the traversal algorithm.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can continue past this transformation.</param>
-        private NodeCollection AddLoopHelper<T>(NodeCollection nodes, RegexNode regexNode, T state, ManyToManyNodeMapping<T> fAdd, out bool canContinue)
+        private NodeCollection AddLoopHelper<T>(NodeCollection nodes, RegexNode regexNode, T state, ManyToManyNodeMapping<T> fAdd, bool isFinal, out bool canContinue)
         {
             switch (regexNode.M, regexNode.N)
             {
-                case (0, 1):
-                    // We can process patterns of the form "x?" by handling if x was present and if it was not.
+                // We can process patterns of the form "x?" by handling if x was present and if it was not.
+                // If we are at the end however, we don't need to add x to the trie. As an example imagine
+                // we have "a(b|c)?". The trie would match "a", "ab" and "ac". But since all start with "a",
+                // we can match only that, and not look into "(b|c)?" at all.
+                case (0, 1) when !isFinal:
                     // We first add it to the trie.
-                    NodeCollection resultIfExists = fAdd(ref this, nodes, state, out bool canContinueIfExists);
+                    NodeCollection resultIfExists = fAdd(ref this, nodes, state, isFinal, out bool canContinueIfExists);
                     // We can always continue by taking the case of x not being present.
                     canContinue = true;
                     if (canContinueIfExists)
@@ -308,9 +346,13 @@ namespace System.Text.RegularExpressions
                     // a{3,} for example is equivalent to aaaa*. The first three a's can be
                     // added to the trie.
                     canContinue = true;
-                    for (int i = 0; i < max && canContinue; i++)
+                    for (int i = 0; i < max - 1 && canContinue; i++)
                     {
-                        nodes = fAdd(ref this, nodes, state, out canContinue);
+                        nodes = fAdd(ref this, nodes, state, false, out canContinue);
+                    }
+                    if (canContinue)
+                    {
+                        nodes = fAdd(ref this, nodes, state, isFinal, out canContinue);
                     }
                     // If we managed to walk through all repetitions and the loop's count is fixed
                     // (like a{3}), we can continue past it. If it isn't we would have to handle all
@@ -327,9 +369,9 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="nodes">The collection of nodes.</param>
         /// <param name="regexNode">The <see cref="RegexNode"/> to traverse.</param>
+        /// <param name="isFinal">Whether we are at the end of the traversal algorithm.</param>
         /// <param name="canContinue">Returns whether the traversal algorithm can look past <paramref name="regexNode"/>.</param>
-        /// <returns></returns>
-        private NodeCollection Add(NodeCollection nodes, RegexNode regexNode, out bool canContinue)
+        private NodeCollection Add(NodeCollection nodes, RegexNode regexNode, bool isFinal, out bool canContinue)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -362,36 +404,40 @@ namespace System.Text.RegularExpressions
                     return nodes;
                 case RegexNodeKind.One:
                     // Easy, just add the character.
-                    return Add(nodes, regexNode.Ch, out canContinue);
+                    return Add(nodes, regexNode.Ch, isFinal, out canContinue);
                 case RegexNodeKind.Multi:
                     // Easy, just add the string.
-                    return Add(nodes, regexNode.Str!, out canContinue);
+                    return Add(nodes, regexNode.Str!, isFinal, out canContinue);
                 case RegexNodeKind.Set:
-                    return AddSet(nodes, regexNode.Str!, out canContinue);
+                    return AddSet(nodes, regexNode.Str!, isFinal, out canContinue);
                 case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
-                    static NodeCollection AddCharHelper(ref TrieBuilder builder, NodeCollection nodes, char c, out bool canContinue)
+                    static NodeCollection AddCharHelper(ref TrieBuilder builder, NodeCollection nodes, char c, bool isFinal, out bool canContinue)
                     {
-                        return builder.Add(nodes, c, out canContinue);
+                        return builder.Add(nodes, c, isFinal, out canContinue);
                     }
-                    return AddLoopHelper(nodes, regexNode, regexNode.Ch, AddCharHelper, out canContinue);
+                    return AddLoopHelper(nodes, regexNode, regexNode.Ch, AddCharHelper, isFinal, out canContinue);
                 case RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy:
-                    static NodeCollection AddSetHelper(ref TrieBuilder builder, NodeCollection nodes, string setString, out bool canContinue)
+                    static NodeCollection AddSetHelper(ref TrieBuilder builder, NodeCollection nodes, string setString, bool isFinal, out bool canContinue)
                     {
-                        return builder.AddSet(nodes, setString, out canContinue);
+                        return builder.AddSet(nodes, setString, isFinal, out canContinue);
                     }
-                    return AddLoopHelper(nodes, regexNode, regexNode.Str!, AddSetHelper, out canContinue);
+                    return AddLoopHelper(nodes, regexNode, regexNode.Str!, AddSetHelper, isFinal, out canContinue);
                 case RegexNodeKind.Loop or RegexNodeKind.Lazyloop:
-                    static NodeCollection AddRegexNodeHelper(ref TrieBuilder builder, NodeCollection nodes, RegexNode regexNode, out bool canContinue)
+                    static NodeCollection AddRegexNodeHelper(ref TrieBuilder builder, NodeCollection nodes, RegexNode regexNode, bool isFinal, out bool canContinue)
                     {
-                        return builder.Add(nodes, regexNode, out canContinue);
+                        return builder.Add(nodes, regexNode, isFinal, out canContinue);
                     }
-                    return AddLoopHelper(nodes, regexNode, regexNode, AddRegexNodeHelper, out canContinue);
+                    return AddLoopHelper(nodes, regexNode, regexNode, AddRegexNodeHelper, isFinal, out canContinue);
                 case RegexNodeKind.Concatenate:
                     int childCount = regexNode.ChildCount();
                     canContinue = true;
-                    for (int i = 0; i < childCount && canContinue; i++)
+                    for (int i = 0; i < childCount - 1 && canContinue; i++)
                     {
-                        nodes = Add(nodes, regexNode.Child(i), out canContinue);
+                        nodes = Add(nodes, regexNode.Child(i), false, out canContinue);
+                    }
+                    if (canContinue)
+                    {
+                        nodes = Add(nodes, regexNode.Child(childCount - 1), isFinal, out canContinue);
                     }
                     return nodes;
                 case RegexNodeKind.Alternate:
@@ -401,7 +447,7 @@ namespace System.Text.RegularExpressions
                     canContinue = false;
                     for (int i = 0; i < childCount; i++)
                     {
-                        NodeCollection result = Add(nodes, regexNode.Child(i), out bool canContinueInner);
+                        NodeCollection result = Add(nodes, regexNode.Child(i), isFinal, out bool canContinueInner);
                         if (canContinueInner)
                         {
                             // If we can continue after this node, we flow its results to the
