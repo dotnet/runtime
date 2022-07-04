@@ -465,7 +465,9 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         declarationElements[tokenCount] = "class";
-                        declarationElements[tokenCount + 1] = currentSymbol.Name;
+                        declarationElements[tokenCount + 1] = currentSymbol.IsGenericType && currentSymbol.TypeArguments.Any()
+                            ? $"{currentSymbol.Name}<{string.Join(", ", currentSymbol.TypeArguments.Select(arg => arg.Name))}>"
+                            : currentSymbol.Name;
 
                         (classDeclarationList ??= new List<string>()).Add(string.Join(" ", declarationElements));
                     }

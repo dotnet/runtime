@@ -16,6 +16,11 @@ namespace System.Text.Json.Reflection
                 return GetCompilableName(type.GetElementType()) + "[]";
             }
 
+            if (type.IsGenericParameter)
+            {
+                return type.Name;
+            }
+
             string compilableName;
 
             if (!type.IsGenericType)
@@ -26,33 +31,54 @@ namespace System.Text.Json.Reflection
             {
                 StringBuilder sb = new();
 
-                string fullName = type.FullName;
-                int backTickIndex = fullName.IndexOf('`');
-
-                string baseName = fullName.Substring(0, backTickIndex);
-
-                sb.Append(baseName);
-
-                sb.Append('<');
-
-                Type[] genericArgs = type.GetGenericArguments();
-                int genericArgCount = genericArgs.Length;
-                List<string> genericArgNames = new(genericArgCount);
-
-                for (int i = 0; i < genericArgCount; i++)
+                if (!string.IsNullOrEmpty(type.Namespace))
                 {
-                    genericArgNames.Add(GetCompilableName(genericArgs[i]));
+                    sb.Append(type.Namespace);
+                    sb.Append('.');
                 }
 
-                sb.Append(string.Join(", ", genericArgNames));
-
-                sb.Append('>');
+                int argumentIndex = 0;
+                AppendTypeChain(sb, type, type.GetGenericArguments(), ref argumentIndex);
 
                 compilableName = sb.ToString();
             }
 
             compilableName = compilableName.Replace("+", ".");
             return "global::" + compilableName;
+
+            static void AppendTypeChain(StringBuilder sb, Type type, Type[] genericArguments, ref int argumentIndex)
+            {
+                Type declaringType = type.DeclaringType;
+                if (declaringType != null)
+                {
+                    AppendTypeChain(sb, declaringType, genericArguments, ref argumentIndex);
+                    sb.Append('.');
+                }
+                int backTickIndex = type.Name.IndexOf('`');
+                if (backTickIndex == -1)
+                {
+                    sb.Append(type.Name);
+                }
+                else
+                {
+                    sb.Append(type.Name, 0, backTickIndex);
+
+                    sb.Append('<');
+
+                    int startIndex = argumentIndex;
+                    argumentIndex = type.GetGenericArguments().Length;
+                    for (int i = startIndex; i < argumentIndex; i++)
+                    {
+                        if (i != startIndex)
+                        {
+                            sb.Append(", ");
+                        }
+                        sb.Append(GetCompilableName(genericArguments[i]));
+                    }
+
+                    sb.Append('>');
+                }
+            }
         }
 
         public static string GetTypeInfoPropertyName(this Type type)

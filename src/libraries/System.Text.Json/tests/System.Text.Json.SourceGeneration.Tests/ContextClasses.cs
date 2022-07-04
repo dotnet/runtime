@@ -118,4 +118,13 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     [JsonSerializable(typeof(JsonMessage))]
     public partial class PublicContext : JsonSerializerContext { }
+
+    [JsonSerializable(typeof(JsonMessage))]
+    public partial class GenericContext<T> : JsonSerializerContext { }
+
+    public partial class ContextGenericContainer<T>
+    {
+        [JsonSerializable(typeof(JsonMessage))]
+        public partial class NestedInGenericContainerContext : JsonSerializerContext { }
+    }
 }
