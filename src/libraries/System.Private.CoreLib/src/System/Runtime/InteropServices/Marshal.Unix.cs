@@ -36,13 +36,7 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(bufferLength >= (s.Length + 1) * SystemMaxDBCSCharSize, "Insufficient buffer length passed to StringToAnsiString");
 
-            int convertedBytes;
-
-            fixed (char* pChar = s)
-            {
-                convertedBytes = Encoding.UTF8.GetBytes(pChar, s.Length, buffer, bufferLength);
-            }
-
+            int convertedBytes = Encoding.UTF8.GetBytes(s, new Span<byte>(buffer, bufferLength));
             buffer[convertedBytes] = 0;
 
             return convertedBytes;
@@ -194,6 +188,16 @@ namespace System.Runtime.InteropServices
         public static void SetLastSystemError(int error)
         {
             Interop.Sys.SetErrNo(error);
+        }
+
+        /// <summary>
+        /// Gets the system error message for the supplied error code.
+        /// </summary>
+        /// <param name="error">The error code.</param>
+        /// <returns>The error message associated with <paramref name="error"/>.</returns>
+        public static string GetPInvokeErrorMessage(int error)
+        {
+            return Interop.Sys.StrError(error);
         }
     }
 }

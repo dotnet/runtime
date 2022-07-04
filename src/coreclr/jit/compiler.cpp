@@ -116,25 +116,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sz,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) al,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) st,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) jitType,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -3199,6 +3199,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
+#ifdef FEATURE_CFI_SUPPORT
+    // Hot/cold splitting is not being tested on NativeAOT.
+    if (generateCFIUnwindCodes())
+    {
+        opts.compProcedureSplitting = false;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
 #ifdef TARGET_LOONGARCH64
     // Hot/cold splitting is not being tested on LoongArch64.
     opts.compProcedureSplitting = false;
@@ -4698,6 +4706,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Figure out what locals are address-taken.
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
@@ -4840,11 +4849,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Introduce copies for some single-def locals to make them more
+        // amenable to optimization
+        //
+        DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
+
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
-
-        // optOptimizeBools() might have changed the number of blocks; the dominators/reachability might be bad.
     }
 
     // Figure out the order in which operators are to be evaluated
@@ -4854,7 +4866,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Weave the tree lists. Anyone who modifies the tree shapes after
     // this point is responsible for calling fgSetStmtSeq() to keep the
     // nodes properly linked.
-    // This can create GC poll calls, and create new BasicBlocks (without updating dominators/reachability).
     //
     DoPhase(this, PHASE_SET_BLOCK_ORDER, &Compiler::fgSetBlockOrder);
 
@@ -4983,7 +4994,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif
 
     // Dominator and reachability sets are no longer valid.
-    fgDomsComputed = false;
+    // The loop table is no longer valid.
+    fgDomsComputed    = false;
+    optLoopTableValid = false;
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -10187,10 +10200,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_stressLclFld++;
                     break;
 
-                case AddressExposedReason::COPY_FLD_BY_FLD:
-                    m_copyFldByFld++;
-                    break;
-
                 case AddressExposedReason::DISPATCH_RET_BUF:
                     m_dispatchRetBuf++;
                     break;
@@ -10289,7 +10298,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_wideIndir, m_addrExposed);
     PRINT_STATS(m_osrExposed, m_addrExposed);
     PRINT_STATS(m_stressLclFld, m_addrExposed);
-    PRINT_STATS(m_copyFldByFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

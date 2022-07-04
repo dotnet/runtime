@@ -551,6 +551,13 @@ namespace System.Numerics.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            Assert.Equal(NegativeOne, BinaryNumberHelper<BigInteger>.AllBitsSet);
+            Assert.Equal(BigInteger.Zero, ~BinaryNumberHelper<BigInteger>.AllBitsSet);
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<BigInteger>.IsPow2(Zero));

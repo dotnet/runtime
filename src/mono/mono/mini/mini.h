@@ -2932,7 +2932,11 @@ static inline gboolean
 mini_safepoints_enabled (void)
 {
 #if defined (TARGET_WASM)
-	return mono_opt_wasm_gc_safepoints;
+	#ifndef DISABLE_THREADS
+		return TRUE;
+	#else
+		return mono_opt_wasm_gc_safepoints;
+	#endif
 #else
 	return TRUE;
 #endif

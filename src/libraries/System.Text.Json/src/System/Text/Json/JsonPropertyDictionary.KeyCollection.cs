@@ -30,7 +30,7 @@ namespace System.Text.Json
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                foreach (KeyValuePair<string, T?> item in _parent)
+                foreach (KeyValuePair<string, T> item in _parent)
                 {
                     yield return item.Key;
                 }
@@ -49,7 +49,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(index));
                 }
 
-                foreach (KeyValuePair<string, T?> item in _parent)
+                foreach (KeyValuePair<string, T> item in _parent)
                 {
                     if (index >= propertyNameArray.Length)
                     {
@@ -62,7 +62,7 @@ namespace System.Text.Json
 
             public IEnumerator<string> GetEnumerator()
             {
-                foreach (KeyValuePair<string, T?> item in _parent)
+                foreach (KeyValuePair<string, T> item in _parent)
                 {
                     yield return item.Key;
                 }

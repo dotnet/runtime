@@ -102,10 +102,8 @@ namespace System.Composition.Convention
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
-            if (_metadataItems == null)
-            {
-                _metadataItems = new List<Tuple<string, object>>();
-            }
+
+            _metadataItems ??= new List<Tuple<string, object>>();
             _metadataItems.Add(Tuple.Create(name, value));
             return this;
         }
@@ -132,20 +130,14 @@ namespace System.Composition.Convention
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
 
-            if (_metadataItemFuncs == null)
-            {
-                _metadataItemFuncs = new List<Tuple<string, Func<Type, object>>>();
-            }
+            _metadataItemFuncs ??= new List<Tuple<string, Func<Type, object>>>();
             _metadataItemFuncs.Add(Tuple.Create(name, getValueFromPartType));
             return this;
         }
 
         internal void BuildAttributes(Type type, ref List<Attribute> attributes)
         {
-            if (attributes == null)
-            {
-                attributes = new List<Attribute>();
-            }
+            attributes ??= new List<Attribute>();
 
             var contractName = (_getContractNameFromPartType != null) ? _getContractNameFromPartType(type) : _contractName;
             attributes.Add(new ExportAttribute(contractName, _contractType));

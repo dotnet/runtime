@@ -1143,8 +1143,7 @@ TypeHandle TypeName::GetTypeFromAsm()
                 for (COUNT_T i = 0; i < GetNames().GetCount(); i ++)
                     tnb.AddName(GetNames()[i]->GetUnicode());
 
-                StackScratchBuffer bufFullName;
-                DomainAssembly* pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(pRequestingAssembly?pRequestingAssembly->GetDomainAssembly():NULL,tnb.GetString()->GetANSI(bufFullName), pAsmRef);
+                DomainAssembly* pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(pRequestingAssembly?pRequestingAssembly->GetDomainAssembly():NULL,tnb.GetString()->GetUTF8(), pAsmRef);
                 if (pDomainAssembly)
                     th = GetTypeHaveAssembly(pDomainAssembly->GetAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
             }
@@ -1362,7 +1361,7 @@ TypeName::GetTypeHaveAssemblyHelper(
                 if (pManifestModule->LookupFile(mdFile))
                     continue;
 
-                pManifestModule->LoadModule(GetAppDomain(), mdFile);
+                pManifestModule->LoadModule(mdFile);
 
                 th = GetTypeHaveAssemblyHelper(pAssembly, bThrowIfNotFound, bIgnoreCase, NULL, FALSE);
 

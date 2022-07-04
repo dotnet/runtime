@@ -206,19 +206,8 @@ namespace System.Xml.Schema
 
         internal XmlReaderSettings ReaderSettings
         {
-            get
-            {
-                if (_readerSettings == null)
-                {
-                    _readerSettings = new XmlReaderSettings();
-                    _readerSettings.DtdProcessing = DtdProcessing.Prohibit;
-                }
-                return _readerSettings;
-            }
-            set
-            {
-                _readerSettings = value;
-            }
+            get => _readerSettings ??= new XmlReaderSettings() { DtdProcessing = DtdProcessing.Prohibit };
+            set => _readerSettings = value;
         }
 
         //internal Dictionary<Uri, XmlSchema> SchemaLocations {
@@ -509,11 +498,7 @@ namespace System.Xml.Schema
             }
 
             //Add the schema's targetnamespace
-            string? tns = schema.TargetNamespace;
-            if (tns == null)
-            {
-                tns = string.Empty;
-            }
+            string tns = schema.TargetNamespace ?? string.Empty;
             if (_referenceNamespaces[tns] == null)
             {
                 _referenceNamespaces.Add(tns, tns);
@@ -690,10 +675,7 @@ namespace System.Xml.Schema
                             break;
 
                         case Compositor.Redefine:
-                            if (_redefinedList == null)
-                            {
-                                _redefinedList = new ArrayList();
-                            }
+                            _redefinedList ??= new ArrayList();
 
                             _redefinedList.Add(new RedefineEntry((external as XmlSchemaRedefine)!, _rootSchemaForRedefine!));
                             if (_processedExternals[includedSchema] != null)

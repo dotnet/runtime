@@ -1451,6 +1451,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Instead, we're going to sink the assignment below the COMMA.
             src->AsOp()->gtOp2 =
                 impAssignStructPtr(destAddr, src->AsOp()->gtOp2, structHnd, curLevel, pAfterStmt, usedDI, block);
+            src->AddAllEffectsFlags(src->AsOp()->gtOp2);
+
             return src;
         }
 
@@ -3186,7 +3188,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* arrayLocalNode = impStackTop(1).val;
 
     //
-    // Verify that the field token is known and valid.  Note that It's also
+    // Verify that the field token is known and valid.  Note that it's also
     // possible for the token to come from reflection, in which case we cannot do
     // the optimization and must therefore revert to calling the helper.  You can
     // see an example of this in bvt\DynIL\initarray2.exe (in Main).
@@ -3789,8 +3791,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             break;
 
         case NI_Internal_Runtime_MethodTable_Of:
-        case NI_System_ByReference_ctor:
-        case NI_System_ByReference_get_Value:
         case NI_System_Activator_AllocatorOf:
         case NI_System_Activator_DefaultConstructorOf:
         case NI_System_EETypePtr_EETypePtrOf:
@@ -3894,35 +3894,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 op1->gtFlags |= GTF_EXCEPT;
 
                 retNode = op1;
-                break;
-            }
-
-            // Implement ByReference Ctor.  This wraps the assignment of the ref into a byref-like field
-            // in a value type.  The canonical example of this is Span<T>. In effect this is just a
-            // substitution.  The parameter byref will be assigned into the newly allocated object.
-            case NI_System_ByReference_ctor:
-            {
-                // Remove call to constructor and directly assign the byref passed
-                // to the call to the first slot of the ByReference struct.
-                GenTree*             op1               = impPopStack().val;
-                GenTree*             thisptr           = newobjThis;
-                CORINFO_FIELD_HANDLE fldHnd            = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                GenTree*             field             = gtNewFieldRef(TYP_BYREF, fldHnd, thisptr, 0);
-                GenTree*             assign            = gtNewAssignNode(field, op1);
-                GenTree*             byReferenceStruct = gtCloneExpr(thisptr->gtGetOp1());
-                assert(byReferenceStruct != nullptr);
-                impPushOnStack(byReferenceStruct, typeInfo(TI_STRUCT, clsHnd));
-                retNode = assign;
-                break;
-            }
-
-            // Implement ptr value getter for ByReference struct.
-            case NI_System_ByReference_get_Value:
-            {
-                GenTree*             op1    = impPopStack().val;
-                CORINFO_FIELD_HANDLE fldHnd = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                GenTree*             field  = gtNewFieldRef(TYP_BYREF, fldHnd, op1, 0);
-                retNode                     = field;
                 break;
             }
 
@@ -4459,13 +4430,164 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
             case NI_System_Math_Log10:
-#ifdef TARGET_ARM64
+            {
+                retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
+                break;
+            }
+#if defined(TARGET_ARM64)
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
             // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
             // so we can then emit maxss/minss and avoid NaN/-0.0 handling
             case NI_System_Math_Max:
             case NI_System_Math_Min:
 #endif
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+            case NI_System_Math_Max:
+            case NI_System_Math_Min:
+            {
+                assert(varTypeIsFloating(callType));
+                assert(sig->numArgs == 2);
+
+                GenTreeDblCon* cnsNode   = nullptr;
+                GenTree*       otherNode = nullptr;
+
+                GenTree* op2 = impStackTop().val;
+                GenTree* op1 = impStackTop(1).val;
+
+                if (op2->IsCnsFltOrDbl())
+                {
+                    cnsNode   = op2->AsDblCon();
+                    otherNode = op1;
+                }
+                else if (op1->IsCnsFltOrDbl())
+                {
+                    cnsNode   = op1->AsDblCon();
+                    otherNode = op2;
+                }
+
+                if (cnsNode == nullptr)
+                {
+                    // no constant node, nothing to do
+                    break;
+                }
+
+                if (otherNode->IsCnsFltOrDbl())
+                {
+                    // both are constant, we can fold this operation completely. Pop both peeked values
+
+                    if (ni == NI_System_Math_Max)
+                    {
+                        cnsNode->gtDconVal =
+                            FloatingPointUtils::maximum(cnsNode->gtDconVal, otherNode->AsDblCon()->gtDconVal);
+                    }
+                    else
+                    {
+                        assert(ni == NI_System_Math_Min);
+                        cnsNode->gtDconVal =
+                            FloatingPointUtils::minimum(cnsNode->gtDconVal, otherNode->AsDblCon()->gtDconVal);
+                    }
+
+                    retNode = cnsNode;
+
+                    impPopStack();
+                    impPopStack();
+                    DEBUG_DESTROY_NODE(otherNode);
+
+                    break;
+                }
+
+                // only one is constant, we can fold in specialized scenarios
+
+                if (cnsNode->IsFloatNaN())
+                {
+                    impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG(
+                                                   "spill side effects before propagating NaN"));
+
+                    // maxsd, maxss, minsd, and minss all return op2 if either is NaN
+                    // we require NaN to be propagated so ensure the known NaN is op2
+
+                    impPopStack();
+                    impPopStack();
+                    DEBUG_DESTROY_NODE(otherNode);
+
+                    retNode = cnsNode;
+                    break;
+                }
+
+                if (ni == NI_System_Math_Max)
+                {
+                    // maxsd, maxss return op2 if both inputs are 0 of either sign
+                    // we require +0 to be greater than -0, so we can't handle if
+                    // the known constant is +0. This is because if the unknown value
+                    // is -0, we'd need the cns to be op2. But if the unknown value
+                    // is NaN, we'd need the cns to be op1 instead.
+
+                    if (cnsNode->IsFloatPositiveZero())
+                    {
+                        break;
+                    }
+
+                    // Given the checks, op1 can safely be the cns and op2 the other node
+
+                    ni = (callType == TYP_DOUBLE) ? NI_SSE2_Max : NI_SSE_Max;
+
+                    // one is constant and we know its something we can handle, so pop both peeked values
+
+                    op1 = cnsNode;
+                    op2 = otherNode;
+                }
+                else
+                {
+                    assert(ni == NI_System_Math_Min);
+
+                    // minsd, minss return op2 if both inputs are 0 of either sign
+                    // we require -0 to be lesser than +0, so we can't handle if
+                    // the known constant is -0. This is because if the unknown value
+                    // is +0, we'd need the cns to be op2. But if the unknown value
+                    // is NaN, we'd need the cns to be op1 instead.
+
+                    if (cnsNode->IsFloatNegativeZero())
+                    {
+                        break;
+                    }
+
+                    // Given the checks, op1 can safely be the cns and op2 the other node
+
+                    ni = (callType == TYP_DOUBLE) ? NI_SSE2_Min : NI_SSE_Min;
+
+                    // one is constant and we know its something we can handle, so pop both peeked values
+
+                    op1 = cnsNode;
+                    op2 = otherNode;
+                }
+
+                assert(op1->IsCnsFltOrDbl() && !op2->IsCnsFltOrDbl());
+
+                impPopStack();
+                impPopStack();
+
+                GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16, callJitType);
+
+                if (callJitType == CORINFO_TYPE_FLOAT)
+                {
+                    vecCon->gtSimd16Val.f32[0] = (float)op1->AsDblCon()->gtDconVal;
+                }
+                else
+                {
+                    vecCon->gtSimd16Val.f64[0] = op1->AsDblCon()->gtDconVal;
+                }
+
+                op1 = vecCon;
+                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_CreateScalarUnsafe, callJitType, 16);
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, ni, callJitType, 16);
+                retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector128_ToScalar, callJitType, 16);
+
+                break;
+            }
+#endif
+
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
             case NI_System_Math_Sin:
@@ -5394,17 +5516,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "DefaultConstructorOf") == 0)
             {
                 result = NI_System_Activator_DefaultConstructorOf;
-            }
-        }
-        else if (strcmp(className, "ByReference`1") == 0)
-        {
-            if (strcmp(methodName, ".ctor") == 0)
-            {
-                result = NI_System_ByReference_ctor;
-            }
-            else if (strcmp(methodName, "get_Value") == 0)
-            {
-                result = NI_System_ByReference_get_Value;
             }
         }
         else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
@@ -7955,7 +8066,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 }
 
 //------------------------------------------------------------------------
-// impImportNewObjArray: Build and import `new` of multi-dimmensional array
+// impImportNewObjArray: Build and import `new` of multi-dimensional array
 //
 // Arguments:
 //    pResolvedToken - The CORINFO_RESOLVED_TOKEN that has been initialized
@@ -7970,7 +8081,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 // Notes:
 //    Multi-dimensional array constructors are imported as calls to a JIT
 //    helper, not as regular calls.
-
+//
 void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
 {
     GenTree* classHandle = impParentClassTokenToHandle(pResolvedToken);
@@ -8007,7 +8118,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     // The arguments of the CORINFO_HELP_NEW_MDARR helper are:
     //  - Array class handle
     //  - Number of dimension arguments
-    //  - Pointer to block of int32 dimensions - address  of lvaNewObjArrayArgs temp.
+    //  - Pointer to block of int32 dimensions: address of lvaNewObjArrayArgs temp.
     //
 
     node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
@@ -13542,7 +13653,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         lclTyp = JITtype2varType(cit);
                     }
-                    goto ARR_LD_POST_VERIFY;
+                    goto ARR_LD;
                 }
 
                 // Similarly, if its a readonly access, we can do a simple address-of
@@ -13550,7 +13661,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (prefixFlags & PREFIX_READONLY)
                 {
                     lclTyp = TYP_REF;
-                    goto ARR_LD_POST_VERIFY;
+                    goto ARR_LD;
                 }
 
                 // Otherwise we need the full helper function with run-time type check
@@ -13594,7 +13705,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     tiRetVal           = verMakeTypeInfo(ldelemClsHnd); // precise type always needed for struct
                     tiRetVal.NormaliseForStack();
                 }
-                goto ARR_LD_POST_VERIFY;
+                goto ARR_LD;
 
             case CEE_LDELEM_I1:
                 lclTyp = TYP_BYTE;
@@ -13631,7 +13742,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ARR_LD;
 
             ARR_LD:
-            ARR_LD_POST_VERIFY:
 
                 op2 = impPopStack().val; // index
                 op1 = impPopStack().val; // array
@@ -15192,14 +15302,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Insert the security callout before any actual code is generated
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
-                // There are three different cases for new
-                // Object size is variable (depends on arguments)
+                // There are three different cases for new.
+                // Object size is variable (depends on arguments).
                 //      1) Object is an array (arrays treated specially by the EE)
                 //      2) Object is some other variable sized object (e.g. String)
                 //      3) Class Size can be determined beforehand (normal case)
-                // In the first case, we need to call a NEWOBJ helper (multinewarray)
-                // in the second case we call the constructor with a '0' this pointer
-                // In the third case we alloc the memory, then call the constuctor
+                // In the first case, we need to call a NEWOBJ helper (multinewarray).
+                // In the second case we call the constructor with a '0' this pointer.
+                // In the third case we alloc the memory, then call the constuctor.
 
                 clsFlags = callInfo.classFlags;
                 if (clsFlags & CORINFO_FLG_ARRAY)

@@ -472,9 +472,13 @@ namespace System.Net.Security
                             // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                             outSecBuffer.size = outUnmanagedBuffer.cbBuffer;
                             outSecBuffer.type = outUnmanagedBuffer.BufferType;
-                            outSecBuffer.token = outSecBuffer.size > 0 ?
-                                new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).ToArray() :
-                                null;
+
+                            if (isSspiAllocated)
+                            {
+                                outSecBuffer.token = outSecBuffer.size > 0 ?
+                                    new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).ToArray() :
+                                    null;
+                            }
 
                             if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                             {
@@ -952,25 +956,22 @@ namespace System.Net.Security
 
         internal static unsafe int CompleteAuthToken(
             ref SafeDeleteSslContext? refContext,
-            in SecurityBuffer inSecBuffer)
+            in InputSecurityBuffer inSecBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"refContext = {refContext}, inSecBuffer = {inSecBuffer}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"refContext = {refContext}");
 
             var inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(1);
             int errorCode = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
             Interop.SspiCli.SecBuffer inUnmanagedBuffer = default;
             inSecurityBufferDescriptor.pBuffers = &inUnmanagedBuffer;
-            fixed (byte* pinnedToken = inSecBuffer.token)
+            fixed (byte* pinnedToken = inSecBuffer.Token)
             {
-                inUnmanagedBuffer.cbBuffer = inSecBuffer.size;
-                inUnmanagedBuffer.BufferType = inSecBuffer.type;
-
-                // Use the unmanaged token if it's not null; otherwise use the managed buffer.
+                Debug.Assert(inSecBuffer.UnmanagedToken != null);
+                inUnmanagedBuffer.cbBuffer = inSecBuffer.Token.Length;
+                inUnmanagedBuffer.BufferType = inSecBuffer.Type;
                 inUnmanagedBuffer.pvBuffer =
-                    inSecBuffer.unmanagedToken != null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
-                    inSecBuffer.token == null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
-                    (IntPtr)(pinnedToken + inSecBuffer.offset);
+                    inSecBuffer.Token.IsEmpty ? IntPtr.Zero : (IntPtr)pinnedToken;
 
                 Interop.SspiCli.CredHandle contextHandle = refContext != null ? refContext._handle : default;
                 if (refContext == null || refContext.IsInvalid)

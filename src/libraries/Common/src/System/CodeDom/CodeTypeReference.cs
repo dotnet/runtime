@@ -348,12 +348,7 @@ namespace System.Runtime.Serialization
                     return ArrayElementType.TypeArguments;
                 }
 
-                if (_typeArguments == null)
-                {
-                    _typeArguments = new CodeTypeReferenceCollection();
-                }
-
-                return _typeArguments;
+                return _typeArguments ??= new CodeTypeReferenceCollection();
             }
         }
 

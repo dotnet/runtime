@@ -168,7 +168,7 @@
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
-    <Compile Include="Serialization\JsonPolymorphicTypeConfigurationTests.cs" />
+    <Compile Include="Serialization\JsonPolymorphismOptionsTests.cs" />
     <Compile Include="Serialization\JsonSerializerApiValidation.cs" />
     <Compile Include="Serialization\JsonSerializerWrapper.Reflection.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverMultiContextTests.cs" />

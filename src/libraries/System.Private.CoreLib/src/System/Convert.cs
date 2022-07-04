@@ -16,20 +16,11 @@ namespace System
         InsertLineBreaks = 1
     }
 
-    // Returns the type code of this object. An implementation of this method
-    // must not return TypeCode.Empty (which represents a null reference) or
-    // TypeCode.Object (which represents an object that doesn't implement the
-    // IConvertible interface). An implementation of this method should return
-    // TypeCode.DBNull if the value of this object is a database null. For
-    // example, a nullable integer type should return TypeCode.DBNull if the
-    // value of the object is the database null. Otherwise, an implementation
-    // of this method should return the TypeCode that best describes the
-    // internal representation of the object.
-    // The Value class provides conversion and querying methods for values. The
-    // Value class contains static members only, and it is not possible to create
+    // The Convert class provides conversion and querying methods for values. The
+    // Convert class contains static members only, and it is not possible to create
     // instances of the class.
     //
-    // The statically typed conversion methods provided by the Value class are all
+    // The statically typed conversion methods provided by the Convert class are all
     // of the form:
     //
     //    public static XXX ToXXX(YYY value)
@@ -57,7 +48,7 @@ namespace System
     // String      x   x   x   x   x   x   x   x   x   x   x   x   x   x   x
     // ----------------------------------------------------------------------
     //
-    // For dynamic conversions, the Value class provides a set of methods of the
+    // For dynamic conversions, the Convert class provides a set of methods of the
     // form:
     //
     //    public static XXX ToXXX(object value)
@@ -71,25 +62,11 @@ namespace System
     //    }
     //
     // The code first checks if the given value is a null reference (which is the
-    // same as Value.Empty), in which case it returns the default value for type
+    // same as TypeCode.Empty), in which case it returns the default value for type
     // XXX. Otherwise, a cast to IConvertible is performed, and the appropriate ToXXX()
     // method is invoked on the object. An InvalidCastException is thrown if the
     // cast to IConvertible fails, and that exception is simply allowed to propagate out
     // of the conversion method.
-
-    // Constant representing the database null value. This value is used in
-    // database applications to indicate the absence of a known value. Note
-    // that Value.DBNull is NOT the same as a null object reference, which is
-    // represented by Value.Empty.
-    //
-    // The Equals() method of DBNull always returns false, even when the
-    // argument is itself DBNull.
-    //
-    // When passed Value.DBNull, the Value.GetTypeCode() method returns
-    // TypeCode.DBNull.
-    //
-    // When passed Value.DBNull, the Value.ToXXX() methods all throw an
-    // InvalidCastException.
 
     public static partial class Convert
     {
@@ -143,6 +120,16 @@ namespace System
         }
 #endif
 
+        // Constant representing the database null value. This value is used in
+        // database applications to indicate the absence of a known value. Note
+        // that Convert.DBNull is NOT the same as a null object reference, which is
+        // represented by TypeCode.Empty.
+        //
+        // When passed Convert.DBNull, the Convert.GetTypeCode() method returns
+        // TypeCode.DBNull.
+        //
+        // When passed Convert.DBNull, all the Convert.ToXXX() methods except ToString()
+        // throw an InvalidCastException.
         public static readonly object DBNull = System.DBNull.Value;
 
         // Returns the type code for the given object. If the argument is null,

@@ -51,15 +51,7 @@ namespace System.Runtime.Serialization
             _unsafeTypeForwardingEnabled = true;
         }
 
-        protected ObjectToIdCache SerializedObjects
-        {
-            get
-            {
-                if (_serializedObjects == null)
-                    _serializedObjects = new ObjectToIdCache();
-                return _serializedObjects;
-            }
-        }
+        protected ObjectToIdCache SerializedObjects => _serializedObjects ??= new ObjectToIdCache();
 
         internal override bool IsGetOnlyCollection
         {
@@ -177,10 +169,7 @@ namespace System.Runtime.Serialization
                 dataContract = GetDataContract(declaredTypeHandle, declaredType);
                 if (!WriteClrTypeInfo(xmlWriter, dataContract) && DataContractResolver != null)
                 {
-                    if (objectType == null)
-                    {
-                        objectType = Type.GetTypeFromHandle(objectTypeHandle)!;
-                    }
+                    objectType ??= Type.GetTypeFromHandle(objectTypeHandle)!;
                     WriteResolvedTypeInfo(xmlWriter, objectType, declaredType);
                 }
             }
@@ -466,8 +455,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteIXmlSerializable(XmlWriterDelegator xmlWriter, object obj)
         {
-            if (_xmlSerializableWriter == null)
-                _xmlSerializableWriter = new XmlSerializableWriter();
+            _xmlSerializableWriter ??= new XmlSerializableWriter();
             WriteIXmlSerializable(xmlWriter, obj, _xmlSerializableWriter);
         }
 

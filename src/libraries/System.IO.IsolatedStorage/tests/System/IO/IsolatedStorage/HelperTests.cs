@@ -41,8 +41,7 @@ namespace System.IO.IsolatedStorage.Tests
         {
             // Machine scope is behind a policy that isn't enabled by default
             // https://github.com/dotnet/runtime/issues/21742
-            // It's also disabled on Android, see https://github.com/dotnet/runtime/issues/55693
-            if (scope == IsolatedStorageScope.Machine && (PlatformDetection.IsInAppContainer || PlatformDetection.IsAndroid)) 
+            if (scope == IsolatedStorageScope.Machine && PlatformDetection.IsInAppContainer) 
                 return;
 
             string path = Helper.GetDataDirectory(scope);

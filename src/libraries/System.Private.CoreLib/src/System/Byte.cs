@@ -130,7 +130,7 @@ namespace System
             Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
             if (status != Number.ParsingStatus.OK)
             {
-                Number.ThrowOverflowOrFormatException(status, TypeCode.Byte);
+                Number.ThrowOverflowOrFormatException(status, s, TypeCode.Byte);
             }
 
             if (i > MaxValue) Number.ThrowOverflowException(TypeCode.Byte);
@@ -377,6 +377,9 @@ namespace System
         //
         // IBinaryNumber
         //
+
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static byte IBinaryNumber<byte>.AllBitsSet => MaxValue;
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(byte value) => BitOperations.IsPow2((uint)value);

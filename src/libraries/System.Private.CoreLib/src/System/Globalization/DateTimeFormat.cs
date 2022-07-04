@@ -299,7 +299,7 @@ namespace System
         // The pos should point to a quote character. This method will
         // append to the result StringBuilder the string enclosed by the quote character.
         //
-        internal static int ParseQuoteString(ReadOnlySpan<char> format, int pos, ref ValueStringBuilder result)
+        internal static int ParseQuoteString(scoped ReadOnlySpan<char> format, int pos, ref ValueStringBuilder result)
         {
             //
             // NOTE : pos will be the index of the quote character in the 'format' string.
@@ -444,7 +444,7 @@ namespace System
         //  Actions: Format the DateTime instance using the specified format.
         //
         private static void FormatCustomized(
-            DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, ref ValueStringBuilder result)
+            DateTime dateTime, scoped ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, ref ValueStringBuilder result)
         {
             Calendar cal = dtfi.Calendar;
 

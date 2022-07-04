@@ -223,7 +223,7 @@ namespace System.Security.Cryptography.Pkcs
                 SignedAttributesSet signedAttrsSet = default;
                 signedAttrsSet.SignedAttributes = PkcsHelpers.NormalizeAttributeSet(
                     signedAttrs.ToArray(),
-                    normalized => hasher.AppendData(normalized));
+                    hasher.AppendData);
 
                 // Since this contains user data in a context where BER is permitted, use BER.
                 // There shouldn't be any observable difference here between BER and DER, though,

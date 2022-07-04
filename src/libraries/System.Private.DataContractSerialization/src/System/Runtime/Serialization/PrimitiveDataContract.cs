@@ -86,17 +86,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal MethodInfo XmlFormatReaderMethod
-        {
-            get
-            {
-                if (_helper.XmlFormatReaderMethod == null)
-                {
-                    _helper.XmlFormatReaderMethod = typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
-                }
-                return _helper.XmlFormatReaderMethod;
-            }
-        }
+        internal MethodInfo XmlFormatReaderMethod =>
+            _helper.XmlFormatReaderMethod ??= typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
