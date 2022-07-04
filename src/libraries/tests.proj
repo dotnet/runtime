@@ -394,6 +394,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <!--Needs work to get these tests to pass -->
     <!--These tests have failures-->
+    <!-- System.Collection.Immutable running into https://github.com/dotnet/runtime/issues/70012 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" 
                       Condition="'$(TargetOS)' == 'linux'" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"
