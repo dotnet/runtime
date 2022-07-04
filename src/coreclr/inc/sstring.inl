@@ -327,41 +327,6 @@ inline SString::SString(tagUTF8 dummytag, const UTF8 *string, COUNT_T count)
     SS_RETURN;
 }
 
-inline SString::SString(tagANSI dummytag, const ANSI *string)
-  : SBuffer(Immutable, s_EmptyBuffer, sizeof(s_EmptyBuffer))
-{
-    SS_CONTRACT_VOID
-    {
-        SS_CONSTRUCTOR_CHECK;
-        PRECONDITION(CheckPointer(string, NULL_OK));
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    SS_CONTRACT_END;
-
-    SetANSI(string);
-
-    SS_RETURN;
-}
-
-inline SString::SString(tagANSI dummytag, const ANSI *string, COUNT_T count)
-  : SBuffer(Immutable, s_EmptyBuffer, sizeof(s_EmptyBuffer))
-{
-    SS_CONTRACT_VOID
-    {
-        SS_CONSTRUCTOR_CHECK;
-        PRECONDITION(CheckPointer(string, NULL_OK));
-        PRECONDITION(CheckCount(count));
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    SS_CONTRACT_END;
-
-    SetANSI(string, count);
-
-    SS_RETURN;
-}
-
 inline SString::SString(WCHAR character)
   : SBuffer(Immutable, s_EmptyBuffer, sizeof(s_EmptyBuffer))
 {
@@ -1574,8 +1539,7 @@ inline CHECK SString::CheckRepresentation(int representation)
     CHECK(representation == REPRESENTATION_EMPTY
           || representation == REPRESENTATION_UNICODE
           || representation == REPRESENTATION_ASCII
-          || representation == REPRESENTATION_UTF8
-          || representation == REPRESENTATION_ANSI);
+          || representation == REPRESENTATION_UTF8);
     CHECK((representation & REPRESENTATION_MASK) == representation);
 
     CHECK_OK;
@@ -1682,31 +1646,6 @@ inline WCHAR *SString::GetCopyOfUnicodeString()
     wcscpy_s(buffer, GetCount() + 1, GetUnicode());
 
     SS_RETURN buffer.Extract();
-}
-
-//----------------------------------------------------------------------------
-// Return a writeable buffer that can store 'countChars'+1 ansi characters.
-// Call CloseBuffer when done.
-//----------------------------------------------------------------------------
-inline ANSI *SString::OpenANSIBuffer(COUNT_T countChars)
-{
-    SS_CONTRACT(ANSI*)
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(this));
-        PRECONDITION(CheckCount(countChars));
-#if _DEBUG
-        SS_POSTCONDITION(IsBufferOpen());
-#endif
-        SS_POSTCONDITION(GetRawCount() == countChars);
-        SS_POSTCONDITION(GetRepresentation() == REPRESENTATION_ANSI || countChars == 0);
-        SS_POSTCONDITION(CheckPointer(RETVAL));
-        THROWS;
-    }
-    SS_CONTRACT_END;
-
-    OpenBuffer(REPRESENTATION_ANSI, countChars);
-    SS_RETURN GetRawANSI();
 }
 
 //----------------------------------------------------------------------------
@@ -2114,24 +2053,6 @@ inline WCHAR SString::Index::operator[](int index) const
         return *(CHAR*)&GetAt(index);
     else
         return *(WCHAR*)&GetAt(index);
-}
-
-//-----------------------------------------------------------------------------
-// Opaque scratch buffer class routines
-//-----------------------------------------------------------------------------
-inline SString::AbstractScratchBuffer::AbstractScratchBuffer(void *buffer, COUNT_T size)
-  : SString(buffer, size)
-{
-    SS_CONTRACT_VOID
-    {
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(buffer));
-        PRECONDITION(CheckCount(size));
-        NOTHROW;
-    }
-    SS_CONTRACT_END;
-
-    SS_RETURN;
 }
 
 #ifdef _MSC_VER

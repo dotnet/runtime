@@ -34,6 +34,8 @@ namespace System.Text.Json.Serialization.Metadata
             : base(converter, options)
         {
             NumberHandling = GetNumberHandlingForType(Type);
+            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            MapInterfaceTypesToCallbacks();
 
             if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
             {
@@ -112,7 +114,7 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                     else
                     {
-                        if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
+                        if (propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null)
                         {
                             ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyName, currentType);
                         }
@@ -130,7 +132,7 @@ namespace System.Text.Json.Serialization.Metadata
                         continue;
                     }
 
-                    bool hasJsonInclude = JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(fieldInfo) != null;
+                    bool hasJsonInclude = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
 
                     if (fieldInfo.IsPublic)
                     {
@@ -168,7 +170,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (propertyOrderSpecified)
             {
-                PropertyCache.List.Sort((p1, p2) => p1.Value!.Order.CompareTo(p2.Value!.Order));
+                PropertyCache.List.StableSortByKey(static p => p.Value.Order);
             }
         }
 
@@ -181,8 +183,8 @@ namespace System.Text.Json.Serialization.Metadata
             ref bool propertyOrderSpecified,
             ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
-            bool hasExtensionAttribute = memberInfo.GetCustomAttribute(typeof(JsonExtensionDataAttribute)) != null;
-            if (hasExtensionAttribute && DataExtensionProperty != null)
+            bool hasExtensionAttribute = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
+            if (hasExtensionAttribute && ExtensionDataProperty != null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
             }
@@ -198,9 +200,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (hasExtensionAttribute)
             {
-                Debug.Assert(DataExtensionProperty == null);
-                ValidateAndAssignDataExtensionProperty(jsonPropertyInfo);
-                Debug.Assert(DataExtensionProperty != null);
+                Debug.Assert(ExtensionDataProperty == null);
+                ExtensionDataProperty = jsonPropertyInfo;
             }
             else
             {
@@ -216,7 +217,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool isVirtual,
             JsonSerializerOptions options)
         {
-            JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
+            JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
             if (IsInvalidForSerialization(memberType))
             {
@@ -306,16 +307,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             return jsonParameters;
-        }
-
-        private void ValidateAndAssignDataExtensionProperty(JsonPropertyInfo jsonPropertyInfo)
-        {
-            if (!IsValidDataExtensionProperty(jsonPropertyInfo))
-            {
-                ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, jsonPropertyInfo);
-            }
-
-            DataExtensionProperty = jsonPropertyInfo;
         }
     }
 }

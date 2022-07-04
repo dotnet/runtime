@@ -600,13 +600,12 @@ namespace MS.Internal.Xml.Cache
                 IDtdAttributeInfo? idAttribute = attrList.LookupIdAttribute();
                 if (idAttribute != null)
                 {
-                    if (_elemIdMap == null)
-                        _elemIdMap = new Hashtable();
+                    _elemIdMap ??= new Hashtable();
 
                     // Id was defined in DTD and DTD doesn't have notion of namespace so we should
                     // use prefix instead of namespace here.  Schema already does this for us.
                     _elemIdMap.Add(new XmlQualifiedName(attrList.LocalName, attrList.Prefix),
-                                       new XmlQualifiedName(idAttribute.LocalName, idAttribute.Prefix));
+                                   new XmlQualifiedName(idAttribute.LocalName, idAttribute.Prefix));
                 }
             }
         }

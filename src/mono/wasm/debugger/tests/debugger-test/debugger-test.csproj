@@ -26,6 +26,7 @@
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
     <ProjectReference Include="..\debugger-test-with-full-debug-type\debugger-test-with-full-debug-type.csproj" Private="true"/>
     <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" Private="true"/>
+    <ProjectReference Include="..\debugger-test-with-pdb-deleted\debugger-test-with-pdb-deleted.csproj" Private="true"/>
   </ItemGroup>
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="Build">
@@ -46,9 +47,11 @@
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-full-debug-type.dll" />
+      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-special-char-in-path.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-pdb-deleted.dll" />
 
       <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>

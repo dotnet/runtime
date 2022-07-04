@@ -251,10 +251,7 @@ namespace System.Net.Security
                 {
                     issuers = GetRequestCertificateAuthorities();
                     remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext);
-                    if (_sslAuthenticationOptions.ClientCertificates == null)
-                    {
-                        _sslAuthenticationOptions.ClientCertificates = new X509CertificateCollection();
-                    }
+                    _sslAuthenticationOptions.ClientCertificates ??= new X509CertificateCollection();
                     clientCertificate = _sslAuthenticationOptions.CertSelectionDelegate(this, _sslAuthenticationOptions.TargetHost, _sslAuthenticationOptions.ClientCertificates, remoteCert, issuers);
                 }
                 finally
@@ -946,11 +943,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    if (chain == null)
-                    {
-                        chain = new X509Chain();
-                    }
-
+                    chain ??= new X509Chain();
                     chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 

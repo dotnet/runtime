@@ -1297,12 +1297,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var argsNew = JObject.FromObject(new
                 {
                     callFrameId = args?["callFrames"]?[0]?["callFrameId"]?.Value<string>(),
-                    expression = "assembly_name_str + '|' + entrypoint_method_token",
+                    expression = "_assembly_name_str + '|' + _entrypoint_method_token",
                 });
                 Result assemblyAndMethodToken = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew, token);
                 if (!assemblyAndMethodToken.IsOk)
                 {
-                    logger.LogDebug("Failure evaluating assembly_name_str + '|' + entrypoint_method_token");
+                    logger.LogDebug("Failure evaluating _assembly_name_str + '|' + _entrypoint_method_token");
                     return;
                 }
                 logger.LogDebug($"Entrypoint assembly and method token {assemblyAndMethodToken.Value["result"]["value"].Value<string>()}");
@@ -1469,7 +1469,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        internal async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
+        internal virtual async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
 
@@ -1623,7 +1623,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var locations = GetBPReqLocations(store, req);
 
-            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, context.IsRuntimeReady);
+            logger.LogDebug("BP request for '{Req}' runtime ready {Context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
 

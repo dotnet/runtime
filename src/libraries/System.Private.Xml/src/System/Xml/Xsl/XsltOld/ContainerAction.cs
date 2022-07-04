@@ -435,10 +435,7 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
             info.NegativeInfinitySymbol = string.Concat(info.NegativeSign, info.PositiveInfinitySymbol);
-            if (Name == null)
-            {
-                Name = new XmlQualifiedName();
-            }
+            Name ??= new XmlQualifiedName();
             compiler.AddDecimalFormat(Name, format);
             CheckEmpty(compiler);
         }
@@ -860,10 +857,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddAction(Action? action)
         {
-            if (this.containedActions == null)
-            {
-                this.containedActions = new ArrayList();
-            }
+            this.containedActions ??= new ArrayList();
             this.containedActions.Add(action);
             lastCopyCodeAction = null;
         }

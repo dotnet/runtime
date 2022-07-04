@@ -52,10 +52,7 @@ namespace System.Net
 
         private void EnsureResponseStream()
         {
-            if (_responseStream == null)
-            {
-                _responseStream = _httpContext!.Connection.GetResponseStream();
-            }
+            _responseStream ??= _httpContext!.Connection.GetResponseStream();
         }
 
         public Version ProtocolVersion

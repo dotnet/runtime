@@ -201,12 +201,9 @@ namespace System.Data.Odbc
             {
                 if (IsOpen)
                 {
-                    if (ProviderInfo.DriverName == null)
-                    {
-                        ProviderInfo.DriverName = GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME)!;
-                    }
-                    return ProviderInfo.DriverName;
+                    return ProviderInfo.DriverName ??= GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME)!;
                 }
+
                 return string.Empty;
             }
         }

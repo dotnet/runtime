@@ -1728,6 +1728,9 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
+#if NET7_0_OR_GREATER
+            Assert.Equal(expectedSuccessStartAt, r.IsMatch(input.AsSpan(), startat));
+#endif
 
             // Normal matching, but any match before startat is ignored.
             Match match = r.Match(input, startat);

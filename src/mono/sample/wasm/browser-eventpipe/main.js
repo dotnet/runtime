@@ -1,4 +1,4 @@
-import { createDotnetRuntime } from "./dotnet.js";
+import createDotnetRuntime from "./dotnet.js";
 
 function downloadData(dataURL, filename) {
     // make an `<a download="filename" href="data:..."/>` link and click on it to trigger a download with the given name

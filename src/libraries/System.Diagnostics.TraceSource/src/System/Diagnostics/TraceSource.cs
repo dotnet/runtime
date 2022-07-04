@@ -470,10 +470,7 @@ namespace System.Diagnostics
                 // Ensure that config is loaded
                 Initialize();
 
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-
-                return _attributes;
+                return _attributes ??= new StringDictionary();
             }
         }
 

@@ -218,6 +218,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(testObj.IntProp, deserialized.IntProp);
         }
 
+        [Theory]
+        [InlineData(typeof(List<int>), JsonTypeInfoKind.Enumerable)]
+        [InlineData(typeof(Dictionary<string, int>), JsonTypeInfoKind.Dictionary)]
+        [InlineData(typeof(object), JsonTypeInfoKind.None)]
+        [InlineData(typeof(string), JsonTypeInfoKind.None)]
+        public static void AddingPropertyToNonObjectJsonTypeInfoKindThrows(Type type, JsonTypeInfoKind expectedKind)
+        {
+            JsonSerializerOptions options = new();
+            DefaultJsonTypeInfoResolver resolver = new();
+            JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
+            Assert.Equal(expectedKind, typeInfo.Kind);
+
+            JsonPropertyInfo property = typeInfo.CreateJsonPropertyInfo(typeof(int), "test");
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(property));
+        }
+
         [Fact]
         public static void RecursiveTypeNumberHandling()
         {
@@ -385,12 +401,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(typeInfo.Converter.CanConvert(typeof(T)));
 
             JsonPropertyInfo prop = typeInfo.CreateJsonPropertyInfo(typeof(string), "foo");
+            Assert.True(typeInfo.Properties.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => untyped.CreateObject = untyped.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = typeInfo.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.NumberHandling = typeInfo.NumberHandling);
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(prop));
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Insert(0, prop));
+            Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = new());
+
+            if (typeInfo.PolymorphismOptions is JsonPolymorphismOptions jpo)
+            {
+                Assert.True(jpo.DerivedTypes.IsReadOnly);
+                Assert.Throws<InvalidOperationException>(() => jpo.IgnoreUnrecognizedTypeDiscriminators = true);
+                Assert.Throws<InvalidOperationException>(() => jpo.TypeDiscriminatorPropertyName = "__case");
+                Assert.Throws<InvalidOperationException>(() => jpo.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor);
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Clear());
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Add(default));
+                Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Insert(0, default));
+            }
 
             foreach (var property in typeInfo.Properties)
             {
@@ -580,6 +610,54 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(typeInfo.Properties[0]);
         }
 
+        [Fact]
+        public static void CreateJsonTypeInfoWithNullArgumentsThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(null, new JsonSerializerOptions()));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(typeof(string), null));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo(null, null));
+            Assert.Throws<ArgumentNullException>(() => JsonTypeInfo.CreateJsonTypeInfo<string>(null));
+        }
+
+        [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(Dictionary<,>))]
+        [InlineData(typeof(List<>))]
+        [InlineData(typeof(Nullable<>))]
+        [InlineData(typeof(int*))]
+        [InlineData(typeof(RefStruct))]
+        public static void CreateJsonTypeInfoWithInappropriateTypeThrows(Type type)
+        {
+            Assert.Throws<ArgumentException>(() => JsonTypeInfo.CreateJsonTypeInfo(type, new JsonSerializerOptions()));
+        }
+
+        ref struct RefStruct
+        {
+            public int Foo { get; set; }
+        }
+
+        [Fact]
+        public static void CreateJsonPropertyInfoWithNullArgumentsThrows()
+        {
+            JsonTypeInfo ti = JsonTypeInfo.CreateJsonTypeInfo<MyClass>(new JsonSerializerOptions());
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(null, "test"));
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(typeof(string), null));
+            Assert.Throws<ArgumentNullException>(() => ti.CreateJsonPropertyInfo(null, null));
+        }
+
+        [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(Dictionary<,>))]
+        [InlineData(typeof(List<>))]
+        [InlineData(typeof(Nullable<>))]
+        [InlineData(typeof(int*))]
+        [InlineData(typeof(RefStruct))]
+        public static void CreateJsonPropertyInfoWithInappropriateTypeThrows(Type type)
+        {
+            JsonTypeInfo ti = JsonTypeInfo.CreateJsonTypeInfo<MyClass>(new JsonSerializerOptions());
+            Assert.Throws<ArgumentException>(() => ti.CreateJsonPropertyInfo(type, "test"));
+        }
+
         [Theory]
         [InlineData(typeof(object))]
         [InlineData(typeof(string))]
@@ -639,6 +717,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { 13 };
             yield return new object[] { new SomeClass { IntProp = 17 } };
             yield return new object[] { new SomeRecursiveClass() };
+            yield return new object[] { new SomePolymorphicClass() };
         }
 
         [Fact]
@@ -825,6 +904,65 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Assert.Fail("this ctor should not be used");
             }
+        }
+
+        [Fact]
+        public static void PropertyOrderIsRespected()
+        {
+            JsonSerializerOptions options = new()
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        ti =>
+                        {
+                            if (ti.Type == typeof(ClassWithExplicitOrderOfProperties))
+                            {
+                                Assert.Equal(5, ti.Properties.Count);
+                                Assert.Equal("A", ti.Properties[0].Name);
+                                Assert.Equal("B", ti.Properties[1].Name);
+                                Assert.Equal("C", ti.Properties[2].Name);
+                                Assert.Equal("D", ti.Properties[3].Name);
+                                Assert.Equal("E", ti.Properties[4].Name);
+
+                                // swapping A,B (both with Order property)
+                                (ti.Properties[0], ti.Properties[1]) = (ti.Properties[1], ti.Properties[0]);
+
+                                // swapping E,C (one with Order property one without)
+                                (ti.Properties[2], ti.Properties[4]) = (ti.Properties[4], ti.Properties[2]);
+                            }
+                        }
+                    }
+                }
+            };
+
+            ClassWithExplicitOrderOfProperties obj = new()
+            {
+                A = "a",
+                B = "b",
+                C = "c",
+                D = "d",
+                E = "e",
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"B":"b","A":"a","E":"e","D":"d","C":"c"}""", json);
+        }
+
+        private class ClassWithExplicitOrderOfProperties
+        {
+            public string C { get; set; }
+            public string D { get; set; }
+
+            [JsonPropertyOrder(1)]
+            public string E { get; set; }
+
+            [JsonPropertyOrder(-1)]
+            public string B { get; set; }
+
+            [JsonPropertyOrder(-2)]
+            public string A { get; set; }
         }
     }
 }
