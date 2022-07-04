@@ -871,6 +871,18 @@ namespace System.Runtime.InteropServices
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static NFloat IBinaryNumber<NFloat>.AllBitsSet
+        {
+#if TARGET_64BIT
+            [NonVersionable]
+            get => (NFloat)BitConverter.UInt64BitsToDouble(0xFFFF_FFFF_FFFF_FFFF);
+#else
+            [NonVersionable]
+            get => BitConverter.UInt32BitsToSingle(0xFFFF_FFFF);
+#endif
+        }
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(NFloat value) => NativeType.IsPow2(value._value);
 

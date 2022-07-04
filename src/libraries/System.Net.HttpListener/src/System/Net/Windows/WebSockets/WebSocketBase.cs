@@ -922,10 +922,7 @@ namespace System.Net.WebSockets
             {
                 lock (_thisLock)
                 {
-                    if (_receiveOperation == null)
-                    {
-                        _receiveOperation = new WebSocketOperation.ReceiveOperation(this);
-                    }
+                    _receiveOperation ??= new WebSocketOperation.ReceiveOperation(this);
                 }
             }
         }
@@ -936,10 +933,7 @@ namespace System.Net.WebSockets
             {
                 lock (_thisLock)
                 {
-                    if (_sendOperation == null)
-                    {
-                        _sendOperation = new WebSocketOperation.SendOperation(this);
-                    }
+                    _sendOperation ??= new WebSocketOperation.SendOperation(this);
                 }
             }
         }

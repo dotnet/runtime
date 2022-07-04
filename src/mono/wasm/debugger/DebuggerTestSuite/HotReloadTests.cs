@@ -1,19 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
-using System.Threading;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class HotReloadTests : DebuggerTests
     {
+        public HotReloadTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodChangedUserBreak()
         {

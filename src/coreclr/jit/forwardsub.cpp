@@ -187,7 +187,6 @@ class ForwardSubVisitor final : public GenTreeVisitor<ForwardSubVisitor>
 public:
     enum
     {
-        ComputeStack      = true,
         DoPostOrder       = true,
         UseExecutionOrder = true
     };
@@ -197,7 +196,6 @@ public:
         , m_use(nullptr)
         , m_node(nullptr)
         , m_parentNode(nullptr)
-        , m_callAncestor(nullptr)
         , m_lclNum(lclNum)
         , m_useCount(0)
         , m_useFlags(GTF_EMPTY)
@@ -221,7 +219,7 @@ public:
 
                 // Screen out contextual "uses"
                 //
-                GenTree* const parent = m_ancestors.Top(1);
+                GenTree* const parent = user;
                 bool const     isDef  = parent->OperIs(GT_ASG) && (parent->gtGetOp1() == node);
                 bool const     isAddr = parent->OperIs(GT_ADDR);
 
@@ -243,19 +241,6 @@ public:
                     m_use        = use;
                     m_useFlags   = m_accumulatedFlags;
                     m_parentNode = parent;
-
-                    // If this use contributes to a call arg we need to
-                    // remember the call and handle it specially when we
-                    // see it later in the postorder walk.
-                    //
-                    for (int i = 1; i < m_ancestors.Height(); i++)
-                    {
-                        if (m_ancestors.Top(i)->IsCall())
-                        {
-                            m_callAncestor = m_ancestors.Top(i)->AsCall();
-                            break;
-                        }
-                    }
                 }
             }
         }
@@ -271,29 +256,6 @@ public:
             if (varDsc->IsAddressExposed())
             {
                 m_accumulatedFlags |= GTF_GLOB_REF;
-            }
-        }
-
-        // Is this the use's call ancestor?
-        //
-        if ((m_callAncestor != nullptr) && (node == m_callAncestor))
-        {
-            // To be conservative and avoid issues with morph
-            // reordering call args, we merge in effects of all args
-            // to this call.
-            //
-            // Remove this if/when morph's arg sorting is fixed.
-            //
-            GenTreeFlags oldUseFlags = m_useFlags;
-
-            for (CallArg& arg : m_callAncestor->gtArgs.Args())
-            {
-                m_useFlags |= (arg.GetNode()->gtFlags & GTF_GLOB_EFFECT);
-            }
-
-            if (oldUseFlags != m_useFlags)
-            {
-                JITDUMP(" [added other call arg use flags: 0x%x]", m_useFlags & ~oldUseFlags);
             }
         }
 
@@ -341,7 +303,6 @@ private:
     GenTree**    m_use;
     GenTree*     m_node;
     GenTree*     m_parentNode;
-    GenTreeCall* m_callAncestor;
     unsigned     m_lclNum;
     unsigned     m_useCount;
     GenTreeFlags m_useFlags;

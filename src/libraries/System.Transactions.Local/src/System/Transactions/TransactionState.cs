@@ -697,10 +697,7 @@ namespace System.Transactions
             // Start the process for abort.  From the active state we can transition directly
             // to the aborted state.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -843,10 +840,7 @@ namespace System.Transactions
             // Start the process for abort.  From the active state we can transition directly
             // to the aborted state.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             Debug.Assert(tx._promoter != null);
             ((ISimpleTransactionSuperior)tx._promoter).Rollback();
@@ -1155,10 +1149,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -1232,10 +1223,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -1296,10 +1284,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // The durable enlistment must have aborted.  Go to the aborted state.
             TransactionStateAborted.EnterState(tx);
@@ -1343,10 +1328,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // The durable enlistment must have aborted.  Go to the aborted state.
             TransactionStateAborted.EnterState(tx);
@@ -1824,10 +1806,7 @@ namespace System.Transactions
             Debug.Assert(tx.PromotedTransaction != null, "Promoted state not valid for transaction.");
             // Forward this on to the promoted transaction.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // Don't hold locks while calling into the promoted tx
             Monitor.Exit(tx);
@@ -2072,10 +2051,7 @@ namespace System.Transactions
             // LTM gives up the ability to control Tx timeout when it promotes.
             try
             {
-                if (tx._innerException == null)
-                {
-                    tx._innerException = new TimeoutException(SR.TraceTransactionTimeout);
-                }
+                tx._innerException ??= new TimeoutException(SR.TraceTransactionTimeout);
                 Debug.Assert(tx.PromotedTransaction != null);
                 DistributedTransaction.Rollback();
 
@@ -2440,10 +2416,7 @@ namespace System.Transactions
                 // In this state we don't want a transaction exception from BeginCommit to randomly
                 // bubble up to the application or go unhandled.  So catch the exception and if the
                 // inner exception for the transaction has not already been set then set it.
-                if (tx._innerException == null)
-                {
-                    tx._innerException = e;
-                }
+                tx._innerException ??= e;
                 TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -2461,10 +2434,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // This change state event at this point would be caused by one of the enlistments
             // aborting.  Really change to P0Aborting
@@ -2576,10 +2546,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // This change state event at this point would be caused by one of the enlistments
             // aborting.  Really change to P0Aborting
@@ -2653,10 +2620,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // This change state event at this point would be caused by one of the enlistments
             // aborting.  Really change to P1Aborting
@@ -3406,10 +3370,7 @@ namespace System.Transactions
             // Pass the Rollback through the promotable single phase enlistment to be
             // certain it is notified.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateDelegatedAborting.EnterState(tx);
         }
@@ -3521,10 +3482,7 @@ namespace System.Transactions
             // transaction promoter will get notified of the abort.
             Debug.Assert(tx._durableEnlistment != null, "PromotedNonMSDTC state is not valid for transaction");
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -3613,10 +3571,7 @@ namespace System.Transactions
             // Just transition to Aborted. The PSPE will be told to rollback thru the durableEnlistment.
             // This is also overridden in TransactionStatePromotedNonMSDTCSinglePhaseCommit
             // that does something slightly differently.
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             TransactionStateAborted.EnterState(tx);
         }
@@ -3917,10 +3872,7 @@ namespace System.Transactions
 
         internal override void ChangeStateTransactionAborted(InternalTransaction tx, Exception? e)
         {
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             // The durable enlistment must have aborted.  Go to the aborted state.
             TransactionStatePromotedNonMSDTCAborted.EnterState(tx);
@@ -4342,10 +4294,7 @@ namespace System.Transactions
             // Pass the Rollback through the promotable single phase enlistment to be
             // certain it is notified.
 
-            if (tx._innerException == null)
-            {
-                tx._innerException = e;
-            }
+            tx._innerException ??= e;
 
             Debug.Assert(tx.PromotedTransaction != null);
             DistributedTransaction.Rollback();

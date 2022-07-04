@@ -32,10 +32,7 @@ namespace System
                     end = i;
             }
 
-            if (res == null)
-            {
-                res = str.Substring(start, end - start);
-            }
+            res ??= str.Substring(start, end - start);
 
             if (res == Localhost || res == Loopback)
             {

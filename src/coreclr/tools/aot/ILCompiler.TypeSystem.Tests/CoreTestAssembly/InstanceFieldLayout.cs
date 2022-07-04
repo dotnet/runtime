@@ -296,7 +296,7 @@ namespace IsByRefLike
 {
     public ref struct ByRefLikeStruct
     {
-        ByReference<object> ByRef;
+        ref object ByRef;
     }
 
     public struct NotByRefLike

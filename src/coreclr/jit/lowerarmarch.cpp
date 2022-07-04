@@ -576,19 +576,19 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
-// LowerPutArgStk: Lower a GT_PUTARG_STK.
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
 //
 // Arguments:
 //    putArgStk - The node to lower
 //
-void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 {
-    GenTree* src = putArgStk->Data();
+    GenTree* src = putArgNode->Data();
 
     if (src->TypeIs(TYP_STRUCT))
     {
         // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
-        MakeSrcContained(putArgStk, src);
+        MakeSrcContained(putArgNode, src);
 
         // TODO-ADDR: always perform this transformation in local morph and delete this code.
         if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
@@ -607,7 +607,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         }
         else if (src->OperIs(GT_LCL_VAR))
         {
-            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type.
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
+            // the non-split case.
             comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }

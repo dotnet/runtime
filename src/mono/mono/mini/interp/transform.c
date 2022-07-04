@@ -1862,9 +1862,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			!strcmp (klass_name, "SpanHelpers") &&
 			!strcmp (tm, "ClearWithReferences")) {
 		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
-	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
-		g_assert (!strcmp (tm, "get_Value"));
-		*op = MINT_LDIND_I;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
 		if (!strcmp (tm, "Block")) {
 			InterpInst *ldloca2 = td->last_ins;
@@ -3724,9 +3721,7 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 static void
 interp_emit_memory_barrier (TransformData *td, int kind)
 {
-#if defined(TARGET_WASM)
-	// mono_memory_barrier is dummy on wasm
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	if (kind == MONO_MEMORY_BARRIER_SEQ)
 		interp_add_ins (td, MINT_MONO_MEMORY_BARRIER);
 #else
@@ -5554,18 +5549,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 				td->last_ins->info.call_args = call_args;
 			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
-					!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
-					!strcmp (m->name, ".ctor")) {
-				/* public ByReference(ref T value) */
-				MONO_PROFILER_RAISE (inline_method, (td->rtm->method, m));
-				g_assert (csignature->hasthis && csignature->param_count == 1);
-				td->sp--;
-				/* We already have the vt on top of the stack. Just do a dummy mov that should be optimized out */
-				interp_add_ins (td, MINT_MOV_P);
-				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-				push_type_vt (td, klass, mono_class_value_size (klass, NULL));
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 					(!strcmp (m_class_get_name (m->klass), "Span`1") ||
 					!strcmp (m_class_get_name (m->klass), "ReadOnlySpan`1")) &&
 					csignature->param_count == 2 &&
@@ -5836,7 +5819,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			mono_class_init_internal (klass);
 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
-			mt = mint_type (m_class_get_byval_arg (field_klass));
+			mt = mint_type (ftype);
 			int field_size = mono_class_value_size (field_klass, NULL);
 			int obj_size = mono_class_value_size (klass, NULL);
 			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);

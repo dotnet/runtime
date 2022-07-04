@@ -1023,12 +1023,7 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableList<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (_immutable == null)
-                {
-                    _immutable = ImmutableList<T>.WrapNode(this.Root);
-                }
-
-                return _immutable;
+                return _immutable ??= ImmutableList<T>.WrapNode(this.Root);
             }
 
             #endregion
@@ -1219,17 +1214,6 @@ namespace System.Collections.Immutable
         /// Gets a simple debugger-viewable list.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] Contents
-        {
-            get
-            {
-                if (_cachedContents == null)
-                {
-                    _cachedContents = _list.ToArray(_list.Count);
-                }
-
-                return _cachedContents;
-            }
-        }
+        public T[] Contents => _cachedContents ??= _list.ToArray(_list.Count);
     }
 }
