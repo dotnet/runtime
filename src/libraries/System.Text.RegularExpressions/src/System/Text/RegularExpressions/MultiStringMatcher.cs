@@ -115,7 +115,6 @@ namespace System.Text.RegularExpressions
 
         public int Find(ReadOnlySpan<char> text)
         {
-            int lastMatch = -1;
             int currentState = TrieNode.Root;
             ReadOnlySpan<TrieNodeWithLinks> trie = Trie;
 
@@ -129,14 +128,8 @@ namespace System.Text.RegularExpressions
                         currentState = nextState;
                         break;
                     }
-                    // The algorithm effectively resets when we reach the root node.
-                    // If we had found a match before, we return it.
                     if (currentState == TrieNode.Root)
                     {
-                        if (lastMatch != -1)
-                        {
-                            return lastMatch;
-                        }
                         break;
                     }
 
@@ -147,24 +140,12 @@ namespace System.Text.RegularExpressions
 
                 if (matchLength != -1)
                 {
-                    // Found a match. We mark it and continue searching hoping it is getting bigger.
-                    int indexOfMatch = i + 1 - matchLength;
-
-                    // We want to return the leftmost-longest match.
-                    // If this match starts later than the match we might have found before,
-                    // we cannot accept it because we want to return the leftmost match.
-                    // The match can start at the same position as the previous one, which
-                    // means that it is longer and we accept it.
-                    // The unsigned integer comparison will also always
-                    // succeed if the last match index is negative.
-                    if ((uint)indexOfMatch <= (uint)lastMatch)
-                    {
-                        lastMatch = indexOfMatch;
-                    }
+                    // Found a match. We calculate the beginning of it and return it.
+                    return i + 1 - matchLength;
                 }
             }
 
-            return lastMatch;
+            return -1;
         }
     }
 
