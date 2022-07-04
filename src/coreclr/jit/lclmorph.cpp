@@ -710,9 +710,11 @@ private:
             unsigned   indirSize = GetIndirSize(node, user);
             bool       isWide;
 
-            if (indirSize == 0)
+            if ((indirSize == 0) || ((val.Offset() + indirSize) > UINT16_MAX))
             {
                 // If we can't figure out the indirection size then treat it as a wide indirection.
+                // Additionally, treat indirections with large offsets as wide: local field nodes
+                // and the emitter do not support them.
                 isWide = true;
             }
             else
