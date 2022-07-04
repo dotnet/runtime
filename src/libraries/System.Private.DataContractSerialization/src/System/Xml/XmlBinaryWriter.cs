@@ -108,7 +108,7 @@ namespace System.Xml
             // GetBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
             var buffer = GetBuffer(1 + Unsafe.SizeOf<T>(), out int offset);
 
-            DiagnosticUtility.DebugAssert(offset >= 0 && offset + 1 + Unsafe.SizeOf<T>() < buffer.Length, "WriteTextNodeRaw");
+            DiagnosticUtility.DebugAssert(offset >= 0 && offset + 1 + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
 
             bytePtr = (byte)nodeType;
@@ -123,7 +123,7 @@ namespace System.Xml
             // GetBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
             var buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset);
 
-            DiagnosticUtility.DebugAssert(offset >= 0 && offset + Unsafe.SizeOf<T>() < buffer.Length, "WriteTextNodeRaw");
+            DiagnosticUtility.DebugAssert(offset >= 0 && offset + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
             Unsafe.WriteUnaligned<T>(ref bytePtr, value);
             Advance(Unsafe.SizeOf<T>());
