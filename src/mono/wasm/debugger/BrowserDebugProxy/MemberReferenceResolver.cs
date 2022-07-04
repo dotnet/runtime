@@ -113,8 +113,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     typeId = await FindStaticTypeId(classNameToFind);
 
                     string part = parts[i];
-                    Console.WriteLine($"classNameToFind = {classNameToFind}; typeId ={typeId}; part = {part}");
-
                     if (typeId != -1)
                     {
                         JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
@@ -123,8 +121,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             ArraySegment<string> remaining = null;
                             if (i < parts.Length - 1)
                                 remaining = parts[i..];
-                            Console.WriteLine($"FOUND part = {part}; memberObject = {memberObject}, remaining.cnt = {remaining.Count}");
-
                             return (memberObject, remaining);
                         }
 
@@ -252,7 +248,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
-                        Console.WriteLine("ASINSTACNE MEMBER?");
                         retObject = await ResolveAsInstanceMember(remaining, retObject, throwOnNullReference);
                     }
                 }
