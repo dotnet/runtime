@@ -2151,7 +2151,7 @@ ep_rt_mono_file_open_write (const ep_char8_t *path)
 	if (!path)
 		return INVALID_HANDLE_VALUE;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
 
 	if (!path_utf16)
 		return INVALID_HANDLE_VALUE;
@@ -2636,7 +2636,7 @@ ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 #else
 	gchar **next = NULL;
 	for (next = environ; *next != NULL; ++next)
-		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16_string (*next, -1));
+		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
 #endif
 }
 
@@ -2843,7 +2843,8 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 			}
 			mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
-			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
+			uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
+			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 		}
 	}
 
@@ -5873,12 +5874,10 @@ mono_profiler_get_generic_types (
 			*generic_type_count = generic_instance->type_argc;
 			for (uint32_t i = 0; i < generic_instance->type_argc; ++i) {
 				uint8_t type = generic_instance->type_argv [i]->type;
-				memcpy (buffer, &type, sizeof (type));
-				buffer += sizeof (type);
+				ep_write_buffer_uint8_t (&buffer, type);
 
 				uint64_t class_id = (uint64_t)mono_class_from_mono_type_internal (generic_instance->type_argv [i]);
-				memcpy (buffer, &class_id, sizeof (class_id));
-				buffer += sizeof (class_id);
+				ep_write_buffer_uint64_t (&buffer, class_id);
 			}
 		}
 	}
