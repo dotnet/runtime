@@ -121,7 +121,7 @@ namespace System.IO
                 return Marshal.GetLastWin32Error();
             }
 
-            data.PopulateFrom(ref fileInformationData);
+            data.PopulateFrom(fileInformationData);
             return Interop.Errors.ERROR_SUCCESS;
         }
 
