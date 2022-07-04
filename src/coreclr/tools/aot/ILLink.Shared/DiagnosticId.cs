@@ -226,23 +226,12 @@ namespace ILLink.Shared
 				_ => MessageSubCategory.None,
 			};
 
-		public static string GetDiagnosticCategory (this DiagnosticId diagnosticId)
-		{
-			switch ((int) diagnosticId) {
-			case > 2000 and < 3000:
-				return DiagnosticCategory.Trimming;
-
-			case >= 3000 and < 3050:
-				return DiagnosticCategory.SingleFile;
-
-			case >= 3050 and <= 6000:
-				return DiagnosticCategory.AOT;
-
-			default:
-				break;
-			}
-
-			throw new ArgumentException ($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).");
-		}
+		public static string GetDiagnosticCategory (this DiagnosticId diagnosticId) =>
+			(int) diagnosticId switch {
+				> 2000 and < 3000 => DiagnosticCategory.Trimming,
+				>= 3000 and < 3050 => DiagnosticCategory.SingleFile,
+				>= 3050 and <= 6000 => DiagnosticCategory.AOT,
+				_ => throw new ArgumentException ($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
+			};
 	}
 }

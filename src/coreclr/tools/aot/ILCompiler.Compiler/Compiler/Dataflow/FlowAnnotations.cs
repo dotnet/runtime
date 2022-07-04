@@ -924,7 +924,6 @@ namespace ILLink.Shared.TrimAnalysis
         internal partial MethodParameterValue GetMethodParameterValue(MethodProxy method, int parameterIndex)
             => GetMethodParameterValue(method, parameterIndex, GetParameterAnnotation(method.Method, parameterIndex + (method.IsStatic() ? 0 : 1)));
 
-        // Linker-specific dataflow value creation. Eventually more of these should be shared.
         internal SingleValue GetFieldValue(FieldDesc field)
             => field.Name switch
             {

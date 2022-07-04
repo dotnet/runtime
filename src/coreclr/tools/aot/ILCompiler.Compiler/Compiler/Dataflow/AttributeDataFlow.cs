@@ -107,20 +107,13 @@ namespace ILCompiler.Dataflow
         }
 
         MultiValue GetValueForCustomAttributeArgument(object? argument)
-        {
-            if (argument is TypeDesc td)
+            => argument switch
             {
-                return new SystemTypeValue(td);
-            }
-
-            if (argument is string str)
-            {
-                return new KnownStringValue(str);
-            }
-
-            // We shouldn't have gotten a None annotation from flow annotations since only string/Type can have annotations
-            throw new InvalidOperationException();
-        }
+                TypeDesc td => new SystemTypeValue(td),
+                string str => new KnownStringValue(str),
+                // We shouldn't have gotten a None annotation from flow annotations since only string/Type can have annotations
+                _ => throw new InvalidOperationException()
+            };
 
         void RequireDynamicallyAccessedMembers(
             in DiagnosticContext diagnosticContext,

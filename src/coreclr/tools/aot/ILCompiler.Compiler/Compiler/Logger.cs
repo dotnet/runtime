@@ -3,8 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -15,10 +16,6 @@ using ILLink.Shared;
 
 using ILSequencePoint = Internal.IL.ILSequencePoint;
 using MethodIL = Internal.IL.MethodIL;
-using System.Diagnostics.Metrics;
-using System.Diagnostics;
-using System.Reflection;
-using Internal.IL;
 
 namespace ILCompiler
 {

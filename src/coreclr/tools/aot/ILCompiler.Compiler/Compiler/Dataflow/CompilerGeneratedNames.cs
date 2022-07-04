@@ -27,6 +27,8 @@ namespace ILCompiler.Dataflow
             if (!IsGeneratedMemberName(typeName))
                 return false;
 
+            // State machines are generated into types with names like <OwnerMethodName>d__0
+            // Or if its nested in a local function the name will look like <<OwnerMethodName>g__Local>d and so on
             int i = typeName.LastIndexOf('>');
             if (i == -1)
                 return false;

@@ -3,7 +3,6 @@
 
 using ILCompiler;
 using ILCompiler.Logging;
-using Internal.Metadata.NativeFormat;
 
 #nullable enable
 
