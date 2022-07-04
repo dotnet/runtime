@@ -3474,8 +3474,21 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 
 #if defined(HOST_ARM64)
 
+#if defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
+
 #define Define_InterlockMethod(RETURN_TYPE, METHOD_DECL, METHOD_INVOC, INTRINSIC_NAME) \
-__attribute__((target("lse")))  \
+EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
+{                                                               \
+    return INTRINSIC_NAME;                                      \
+}                                                               \
+
+#else   // !LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+
+#define Define_InterlockMethod(RETURN_TYPE, METHOD_DECL, METHOD_INVOC, INTRINSIC_NAME) \
+/* Function multiversioning will never inline a method that is  \
+   marked such. However, just to make sure that we don't see    \
+   surprises, explicitely mark them as noinline. */             \
+__attribute__((target("lse")))  __attribute__((noinline))       \
 EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI Lse_##METHOD_DECL  \
 {                                                               \
     return INTRINSIC_NAME;                                      \
@@ -3495,7 +3508,8 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
     }                                                           \
 }                                                               \
 
-#else
+#endif  // LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+#else   // !HOST_ARM64
 
 #define Define_InterlockMethod(RETURN_TYPE, METHOD_DECL, METHOD_INVOC, INTRINSIC_NAME) \
 EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
@@ -3505,8 +3519,7 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
     return result;                                              \
 }                                                               \
 
-#endif
-
+#endif  // HOST_ARM64
 
 /*++
 Function:
