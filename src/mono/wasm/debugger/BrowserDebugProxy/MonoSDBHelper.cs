@@ -859,9 +859,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<MethodInfo> CreateMethodInfoFromRuntimeInformation (AssemblyInfo asm, int methodId, string methodName, int methodToken, CancellationToken token )
         {
-            var typeToken = await GetTypeTokenFromMethod(methodId, token);
-            asm.TypesByToken.TryGetValue(typeToken, out TypeInfo typeInfo);
-            var attrs =  await GetAttributesFromMethod(methodId, token);
+            var typeToken = await GetTypeTokenFromMethodId(methodId, token);
+            TypeInfo typeInfo = asm.TypesByToken[typeToken];
+            var attrs =  await GetAttributesFromMethodId(methodId, token);
             return new MethodInfo(asm, methodName, methodToken, typeInfo, attrs);
         }
         public async Task<TypeInfoWithDebugInformation> GetTypeInfo(int typeId, CancellationToken token)
@@ -975,7 +975,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return stringDebuggerCmdReader.ReadInt32();
         }
 
-        public async Task<MethodAttributes> GetAttributesFromMethod(int methodId, CancellationToken token)
+        public async Task<MethodAttributes> GetAttributesFromMethodId(int methodId, CancellationToken token)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(methodId);
@@ -985,7 +985,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return (MethodAttributes) flags;
         }
 
-        public async Task<int> GetTypeTokenFromMethod(int methodId, CancellationToken token)
+        public async Task<int> GetTypeTokenFromMethodId(int methodId, CancellationToken token)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(methodId);
@@ -1163,7 +1163,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var methodInfo = await GetMethodInfo(methodId, token);
             if (methodInfo != null)
                 return methodInfo.Info.IsStatic();
-            var attrs = await GetAttributesFromMethod(methodId, token);
+            var attrs = await GetAttributesFromMethodId(methodId, token);
             return (attrs & MethodAttributes.Static) > 0;
         }
 
