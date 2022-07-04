@@ -1437,7 +1437,7 @@ namespace System.Net.Http
             {
                 public Http2ReadStream(Http2Stream http2Stream) : base(http2Stream)
                 {
-                    base.CloseResponseBody = true;
+                    base.CloseResponseBodyOnDispose = true;
                 }
 
                 public override bool CanWrite => false;
@@ -1486,7 +1486,6 @@ namespace System.Net.Http
             {
                 private Http2Stream? _http2Stream;
                 private readonly HttpResponseMessage _responseMessage;
-                protected bool CloseResponseBody { get; set; }
 
                 public Http2ReadWriteStream(Http2Stream http2Stream)
                 {
@@ -1509,6 +1508,8 @@ namespace System.Net.Http
                     }
                 }
 
+                protected bool CloseResponseBodyOnDispose { get; set; }
+
                 protected override void Dispose(bool disposing)
                 {
                     Http2Stream? http2Stream = Interlocked.Exchange(ref _http2Stream, null);
@@ -1522,7 +1523,7 @@ namespace System.Net.Http
                     // protocol, we have little choice: if someone drops the Http2ReadStream without
                     // disposing of it, we need to a) signal to the server that the stream is being
                     // canceled, and b) clean up the associated state in the Http2Connection.
-                    if (CloseResponseBody)
+                    if (CloseResponseBodyOnDispose)
                     {
                         http2Stream.CloseResponseBody();
                     }

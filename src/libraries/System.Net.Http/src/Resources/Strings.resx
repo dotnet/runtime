@@ -564,4 +564,7 @@
   <data name="net_http_chunk_too_large" xml:space="preserve">
     <value>The HTTP/1.1 response chunk was too large.</value>
   </data>
+    <data name="net_unsupported_extended_connect" xml:space="preserve">
+    <value>Extended CONNECT is not supported.</value>
+  </data>
 </root>
