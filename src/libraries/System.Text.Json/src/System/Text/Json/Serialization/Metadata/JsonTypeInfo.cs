@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -404,22 +405,38 @@ namespace System.Text.Json.Serialization.Metadata
 
         private protected volatile bool _isConfigured;
         private readonly object _configureLock = new object();
+        private ExceptionDispatchInfo? _cachedConfigureError;
 
         internal bool IsConfigured => _isConfigured;
 
         internal void EnsureConfigured()
         {
-            if (_isConfigured)
-                return;
+            if (!_isConfigured)
+                ConfigureLocked();
 
-            lock (_configureLock)
+            void ConfigureLocked()
             {
-                if (_isConfigured)
-                    return;
+                _cachedConfigureError?.Throw();
 
-                Configure();
+                lock (_configureLock)
+                {
+                    if (_isConfigured)
+                        return;
 
-                _isConfigured = true;
+                    _cachedConfigureError?.Throw();
+
+                    try
+                    {
+                        Configure();
+
+                        _isConfigured = true;
+                    }
+                    catch (Exception e)
+                    {
+                        _cachedConfigureError = ExceptionDispatchInfo.Capture(e);
+                        throw;
+                    }
+                }
             }
         }
 
