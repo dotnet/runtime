@@ -3969,54 +3969,10 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
     }
     else
     {
-        switch (th.GetInternalCorElementType())
+        CorElementType elementType = th.GetInternalCorElementType();
+        if (CorIsPrimitiveType(elementType))
         {
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_BOOLEAN:
-            result = asCorInfoType(ELEMENT_TYPE_I1);
-            break;
-
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_CHAR:
-            result = asCorInfoType(ELEMENT_TYPE_I2);
-            break;
-
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-            result = asCorInfoType(ELEMENT_TYPE_I4);
-            break;
-
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-            result = asCorInfoType(ELEMENT_TYPE_I8);
-            break;
-
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:
-            result = asCorInfoType(ELEMENT_TYPE_I);
-            break;
-
-        case ELEMENT_TYPE_R4:
-            result = asCorInfoType(ELEMENT_TYPE_R4);
-            break;
-
-        case ELEMENT_TYPE_R8:
-            result = asCorInfoType(ELEMENT_TYPE_R8);
-            break;
-
-        case ELEMENT_TYPE_VOID:
-            result = asCorInfoType(ELEMENT_TYPE_VOID);
-            break;
-
-        case ELEMENT_TYPE_PTR:
-        case ELEMENT_TYPE_FNPTR:
-            result = asCorInfoType(ELEMENT_TYPE_PTR);
-            break;
-
-        default:
-            break;
+            result = asCorInfoType(elementType);
         }
     }
 
@@ -13938,7 +13894,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             DWORD dwBlobSize = CorSigUncompressData(pBlob);
             const uint8_t *const pBlobStart = pBlob;
-            pBlob += dwBlobSize;    
+            pBlob += dwBlobSize;
             StackSArray<TypeHandle> types;
             DWORD cTypes = CorSigUncompressData(pBlob);
             bool fail = false;
@@ -13965,7 +13921,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             MethodDesc *pMDCompare = NULL;
-            
+
             if (!fail)
             {
                 if (kind == ENCODE_CHECK_IL_BODY)
@@ -13995,7 +13951,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                 fail = fail || (pMethodMetadata->cByteData != dwBlobSize);
             }
-            
+
             if (!fail)
             {
                 fail = 0 != memcmp(pBlobStart, pMethodMetadata->pByteData, dwBlobSize);
