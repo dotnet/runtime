@@ -230,21 +230,21 @@ async function decrypt(algorithm, cryptoKey, data) {
     // crypto.subtle AES-CBC will only allow a PaddingMode of PKCS7, but we need to use
     // PaddingMode None. To simulate this, we only decrypt full blocks of data, with an extra full
     // padding block of 0x10 (16) bytes appended to data. crypto.subtle will see that padding block and return
-    // the fully decrypted message. To create the encrypted padding block, we encrypt the padding block
-    // using the last block of the cipher text as the IV.
+    // the fully decrypted message. To create the encrypted padding block, we encrypt an empty array using the
+    // last block of the cipher text as the IV. This will create a full block of padding bytes.
 
     const paddingBlockIV = new Uint8Array(data).slice(data.length - AesBlockSizeBytes);
-    const paddingBlock = new Uint8Array([0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10]);
+    const empty = new Uint8Array();
     const encryptedPaddingBlockResult = await crypto.subtle.encrypt(
         {
             name: algorithm.name,
             iv: paddingBlockIV
         },
         cryptoKey,
-        paddingBlock
+        empty
     );
 
-    const encryptedPaddingBlock = new Uint8Array(encryptedPaddingBlockResult).slice(0, AesBlockSizeBytes);
+    const encryptedPaddingBlock = new Uint8Array(encryptedPaddingBlockResult);
     for (var i = 0; i < encryptedPaddingBlock.length; i++) {
         data.push(encryptedPaddingBlock[i]);
     }
