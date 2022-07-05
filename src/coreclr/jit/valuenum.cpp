@@ -9651,14 +9651,7 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
         return VNZeroForType(castToType);
     }
 
-    ValueNum srcExcVN;
-    ValueNum srcNormVN;
-    VNUnpackExc(srcVN, &srcNormVN, &srcExcVN);
-
-    ValueNum resultNormVN = VNForFunc(castToType, VNF_BitCast, srcNormVN, VNForIntCon(castToType));
-    ValueNum resultExcVN  = srcExcVN;
-
-    return VNWithExc(resultNormVN, resultExcVN);
+    return VNForFunc(castToType, VNF_BitCast, srcVN, VNForIntCon(castToType));
 }
 
 //------------------------------------------------------------------------
