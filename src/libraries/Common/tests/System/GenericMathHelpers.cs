@@ -59,6 +59,8 @@ namespace System
     public static class BinaryNumberHelper<TSelf>
         where TSelf : IBinaryNumber<TSelf>
     {
+        public static TSelf AllBitsSet => TSelf.AllBitsSet;
+
         public static bool IsPow2(TSelf value) => TSelf.IsPow2(value);
 
         public static TSelf Log2(TSelf value) => TSelf.Log2(value);
@@ -404,7 +406,7 @@ namespace System
     }
 
     public static class ShiftOperatorsHelper<TSelf, TResult>
-        where TSelf : IShiftOperators<TSelf, TResult>
+        where TSelf : IShiftOperators<TSelf, int, TResult>
     {
         public static TResult op_LeftShift(TSelf value, int shiftAmount) => value << shiftAmount;
 

@@ -13,7 +13,7 @@ namespace System.Text.Json
     {
         private readonly JsonPropertyDictionary<JsonPropertyInfo> _parent;
         private List<JsonPropertyInfo>? _items;
-        private JsonTypeInfo _parentTypeInfo;
+        private readonly JsonTypeInfo _parentTypeInfo;
 
         [MemberNotNullWhen(false, nameof(_items))]
         public bool IsReadOnly => _items == null;
@@ -21,14 +21,14 @@ namespace System.Text.Json
 
         public JsonPropertyInfo this[int index]
         {
-            get => IsReadOnly ? _parent.List[index].Value! : _items[index];
+            get => IsReadOnly ? _parent.List[index].Value : _items[index];
             set
             {
                 if (IsReadOnly)
                     ThrowCollectionIsReadOnly();
 
                 if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
 
                 value.EnsureChildOf(_parentTypeInfo);
                 _items[index] = value;
@@ -47,10 +47,8 @@ namespace System.Text.Json
                 // We cannot ensure keys won't change while editing therefore we operate on the internal copy.
                 // Once we're done editing FinishEditingAndMakeReadOnly should be called then we switch to operating directly on _parent
                 _items = new List<JsonPropertyInfo>(_parent.Count);
-                foreach (var kv in _parent.List)
+                foreach (KeyValuePair<string, JsonPropertyInfo> kv in _parent.List)
                 {
-                    Debug.Assert(kv.Value != null, $"{nameof(JsonPropertyDictionary<JsonPropertyInfo>)} contains null value");
-
                     // we need to do this so that property cannot be copied over elsewhere
                     // since source gen properties do not have parents by default
                     kv.Value.EnsureChildOf(parentTypeInfo);
@@ -66,7 +64,7 @@ namespace System.Text.Json
             // We do not know if any of the keys needs to be updated therefore we need to re-create cache
             _parent.Clear();
 
-            foreach (var item in _items)
+            foreach (JsonPropertyInfo item in _items)
             {
                 string key = item.Name;
                 if (!_parent.TryAddValue(key, item))
@@ -85,7 +83,7 @@ namespace System.Text.Json
                 ThrowCollectionIsReadOnly();
 
             if (item == null)
-                throw new ArgumentNullException(nameof(item));
+                ThrowHelper.ThrowArgumentNullException(nameof(item));
 
             item.EnsureChildOf(_parentTypeInfo);
             _items.Add(item);
@@ -110,14 +108,14 @@ namespace System.Text.Json
 
             if (IsReadOnly)
             {
-                foreach (KeyValuePair<string, JsonPropertyInfo?> item in _parent)
+                foreach (KeyValuePair<string, JsonPropertyInfo> item in _parent)
                 {
                     if (index >= array.Length)
                     {
                         ThrowHelper.ThrowArgumentException_ArrayTooSmall(nameof(array));
                     }
 
-                    array[index++] = item.Value!;
+                    array[index++] = item.Value;
                 }
             }
             else
@@ -131,7 +129,7 @@ namespace System.Text.Json
             if (IsReadOnly)
             {
                 int index = 0;
-                foreach (var kv in _parent.List)
+                foreach (KeyValuePair<string, JsonPropertyInfo> kv in _parent.List)
                 {
                     if (kv.Value == item)
                     {
@@ -155,7 +153,7 @@ namespace System.Text.Json
                 ThrowCollectionIsReadOnly();
 
             if (item == null)
-                throw new ArgumentNullException(nameof(item));
+                ThrowHelper.ThrowArgumentNullException(nameof(item));
 
             item.EnsureChildOf(_parentTypeInfo);
             _items.Insert(index, item);
@@ -181,9 +179,9 @@ namespace System.Text.Json
         {
             if (IsReadOnly)
             {
-                foreach (KeyValuePair<string, JsonPropertyInfo?> item in _parent)
+                foreach (KeyValuePair<string, JsonPropertyInfo> item in _parent)
                 {
-                    yield return item.Value!;
+                    yield return item.Value;
                 }
             }
             else

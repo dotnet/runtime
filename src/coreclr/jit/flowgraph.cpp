@@ -1894,7 +1894,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
         {
             // have to insert this immediately before the GT_RETURN so we transform:
             // ret(...) ->
-            // ret(comma(comma(tmp=...,call mon_exit), tmp)
+            // ret(comma(comma(tmp=...,call mon_exit), tmp))
             //
             //
             // Before morph stage, it is possible to have a case of GT_RETURN(TYP_LONG, op1) where op1's type is
@@ -3116,6 +3116,45 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
     return fgLastBB;
 }
 
+//------------------------------------------------------------------------------
+// fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
+//
+// Arguments:
+//    block - Basic block to get a dominator for
+//
+// Return Value:
+//    Basic block that dominates this block
+//
+BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
+{
+    assert(fgDomsComputed);
+    BasicBlock* lastReachablePred = nullptr;
+
+    // Check if we have unreachable preds
+    for (const flowList* predEdge : block->PredEdges())
+    {
+        BasicBlock* predBlock = predEdge->getBlock();
+        if (predBlock == block)
+        {
+            continue;
+        }
+
+        // We check pred's count of InEdges - it's quite conservative.
+        // We, probably, could use fgReachable(fgFirstBb, pred) here to detect unreachable preds
+        if (predBlock->countOfInEdges() > 0)
+        {
+            if (lastReachablePred != nullptr)
+            {
+                // More than one of "reachable" preds - return cached result
+                return block->bbIDom;
+            }
+            lastReachablePred = predBlock;
+        }
+    }
+
+    return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
+}
+
 /*****************************************************************************************************
  *
  *  Function to return the first basic block after the main part of the function. With funclets, it is
@@ -3361,6 +3400,28 @@ void Compiler::fgCreateFunclets()
 #endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// fgFuncletsAreCold: Determine if EH funclets can be moved to cold section.
+//
+// Notes:
+//   Walk the EH funclet blocks of a function to determine if the funclet
+//   section is cold. If any of the funclets are hot, then it may not be
+//   beneficial to split at fgFirstFuncletBB and move all funclets to
+//   the cold section.
+//
+bool Compiler::fgFuncletsAreCold()
+{
+    for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->bbNext)
+    {
+        if (!block->isRunRarely())
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 #endif // defined(FEATURE_EH_FUNCLETS)
 
 /*-------------------------------------------------------------------------
@@ -3401,17 +3462,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     }
 #endif // DEBUG
 
-#if defined(FEATURE_EH_FUNCLETS)
-    // TODO-CQ: handle hot/cold splitting in functions with EH (including synchronized methods
-    // that create EH in methods without explicit EH clauses).
-
-    if (compHndBBtabCount > 0)
-    {
-        JITDUMP("No procedure splitting will be done for this method with EH (implementation limitation)\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-#endif // FEATURE_EH_FUNCLETS
-
     BasicBlock* firstColdBlock       = nullptr;
     BasicBlock* prevToFirstColdBlock = nullptr;
     BasicBlock* block;
@@ -3420,8 +3470,8 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     bool forceSplit = false;
 
 #ifdef DEBUG
-    // If stress-splitting, split right after the first block; don't handle functions with EH
-    forceSplit = JitConfig.JitStressProcedureSplitting() && (compHndBBtabCount == 0);
+    // If stress-splitting, split right after the first block
+    forceSplit = JitConfig.JitStressProcedureSplitting();
 #endif
 
     if (forceSplit)
@@ -3456,12 +3506,29 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     prevToFirstColdBlock = nullptr;
                 }
             }
-            else // (firstColdBlock == NULL)
+            else // (firstColdBlock == NULL) -- we don't have a candidate for first cold block
             {
-                // We don't have a candidate for first cold block
+
+#ifdef FEATURE_EH_FUNCLETS
+                //
+                // If a function has exception handling and we haven't found the first cold block yet,
+                // consider splitting at the first funclet; do not consider splitting between funclets,
+                // as this may break unwind info.
+                //
+                if (block == fgFirstFuncletBB)
+                {
+                    if (fgFuncletsAreCold())
+                    {
+                        firstColdBlock       = block;
+                        prevToFirstColdBlock = lblk;
+                    }
+
+                    break;
+                }
+#endif // FEATURE_EH_FUNCLETS
 
                 // Is this a cold block?
-                if (!blockMustBeInHotSection && (block->isRunRarely() == true))
+                if (!blockMustBeInHotSection && block->isRunRarely())
                 {
                     //
                     // If the last block that was hot was a BBJ_COND

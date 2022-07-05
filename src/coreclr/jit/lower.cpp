@@ -259,6 +259,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckBoundsChk(node->AsBoundsChk());
             break;
 #endif // TARGET_XARCH
+
         case GT_ARR_ELEM:
             return LowerArrElem(node);
 
@@ -1071,7 +1072,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     // Struct can be split into register(s) and stack on ARM
     if (compFeatureArgSplit() && callArg->AbiInfo.IsSplit())
     {
-        assert(arg->OperGet() == GT_OBJ || arg->OperGet() == GT_FIELD_LIST);
+        assert(arg->OperIs(GT_OBJ, GT_FIELD_LIST) || arg->OperIsLocalRead());
         // TODO: Need to check correctness for FastTailCall
         if (call->IsFastTailCall())
         {

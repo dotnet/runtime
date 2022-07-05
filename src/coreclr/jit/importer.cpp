@@ -3188,7 +3188,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* arrayLocalNode = impStackTop(1).val;
 
     //
-    // Verify that the field token is known and valid.  Note that It's also
+    // Verify that the field token is known and valid.  Note that it's also
     // possible for the token to come from reflection, in which case we cannot do
     // the optimization and must therefore revert to calling the helper.  You can
     // see an example of this in bvt\DynIL\initarray2.exe (in Main).
@@ -3791,8 +3791,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             break;
 
         case NI_Internal_Runtime_MethodTable_Of:
-        case NI_System_ByReference_ctor:
-        case NI_System_ByReference_get_Value:
         case NI_System_Activator_AllocatorOf:
         case NI_System_Activator_DefaultConstructorOf:
         case NI_System_EETypePtr_EETypePtrOf:
@@ -3896,35 +3894,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 op1->gtFlags |= GTF_EXCEPT;
 
                 retNode = op1;
-                break;
-            }
-
-            // Implement ByReference Ctor.  This wraps the assignment of the ref into a byref-like field
-            // in a value type.  The canonical example of this is Span<T>. In effect this is just a
-            // substitution.  The parameter byref will be assigned into the newly allocated object.
-            case NI_System_ByReference_ctor:
-            {
-                // Remove call to constructor and directly assign the byref passed
-                // to the call to the first slot of the ByReference struct.
-                GenTree*             op1               = impPopStack().val;
-                GenTree*             thisptr           = newobjThis;
-                CORINFO_FIELD_HANDLE fldHnd            = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                GenTree*             field             = gtNewFieldRef(TYP_BYREF, fldHnd, thisptr, 0);
-                GenTree*             assign            = gtNewAssignNode(field, op1);
-                GenTree*             byReferenceStruct = gtCloneExpr(thisptr->gtGetOp1());
-                assert(byReferenceStruct != nullptr);
-                impPushOnStack(byReferenceStruct, typeInfo(TI_STRUCT, clsHnd));
-                retNode = assign;
-                break;
-            }
-
-            // Implement ptr value getter for ByReference struct.
-            case NI_System_ByReference_get_Value:
-            {
-                GenTree*             op1    = impPopStack().val;
-                CORINFO_FIELD_HANDLE fldHnd = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                GenTree*             field  = gtNewFieldRef(TYP_BYREF, fldHnd, op1, 0);
-                retNode                     = field;
                 break;
             }
 
@@ -5547,17 +5516,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "DefaultConstructorOf") == 0)
             {
                 result = NI_System_Activator_DefaultConstructorOf;
-            }
-        }
-        else if (strcmp(className, "ByReference`1") == 0)
-        {
-            if (strcmp(methodName, ".ctor") == 0)
-            {
-                result = NI_System_ByReference_ctor;
-            }
-            else if (strcmp(methodName, "get_Value") == 0)
-            {
-                result = NI_System_ByReference_get_Value;
             }
         }
         else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
@@ -8108,7 +8066,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 }
 
 //------------------------------------------------------------------------
-// impImportNewObjArray: Build and import `new` of multi-dimmensional array
+// impImportNewObjArray: Build and import `new` of multi-dimensional array
 //
 // Arguments:
 //    pResolvedToken - The CORINFO_RESOLVED_TOKEN that has been initialized
@@ -8123,7 +8081,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 // Notes:
 //    Multi-dimensional array constructors are imported as calls to a JIT
 //    helper, not as regular calls.
-
+//
 void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
 {
     GenTree* classHandle = impParentClassTokenToHandle(pResolvedToken);
@@ -8160,7 +8118,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     // The arguments of the CORINFO_HELP_NEW_MDARR helper are:
     //  - Array class handle
     //  - Number of dimension arguments
-    //  - Pointer to block of int32 dimensions - address  of lvaNewObjArrayArgs temp.
+    //  - Pointer to block of int32 dimensions: address of lvaNewObjArrayArgs temp.
     //
 
     node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
@@ -13695,7 +13653,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         lclTyp = JITtype2varType(cit);
                     }
-                    goto ARR_LD_POST_VERIFY;
+                    goto ARR_LD;
                 }
 
                 // Similarly, if its a readonly access, we can do a simple address-of
@@ -13703,7 +13661,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (prefixFlags & PREFIX_READONLY)
                 {
                     lclTyp = TYP_REF;
-                    goto ARR_LD_POST_VERIFY;
+                    goto ARR_LD;
                 }
 
                 // Otherwise we need the full helper function with run-time type check
@@ -13747,7 +13705,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     tiRetVal           = verMakeTypeInfo(ldelemClsHnd); // precise type always needed for struct
                     tiRetVal.NormaliseForStack();
                 }
-                goto ARR_LD_POST_VERIFY;
+                goto ARR_LD;
 
             case CEE_LDELEM_I1:
                 lclTyp = TYP_BYTE;
@@ -13784,7 +13742,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ARR_LD;
 
             ARR_LD:
-            ARR_LD_POST_VERIFY:
 
                 op2 = impPopStack().val; // index
                 op1 = impPopStack().val; // array
@@ -15345,14 +15302,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Insert the security callout before any actual code is generated
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
-                // There are three different cases for new
-                // Object size is variable (depends on arguments)
+                // There are three different cases for new.
+                // Object size is variable (depends on arguments).
                 //      1) Object is an array (arrays treated specially by the EE)
                 //      2) Object is some other variable sized object (e.g. String)
                 //      3) Class Size can be determined beforehand (normal case)
-                // In the first case, we need to call a NEWOBJ helper (multinewarray)
-                // in the second case we call the constructor with a '0' this pointer
-                // In the third case we alloc the memory, then call the constuctor
+                // In the first case, we need to call a NEWOBJ helper (multinewarray).
+                // In the second case we call the constructor with a '0' this pointer.
+                // In the third case we alloc the memory, then call the constuctor.
 
                 clsFlags = callInfo.classFlags;
                 if (clsFlags & CORINFO_FLG_ARRAY)

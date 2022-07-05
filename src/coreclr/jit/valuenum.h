@@ -1040,10 +1040,6 @@ public:
     // the function application it represents; otherwise, return "false."
     bool GetVNFunc(ValueNum vn, VNFuncApp* funcApp);
 
-    // Requires that "vn" represents a "GC heap address" the sum of a "TYP_REF" value and some integer
-    // value.  Returns the TYP_REF value.
-    ValueNum VNForRefInAddr(ValueNum vn);
-
     // Returns "true" iff "vn" is a valid value number -- one that has been previously returned.
     bool VNIsValid(ValueNum vn);
 

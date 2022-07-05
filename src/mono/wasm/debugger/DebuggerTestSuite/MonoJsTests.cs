@@ -8,11 +8,15 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class MonoJsTests : DebuggerTests
     {
+        public MonoJsTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task BadRaiseDebugEventsTest()
         {

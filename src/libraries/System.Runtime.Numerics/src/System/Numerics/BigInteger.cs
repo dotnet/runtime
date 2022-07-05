@@ -3821,6 +3821,9 @@ namespace System.Numerics
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static BigInteger IBinaryNumber<BigInteger>.AllBitsSet => MinusOne;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(BigInteger value) => value.IsPowerOfTwo;
 
@@ -5187,7 +5190,7 @@ namespace System.Numerics
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
         public static BigInteger operator >>>(BigInteger value, int shiftAmount)
         {
             value.AssertValid();

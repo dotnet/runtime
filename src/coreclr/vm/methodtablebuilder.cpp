@@ -8803,10 +8803,6 @@ MethodTableBuilder::HandleExplicitLayout(
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMT->IsByRefLike());
 
-    // ByReference<T> is an indication for a byref field, treat it as such.
-    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-         return MarkTagType(pFieldLayout, TARGET_POINTER_SIZE, byref);
-
     ExplicitClassTrust explicitClassTrust;
 
     ExplicitFieldTrust::TrustLevel trust;
@@ -9902,9 +9898,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
         if (g_pNullableClass != NULL)
         {
-            _ASSERTE(g_pByReferenceClass != NULL);
-            _ASSERTE(g_pByReferenceClass->IsByRefLike());
-
             _ASSERTE(g_pNullableClass->IsNullable());
 
             // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient

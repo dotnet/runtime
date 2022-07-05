@@ -120,9 +120,12 @@ jobs:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.10.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
-        - Windows.7.Amd64.Open
-        - Windows.10.Amd64.Open
+        - ${{ if eq(parameters.jobParameters.helixQueueGroup, 'cet') }}:
+          - Windows.11.Amd64.Cet.Open
+        - ${{ if ne(parameters.jobParameters.helixQueueGroup, 'cet') }}:
+          - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
+          - Windows.7.Amd64.Open
+          - Windows.10.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.7.Amd64
         - Windows.81.Amd64

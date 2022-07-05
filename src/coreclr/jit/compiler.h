@@ -412,7 +412,6 @@ enum class AddressExposedReason
     WIDE_INDIR,       // We access via indirection with wider type.
     OSR_EXPOSED,      // It was exposed in the original method, osr has to repeat it.
     STRESS_LCL_FLD,   // Stress mode replaces localVar with localFld and makes them addrExposed.
-    COPY_FLD_BY_FLD,  // Field by field copy takes the address of the local, can be fixed.
     DISPATCH_RET_BUF  // Caller return buffer dispatch.
 };
 
@@ -3184,8 +3183,6 @@ public:
                        CORINFO_ARG_LIST_HANDLE varList,
                        CORINFO_SIG_INFO*       varSig);
 
-    static unsigned lvaTypeRefMask(var_types type);
-
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);
 
@@ -3249,8 +3246,6 @@ public:
     void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
-
-    VARSET_VALRET_TP lvaStmtLclMask(Statement* stmt);
 
 #ifdef DEBUG
     struct lvaStressLclFldArgs
@@ -4697,12 +4692,6 @@ public:
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
 
-    // Requires value numbering phase to have completed. Returns the value number ("gtVN") of the
-    // "tree," EXCEPT in the case of GTF_VAR_USEASG, because the tree node's gtVN member is the
-    // "use" VN. Performs a lookup into the map of (use asg tree -> def VN.) to return the "def's"
-    // VN.
-    inline ValueNum GetUseAsgDefVNOrTreeVN(GenTree* tree);
-
     // Requires that "lcl" has the GTF_VAR_DEF flag set.  Returns the SSA number of "lcl".
     // Except: assumes that lcl is a def, and if it is
     // a partial def (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
@@ -5189,6 +5178,8 @@ public:
 
     BasicBlock* fgEndBBAfterMainFunction();
 
+    BasicBlock* fgGetDomSpeculatively(const BasicBlock* block);
+
     void fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd);
 
     void fgRemoveBlock(BasicBlock* block, bool unreachable);
@@ -5255,6 +5246,10 @@ public:
     void fgComputeEdgeWeights();
 
     bool fgReorderBlocks(bool useProfile);
+
+#ifdef FEATURE_EH_FUNCLETS
+    bool fgFuncletsAreCold();
+#endif // FEATURE_EH_FUNCLETS
 
     PhaseStatus fgDetermineFirstColdBlock();
 
@@ -5610,9 +5605,6 @@ private:
         }
     };
 
-    // A MACK_CopyBlock context is immutable, so we can just make one of these and share it.
-    static MorphAddrContext s_CopyBlockMAC;
-
 #ifdef FEATURE_SIMD
     GenTree* getSIMDStructFromField(GenTree*     tree,
                                     CorInfoType* simdBaseJitTypeOut,
@@ -5700,7 +5692,6 @@ private:
     GenTree* fgMorphOneAsgBlockOp(GenTree* tree);
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenTree* initVal, unsigned blockSize);
-    GenTree* fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
@@ -7866,15 +7857,6 @@ public:
     // not all JIT Helper calls follow the standard ABI on the target architecture.
     regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper);
 
-#ifdef TARGET_ARM
-    // Requires that "varDsc" be a promoted struct local variable being passed as an argument, beginning at
-    // "firstArgRegNum", which is assumed to have already been aligned to the register alignment restriction of the
-    // struct type. Adds bits to "*pArgSkippedRegMask" for any argument registers *not* used in passing "varDsc" --
-    // i.e., internal "holes" caused by internal alignment constraints.  For example, if the struct contained an int and
-    // a double, and we at R0 (on ARM), then R1 would be skipped, and the bit for R1 would be added to the mask.
-    void fgAddSkippedRegsInPromotedStructArg(LclVarDsc* varDsc, unsigned firstArgRegNum, regMaskTP* pArgSkippedRegMask);
-#endif // TARGET_ARM
-
     // If "tree" is a indirection (GT_IND, or GT_OBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR
     // node, else NULL.
     static GenTreeLclVar* fgIsIndirOfAddrOfLocal(GenTree* tree);
@@ -9946,7 +9928,6 @@ public:
         unsigned m_escapeAddress;
         unsigned m_osrExposed;
         unsigned m_stressLclFld;
-        unsigned m_copyFldByFld;
         unsigned m_dispatchRetBuf;
         unsigned m_wideIndir;
 
@@ -11217,19 +11198,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
-// Values used to mark the types a stack slot is used for
-
-const unsigned TYPE_REF_INT      = 0x01; // slot used as a 32-bit int
-const unsigned TYPE_REF_LNG      = 0x02; // slot used as a 64-bit long
-const unsigned TYPE_REF_FLT      = 0x04; // slot used as a 32-bit float
-const unsigned TYPE_REF_DBL      = 0x08; // slot used as a 64-bit float
-const unsigned TYPE_REF_PTR      = 0x10; // slot used as a 32-bit pointer
-const unsigned TYPE_REF_BYR      = 0x20; // slot used as a byref pointer
-const unsigned TYPE_REF_STC      = 0x40; // slot used as a struct
-const unsigned TYPE_REF_TYPEMASK = 0x7F; // bits that represent the type
-
-// const unsigned TYPE_REF_ADDR_TAKEN  = 0x80; // slots address was taken
 
 /*****************************************************************************
  *

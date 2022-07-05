@@ -1928,38 +1928,6 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 }
 
 /*****************************************************************************
- *
- *  The following returns the mask of all tracked locals
- *  referenced in a statement.
- */
-
-inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(Statement* stmt)
-{
-    VARSET_TP lclMask(VarSetOps::MakeEmpty(this));
-
-    assert(fgStmtListThreaded);
-
-    for (GenTree* const tree : stmt->TreeList())
-    {
-        if (tree->gtOper != GT_LCL_VAR)
-        {
-            continue;
-        }
-
-        const LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
-
-        if (!varDsc->lvTracked)
-        {
-            continue;
-        }
-
-        VarSetOps::UnionD(this, lclMask, VarSetOps::MakeSingleton(this, varDsc->lvVarIndex));
-    }
-
-    return lclMask;
-}
-
-/*****************************************************************************
  Is this a synchronized instance method? If so, we will need to report "this"
  in the GC information, so that the EE can release the object lock
  in case of an exception
@@ -2335,27 +2303,6 @@ inline bool Compiler::lvaIsOriginalThisReadOnly()
  *  integer/address and a float value.
  */
 
-/* static */ inline unsigned Compiler::lvaTypeRefMask(var_types type)
-{
-    const static BYTE lvaTypeRefMasks[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) howUsed,
-#include "typelist.h"
-#undef DEF_TP
-    };
-
-    assert((unsigned)type < sizeof(lvaTypeRefMasks));
-    assert(lvaTypeRefMasks[type] != 0);
-
-    return lvaTypeRefMasks[type];
-}
-
-/*****************************************************************************
- *
- *  The following is used to detect the cases where the same local variable#
- *  is used both as a long/double value and a 32-bit value and/or both as an
- *  integer/address and a float value.
- */
-
 inline var_types Compiler::lvaGetActualType(unsigned lclNum)
 {
     return genActualType(lvaGetRealType(lclNum));
@@ -2481,41 +2428,6 @@ inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
     NYI("getCallArgFloatRegister for RyuJIT/x86");
     return REG_NA;
 #endif // !TARGET_AMD64
-}
-
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                     Register Allocator                                    XX
-XX                      Inline functions                                     XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************/
-
-inline bool rpCanAsgOperWithoutReg(GenTree* op, bool lclvar)
-{
-    var_types type;
-
-    switch (op->OperGet())
-    {
-        case GT_CNS_LNG:
-        case GT_CNS_INT:
-            return true;
-        case GT_LCL_VAR:
-            type = genActualType(op->TypeGet());
-            if (lclvar && ((type == TYP_INT) || (type == TYP_REF) || (type == TYP_BYREF)))
-            {
-                return true;
-            }
-            break;
-        default:
-            break;
-    }
-
-    return false;
 }
 
 /*
@@ -4155,21 +4067,6 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
     }
 
     return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());
-}
-
-/*****************************************************************************/
-ValueNum Compiler::GetUseAsgDefVNOrTreeVN(GenTree* op)
-{
-    if (op->gtFlags & GTF_VAR_USEASG)
-    {
-        unsigned lclNum = op->AsLclVarCommon()->GetLclNum();
-        unsigned ssaNum = GetSsaNumForLocalVarDef(op);
-        return lvaTable[lclNum].GetPerSsaData(ssaNum)->m_vnPair.GetConservative();
-    }
-    else
-    {
-        return op->gtVNPair.GetConservative();
-    }
 }
 
 /*****************************************************************************/

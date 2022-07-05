@@ -977,13 +977,10 @@ namespace Internal.Runtime.TypeLoader
 
             Debug.Assert(type is DefType || type is ArrayType || type is PointerType || type is ByRefType);
 
-            if (state.ThreadDataSize != 0)
-                state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue();
-
             RuntimeTypeHandle rtt = EETypeCreator.CreateEEType(type, state);
 
             if (state.ThreadDataSize != 0)
-                TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadDataSize);
+                TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadStaticDesc);
 
             TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->BaseSize.LowLevelToString());
         }
