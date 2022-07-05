@@ -104,7 +104,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override void LateAddProperties()
         {
-            if (PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            Debug.Assert(!IsConfigured);
+            Debug.Assert(PropertyCache is null);
+
+            if (Kind != JsonTypeInfoKind.Object)
             {
                 return;
             }

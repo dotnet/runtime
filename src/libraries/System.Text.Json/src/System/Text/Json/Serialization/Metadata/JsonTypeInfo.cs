@@ -144,9 +144,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (_properties == null)
                 {
-                    // We need to ensure SourceGen had a chance to add properties
-                    LateAddProperties();
-                    _properties = new(this);
+                    PopulatePropertyList();
                 }
 
                 return _properties;
@@ -589,6 +587,28 @@ namespace System.Text.Json.Serialization.Metadata
             propertyInfo.Name = name;
 
             return propertyInfo;
+        }
+
+        [MemberNotNull(nameof(_properties))]
+        private void PopulatePropertyList()
+        {
+            if (!_isConfigured)
+            {
+                // For mutable instances we need to synchronize access
+                // with Configure() calls, otherwise we risk corrupting property state.
+                lock (_configureLock)
+                {
+                    if (!_isConfigured)
+                    {
+                        // Ensure SourceGen had a chance to add properties
+                        LateAddProperties();
+                        _properties = new(this);
+                        return;
+                    }
+                }
+            }
+
+            _properties = new(this);
         }
 
         internal abstract JsonParameterInfoValues[] GetParameterInfoValues();
