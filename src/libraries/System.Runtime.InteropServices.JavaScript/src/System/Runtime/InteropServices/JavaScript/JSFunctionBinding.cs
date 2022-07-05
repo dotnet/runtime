@@ -73,8 +73,8 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Low level implementation of creating and binding JavaScript function, so that managed code could be called from JavaScript.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// Binds a specific managed function wrapper so that it can later be invoked by JavaScript callers.
+        /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
         /// </summary>
         public static JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
