@@ -7202,10 +7202,47 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
-    ind->ChangeType(comp->gtTypeForNullCheck(ind));
+    var_types nullCheckType = comp->gtTypeForNullCheck(ind);
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool useNullCheck = true;
+
+    // Changing the width of the access may make the indirection
+    // unrepresentable if we contained an address mode, so get the width from
+    // the address mode if possible.
+    if (ind->gtGetOp1()->isContained() && ind->gtGetOp1()->OperIs(GT_LEA))
+    {
+        unsigned addrModeScale = ind->gtGetOp1()->AsAddrMode()->gtScale;
+        unsigned existingWidth = ind->OperIs(GT_NULLCHECK) ? genTypeSize(ind) : ind->AsIndir()->Size();
+
+        // We cannot allow the indir to read more bytes, but we can allow it to read fewer.
+        if (existingWidth < addrModeScale)
+        {
+            ind->gtGetOp1()->ClearContained();
+        }
+        else
+        {
+            switch (addrModeScale)
+            {
+                case 1:
+                    nullCheckType = TYP_BYTE;
+                    break;
+                case 2:
+                    nullCheckType = TYP_SHORT;
+                    break;
+                case 4:
+                    nullCheckType = TYP_INT;
+                    break;
+                case 8:
+                    nullCheckType = TYP_LONG;
+                    break;
+                default:
+                    assert(!"Unexpected address mode scale");
+                    break;
+            }
+        }
+    }
+
 #elif TARGET_ARM
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
@@ -7223,6 +7260,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
         ind->ChangeOper(GT_IND);
         ind->SetUnusedValue();
     }
+
+    ind->ChangeType(nullCheckType);
 }
 
 //------------------------------------------------------------------------

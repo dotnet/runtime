@@ -9981,6 +9981,7 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
             return TYP_INT;
         }
 #endif
+
         return tree->TypeGet();
     }
     // for the rest: probe a single byte to avoid potential AVEs
