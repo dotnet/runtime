@@ -2,13 +2,13 @@ using System;
 
 namespace DebuggerTests
 {
-    public class ClassWithPdbDeleted
+    public class ClassWithoutDebugSymbols
     {
         private int propA {get;}
         public int propB {get;}
         protected int propC {get;}
         public int d;
-        public ClassWithPdbDeleted()
+        public ClassWithoutDebugSymbols()
         {
             propA = 10;
             propB = 20;
