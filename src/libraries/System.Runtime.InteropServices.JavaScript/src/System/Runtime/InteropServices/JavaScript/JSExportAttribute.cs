@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Attribute used to indicate a source generator should export the function to JavaScript and create thunks necessary to marshal the arguments, results and exceptions.
+    /// Attribute used to indicate a source generator should export a method to JavaScript and create thunks necessary to marshal its arguments along with any return value or thrown exception.
     /// For marshaling arguments of complex types <seealso cref="JSMarshalAsAttribute{T}"/>.
     /// </summary>
     /// <remarks>
