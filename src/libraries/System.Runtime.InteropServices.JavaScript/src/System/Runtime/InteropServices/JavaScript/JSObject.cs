@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public bool IsDisposed { get => _isDisposed; }
 
         /// <summary>
-        /// Returns true when the object contains the property.
+        /// Checks whether the target object or one of its prototypes has a property with the specified name.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasProperty(string propertyName)
