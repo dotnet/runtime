@@ -26,6 +26,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             Assert.NotNull(GenericContext<object>.Default);
             Assert.NotNull(ContextGenericContainer<object>.NestedInGenericContainerContext.Default);
+            Assert.NotNull(NestedGenericTypesContext.Default);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

@@ -465,9 +465,7 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         declarationElements[tokenCount] = "class";
-                        declarationElements[tokenCount + 1] = currentSymbol.IsGenericType && currentSymbol.TypeArguments.Any()
-                            ? $"{currentSymbol.Name}<{string.Join(", ", currentSymbol.TypeArguments.Select(arg => arg.Name))}>"
-                            : currentSymbol.Name;
+                        declarationElements[tokenCount + 1] = GetClassDeclarationName(currentSymbol);
 
                         (classDeclarationList ??= new List<string>()).Add(string.Join(" ", declarationElements));
                     }
@@ -477,6 +475,37 @@ namespace System.Text.Json.SourceGeneration
 
                 Debug.Assert(classDeclarationList.Count > 0);
                 return true;
+            }
+
+            private static string GetClassDeclarationName(INamedTypeSymbol typeSymbol)
+            {
+                if (!typeSymbol.IsGenericType || typeSymbol.TypeArguments.Length == 0)
+                {
+                    return typeSymbol.Name;
+                }
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append(typeSymbol.Name);
+                sb.Append('<');
+
+                bool first = true;
+                foreach (ITypeSymbol typeArg in typeSymbol.TypeArguments)
+                {
+                    if (!first)
+                    {
+                        sb.Append(", ");
+                    }
+                    else
+                    {
+                        first = false;
+                    }
+                    sb.Append(typeArg.Name);
+                }
+
+                sb.Append('>');
+
+                return sb.ToString();
             }
 
             private TypeGenerationSpec? GetRootSerializableType(
