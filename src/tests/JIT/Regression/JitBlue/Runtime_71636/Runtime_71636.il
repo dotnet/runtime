@@ -15,11 +15,18 @@
     call bool Runtime_71636::ProblemWithLdElemA()
     brtrue FAILURE_LDELEMA
 
+    call bool Runtime_71636::ProblemWithLdElem()
+    brtrue FAILURE_LDELEM
+
     ldc.i4 100
     ret
 
   FAILURE_LDELEMA:
     ldc.i4 101
+    ret
+
+  FAILURE_LDELEM:
+    ldc.i4 102
     ret
   }
 
@@ -42,7 +49,7 @@
 
     ldloc arr
     ldloc idx
-    ldc.i4 0
+    ldc.i4 10
     conv.i
     stelem.i
 
@@ -59,6 +66,39 @@
     ret
   }
 
+  .method private static bool ProblemWithLdElem() noinlining
+  {
+    .locals (void* lcl, void*[] arr, int32 idx)
+
+    call void*[] Runtime_71636::GetArray()
+    stloc arr
+
+    ldc.i4 0
+    stloc idx
+
+    ldloc arr
+    ldloc idx
+    ldloca lcl
+    stelem.i
+
+    ldloc arr
+    ldloc idx
+    ldelem void*
+    call void [System.Runtime]System.GC::Collect()
+    stloc lcl
+
+    ldloc lcl
+    ldloca lcl
+    bne.un NOT_EQUAL
+
+    ldc.i4 0
+    ret
+
+  NOT_EQUAL:
+    ldc.i4 1
+    ret
+  }
+
   .method private static void*[] GetArray() noinlining
   {
     .locals (void*[] arr)
@@ -68,7 +108,7 @@
 
     ldloc arr
     ldc.i4 0
-    ldc.i4 10
+    ldc.i4 0
     conv.i
     stelem.i
 
