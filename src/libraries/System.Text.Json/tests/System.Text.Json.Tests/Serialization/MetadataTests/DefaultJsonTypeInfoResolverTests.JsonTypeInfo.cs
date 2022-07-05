@@ -72,7 +72,6 @@ namespace System.Text.Json.Serialization.Tests
             else
             {
                 Assert.Equal(0, ti.Properties.Count);
-                Assert.True(ti.Properties.IsReadOnly);
                 Assert.Throws<InvalidOperationException>(() => ti.Properties.Add(property));
                 Assert.Throws<InvalidOperationException>(() => ti.Properties.Insert(0, property));
                 Assert.Throws<InvalidOperationException>(() => ti.Properties.Clear());

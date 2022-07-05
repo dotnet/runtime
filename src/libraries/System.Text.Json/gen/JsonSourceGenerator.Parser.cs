@@ -1092,7 +1092,7 @@ namespace System.Text.Json.SourceGeneration
 
                         if (propertyOrderSpecified)
                         {
-                            propGenSpecList.Sort((p1, p2) => p1.Order.CompareTo(p2.Order));
+                            propGenSpecList.StableSortByKey(p => p.Order);
                         }
                     }
                 }

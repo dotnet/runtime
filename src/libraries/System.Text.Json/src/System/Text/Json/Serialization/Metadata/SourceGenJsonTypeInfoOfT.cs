@@ -89,11 +89,6 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
         }
 
-        internal override void LateAddProperties()
-        {
-            AddPropertiesUsingSourceGenInfo();
-        }
-
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
             JsonSerializerContext? context = Options.SerializerContext;
@@ -107,7 +102,7 @@ namespace System.Text.Json.Serialization.Metadata
             return array;
         }
 
-        internal void AddPropertiesUsingSourceGenInfo()
+        internal override void LateAddProperties()
         {
             if (PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
             {
