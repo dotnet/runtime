@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
-                if (Parser.IsSyntaxTargetForGeneration(context.Node))
+                if (IsSyntaxTargetForGeneration(context.Node))
                 {
                     ClassDeclarationSyntax classSyntax = GetSemanticTargetForGeneration(context);
                     if (classSyntax != null)
@@ -59,7 +59,10 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
             }
 
-            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            private static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
+                node is MethodDeclarationSyntax m && m.AttributeLists.Count > 0;
+
+            private static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
             {
                 var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
 

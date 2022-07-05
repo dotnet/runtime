@@ -31,9 +31,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 _reportDiagnostic = reportDiagnostic;
             }
 
-            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
-                node is MethodDeclarationSyntax m && m.AttributeLists.Count > 0;
-
             /// <summary>
             /// Gets the set of logging classes containing methods to output.
             /// </summary>
