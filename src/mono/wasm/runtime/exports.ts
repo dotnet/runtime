@@ -58,7 +58,7 @@ import {
 } from "./diagnostics";
 import {
     mono_wasm_diagnostic_server_on_server_thread_created,
-} from "./diagnostic_server/server_pthread";
+} from "./diagnostics/server_pthread";
 import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import cwraps from "./cwraps";

@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./imports";
-import cwraps from "./cwraps";
+import { Module } from "../imports";
+import cwraps from "../cwraps";
 import type {
     DiagnosticOptions,
     EventPipeSessionOptions,
     EventPipeSessionID,
-} from "./types";
-import { is_nullish } from "./types";
-import type { VoidPtr } from "./types/emscripten";
-import { getController, startDiagnosticServer } from "./diagnostic_server/browser/controller";
-import * as memory from "./memory";
+} from "../types";
+import { is_nullish } from "../types";
+import type { VoidPtr } from "../types/emscripten";
+import { getController, startDiagnosticServer } from "./browser/controller";
+import * as memory from "../memory";
 
 const sizeOfInt32 = 4;
 
