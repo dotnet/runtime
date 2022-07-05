@@ -4,8 +4,6 @@
 import type { MonoThreadMessage } from "../../pthreads/shared";
 import { isMonoThreadMessage } from "../../pthreads/shared";
 
-export type { EventPipeSessionDiagnosticServerID } from "../../types";
-
 export type EventPipeSessionIDImpl = number;
 
 export interface DiagnosticMessage extends MonoThreadMessage {

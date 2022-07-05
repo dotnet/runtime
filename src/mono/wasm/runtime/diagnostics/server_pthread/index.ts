@@ -5,26 +5,25 @@
 
 import { pthread_self } from "../../pthreads/worker";
 import { Module } from "../../imports";
-import { controlCommandReceived } from "./event_pipe";
 import { isDiagnosticMessage } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
-import { DiagnosticServer } from "./event_pipe";
+import type {
+    DiagnosticServerControlCommand,
+    /*DiagnosticServerControlCommandStart, DiagnosticServerControlCommandSetSessionID*/
+} from "../shared/controller-commands";
 
 import { mockScript } from "./mock-remote";
-import PromiseController from "./promise-controller";
-
-//function delay(ms: number): Promise<void> {
-//    return new Promise(resolve => setTimeout(resolve, ms));
-//}
+import { PromiseController } from "../../promise-utils";
 
 function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
     return new Promise((resolve) => {
-        const listener: (event: Event) => void = ((event: MessageEvent<string | ArrayBuffer>) => {
-            src.removeEventListener("message", listener);
-            resolve(event);
-        }) as (event: Event) => void;
-        src.addEventListener("message", listener);
+        const listener = (event: Event) => { resolve(event as MessageEvent<string | ArrayBuffer>); };
+        src.addEventListener("message", listener, { once: true });
     });
+}
+
+export interface DiagnosticServer {
+    stop(): void;
 }
 
 class DiagnosticServerImpl implements DiagnosticServer {
@@ -33,31 +32,24 @@ class DiagnosticServerImpl implements DiagnosticServer {
     constructor(websocketUrl: string) {
         this.websocketUrl = websocketUrl;
         this.ws = null; // new WebSocket(this.websocketUrl);
+        pthread_self.addEventListenerFromBrowser(this.onMessageFromMainThread.bind(this));
     }
 
-    start(): void {
-        console.log(`starting diagnostic server with url: ${this.websocketUrl}`);
-        // XXX FIXME: we started before the runtime is ready, so we don't get a port because it gets created on attach.
-
-        if (pthread_self) {
-            pthread_self.addEventListenerFromBrowser(this.onMessage.bind(this));
-            pthread_self.postMessageToBrowser({
-                "type": "diagnostic_server",
-                "cmd": "started",
-                "thread_id": pthread_self.pthread_id
-            });
-        }
-    }
-
+    private startRequestedController = new PromiseController<void>();
     private stopRequested = false;
     private stopRequestedController = new PromiseController<void>();
 
+    start(): void {
+        console.log(`starting diagnostic server with url: ${this.websocketUrl}`);
+        this.startRequestedController.resolve();
+    }
     stop(): void {
         this.stopRequested = true;
         this.stopRequestedController.resolve();
     }
 
     async serverLoop(this: DiagnosticServerImpl): Promise<void> {
+        await this.startRequestedController.promise;
         while (!this.stopRequested) {
             const firstPromise: Promise<["first", string] | ["second", undefined]> = this.advertiseAndWaitForClient().then((r) => ["first", r]);
             const secondPromise: Promise<["first", string] | ["second", undefined]> = this.stopRequestedController.promise.then(() => ["second", undefined]);
@@ -80,24 +72,25 @@ class DiagnosticServerImpl implements DiagnosticServer {
         return message.data.toString();
     }
 
-    // async eventPipeSessionLoop(): Promise<void> {
-    // await runtimeStarted();
-    // const eventPipeFlushThread = await enableEventPipeSessionAndSignalResume();
-    // while (!this.stopRequested) {
-    //     const outcome = await oneOfStoppedOrMessageReceived(eventPipeFlushThread);
-    //     if (outcome === "stopped") {
-    //         break;
-    //     } else {
-    //         sendEPBufferToWebSocket(outcome);
-    //     }
-    // }
-    // await closeWebSocket();
-    // }
-
-    onMessage(this: DiagnosticServerImpl, event: MessageEvent<unknown>): void {
+    onMessageFromMainThread(this: DiagnosticServerImpl, event: MessageEvent<unknown>): void {
         const d = event.data;
         if (d && isDiagnosticMessage(d)) {
-            controlCommandReceived(this, d);
+            this.controlCommandReceived(d as DiagnosticServerControlCommand);
+        }
+    }
+
+    /// dispatch commands received from the main thread
+    controlCommandReceived(cmd: DiagnosticServerControlCommand): void {
+        switch (cmd.cmd) {
+            case "start":
+                this.start();
+                break;
+            case "stop":
+                this.stop();
+                break;
+            default:
+                console.warn("Unknown control command: ", <any>cmd);
+                break;
         }
     }
 }
@@ -108,7 +101,6 @@ export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUr
     const websocketUrl = Module.UTF8ToString(websocketUrlPtr);
     console.debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     const server = new DiagnosticServerImpl(websocketUrl);
-    server.start();
     queueMicrotask(() => {
         mockScript.run();
     });

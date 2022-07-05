@@ -181,23 +181,12 @@ export type CoverageProfilerOptions = {
     send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
-/// Options to configure the diagnostic server
-export type DiagnosticServerOptions = {
-    suspend: boolean, // if true, the server will suspend the app when it starts until a diagnostic tool tells the runtime to resume.
-    connect_url: string, // websocket URL to connect to.
-}
-
 /// Options to configure EventPipe sessions that will be created and started at runtime startup
 export type DiagnosticOptions = {
+    /// An array of sessions to start at runtime startup
     sessions?: EventPipeSessionOptions[],
     /// If true, the diagnostic server will be started.  If "wait", the runtime will wait at startup until a diagnsotic session connects to the server
     server?: DiagnosticServerOptions,
-}
-
-export type EventPipeSessionDiagnosticServerID = number;
-/// For EventPipe sessions started by the diagnostic server, an id is assigned to each session before it is associated with an eventpipe session in the runtime.
-export interface EventPipeSessionIPCOptions {
-    diagnostic_server_id: EventPipeSessionDiagnosticServerID;
 }
 
 /// Options to configure the event pipe session
@@ -211,6 +200,11 @@ export interface EventPipeSessionOptions {
     providers: string;
 }
 
+/// Options to configure the diagnostic server
+export type DiagnosticServerOptions = {
+    connect_url: string, // websocket URL to connect to.
+    suspend: boolean, // if true, the server will suspend the app when it starts until a diagnostic tool tells the runtime to resume.
+}
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 

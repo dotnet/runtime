@@ -1,69 +1,55 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { EventPipeSessionDiagnosticServerID } from "../../types";
 import cwraps from "../../cwraps";
 import { withStackAlloc, getI32 } from "../../memory";
+import { PromiseController } from "../../promise-utils";
 import { Thread, waitForThread } from "../../pthreads/browser";
-
-// interface ServerReadyResult {
-//     sessions?: (EventPipeSessionOptions & EventPipeSessionIPCOptions)[]; // provider configs
-// }
-
-// interface ServerConfigureResult {
-//     serverStarted: boolean;
-//     serverReady?: Promise<ServerReadyResult>;
-// }
-
-// async function configureServer(options: DiagnosticOptions): Promise<ServerConfigureResult> {
-//     if (options.server !== undefined && options.server) {
-//         // TODO start the server
-//         let serverReady: Promise<ServerReadyResult>;
-//         if (options.server == "wait") {
-//             //TODO: make a promise to wait for the connection
-//             serverReady = Promise.resolve({});
-//         } else {
-//             // server is ready now, no need to wait
-//             serverReady = Promise.resolve({});
-//         }
-//         // TODO: start the server and wait for a connection
-//         return { serverStarted: false, serverReady: serverReady };
-//     } else
-//         return { serverStarted: false };
-// }
-
-// function postIPCStreamingSessionStarted(/*diagnosticSessionID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl*/): void {
-//     // TODO: For IPC streaming sessions this is the place to send back an acknowledgement with the session ID
-// }
+import { makeDiagnosticServerControlCommand } from "../shared/controller-commands";
+import { isDiagnosticMessage } from "../shared/types";
 
 /// An object that can be used to control the diagnostic server.
 export interface ServerController {
-    wait_for_resume(): Promise<{ sessions: EventPipeSessionDiagnosticServerID[] }>;
-    post_diagnostic_server_attach_to_runtime(): void;
-    // configureServer(options: DiagnosticOptions): Promise<ServerConfigureResult>;
-    // postIPCStreamingSessionStarted(diagnosticSessionID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl): void;
+    waitForStartupResume(): Promise<void>;
+    postServerAttachToRuntime(): void;
 }
 
 class ServerControllerImpl implements ServerController {
-    constructor(private server: Thread) { }
-    async wait_for_resume(): Promise<{ sessions: EventPipeSessionDiagnosticServerID[] }> {
-        console.debug("waiting for the diagnostic server to allow us to resume");
-        const promise = new Promise<void>((resolve, /*reject*/) => {
-            setTimeout(() => { resolve(); }, 1000);
-        });
-        await promise;
-        // let req = this.server.allocateRequest({ type: "diagnostic_server", cmd: "wait_for_resume" });
-        // let respone = await this.server.sendAndWait(req);
-        // if (respone.type !== "diagnostic_server" || respone.cmd !== "wait_for_resume_response") {
-        //     throw new Error("unexpected response");
-        // }
-        return { sessions: [] };
+    private readonly startupResumePromise: PromiseController<void> = new PromiseController();
+    constructor(private server: Thread) {
+        server.port.addEventListener("message", this.onServerReply.bind(this));
     }
-    post_diagnostic_server_attach_to_runtime(): void {
+    start(): void {
+        console.debug("signaling the diagnostic server to start");
+        this.server.postMessageToWorker(makeDiagnosticServerControlCommand("start"));
+    }
+    stop(): void {
+        console.debug("signaling the diagnostic server to stop");
+        this.server.postMessageToWorker(makeDiagnosticServerControlCommand("stop"));
+    }
+    async waitForStartupResume(): Promise<void> {
+        await this.startupResumePromise.promise;
+    }
+    postServerAttachToRuntime(): void {
         console.debug("signal the diagnostic server to attach to the runtime");
+        this.server.postMessageToWorker(makeDiagnosticServerControlCommand("attach_to_runtime"));
+    }
+
+    onServerReply(event: MessageEvent): void {
+        const d = event.data;
+        if (isDiagnosticMessage(d)) {
+            switch (d.cmd) {
+                case "startup_resume":
+                    console.debug("diagnostic server startup resume");
+                    this.startupResumePromise.resolve();
+                    break;
+                default:
+                    console.warn("Unknown control command: ", <any>d);
+                    break;
+            }
+        }
     }
 }
-
 
 let serverController: ServerController | null = null;
 
@@ -91,7 +77,9 @@ export async function startDiagnosticServer(websocket_url: string): Promise<Serv
     if (thread === undefined) {
         throw new Error("unexpected diagnostic server thread not found");
     }
-    serverController = new ServerControllerImpl(thread);
-    return serverController;
+    const serverControllerImpl = new ServerControllerImpl(thread);
+    serverController = serverControllerImpl;
+    serverControllerImpl.start();
+    return serverControllerImpl;
 }
 

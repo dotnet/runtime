@@ -40,7 +40,9 @@ class WorkerSelf implements PThreadSelf {
     }
 }
 
-export let pthread_self: PThreadSelf | null = null;
+// we are lying that this is never null, but afterThreadInit should be the first time we get to run any code
+// in the worker, so this becomes non-null very early.
+export let pthread_self: PThreadSelf = null as any as PThreadSelf;
 
 /// This is the "public internal" API for runtime subsystems that wish to be notified about
 /// pthreads that are running on the current worker.

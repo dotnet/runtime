@@ -3,6 +3,7 @@
 
 import { Module } from "../../imports";
 import { pthread_ptr, MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol } from "../shared";
+import { MonoThreadMessage } from "../shared";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -10,6 +11,14 @@ export interface Thread {
     readonly pthread_ptr: pthread_ptr;
     readonly worker: Worker;
     readonly port: MessagePort;
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
+}
+
+class ThreadImpl implements Thread {
+    constructor(readonly pthread_ptr: pthread_ptr, readonly worker: Worker, readonly port: MessagePort) { }
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void {
+        this.port.postMessage(message);
+    }
 }
 
 interface ThreadCreateResolveReject {
@@ -44,7 +53,7 @@ function resolvePromises(pthread_ptr: pthread_ptr, thread: Thread): void {
 }
 
 function addThread(pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort): Thread {
-    const thread = { pthread_ptr, worker, port };
+    const thread = new ThreadImpl(pthread_ptr, worker, port);
     threads.set(pthread_ptr, thread);
     return thread;
 }

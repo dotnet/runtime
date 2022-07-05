@@ -41,20 +41,28 @@ export async function init_polyfills(): Promise<void> {
     }
     if (MonoWasmThreads && typeof globalThis.EventTarget === "undefined") {
         globalThis.EventTarget = class EventTarget {
-            private listeners = new Map<string, Array<EventListenerOrEventListenerObject>>();
+            private subscribers = new Map<string, Array<{ listener: EventListenerOrEventListenerObject, oneShot: boolean }>>();
             addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions) {
                 if (listener === undefined || listener == null)
                     return;
-                if (options !== undefined)
-                    throw new Error("FIXME: addEventListener polyfill doesn't implement options");
-                if (!this.listeners.has(type)) {
-                    this.listeners.set(type, []);
+                let oneShot = false;
+                if (options !== undefined) {
+                    for (const [k, v] of Object.entries(options)) {
+                        if (k === "once") {
+                            oneShot = v ? true : false;
+                            continue;
+                        }
+                        throw new Error(`FIXME: addEventListener polyfill doesn't implement option '${k}'`);
+                    }
                 }
-                const listeners = this.listeners.get(type);
+                if (!this.subscribers.has(type)) {
+                    this.subscribers.set(type, []);
+                }
+                const listeners = this.subscribers.get(type);
                 if (listeners === undefined) {
                     throw new Error("can't happen");
                 }
-                listeners.push(listener);
+                listeners.push({ listener, oneShot });
             }
             removeEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | EventListenerOptions) {
                 if (listener === undefined || listener == null)
@@ -62,26 +70,37 @@ export async function init_polyfills(): Promise<void> {
                 if (options !== undefined) {
                     throw new Error("FIXME: removeEventListener polyfill doesn't implement options");
                 }
-                if (!this.listeners.has(type)) {
+                if (!this.subscribers.has(type)) {
                     return;
                 }
-                const listeners = this.listeners.get(type);
-                if (listeners === undefined)
+                const subscribers = this.subscribers.get(type);
+                if (subscribers === undefined)
                     return;
-                const index = listeners.indexOf(listener);
+                let index = -1;
+                const n = subscribers.length;
+                for (let i = 0; i < n; ++i) {
+                    if (subscribers[i].listener === listener) {
+                        index = i;
+                        break;
+                    }
+                }
                 if (index > -1) {
-                    listeners.splice(index, 1);
+                    subscribers.splice(index, 1);
                 }
             }
             dispatchEvent(event: Event) {
-                if (!this.listeners.has(event.type)) {
+                if (!this.subscribers.has(event.type)) {
                     return true;
                 }
-                const listeners = this.listeners.get(event.type);
-                if (listeners === undefined) {
+                const subscribers = this.subscribers.get(event.type);
+                if (subscribers === undefined) {
                     return true;
                 }
-                for (const listener of listeners) {
+                for (const sub of subscribers) {
+                    const listener = sub.listener;
+                    if (sub.oneShot) {
+                        this.removeEventListener(event.type, listener);
+                    }
                     if (typeof listener === "function") {
                         listener.call(this, event);
                     } else {

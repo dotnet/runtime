@@ -1,26 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { EventPipeSessionDiagnosticServerID, EventPipeSessionIDImpl, DiagnosticMessage } from "./types";
+import { DiagnosticMessage } from "./types";
 
-
+/// Commands from the main thread to the diagnostic server
 export type DiagnosticServerControlCommand =
-    DiagnosticServerControlCommandStart
+    | DiagnosticServerControlCommandStart
     | DiagnosticServerControlCommandStop
-    | DiagnosticServerControlCommandSetSessionID
+    | DiagnosticServerControlCommandAttachToRuntime
     ;
 
-export interface DiagnosticServerControlCommandStart extends DiagnosticMessage {
-    cmd: "start",
-    url: string, // websocket url to connect to
+interface DiagnosticServerControlCommandSpecific<Cmd extends string> extends DiagnosticMessage {
+    cmd: Cmd;
 }
 
-export interface DiagnosticServerControlCommandStop extends DiagnosticMessage {
-    cmd: "stop",
+export type DiagnosticServerControlCommandStart = DiagnosticServerControlCommandSpecific<"start">;
+export type DiagnosticServerControlCommandStop = DiagnosticServerControlCommandSpecific<"stop">;
+export type DiagnosticServerControlCommandAttachToRuntime = DiagnosticServerControlCommandSpecific<"attach_to_runtime">;
+
+export function makeDiagnosticServerControlCommand<T extends DiagnosticServerControlCommand["cmd"]>(cmd: T): DiagnosticServerControlCommandSpecific<T> {
+    return {
+        type: "diagnostic_server",
+        cmd: cmd,
+    };
 }
 
-export interface DiagnosticServerControlCommandSetSessionID extends DiagnosticMessage {
-    cmd: "set_session_id";
-    diagnostic_server_id: EventPipeSessionDiagnosticServerID;
-    session_id: EventPipeSessionIDImpl;
+export type DiagnosticServerControlReply =
+    | DiagnosticServerControlReplyStartupResume
+    ;
+
+export interface DiagnosticServerControlReplyStartupResume extends DiagnosticMessage {
+    cmd: "startup_resume",
 }
