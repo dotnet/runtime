@@ -3970,8 +3970,7 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
     else
     {
         CorElementType elementType = th.GetInternalCorElementType();
-        if (CorIsPrimitiveType(elementType) || 
-            elementType == ELEMENT_TYPE_PTR || elementType == ELEMENT_TYPE_FNPTR)
+        if (CorIsPrimitiveType(elementType))
         {
             result = asCorInfoType(elementType);
         }
