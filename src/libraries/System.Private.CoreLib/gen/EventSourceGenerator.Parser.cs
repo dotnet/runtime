@@ -4,116 +4,90 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Generators
 {
     public partial class EventSourceGenerator
     {
-        private static bool IsSyntaxTargetForGeneration(SyntaxNode node, CancellationToken cancellationToken) =>
-            node is ClassDeclarationSyntax { AttributeLists.Count: > 0 };
-
-        private static EventSourceClass? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+        private static EventSourceClass? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
         {
-            const string EventSourceAutoGenerateAttribute = "System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute";
             const string EventSourceAttribute = "System.Diagnostics.Tracing.EventSourceAttribute";
 
-            var classDef = (ClassDeclarationSyntax)context.Node;
-            SemanticModel sm = context.SemanticModel;
+            var classDef = (ClassDeclarationSyntax)context.TargetNode;
+
             EventSourceClass? eventSourceClass = null;
 
-            bool autoGenerate = false;
-            foreach (AttributeListSyntax cal in classDef.AttributeLists)
+            foreach (AttributeData attribute in context.TargetSymbol.GetAttributes())
             {
-                foreach (AttributeSyntax ca in cal.Attributes)
+                if (attribute.AttributeClass is null)
+                    continue;
+
+                NamespaceDeclarationSyntax? ns = classDef.Parent as NamespaceDeclarationSyntax;
+                if (ns is null)
                 {
-                    if (sm.GetSymbolInfo(ca, cancellationToken).Symbol is not IMethodSymbol caSymbol)
+                    if (classDef.Parent is not CompilationUnitSyntax)
                     {
-                        // badly formed attribute definition, or not the right attribute
+                        // since this generator doesn't know how to generate a nested type...
                         continue;
                     }
+                }
 
-                    string attributeFullName = caSymbol.ContainingType.ToDisplayString();
-
-                    if (attributeFullName.Equals(EventSourceAutoGenerateAttribute, StringComparison.Ordinal))
-                    {
-                        autoGenerate = true;
-                        continue;
-                    }
-
-                    if (!attributeFullName.Equals(EventSourceAttribute, StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
-                    string nspace = string.Empty;
-                    NamespaceDeclarationSyntax? ns = classDef.Parent as NamespaceDeclarationSyntax;
-                    if (ns is null)
-                    {
-                        if (classDef.Parent is not CompilationUnitSyntax)
-                        {
-                            // since this generator doesn't know how to generate a nested type...
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        nspace = ns.Name.ToString();
-                        while (true)
-                        {
-                            ns = ns.Parent as NamespaceDeclarationSyntax;
-                            if (ns == null)
-                            {
-                                break;
-                            }
-
-                            nspace = $"{ns.Name}.{nspace}";
-                        }
-                    }
-
-                    string className = classDef.Identifier.ToString();
-                    string name = className;
-                    string guid = "";
-
-                    SeparatedSyntaxList<AttributeArgumentSyntax>? args = ca.ArgumentList?.Arguments;
-                    if (args is not null)
-                    {
-                        foreach (AttributeArgumentSyntax arg in args)
-                        {
-                            string argName = arg.NameEquals!.Name.Identifier.ToString();
-                            string value = sm.GetConstantValue(arg.Expression, cancellationToken).ToString();
-
-                            switch (argName)
-                            {
-                                case "Guid":
-                                    guid = value;
-                                    break;
-                                case "Name":
-                                    name = value;
-                                    break;
-                            }
-                        }
-                    }
-
-                    if (!Guid.TryParse(guid, out Guid result))
-                    {
-                        result = GenerateGuidFromName(name.ToUpperInvariant());
-                    }
-
-                    eventSourceClass = new EventSourceClass(nspace, className, name, result);
+                if (attribute.AttributeClass.Name != "EventSourceAttribute" &&
+                    attribute.AttributeClass.ToDisplayString() != EventSourceAttribute)
+                {
                     continue;
                 }
-            }
 
-            if (!autoGenerate)
-            {
-                return null;
+                string nspace = string.Empty;
+                if (ns is not null)
+                {
+                    nspace = ns.Name.ToString();
+                    while (true)
+                    {
+                        ns = ns.Parent as NamespaceDeclarationSyntax;
+                        if (ns == null)
+                        {
+                            break;
+                        }
+
+                        nspace = $"{ns.Name}.{nspace}";
+                    }
+                }
+
+                string className = classDef.Identifier.ValueText;
+                string name = className;
+                string guid = "";
+
+                ImmutableArray<KeyValuePair<string, TypedConstant>> args = attribute.NamedArguments;
+                foreach (KeyValuePair<string, TypedConstant> arg in args)
+                {
+                    string argName = arg.Key;
+                    string value = arg.Value.Value?.ToString();
+
+                    switch (argName)
+                    {
+                        case "Guid":
+                            guid = value;
+                            break;
+                        case "Name":
+                            name = value;
+                            break;
+                    }
+                }
+
+                if (!Guid.TryParse(guid, out Guid result))
+                {
+                    result = GenerateGuidFromName(name.ToUpperInvariant());
+                }
+
+                eventSourceClass = new EventSourceClass(nspace, className, name, result);
+                continue;
             }
 
             return eventSourceClass;
