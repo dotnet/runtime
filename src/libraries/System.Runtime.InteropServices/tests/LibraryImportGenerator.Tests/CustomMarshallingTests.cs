@@ -56,10 +56,10 @@ namespace LibraryImportGenerator.IntegrationTests
             [CustomMarshaller(typeof(int), MarshalMode.ManagedToUnmanagedOut, typeof(IntGuaranteedUnmarshal))]
             public static unsafe class IntGuaranteedUnmarshal
             {
-                public static bool ConvertToManagedGuaranteedCalled = false;
-                public static int ConvertToManagedGuaranteed(int unmanaged)
+                public static bool ConvertToManagedFinallyCalled = false;
+                public static int ConvertToManagedFinally(int unmanaged)
                 {
-                    ConvertToManagedGuaranteedCalled = true;
+                    ConvertToManagedFinallyCalled = true;
                     return unmanaged;
                 }
             }
@@ -134,9 +134,9 @@ namespace LibraryImportGenerator.IntegrationTests
         [Fact]
         public void GuaranteedUnmarshal()
         {
-            NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedGuaranteedCalled = false;
+            NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedFinallyCalled = false;
             Assert.Throws<Exception>(() => NativeExportsNE.Stateless.GuaranteedUnmarshal(out _));
-            Assert.True(NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedGuaranteedCalled);
+            Assert.True(NativeExportsNE.Stateless.IntGuaranteedUnmarshal.ConvertToManagedFinallyCalled);
         }
 
         [Fact]

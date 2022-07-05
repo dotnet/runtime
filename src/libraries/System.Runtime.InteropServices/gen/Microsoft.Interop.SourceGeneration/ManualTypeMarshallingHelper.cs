@@ -392,10 +392,10 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    // Native type is the first parameter of ConvertToManaged or ConvertToManagedGuaranteed
-                    if (methods.ToManagedGuaranteed is not null)
+                    // Native type is the first parameter of ConvertToManaged or ConvertToManagedFinally
+                    if (methods.ToManagedFinally is not null)
                     {
-                        nativeType = methods.ToManagedGuaranteed.Parameters[0].Type;
+                        nativeType = methods.ToManagedFinally.Parameters[0].Type;
                     }
                     else if (methods.ToManaged is not null)
                     {

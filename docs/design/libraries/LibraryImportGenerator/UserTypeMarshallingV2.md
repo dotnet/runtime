@@ -290,7 +290,7 @@ static class TMarshaller<T, U, V...>
 
 ### Stateless Unmanaged->Managed with Guaranteed Unmarshalling
 
-This shape directs the generator to emit the `ConvertToManagedGuaranteed` call in the "GuaranteedUnmarshal" phase of marshalling.
+This shape directs the generator to emit the `ConvertToManagedFinally` call in the "GuaranteedUnmarshal" phase of marshalling.
 
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TManaged<,,,...>), OutMarshaller = typeof(NativeToManaged))]
@@ -299,7 +299,7 @@ static class TMarshaller<T, U, V...>
 {
     public static class NativeToManaged
     {
-        public static TManaged ConvertToManagedGuaranteed(TNative unmanaged); // Should not throw exceptions
+        public static TManaged ConvertToManagedFinally(TNative unmanaged); // Should not throw exceptions
 
         public static void Free(TNative unmanaged); // Optional. Should not throw exceptions
     }
@@ -414,7 +414,7 @@ static class TMarshaller<T, U, V...>
 
         public void FromUnmanaged(TNative native); // Should not throw exceptions.
 
-        public TManaged ToManagedGuaranteed(); // Should not throw exceptions.
+        public TManaged ToManagedFinally(); // Should not throw exceptions.
 
         public void Free(); // Should not throw exceptions.
     }
@@ -530,7 +530,7 @@ static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement 
 
 ### Stateless Unmanaged->Managed with Guaranteed Unmarshalling
 
-This shape directs the generator to emit the `ConvertToManagedGuaranteed` call in the "GuaranteedUnmarshal" phase of marshalling.
+This shape directs the generator to emit the `ConvertToManagedFinally` call in the "GuaranteedUnmarshal" phase of marshalling.
 
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(NativeToManaged))]
@@ -676,7 +676,7 @@ static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement 
 
         public Span<TManagedElement> GetManagedValuesDestination(int length); // Can throw exceptions.
 
-        public TCollection ToManagedGuaranteed(); // Can throw exceptions
+        public TCollection ToManagedFinally(); // Can throw exceptions
 
         public void Free(); // Optional. Should not throw exceptions.
     }

@@ -747,7 +747,7 @@ public static class Marshaller
 {
     public struct Native { }
 
-    public static S ConvertToManagedGuaranteed(Native n) => default;
+    public static S ConvertToManagedFinally(Native n) => default;
 }
 ";
                 public static string Ref = @"
@@ -793,7 +793,7 @@ public static class Marshaller
                     + NonBlittableUserDefinedType()
                     + Out;
 
-                public static string NativeToManagedGuaranteedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                public static string NativeToManagedFinallyOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
                     + NonBlittableUserDefinedType()
                     + OutGuaranteed;
 
@@ -805,7 +805,7 @@ public static class Marshaller
                     + NonBlittableUserDefinedType()
                     + Out;
 
-                public static string NativeToManagedGuaranteedOnlyReturnValue => BasicReturnType("S")
+                public static string NativeToManagedFinallyOnlyReturnValue => BasicReturnType("S")
                     + NonBlittableUserDefinedType()
                     + Out;
 
@@ -921,7 +921,7 @@ public static class Marshaller
     public struct M
     {
         public void FromUnmanaged(Native n) {}
-        public S ToManagedGuaranteed() => default;
+        public S ToManagedFinally() => default;
     }
 }
 ";
@@ -1015,7 +1015,7 @@ public static class Marshaller
                     + NonBlittableUserDefinedType()
                     + Out;
 
-                public static string NativeToManagedGuaranteedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                public static string NativeToManagedFinallyOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
                     + NonBlittableUserDefinedType()
                     + OutGuaranteed;
 
@@ -1027,7 +1027,7 @@ public static class Marshaller
                     + NonBlittableUserDefinedType()
                     + Out;
 
-                public static string NativeToManagedGuaranteedOnlyReturnValue => BasicReturnType("S")
+                public static string NativeToManagedFinallyOnlyReturnValue => BasicReturnType("S")
                     + NonBlittableUserDefinedType()
                     + Out;
 
