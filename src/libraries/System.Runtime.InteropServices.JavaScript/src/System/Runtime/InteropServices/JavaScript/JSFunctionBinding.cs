@@ -62,8 +62,8 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Low level implementation of finding and binding JavaScript function, so that it could be called from managed code.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// Locates and binds a JavaScript function given name and module so that it can later be invoked by managed callers.
+        /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
         /// </summary>
         // JavaScriptExports need to be protected from trimming because they are used from C/JS code which linker can't see
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
