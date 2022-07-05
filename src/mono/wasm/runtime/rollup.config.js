@@ -14,6 +14,7 @@ const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
 const productVersion = process.env.ProductVersion || "7.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
+const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const terserConfig = {
     compress: {
         defaults: false,// too agressive minification breaks subsequent emcc compilation
@@ -60,7 +61,7 @@ const inlineAssert = [
         pattern: /^\s*mono_assert/gm,
         failure: "previous regexp didn't inline all mono_assert statements"
     }];
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration }), typescript()];
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads }), typescript()];
 
 const iffeConfig = {
     treeshake: !isDebug,

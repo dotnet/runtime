@@ -247,6 +247,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/**">
             <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
+          <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows all architecture excludes -->

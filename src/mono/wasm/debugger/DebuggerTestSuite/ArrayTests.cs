@@ -6,11 +6,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class ArrayTests : DebuggerTests
     {
+        public ArrayTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
         [Theory]
         [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, false)]

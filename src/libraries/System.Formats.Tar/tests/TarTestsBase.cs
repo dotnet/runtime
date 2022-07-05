@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -96,6 +98,7 @@ namespace System.Formats.Tar.Tests
             // GNU formatted files. Format used by GNU tar versions up to 1.13.25.
             gnu
         }
+        protected static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
 
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
             Path.Join(Directory.GetCurrentDirectory(), "unarchived", testCaseName);
@@ -312,6 +315,31 @@ namespace System.Formats.Tar.Tests
             };
         }
 
+        protected void CheckConversionType(TarEntry entry, TarEntryFormat expectedFormat)
+        {
+            Type expectedType = GetTypeForFormat(expectedFormat);
+            Assert.Equal(expectedType, entry.GetType());
+        }
+
+        protected TarEntryType GetTarEntryTypeForTarEntryFormat(TarEntryType entryType, TarEntryFormat format)
+        {
+            if (format is TarEntryFormat.V7)
+            {
+                if (entryType is TarEntryType.RegularFile)
+                {
+                    return TarEntryType.V7RegularFile;
+                }
+            }
+            else
+            {
+                if (entryType is TarEntryType.V7RegularFile)
+                {
+                    return TarEntryType.RegularFile;
+                }
+            }
+            return entryType;
+        }
+
         protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
             => targetFormat switch
             {
@@ -322,5 +350,13 @@ namespace System.Formats.Tar.Tests
                 _ => throw new FormatException($"Unexpected format: {targetFormat}")
             };
 
+        public static IEnumerable<object[]> GetFormatsAndLinks()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            {
+                yield return new object[] { format, TarEntryType.SymbolicLink };
+                yield return new object[] { format, TarEntryType.HardLink };
+            }
+        }
     }
 }

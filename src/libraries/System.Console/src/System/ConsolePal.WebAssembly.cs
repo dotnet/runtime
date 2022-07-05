@@ -5,8 +5,11 @@ using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices.JavaScript;
 
 using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
+
+#pragma warning disable CS0612 // using obsolete members until we finish https://github.com/dotnet/runtime/pull/66304/
 
 namespace System
 {

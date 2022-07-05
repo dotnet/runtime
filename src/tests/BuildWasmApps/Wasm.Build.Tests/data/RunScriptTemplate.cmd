@@ -94,16 +94,21 @@ exit /b %EXIT_CODE%
 REM Functions
 :SetEnvVars
 if [%TEST_USING_WORKLOADS%] == [true] (
+    set _DIR_NAME=dotnet-workload
     set SDK_HAS_WORKLOAD_INSTALLED=true
-    robocopy /np /nfl /e %BASE_DIR%\dotnet-workload %EXECUTION_DIR%\dotnet-workload
-    set "SDK_FOR_WORKLOAD_TESTING_PATH=%EXECUTION_DIR%\dotnet-workload"
-    set "PATH=%EXECUTION_DIR%\dotnet-workload;%PATH%"
-    set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 ) else (
+    set _DIR_NAME=sdk-no-workload
     set SDK_HAS_WORKLOAD_INSTALLED=false
-    robocopy /np /nfl /e %BASE_DIR%\sdk-no-workload %EXECUTION_DIR%\sdk-no-workload
-    set "SDK_FOR_WORKLOAD_TESTING_PATH=%EXECUTION_DIR%\sdk-no-workload"
-    set "PATH=%EXECUTION_DIR%\sdk-no-workload;%PATH%"
-    set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 )
+
+if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
+    robocopy /np /nfl /NDL /NJH /NJS /nc /e %BASE_DIR%\%_DIR_NAME% %EXECUTION_DIR%\%_DIR_NAME%
+    set _SDK_DIR=%EXECUTION_DIR%\%_DIR_NAME%
+) else (
+    set _SDK_DIR=%BASE_DIR%\%_DIR_NAME%
+)
+
+set "PATH=%_SDK_DIR%;%PATH%"
+set "SDK_FOR_WORKLOAD_TESTING_PATH=%_SDK_DIR%"
+set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 EXIT /b 0

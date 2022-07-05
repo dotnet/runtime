@@ -80,7 +80,7 @@ internal abstract class WasmHostProvider : IDisposable
         {
             _process.Exited += (_, _) =>
             {
-                Console.WriteLine ($"**Browser died!**");
+                //Console.WriteLine ($"**Browser died!**");
                 Dispose();
             };
 

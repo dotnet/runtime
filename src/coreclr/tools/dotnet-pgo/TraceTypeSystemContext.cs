@@ -25,11 +25,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private readonly PgoTraceProcess _pgoTraceProcess;
         private readonly ModuleLoadLogger _moduleLoadLogger;
         private int _clrInstanceID;
+        private bool _automaticReferences;
 
-        private readonly Dictionary<string,string> _normalizedFilePathToFilePath = new Dictionary<string,string> (StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string,string> _normalizedFilePathToFilePath = new Dictionary<string,string> (StringComparer.OrdinalIgnoreCase);
 
-        public TraceTypeSystemContext(PgoTraceProcess traceProcess, int clrInstanceID, Logger logger)
+        public TraceTypeSystemContext(PgoTraceProcess traceProcess, int clrInstanceID, Logger logger, bool automaticReferences)
         {
+            _automaticReferences = automaticReferences;
             foreach (var traceData in traceProcess.TraceProcess.EventsInProcess.ByEventType<ModuleLoadUnloadTraceData>())
             {
                 if (traceData.ModuleILPath != null)
@@ -124,21 +126,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 string filePath = null;
 
-                foreach (var module in _pgoTraceProcess.EnumerateLoadedManagedModules())
+                if (_automaticReferences)
                 {
-                    var managedModule = module.ManagedModule;
-
-                    if (module.ClrInstanceID != _clrInstanceID)
-                        continue;
-
-                    if (PgoTraceProcess.CompareModuleAgainstSimpleName(simpleName, managedModule))
+                    foreach (var module in _pgoTraceProcess.EnumerateLoadedManagedModules())
                     {
-                        string filePathTemp = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
+                        var managedModule = module.ManagedModule;
 
-                        // This path may be normalized
-                        if (File.Exists(filePathTemp) || !_normalizedFilePathToFilePath.TryGetValue(filePathTemp, out filePath))
-                            filePath = filePathTemp;
-                        break;
+                        if (module.ClrInstanceID != _clrInstanceID)
+                            continue;
+
+                        if (PgoTraceProcess.CompareModuleAgainstSimpleName(simpleName, managedModule))
+                        {
+                            string filePathTemp = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
+
+                            // This path may be normalized
+                            if (File.Exists(filePathTemp) || !_normalizedFilePathToFilePath.TryGetValue(filePathTemp, out filePath))
+                                filePath = filePathTemp;
+                            break;
+                        }
                     }
                 }
 

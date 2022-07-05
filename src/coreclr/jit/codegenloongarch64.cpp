@@ -6420,12 +6420,10 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_NULLCHECK));
-    assert(!tree->gtOp1->isContained());
-    regNumber addrReg = genConsumeReg(tree->gtOp1);
 
-    regNumber targetReg = REG_R0;
+    genConsumeRegs(tree->gtOp1);
 
-    GetEmitter()->emitIns_R_R_I(INS_ld_w, EA_4BYTE, targetReg, addrReg, 0);
+    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), REG_R0, tree);
 }
 
 //------------------------------------------------------------------------
