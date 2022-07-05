@@ -148,7 +148,7 @@ namespace System.Security.Cryptography
                     pOutput, output.Length);
 
                 if (bytesWritten < 0)
-                    throw new Exception(SR.Unknown_Error);
+                    throw new Exception(SR.Format(SR.Unknown_SubtleCrypto_Error, bytesWritten));
 
                 return bytesWritten;
             }
