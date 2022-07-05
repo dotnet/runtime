@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Create a <see cref="CustomMarshallerAttribute"/> instance.
         /// </summary>
         /// <param name="managedType">Managed type to marshal.</param>
-        /// <param name="marshalMode">Marshalling mode.</param>
+        /// <param name="marshalMode">The marshalling mode this attribute applies to.</param>
         /// <param name="marshallerType">Type used for marshalling.</param>
         public CustomMarshallerAttribute(Type managedType, MarshalMode marshalMode, Type marshallerType)
         {
@@ -23,10 +23,19 @@ namespace System.Runtime.InteropServices.Marshalling
             MarshallerType = marshallerType;
         }
 
+        /// <summary>
+        /// The managed type to marshal.
+        /// </summary>
         public Type ManagedType { get; }
 
+        /// <summary>
+        /// The marshalling mode this attribute applies to.
+        /// </summary>
         public MarshalMode MarshalMode { get; }
 
+        /// <summary>
+        /// Type used for marshalling.
+        /// </summary>
         public Type MarshallerType { get; }
 
         /// <summary>

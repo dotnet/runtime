@@ -2174,9 +2174,9 @@ namespace System.Runtime.InteropServices.Marshalling
     public sealed partial class CustomMarshallerAttribute : System.Attribute
     {
         public CustomMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.MarshalMode marshalMode, System.Type marshallerType) { }
-        public Type ManagedType { get { throw null; } }
-        public MarshalMode MarshalMode { get { throw null; } }
-        public Type MarshallerType { get { throw null; } }
+        public System.Type ManagedType { get { throw null; } }
+        public System.Runtime.InteropServices.Marshalling.MarshalMode MarshalMode { get { throw null; } }
+        public System.Type MarshallerType { get { throw null; } }
         public struct GenericPlaceholder
         {
         }
