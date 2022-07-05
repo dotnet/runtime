@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as instance of Span or ArraySegment helpers on JavaScript side.
+        /// Marshals a managed Span or ArraySegment as a JavaScript wrapper object that provides access to the managed memory.
         /// </summary>
         public sealed class MemoryView : JSType
         {
