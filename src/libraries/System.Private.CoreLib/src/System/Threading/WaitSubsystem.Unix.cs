@@ -125,7 +125,7 @@ namespace System.Threading
         // around and keep track of whether the lock still needs to be released.
         public struct LockHolder
         {
-            LowLevelLock? _lock;
+            private LowLevelLock? _lock;
 
             public LockHolder(LowLevelLock l)
             {
