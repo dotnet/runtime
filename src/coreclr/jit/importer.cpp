@@ -2492,14 +2492,6 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
     }
 }
 
-void Compiler::impSpillEvalStack()
-{
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
-    {
-        impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillEvalStack"));
-    }
-}
-
 /*****************************************************************************
  *
  *  If the stack contains any trees with side effects in them, assign those
@@ -2594,53 +2586,12 @@ inline void Compiler::impSpillSpecialSideEff()
 
 /*****************************************************************************
  *
- *  Spill all stack references to value classes (TYP_STRUCT nodes)
- */
-
-void Compiler::impSpillValueClasses()
-{
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
-    {
-        GenTree* tree = verCurrentState.esStack[level].val;
-
-        if (fgWalkTreePre(&tree, impFindValueClasses) == WALK_ABORT)
-        {
-            // Tree walk was aborted, which means that we found a
-            // value class on the stack.  Need to spill that
-            // stack entry.
-
-            impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillValueClasses"));
-        }
-    }
-}
-
-/*****************************************************************************
- *
- *  Callback that checks if a tree node is TYP_STRUCT
- */
-
-Compiler::fgWalkResult Compiler::impFindValueClasses(GenTree** pTree, fgWalkData* data)
-{
-    fgWalkResult walkResult = WALK_CONTINUE;
-
-    if ((*pTree)->gtType == TYP_STRUCT)
-    {
-        // Abort the walk and indicate that we found a value class
-
-        walkResult = WALK_ABORT;
-    }
-
-    return walkResult;
-}
-
-/*****************************************************************************
- *
  *  If the stack contains any trees with references to local #lclNum, assign
  *  those trees to temps and replace their place on the stack with refs to
  *  their temps.
  */
 
-void Compiler::impSpillLclRefs(ssize_t lclNum)
+void Compiler::impSpillLclRefs(unsigned lclNum)
 {
     /* Before we make any appends to the tree list we must spill the
      * "special" side effects (GTF_ORDER_SIDEEFF) - GT_CATCH_ARG */
@@ -15877,8 +15828,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 #endif
 
-                        op1->gtFlags |= (obj->gtFlags & GTF_GLOB_EFFECT);
-
                         if (fgAddrCouldBeNull(obj))
                         {
                             op1->gtFlags |= GTF_EXCEPT;
@@ -16182,8 +16131,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 #endif
 
-                        op1->gtFlags |= (obj->gtFlags & GTF_GLOB_EFFECT);
-
                         if (fgAddrCouldBeNull(obj))
                         {
                             op1->gtFlags |= GTF_EXCEPT;
@@ -16233,7 +16180,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                // Create the member assignment, unless we have a TYP_STRUCT.
+                // "impAssignStruct" will back-substitute the field address tree into calls that return things via
+                // return buffers, so we have to delay calling it until after we have spilled everything needed.
                 bool deferStructAssign = (lclTyp == TYP_STRUCT);
 
                 if (!deferStructAssign)
@@ -16323,10 +16271,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     op1 = gtNewAssignNode(op1, op2);
-
-                    /* Mark the expression as containing an assignment */
-
-                    op1->gtFlags |= GTF_ASG;
                 }
 
                 /* Check if the class needs explicit initialization */
@@ -16344,42 +16288,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                /* stfld can interfere with value classes (consider the sequence
-                   ldloc, ldloca, ..., stfld, stloc).  We will be conservative and
-                   spill all value class references from the stack. */
-
-                if (obj && ((obj->gtType == TYP_BYREF) || (obj->gtType == TYP_I_IMPL)))
-                {
-                    assert(tiObj);
-
-                    // If we can resolve the field to be within some local,
-                    // then just spill that local.
-                    //
-                    GenTreeLclVarCommon* const lcl = obj->IsLocalAddrExpr();
-
-                    if (lcl != nullptr)
-                    {
-                        impSpillLclRefs(lcl->GetLclNum());
-                    }
-                    else if (impIsValueType(tiObj))
-                    {
-                        impSpillEvalStack();
-                    }
-                    else
-                    {
-                        impSpillValueClasses();
-                    }
-                }
-
-                /* Spill any refs to the same member from the stack */
-
-                impSpillLclRefs((ssize_t)resolvedToken.hField);
-
-                /* stsfld also interferes with indirect accesses (for aliased
-                   statics) and calls. But don't need to spill other statics
-                   as we have explicitly spilled this particular static field. */
-
-                impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STFLD"));
+                // An indirect store such as "st[s]fld" interferes with indirect accesses, so we must spill
+                // global refs and potentially aliased locals.
+                impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STFLD"));
 
                 if (deferStructAssign)
                 {

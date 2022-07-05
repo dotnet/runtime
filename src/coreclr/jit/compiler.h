@@ -2712,7 +2712,7 @@ public:
 
     GenTree* gtReverseCond(GenTree* tree);
 
-    static bool gtHasRef(GenTree* tree, ssize_t lclNum);
+    static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
 
@@ -4007,10 +4007,7 @@ private:
     void impSpillSpecialSideEff();
     void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
-    void               impSpillValueClasses();
-    void               impSpillEvalStack();
-    static fgWalkPreFn impFindValueClasses;
-    void impSpillLclRefs(ssize_t lclNum);
+    void impSpillLclRefs(unsigned lclNum);
 
     BasicBlock* impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter);
 
