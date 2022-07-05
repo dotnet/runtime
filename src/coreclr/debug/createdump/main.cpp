@@ -268,7 +268,7 @@ GetLastErrorString()
     }
 #endif
     char buffer[64];
-    sprintf(buffer, "(%d)", error);
+    snprintf(buffer, sizeof(buffer), "(%d)", error);
     result.append(buffer);
     return result;
 }
