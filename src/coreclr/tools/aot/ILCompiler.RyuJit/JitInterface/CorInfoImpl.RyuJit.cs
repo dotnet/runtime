@@ -506,13 +506,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.Ldelema_Ref;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST_I_IMPL:
-                    id = ReadyToRunHelper.Stelem_Ref_I;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF_I_IMPL:
-                    id = ReadyToRunHelper.Ldelema_Ref_I;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_MEMSET:
                     id = ReadyToRunHelper.MemSet;
                     break;

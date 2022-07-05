@@ -137,19 +137,6 @@ void ECall::PopulateManagedCastHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
 
-#ifdef TARGET_64BIT
-    // On 64bit we have different helpers for array indexing with a native int so that
-    // we can properly throw exceptions; however, these helpers are relatively rarely used
-    // and do not need the aggressive optimization of the integer based helpers
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF_NINT));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST_I_IMPL, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF_NINT));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF_I_IMPL, pDest);
-#endif
-
     // Array element accessors are more perf sensitive than other managed helpers and indirection
     // costs introduced by PreStub could be noticeable (7% to 30% depending on platform).
     // Other helpers are either more complex, less common, or have their trivial case inlined by the JIT,
@@ -164,9 +151,6 @@ void ECall::PopulateManagedCastHelpers()
     // This helper is marked AggressiveOptimization and its native code is in its final form.
     // Get the code directly to avoid PreStub indirection.
     pDest = pMD->GetNativeCode();
-#ifndef TARGET_64BIT
-    SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST_I_IMPL, pDest);
-#endif
     SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
@@ -174,9 +158,6 @@ void ECall::PopulateManagedCastHelpers()
     // This helper is marked AggressiveOptimization and its native code is in its final form.
     // Get the code directly to avoid PreStub indirection.
     pDest = pMD->GetNativeCode();
-#ifndef TARGET_64BIT
-    SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF_I_IMPL, pDest);
-#endif
     SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
 }
 

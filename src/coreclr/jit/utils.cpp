@@ -1372,7 +1372,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_UNBOX:
             case CORINFO_HELP_GETREFANY:
             case CORINFO_HELP_LDELEMA_REF:
-            case CORINFO_HELP_LDELEMA_REF_I_IMPL:
 
                 isPure = true;
                 break;
@@ -1444,7 +1443,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_SETFIELDFLOAT:
             case CORINFO_HELP_SETFIELDDOUBLE:
             case CORINFO_HELP_ARRADDR_ST:
-            case CORINFO_HELP_ARRADDR_ST_I_IMPL:
 
                 mutatesHeap = true;
                 break;

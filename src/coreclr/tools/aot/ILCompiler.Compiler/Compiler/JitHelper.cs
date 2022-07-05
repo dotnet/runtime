@@ -112,13 +112,6 @@ namespace ILCompiler
                     mangledName = "RhpLdelemaRef";
                     break;
 
-                case ReadyToRunHelper.Stelem_Ref_I:
-                    mangledName = "RhpStelemRefNint";
-                    break;
-                case ReadyToRunHelper.Ldelema_Ref_I:
-                    mangledName = "RhpLdelemaRefNint";
-                    break;
-
                 case ReadyToRunHelper.MemCpy:
                     mangledName = "memcpy"; // TODO: Null reference handling
                     break;

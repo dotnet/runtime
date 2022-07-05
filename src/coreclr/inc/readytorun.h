@@ -401,10 +401,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
-
-    // Array helpers for use with native ints
-    READYTORUN_HELPER_Stelem_Ref_I                = 0x113,
-    READYTORUN_HELPER_Ldelema_Ref_I               = 0x114,
 };
 
 #include "readytoruninstructionset.h"

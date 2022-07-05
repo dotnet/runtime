@@ -321,10 +321,6 @@ namespace Internal.ReadyToRunConstants
 
         GetCurrentManagedThreadId   = 0x112,
 
-        // Array helpers for use with native ints
-        Stelem_Ref_I                = 0x113,
-        Ldelema_Ref_I               = 0x114,
-
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.

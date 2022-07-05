@@ -596,56 +596,6 @@ namespace System.Runtime.CompilerServices
             StelemRef_Helper(ref element, elementType, obj);
         }
 
-#if TARGET_64BIT
-        [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static ref object? LdelemaRefNint(Array array, nint index, void* type)
-        {
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
-
-            if (elementType == type)
-                return ref element;
-
-            return ref ThrowArrayMismatchException();
-        }
-
-        [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static void StelemRefNint(Array array, nint index, object? obj)
-        {
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
-
-            if (obj == null)
-                goto assigningNull;
-
-            if (elementType != RuntimeHelpers.GetMethodTable(obj))
-                goto notExactMatch;
-
-            doWrite:
-                WriteBarrier(ref element, obj);
-                return;
-
-            assigningNull:
-                element = null;
-                return;
-
-            notExactMatch:
-                if (array.GetType() == typeof(object[]))
-                    goto doWrite;
-
-            StelemRef_Helper(ref element, elementType, obj);
-        }
-#endif // TARGET_64BIT
-
-
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]

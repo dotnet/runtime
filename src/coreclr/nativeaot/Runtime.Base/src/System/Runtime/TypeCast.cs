@@ -792,59 +792,6 @@ assigningNull:
             StelemRef_Helper(ref element, elementType, obj);
         }
 
-        //
-        // Array stelem/ldelema helpers with RyuJIT conventions
-        //
-        [RuntimeExport("RhpStelemRefNint")]
-        public static unsafe void StelemRefNint(Array array, nint index, object obj)
-        {
-            // This is supported only on arrays
-            Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
-
-#if INPLACE_RUNTIME
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-#else
-            if (array is null)
-            {
-                // TODO: If both array and obj are null, we're likely going to throw Redhawk's NullReferenceException.
-                //       This should blame the caller.
-                throw obj.MethodTable->GetClasslibException(ExceptionIDs.NullReference);
-            }
-            if ((nuint)index >= (nuint)array.Length)
-            {
-                throw array.MethodTable->GetClasslibException(ExceptionIDs.IndexOutOfRange);
-            }
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            ref object element = ref Unsafe.Add(ref rawData, index);
-#endif
-
-            MethodTable* elementType = array.GetMethodTable()->RelatedParameterType;
-
-            if (obj == null)
-                goto assigningNull;
-
-            if (elementType != obj.GetMethodTable())
-                goto notExactMatch;
-
-doWrite:
-            InternalCalls.RhpAssignRef(ref element, obj);
-            return;
-
-assigningNull:
-            element = null;
-            return;
-
-        notExactMatch:
-#if INPLACE_RUNTIME
-            // This optimization only makes sense for inplace runtime where there's only one System.Object.
-            if (array.GetMethodTable() == MethodTable.Of<object[]>())
-                goto doWrite;
-#endif
-
-            StelemRef_Helper(ref element, elementType, obj);
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void StelemRef_Helper(ref object element, MethodTable* elementType, object obj)
         {
@@ -884,26 +831,6 @@ assigningNull:
 
             ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
             return ref Unsafe.Add(ref rawData, index);
-        }
-
-        [RuntimeExport("RhpLdelemaRefNint")]
-        public static unsafe ref object LdelemaRefNint(Array array, nint index, IntPtr elementType)
-        {
-            Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
-
-            MethodTable* elemType = (MethodTable*)elementType;
-            MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
-
-            if (!AreTypesEquivalent(elemType, arrayElemType))
-            {
-                // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
-                // to find the correct classlib.
-
-                throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-            }
-
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            return ref Unsafe.Add(ref rawData, (int)index);
         }
 
         internal static unsafe bool IsDerived(MethodTable* pDerivedType, MethodTable* pBaseType)
