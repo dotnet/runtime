@@ -8,8 +8,8 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Represents slot of the marshaling stack frame.
-    /// It's used by JSImport code generator and should not be used by developers in source code.
+    /// Contains the storage and type information for an argument or return value on the native stack.
+    /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
     /// </summary>
     [SupportedOSPlatform("browser")]
     [CLSCompliant(false)]
