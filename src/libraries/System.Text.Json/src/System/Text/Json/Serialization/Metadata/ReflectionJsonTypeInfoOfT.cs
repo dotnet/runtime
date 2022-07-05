@@ -172,6 +172,10 @@ namespace System.Text.Json.Serialization.Metadata
             propertyOrderSpecified |= jsonPropertyInfo.Order != 0;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked as RequiresUnreferencedCode")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         private JsonPropertyInfo? AddProperty(
             Type typeToConvert,
             MemberInfo memberInfo,
@@ -203,7 +207,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return null;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = CreateProperty(typeToConvert, converter);
+            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert, converter);
             jsonPropertyInfo.IgnoreCondition = ignoreCondition;
             jsonPropertyInfo.CustomConverter = customConverter;
             jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo);

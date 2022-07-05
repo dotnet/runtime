@@ -20,19 +20,29 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo? ParentTypeInfo { get; private set; }
         private JsonTypeInfo? _jsonTypeInfo;
 
-        internal ConverterStrategy ConverterStrategy;
+        internal ConverterStrategy ConverterStrategy { get; private protected set; }
 
         /// <summary>
         /// Converter resolved from PropertyType and not taking in consideration any custom attributes or custom settings.
         /// - for reflection we store the original value since we need it in order to construct typed JsonPropertyInfo
         /// - for source gen it remains null, we will initialize it only if someone used resolver to remove CustomConverter
         /// </summary>
-        internal JsonConverter? DefaultConverterForType { get; set; }
+        internal JsonConverter? DefaultConverterForType
+        {
+            get => _defaultConverterForType;
+            set
+            {
+                _defaultConverterForType = value;
+                ConverterStrategy = value?.ConverterStrategy ?? default;
+            }
+        }
+
+        private JsonConverter? _defaultConverterForType;
 
         /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
         /// </summary>
-        internal abstract JsonConverter EffectiveConverter { get; set; }
+        internal abstract JsonConverter EffectiveConverter { get; }
 
         /// <summary>
         /// Custom converter override at the property level, equivalent to <see cref="JsonConverterAttribute" /> annotation.
@@ -176,18 +186,19 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool _isExtensionDataProperty;
 
-        internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? parentTypeInfo, JsonSerializerOptions options)
+        internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
+            Debug.Assert(declaringTypeInfo is null || declaringTypeInfo.Type == declaringType);
+
             DeclaringType = declaringType;
             PropertyType = propertyType;
+            ParentTypeInfo = declaringTypeInfo; // null parentTypeInfo means it's not tied yet
             Options = options;
-            ParentTypeInfo = parentTypeInfo; // null parentTypeInfo means it's not tied yet
-            PropertyTypeCanBeNull = PropertyType.CanBeNull();
         }
 
         internal static JsonPropertyInfo GetPropertyPlaceholder()
         {
-            JsonPropertyInfo info = new JsonPropertyInfo<object>(typeof(object), typeof(object), parentTypeInfo: null, options: null!);
+            JsonPropertyInfo info = new JsonPropertyInfo<object>(typeof(object), declaringTypeInfo: null, options: null!);
 
             Debug.Assert(!info.IsForTypeInfo);
             Debug.Assert(!info.CanDeserialize);
@@ -225,7 +236,7 @@ namespace System.Text.Json.Serialization.Metadata
             _isConfigured = true;
         }
 
-        internal virtual void Configure()
+        internal void Configure()
         {
             Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             DeclaringTypeNumberHandling = ParentTypeInfo.NumberHandling;
@@ -241,7 +252,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             DetermineEffectiveConverter();
-            ConverterStrategy = EffectiveConverter.ConverterStrategy;
 
             if (IsForTypeInfo)
             {
@@ -590,7 +600,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
                 }
 
                 _name = value;
@@ -805,7 +815,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonNumberHandling? EffectiveNumberHandling { get; set; }
 
         //  Whether the property type can be null.
-        internal bool PropertyTypeCanBeNull { get; }
+        internal abstract bool PropertyTypeCanBeNull { get; }
 
         /// <summary>
         /// Default value used for parameterized ctor invocation.

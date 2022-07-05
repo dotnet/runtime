@@ -89,6 +89,19 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        private protected override JsonPropertyInfo CreatePropertyInfoForTypeInfo()
+        {
+            return new JsonPropertyInfo<T>(
+                declaringType: typeof(T),
+                declaringTypeInfo: null,
+                Options)
+            {
+                DefaultConverterForType = Converter,
+                JsonTypeInfo = this,
+                IsForTypeInfo = true,
+            };
+        }
+
         private protected void MapInterfaceTypesToCallbacks()
         {
             // Callbacks currently only supported in object kinds

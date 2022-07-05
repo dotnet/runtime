@@ -44,7 +44,7 @@ namespace System.Text.Json
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             AddValue(propertyName, value);
@@ -111,7 +111,7 @@ namespace System.Text.Json
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             return TryRemoveProperty(propertyName, out _);
@@ -218,7 +218,7 @@ namespace System.Text.Json
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             CreateDictionaryIfThresholdMet();
