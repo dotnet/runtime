@@ -240,7 +240,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void NotifyInvokeSucceededInNoReturn()
+        public void OnInvokedInNoReturn()
         {
             bool xNotified = false;
             bool yNotified = false;
@@ -260,7 +260,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void NotifyInvokeSucceededInNoOut()
+        public void OnInvokedInNoOut()
         {
             bool xNotified = false;
             bool yNotified = false;

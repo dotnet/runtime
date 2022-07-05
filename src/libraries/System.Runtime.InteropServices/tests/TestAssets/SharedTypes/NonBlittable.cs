@@ -296,7 +296,7 @@ namespace SharedTypes
 
             public IntWrapperWithNotification ToManaged() => _managed;
 
-            public void NotifyInvokeSucceeded() => _managed.RaiseInvokeSucceeded();
+            public void OnInvoked() => _managed.RaiseInvokeSucceeded();
         }
     }
 

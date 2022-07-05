@@ -343,7 +343,7 @@ static class TMarshaller<T, U, V...>
 
         public TNative ToUnmanaged(); // Can throw exceptions.
 
-        public void NotifyInvokeSucceeded(); // Optional. Should not throw exceptions.
+        public void OnInvoked(); // Optional. Should not throw exceptions.
 
         public void Free(); // Should not throw exceptions.
     }
@@ -372,7 +372,7 @@ static class TMarshaller<T, U, V...>
 
         public TNative ToUnmanaged(); // Can throw exceptions.
 
-        public void NotifyInvokeSucceeded(); // Optional. Should not throw exceptions.
+        public void OnInvoked(); // Optional. Should not throw exceptions.
 
         public void Free(); // Should not throw exceptions.
     }
@@ -594,7 +594,7 @@ static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement 
 
         public static ref TOther GetPinnableReference(TCollection collection); // Optional. Can throw exceptions. Result pinnned and passed to Invoke.
 
-        public void NotifyInvokeSucceeded(); // Optional. Should not throw exceptions.
+        public void OnInvoked(); // Optional. Should not throw exceptions.
     }
 }
 
@@ -626,7 +626,7 @@ static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement 
 
         public static ref TOther GetPinnableReference(TCollection collection); // Optional. Can throw exceptions. Result pinnned and passed to Invoke.
 
-        public void NotifyInvokeSucceeded(); // Optional. Should not throw exceptions.
+        public void OnInvoked(); // Optional. Should not throw exceptions.
     }
 }
 
@@ -708,7 +708,7 @@ There's a few optional members in the above shapes. This section explains what t
 
 The `Free` method on each shape supports releasing any unmanaged (or managed in the stateful shapes) resources. This method is optional as the `Free` method is required to be called in a `finally` clause and emitting a `try-finally` block with only method calls to empty methods puts a lot of stress on the JIT to inline all of the methods and realize that they are no-ops to remove the `finally` clause. Additionally, just having the `try-finally` block wrapping the main code can cause some de-optimizations.
 
-### NotifyInvokeSucceeded method
+### OnInvoked method
 
 This method is called after a stub successfully invokes the target code (unmanaged code in a P/Invoke scenario, managed code in a Reverse P/Invoke scenario). As this method would be called in a very large majority of cases in P/Invoke-style scenarios and has only limited utility (its main use is to provide a good place to call `GC.KeepAlive` that does not require a `try-finally` block), we decided to make it optional.
 

@@ -414,15 +414,15 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_shape.HasFlag(MarshallerShape.NotifyInvokeSucceeded))
+            if (!_shape.HasFlag(MarshallerShape.OnInvoked))
                 yield break;
 
-            // <marshaller>.NotifyInvokeSucceeded();
+            // <marshaller>.OnInvoked();
             yield return ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(context.GetAdditionalIdentifier(info, MarshallerIdentifier)),
-                        IdentifierName(ShapeMemberNames.Value.Stateful.NotifyInvokeSucceeded)),
+                        IdentifierName(ShapeMemberNames.Value.Stateful.OnInvoked)),
                     ArgumentList()));
         }
     }

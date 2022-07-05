@@ -22,7 +22,7 @@ namespace Microsoft.Interop
         ToManaged = 0x10,
         GuaranteedUnmarshal = 0x20,
         Free = 0x40,
-        NotifyInvokeSucceeded = 0x80,
+        OnInvoked = 0x80,
     }
 
     public static class ShapeMemberNames
@@ -51,7 +51,7 @@ namespace Microsoft.Interop
                 public const string FromUnmanaged = nameof(FromUnmanaged);
                 // Optional features
                 public const string Free = nameof(Free);
-                public const string NotifyInvokeSucceeded = nameof(NotifyInvokeSucceeded);
+                public const string OnInvoked = nameof(OnInvoked);
             }
         }
 
@@ -86,7 +86,7 @@ namespace Microsoft.Interop
                 public const string FromUnmanaged = nameof(FromUnmanaged);
                 // Optional features
                 public const string Free = nameof(Free);
-                public const string NotifyInvokeSucceeded = nameof(NotifyInvokeSucceeded);
+                public const string OnInvoked = nameof(OnInvoked);
             }
         }
     }
@@ -392,7 +392,7 @@ namespace Microsoft.Interop
             public IMethodSymbol? FromUnmanaged { get; init; }
             public IMethodSymbol? ToUnmanaged { get; init; }
             public IMethodSymbol? Free { get; init; }
-            public IMethodSymbol? NotifyInvokeSucceeded { get; init; }
+            public IMethodSymbol? OnInvoked { get; init; }
         }
 
         public static (MarshallerShape shape, MarshallerMethods methods) GetShapeForType(ITypeSymbol marshallerType, ITypeSymbol managedType, Compilation compilation)
@@ -458,11 +458,11 @@ namespace Microsoft.Interop
                 methods = methods with { Free = free };
             }
 
-            IMethodSymbol notifyInvokeSucceeded = GetNotifyInvokeSucceededMethod(marshallerType);
-            if (notifyInvokeSucceeded is not null)
+            IMethodSymbol OnInvoked = GetOnInvokedMethod(marshallerType);
+            if (OnInvoked is not null)
             {
-                shape |= MarshallerShape.NotifyInvokeSucceeded;
-                methods = methods with { NotifyInvokeSucceeded = notifyInvokeSucceeded };
+                shape |= MarshallerShape.OnInvoked;
+                methods = methods with { OnInvoked = OnInvoked };
             }
 
             if (GetStatelessGetPinnableReference(marshallerType, managedType) is not null)
@@ -587,9 +587,9 @@ namespace Microsoft.Interop
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: true });
         }
 
-        private static IMethodSymbol? GetNotifyInvokeSucceededMethod(ITypeSymbol type)
+        private static IMethodSymbol? GetOnInvokedMethod(ITypeSymbol type)
         {
-            return type.GetMembers(ShapeMemberNames.Value.Stateful.NotifyInvokeSucceeded)
+            return type.GetMembers(ShapeMemberNames.Value.Stateful.OnInvoked)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: true });
         }

@@ -956,7 +956,7 @@ public static class Marshaller
     }
 }
 ";
-                public static string RefWithNotifyInvokeSucceeded = @"
+                public static string RefWithOnInvoked = @"
 [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(M))]
 public static class Marshaller
 {
@@ -968,7 +968,7 @@ public static class Marshaller
         public Native ToUnmanaged() => default;
         public void FromUnmanaged(Native n) {}
         public S ToManaged() => default;
-        public void NotifyInvokeSucceeded() {}
+        public void OnInvoked() {}
     }
 }
 ";
@@ -1043,9 +1043,9 @@ public static class Marshaller
                     + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                     + RefWithFree;
 
-                public static string ParametersAndModifiersWithNotifyInvokeSucceeded = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                public static string ParametersAndModifiersWithOnInvoked = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                     + NonBlittableUserDefinedType(defineNativeMarshalling: true)
-                    + RefWithNotifyInvokeSucceeded;
+                    + RefWithOnInvoked;
 
                 public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Marshaller")
                     + NonBlittableUserDefinedType(defineNativeMarshalling: false)
