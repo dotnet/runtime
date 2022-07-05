@@ -9559,7 +9559,7 @@ retry:
 	}
 
 	/* Check if we use excessive stack space */
-	if (td->max_stack_height > header->max_stack * (guint)3 && header->max_stack > 16)
+	if (td->max_stack_height > header->max_stack * 3u && header->max_stack > 16)
 		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);
 
 	guint32 code_len_u8, code_len_u16;
