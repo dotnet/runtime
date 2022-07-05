@@ -6,8 +6,8 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Attribute used to indicate a source generator should import the function from JavaScript and create thunks necessary to marshal the arguments, results and exceptions.
-    /// For marshaling arguments of complex types <seealso cref="JSMarshalAsAttribute{T}"/>.
+    /// Indicates that the JSImport source generator should create a managed wrapper to invoke a specific imported JavaScript function and marshal its arguments, return values, and exceptions.
+    /// To configure the marshaling behavior for specific values, <seealso cref="JSMarshalAsAttribute{T}"/>.
     /// </summary>
     /// <remarks>
     /// This attribute is meaningless if the source generator associated with it is not enabled.
