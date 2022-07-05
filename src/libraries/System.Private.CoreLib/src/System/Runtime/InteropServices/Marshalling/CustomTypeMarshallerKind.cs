@@ -10,9 +10,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// The shape of a custom type marshaller for usage in source-generated interop scenarios.
     /// </summary>
-    /// <remarks>
     /// <seealso cref="LibraryImportAttribute"/>
-    /// </remarks>
     public enum CustomTypeMarshallerKind
     {
         /// <summary>

@@ -31,34 +31,26 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Returns the native value representing the string.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
         public void* ToNativeValue() => _nativeValue;
 
         /// <summary>
         /// Sets the native value representing the string.
         /// </summary>
         /// <param name="value">The native value.</param>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
         public void FromNativeValue(void* value) => _nativeValue = value;
 
         /// <summary>
         /// Returns the managed string.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
         public string? ToManaged() => Marshal.PtrToStringUni((IntPtr)_nativeValue);
 
         /// <summary>
         /// Frees native resources.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
-        /// </remarks>
         public void FreeNative()
         {
             Marshal.FreeCoTaskMem((IntPtr)_nativeValue);
