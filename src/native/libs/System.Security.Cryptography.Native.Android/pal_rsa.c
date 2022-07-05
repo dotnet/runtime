@@ -8,11 +8,10 @@
 
 #define RSA_FAIL -1
 
-static jobject GetRsaOaepPadding(RsaPadding padding)
+static jobject GetRsaOaepPadding(JNIEnv* env, RsaPadding padding)
 {
     assert(padding >= OaepSHA1 && padding <= OaepSHA512);
 
-    JNIEnv* env = GetJNIEnv();
     jobject oaepParameterSpec;
     INIT_LOCALS(oaepLocals, oaepDigest, mgf1, mgf1ParameterSpec, pSource);
 
@@ -116,7 +115,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* fr
     {
         loc[algName] = make_java_string(env, "RSA/ECB/OAEPPadding");
         loc[cipher] = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, loc[algName]);
-        oaepParameterSpec = GetRsaOaepPadding(padding);
+        oaepParameterSpec = GetRsaOaepPadding(env, padding);
 
         if (oaepParameterSpec == FAIL)
         {
@@ -176,7 +175,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
     {
         algName = make_java_string(env, "RSA/ECB/OAEPPadding");
         cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
-        oaepParameterSpec = GetRsaOaepPadding(padding);
+        oaepParameterSpec = GetRsaOaepPadding(env, padding);
 
         if (oaepParameterSpec == FAIL)
         {
