@@ -4482,10 +4482,10 @@ namespace System.Diagnostics.Tracing
                     Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference<EventSource>>(2), null);
 #if FEATURE_PERFTRACING
                     // It is possible that another thread could observe the s_EventSources list at this point and it
-                    // won’t have the NativeRuntimeEventSource in it. In the past we guaranteed that the NativeRuntimeEventSource
+                    // won't have the NativeRuntimeEventSource in it. In the past we guaranteed that the NativeRuntimeEventSource
                     // was always visible in the list by initializing it in the EventListener static constructor, however doing it
-                    // that way triggered deadlocks between the static constructor and an OS ETW lock. As best I can tell
-                    // there is no issue having a small window of time where NativeRuntimeEventSource is not in the list as long
+                    // that way triggered deadlocks between the static constructor and an OS ETW lock. There is no known issue here
+                    // having a small window of time where NativeRuntimeEventSource is not in the list as long
                     // as we still guarantee it gets initialized eventually.
                     GC.KeepAlive(NativeRuntimeEventSource.Log);
 #endif
