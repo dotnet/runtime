@@ -4882,11 +4882,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_BitConverter_DoubleToInt64Bits:
             {
-                GenTree* op1 = impPopStack().val;
+                GenTree* op1 = impStackTop().val;
                 assert(varTypeIsFloating(op1));
 
                 if (op1->IsCnsFltOrDbl())
                 {
+                    impPopStack();
+
                     double f64Cns = op1->AsDblCon()->gtDconVal;
                     retNode       = gtNewLconNode(*reinterpret_cast<int64_t*>(&f64Cns));
                 }
@@ -4894,6 +4896,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 else
                 {
                     // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    impPopStack();
 
                     if (op1->TypeGet() != TYP_DOUBLE)
                     {
@@ -4924,11 +4927,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_BitConverter_Int64BitsToDouble:
             {
-                GenTree* op1 = impPopStack().val;
+                GenTree* op1 = impStackTop().val;
                 assert(varTypeIsLong(op1));
 
                 if (op1->IsIntegralConst())
                 {
+                    impPopStack();
+
                     int64_t i64Cns = op1->AsIntConCommon()->LngValue();
                     retNode        = gtNewDconNode(*reinterpret_cast<double*>(&i64Cns));
                 }
@@ -4936,6 +4941,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 else
                 {
                     // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    impPopStack();
+
                     retNode = gtNewBitCastNode(TYP_DOUBLE, op1);
                 }
 #endif
