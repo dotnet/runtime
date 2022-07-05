@@ -1042,6 +1042,9 @@ protected:
     void genIntToFloatCast(GenTree* treeNode);
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
+#ifdef TARGET_ARM64
+    void genCodeForConditional(GenTreeConditional* tree);
+#endif
     void genIntrinsic(GenTree* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
     void genPutArgReg(GenTreeOp* tree);
@@ -1703,6 +1706,12 @@ public:
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // TARGET_XARCH
+
+#ifdef TARGET_ARM64
+    static insCond InsCondForCompareOp(GenTree* tree);
+    static insCond InvertInsCond(insCond cond);
+    static insCflags InsCflagsForCcmp(insCond cond);
+#endif
 
 #ifndef TARGET_LOONGARCH64
     // Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions
