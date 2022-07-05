@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public static partial class JSHost
     {
         /// <summary>
-        /// Returns proxy of the <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/globalThis">globalThis</see>, the top level object.
+        /// Returns a proxy for the <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/globalThis">globalThis</see> JavaScript host object.
         /// </summary>
         public static JSObject GlobalThis
         {
