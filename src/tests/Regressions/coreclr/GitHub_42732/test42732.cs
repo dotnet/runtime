@@ -11,14 +11,16 @@ public class Test11611
         public int b;
     }
 
-    delegate void testDelegate(TypedReference tr);
+
+   public delegate void testDelegate(TypedReference tr);
+   public static testDelegate d;
 
     static void test(TypedReference tr)
     {
         Type t = __reftype(tr);
         Console.WriteLine($"tr = {t.Name}");
     }
-    public static void Test(testDelegate d)
+    public static void Test()
     {
         TestStruct s = default;
         var tr = __makeref(s);
@@ -30,7 +32,9 @@ public class Test11611
     public static int Main(string[] args)
     {
         Console.WriteLine("About to run test");
-        Test(test);
+        d = test;
+        Test();
         Console.WriteLine("Test complete run test");
+        return 100;
     }
 }
