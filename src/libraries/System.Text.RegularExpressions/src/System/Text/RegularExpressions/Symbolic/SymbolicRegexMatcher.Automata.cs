@@ -242,8 +242,18 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Make an NFA state for the given node and previous character kind.
+        /// Make an NFA state for the given node and previous character kind. NFA states include a "core state" of a
+        /// <see cref="MatchingState{TSet}"/> allocated with <see cref="GetOrCreateState(SymbolicRegexNode{TSet}, uint)"/>,
+        /// which stores the pattern and previous character kind and can be used for creating further NFA transitions.
+        /// In addition to the ID of the core state, NFA states are allocated a new NFA mode specific ID, which is
+        /// used to index into NFA mode transition arrays (e.g. <see cref="_nfaDelta"/>).
         /// </summary>
+        /// <remarks>
+        /// Using an ID numbering for NFA mode that is separate from DFA mode allows the IDs to be smaller, which saves
+        /// space both in the NFA mode arrays and in the <see cref="SparseIntMap{T}"/> instances used during matching for
+        /// sets of NFA states.
+        /// The core state ID can be looked up by the NFA ID with <see cref="GetCoreStateId(int)"/>.
+        /// </remarks>
         /// <returns>the NFA ID of the new state, or null if the state is a dead end</returns>
         private int? CreateNfaState(SymbolicRegexNode<TSet> node, uint prevCharKind)
         {
