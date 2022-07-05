@@ -654,7 +654,7 @@
     <value>Runtime type '{0}' has a diamond ambiguity between derived types '{1}' and '{2}' of polymorphic type '{3}'. Consider either removing one of the derived types or removing the 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' setting.</value>
   </data>
   <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
-    <value>Invalid JsonTypeInfo operation for 'JsonTypeInfoKind.{0}'.</value>
+    <value>Invalid JsonTypeInfo operation for metadata kind '{0}'.</value>
   </data>
   <data name="CombineOneOfResolversIsNull" xml:space="preserve">
     <value>One of the provided resolvers is null.</value>
