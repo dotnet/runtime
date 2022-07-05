@@ -545,9 +545,19 @@ namespace System.Formats.Tar
             {
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,
-                Share = FileShare.None,
-                PreallocationSize = Length,
+                Share = FileShare.None
             };
+            if (OperatingSystem.IsWindows())
+            {
+                // On Windows, PreallocationSize gives a perf improvement.
+                fileStreamOptions.PreallocationSize = Length;
+            }
+            else
+            {
+                // Restore permissions.
+                // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
+                fileStreamOptions.UnixCreateMode = Mode & (UnixFileMode)0x1FF;
+            }
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
             {
@@ -556,7 +566,6 @@ namespace System.Formats.Tar
                     // Important: The DataStream will be written from its current position
                     DataStream.CopyTo(fs);
                 }
-                SetModeOnFile(fs.SafeFileHandle);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
@@ -578,6 +587,17 @@ namespace System.Formats.Tar
                 PreallocationSize = Length,
                 Options = FileOptions.Asynchronous
             };
+            if (OperatingSystem.IsWindows())
+            {
+                // On Windows, PreallocationSize gives a perf improvement.
+                fileStreamOptions.PreallocationSize = Length;
+            }
+            else
+            {
+                // Restore permissions.
+                // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
+                fileStreamOptions.UnixCreateMode = Mode & (UnixFileMode)0x1FF;
+            }
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             FileStream fs = new FileStream(destinationFileName, fileStreamOptions);
             await using (fs)
@@ -587,7 +607,6 @@ namespace System.Formats.Tar
                     // Important: The DataStream will be written from its current position
                     await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
                 }
-                SetModeOnFile(fs.SafeFileHandle);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);

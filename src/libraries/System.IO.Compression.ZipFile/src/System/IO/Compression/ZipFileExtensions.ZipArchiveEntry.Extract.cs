@@ -65,21 +65,34 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationFileName);
 
-            // Rely on FileStream's ctor for further checking destinationFileName parameter
-            FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
+            FileStreamOptions fileStreamOptions = new()
+            {
+                Access = FileAccess.Write,
+                Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
+                Share = FileShare.None,
+                BufferSize = 0x1000
+            };
 
-            using (FileStream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
+            // Restore Unix permissions.
+            if (!OperatingSystem.IsWindows() && source.ExternalAttributes != 0)
+            {
+                // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
+                UnixFileMode mode = (UnixFileMode)((source.ExternalAttributes >> 16) & 0x1FF);
+
+                if (mode != UnixFileMode.None) // .zip files created on Windows don't include permissions.
+                {
+                    fileStreamOptions.UnixCreateMode = mode;
+                }
+            }
+
+            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
             {
                 using (Stream es = source.Open())
                     es.CopyTo(fs);
-
-                ExtractExternalAttributes(fs, source);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
         }
-
-        static partial void ExtractExternalAttributes(FileStream fs, ZipArchiveEntry entry);
 
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) =>
             ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);
