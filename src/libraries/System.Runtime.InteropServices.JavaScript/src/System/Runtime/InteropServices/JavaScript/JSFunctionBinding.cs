@@ -52,8 +52,8 @@ namespace System.Runtime.InteropServices.JavaScript
         #endregion
 
         /// <summary>
-        /// Low level call to JavaScript.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// Invokes a previously bound JavaScript function using the provided span to transport argument and return values.
+        /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
