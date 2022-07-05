@@ -3,7 +3,11 @@
 
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID, EventPipeSessionAutoStopOptions } from "./types";
+import type {
+    DiagnosticOptions,
+    EventPipeSessionOptions,
+    EventPipeSessionID,
+} from "./types";
 import { is_nullish } from "./types";
 import type { VoidPtr } from "./types/emscripten";
 import { getController, startDiagnosticServer } from "./diagnostic_server/browser/controller";
@@ -12,6 +16,20 @@ import * as memory from "./memory";
 const sizeOfInt32 = 4;
 
 type EventPipeSessionIDImpl = number;
+
+// An EventPipe session object represents a single diagnostic tracing session that is collecting
+/// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
+/// Each session subscribes to a number of providers and will collect events from the time that start() is called, until stop() is called.
+/// Upon completion the session saves the events to a file on the VFS.
+/// The data can then be retrieved as Blob.
+export interface EventPipeSession {
+    // session ID for debugging logging only
+    get sessionID(): EventPipeSessionID;
+    isIPCStreamingSession(): boolean;
+    start(): void;
+    stop(): void;
+    getTraceBlob(): Blob;
+}
 
 
 // internal session state of the JS instance
@@ -30,38 +48,9 @@ function stop_streaming(sessionID: EventPipeSessionIDImpl): void {
 }
 
 abstract class EventPipeSessionBase {
-    isIPCStreamingSession(): this is EventPipeStreamingSession {
-        return this instanceof EventPipeIPCSession;
-    }
+    isIPCStreamingSession() { return false; }
 }
 
-class EventPipeIPCSession extends EventPipeSessionBase implements EventPipeStreamingSession {
-    private _sessionID: EventPipeSessionIDImpl;
-    private _diagnosticServerID: EventPipeSessionDiagnosticServerID;
-
-    constructor(diagnosticServerID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl) {
-        super();
-        this._sessionID = sessionID;
-        this._diagnosticServerID = diagnosticServerID;
-    }
-
-    get sessionID(): bigint {
-        return BigInt(this._sessionID);
-    }
-
-    start() {
-        throw new Error("implement me");
-    }
-    stop() {
-        throw new Error("implement me");
-    }
-    getTraceBlob(): Blob {
-        throw new Error("implement me");
-    }
-    postIPCStreamingSessionStarted() {
-        // getController().postIPCStreamingSessionStarted(this._diagnosticServerID, this._sessionID);
-    }
-}
 
 /// An EventPipe session that saves the event data to a file in the VFS.
 class EventPipeFileSession extends EventPipeSessionBase implements EventPipeSession {
@@ -103,25 +92,6 @@ class EventPipeFileSession extends EventPipeSessionBase implements EventPipeSess
         }
         const data = Module.FS_readFile(this._tracePath, { encoding: "binary" }) as Uint8Array;
         return new Blob([data], { type: "application/octet-stream" });
-    }
-}
-
-// an EventPipeSession that starts at runtime startup
-class StartupEventPipeFileSession extends EventPipeFileSession implements EventPipeSession {
-    readonly _on_stop_callback: null | ((session: EventPipeSession) => void);
-    constructor(sessionID: EventPipeSessionIDImpl, tracePath: string, on_stop_callback?: (session: EventPipeSession) => void) {
-        super(sessionID, tracePath);
-        // By the time we create the JS object, it's already running
-        this._state = State.Started;
-        this._on_stop_callback = on_stop_callback ?? null;
-    }
-
-    stop = () => {
-        super.stop();
-        if (this._on_stop_callback !== null) {
-            const cb = this._on_stop_callback;
-            setTimeout(cb, 0, this);
-        }
     }
 }
 
@@ -272,7 +242,7 @@ export interface Diagnostics {
 }
 
 
-let startup_session_configs: ((EventPipeSessionOptions & EventPipeSessionAutoStopOptions) | EventPipeSessionIPCOptions)[] = [];
+let startup_session_configs: EventPipeSessionOptions[] = [];
 let startup_sessions: (EventPipeSession | null)[] | null = null;
 
 export function mono_wasm_event_pipe_early_startup_callback(): void {
@@ -287,42 +257,28 @@ export function mono_wasm_event_pipe_early_startup_callback(): void {
 }
 
 
-function createAndStartEventPipeSession(options: ((EventPipeSessionOptions & EventPipeSessionAutoStopOptions) | EventPipeSessionIPCOptions)): EventPipeSession | null {
+function createAndStartEventPipeSession(options: (EventPipeSessionOptions)): EventPipeSession | null {
     const session = createEventPipeSession(options);
     if (session === null) {
         return null;
-    }
-    if (session instanceof EventPipeIPCSession) {
-        session.postIPCStreamingSessionStarted();
     }
     session.start();
 
     return session;
 }
 
-function createEventPipeSession(options?: EventPipeSessionOptions | EventPipeSessionIPCOptions): EventPipeSession | null {
+function createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
     // The session trace is saved to a file in the VFS. The file name doesn't matter,
     // but we'd like it to be distinct from other traces.
     const tracePath = `/trace-${totalSessions++}.nettrace`;
 
-    let success: number | false;
-
-    if ((<EventPipeSessionIPCOptions>options)?.diagnostic_server_id !== undefined) {
-        success = false;
-    } else {
-        success = memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, <EventPipeSessionOptions>options, tracePath);
-    }
+    const success = memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, <EventPipeSessionOptions>options, tracePath);
 
     if (success === false)
         return null;
     const sessionID = success;
 
-    if ((<EventPipeSessionIPCOptions>options)?.diagnostic_server_id !== undefined) {
-        return new EventPipeIPCSession((<EventPipeSessionIPCOptions>options).diagnostic_server_id, sessionID);
-    } else {
-        const session = new EventPipeFileSession(sessionID, tracePath);
-        return session;
-    }
+    return new EventPipeFileSession(sessionID, tracePath);
 }
 
 /// APIs for working with .NET diagnostics from JavaScript.
@@ -369,9 +325,7 @@ export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Pr
             if (suspend) {
                 console.debug("waiting for the diagnostic server to resume us");
                 const response = await controller.wait_for_resume();
-                const session_configs = response.sessions.map(session => { return { diagnostic_server_id: session }; });
-                /// FIXME: decide if main thread or the diagnostic server will start the streaming sessions
-                startup_session_configs.push(...session_configs);
+                console.debug("diagnostic server resumed us", response);
             }
         }
     }

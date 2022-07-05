@@ -189,18 +189,9 @@ export type DiagnosticServerOptions = {
 
 /// Options to configure EventPipe sessions that will be created and started at runtime startup
 export type DiagnosticOptions = {
-    sessions?: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[],
+    sessions?: EventPipeSessionOptions[],
     /// If true, the diagnostic server will be started.  If "wait", the runtime will wait at startup until a diagnsotic session connects to the server
     server?: DiagnosticServerOptions,
-}
-
-/// For EventPipe sessions that will be created and started at runtime startup
-export interface EventPipeSessionAutoStopOptions {
-    /// Should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
-    /// The session will be stopped when the jit_done event is fired for this method.
-    stop_at?: string;
-    /// Called after the session has been stopped.
-    on_session_stopped?: (session: EventPipeSession) => void;
 }
 
 export type EventPipeSessionDiagnosticServerID = number;
@@ -327,19 +318,3 @@ export function notThenable<T>(x: T | PromiseLike<T>): x is T {
 /// Primarily intended for debugging purposes.
 export type EventPipeSessionID = bigint;
 
-
-/// An EventPipe session object represents a single diagnostic tracing session that is collecting
-/// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
-/// Each session subscribes to a number of providers and will collect events from the time that start() is called, until stop() is called.
-/// Upon completion the session saves the events to a file on the VFS.
-/// The data can then be retrieved as Blob.
-export interface EventPipeSession {
-    // session ID for debugging logging only
-    get sessionID(): EventPipeSessionID;
-    isIPCStreamingSession(): this is EventPipeStreamingSession;
-    start(): void;
-    stop(): void;
-    getTraceBlob(): Blob;
-}
-
-export type EventPipeStreamingSession = EventPipeSession
