@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Returns proxy of the runtime module export in JavaScript.
+        /// Returns a proxy for the JavaScript module that contains the .NET runtime.
         /// </summary>
         public static JSObject DotnetInstance
         {
