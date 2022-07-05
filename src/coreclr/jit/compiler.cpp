@@ -2820,6 +2820,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
+    opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2991,6 +2993,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
+        }
+
+        // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
+        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specfied by
+        // JitEarlyExpandMDArraysFilter.
+        if (JitConfig.JitEarlyExpandMDArrays() == 0)
+        {
+            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodName, info.compClassName,
+                                                                  &info.compMethodInfo->args))
+            {
+                opts.compJitEarlyExpandMDArrays = true;
+            }
         }
     }
 
@@ -4838,6 +4852,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
+
+    // Morph multi-dimensional array operations.
+    // (Consider deferring all array operation morphing, including single-dimensional array ops,
+    // from global morph to here, so cloning doesn't have to deal with morphed forms.)
+    //
+    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);
 
     // Create the variable table (and compute variable ref counts)
     //
@@ -9834,7 +9854,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 #endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
-            if (tree->OperIsIndirOrArrLength())
+            if (tree->OperIsIndirOrArrMetaData())
             {
                 chars += printf("[IND_NONFAULTING]");
             }

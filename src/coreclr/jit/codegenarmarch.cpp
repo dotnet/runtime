@@ -1507,10 +1507,9 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     regNumber tmpReg = arrIndex->GetSingleTempReg();
     assert(tgtReg != tmpReg);
 
-    unsigned  dim      = arrIndex->gtCurrDim;
-    unsigned  rank     = arrIndex->gtArrRank;
-    var_types elemType = arrIndex->gtArrElemType;
-    unsigned  offset;
+    unsigned dim  = arrIndex->gtCurrDim;
+    unsigned rank = arrIndex->gtArrRank;
+    unsigned offset;
 
     offset = compiler->eeGetMDArrayLowerBoundOffset(rank, dim);
     emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
@@ -1561,10 +1560,9 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
         regNumber tmpReg = arrOffset->GetSingleTempReg();
 
-        unsigned  dim      = arrOffset->gtCurrDim;
-        unsigned  rank     = arrOffset->gtArrRank;
-        var_types elemType = arrOffset->gtArrElemType;
-        unsigned  offset   = compiler->eeGetMDArrayLengthOffset(rank, dim);
+        unsigned dim    = arrOffset->gtCurrDim;
+        unsigned rank   = arrOffset->gtArrRank;
+        unsigned offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
 
         // Load tmpReg with the dimension size and evaluate
         // tgtReg = offsetReg*tmpReg + indexReg.
