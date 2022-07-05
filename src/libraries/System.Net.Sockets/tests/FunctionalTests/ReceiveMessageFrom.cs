@@ -276,6 +276,20 @@ namespace System.Net.Sockets.Tests
             var r = await ReceiveMessageFromAsync(receiver, new byte[1], sourceEp);
             Assert.Equal(SocketFlags.Broadcast, r.SocketFlags);
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows doesn't report MSG_TRUNC
+        public async Task ReceiveTruncated_TruncatedFlagIsSetOnReceive()
+        {
+            using var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            receiver.BindToAnonymousPort(IPAddress.Loopback);
+            using var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            sender.SendTo(new byte[2], receiver.LocalEndPoint);
+
+            var r = await ReceiveMessageFromAsync(receiver, new byte[1], sender.LocalEndPoint);
+            Assert.Equal(SocketFlags.Truncated, r.SocketFlags);
+        }
     }
 
     public sealed class ReceiveMessageFrom_Sync : ReceiveMessageFrom<SocketHelperArraySync>
