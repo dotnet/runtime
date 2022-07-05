@@ -99,6 +99,27 @@ public partial class Program
 
         TestIsAssignableFrom();
 
+        AreSame(Type.GetTypeCode(null),                       TypeCode.Empty);
+        AreSame(Type.GetTypeCode(typeof(bool)),               TypeCode.Boolean);
+        AreSame(Type.GetTypeCode(typeof(char)),               TypeCode.Char);
+        AreSame(Type.GetTypeCode(typeof(sbyte)),              TypeCode.SByte);
+        AreSame(Type.GetTypeCode(typeof(byte)),               TypeCode.Byte);
+        AreSame(Type.GetTypeCode(typeof(short)),              TypeCode.Int16);
+        AreSame(Type.GetTypeCode(typeof(ushort)),             TypeCode.UInt16);
+        AreSame(Type.GetTypeCode(typeof(int)),                TypeCode.Int32);
+        AreSame(Type.GetTypeCode(typeof(uint)),               TypeCode.UInt32);
+        AreSame(Type.GetTypeCode(typeof(long)),               TypeCode.Int64);
+        AreSame(Type.GetTypeCode(typeof(ulong)),              TypeCode.UInt64);
+        AreSame(Type.GetTypeCode(typeof(float)),              TypeCode.Single);
+        AreSame(Type.GetTypeCode(typeof(double)),             TypeCode.Double);
+        AreSame(Type.GetTypeCode(typeof(decimal)),            TypeCode.Decimal);
+        AreSame(Type.GetTypeCode(typeof(string)),             TypeCode.String);
+        AreSame(Type.GetTypeCode(typeof(object)),             TypeCode.Object);
+        AreSame(Type.GetTypeCode(typeof(DateTime)),           TypeCode.DateTime);
+        AreSame(Type.GetTypeCode(typeof(GenericStruct<int>)), TypeCode.Object);
+        AreSame(Type.GetTypeCode(typeof(SimpleStruct)),       TypeCode.Object);
+        AreSame(Type.GetTypeCode(typeof(SimpleEnum)),         TypeCode.Int32);
+
         return 100 + _errors;
     }
 
@@ -135,7 +156,6 @@ public partial class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static dynamic CreateDynamic2() => new { Name = "Test" };
 
-
     static void IsTrue(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         if (!expression)
@@ -170,11 +190,26 @@ public partial class Program
         }
         Console.WriteLine($"Line {line}: test failed (expected: NullReferenceException)");
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void AreSame(TypeCode a, TypeCode b, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
+    {
+        if (a != b)
+        {
+            Console.WriteLine($"{file}:L{line} test failed (not equal).");
+            _errors++;
+        }
+    }
 }
 
 public struct GenericStruct<T>
 {
     public T field;
+}
+
+public struct SimpleStruct
+{
+    public int field;
 }
 
 public enum SimpleEnum

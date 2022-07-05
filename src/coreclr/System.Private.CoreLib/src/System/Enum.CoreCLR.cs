@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -20,7 +21,54 @@ namespace System
         private extern CorElementType InternalGetCorElementType();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType InternalGetUnderlyingType(RuntimeType enumType);
+        internal static extern RuntimeType InternalGetUnderlyingTypeImpl(RuntimeType enumType);
+
+        internal static RuntimeType InternalGetUnderlyingType(RuntimeType enumType)
+        {
+            Type type;
+            TypeCode typeCode = Type.GetTypeCode(enumType);
+            switch (typeCode)
+            {
+                case TypeCode.Boolean:
+                    type = typeof(bool);
+                    break;
+                case TypeCode.Char:
+                    type = typeof(char);
+                    break;
+                case TypeCode.SByte:
+                    type = typeof(sbyte);
+                    break;
+                case TypeCode.Byte:
+                    type = typeof(byte);
+                    break;
+                case TypeCode.Int16:
+                    type = typeof(short);
+                    break;
+                case TypeCode.UInt16:
+                    type = typeof(ushort);
+                    break;
+                case TypeCode.Int32:
+                    type = typeof(int);
+                    break;
+                case TypeCode.UInt32:
+                    type = typeof(uint);
+                    break;
+                case TypeCode.Int64:
+                    type = typeof(long);
+                    break;
+                case TypeCode.UInt64:
+                    type = typeof(ulong);
+                    break;
+                case TypeCode.Single:
+                    type = typeof(float);
+                    break;
+                default:
+                    Debug.Assert(typeCode == TypeCode.Double);
+                    type = typeof(double);
+                    break;
+            }
+            return (RuntimeType)type;
+        }
 
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {

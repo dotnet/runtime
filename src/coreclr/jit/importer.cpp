@@ -4218,6 +4218,75 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_GetTypeCode:
+            {
+                if (impStackTop().val->IsCall())
+                {
+                    GenTreeCall* call = impStackTop().val->AsCall();
+                    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+                    {
+                        assert(call->gtArgs.CountArgs() == 1);
+                        CORINFO_CLASS_HANDLE hClass =
+                            gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
+                        if (hClass != NO_CLASS_HANDLE)
+                        {
+                            int typeCode = -1;
+                            switch (info.compCompHnd->getTypeForPrimitiveValueClass(hClass))
+                            {
+                                case CORINFO_TYPE_BOOL:
+                                    typeCode = 3;
+                                    break;
+                                case CORINFO_TYPE_CHAR:
+                                    typeCode = 4;
+                                    break;
+                                case CORINFO_TYPE_BYTE:
+                                    typeCode = 5;
+                                    break;
+                                case CORINFO_TYPE_UBYTE:
+                                    typeCode = 6;
+                                    break;
+                                case CORINFO_TYPE_SHORT:
+                                    typeCode = 7;
+                                    break;
+                                case CORINFO_TYPE_USHORT:
+                                    typeCode = 8;
+                                    break;
+                                case CORINFO_TYPE_INT:
+                                    typeCode = 9;
+                                    break;
+                                case CORINFO_TYPE_UINT:
+                                    typeCode = 10;
+                                    break;
+                                case CORINFO_TYPE_LONG:
+                                    typeCode = 11;
+                                    break;
+                                case CORINFO_TYPE_ULONG:
+                                    typeCode = 12;
+                                    break;
+                                case CORINFO_TYPE_FLOAT:
+                                    typeCode = 13;
+                                    break;
+                                case CORINFO_TYPE_DOUBLE:
+                                    typeCode = 14;
+                                    break;
+                                default:
+                                    if (hClass == impGetStringClass())
+                                    {
+                                        typeCode = 18;
+                                    }
+                                    break;
+                            }
+                            if (typeCode != -1)
+                            {
+                                retNode = gtNewIconNode(typeCode);
+                                impPopStack();
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+
             case NI_System_Threading_Thread_get_ManagedThreadId:
             {
                 if (impStackTop().val->OperIs(GT_RET_EXPR))
@@ -5714,6 +5783,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "GetTypeFromHandle") == 0)
             {
                 result = NI_System_Type_GetTypeFromHandle;
+            }
+            else if (strcmp(methodName, "GetTypeCode") == 0)
+            {
+                result = NI_System_Type_GetTypeCode;
             }
         }
         else if (strcmp(className, "String") == 0)

@@ -203,7 +203,7 @@ namespace System
                     else if (ReferenceEquals(this, typeof(DateTime)))
                         typeCode = TypeCode.DateTime;
                     else if (IsEnum)
-                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
+                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingTypeImpl(this));
                     else
                         typeCode = TypeCode.Object;
                     break;

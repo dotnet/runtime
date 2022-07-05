@@ -105,6 +105,11 @@ namespace System
             }
         }
 
+        internal static Type InternalGetUnderlyingTypeImpl(RuntimeType enumType)
+        {
+            return InternalGetUnderlyingType(enumType);
+        }
+
         internal static Type InternalGetUnderlyingType(RuntimeType enumType)
         {
             Debug.Assert(enumType is RuntimeType);

@@ -55,7 +55,7 @@ FCFuncStart(gDependentHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gEnumFuncs)
-    FCFuncElement("InternalGetUnderlyingType",  ReflectionEnum::InternalGetEnumUnderlyingType)
+    FCFuncElement("InternalGetUnderlyingTypeImpl",  ReflectionEnum::InternalGetEnumUnderlyingTypeImpl)
     FCFuncElement("InternalGetCorElementType",  ReflectionEnum::InternalGetCorElementType)
     FCFuncElement("InternalBoxEnum", ReflectionEnum::InternalBoxEnum)
 FCFuncEnd()
