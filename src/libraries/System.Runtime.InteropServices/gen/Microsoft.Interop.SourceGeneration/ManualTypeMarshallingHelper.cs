@@ -73,7 +73,7 @@ namespace Microsoft.Interop
         public static bool IsLinearCollectionEntryPoint(INamedTypeSymbol entryPointType)
         {
             return entryPointType.IsGenericType
-                && entryPointType.TypeParameters.Last().GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.ElementUnmanagedTypeAttribute);
+                && entryPointType.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.ContiguousCollectionMarshallerAttribute);
         }
 
         public static bool HasEntryPointMarshallerAttribute(ITypeSymbol entryPointType)

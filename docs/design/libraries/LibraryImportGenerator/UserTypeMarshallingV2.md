@@ -197,14 +197,10 @@ namespace System.Runtime.InteropServices.Marshalling;
 + }
 +
 + /// <summary>
-+ /// Specifies that a particular generic parameter is the collection element's unmanaged type.
++ /// Specifies that this marshaller entry-point type is a contiguous collection marshaller.
 + /// </summary>
-+ /// <remarks>
-+ /// If this attribute is provided on a generic parameter of a marshaller, then the generator will assume
-+ /// that it is a linear collection marshaller.
-+ /// </remarks>
-+ [AttributeUsage(AttributeTargets.GenericParameter)]
-+ public sealed class ElementUnmanagedTypeAttribute : Attribute
++ [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
++ public sealed class ContiguousCollectionMarshallerAttribute : Attribute
 + {
 + }
 ```
@@ -448,14 +444,14 @@ We'll continue with the collection marshaller shapes. These marshaller shapes su
 Each of these shapes will support marshalling the following type:
 
 ```csharp
-// Any number of generic parameters is allowed, with any constraints
+// Any number of generic parameters is allowed, with any constraints]
 struct TCollection<T, U, V...>
 {
     // ...
 }
 ```
 
-A collection marshaller for a managed type will have similar generics handling as the value marshaller case; however, there is one difference. A collection marshaller must have an additional generic parameter with the `ElementUnmanagedTypeAttribute`. This parameter can optionally be constrained to `: unmanaged` (but the system will not require this). The attributed parameter will be filled in with a generics-compatible representation of the unmanaged type for the collection's element type (`nint` will be used when the native type is a pointer type).
+A collection marshaller must have the `ContiguousCollectionMarshallerAttribute` applied to the entry-point type. A collection marshaller for a managed type will have similar generics handling as the value marshaller case; however, there is one difference. A collection marshaller must have an additional generic parameter at the end of the generic parameter list. This parameter can optionally be constrained to `: unmanaged` (but the system will not require this). The additional parameter will be filled in with a generics-compatible representation of the unmanaged type for the collection's element type (`nint` will be used when the native type is a pointer type).
 
 The type `TNative` can be any `unmanaged` type. It represents whatever unmanaged type the marshaller marshals the managed type to.
 
@@ -465,7 +461,8 @@ The type `TNative` can be any `unmanaged` type. It represents whatever unmanaged
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), InMarshaller = typeof(ManagedToNative))]
 [UnmanagedToManagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(ManagedToNative))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     public static class ManagedToNative
     {
@@ -489,7 +486,8 @@ The element type of the `Span` for the caller-allocated buffer can be any type t
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), InMarshaller = typeof(ManagedToNative))]
 [UnmanagedToManagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(ManagedToNative))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     [CustomTypeMarshallerFeatures(BufferSize = 0x200)]
     public static class ManagedToNative
@@ -513,7 +511,8 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(NativeToManaged))]
 [UnmanagedToManagedMarshallers(typeof(TCollection<,,,...>), InMarshaller = typeof(NativeToManaged))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     public static class NativeToManaged
     {
@@ -536,7 +535,8 @@ This shape directs the generator to emit the `ConvertToManagedGuaranteed` call i
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(NativeToManaged))]
 [UnmanagedToManagedMarshallers(typeof(TCollection<,,,...>), InMarshaller = typeof(NativeToManaged))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     public static class NativeToManaged
     {
@@ -557,7 +557,8 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), RefMarshaller = typeof(Bidirectional))]
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), RefMarshaller = typeof(Bidirectional))]
 [ElementMarshaller(typeof(TManaged<,,,...>), typeof(Bidirectional))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     public static class Bidirectional
     {
@@ -574,7 +575,8 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), InMarshaller = typeof(ManagedToNative))]
 [UnmanagedToManagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(ManagedToNative))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     public struct ManagedToNative // Can be ref struct
     {
@@ -604,7 +606,8 @@ The element type of the `Span` for the caller-allocated buffer can be any type t
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), InMarshaller = typeof(ManagedToNative))]
 [UnmanagedToManagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(ManagedToNative))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     [CustomTypeMarshallerFeatures(BufferSize = 0x200)]
     public struct ManagedToNative // Can be ref struct
@@ -634,7 +637,8 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(NativeToManaged))]
 [UnmanagedToManagedMarshallers(typeof(TCollection<,,,...>), InMarshaller = typeof(NativeToManaged))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     public struct NativeToManaged // Can be ref struct
     {
@@ -659,7 +663,8 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), OutMarshaller = typeof(NativeToManaged))]
 [UnmanagedToManagedMarshallers(typeof(TCollection<,,,...>), InMarshaller = typeof(NativeToManaged))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     public struct NativeToManaged // Can be ref struct
     {
@@ -683,7 +688,8 @@ static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> w
 ```csharp
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), RefMarshaller = typeof(Bidirectional))]
 [ManagedToUnmanagedMarshallers(typeof(TCollection<,,,...>), RefMarshaller = typeof(Bidirectional))]
-static class TMarshaller<T, U, V..., [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+[ContiguousCollectionMarshaller]
+static class TMarshaller<T, U, V..., TUnmanagedElement> where TUnmanagedElement : unmanaged
 {
     public struct Bidirectional // Can be ref struct
     {
@@ -731,7 +737,7 @@ The marshaller type must be an entry-point marshaller type as defined above and 
 - The type must either be:
   - Non-generic
   - A closed generic
-  - An open generic with as many generic parameters with compatible constraints as the managed type (excluding up to one generic parameter with the `ElementUnmanagedTypeAttribute`)
+  - An open generic with as many generic parameters with compatible constraints as the managed type (excluding one generic parameter if the marshaller has the `ContiguousCollectionMarshallerAttribute` attribute)
 - If used in `NativeMarshallingAttribute`, the type should be at least as visible as the managed type.
 
 Passing size info for parameters will be based to the [V1 design](SpanMarshallers.md#providing-additional-data-for-collection-marshalling) and the properties/fields on `MarshalUsingAttribute` will remain unchanged.

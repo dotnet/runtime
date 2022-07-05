@@ -1458,7 +1458,8 @@ partial class Test
             {
                 public const string In = @"
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
     public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;
@@ -1467,7 +1468,8 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 ";
                 public const string InPinnable = @"
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
     public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;
@@ -1478,7 +1480,8 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 ";
                 public const string InBuffer = @"
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public const int BufferSize = 0x100;
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, System.Span<byte> buffer, out int numElements) => throw null;
@@ -1488,7 +1491,8 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 ";
                 public const string Ref = @"
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
     public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;
@@ -1501,7 +1505,8 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 ";
                 public const string RefNested = @"
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,>.Ref.Nested))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     static class Nested
     {
@@ -1520,7 +1525,8 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 ";
                 public const string Out = @"
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public static TestCollection<T> AllocateContainerForManagedElements(byte* unmanaged, int length) => throw null;
     public static System.Span<T> GetManagedValuesDestination(TestCollection<T> managed) => throw null;
@@ -1578,7 +1584,8 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 class TestCollection<T> {}
 
 [CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,,>))]
-static unsafe class Marshaller<T, U, [ElementUnmanagedType] TUnmanagedElement>
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, U, TUnmanagedElement>
 {
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
     public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;

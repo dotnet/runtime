@@ -340,7 +340,8 @@ namespace SharedTypes
     }
 
     [CustomMarshaller(typeof(List<>), MarshalMode.Default, typeof(ListMarshaller<,>))]
-    public unsafe static class ListMarshaller<T, [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+    [ContiguousCollectionMarshaller]
+    public unsafe static class ListMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public static byte* AllocateContainerForUnmanagedElements(List<T> managed, out int numElements)
             => AllocateContainerForUnmanagedElements(managed, Span<byte>.Empty, out numElements);
@@ -398,7 +399,8 @@ namespace SharedTypes
     }
 
     [CustomMarshaller(typeof(List<>), MarshalMode.Default, typeof(ListMarshallerWithPinning<,>))]
-    public unsafe static class ListMarshallerWithPinning<T, [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+    [ContiguousCollectionMarshaller]
+    public unsafe static class ListMarshallerWithPinning<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public static byte* AllocateContainerForUnmanagedElements(List<T> managed, out int numElements)
             => AllocateContainerForUnmanagedElements(managed, Span<byte>.Empty, out numElements);
@@ -465,7 +467,8 @@ namespace SharedTypes
     }
 
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.Default, typeof(CustomArrayMarshaller<,>))]
-    public unsafe static class CustomArrayMarshaller<T, [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+    [ContiguousCollectionMarshaller]
+    public unsafe static class CustomArrayMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public static byte* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
         {
