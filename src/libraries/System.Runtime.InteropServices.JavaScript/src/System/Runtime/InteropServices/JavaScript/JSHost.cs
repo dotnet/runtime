@@ -36,14 +36,13 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Download and instantiate ES6 module from provided URL.
-        /// It will use <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import">dynamic import</see> of underlying JavaScript engine.
-        /// The instance of the module would be downloaded only once per <paramref name="moduleName"/> and cached.
+        /// Download and instantiate an ES6 module from the provided URL, via the JavaScript host's <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import">dynamic import API</see>.
+        /// If a module with the provided <paramref name="moduleName"/> has previously been instantiated, it will be returned instead.
         /// </summary>
         /// <param name="moduleName">Globally unique identifier of the ES6 module, which is used by <see cref="JSImportAttribute(string, string)"/>.</param>
-        /// <param name="moduleUrl"></param>
-        /// <param name="cancellationToken">A cancellation token to observe.</param>
-        /// <returns>Proxy object of the module exports.</returns>
+        /// <param name="moduleUrl">The location of the module file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A proxy for the JavaScript object that contains the module's exports.</returns>
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
