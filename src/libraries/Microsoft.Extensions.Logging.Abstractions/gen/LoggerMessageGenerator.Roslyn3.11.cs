@@ -51,12 +51,39 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 if (Parser.IsSyntaxTargetForGeneration(context.Node))
                 {
-                    ClassDeclarationSyntax classSyntax = Parser.GetSemanticTargetForGeneration(context);
+                    ClassDeclarationSyntax classSyntax = GetSemanticTargetForGeneration(context);
                     if (classSyntax != null)
                     {
                         ClassDeclarations.Add(classSyntax);
                     }
                 }
+            }
+
+            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            {
+                var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
+
+                foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
+                {
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
+                        if (attributeSymbol == null)
+                        {
+                            continue;
+                        }
+
+                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                        if (fullName == Parser.LoggerMessageAttribute)
+                        {
+                            return methodDeclarationSyntax.Parent as ClassDeclarationSyntax;
+                        }
+                    }
+                }
+
+                return null;
             }
         }
     }
