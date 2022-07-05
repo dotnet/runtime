@@ -13669,6 +13669,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto APPEND;
 
             case CEE_LDELEMA:
+            {
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);
@@ -13676,63 +13677,47 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 ldelemClsHnd = resolvedToken.hClass;
+                lclTyp       = JITtype2varType(info.compCompHnd->asCorInfoType(ldelemClsHnd));
 
-                // If it's a value class array we just do a simple address-of
-                if (eeIsValueClass(ldelemClsHnd))
+                // If it's a value class / pointer array, or a readonly access, we don't need a type check.
+                if ((lclTyp != TYP_REF) || ((prefixFlags & PREFIX_READONLY) != 0))
                 {
-                    CorInfoType cit = info.compCompHnd->getTypeForPrimitiveValueClass(ldelemClsHnd);
-                    if (cit == CORINFO_TYPE_UNDEF)
-                    {
-                        lclTyp = TYP_STRUCT;
-                    }
-                    else
-                    {
-                        lclTyp = JITtype2varType(cit);
-                    }
-                    goto ARR_LD;
-                }
-
-                // Similarly, if its a readonly access, we can do a simple address-of
-                // without doing a runtime type-check
-                if (prefixFlags & PREFIX_READONLY)
-                {
-                    lclTyp = TYP_REF;
                     goto ARR_LD;
                 }
 
                 // Otherwise we need the full helper function with run-time type check
-                op1 = impTokenToHandle(&resolvedToken);
-                if (op1 == nullptr)
-                { // compDonotInline()
+                GenTree* type = impTokenToHandle(&resolvedToken);
+                if (type == nullptr)
+                {
+                    assert(compDonotInline());
                     return;
                 }
 
-                {
-                    GenTree* type  = op1;
-                    GenTree* index = impPopStack().val;
-                    GenTree* arr   = impPopStack().val;
-#ifdef TARGET_64BIT
-                    // The CLI Spec allows an array to be indexed by either an int32 or a native int.
-                    // The array helper takes a native int for array length.
-                    // So if we have an int, explicitly extend it to be a native int.
-                    if (genActualType(index->TypeGet()) != TYP_I_IMPL)
-                    {
-                        if (index->IsIntegralConst())
-                        {
-                            index->gtType = TYP_I_IMPL;
-                        }
-                        else
-                        {
-                            bool isUnsigned = false;
-                            index           = gtNewCastNode(TYP_I_IMPL, index, isUnsigned, TYP_I_IMPL);
-                        }
-                    }
-#endif // TARGET_64BIT
-                    op1 = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
-                }
+                GenTree* index = impPopStack().val;
+                GenTree* arr   = impPopStack().val;
 
+#ifdef TARGET_64BIT
+                // The CLI Spec allows an array to be indexed by either an int32 or a native int.
+                // The array helper takes a native int for array length.
+                // So if we have an int, explicitly extend it to be a native int.
+                if (genActualType(index->TypeGet()) != TYP_I_IMPL)
+                {
+                    if (index->IsIntegralConst())
+                    {
+                        index->gtType = TYP_I_IMPL;
+                    }
+                    else
+                    {
+                        bool isUnsigned = false;
+                        index           = gtNewCastNode(TYP_I_IMPL, index, isUnsigned, TYP_I_IMPL);
+                    }
+                }
+#endif // TARGET_64BIT
+
+                op1 = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
                 impPushOnStack(op1, tiRetVal);
-                break;
+            }
+            break;
 
             // ldelem for reference and value types
             case CEE_LDELEM:
