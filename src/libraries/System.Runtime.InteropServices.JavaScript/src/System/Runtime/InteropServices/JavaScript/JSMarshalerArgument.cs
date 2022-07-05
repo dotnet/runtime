@@ -26,8 +26,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Implementation of the argument marshaling.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Initialize()
