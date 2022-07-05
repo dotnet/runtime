@@ -56,5 +56,6 @@
     <Compile Include="..\src\System\TermInfo.Database.cs" Link="src\System\TermInfo.Database.cs" />
     <Compile Include="..\src\System\ConsolePal.TerminalFormatStrings.cs" Link="src\System\ConsolePal.TerminalFormatStrings.cs" />
     <Compile Include="..\src\System\IO\KeyMapper.cs" Link="src\System\IO\KeyMapper.cs" />
+    <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs" Link="src\System\Text\ConsoleEncoding.cs" />
   </ItemGroup>
 </Project>
