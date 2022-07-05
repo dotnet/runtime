@@ -41,7 +41,7 @@ print_implemented_interfaces (MonoClass *klass)
 
 	for (guint16 i = 0; i < klass->interface_offsets_count; i++) {
 		char *ic_name = mono_type_get_full_name (klass->interfaces_packed [i]);
-		printf ("  [%03d][UUID %03d][SLOT %03d][SIZE  %03d] interface %s\n", i,
+		printf ("  [%03hu][UUID %03d][SLOT %03d][SIZE  %03d] interface %s\n", i,
 				klass->interfaces_packed [i]->interface_id,
 				klass->interface_offsets_packed [i],
 				mono_class_get_method_count (klass->interfaces_packed [i]),

@@ -1922,7 +1922,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		if (lname) {
 			emit_string (w, lname);
 		} else {
-			sprintf (name_buf, "V_%d", i);
+			sprintf (name_buf, "V_%hu", i);
 			emit_string (w, name_buf);
 		}
 		/* type */

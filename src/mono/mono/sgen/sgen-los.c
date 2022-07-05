@@ -790,7 +790,7 @@ sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards)
 			continue;
 
 		total_cards += num_cards;
-		for (guint32 i = 0; i < num_cards; ++i) {
+		for (mword i = 0; i < num_cards; ++i) {
 			if (cards [i])
 				++marked_cards;
 		}

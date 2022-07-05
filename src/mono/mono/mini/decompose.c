@@ -1538,7 +1538,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					break;
 				case OP_LDLEN:
 					NEW_LOAD_MEMBASE_FLAGS (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
-											GINT32_TO_UINT32(ins->inst_imm), ins->flags);
+											ins->inst_imm, ins->flags);
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
 				case OP_BOUNDS_CHECK:
@@ -1548,7 +1548,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
 						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, GINT32_TO_UINT32(ins->inst_imm), index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
 					} else {
-						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, GINT64_TO_UINT64(ins->inst_imm), ins->sreg2, ins->inst_p0);
+						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
 					}
 					break;
 				case OP_NEWARR: {

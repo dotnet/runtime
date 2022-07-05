@@ -9106,7 +9106,7 @@ calli_end:
 						cfg->flags |= MONO_CFG_HAS_ALLOCA;
 						MONO_ADD_INS (init_localsbb, array_new_localalloc_ins);
 					}
-					array_new_localalloc_ins->inst_imm = MAX (GINT64_TO_UINT64(array_new_localalloc_ins->inst_imm), param_count * sizeof (target_mgreg_t));
+					array_new_localalloc_ins->inst_imm = MAX (array_new_localalloc_ins->inst_imm, param_count * GUINT_TO_INT(sizeof (target_mgreg_t)));
 					int dreg = array_new_localalloc_ins->dreg;
 					if (2 * rank == param_count) {
 						/* [lbound, length, lbound, length, ...]

@@ -6342,9 +6342,9 @@ get_source_files_for_type (MonoClass *klass)
 		GPtrArray *source_file_list;
 
 		if (minfo) {
-			guint i;
 			mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
 			for (guint j = 0; j < source_file_list->len; ++j) {
+				guint i;
 				sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, j);
 				for (i = 0; i < files->len; ++i)
 					if (!strcmp ((const char*)g_ptr_array_index (files, i), (const char*)sinfo->source_file))

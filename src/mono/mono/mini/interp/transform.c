@@ -526,7 +526,7 @@ mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *repl
 		else if (td->offset_to_bb [il_offset])
 			break;
 	}
-	for (guint il_offset = bb->il_offset + 1; il_offset < td->header->code_size; il_offset++) {
+	for (guint32 il_offset = bb->il_offset + 1; il_offset < td->header->code_size; il_offset++) {
 		if (td->offset_to_bb [il_offset] == bb)
 			td->offset_to_bb [il_offset] = replace_bb;
 		else if (td->offset_to_bb [il_offset])

@@ -905,7 +905,7 @@ static int ccount = 0;
 #define NEW_LOAD_MEMBASE_FLAGS(cfg,dest,op,dr,base,offset,ins_flags) do { \
 		guint8 __ins_flags = ins_flags; \
 		if (__ins_flags & MONO_INST_FAULT) { \
-			gboolean __out_of_page = offset > mono_target_pagesize (); \
+			gboolean __out_of_page = offset > GUINT_TO_INT(mono_target_pagesize ()); \
 			MONO_EMIT_NULL_CHECK ((cfg), (base), __out_of_page); \
 		} \
 		NEW_LOAD_MEMBASE ((cfg), (dest), (op), (dr), (base), (offset)); \
@@ -916,7 +916,7 @@ static int ccount = 0;
 		MonoInst *__inst; \
 		guint8 __ins_flags = ins_flags; \
 		if (__ins_flags & MONO_INST_FAULT) { \
-			int __out_of_page = offset > mono_target_pagesize (); \
+			int __out_of_page = offset > GUINT_TO_INT(mono_target_pagesize ()); \
 			MONO_EMIT_NULL_CHECK ((cfg), (base), __out_of_page); \
 		} \
 		NEW_LOAD_MEMBASE ((cfg), (__inst), (op), (dr), (base), (offset)); \

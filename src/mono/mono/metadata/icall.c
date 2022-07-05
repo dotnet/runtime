@@ -819,8 +819,8 @@ ves_icall_System_Array_FastCopy (MonoArrayHandle source, int source_idx, MonoArr
 	}
 
 	/* there's no integer overflow since mono_array_length_internal returns an unsigned integer */
-	if ((GINT_TO_UINT(dest_idx + length) > mono_array_handle_length (dest)) ||
-		(GINT_TO_UINT(source_idx + length) > mono_array_handle_length (source)))
+	if ((GINT_TO_UINTPTR(dest_idx + length) > mono_array_handle_length (dest)) ||
+		(GINT_TO_UINTPTR(source_idx + length) > mono_array_handle_length (source)))
 		return FALSE;
 
 	MonoClass * const src_class = m_class_get_element_class (src_vtable->klass);
@@ -3419,7 +3419,7 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 
 			MonoArrayHandle subarray_handle = MONO_HANDLE_NEW (MonoArray, NULL);
 
-			for (guint32 i = 0; i < mono_array_length_internal (arr); ++i) {
+			for (mono_array_size_t i = 0; i < mono_array_length_internal (arr); ++i) {
 				MonoArray *subarray = mono_array_new_full_checked (m_class_get_element_class (m->klass), &lengths [1], NULL, error);
 				goto_if_nok (error, return_null);
 				MONO_HANDLE_ASSIGN_RAW (subarray_handle, subarray); // FIXME? Overkill?
@@ -5187,7 +5187,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes (MonoQCallAssemblyH
 			set_class_failure_in_array (exl, i, (MonoClass*)tmp->data);
 		}
 		/* Types for which it don't */
-		for (guint j = 0; j < mono_array_handle_length (exceptions); ++j) {
+		for (uintptr_t j = 0; j < mono_array_handle_length (exceptions); ++j) {
 			MONO_HANDLE_ARRAY_GETREF (exc, exceptions, j);
 			if (!MONO_HANDLE_IS_NULL (exc)) {
 				g_assert (i < length);

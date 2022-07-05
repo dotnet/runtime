@@ -97,6 +97,6 @@ mono_profhelper_add_to_fd_set (fd_set *set, SOCKET fd, int *max_fd)
 
 	FD_SET (fd, set);
 
-	if (GINT_TO_UINT(*max_fd) < fd)
+	if (*max_fd < GUINT64_TO_INT(fd))
 		*max_fd = (int)fd;
 }
