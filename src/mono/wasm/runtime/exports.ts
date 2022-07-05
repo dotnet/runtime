@@ -407,7 +407,7 @@ export const __linker_exports: any = {
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
     dotnet_browser_sign,
-    dotnet_browser_encrypt_decrypt
+    dotnet_browser_encrypt_decrypt,
 
     // threading exports, if threading is enabled
     ...mono_wasm_threads_exports,
