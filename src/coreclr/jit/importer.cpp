@@ -13875,7 +13875,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 impPopStack(3);
 
-                // Else call a helper function to do the assignment
+// Else call a helper function to do the assignment
 #ifdef TARGET_64BIT
                 // The CLI Spec allows an array to be indexed by either an int32 or a native int.
                 // The array helper takes a native int for array length.
