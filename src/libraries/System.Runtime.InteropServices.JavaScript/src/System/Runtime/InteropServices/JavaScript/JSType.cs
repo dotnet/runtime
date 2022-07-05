@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshaling ignores result of the JavaScript function.
+        /// Suppresses marshaling of the JavaScript function's return value and discards it.
         /// </summary>
         public sealed class Discard : JSType
         {
