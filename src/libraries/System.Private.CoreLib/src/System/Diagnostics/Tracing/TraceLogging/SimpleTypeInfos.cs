@@ -1,21 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-using System.Diagnostics;
-using System.Runtime.Serialization;
-#endif
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: Type handler for empty or unsupported types.
@@ -320,9 +311,7 @@ namespace System.Diagnostics.Tracing
     {
         private readonly TraceLoggingTypeInfo valueInfo;
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
         public NullableTypeInfo(Type type, List<Type> recursionCheck)
             : base(type)
         {
@@ -341,10 +330,8 @@ namespace System.Diagnostics.Tracing
             this.valueInfo.WriteMetadata(group, "Value", format);
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
                 Justification = "The underlying type of Nullable<T> must be defaultable")]
-#endif
         public override void WriteData(PropertyValue value)
         {
             object? refVal = value.ReferenceValue;
@@ -352,11 +339,7 @@ namespace System.Diagnostics.Tracing
             TraceLoggingDataCollector.AddScalar(hasValue);
             PropertyValue val = valueInfo.PropertyValueFactory(hasValue
                 ? refVal
-#if ES_BUILD_STANDALONE
-                : FormatterServices.GetUninitializedObject(valueInfo.DataType));
- #else
                 : RuntimeHelpers.GetUninitializedObject(valueInfo.DataType));
- #endif
             this.valueInfo.WriteData(val);
         }
     }
