@@ -102,6 +102,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
         echo --verify-type-and-field-layout>>$__ResponseFile
         echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
+        echo --targetos:$(TargetOS)>>$__ResponseFile
         echo -O>>$__ResponseFile
 
         echo "Response file: $__ResponseFile"
@@ -227,6 +228,7 @@ if defined RunCrossGen2 (
     echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
+    echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
