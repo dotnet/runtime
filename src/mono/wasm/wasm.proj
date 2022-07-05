@@ -340,7 +340,7 @@
           >
     <!-- install typescript and rollup -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm ci" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm audit" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm audit --verbose" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
     <!-- npm install is faster on dev machine as it doesn't wipe node_modules folder -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
