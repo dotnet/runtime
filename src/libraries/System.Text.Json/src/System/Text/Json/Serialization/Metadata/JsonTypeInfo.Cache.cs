@@ -52,28 +52,14 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, JsonConverter converter)
+        internal JsonPropertyInfo CreatePropertyUsingTypeInfo(Type propertyType)
         {
-            Debug.Assert(propertyType.IsInSubtypeRelationshipWith(converter.TypeToConvert));
-
-            if (converter.TypeToConvert == propertyType)
-            {
-                // For the vast majority of use cases, the converter type matches the property type.
-                // Avoid reflection-based initialization by delegating JsonPropertyInfo<T> construction to the converter itself.
-                return converter.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
-            }
-
-            s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-            MethodInfo factoryInfo = s_createJsonPropertyInfo.MakeGenericMethod(propertyType);
-            return (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
+            JsonTypeInfo typeInfoForProperty = Options.GetOrAddJsonTypeInfo(propertyType, configured: false);
+            Debug.Assert(typeInfoForProperty.Type == propertyType);
+            // note: this.Options does not have to equal typeInfoForProperty.Options
+            //       because cache unifies equivalent options
+            return typeInfoForProperty.CreateJsonPropertyInfo(this, Options);
         }
-
-        private static JsonPropertyInfo CreateJsonPropertyInfo<T>(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
-            => new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options);
-
-        private static MethodInfo? s_createJsonPropertyInfo;
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

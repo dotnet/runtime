@@ -26,7 +26,7 @@ namespace System.Text.Json
         /// <summary>
         /// This method returns configured non-null JsonTypeInfo
         /// </summary>
-        internal JsonTypeInfo GetOrAddJsonTypeInfo(Type type)
+        internal JsonTypeInfo GetOrAddJsonTypeInfo(Type type, bool configured = true)
         {
             if (_cachingContext == null)
             {
@@ -41,7 +41,10 @@ namespace System.Text.Json
                 return null;
             }
 
-            typeInfo.EnsureConfigured();
+            if (configured)
+            {
+                typeInfo.EnsureConfigured();
+            }
 
             return typeInfo;
         }

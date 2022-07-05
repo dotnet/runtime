@@ -148,7 +148,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (Kind == JsonTypeInfoKind.Object)
                 {
-                    // We need to ensure SourceGen had a chance to add properties
                     LateAddProperties();
                 }
 
@@ -453,11 +452,6 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 // Resolver didn't modify properties
-
-                // Source gen currently when initializes properties
-                // also assigns JsonPropertyInfo's JsonTypeInfo which causes SO if there are any
-                // cycles in the object graph. For that reason properties cannot be added immediately.
-                // This is a no-op for ReflectionJsonTypeInfo
                 LateAddProperties();
             }
 
@@ -531,7 +525,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 #endif
 
-        internal virtual void LateAddProperties() { }
+        private protected abstract void LateAddProperties();
 
         /// <summary>
         /// Creates JsonTypeInfo
@@ -548,7 +542,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
-            DefaultJsonTypeInfoResolver.RootDefaultInstance();
+            options.InitializeForReflectionSerializer();
             return new CustomJsonTypeInfo<T>(options);
         }
 
@@ -579,7 +573,6 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
 
-            DefaultJsonTypeInfoResolver.RootDefaultInstance();
             s_createJsonTypeInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonTypeInfo), new Type[] { typeof(JsonSerializerOptions) })!;
             return (JsonTypeInfo)s_createJsonTypeInfo.MakeGenericMethod(type)
                 .Invoke(null, new object[] { options })!;
@@ -591,8 +584,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="propertyType">Type of the property</param>
         /// <param name="name">Name of the property</param>
         /// <returns>JsonPropertyInfo instance</returns>
-        [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
-        [RequiresDynamicCode(MetadataFactoryRequiresUnreferencedCode)]
         public JsonPropertyInfo CreateJsonPropertyInfo(Type propertyType, string name)
         {
             if (propertyType == null)
@@ -610,14 +601,20 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(propertyType), propertyType, Type, name);
             }
 
-            JsonConverter converter = Options.GetConverterForType(propertyType);
-            JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType, converter);
+            if (!Options.IsInitializedForMetadataGeneration)
+            {
+                Options.InitializeForMetadataGeneration();
+            }
+
+            JsonPropertyInfo propertyInfo = CreatePropertyUsingTypeInfo(propertyType);
             propertyInfo.Name = name;
 
             return propertyInfo;
         }
 
         internal abstract JsonParameterInfoValues[] GetParameterInfoValues();
+
+        private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options);
 
         internal void CacheMember(JsonPropertyInfo jsonPropertyInfo, JsonPropertyDictionary<JsonPropertyInfo> propertyCache, ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
@@ -817,23 +814,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonPropertyDictionary<JsonPropertyInfo> CreatePropertyCache(int capacity)
         {
             return new JsonPropertyDictionary<JsonPropertyInfo>(Options.PropertyNameCaseInsensitive, capacity);
-        }
-
-        // This method gets the runtime information for a given type or property.
-        // The runtime information consists of the following:
-        // - class type,
-        // - element type (if the type is a collection),
-        // - the converter (either native or custom), if one exists.
-        private protected static JsonConverter GetConverterFromMember(
-            Type typeToConvert,
-            MemberInfo memberInfo,
-            JsonSerializerOptions options,
-            out JsonConverter? customConverter)
-        {
-            Debug.Assert(typeToConvert != null);
-            Debug.Assert(!IsInvalidForSerialization(typeToConvert), $"Type `{typeToConvert.FullName}` should already be validated.");
-            customConverter = options.GetCustomConverterFromMember(typeToConvert, memberInfo);
-            return options.GetConverterForType(typeToConvert);
         }
 
         private static JsonParameterInfo CreateConstructorParameter(

@@ -102,6 +102,19 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
+        private protected sealed override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
+        {
+            // Options on this type info might not be the same as the one passed in
+            // This is because we're taking JsonTypeInfo from cache which might end up being equivalent but not same reference
+            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
+            {
+                DefaultConverterForType = Converter,
+                JsonTypeInfo = this,
+            };
+        }
+
+        private protected abstract override void LateAddProperties();
+
         private protected void MapInterfaceTypesToCallbacks()
         {
             // Callbacks currently only supported in object kinds

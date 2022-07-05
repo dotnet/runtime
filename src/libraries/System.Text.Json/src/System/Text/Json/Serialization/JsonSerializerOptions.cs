@@ -170,7 +170,8 @@ namespace System.Text.Json
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
-                return _typeInfoResolver ?? DefaultJsonTypeInfoResolver.RootDefaultInstance();
+                InitializeForReflectionSerializer();
+                return _typeInfoResolver;
             }
             set
             {
@@ -626,6 +627,7 @@ namespace System.Text.Json
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [MemberNotNull(nameof(_typeInfoResolver))]
         internal void InitializeForReflectionSerializer()
         {
             if (_typeInfoResolver is JsonSerializerContext ctx)

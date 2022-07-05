@@ -23,6 +23,11 @@ namespace System.Text.Json.Serialization.Metadata
         {
         }
 
+        private protected sealed override void LateAddProperties()
+        {
+            // no properties by default
+        }
+
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
             // Parametrized constructors not supported yet for custom types

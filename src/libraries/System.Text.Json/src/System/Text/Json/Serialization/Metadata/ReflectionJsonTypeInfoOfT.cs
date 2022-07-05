@@ -30,11 +30,6 @@ namespace System.Text.Json.Serialization.Metadata
             PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
             MapInterfaceTypesToCallbacks();
 
-            if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
-            {
-                AddPropertiesAndParametersUsingReflection();
-            }
-
             Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
             if (converter.UsesDefaultConstructor)
             {
@@ -54,11 +49,23 @@ namespace System.Text.Json.Serialization.Metadata
             Converter.ConfigureJsonTypeInfoUsingReflection(this, Options);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked as RequiresUnreferencedCode")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked RequiresDynamicCode.")]
+        private protected sealed override void LateAddProperties()
+        {
+            AddPropertiesAndParametersUsingReflection();
+        }
+
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private void AddPropertiesAndParametersUsingReflection()
         {
-            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+            if (PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            {
+                return;
+            }
 
             const BindingFlags BindingFlags =
                 BindingFlags.Instance |
@@ -192,22 +199,18 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonConverter? customConverter;
-            JsonConverter converter;
+            JsonPropertyInfo jsonPropertyInfo;
 
             try
             {
-                converter = GetConverterFromMember(
-                    typeToConvert,
-                    memberInfo,
-                    options,
-                    out customConverter);
+                customConverter = options.GetCustomConverterFromMember(typeToConvert, memberInfo);
+                jsonPropertyInfo = CreatePropertyUsingTypeInfo(typeToConvert);
             }
             catch (InvalidOperationException) when (ignoreCondition == JsonIgnoreCondition.Always)
             {
                 return null;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert, converter);
             jsonPropertyInfo.IgnoreCondition = ignoreCondition;
             jsonPropertyInfo.CustomConverter = customConverter;
             jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo);

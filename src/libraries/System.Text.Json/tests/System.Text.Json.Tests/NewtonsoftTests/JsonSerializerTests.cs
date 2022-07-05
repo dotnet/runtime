@@ -129,7 +129,7 @@ namespace System.Text.Json.Tests
 
             p1.Spouse = p2;
             p2.Spouse = p1;
-            Assert.Throws<JsonException> (() => JsonSerializer.Serialize(p1));
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(p1));
         }
     }
 

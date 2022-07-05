@@ -32,6 +32,7 @@ namespace System.Text.Json.Serialization.Tests
 
             DefaultJsonTypeInfoResolver r = new();
             JsonSerializerOptions o = new();
+            o.TypeInfoResolver = r;
             o.Converters.Add(new CustomThrowingConverter<SomeClass>());
 
             JsonTypeInfo ti = r.GetTypeInfo(type, o);
@@ -225,8 +226,12 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(string), JsonTypeInfoKind.None)]
         public static void AddingPropertyToNonObjectJsonTypeInfoKindThrows(Type type, JsonTypeInfoKind expectedKind)
         {
-            JsonSerializerOptions options = new();
             DefaultJsonTypeInfoResolver resolver = new();
+            JsonSerializerOptions options = new()
+            {
+                TypeInfoResolver = resolver
+            };
+
             JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
             Assert.Equal(expectedKind, typeInfo.Kind);
 

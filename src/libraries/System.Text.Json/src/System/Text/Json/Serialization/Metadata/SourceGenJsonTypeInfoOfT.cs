@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
         }
 
-        internal override void LateAddProperties()
+        private protected sealed override void LateAddProperties()
         {
             AddPropertiesUsingSourceGenInfo();
         }
