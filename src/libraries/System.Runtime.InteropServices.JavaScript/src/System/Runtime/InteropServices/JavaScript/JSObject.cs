@@ -7,9 +7,9 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Holds proxy of JavaScript object.
+    /// Represents a reference to an object in the JavaScript host environment and enables interaction with it as a proxy.
     /// </summary>
-    /// <remarks>Proxies are relatively expensive object. Developers could manualy <see cref="Dispose()"/> them to save runtime resources.</remarks>
+    /// <remarks>JSObject instances are expensive, so use <see cref="Dispose()"/> to release instances once you no longer need to retain a reference to the target object.</remarks>
     [SupportedOSPlatform("browser")]
     public partial class JSObject : IDisposable
     {
