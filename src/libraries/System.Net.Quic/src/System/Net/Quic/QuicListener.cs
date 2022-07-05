@@ -181,7 +181,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             }
 
             QuicConnection connection = new QuicConnection(new MsQuicConnection(data.Connection, data.Info));
-            SslClientHelloInfo clientHello = new SslClientHelloInfo(Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength), SslProtocols.Tls13);
+            SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
             // Kicks off the rest of the handshake in the background.
             pendingConnection.StartHandshake(connection, clientHello, _connectionOptionsCallback);
