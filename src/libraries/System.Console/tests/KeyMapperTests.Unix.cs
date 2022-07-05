@@ -10,15 +10,13 @@ namespace System.Tests;
 
 public class KeyMapperTests
 {
+    private static readonly TerminalData[] Terminals = { new XTermData(), new GNOMETerminalData(), new UXTermData(), new PuTTYData() };
+
     public static IEnumerable<object[]> RecordedScenarios
     {
         get
         {
-            foreach (TerminalData terminalData in new TerminalData[]
-                {
-                    new XtermData(),
-                    new Xterm256ColorData()
-                })
+            foreach (TerminalData terminalData in Terminals)
             {
                 foreach ((byte[] bytes, ConsoleKeyInfo cki) in terminalData.RecordedScenarios)
                 {
@@ -89,7 +87,7 @@ public class KeyMapperTests
     {
         get
         {
-            foreach (TerminalData terminalData in new TerminalData[] { new XtermData(), new Xterm256ColorData() })
+            foreach (TerminalData terminalData in Terminals)
             {
                 foreach ((char ch, ConsoleKey key) in AsciiKeys)
                 {
@@ -128,7 +126,7 @@ public abstract class TerminalData
     internal Encoding ConsoleEncoding => _consoleEncoding ??= Encoding.GetEncoding(EncodingCharset).RemovePreamble();
 }
 
-public class Xterm256ColorData : TerminalData
+public class GNOMETerminalData : TerminalData
 {
     protected override string EncodingCharset => "utf-8";
     protected override string Term => "xterm-256color";
@@ -194,7 +192,7 @@ public class Xterm256ColorData : TerminalData
     }
 }
 
-public class XtermData : TerminalData
+public class XTermData : TerminalData
 {
     protected override string EncodingCharset => "utf-8";
     protected override string Term => "xterm";
@@ -260,5 +258,125 @@ public class XtermData : TerminalData
     }
 }
 
+public class UXTermData : TerminalData
+{
+    protected override string EncodingCharset => "utf-8";
+    protected override string Term => "xterm";
+    internal override byte Verase => 127;
+    protected override string EncodedTerminalDb => "GgEpACYADwCdAbgFeHRlcm18eHRlcm0tZGViaWFufFgxMSB0ZXJtaW5hbCBlbXVsYXRvcgAAAQAAAQAAAAEAAAAAAQEAAAAAAAAAAQAAAQAAAQAAAAAAAAAAAQBQAAgAGAD//////////////////////////wgAQAAAAAQABgAIABkAHgAmACoALgD//zkASgBMAFAAVwD//1kAZgD//2oAbgB4AHwA/////4AAhACJAI4A//+gAKUAqgD//68AtAC5AL4AxwDLANIA///kAOkA7wD1AP///////wcB////////GQH//x0B////////HwH//yQB//////////8oASwBMgE2AToBPgFEAUoBUAFWAVwBYAH//2UB//9pAW4BcwF3AX4B//+FAYkBkQH/////////////////////////////mQGiAf////+rAbQBvQHGAc8B2AHhAeoB8wH8Af///////wUCCQIOAhMCJwIqAv////88Aj8CSgJNAk8CUgKvAv//sgL///////////////+0Av//////////uAL//+0C//////EC9wL//////////////////////////////QIBA///////////////////////////////////////////////////////////////////BQP/////DAP//////////xMDGgMhA/////8oA///LwP///////82A/////////////89A0MDSQNQA1cDXgNlA20DdQN9A4UDjQOVA50DpQOsA7MDugPBA8kD0QPZA+ED6QPxA/kDAQQIBA8EFgQdBCUELQQ1BD0ERQRNBFUEXQRkBGsEcgR5BIEEiQSRBJkEoQSpBLEEuQTABMcEzgT/////////////////////////////////////////////////////////////0wTeBOME9gT6BP//////////AwVJBf//////////////////jwX///////////////////////+UBf///////////////////////////////////////////////////////////////////////////////////////5oF////////ngWoBf//////////////////////////////////////////////////////////////////////////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"; // /lib/terminfo/x/xterm
+
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
+    {
+        get
+        {
+            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
+            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
+            yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 195, 161 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
+            yield return (new byte[] { 194, 129 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.D1, false, false, true));
+            yield return (new byte[] { 194, 177 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
+            yield return (new byte[] { 194, 178 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo(default, ConsoleKey.OemPlus, false, false, true));
+            yield return (new byte[] { 194, 189 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
+            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
+            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
+            yield return (new byte[] { 195, 191 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 194, 136 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
+            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
+            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
+            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
+            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
+            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.NumPad1, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.NumPad1, false, false, true));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
+            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+        }
+    }
+}
+
+public class PuTTYData : TerminalData
+{
+    protected override string EncodingCharset => "";
+    protected override string Term => "xterm";
+    internal override byte Verase => 127;
+    protected override string EncodedTerminalDb => "GgEpACYADwCdAaQFeHRlcm18eHRlcm0tZGViaWFufFgxMSB0ZXJtaW5hbCBlbXVsYXRvcgAAAQAAAQAAAAEAAAAAAQEAAAAAAAAAAQAAAQAAAQAAAAAAAAAAAQBQAAgAGAD//////////////////////////wgAQAAAAAQABgAIABkAHgAmACoALgD//zkASgBMAFAAVwD//1kAZgD//2oAbgB4AHwA/////4AAhACJAI4A//+gAKUAqgD//68AtAC5AL4AxwDLANIA///kAOkA7wD1AP///////wcB////////GQH//x0B////////HwH//yQB//////////8oASwBMgE2AToBPgFEAUoBUAFWAVwBYAH//2UB//9pAW4BcwF3AX4B//+FAYkBkQH/////////////////////////////mQGiAf////+rAbQBvQHGAc8B2AHhAeoB8wH8Af///////wUCCQIOAv//EwIWAv////8oAisCNgI5AjsCPgKbAv//ngL///////////////+gAv//////////pAL//9kC/////90C4wL/////////////////////////////6QLtAv//////////////////////////////////////////////////////////////////8QL/////+AL///////////8CBgMNA/////8UA///GwP///////8iA/////////////8pAy8DNQM8A0MDSgNRA1kDYQNpA3EDeQOBA4kDkQOYA58DpgOtA7UDvQPFA80D1QPdA+UD7QP0A/sDAgQJBBEEGQQhBCkEMQQ5BEEESQRQBFcEXgRlBG0EdQR9BIUEjQSVBJ0EpQSsBLMEugT/////////////////////////////////////////////////////////////vwTKBM8E4gTmBP//////////7wQ1Bf//////////////////ewX///////////////////////+ABf///////////////////////////////////////////////////////////////////////////////////////4YF////////igWUBf//////////////////////////////////////////////////////////////////////////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"; // /lib/terminfo/x/xterm
+
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
+    {
+        get
+        {
+            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
+            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
+            yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
+            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
+            yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
+            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
+            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
+            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
+            yield return (new byte[] { 27, 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
+            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
+            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
+        }
+    }
+}
 
 
