@@ -13728,21 +13728,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 ldelemClsHnd = resolvedToken.hClass;
-
-                // If it's a reference type or generic variable type
-                // then just generate code as though it's a ldelem.ref instruction
-                if (!eeIsValueClass(ldelemClsHnd))
-                {
-                    lclTyp = TYP_REF;
-                    opcode = CEE_LDELEM_REF;
-                }
-                else
-                {
-                    CorInfoType jitTyp = info.compCompHnd->asCorInfoType(ldelemClsHnd);
-                    lclTyp             = JITtype2varType(jitTyp);
-                    tiRetVal           = verMakeTypeInfo(ldelemClsHnd); // precise type always needed for struct
-                    tiRetVal.NormaliseForStack();
-                }
+                lclTyp       = JITtype2varType(info.compCompHnd->asCorInfoType(ldelemClsHnd));
+                tiRetVal     = verMakeTypeInfo(ldelemClsHnd);
+                tiRetVal.NormaliseForStack();
                 goto ARR_LD;
 
             case CEE_LDELEM_I1:
