@@ -975,7 +975,7 @@ namespace System.Numerics
 
             if (typeof(TOther) == typeof(Complex))
             {
-                result = (Complex)(object)value!;
+                result = (Complex)(object)value;
             }
             else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
             {
@@ -994,7 +994,7 @@ namespace System.Numerics
 
             if (typeof(TOther) == typeof(Complex))
             {
-                result = (Complex)(object)value!;
+                result = (Complex)(object)value;
             }
             else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
             {
@@ -1013,7 +1013,7 @@ namespace System.Numerics
 
             if (typeof(TOther) == typeof(Complex))
             {
-                result = (Complex)(object)value!;
+                result = (Complex)(object)value;
             }
             else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
             {

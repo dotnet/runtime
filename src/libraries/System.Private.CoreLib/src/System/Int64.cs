@@ -565,7 +565,7 @@ namespace System
 
             if (typeof(TOther) == typeof(long))
             {
-                result = (long)(object)value!;
+                result = (long)(object)value;
             }
             else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
             {
@@ -584,7 +584,7 @@ namespace System
 
             if (typeof(TOther) == typeof(long))
             {
-                result = (long)(object)value!;
+                result = (long)(object)value;
             }
             else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
             {
@@ -603,7 +603,7 @@ namespace System
 
             if (typeof(TOther) == typeof(long))
             {
-                result = (long)(object)value!;
+                result = (long)(object)value;
             }
             else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
             {
@@ -756,6 +756,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFromChecked<TOther>(TOther value, out long result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -768,49 +769,49 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value!;
+                double actualValue = (double)(object)value;
                 result = checked((long)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value!;
+                Half actualValue = (Half)(object)value;
                 result = checked((long)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value!;
+                short actualValue = (short)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value!;
+                int actualValue = (int)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value!;
+                Int128 actualValue = (Int128)(object)value;
                 result = checked((long)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value!;
+                nint actualValue = (nint)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value!;
+                sbyte actualValue = (sbyte)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value!;
+                float actualValue = (float)(object)value;
                 result = checked((long)actualValue);
                 return true;
             }
@@ -827,6 +828,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFromSaturating<TOther>(TOther value, out long result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -839,52 +841,52 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value!;
+                double actualValue = (double)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (long)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value!;
+                Half actualValue = (Half)(object)value;
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (long)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value!;
+                short actualValue = (short)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value!;
+                int actualValue = (int)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value!;
+                Int128 actualValue = (Int128)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (long)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value!;
+                nint actualValue = (nint)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value!;
+                sbyte actualValue = (sbyte)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value!;
+                float actualValue = (float)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (long)actualValue;
                 return true;
@@ -902,6 +904,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFromTruncating<TOther>(TOther value, out long result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -914,51 +917,51 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value!;
+                double actualValue = (double)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (long)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value!;
+                Half actualValue = (Half)(object)value;
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (long)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value!;
+                short actualValue = (short)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value!;
+                int actualValue = (int)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value!;
+                Int128 actualValue = (Int128)(object)value;
                 result = (long)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value!;
+                nint actualValue = (nint)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value!;
+                sbyte actualValue = (sbyte)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                float actualValue = (float)(object)value!;
+                float actualValue = (float)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (long)actualValue;
                 return true;

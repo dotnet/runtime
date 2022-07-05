@@ -505,7 +505,7 @@ namespace System
 
             if (typeof(TOther) == typeof(nuint))
             {
-                result = (nuint)(object)value!;
+                result = (nuint)(object)value;
             }
             else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
             {
@@ -524,7 +524,7 @@ namespace System
 
             if (typeof(TOther) == typeof(nuint))
             {
-                result = (nuint)(object)value!;
+                result = (nuint)(object)value;
             }
             else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
             {
@@ -543,7 +543,7 @@ namespace System
 
             if (typeof(TOther) == typeof(nuint))
             {
-                result = (nuint)(object)value!;
+                result = (nuint)(object)value;
             }
             else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
             {
@@ -635,43 +635,43 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value!;
+                byte actualValue = (byte)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value!;
+                char actualValue = (char)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value!;
+                decimal actualValue = (decimal)(object)value;
                 result = checked((nuint)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value!;
+                ushort actualValue = (ushort)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value!;
+                uint actualValue = (uint)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualValue = (ulong)(object)value!;
+                ulong actualValue = (ulong)(object)value;
                 result = checked((nuint)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value!;
+                UInt128 actualValue = (UInt128)(object)value;
                 result = checked((nuint)actualValue);
                 return true;
             }
@@ -701,44 +701,44 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value!;
+                byte actualValue = (byte)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value!;
+                char actualValue = (char)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value!;
+                decimal actualValue = (decimal)(object)value;
                 result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) :
                          (actualValue <= nuint_t.MinValue) ? unchecked((nuint)nuint_t.MinValue) : (nuint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value!;
+                ushort actualValue = (ushort)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value!;
+                uint actualValue = (uint)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualValue = (ulong)(object)value!;
+                ulong actualValue = (ulong)(object)value;
                 result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) : (nuint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value!;
+                UInt128 actualValue = (UInt128)(object)value;
                 result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) : (nuint)actualValue;
                 return true;
             }
@@ -768,44 +768,44 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualValue = (byte)(object)value!;
+                byte actualValue = (byte)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualValue = (char)(object)value!;
+                char actualValue = (char)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualValue = (decimal)(object)value!;
+                decimal actualValue = (decimal)(object)value;
                 result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) :
                          (actualValue <= nuint_t.MinValue) ? unchecked((nuint)nuint_t.MinValue) : (nuint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualValue = (ushort)(object)value!;
+                ushort actualValue = (ushort)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualValue = (uint)(object)value!;
+                uint actualValue = (uint)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualValue = (ulong)(object)value!;
+                ulong actualValue = (ulong)(object)value;
                 result = (nuint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualValue = (UInt128)(object)value!;
+                UInt128 actualValue = (UInt128)(object)value;
                 result = (nuint)actualValue;
                 return true;
             }

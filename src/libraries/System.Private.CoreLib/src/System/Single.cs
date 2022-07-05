@@ -984,7 +984,7 @@ namespace System
 
             if (typeof(TOther) == typeof(float))
             {
-                result = (float)(object)value!;
+                result = (float)(object)value;
             }
             else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
             {
@@ -1003,7 +1003,7 @@ namespace System
 
             if (typeof(TOther) == typeof(float))
             {
-                result = (float)(object)value!;
+                result = (float)(object)value;
             }
             else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
             {
@@ -1022,7 +1022,7 @@ namespace System
 
             if (typeof(TOther) == typeof(float))
             {
-                result = (float)(object)value!;
+                result = (float)(object)value;
             }
             else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
             {
@@ -1158,49 +1158,49 @@ namespace System
 
             if (typeof(TOther) == typeof(double))
             {
-                double actualValue = (double)(object)value!;
+                double actualValue = (double)(object)value;
                 result = (float)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualValue = (Half)(object)value!;
+                Half actualValue = (Half)(object)value;
                 result = (float)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualValue = (short)(object)value!;
+                short actualValue = (short)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualValue = (int)(object)value!;
+                int actualValue = (int)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualValue = (long)(object)value!;
+                long actualValue = (long)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualValue = (Int128)(object)value!;
+                Int128 actualValue = (Int128)(object)value;
                 result = (float)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualValue = (nint)(object)value!;
+                nint actualValue = (nint)(object)value;
                 result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualValue = (sbyte)(object)value!;
+                sbyte actualValue = (sbyte)(object)value;
                 result = actualValue;
                 return true;
             }
