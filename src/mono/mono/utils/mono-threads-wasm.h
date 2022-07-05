@@ -39,7 +39,14 @@ mono_threads_wasm_async_run_in_main_thread (void (*func) (void));
  */
 void
 mono_threads_wasm_async_run_in_main_thread_vi (void (*func)(gpointer), gpointer user_data);
+
+void
+mono_threads_wasm_async_run_in_main_thread_vii (void (*func)(gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 #endif /* DISABLE_THREADS */
+
+// Called from register_thread when a pthread attaches to the runtime
+void
+mono_threads_wasm_on_thread_attached (void);
 
 #endif /* HOST_WASM*/
 

@@ -354,6 +354,38 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return 0;
         }
 
+        static MibcConfig ParseMibcConfigsAndMerge(TypeSystemContext tsc, params PEReader[] pEReader)
+        {
+            MibcConfig firstCfg = null;
+            foreach (PEReader peReader in pEReader)
+            {
+                MibcConfig config = MIbcProfileParser.ParseMibcConfig(tsc, peReader);
+                if (firstCfg == null)
+                {
+                    firstCfg = config;
+                }
+                else
+                {
+                    if (firstCfg.Runtime != config.Runtime)
+                    {
+                        PrintMessage(
+                            $"Warning: Attempting to merge MIBCs collected on different runtimes: {firstCfg.Runtime} != {config.Runtime}");
+                    }
+                    if (firstCfg.FormatVersion != config.FormatVersion)
+                    {
+                        PrintMessage(
+                            $"Warning: Attempting to merge MIBCs with different format versions: {firstCfg.FormatVersion} != {config.FormatVersion}");
+                    }
+                    if (firstCfg.Os != config.Os ||
+                        firstCfg.Arch != config.Arch)
+                    {
+                        PrintMessage(
+                            $"Warning: Attempting to merge MIBCs collected on different RIDs: {firstCfg.Os}-{firstCfg.Arch} != {config.Os}-{config.Arch}");
+                    }
+                }
+            }
+            return firstCfg;
+        }
 
         static int InnerMergeMain(CommandLineOptions commandLineOptions)
         {
@@ -399,7 +431,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
-                int result = MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                MibcConfig mergedConfig = ParseMibcConfigsAndMerge(tsc, mibcReaders);
+                int result = MibcEmitter.GenerateMibcFile(mergedConfig, tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
                 if (result == 0 && commandLineOptions.InheritTimestamp)
                 {
                     commandLineOptions.OutputFileName.CreationTimeUtc = commandLineOptions.InputFilesToMerge.Max(fi => fi.CreationTimeUtc);
@@ -794,7 +827,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         static void PrintMibcStats(ProfileData data)
         {
-            List<MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
+            PrintOutput(data.Config?.ToString());
+            List <MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
             List<MethodProfileData> profiledMethods = methods.Where(spd => spd.SchemaData != null).ToList();
             PrintOutput($"# Methods: {methods.Count}");
             PrintOutput($"# Methods with any profile data: {profiledMethods.Count(spd => spd.SchemaData.Length > 0)}");
@@ -1731,13 +1765,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     GenerateJittraceFile(commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.JitTraceOptions);
                 else if (commandLineOptions.FileType.Value == PgoFileType.mibc)
                 {
+                    var config = new MibcConfig();
+
+                    // Look for OS and Arch, e.g. "Windows" and "x64"
+                    TraceEvent processInfo = p.EventsInProcess.Filter(t => t.EventName == "ProcessInfo").FirstOrDefault();
+                    config.Os = processInfo?.PayloadByName("OSInformation")?.ToString();
+                    config.Arch = processInfo?.PayloadByName("ArchInformation")?.ToString();
+
+                    // Look for Sku, e.g. "CoreClr"
+                    TraceEvent runtimeStart = p.EventsInProcess.Filter(t => t.EventName == "Runtime/Start").FirstOrDefault();
+                    config.Runtime = runtimeStart?.PayloadByName("Sku")?.ToString();
+
                     ILCompiler.MethodProfileData[] methodProfileData = new ILCompiler.MethodProfileData[methodsUsedInProcess.Count];
                     for (int i = 0; i < methodProfileData.Length; i++)
                     {
                         ProcessedMethodData processedData = methodsUsedInProcess[i];
                         methodProfileData[i] = new ILCompiler.MethodProfileData(processedData.Method, ILCompiler.MethodProfilingDataFlags.ReadMethodCode, processedData.ExclusiveWeight, processedData.WeightedCallData, 0xFFFFFFFF, processedData.InstrumentationData);
                     }
-                    return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                    return MibcEmitter.GenerateMibcFile(config, tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
                 }
             }
             return 0;
