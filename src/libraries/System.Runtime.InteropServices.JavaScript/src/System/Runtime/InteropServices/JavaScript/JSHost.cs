@@ -8,7 +8,7 @@ using System.Threading;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Represent JavaScript host environment like browser, in which the dotnet runtime is embedded.
+    /// Represents the JavaScript host environment where the .NET runtime is currently operating.
     /// </summary>
     [SupportedOSPlatform("browser")]
     public static partial class JSHost
