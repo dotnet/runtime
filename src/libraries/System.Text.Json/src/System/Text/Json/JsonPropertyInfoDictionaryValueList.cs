@@ -28,7 +28,7 @@ namespace System.Text.Json
                     ThrowCollectionIsReadOnly();
 
                 if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
 
                 value.EnsureChildOf(_parentTypeInfo);
                 _items[index] = value;
@@ -83,7 +83,7 @@ namespace System.Text.Json
                 ThrowCollectionIsReadOnly();
 
             if (item == null)
-                throw new ArgumentNullException(nameof(item));
+                ThrowHelper.ThrowArgumentNullException(nameof(item));
 
             item.EnsureChildOf(_parentTypeInfo);
             _items.Add(item);
@@ -153,7 +153,7 @@ namespace System.Text.Json
                 ThrowCollectionIsReadOnly();
 
             if (item == null)
-                throw new ArgumentNullException(nameof(item));
+                ThrowHelper.ThrowArgumentNullException(nameof(item));
 
             item.EnsureChildOf(_parentTypeInfo);
             _items.Insert(index, item);

@@ -1,15 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
-using System.IO;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarWriter_WriteEntry_File_Tests : TarTestsBase
+    public partial class TarWriter_File_Base : TarTestsBase
     {
-        partial void VerifyPlatformSpecificMetadata(string filePath, TarEntry entry)
+        protected void VerifyPlatformSpecificMetadata(string filePath, TarEntry entry)
         {
             Assert.True(entry.ModificationTime > DateTimeOffset.UnixEpoch);
 
@@ -29,7 +27,7 @@ namespace System.Formats.Tar.Tests
 
                 if (entry is PaxTarEntry pax)
                 {
-                    VerifyPaxTimestamps(pax);
+                    VerifyExtendedAttributeTimestamps(pax);
                 }
 
                 if (entry is GnuTarEntry gnu)
