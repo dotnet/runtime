@@ -3957,7 +3957,7 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
     _ASSERTE (!th.IsGenericVariable());
 
     CorElementType elementType = th.GetVerifierCorElementType();
-    if (CorIsPrimitiveType(elementtype))
+    if (CorIsPrimitiveType(elementType))
     {
         result = asCorInfoType(elementType);
     }
