@@ -416,15 +416,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             void ConfigureLocked()
             {
-                if (_cachedConfigureError != null)
-                {
-                    _cachedConfigureError.Throw();
-                }
+                _cachedConfigureError?.Throw();
 
                 lock (_configureLock)
                 {
                     if (_isConfigured)
                         return;
+
+                    _cachedConfigureError?.Throw();
 
                     try
                     {
