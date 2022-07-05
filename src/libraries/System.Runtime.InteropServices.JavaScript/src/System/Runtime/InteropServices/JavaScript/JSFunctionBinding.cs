@@ -9,8 +9,8 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Represents binding of the exported or imported JavaScript function.
-    /// It's used by JSImport code generator and should not be used by developers in source code.
+    /// Represents a bound imported or exported JavaScript function and contains information necessary to invoke it.
+    /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
     /// </summary>
     [CLSCompliant(false)]
     [SupportedOSPlatform("browser")]
