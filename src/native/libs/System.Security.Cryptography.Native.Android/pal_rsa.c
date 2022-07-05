@@ -8,6 +8,53 @@
 
 #define RSA_FAIL -1
 
+static jobject GetRsaOaepPadding(RsaPadding padding)
+{
+    assert(padding >= OaepSHA1 && padding <= OaepSHA512);
+
+    JNIEnv* env = GetJNIEnv();
+    jobject oaepParameterSpec;
+    INIT_LOCALS(oaepLocals, oaepDigest, mgf1, mgf1ParameterSpec, pSource);
+
+    oaepLocals[mgf1] = make_java_string(env, "MGF1");
+    oaepLocals[pSource] = (*env)->GetStaticObjectField(env, g_PSourcePSpecifiedClass, g_PSourcePSpecified_DefaultField);
+
+    if (padding == OaepSHA1)
+    {
+        oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA1Field);
+        oaepLocals[oaepDigest] = make_java_string(env, "SHA-1");
+    }
+    else if (padding == OaepSHA256)
+    {
+        oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA256Field);
+        oaepLocals[oaepDigest] = make_java_string(env, "SHA-256");
+    }
+    else if (padding == OaepSHA384)
+    {
+        oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA384Field);
+        oaepLocals[oaepDigest] = make_java_string(env, "SHA-384");
+    }
+    else if (padding == OaepSHA512)
+    {
+        oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA512Field);
+        oaepLocals[oaepDigest] = make_java_string(env, "SHA-512");
+    }
+    else
+    {
+        RELEASE_LOCALS(oaepLocals, env);
+        return FAIL;
+    }
+
+    oaepParameterSpec = (*env)->NewObject(
+        env,
+        g_OAEPParameterSpecClass,
+        g_OAEPParameterSpecCtor,
+        oaepLocals[oaepDigest], oaepLocals[mgf1], oaepLocals[mgf1ParameterSpec], oaepLocals[pSource]);
+
+    RELEASE_LOCALS(oaepLocals, env);
+    return CheckJNIExceptions(env) ? FAIL : oaepParameterSpec;
+}
+
 PALEXPORT RSA* AndroidCryptoNative_RsaCreate()
 {
     RSA* rsa = xcalloc(1, sizeof(RSA));
@@ -57,61 +104,26 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* fr
 
     int32_t ret = RSA_FAIL;
     INIT_LOCALS(loc, algName, cipher, fromBytes, encryptedBytes);
-    INIT_LOCALS(oaepLocals, oaepParameterSpec, oaepDigest, mgf1, mgf1ParameterSpec, pSource);
+    jobject oaepParameterSpec = NULL;
 
     if (padding == Pkcs1)
     {
         loc[algName] = make_java_string(env, "RSA/ECB/PKCS1Padding");
-    }
-    else
-    {
-        loc[algName] = make_java_string(env, "RSA/ECB/OAEPPadding");
-        oaepLocals[mgf1] = make_java_string(env, "MGF1");
-        oaepLocals[pSource] = (*env)->GetStaticObjectField(env, g_PSourcePSpecifiedClass, g_PSourcePSpecified_DefaultField);
-
-        if (padding == OaepSHA1)
-        {
-            oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA1Field);
-            oaepLocals[oaepDigest] = make_java_string(env, "SHA-1");
-        }
-        else if (padding == OaepSHA256)
-        {
-            oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA256Field);
-            oaepLocals[oaepDigest] = make_java_string(env, "SHA-256");
-        }
-        else if (padding == OaepSHA384)
-        {
-            oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA384Field);
-            oaepLocals[oaepDigest] = make_java_string(env, "SHA-384");
-        }
-        else if (padding == OaepSHA512)
-        {
-            oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA512Field);
-            oaepLocals[oaepDigest] = make_java_string(env, "SHA-512");
-        }
-        else
-        {
-            RELEASE_LOCALS(loc, env);
-            RELEASE_LOCALS(oaepLocals, env);
-            return RSA_FAIL;
-        }
-
-        oaepLocals[oaepParameterSpec] = (*env)->NewObject(
-            env,
-            g_OAEPParameterSpecClass,
-            g_OAEPParameterSpecCtor,
-            oaepLocals[oaepDigest], oaepLocals[mgf1], oaepLocals[mgf1ParameterSpec], oaepLocals[pSource]);
-    }
-
-    loc[cipher] = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, loc[algName]);
-
-    if (padding == Pkcs1)
-    {
+        loc[cipher] = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, loc[algName]);
         (*env)->CallVoidMethod(env, loc[cipher], g_cipherInit2Method, CIPHER_ENCRYPT_MODE, rsa->publicKey);
     }
     else
     {
-        (*env)->CallVoidMethod(env, loc[cipher], g_cipherInitMethod, CIPHER_ENCRYPT_MODE, rsa->publicKey, oaepLocals[oaepParameterSpec]);
+        loc[algName] = make_java_string(env, "RSA/ECB/OAEPPadding");
+        loc[cipher] = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, loc[algName]);
+        oaepParameterSpec = GetRsaOaepPadding(padding);
+
+        if (oaepParameterSpec == FAIL)
+        {
+            goto cleanup;
+        }
+
+        (*env)->CallVoidMethod(env, loc[cipher], g_cipherInitMethod, CIPHER_ENCRYPT_MODE, rsa->publicKey, oaepParameterSpec);
     }
 
     loc[fromBytes] = make_java_byte_array(env, flen);
@@ -126,7 +138,11 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* fr
 
 cleanup:
     RELEASE_LOCALS(loc, env);
-    RELEASE_LOCALS(oaepLocals, env);
+
+    if (oaepParameterSpec != NULL && oaepParameterSpec != FAIL)
+    {
+        (*env)->DeleteLocalRef(env, oaepParameterSpec);
+    }
 
     return ret;
 }
@@ -146,62 +162,30 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
     abort_if_invalid_pointer_argument (from);
 
     JNIEnv* env = GetJNIEnv();
+    jobject cipher;
     jobject algName;
-    INIT_LOCALS(oaepLocals, oaepParameterSpec, oaepDigest, mgf1, mgf1ParameterSpec, pSource);
+    jobject oaepParameterSpec = NULL;
 
     if (padding == Pkcs1)
     {
         algName = make_java_string(env, "RSA/ECB/PKCS1Padding");
-    }
-    else
-    {
-        algName = make_java_string(env, "RSA/ECB/OAEPPadding");
-        oaepLocals[mgf1] = make_java_string(env, "MGF1");
-        oaepLocals[pSource] = (*env)->GetStaticObjectField(env, g_PSourcePSpecifiedClass, g_PSourcePSpecified_DefaultField);
-
-        if (padding == OaepSHA1)
-        {
-            oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA1Field);
-            oaepLocals[oaepDigest] = make_java_string(env, "SHA-1");
-        }
-        else if (padding == OaepSHA256)
-        {
-            oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA256Field);
-            oaepLocals[oaepDigest] = make_java_string(env, "SHA-256");
-        }
-        else if (padding == OaepSHA384)
-        {
-            oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA384Field);
-            oaepLocals[oaepDigest] = make_java_string(env, "SHA-384");
-        }
-        else if (padding == OaepSHA512)
-        {
-            oaepLocals[mgf1ParameterSpec] = (*env)->GetStaticObjectField(env, g_MGF1ParameterSpecClass, g_MGF1ParameterSpec_SHA512Field);
-            oaepLocals[oaepDigest] = make_java_string(env, "SHA-512");
-        }
-        else
-        {
-            (*env)->DeleteLocalRef(env, algName);
-            RELEASE_LOCALS(oaepLocals, env);
-            return RSA_FAIL;
-        }
-
-        oaepLocals[oaepParameterSpec] = (*env)->NewObject(
-            env,
-            g_OAEPParameterSpecClass,
-            g_OAEPParameterSpecCtor,
-            oaepLocals[oaepDigest], oaepLocals[mgf1], oaepLocals[mgf1ParameterSpec], oaepLocals[pSource]);
-    }
-
-    jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
-
-    if (padding == Pkcs1)
-    {
+        cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
         (*env)->CallVoidMethod(env, cipher, g_cipherInit2Method, CIPHER_DECRYPT_MODE, rsa->privateKey);
     }
     else
     {
-        (*env)->CallVoidMethod(env, cipher, g_cipherInitMethod, CIPHER_DECRYPT_MODE, rsa->privateKey, oaepLocals[oaepParameterSpec]);
+        algName = make_java_string(env, "RSA/ECB/OAEPPadding");
+        cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
+        oaepParameterSpec = GetRsaOaepPadding(padding);
+
+        if (oaepParameterSpec == FAIL)
+        {
+            (*env)->DeleteLocalRef(env, algName);
+            (*env)->DeleteLocalRef(env, cipher);
+            return RSA_FAIL;
+        }
+
+        (*env)->CallVoidMethod(env, cipher, g_cipherInitMethod, CIPHER_DECRYPT_MODE, rsa->privateKey, oaepParameterSpec);
     }
 
     jbyteArray fromBytes = make_java_byte_array(env, flen);
@@ -213,7 +197,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
         (*env)->DeleteLocalRef(env, cipher);
         (*env)->DeleteLocalRef(env, fromBytes);
         (*env)->DeleteLocalRef(env, algName);
-        RELEASE_LOCALS(oaepLocals, env);
+        (*env)->DeleteLocalRef(env, oaepParameterSpec);
         return RSA_FAIL;
     }
 
@@ -224,7 +208,11 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
     (*env)->DeleteLocalRef(env, fromBytes);
     (*env)->DeleteLocalRef(env, decryptedBytes);
     (*env)->DeleteLocalRef(env, algName);
-    RELEASE_LOCALS(oaepLocals, env);
+
+    if (oaepParameterSpec != NULL && oaepParameterSpec != FAIL)
+    {
+        (*env)->DeleteLocalRef(env, oaepParameterSpec);
+    }
 
     return (int32_t)decryptedBytesLen;
 }
