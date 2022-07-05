@@ -47,7 +47,7 @@
     <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider_ForAttributeWithSimpleName.cs" Link="Common\Roslyn\SyntaxValueProvider_ForAttributeWithSimpleName.cs" />
     
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
-    <Compile Include="..\..\src\System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
   </ItemGroup>
   
 </Project>
