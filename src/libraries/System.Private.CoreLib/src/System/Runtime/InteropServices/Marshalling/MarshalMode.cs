@@ -10,12 +10,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// An enumeration representing the different marshalling scenarios in our marshalling model.
     /// </summary>
-#if LIBRARYIMPORT_GENERATOR_TEST || MICROSOFT_INTEROP_SOURCEGENERATION
-    public
-#else
-    internal
-#endif
-    enum MarshalMode
+    public enum MarshalMode
     {
         /// <summary>
         /// All scenarios. A marshaller specified with this scenario will be used if there is not a specific
