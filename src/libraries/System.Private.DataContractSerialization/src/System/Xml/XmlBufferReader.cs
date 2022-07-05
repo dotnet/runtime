@@ -169,10 +169,8 @@ namespace System.Xml
             return _buffer;
         }
 
-        private ref byte GetBufferRef(int size)
-            => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(GetBuffer(size, out int offset)), offset);
         private Span<byte> GetBufferSpan(int size)
-            => GetBuffer(size, out int offset, out int offsetMax).AsSpan(offset, (offsetMax - offset));
+            => GetBuffer(size, out int offset).AsSpan(offset, size);
 
         public byte[] GetBuffer(out int offset, out int offsetMax)
         {
@@ -240,7 +238,7 @@ namespace System.Xml
                 }
                 int needed = newOffsetMax - _offsetMax;
                 DiagnosticUtility.DebugAssert(needed > 0, "");
-                int read = _stream.ReadAtLeast(_buffer.AsSpan(_offsetMax, needed), needed, throwOnEndOfStream: false);
+                int read = _stream.ReadAtLeast(_buffer.AsSpan(_offsetMax), needed, throwOnEndOfStream: false);
                 _offsetMax += read;
 
                 if (read < needed)
@@ -957,7 +955,13 @@ namespace System.Xml
 
         private T ReadRawBytes<T>() where T : unmanaged
         {
-            var value = Unsafe.ReadUnaligned<T>(ref GetBufferRef(Unsafe.SizeOf<T>()));
+            // Unsafe
+            ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(GetBuffer(Unsafe.SizeOf<T>(), out int offset)), offset);
+            var value = Unsafe.ReadUnaligned<T>(ref bytePtr);
+
+            // SAFE
+            // var value = MemoryMarshal.Read<T>(GetBufferSpan(Unsafe.SizeOf<T>()));
+
             Advance(Unsafe.SizeOf<T>());
             return value;
         }
