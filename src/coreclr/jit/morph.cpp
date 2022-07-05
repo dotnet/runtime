@@ -1022,7 +1022,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             // TODO-Arm: This optimization is not implemented for ARM32
             // so we skip this for ARM32 until it is ported to use RyuJIT backend
             //
-            if (argx->OperGet() == GT_OBJ)
+            if (argx->OperIs(GT_OBJ) && (arg.AbiInfo.GetRegNum() != REG_STK))
             {
                 GenTreeObj* argObj     = argx->AsObj();
                 unsigned    structSize = argObj->GetLayout()->GetSize();
