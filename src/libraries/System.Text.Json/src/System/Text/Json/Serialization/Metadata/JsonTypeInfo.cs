@@ -686,6 +686,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Properties have been exported to a metadata resolver,
                 // invalidate the property cache and build from scratch
 
+                ExtensionDataProperty = null;
                 if (PropertyCache is null)
                 {
                     PropertyCache = CreatePropertyCache(capacity: _properties.Count);
@@ -698,6 +699,17 @@ namespace System.Text.Json.Serialization.Metadata
                 bool isOrderSpecified = false;
                 foreach (JsonPropertyInfo property in _properties)
                 {
+                    if (property.IsExtensionData)
+                    {
+                        if (ExtensionDataProperty != null)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
+                        }
+
+                        ExtensionDataProperty = property;
+                        continue;
+                    }
+
                     if (!PropertyCache.TryAddValue(property.Name, property))
                     {
                         ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, property.Name);
@@ -917,6 +929,11 @@ namespace System.Text.Json.Serialization.Metadata
             public JsonPropertyInfoList(JsonTypeInfo jsonTypeInfo)
                 : base(jsonTypeInfo.PropertyCache?.Values)
             {
+                if (jsonTypeInfo.ExtensionDataProperty is not null)
+                {
+                    Add(jsonTypeInfo.ExtensionDataProperty);
+                }
+
                 _jsonTypeInfo = jsonTypeInfo;
             }
 
