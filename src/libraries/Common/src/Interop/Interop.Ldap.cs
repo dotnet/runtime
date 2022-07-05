@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET7_0_OR_GREATER
@@ -185,18 +186,13 @@ namespace System.DirectoryServices.Protocols
         public IntPtr bv_val = IntPtr.Zero;
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(BerVal), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-        internal unsafe struct PinningMarshaller
+        [CustomMarshaller(typeof(BerVal), Scenario.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        internal static unsafe class PinningMarshaller
         {
-            private readonly BerVal _managed;
-            public PinningMarshaller(BerVal managed)
-            {
-                _managed = managed;
-            }
+            public static ref int GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.bv_len);
 
-            public ref int GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<int>() : ref _managed.bv_len);
-
-            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
+            // All usages in our currently supported scenarios will always go through GetPinnableReference
+            public static int* ConvertToUnmanaged(BerVal managed) => throw new UnreachableException();
         }
 #endif
     }
