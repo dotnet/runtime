@@ -205,7 +205,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     for (BasicBlock* const curBlk : BasicBlockRangeList(begBlk, endBlk))
     {
         // Don't change the block weight if it came from profile data.
-        if (curBlk->hasProfileWeight())
+        if (curBlk->hasProfileWeight() && fgHaveProfileData())
         {
             reportBlockWeight(curBlk, "; unchanged: has profile weight");
             continue;
@@ -247,7 +247,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
                 // If the block has BB_ZERO_WEIGHT, then it should be marked as rarely run, and skipped, above.
                 noway_assert(curBlk->bbWeight > BB_ZERO_WEIGHT);
 
-                weight_t scale = BB_LOOP_WEIGHT_SCALE;
+                weight_t scale = curBlk->hasProfileWeight() ? curBlk->getCalledCount(this) : BB_LOOP_WEIGHT_SCALE;
 
                 if (!dominates)
                 {
