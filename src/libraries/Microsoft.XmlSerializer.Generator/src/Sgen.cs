@@ -3,11 +3,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -222,200 +221,222 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static void GenerateFile(List<string> typeNames, string defaultNamespace, string assemblyName, bool proxyOnly, bool silent, bool verbose, bool force, string outputDirectory, bool parsableerrors)
         {
-            Assembly assembly = LoadAssembly(assemblyName, true);
-            Type[] types;
+            string path = Path.IsPathRooted(assemblyName) ? assemblyName : Path.GetFullPath(assemblyName);
 
-            if (typeNames == null || typeNames.Count == 0)
+            // Get the array of runtime assemblies.
+            // This will allow us to at least inspect types depending only on BCL.
+            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+
+            // Create the list of assembly paths consisting of runtime assemblies and the input file.
+            var paths = new List<string>(runtimeAssemblies);
+            paths.Add(path);
+
+            // Create MetadataLoadContext that can resolve assemblies using the created list.
+            var resolver = new System.Reflection.PathAssemblyResolver(paths);
+            var mlc = new System.Reflection.MetadataLoadContext(resolver);
+
+            using (mlc)
             {
-                try
+                Assembly assembly = mlc.LoadFromAssemblyPath(path); ;
+                if (assembly == null)
                 {
-                    types = assembly.GetTypes();
+                    throw new InvalidOperationException(SR.Format(SR.ErrLoadAssembly, assemblyName));
                 }
-                catch (ReflectionTypeLoadException typeException)
+
+                Type[] types;
+
+                if (typeNames == null || typeNames.Count == 0)
                 {
-                    List<Type> loadedTypes = new List<Type>();
-                    foreach (Type type in typeException.Types)
+                    try
                     {
-                        if (type != null)
-                        {
-                            loadedTypes.Add(type);
-                        }
+                        types = assembly.GetTypes();
                     }
-
-                    types = loadedTypes.ToArray();
-                }
-            }
-            else
-            {
-                types = new Type[typeNames.Count];
-                int typeIndex = 0;
-                foreach (string typeName in typeNames)
-                {
-                    Type type = assembly.GetType(typeName);
-                    if (type == null)
+                    catch (ReflectionTypeLoadException typeException)
                     {
-                        Console.Error.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrorDetails, SR.Format(SR.ErrLoadType, typeName, assemblyName))));
-                    }
-
-                    types[typeIndex++] = type;
-                }
-            }
-
-            var mappings = new List<XmlMapping>();
-            var importedTypes = new List<Type>();
-            var importer = new XmlReflectionImporter(defaultNamespace);
-
-            for (int i = 0; i < types.Length; i++)
-            {
-                Type type = types[i];
-
-                try
-                {
-                    if (type != null)
-                    {
-                        if (verbose)
+                        List<Type> loadedTypes = new List<Type>();
+                        foreach (Type type in typeException.Types)
                         {
-                            Console.WriteLine(SR.Format(SR.ImportInfo, type.Name, i + 1, types.Length));
-                        }
-
-                        bool isObsolete = false;
-                        object[] obsoleteAttributes = type.GetCustomAttributes(typeof(ObsoleteAttribute), false);
-                        foreach (object attribute in obsoleteAttributes)
-                        {
-                            if (((ObsoleteAttribute)attribute).IsError)
+                            if (type != null)
                             {
-                                isObsolete = true;
-                                break;
+                                loadedTypes.Add(type);
                             }
                         }
 
-                        if (isObsolete)
-                        {
-                            continue;
-                        }
-                    }
-                }
-                //Ignore the FileNotFoundException when call GetCustomAttributes e.g. if the type uses the attributes defined in a different assembly
-                catch (FileNotFoundException e)
-                {
-                    if (verbose)
-                    {
-                        Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoIgnoreType, type.FullName)));
-                        WriteWarning(e, parsableerrors);
-                    }
-
-                    continue;
-                }
-
-                if (!proxyOnly)
-                {
-                    ImportType(type, defaultNamespace, mappings, importedTypes, verbose, importer, parsableerrors);
-                }
-            }
-
-            if (importedTypes.Count > 0)
-            {
-                var serializableTypes = importedTypes.ToArray();
-                var allMappings = mappings.ToArray();
-
-                bool gac = assembly.GlobalAssemblyCache;
-                outputDirectory ??= (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location));
-
-                if (!Directory.Exists(outputDirectory))
-                {
-                    //We need double quote the path to escpate the space in the path.
-                    //However when a path ending with backslash, if followed by double quote, it becomes an escapte sequence
-                    //e.g. "obj\Debug\netcoreapp2.0\", it will be converted as obj\Debug\netcoreapp2.0", which is not valid and not exist
-                    //We need remove the ending quote for this situation
-                    if (!outputDirectory.EndsWith("\"", StringComparison.Ordinal) || !Directory.Exists(outputDirectory = outputDirectory.Remove(outputDirectory.Length - 1)))
-                    {
-                        throw new ArgumentException(SR.Format(SR.ErrDirectoryNotExists, outputDirectory));
-                    }
-                }
-
-                string serializerName = GetXmlSerializerAssemblyName(serializableTypes[0], defaultNamespace);
-                string codePath = Path.Combine(outputDirectory, serializerName + ".cs");
-
-                if (!force)
-                {
-                    if (File.Exists(codePath))
-                        throw new InvalidOperationException(SR.Format(SR.ErrSerializerExists, codePath, nameof(force)));
-                }
-
-                if (Directory.Exists(codePath))
-                {
-                    throw new InvalidOperationException(SR.Format(SR.ErrDirectoryExists, codePath));
-                }
-
-                bool success = false;
-                bool toDeleteFile = true;
-
-                try
-                {
-                    if (File.Exists(codePath))
-                    {
-                        File.Delete(codePath);
-                    }
-
-                    using (FileStream fs = File.Create(codePath))
-                    {
-                        MethodInfo method;
-                        if (defaultNamespace == null)
-                        {
-                            method = typeof(System.Xml.Serialization.XmlSerializer).GetMethod("GenerateSerializer", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                        }
-                        else
-                        {
-                            Type tempAssemblyType = typeof(System.Xml.Serialization.XmlSerializer).Assembly.GetType("System.Xml.Serialization.TempAssembly");
-                            method = tempAssemblyType.GetMethod("GenerateSerializerToStream", BindingFlags.Static | BindingFlags.NonPublic);
-                        }
-
-                        if (method == null)
-                        {
-                            Console.Error.WriteLine(FormatMessage(parsableerrors: false, warning: false, message: SR.GenerateSerializerNotFound));
-                        }
-                        else
-                        {
-                            if (defaultNamespace == null)
-                            {
-                                success = (bool)method.Invoke(null, new object[] { serializableTypes, allMappings, fs });
-                            }
-                            else
-                            {
-                                success = (bool)method.Invoke(null, new object[] { allMappings, serializableTypes, defaultNamespace, assembly, new Hashtable(), fs });
-                            }
-                        }
-                    }
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    toDeleteFile = false;
-                    throw new UnauthorizedAccessException(SR.Format(SR.DirectoryAccessDenied, outputDirectory));
-                }
-                finally
-                {
-                    if (!success && toDeleteFile && File.Exists(codePath))
-                    {
-                        File.Delete(codePath);
-                    }
-                }
-
-                if (success)
-                {
-                    if (!silent)
-                    {
-                        Console.Out.WriteLine(SR.Format(SR.InfoFileName, codePath));
-                        Console.Out.WriteLine(SR.Format(SR.InfoGeneratedFile, assembly.Location, codePath));
+                        types = loadedTypes.ToArray();
                     }
                 }
                 else
                 {
-                    Console.Out.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrGenerationFailed, assembly.Location)));
+                    types = new Type[typeNames.Count];
+                    int typeIndex = 0;
+                    foreach (string typeName in typeNames)
+                    {
+                        Type type = assembly.GetType(typeName);
+                        if (type == null)
+                        {
+                            Console.Error.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrorDetails, SR.Format(SR.ErrLoadType, typeName, assemblyName))));
+                        }
+
+                        types[typeIndex++] = type;
+                    }
                 }
-            }
-            else
-            {
-                Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoNoSerializableTypes, assembly.Location)));
+
+                var mappings = new List<XmlMapping>();
+                var importedTypes = new List<Type>();
+                var importer = new XmlReflectionImporter(defaultNamespace);
+
+                for (int i = 0; i < types.Length; i++)
+                {
+                    Type type = types[i];
+
+                    try
+                    {
+                        if (type != null)
+                        {
+                            if (verbose)
+                            {
+                                Console.WriteLine(SR.Format(SR.ImportInfo, type.Name, i + 1, types.Length));
+                            }
+
+                            bool isObsolete = false;
+                            IList<CustomAttributeData> attributes  = type.GetCustomAttributesData();
+                            if (attributes.Any(attr => attr.AttributeType.FullName == typeof(ObsoleteAttribute).FullName))
+                            {
+                                CustomAttributeData cad = attributes.FirstOrDefault(at => at.AttributeType.FullName == typeof(ObsoleteAttribute).FullName);
+                                if (cad.ConstructorArguments.Any(ca => ca.ArgumentType.FullName == typeof(bool).FullName))
+                                {
+                                    isObsolete = (bool)cad.ConstructorArguments.FirstOrDefault(ca => ca.ArgumentType.FullName == typeof(bool).FullName).Value;
+                                }
+                            }
+
+                            if (isObsolete)
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                    //Ignore the FileNotFoundException when call GetCustomAttributes e.g. if the type uses the attributes defined in a different assembly
+                    catch (FileNotFoundException e)
+                    {
+                        if (verbose)
+                        {
+                            Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoIgnoreType, type.FullName)));
+                            WriteWarning(e, parsableerrors);
+                        }
+
+                        continue;
+                    }
+
+                    if (!proxyOnly)
+                    {
+                        ImportType(type, defaultNamespace, mappings, importedTypes, verbose, importer, parsableerrors);
+                    }
+                }
+
+                if (importedTypes.Count > 0)
+                {
+                    var serializableTypes = importedTypes.ToArray();
+                    var allMappings = mappings.ToArray();
+
+                    bool gac = assembly.GlobalAssemblyCache;
+                    outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
+
+                    if (!Directory.Exists(outputDirectory))
+                    {
+                        //We need double quote the path to escpate the space in the path.
+                        //However when a path ending with backslash, if followed by double quote, it becomes an escapte sequence
+                        //e.g. "obj\Debug\netcoreapp2.0\", it will be converted as obj\Debug\netcoreapp2.0", which is not valid and not exist
+                        //We need remove the ending quote for this situation
+                        if (!outputDirectory.EndsWith("\"", StringComparison.Ordinal) || !Directory.Exists(outputDirectory = outputDirectory.Remove(outputDirectory.Length - 1)))
+                        {
+                            throw new ArgumentException(SR.Format(SR.ErrDirectoryNotExists, outputDirectory));
+                        }
+                    }
+
+                    string serializerName = GetXmlSerializerAssemblyName(serializableTypes[0], defaultNamespace);
+                    string codePath = Path.Combine(outputDirectory, serializerName + ".cs");
+
+                    if (!force)
+                    {
+                        if (File.Exists(codePath))
+                            throw new InvalidOperationException(SR.Format(SR.ErrSerializerExists, codePath, nameof(force)));
+                    }
+
+                    if (Directory.Exists(codePath))
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.ErrDirectoryExists, codePath));
+                    }
+
+                    bool success = false;
+                    bool toDeleteFile = true;
+
+                    try
+                    {
+                        if (File.Exists(codePath))
+                        {
+                            File.Delete(codePath);
+                        }
+
+                        using (FileStream fs = File.Create(codePath))
+                        {
+                            MethodInfo method;
+                            if (defaultNamespace == null)
+                            {
+                                method = typeof(System.Xml.Serialization.XmlSerializer).GetMethod("GenerateSerializer", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                            }
+                            else
+                            {
+                                Type tempAssemblyType = typeof(System.Xml.Serialization.XmlSerializer).Assembly.GetType("System.Xml.Serialization.TempAssembly");
+                                method = tempAssemblyType.GetMethod("GenerateSerializerToStream", BindingFlags.Static | BindingFlags.NonPublic);
+                            }
+
+                            if (method == null)
+                            {
+                                Console.Error.WriteLine(FormatMessage(parsableerrors: false, warning: false, message: SR.GenerateSerializerNotFound));
+                            }
+                            else
+                            {
+                                if (defaultNamespace == null)
+                                {
+                                    success = (bool)method.Invoke(null, new object[] { serializableTypes, allMappings, fs });
+                                }
+                                else
+                                {
+                                    success = (bool)method.Invoke(null, new object[] { allMappings, serializableTypes, defaultNamespace, assembly, new Hashtable(), fs });
+                                }
+                            }
+                        }
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        toDeleteFile = false;
+                        throw new UnauthorizedAccessException(SR.Format(SR.DirectoryAccessDenied, outputDirectory));
+                    }
+                    finally
+                    {
+                        if (!success && toDeleteFile && File.Exists(codePath))
+                        {
+                            File.Delete(codePath);
+                        }
+                    }
+
+                    if (success)
+                    {
+                        if (!silent)
+                        {
+                            Console.Out.WriteLine(SR.Format(SR.InfoFileName, codePath));
+                            Console.Out.WriteLine(SR.Format(SR.InfoGeneratedFile, assembly.Location, codePath));
+                        }
+                    }
+                    else
+                    {
+                        Console.Out.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrGenerationFailed, assembly.Location)));
+                    }
+                }
+                else
+                {
+                    Console.Out.WriteLine(FormatMessage(parsableerrors, true, SR.Format(SR.InfoNoSerializableTypes, assembly.Location)));
+                }
             }
         }
 
@@ -473,20 +494,7 @@ namespace Microsoft.XmlSerializer.Generator
             }
         }
 
-        private static Assembly LoadAssembly(string assemblyName, bool throwOnFail)
-        {
-            Assembly assembly;
-            string path = Path.IsPathRooted(assemblyName) ? assemblyName : Path.GetFullPath(assemblyName);
-            assembly = Assembly.LoadFile(path);
-            if (assembly == null)
-            {
-                throw new InvalidOperationException(SR.Format(SR.ErrLoadAssembly, assemblyName));
-            }
-
-            return assembly;
-        }
-
-        private static void WriteHeader()
+        private void WriteHeader()
         {
             // do not localize Copyright header
             Console.WriteLine($".NET Xml Serialization Generation Utility, Version {ThisAssembly.InformationalVersion}]");

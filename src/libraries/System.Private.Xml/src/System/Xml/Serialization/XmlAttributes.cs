@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reflection;
 using System.ComponentModel;
 
@@ -76,76 +80,82 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlAttributes(ICustomAttributeProvider provider)
         {
-            object[] attrs = provider.GetCustomAttributes(false);
+            // object[] attrs = provider.GetCustomAttributes(false);
+            IList<CustomAttributeData> attrs = ((MemberInfo)provider).GetCustomAttributesData();
 
             // most generic <any/> matches everything
             XmlAnyElementAttribute? wildcard = null;
-            for (int i = 0; i < attrs.Length; i++)
+            foreach (CustomAttributeData attribute in attrs)
             {
-                if (attrs[i] is XmlIgnoreAttribute || attrs[i] is ObsoleteAttribute)
+                Attribute? attr = CreateAttributeFromCustomAttributeData(attribute);
+                if (attr != null)
                 {
-                    _xmlIgnore = true;
-                    break;
-                }
-                else if (attrs[i] is XmlElementAttribute)
-                {
-                    _xmlElements.Add((XmlElementAttribute)attrs[i]);
-                }
-                else if (attrs[i] is XmlArrayItemAttribute)
-                {
-                    _xmlArrayItems.Add((XmlArrayItemAttribute)attrs[i]);
-                }
-                else if (attrs[i] is XmlAnyElementAttribute any)
-                {
-                    if ((any.Name == null || any.Name.Length == 0) && any.GetNamespaceSpecified() && any.Namespace == null)
+                    if (attr is XmlIgnoreAttribute || attr is ObsoleteAttribute)
                     {
-                        // ignore duplicate wildcards
-                        wildcard = any;
+                        _xmlIgnore = true;
+                        break;
                     }
-                    else
+                    else if (attr is XmlElementAttribute)
                     {
-                        _xmlAnyElements.Add((XmlAnyElementAttribute)attrs[i]);
+                        _xmlElements.Add((XmlElementAttribute)attr);
                     }
-                }
-                else if (attrs[i] is DefaultValueAttribute)
-                {
-                    _xmlDefaultValue = ((DefaultValueAttribute)attrs[i]).Value;
-                }
-                else if (attrs[i] is XmlAttributeAttribute)
-                {
-                    _xmlAttribute = (XmlAttributeAttribute)attrs[i];
-                }
-                else if (attrs[i] is XmlArrayAttribute)
-                {
-                    _xmlArray = (XmlArrayAttribute)attrs[i];
-                }
-                else if (attrs[i] is XmlTextAttribute)
-                {
-                    _xmlText = (XmlTextAttribute)attrs[i];
-                }
-                else if (attrs[i] is XmlEnumAttribute)
-                {
-                    _xmlEnum = (XmlEnumAttribute)attrs[i];
-                }
-                else if (attrs[i] is XmlRootAttribute)
-                {
-                    _xmlRoot = (XmlRootAttribute)attrs[i];
-                }
-                else if (attrs[i] is XmlTypeAttribute)
-                {
-                    _xmlType = (XmlTypeAttribute)attrs[i];
-                }
-                else if (attrs[i] is XmlAnyAttributeAttribute)
-                {
-                    _xmlAnyAttribute = (XmlAnyAttributeAttribute)attrs[i];
-                }
-                else if (attrs[i] is XmlChoiceIdentifierAttribute)
-                {
-                    _xmlChoiceIdentifier = (XmlChoiceIdentifierAttribute)attrs[i];
-                }
-                else if (attrs[i] is XmlNamespaceDeclarationsAttribute)
-                {
-                    _xmlns = true;
+                    else if (attr is XmlArrayItemAttribute)
+                    {
+                        _xmlArrayItems.Add((XmlArrayItemAttribute)attr);
+                    }
+                    else if (attr is XmlAnyElementAttribute)
+                    {
+                        XmlAnyElementAttribute any = (XmlAnyElementAttribute)attr;
+                        if ((any.Name == null || any.Name.Length == 0) && any.GetNamespaceSpecified() && any.Namespace == null)
+                        {
+                            // ignore duplicate wildcards
+                            wildcard = any;
+                        }
+                        else
+                        {
+                            _xmlAnyElements.Add((XmlAnyElementAttribute)attr);
+                        }
+                    }
+                    else if (attr is DefaultValueAttribute)
+                    {
+                        _xmlDefaultValue = ((DefaultValueAttribute)attr).Value;
+                    }
+                    else if (attr is XmlAttributeAttribute)
+                    {
+                        _xmlAttribute = (XmlAttributeAttribute)attr;
+                    }
+                    else if (attr is XmlArrayAttribute)
+                    {
+                        _xmlArray = (XmlArrayAttribute)attr;
+                    }
+                    else if (attr is XmlTextAttribute)
+                    {
+                        _xmlText = (XmlTextAttribute)attr;
+                    }
+                    else if (attr is XmlEnumAttribute)
+                    {
+                        _xmlEnum = (XmlEnumAttribute)attr;
+                    }
+                    else if (attr is XmlRootAttribute)
+                    {
+                        _xmlRoot = (XmlRootAttribute)attr;
+                    }
+                    else if (attr is XmlTypeAttribute)
+                    {
+                        _xmlType = (XmlTypeAttribute)attr;
+                    }
+                    else if (attr is XmlAnyAttributeAttribute)
+                    {
+                        _xmlAnyAttribute = (XmlAnyAttributeAttribute)attr;
+                    }
+                    else if (attr is XmlChoiceIdentifierAttribute)
+                    {
+                        _xmlChoiceIdentifier = (XmlChoiceIdentifierAttribute)attr;
+                    }
+                    else if (attr is XmlNamespaceDeclarationsAttribute)
+                    {
+                        _xmlns = true;
+                    }
                 }
             }
             if (_xmlIgnore)
@@ -172,11 +182,89 @@ namespace System.Xml.Serialization
             }
         }
 
+        private static Attribute? CreateAttributeFromCustomAttributeData(CustomAttributeData cad)
+        {
+            var attrType = cad.AttributeType;
+            var isSystemNS = attrType.Namespace?.StartsWith("System.");
+            if (!isSystemNS.HasValue || !isSystemNS.Value)
+            {
+                return null;
+            }
+
+            var rtType = Type.GetType(attrType.AssemblyQualifiedName!);
+            int count = cad.ConstructorArguments.Count;
+            Type? [] constructorArgsTypes = new Type[count];
+            object [] constructorValues = new object[count];
+            for (int i = 0; i < count; i++)
+            {
+                constructorArgsTypes[i] = Type.GetType(cad.ConstructorArguments[i].ArgumentType.AssemblyQualifiedName!) ?? null;
+                if (cad.ConstructorArguments[i].ArgumentType.IsEnum)
+                {
+                    constructorValues[i] = Enum.ToObject(constructorArgsTypes[i]!, cad.ConstructorArguments[i].Value!);
+                }
+                else
+                {
+                    constructorValues[i] = cad.ConstructorArguments[i].Value!;
+                }
+            }
+
+            if (rtType == null  || constructorArgsTypes == null)
+            {
+                return null;
+            }
+
+            var rtConstructor = rtType.GetConstructor(constructorArgsTypes!);
+            if (rtConstructor == null)
+            {
+                return null;
+            }
+
+            var attribute = (Attribute)rtConstructor.Invoke(constructorValues);
+
+            if (cad.NamedArguments == null)
+            {
+                return attribute;
+            }
+
+            foreach (var namedArg in cad.NamedArguments)
+            {
+                var propInfo = namedArg.MemberInfo as PropertyInfo;
+                if (propInfo != null)
+                {
+                    var rtPropDeclaringType = Type.GetType(propInfo.DeclaringType!.AssemblyQualifiedName!) ?? null;
+                    if (rtPropDeclaringType != null )
+                    {
+                        var rtPropInfo = rtPropDeclaringType!.GetProperty(propInfo.Name);
+                        var rtArgType = Type.GetType(namedArg.TypedValue.ArgumentType.AssemblyQualifiedName!);
+                        object argValue;
+                        if (rtArgType!.IsEnum)
+                        {
+                            argValue = Enum.ToObject(rtArgType, namedArg.TypedValue.Value!);
+                        }
+                        else
+                        {
+                            argValue = namedArg.TypedValue.Value!;
+                        }
+                        rtPropInfo!.SetValue(attribute, argValue, null);
+                    }
+                }
+            }
+
+            return attribute;
+        }
+
         internal static object? GetAttr(MemberInfo memberInfo, Type attrType)
         {
-            object[] attrs = memberInfo.GetCustomAttributes(attrType, false);
-            if (attrs.Length == 0) return null;
-            return attrs[0];
+            // object[] attrs = memberInfo.GetCustomAttributes(attrType, false);
+            // if (attrs.Length == 0) return null;
+            // return attrs[0];
+            IList<CustomAttributeData> attrs = memberInfo.GetCustomAttributesData();
+            if (!attrs.Any(attr => attr.AttributeType.FullName == attrType.FullName))
+            {
+                return null;
+            }
+            CustomAttributeData data = attrs.FirstOrDefault(ca => ca.AttributeType.FullName == attrType.FullName)!;
+            return CreateAttributeFromCustomAttributeData(data);
         }
 
         /// <devdoc>

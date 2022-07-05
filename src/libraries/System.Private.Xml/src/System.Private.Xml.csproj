@@ -540,7 +540,6 @@
       <LogicalName>rss-0.91.dtd</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="System\Xml\Xsl\IlGen\GenerateHelper.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\IteratorDescriptor.cs" />
@@ -785,5 +784,13 @@
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
 </Project>
