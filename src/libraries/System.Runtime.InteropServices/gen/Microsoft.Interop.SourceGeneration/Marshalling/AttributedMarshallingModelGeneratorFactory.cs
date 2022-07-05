@@ -13,7 +13,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled, Scenario InScenario, Scenario RefScenario, Scenario OutScenario);
+    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled, MarshalMode InMode, MarshalMode RefMode, MarshalMode OutMode);
 
     public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
     {
@@ -214,15 +214,15 @@ namespace Microsoft.Interop
             CustomTypeMarshallerData marshallerData;
             if (info.IsManagedReturnPosition)
             {
-                marshallerData = marshalInfo.Marshallers.GetScenarioOrDefault(Options.OutScenario);
+                marshallerData = marshalInfo.Marshallers.GetModeOrDefault(Options.OutMode);
             }
             else
             {
                 marshallerData = info.RefKind switch
                 {
-                    RefKind.None or RefKind.In => marshalInfo.Marshallers.GetScenarioOrDefault(Options.InScenario),
-                    RefKind.Ref => marshalInfo.Marshallers.GetScenarioOrDefault(Options.RefScenario),
-                    RefKind.Out => marshalInfo.Marshallers.GetScenarioOrDefault(Options.OutScenario),
+                    RefKind.None or RefKind.In => marshalInfo.Marshallers.GetModeOrDefault(Options.InMode),
+                    RefKind.Ref => marshalInfo.Marshallers.GetModeOrDefault(Options.RefMode),
+                    RefKind.Out => marshalInfo.Marshallers.GetModeOrDefault(Options.OutMode),
                     _ => throw new MarshallingNotSupportedException(info, context)
                 };
             }
@@ -328,7 +328,7 @@ namespace Microsoft.Interop
         {
             // Marshalling out or return parameter, but no out marshaller is specified
             if ((info.RefKind == RefKind.Out || info.IsManagedReturnPosition)
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.OutScenario))
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.OutMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -337,7 +337,7 @@ namespace Microsoft.Interop
             }
 
             // Marshalling ref parameter, but no ref marshaller is specified
-            if (info.RefKind == RefKind.Ref && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.RefScenario))
+            if (info.RefKind == RefKind.Ref && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.RefMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -347,7 +347,7 @@ namespace Microsoft.Interop
 
             // Marshalling in parameter, but no in marshaller is specified
             if (info.RefKind == RefKind.In
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.InScenario))
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -359,7 +359,7 @@ namespace Microsoft.Interop
             if (!info.IsByRef
                 && !info.IsManagedReturnPosition
                 && context.SingleFrameSpansNativeContext
-                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Options.InScenario)))
+                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode)))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {

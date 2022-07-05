@@ -70,7 +70,7 @@
 
     <ItemGroup Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)' and '$(IncludeLibraryImportGeneratorSources)' != 'false'">
       <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/tests/Ancillary.Interop/CustomMarshallerAttribute.cs" />
-      <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/tests/Ancillary.Interop/Scenario.cs" />
+      <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/tests/Ancillary.Interop/MarshalMode.cs" />
     </ItemGroup>
   </Target>
 

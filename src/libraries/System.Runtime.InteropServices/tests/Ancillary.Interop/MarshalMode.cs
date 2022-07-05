@@ -4,7 +4,7 @@
 #if MICROSOFT_INTEROP_SOURCEGENERATION
 namespace Microsoft.Interop
 #else
-namespace System.Runtime.InteropServices
+namespace System.Runtime.InteropServices.Marshalling
 #endif
 {
     /// <summary>
@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
 #else
     internal
 #endif
-    enum Scenario
+    enum MarshalMode
     {
         /// <summary>
         /// All scenarios. A marshaller specified with this scenario will be used if there is not a specific
