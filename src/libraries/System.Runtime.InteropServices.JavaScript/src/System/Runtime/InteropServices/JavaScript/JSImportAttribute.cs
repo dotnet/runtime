@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public string FunctionName { get; }
 
         /// <summary>
-        /// Globally unique identifier of the ES6 module, which need to be loaded by <see cref="JSHost.ImportAsync(string, string, Threading.CancellationToken)"/> before first use.
+        /// Globally unique identifier of the ES6 module, if any, that contains the function. The module must be loaded via <see cref="JSHost.ImportAsync(string, string, Threading.CancellationToken)"/> before any attempt to invoke the function.
         /// </summary>
         public string? ModuleName { get; }
 
