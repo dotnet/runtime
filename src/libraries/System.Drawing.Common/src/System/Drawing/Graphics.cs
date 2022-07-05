@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 #if NET7_0_OR_GREATER
 using System.Runtime.InteropServices.Marshalling;
 #endif
@@ -87,6 +88,9 @@ namespace System.Drawing
                 {
                     GC.KeepAlive(_managed);
                 }
+
+                [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "This method is part of the marshaller shape and is required to be an instance method.")]
+                public void Free() { }
             }
         }
 #endif
