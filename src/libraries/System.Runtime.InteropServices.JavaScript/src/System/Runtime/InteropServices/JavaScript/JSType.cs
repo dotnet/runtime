@@ -149,7 +149,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Dynamic marshaling as best fit, base of the type of the argument instance.
+        /// Dynamically selects the most appropriate JavaScript or managed type for each argument value at runtime.
         /// </summary>
         public sealed class Any : JSType
         {
