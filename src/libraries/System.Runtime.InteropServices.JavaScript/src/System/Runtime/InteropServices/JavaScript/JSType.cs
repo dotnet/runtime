@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal JSType() { }
         /// <summary>
-        /// Marshaling validates that the JavaScript function returned undefined value.
+        /// Asserts that a JavaScript function should have no return value.
         /// </summary>
         public sealed class Void : JSType
         {
