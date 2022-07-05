@@ -6,7 +6,8 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Should be used to specify type of JavaScript object, which should be result of argument marshaling.
+    /// Specifies the JavaScript type associated with a managed argument or return value.
+    /// The JSImport generator will use this information to marshal data between the JavaScript and managed environments.
     /// </summary>
     /// <typeparam name="T">One of the types defined in <see cref="JSType"/>, for example <see cref="JSType.MemoryView"/></typeparam>
     /// <example>
