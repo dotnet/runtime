@@ -87,19 +87,19 @@
     <HelixWorkItem Include="SOD - Maui Blazor iOS IPA Size" Condition="'$(iOSLlvmBuild)' == 'False'">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)mauiblazorios;cp $HELIX_CORRELATION_PAYLOAD/MauiBlazoriOSDefault.ipa .;$(Python) pre.py --name MauiBlazoriOSDefault.ipa</PreCommands>
-      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --startup-iterations 7</Command>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Maui Blazor iOS IPA Size Unzipped" Condition="'$(iOSLlvmBuild)' == 'False'">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)mauiblazorios;cp $HELIX_CORRELATION_PAYLOAD/MauiBlazoriOSDefault.ipa .;$(Python) pre.py --unzip --name MauiBlazoriOSDefault.ipa</PreCommands>
-      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --startup-iterations 7</Command>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Maui Blazor MacCatalyst .app Size" Condition="'$(iOSLlvmBuild)' == 'False'">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)mauiblazorios;cp -rf $HELIX_CORRELATION_PAYLOAD/MauiBlazorMacCatalystDefault ./app;$(Python) pre.py --name app</PreCommands>
-      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --startup-iterations 7</Command>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Maui iOS Podcast IPA Size" Condition="'$(iOSLlvmBuild)' == 'False'">
