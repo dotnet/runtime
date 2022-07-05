@@ -3029,7 +3029,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		for (i = 0; ; ++i) {
 			int offset = 0;
 
-			if (slot < first_slot + size - (guint32)1) {
+			if (slot < first_slot + size - 1u) {
 				rgctx_index = slot - first_slot + 1 + offset;
 				info = (MonoRuntimeGenericContext*)rgctx [rgctx_index];
 				if (info)
