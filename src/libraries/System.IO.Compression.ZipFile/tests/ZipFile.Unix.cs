@@ -199,23 +199,22 @@ namespace System.IO.Compression.Tests
 
         private static string GetExpectedPermissions(string expectedPermissions)
         {
-            if (string.IsNullOrEmpty(expectedPermissions))
+            using (var tempFolder = new TempDirectory())
             {
-                // Create a new file, and get its permissions to get the current system default permissions
-
-                using (var tempFolder = new TempDirectory())
+                string filename = Path.Combine(tempFolder.Path, Path.GetRandomFileName());
+                FileStreamOptions fileStreamOptions = new()
                 {
-                    string filename = Path.Combine(tempFolder.Path, Path.GetRandomFileName());
-                    File.WriteAllText(filename, "contents");
-
-                    Interop.Sys.FileStatus status;
-                    Assert.Equal(0, Interop.Sys.Stat(filename, out status));
-
-                    expectedPermissions = Convert.ToString(status.Mode & 0xFFF, 8);
+                    Access = FileAccess.Write,
+                    Mode = FileMode.CreateNew
+                };
+                if (expectedPermissions != null)
+                {
+                    fileStreamOptions.UnixCreateMode = (UnixFileMode)Convert.ToInt32(expectedPermissions, 8);
                 }
-            }
+                new FileStream(filename, fileStreamOptions).Dispose();
 
-            return expectedPermissions;
+                return Convert.ToString((int)File.GetUnixFileMode(filename), 8);
+            }
         }
 
         [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
