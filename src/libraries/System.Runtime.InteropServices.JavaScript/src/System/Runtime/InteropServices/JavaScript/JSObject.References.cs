@@ -82,7 +82,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Dispose the JavaScript object handle and release it's reference.
+        /// Releases any resources used by the proxy and discards the reference to its target JavaScript object.
         /// </summary>
         public void Dispose()
         {
