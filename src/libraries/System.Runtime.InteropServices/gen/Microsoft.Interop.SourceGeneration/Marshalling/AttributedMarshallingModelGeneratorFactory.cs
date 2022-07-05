@@ -252,6 +252,9 @@ namespace Microsoft.Interop
                 marshallingStrategy = new StatelessValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                     marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+
+                if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
+                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
@@ -302,6 +305,9 @@ namespace Microsoft.Interop
                 // TODO: Handle linear collection marshalling with non-blittable elements
                 throw new MarshallingNotSupportedException(info, context);
             }
+
+            if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
+                marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
 
             if (marshalInfo.UseDefaultMarshalling && info.ManagedType is SzArrayType)
             {
