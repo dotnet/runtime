@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public sealed class JSException : Exception
     {
         /// <summary>
-        /// Initializes a new instance of the Exception class with a specified error message.
+        /// Initializes a new instance of the JSException class with a specified error message.
         /// </summary>
         /// <param name="msg">The message that describes the error.</param>
         public JSException(string msg) : base(msg)
