@@ -7,8 +7,9 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
 import { makeChannelCreatedMonoMessage, pthread_ptr } from "../shared";
 import { mono_assert, is_nullish } from "../../types";
-import type { MonoThreadMessage, PThreadInfo } from "../shared";
+import type { MonoThreadMessage } from "../shared";
 import {
+    PThreadSelf,
     makeWorkerThreadEvent,
     dotnetPthreadCreated,
     dotnetPthreadAttached,
@@ -24,28 +25,18 @@ export {
     WorkerThreadEventTarget,
 } from "./events";
 
-export interface PThreadSelf extends PThreadInfo {
-    postMessageToBrowser: <T extends MonoThreadMessage>(message: T, transfer?: Transferable[]) => void;
-    addEventListenerFromBrowser: (listener: <T extends MonoThreadMessage>(event: MessageEvent<T>) => void) => void;
-}
-
 class WorkerSelf implements PThreadSelf {
-    readonly port: MessagePort;
-    readonly pthread_id: pthread_ptr;
-    readonly is_main_thread = false;
-    constructor(pthread_id: pthread_ptr, port: MessagePort) {
-        this.port = port;
-        this.pthread_id = pthread_id;
-    }
+    readonly isBrowserThread = false;
+    constructor(readonly pthread_id: pthread_ptr, readonly portToBrowser: MessagePort) { }
     postMessageToBrowser(message: MonoThreadMessage, transfer?: Transferable[]) {
         if (transfer) {
-            this.port.postMessage(message, transfer);
+            this.portToBrowser.postMessage(message, transfer);
         } else {
-            this.port.postMessage(message);
+            this.portToBrowser.postMessage(message);
         }
     }
     addEventListenerFromBrowser(listener: (event: MessageEvent<MonoThreadMessage>) => void) {
-        this.port.addEventListener("message", listener);
+        this.portToBrowser.addEventListener("message", listener);
     }
 }
 
@@ -64,28 +55,25 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
     console.debug("got message from main on the dedicated channel", event.data);
 }
 
-let portToMain: MessagePort | null = null;
-
-function setupChannelToMainThread(pthread_ptr: pthread_ptr): MessagePort {
+function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
     console.debug("creating a channel", pthread_ptr);
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
     workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
     workerPort.start();
-    portToMain = workerPort;
     pthread_self = new WorkerSelf(pthread_ptr, workerPort);
     self.postMessage(makeChannelCreatedMonoMessage(pthread_ptr, mainPort), [mainPort]);
-    return workerPort;
+    return pthread_self;
 }
 
 /// This is an implementation detail function.
 /// Called in the worker thread from mono when a pthread becomes attached to the mono runtime.
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
-    const port = portToMain;
-    mono_assert(port !== null, "expected a port to the main thread");
+    const self = pthread_self;
+    mono_assert(self !== null && self.pthread_id == pthread_id, "expected pthread_self to be set already when attaching");
     console.debug("attaching pthread to runtime", pthread_id);
-    currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_id, port));
+    currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
 }
 
 /// This is an implementation detail function.
@@ -97,7 +85,7 @@ export function afterThreadInitTLS(): void {
         const pthread_ptr = (<any>Module)["_pthread_self"]();
         mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
         console.debug("after thread init, pthread ptr", pthread_ptr);
-        const port = setupChannelToMainThread(pthread_ptr);
-        currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_ptr, port));
+        const self = setupChannelToMainThread(pthread_ptr);
+        currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, self));
     }
 }

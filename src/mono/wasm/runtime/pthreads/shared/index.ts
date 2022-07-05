@@ -8,14 +8,14 @@ export type pthread_ptr = number;
 
 export interface PThreadInfo {
     readonly pthread_id: pthread_ptr;
-    readonly is_main_thread: boolean;
+    readonly isBrowserThread: boolean;
 }
 
 export const MainThread: PThreadInfo = {
     get pthread_id(): pthread_ptr {
         return getBrowserThreadID();
     },
-    is_main_thread: true
+    isBrowserThread: true
 };
 
 let browser_thread_id_lazy: pthread_ptr | undefined;
