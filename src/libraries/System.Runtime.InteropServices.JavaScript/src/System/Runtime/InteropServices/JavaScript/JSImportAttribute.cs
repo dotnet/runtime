@@ -31,7 +31,8 @@ namespace System.Runtime.InteropServices.JavaScript
     public sealed class JSImportAttribute : Attribute
     {
         /// <summary>
-        /// Name of the function to be bound in the IMPORTS object of the runtime instance in the JavaScript page. It allows dots for nested objects.
+        /// The name of the target JavaScript function. This name will be used as a key to locate the function in the IMPORTS JavaScript object owned by the runtime.
+        /// Functions nested inside of objects can be referred to by using the dot operator to connect one or more names.
         /// </summary>
         public string FunctionName { get; }
 
