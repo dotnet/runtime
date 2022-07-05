@@ -743,7 +743,7 @@ namespace System.Runtime
         // Array stelem/ldelema helpers with RyuJIT conventions
         //
         [RuntimeExport("RhpStelemRef")]
-        public static unsafe void StelemRef(Array array, int index, object obj)
+        public static unsafe void StelemRef(Array array, nint index, object obj)
         {
             // This is supported only on arrays
             Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
@@ -814,7 +814,7 @@ assigningNull:
         }
 
         [RuntimeExport("RhpLdelemaRef")]
-        public static unsafe ref object LdelemaRef(Array array, int index, IntPtr elementType)
+        public static unsafe ref object LdelemaRef(Array array, nint index, IntPtr elementType)
         {
             Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
 
@@ -830,7 +830,7 @@ assigningNull:
             }
 
             ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            return ref Unsafe.Add(ref rawData, index);
+            return ref Unsafe.Add(ref rawData, (int)index);
         }
 
         internal static unsafe bool IsDerived(MethodTable* pDerivedType, MethodTable* pBaseType)
