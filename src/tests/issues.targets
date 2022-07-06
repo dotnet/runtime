@@ -1455,7 +1455,7 @@
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
-            <Issue>https://github.com/dotnet/runtime/issues/71571</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
             <Issue>https://github.com/dotnet/runtime/issues/61693</Issue>
