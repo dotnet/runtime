@@ -109,7 +109,7 @@ public partial class Program
         IsFalse(typeof(ValueType).IsEnum);
         IsFalse(typeof(GenericStruct<int>).IsEnum);
         IsFalse(typeof(SimpleStruct).IsEnum);
-        IsTrue (typeof(SimpleEnum).IsValueType);
+        IsTrue (typeof(SimpleEnum).IsEnum);
 
         AreSame(Type.GetTypeCode(null),                       TypeCode.Empty);
         AreSame(Type.GetTypeCode(typeof(bool)),               TypeCode.Boolean);
