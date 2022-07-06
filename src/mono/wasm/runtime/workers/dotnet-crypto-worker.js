@@ -187,7 +187,7 @@ async function sign(type, key, data) {
 }
 
 function get_hash_name(type) {
-    switch(type) {
+    switch (type) {
         case 0: return "SHA-1";
         case 1: return "SHA-256";
         case 2: return "SHA-384";
@@ -195,6 +195,75 @@ function get_hash_name(type) {
         default:
             throw "CRYPTO: Unknown digest: " + type;
     }
+}
+
+const AesBlockSizeBytes = 16; // 128 bits
+
+async function encrypt_decrypt(isEncrypting, key, iv, data) {
+    const algorithmName = "AES-CBC";
+    const keyUsage = isEncrypting ? ["encrypt"] : ["encrypt", "decrypt"];
+    const cryptoKey = await importKey(key, algorithmName, keyUsage);
+    const algorithm = {
+        name: algorithmName,
+        iv: new Uint8Array(iv)
+    };
+
+    const result = await (isEncrypting ?
+        crypto.subtle.encrypt(
+            algorithm,
+            cryptoKey,
+            new Uint8Array(data)) :
+        decrypt(
+            algorithm,
+            cryptoKey,
+            data));
+
+    let resultByteArray = new Uint8Array(result);
+    if (isEncrypting) {
+        // trim off the last block, which is always a padding block.
+        resultByteArray = resultByteArray.slice(0, resultByteArray.length - AesBlockSizeBytes);
+    }
+    return Array.from(resultByteArray);
+}
+
+async function decrypt(algorithm, cryptoKey, data) {
+    // crypto.subtle AES-CBC will only allow a PaddingMode of PKCS7, but we need to use
+    // PaddingMode None. To simulate this, we only decrypt full blocks of data, with an extra full
+    // padding block of 0x10 (16) bytes appended to data. crypto.subtle will see that padding block and return
+    // the fully decrypted message. To create the encrypted padding block, we encrypt an empty array using the
+    // last block of the cipher text as the IV. This will create a full block of padding bytes.
+
+    const paddingBlockIV = new Uint8Array(data).slice(data.length - AesBlockSizeBytes);
+    const empty = new Uint8Array();
+    const encryptedPaddingBlockResult = await crypto.subtle.encrypt(
+        {
+            name: algorithm.name,
+            iv: paddingBlockIV
+        },
+        cryptoKey,
+        empty
+    );
+
+    const encryptedPaddingBlock = new Uint8Array(encryptedPaddingBlockResult);
+    for (var i = 0; i < encryptedPaddingBlock.length; i++) {
+        data.push(encryptedPaddingBlock[i]);
+    }
+
+    return await crypto.subtle.decrypt(
+        algorithm,
+        cryptoKey,
+        new Uint8Array(data));
+}
+
+function importKey(key, algorithmName, keyUsage) {
+    return crypto.subtle.importKey(
+        "raw",
+        new Uint8Array(key),
+        {
+            name: algorithmName
+        },
+        false /* extractable */,
+        keyUsage);
 }
 
 // Operation to perform.
@@ -208,7 +277,12 @@ async function async_call(msg) {
     else if (req.func === "sign") {
         const signResult = await sign(req.type, new Uint8Array(req.key), new Uint8Array(req.data));
         return JSON.stringify(signResult);
-    } else {
+    }
+    else if (req.func === "encrypt_decrypt") {
+        const signResult = await encrypt_decrypt(req.isEncrypting, req.key, req.iv, req.data);
+        return JSON.stringify(signResult);
+    }
+    else {
         throw "CRYPTO: Unknown request: " + req.func;
     }
 }

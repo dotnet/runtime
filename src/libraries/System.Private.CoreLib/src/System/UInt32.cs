@@ -1001,14 +1001,14 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static uint IShiftOperators<uint, uint>.operator <<(uint value, int shiftAmount) => value << shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static uint IShiftOperators<uint, int, uint>.operator <<(uint value, int shiftAmount) => value << shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static uint IShiftOperators<uint, uint>.operator >>(uint value, int shiftAmount) => value >> shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static uint IShiftOperators<uint, int, uint>.operator >>(uint value, int shiftAmount) => value >> shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static uint IShiftOperators<uint, uint>.operator >>>(uint value, int shiftAmount) => value >>> shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static uint IShiftOperators<uint, int, uint>.operator >>>(uint value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISpanParsable
