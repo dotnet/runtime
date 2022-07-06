@@ -3624,12 +3624,10 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            if ((pClass->IsNotTightlyPacked() && (pClass->HasExplicitSize())) ||
+            if ((pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize())) ||
                 pMT == g_TypedReferenceMT ||
                 VMClsHnd.IsNativeValueType())
             {
-                // All kinds of structs with Size=.., Pack=... will be marked as "Explicit Size"
-                // and end up as "custom layout". We consider "Auto-layout" as non-custom one
                 ret |= CORINFO_FLG_CUSTOMLAYOUT;
             }
 
