@@ -241,6 +241,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 Assert.Throws<InvalidOperationException>(() => map.Clear());
             }
         }
+
         public enum SetValueMethod
         {
             ItemSet,

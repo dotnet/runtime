@@ -38,15 +38,20 @@ namespace System.Security.Cryptography.Cose
             return FromEncodedValue(encodedValue.AsSpan());
         }
 
+        private static ReadOnlyMemory<byte> Encode(CborWriter writer)
+        {
+            byte[] buffer = new byte[writer.BytesWritten];
+            writer.Encode(buffer);
+
+            return buffer.AsMemory();
+        }
+
         public static CoseHeaderValue FromInt32(int value)
         {
             var writer = new CborWriter();
             writer.WriteInt32(value);
 
-            byte[] encodedValue = new byte[writer.BytesWritten];
-            writer.Encode(encodedValue);
-
-            return FromEncodedValue(encodedValue.AsMemory());
+            return FromEncodedValue(Encode(writer));
         }
 
         public static CoseHeaderValue FromString(string value)
@@ -59,10 +64,7 @@ namespace System.Security.Cryptography.Cose
             var writer = new CborWriter();
             writer.WriteTextString(value);
 
-            byte[] encodedValue = new byte[writer.BytesWritten];
-            writer.Encode(encodedValue);
-
-            return FromEncodedValue(encodedValue.AsMemory());
+            return FromEncodedValue(Encode(writer));
         }
 
         public static CoseHeaderValue FromBytes(ReadOnlySpan<byte> value)
@@ -70,10 +72,7 @@ namespace System.Security.Cryptography.Cose
             var writer = new CborWriter();
             writer.WriteByteString(value);
 
-            byte[] encodedValue = new byte[writer.BytesWritten];
-            writer.Encode(encodedValue);
-
-            return FromEncodedValue(encodedValue.AsMemory());
+            return FromEncodedValue(Encode(writer));
         }
 
         public static CoseHeaderValue FromBytes(byte[] value)

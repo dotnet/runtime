@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +14,11 @@ namespace System.Security.Cryptography.Cose
         private readonly byte[] _encodedBodyProtectedHeaders;
         internal readonly byte[] _encodedSignProtectedHeaders;
         internal readonly byte[] _signature;
+        private CoseMultiSignMessage? _message;
+
+        public CoseHeaderMap ProtectedHeaders { get; }
+        public CoseHeaderMap UnprotectedHeaders { get; }
+
 
         internal CoseSignature(CoseMultiSignMessage message, CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedBodyProtectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
             : this(protectedHeaders, unprotectedHeaders, encodedBodyProtectedHeaders, encodedSignProtectedHeaders, signature)
@@ -30,11 +34,6 @@ namespace System.Security.Cryptography.Cose
             _encodedSignProtectedHeaders = encodedSignProtectedHeaders;
             _signature = signature;
         }
-
-        public CoseHeaderMap ProtectedHeaders { get; }
-        public CoseHeaderMap UnprotectedHeaders { get; }
-
-        private CoseMultiSignMessage? _message;
         internal CoseMultiSignMessage Message
         {
             get
@@ -57,7 +56,7 @@ namespace System.Security.Cryptography.Cose
 
             if (Message.IsDetached)
             {
-                throw new CryptographicException(SR.Sign1VerifyContentWasDetached);
+                throw new InvalidOperationException(SR.Sign1VerifyContentWasDetached);
             }
 
             return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
@@ -72,7 +71,7 @@ namespace System.Security.Cryptography.Cose
 
             if (Message.IsDetached)
             {
-                throw new CryptographicException(SR.Sign1VerifyContentWasDetached);
+                throw new InvalidOperationException(SR.Sign1VerifyContentWasDetached);
             }
 
             return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
@@ -92,7 +91,7 @@ namespace System.Security.Cryptography.Cose
 
             if (!Message.IsDetached)
             {
-                throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
+                throw new InvalidOperationException(SR.Sign1VerifyContentWasEmbedded);
             }
 
             return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
@@ -107,7 +106,7 @@ namespace System.Security.Cryptography.Cose
 
             if (!Message.IsDetached)
             {
-                throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
+                throw new InvalidOperationException(SR.Sign1VerifyContentWasEmbedded);
             }
 
             return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
@@ -125,11 +124,6 @@ namespace System.Security.Cryptography.Cose
                 throw new ArgumentNullException(nameof(detachedContent));
             }
 
-            if (!Message.IsDetached)
-            {
-                throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
-            }
-
             if (!detachedContent.CanRead)
             {
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
@@ -138,6 +132,11 @@ namespace System.Security.Cryptography.Cose
             if (!detachedContent.CanSeek)
             {
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            if (!Message.IsDetached)
+            {
+                throw new InvalidOperationException(SR.Sign1VerifyContentWasEmbedded);
             }
 
             return VerifyCore(key, default, detachedContent, associatedData, CoseHelpers.GetKeyType(key));
@@ -154,11 +153,6 @@ namespace System.Security.Cryptography.Cose
                 throw new ArgumentNullException(nameof(detachedContent));
             }
 
-            if (!Message.IsDetached)
-            {
-                throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded);
-            }
-
             if (!detachedContent.CanRead)
             {
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
@@ -167,6 +161,11 @@ namespace System.Security.Cryptography.Cose
             if (!detachedContent.CanSeek)
             {
                 throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            if (!Message.IsDetached)
+            {
+                throw new InvalidOperationException(SR.Sign1VerifyContentWasEmbedded);
             }
 
             return VerifyAsyncCore(key, detachedContent, associatedData, CoseHelpers.GetKeyType(key), cancellationToken);

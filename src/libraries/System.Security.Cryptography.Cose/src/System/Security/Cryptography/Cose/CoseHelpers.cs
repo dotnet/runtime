@@ -244,11 +244,16 @@ namespace System.Security.Cryptography.Cose
                     string exMsg;
                     if (keyType == KeyType.RSA)
                     {
-                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding, alg.Value, keyType.ToString(), signer.HashAlgorithm.Name, signer.RSASignaturePadding!.ToString());
+                        exMsg = SR.Format(
+                            SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding,
+                            alg.Value,
+                            keyType,
+                            signer.HashAlgorithm.Name,
+                            signer.RSASignaturePadding!);
                     }
                     else
                     {
-                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, keyType.ToString(), signer.HashAlgorithm.Name);
+                        exMsg = SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, keyType, signer.HashAlgorithm.Name);
                     }
 
                     throw new CryptographicException(exMsg);

@@ -5,14 +5,14 @@ namespace System.Security.Cryptography.Cose
 {
     public sealed class CoseSigner
     {
+        internal CoseHeaderMap? _protectedHeaders;
+        internal CoseHeaderMap? _unprotectedHeaders;
+        internal readonly KeyType _keyType;
         public AsymmetricAlgorithm Key { get; }
         public HashAlgorithmName HashAlgorithm { get; }
-        internal CoseHeaderMap? _protectedHeaders;
-        public CoseHeaderMap ProtectedHeaders => _protectedHeaders ??= new CoseHeaderMap();
-        internal CoseHeaderMap? _unprotectedHeaders;
-        public CoseHeaderMap UnprotectedHeaders => _unprotectedHeaders ??= new CoseHeaderMap();
         public RSASignaturePadding? RSASignaturePadding { get; }
-        internal readonly KeyType _keyType;
+        public CoseHeaderMap ProtectedHeaders => _protectedHeaders ??= new CoseHeaderMap();
+        public CoseHeaderMap UnprotectedHeaders => _unprotectedHeaders ??= new CoseHeaderMap();
 
         public CoseSigner(AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
         {

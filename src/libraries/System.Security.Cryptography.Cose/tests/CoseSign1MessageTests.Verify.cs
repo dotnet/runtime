@@ -115,6 +115,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData("D2844AA10167756E6B6E6F776EA10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
         public void VerifyThrowsWithUnknownAlgorithm(string hexCborMessage)
         {
+            ReplaceContentInHexCborMessage(ref hexCborMessage);
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage));
             Assert.Throws<CryptographicException>(() => Verify(msg, DefaultKey, s_sampleContent));
         }
@@ -129,7 +130,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28445A201260300A104423131F658406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B"));
             Assert.Null(msg.Content);
-            Assert.Throws<CryptographicException>(() => Verify(msg, DefaultKey, s_sampleContent));
+            Assert.Throws<InvalidOperationException>(() => Verify(msg, DefaultKey, s_sampleContent));
         }
 
         [Fact]
@@ -142,7 +143,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28443A10126A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36"));
             Assert.NotNull(msg.Content);
-            Assert.Throws<CryptographicException>(() => Verify(msg, DefaultKey, s_sampleContent));
+            Assert.Throws<InvalidOperationException>(() => Verify(msg, DefaultKey, s_sampleContent));
         }
 
         private void ReplaceContentInHexCborMessage(ref string hexCborMessage)

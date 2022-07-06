@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Cose
                 ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
 
                 byte[]? payload = DecodePayload(reader);
-                DecodeCoseSignaturesArray(reader, out List<CoseSignature> signatures, encodedProtectedHeaders, payload);
+                List<CoseSignature> signatures = DecodeCoseSignaturesArray(reader, encodedProtectedHeaders);
 
                 reader.ReadEndArray();
 
@@ -259,7 +259,7 @@ namespace System.Security.Cryptography.Cose
             return reader.ReadByteString();
         }
 
-        private static void DecodeCoseSignaturesArray(CborReader reader, out List<CoseSignature> signatures, byte[] bodyProtected, byte[]? content)
+        private static List<CoseSignature> DecodeCoseSignaturesArray(CborReader reader, byte[] bodyProtected)
         {
             int? signaturesLength = reader.ReadStartArray();
 
@@ -268,13 +268,13 @@ namespace System.Security.Cryptography.Cose
                 throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.MultiSignMessageMustCarryAtLeastOneSignature));
             }
 
-            signatures = new List<CoseSignature>(signaturesLength!.Value);
+            List<CoseSignature> signatures = new List<CoseSignature>(signaturesLength!.Value);
 
             for (int i = 0; i < signaturesLength; i++)
             {
                 int? length = reader.ReadStartArray();
 
-                if (length != 3)
+                if (length != CoseMultiSignMessage.CoseSignatureArrayLength)
                 {
                     throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeCoseSignatureMustBeArrayOfThree));
                 }
@@ -293,8 +293,9 @@ namespace System.Security.Cryptography.Cose
 
                 reader.ReadEndArray();
             }
-
             reader.ReadEndArray();
+
+            return signatures;
         }
 
         internal static void AppendToBeSigned(
@@ -408,9 +409,9 @@ namespace System.Security.Cryptography.Cose
         internal static int ComputeToBeSignedEncodedSize(SigStructureContext context, int bodyProtectedLength, int signProtectedLength, int associatedDataLength, int contentLength)
         {
             int encodedSize = CoseHelpers.SizeOfArrayOfLessThan24 +
-            CoseHelpers.GetByteStringEncodedSize(bodyProtectedLength) +
-            CoseHelpers.GetByteStringEncodedSize(associatedDataLength) +
-            CoseHelpers.GetByteStringEncodedSize(contentLength);
+                CoseHelpers.GetByteStringEncodedSize(bodyProtectedLength) +
+                CoseHelpers.GetByteStringEncodedSize(associatedDataLength) +
+                CoseHelpers.GetByteStringEncodedSize(contentLength);
 
             if (context == SigStructureContext.Signature)
             {
