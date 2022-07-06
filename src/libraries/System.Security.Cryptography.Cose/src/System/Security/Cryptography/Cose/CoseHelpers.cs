@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.Cose
             {
                 ECDsa => KeyType.ECDsa,
                 RSA => KeyType.RSA,
-                _ => throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()))
+                _ => throw new ArgumentException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()), nameof(key))
             };
         }
 

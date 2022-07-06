@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void CoseSigner_UnsupportedKeyThrows()
         {
-            Assert.Throws<CryptographicException>(() => new CoseSigner(ECDiffieHellman.Create(), HashAlgorithmName.SHA256));
+            Assert.Throws<ArgumentException>("key", () => new CoseSigner(ECDiffieHellman.Create(), HashAlgorithmName.SHA256));
         }
 
         [Fact]

@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseMessage msg = Decode(encodedMsg);
 
             AsymmetricAlgorithm key = ECDiffieHellman.Create();
-            Assert.Throws<CryptographicException>(() => Verify(msg, key, s_sampleContent));
+            Assert.Throws<ArgumentException>("key", () => Verify(msg, key, s_sampleContent));
         }
 
         [Theory]

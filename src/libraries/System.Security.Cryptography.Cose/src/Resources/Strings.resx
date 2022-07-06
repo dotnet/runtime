@@ -120,6 +120,9 @@
   <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
     <value>The destination is too small to hold the encoded value.</value>
   </data>
+  <data name="CoseHeaderMapArgumentCoseHeaderValueIncorrect" xml:space="preserve">
+    <value>Not a valid CBOR encoded value on CoseHeaderValue on header '{0}', see inner exception for details.</value>
+  </data>
   <data name="CoseHeaderMapCborEncodedValueNotValid" xml:space="preserve">
     <value>Not a valid CBOR encoded value, it must be a single value with no trailing data.</value>
   </data>
@@ -129,8 +132,8 @@
   <data name="CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue" xml:space="preserve">
     <value>Header '{0}' does not accept the specified value.</value>
   </data>
-  <data name="CoseHeaderMapLabelDoeNotExist" xml:space="preserve">
-    <value>Label '{0}' does not exist is the map.</value>
+  <data name="CoseHeaderValueErrorWhileDecoding" xml:space="preserve">
+    <value>Error while decoding CBOR encoded value, see inner exception for details.</value>
   </data>
   <data name="CoseSignerRSAKeyNeedsPadding" xml:space="preserve">
     <value>RSA key needs a signature padding.</value>
@@ -212,9 +215,6 @@
   </data>
   <data name="Sign1VerifyAlgIsRequired" xml:space="preserve">
     <value>Algorithm (alg) header is required and it must be a protected header.</value>
-  </data>
-  <data name="Sign1VerifyAlgorithmHeaderParameterWasMissing" xml:space="preserve">
-    <value>Algorithm (alg) header parameter was missing.</value>
   </data>
   <data name="Sign1VerifyContentWasDetached" xml:space="preserve">
     <value>Content was not included in the message (detached message), provide a content to verify.</value>

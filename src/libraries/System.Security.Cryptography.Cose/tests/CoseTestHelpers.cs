@@ -520,5 +520,123 @@ namespace System.Security.Cryptography.Cose.Tests
             int pos = text.IndexOf(search);
             return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
         }
+
+        public static IEnumerable<byte[]> AllCborTypes()
+        {
+            var w = new CborWriter();
+
+            w.WriteBigInteger(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteBoolean(true);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteByteString(s_sampleContent);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteCborNegativeIntegerRepresentation(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteDateTimeOffset(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteDecimal(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteDecimal(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteDouble(default);
+            yield return ReturnDataAndReset(w);
+#if NETCOREAPP
+            w.WriteHalf(default);
+            yield return ReturnDataAndReset(w);
+#endif
+            w.WriteInt32(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteInt64(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteNull();
+            yield return ReturnDataAndReset(w);
+
+            w.WriteSimpleValue(CborSimpleValue.Undefined);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteSingle(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteTag(CborTag.UnsignedBigNum);
+            w.WriteInt32(42);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteTextString(string.Empty);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteUInt32(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteUInt64(default);
+            yield return ReturnDataAndReset(w);
+
+            w.WriteUnixTimeSeconds(default);
+            yield return ReturnDataAndReset(w);
+
+            // Array
+            w.WriteStartArray(2);
+            w.WriteInt32(42);
+            w.WriteTextString("foo");
+            w.WriteEndArray();
+            yield return ReturnDataAndReset(w);
+
+            // Map
+            w.WriteStartMap(2);
+            // first label-value pair.
+            w.WriteInt32(42);
+            w.WriteTextString("4242");
+            // second label-value pair.
+            w.WriteTextString("42");
+            w.WriteInt32(4242);
+            w.WriteEndMap();
+            yield return ReturnDataAndReset(w);
+
+            // Indefinite length array
+            w.WriteStartArray(null);
+            w.WriteInt32(42);
+            w.WriteTextString("foo");
+            w.WriteEndArray();
+            yield return ReturnDataAndReset(w);
+
+            // Indefinite length map
+            w.WriteStartMap(null);
+            // first label-value pair.
+            w.WriteInt32(42);
+            w.WriteTextString("4242");
+            // second label-value pair.
+            w.WriteTextString("42");
+            w.WriteInt32(4242);
+            w.WriteEndMap();
+            yield return ReturnDataAndReset(w);
+
+            // Indefinite length tstr
+            w.WriteStartIndefiniteLengthTextString();
+            w.WriteTextString("foo");
+            w.WriteEndIndefiniteLengthTextString();
+            yield return ReturnDataAndReset(w);
+
+            // Indefinite length bstr
+            w.WriteStartIndefiniteLengthByteString();
+            w.WriteByteString(s_sampleContent);
+            w.WriteEndIndefiniteLengthByteString();
+            yield return ReturnDataAndReset(w);
+
+            static byte[] ReturnDataAndReset(CborWriter w)
+            {
+                byte[] encodedValue = w.Encode();
+                w.Reset();
+                return encodedValue;
+            }
+        }
     }
 }

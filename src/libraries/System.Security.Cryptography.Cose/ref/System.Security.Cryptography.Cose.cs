@@ -42,14 +42,14 @@ namespace System.Security.Cryptography.Cose
         public bool Contains(System.Collections.Generic.KeyValuePair<System.Security.Cryptography.Cose.CoseHeaderLabel, System.Security.Cryptography.Cose.CoseHeaderValue> item) { throw null; }
         public bool ContainsKey(System.Security.Cryptography.Cose.CoseHeaderLabel key) { throw null; }
         public void CopyTo(System.Collections.Generic.KeyValuePair<System.Security.Cryptography.Cose.CoseHeaderLabel, System.Security.Cryptography.Cose.CoseHeaderValue>[] array, int arrayIndex) { }
-        public System.Collections.IEnumerator GetEnumerator() { throw null; }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<System.Security.Cryptography.Cose.CoseHeaderLabel, System.Security.Cryptography.Cose.CoseHeaderValue>> GetEnumerator() { throw null; }
         public byte[] GetValueAsBytes(System.Security.Cryptography.Cose.CoseHeaderLabel label) { throw null; }
         public int GetValueAsBytes(System.Security.Cryptography.Cose.CoseHeaderLabel label, System.Span<byte> destination) { throw null; }
         public int GetValueAsInt32(System.Security.Cryptography.Cose.CoseHeaderLabel label) { throw null; }
         public string GetValueAsString(System.Security.Cryptography.Cose.CoseHeaderLabel label) { throw null; }
         public bool Remove(System.Collections.Generic.KeyValuePair<System.Security.Cryptography.Cose.CoseHeaderLabel, System.Security.Cryptography.Cose.CoseHeaderValue> item) { throw null; }
         public bool Remove(System.Security.Cryptography.Cose.CoseHeaderLabel label) { throw null; }
-        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<System.Security.Cryptography.Cose.CoseHeaderLabel, System.Security.Cryptography.Cose.CoseHeaderValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.Security.Cryptography.Cose.CoseHeaderLabel, System.Security.Cryptography.Cose.CoseHeaderValue>>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetValue(System.Security.Cryptography.Cose.CoseHeaderLabel key, out System.Security.Cryptography.Cose.CoseHeaderValue value) { throw null; }
     }
     public readonly partial struct CoseHeaderValue : System.IEquatable<System.Security.Cryptography.Cose.CoseHeaderValue>

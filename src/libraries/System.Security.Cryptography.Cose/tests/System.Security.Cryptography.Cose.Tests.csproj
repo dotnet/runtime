@@ -11,6 +11,7 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
+    <Compile Include="CoseHeaderValueTests.cs" />
     <Compile Include="CoseMessageTests.Verify.cs" />
     <Compile Include="CoseHeaderLabelTests.cs" />
     <Compile Include="CoseHeaderMapTests.cs" />

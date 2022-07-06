@@ -386,14 +386,14 @@ namespace System.Security.Cryptography.Cose.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AllCborTypes_TestData))]
+        [MemberData(nameof(AllCborTypesTestDataHeaderMaps))]
         public void SignWithAllCborTypesAsHeaderValue(bool useProtectedMap, byte[] encodedValue)
         {
             var myLabel = new CoseHeaderLabel(42);
 
             CoseHeaderMap protectedHeaders = GetHeaderMapWithAlgorithm(DefaultAlgorithm);
             CoseHeaderMap unprotectedHeaders = GetEmptyHeaderMap();
-            (useProtectedMap ? protectedHeaders : unprotectedHeaders)[myLabel] = CoseHeaderValue.FromEncodedValue(encodedValue);//.SetEncodedValue(myLabel, encodedValue);
+            (useProtectedMap ? protectedHeaders : unprotectedHeaders)[myLabel] = CoseHeaderValue.FromEncodedValue(encodedValue);
 
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedProtectedHeaders = GetExpectedProtectedHeaders(DefaultAlgorithm);
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedUnprotectedHeaders = GetEmptyExpectedHeaders();
@@ -409,7 +409,7 @@ namespace System.Security.Cryptography.Cose.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AllCborTypes_TestData))]
+        [MemberData(nameof(AllCborTypesTestDataHeaderMaps))]
         public void MultiSign_SignWithAllCborTypesAsHeaderValue_BodyHeaders(bool useProtectedMap, byte[] encodedValue)
         {
             if (MessageKind != CoseMessageKind.MultiSign)
@@ -452,124 +452,14 @@ namespace System.Security.Cryptography.Cose.Tests
             AssertExtensions.SequenceEqual(encodedValue, roundtrippedValue.Span);
         }
 
-        public static IEnumerable<object[]> AllCborTypes_TestData()
+        public static IEnumerable<object[]> AllCborTypesTestDataHeaderMaps()
         {
             foreach (bool useProtectedMap in new[] { false, true })
             {
-                var w = new CborWriter();
-
-                w.WriteBigInteger(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteBoolean(true);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteByteString(s_sampleContent);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteCborNegativeIntegerRepresentation(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteDateTimeOffset(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteDecimal(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteDecimal(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteDouble(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-#if NETCOREAPP
-                w.WriteHalf(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-#endif
-                w.WriteInt32(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteInt64(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteNull();
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteSimpleValue(CborSimpleValue.Undefined);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteSingle(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteTag(CborTag.UnsignedBigNum);
-                w.WriteInt32(42);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteTextString(string.Empty);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteUInt32(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteUInt64(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                w.WriteUnixTimeSeconds(default);
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                // Array
-                w.WriteStartArray(2);
-                w.WriteInt32(42);
-                w.WriteTextString("foo");
-                w.WriteEndArray();
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                // Map
-                w.WriteStartMap(2);
-                // first label-value pair.
-                w.WriteInt32(42);
-                w.WriteTextString("4242");
-                // second label-value pair.
-                w.WriteTextString("42");
-                w.WriteInt32(4242);
-                w.WriteEndMap();
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                // Indefinite length array
-                w.WriteStartArray(null);
-                w.WriteInt32(42);
-                w.WriteTextString("foo");
-                w.WriteEndArray();
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                // Indefinite length map
-                w.WriteStartMap(null);
-                // first label-value pair.
-                w.WriteInt32(42);
-                w.WriteTextString("4242");
-                // second label-value pair.
-                w.WriteTextString("42");
-                w.WriteInt32(4242);
-                w.WriteEndMap();
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                // Indefinite length tstr
-                w.WriteStartIndefiniteLengthTextString();
-                w.WriteTextString("foo");
-                w.WriteEndIndefiniteLengthTextString();
-                yield return ReturnDataAndReset(useProtectedMap, w);
-
-                // Indefinite length bstr
-                w.WriteStartIndefiniteLengthByteString();
-                w.WriteByteString(s_sampleContent);
-                w.WriteEndIndefiniteLengthByteString();
-                yield return ReturnDataAndReset(useProtectedMap, w);
-            }
-
-            static object[] ReturnDataAndReset(bool useProtectedMap, CborWriter w)
-            {
-                byte[] encodedValue = w.Encode();
-                w.Reset();
-                return new object[] { useProtectedMap, encodedValue };
+                foreach (byte[] encodedValue in AllCborTypes())
+                {
+                    yield return new object[] { useProtectedMap, encodedValue };
+                }
             }
         }
 

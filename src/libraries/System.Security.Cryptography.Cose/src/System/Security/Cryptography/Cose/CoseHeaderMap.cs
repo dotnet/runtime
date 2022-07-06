@@ -13,7 +13,18 @@ namespace System.Security.Cryptography.Cose
     {
         private static readonly CoseHeaderMap s_emptyMap = new CoseHeaderMap(isReadOnly: true);
 
+        private readonly Dictionary<CoseHeaderLabel, CoseHeaderValue> _headerParameters = new Dictionary<CoseHeaderLabel, CoseHeaderValue>();
+
         public bool IsReadOnly { get; internal set; }
+
+        public CoseHeaderMap() : this(isReadOnly: false) { }
+
+        private CoseHeaderMap(bool isReadOnly)
+        {
+            IsReadOnly = isReadOnly;
+        }
+
+        private ICollection<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>> HeaderParametersAsCollection => _headerParameters;
 
         public ICollection<CoseHeaderLabel> Keys => _headerParameters.Keys;
 
@@ -34,15 +45,6 @@ namespace System.Security.Cryptography.Cose
                 ValidateInsertion(key, value);
                 _headerParameters[key] = value;
             }
-        }
-
-        private readonly Dictionary<CoseHeaderLabel, CoseHeaderValue> _headerParameters = new Dictionary<CoseHeaderLabel, CoseHeaderValue>();
-
-        public CoseHeaderMap() : this (isReadOnly: false) { }
-
-        internal CoseHeaderMap(bool isReadOnly)
-        {
-            IsReadOnly = isReadOnly;
         }
 
         public int GetValueAsInt32(CoseHeaderLabel label) => _headerParameters[label].GetValueAsInt32();
@@ -81,15 +83,15 @@ namespace System.Security.Cryptography.Cose
         }
 
         public bool Contains(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item)
-            => ((ICollection<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>>)_headerParameters).Contains(item);
+            => HeaderParametersAsCollection.Contains(item);
 
         public void CopyTo(KeyValuePair<CoseHeaderLabel, CoseHeaderValue>[] array, int arrayIndex)
-            => ((ICollection<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>>)_headerParameters).CopyTo(array, arrayIndex);
+            => HeaderParametersAsCollection.CopyTo(array, arrayIndex);
 
-        IEnumerator<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>> IEnumerable<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>>.GetEnumerator()
+        public IEnumerator<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>> GetEnumerator()
             => _headerParameters.GetEnumerator();
 
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
             => _headerParameters.GetEnumerator();
 
         public bool Remove(CoseHeaderLabel label)
@@ -101,7 +103,7 @@ namespace System.Security.Cryptography.Cose
         public bool Remove(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item)
         {
             ValidateIsReadOnly();
-            return ((ICollection<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>>)_headerParameters).Remove(item);
+            return HeaderParametersAsCollection.Remove(item);
         }
 
         private void ValidateIsReadOnly()
@@ -115,76 +117,80 @@ namespace System.Security.Cryptography.Cose
         private static void ValidateInsertion(CoseHeaderLabel label, CoseHeaderValue headerValue)
         {
             var reader = new CborReader(headerValue.EncodedValue);
-
-            if (label.LabelAsString != null) // all known headers are integers.
+            try
             {
-                reader.SkipValue();
-            }
-            else
-            {
-                CborReaderState initialState = reader.PeekState();
-                int intLabel = label.LabelAsInt32;
-
-                switch (intLabel)
+                if (label.LabelAsString != null) // all known headers are integers.
                 {
-                    case KnownHeaders.Alg:
-                        if (initialState != CborReaderState.NegativeInteger &&
-                            initialState != CborReaderState.UnsignedInteger &&
-                            initialState != CborReaderState.TextString)
-                        {
-                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, intLabel));
-                        }
-                        reader.SkipValue();
-                        break;
-                    case KnownHeaders.Crit:
-                        int length = reader.ReadStartArray().GetValueOrDefault();
-                        if (length < 1)
-                        {
-                            throw new InvalidOperationException(SR.CriticalHeadersMustBeArrayOfAtLeastOne);
-                        }
+                    reader.SkipValue();
+                }
+                else
+                {
+                    CborReaderState initialState = reader.PeekState();
+                    switch (label.LabelAsInt32)
+                    {
+                        case KnownHeaders.Alg:
+                            if (initialState != CborReaderState.NegativeInteger &&
+                                initialState != CborReaderState.UnsignedInteger &&
+                                initialState != CborReaderState.TextString)
+                            {
+                                throw new ArgumentException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label.LabelName));
+                            }
+                            reader.SkipValue();
+                            break;
+                        case KnownHeaders.Crit:
+                            int length = reader.ReadStartArray().GetValueOrDefault();
+                            if (length < 1)
+                            {
+                                throw new ArgumentException(SR.CriticalHeadersMustBeArrayOfAtLeastOne);
+                            }
 
-                        for (int i = 0; i < length; i++)
-                        {
-                            CborReaderState state = reader.PeekState();
-                            if (state == CborReaderState.UnsignedInteger || state == CborReaderState.NegativeInteger)
+                            for (int i = 0; i < length; i++)
                             {
-                                reader.ReadInt32();
+                                CborReaderState state = reader.PeekState();
+                                if (state == CborReaderState.UnsignedInteger || state == CborReaderState.NegativeInteger)
+                                {
+                                    reader.ReadInt32();
+                                }
+                                else if (state == CborReaderState.TextString)
+                                {
+                                    reader.ReadTextString();
+                                }
+                                else
+                                {
+                                    throw new ArgumentException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label.LabelName));
+                                }
                             }
-                            else if (state == CborReaderState.TextString)
+                            reader.SkipToParent();
+                            break;
+                        case KnownHeaders.ContentType:
+                            if (initialState != CborReaderState.TextString &&
+                                initialState != CborReaderState.UnsignedInteger)
                             {
-                                reader.ReadTextString();
+                                throw new ArgumentException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label.LabelName));
                             }
-                            else
+                            reader.SkipValue();
+                            break;
+                        case KnownHeaders.Kid:
+                            if (initialState != CborReaderState.ByteString)
                             {
-                                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, intLabel));
+                                throw new ArgumentException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label.LabelName));
                             }
-                        }
-                        reader.SkipToParent();
-                        break;
-                    case KnownHeaders.ContentType:
-                        if (initialState != CborReaderState.TextString &&
-                            initialState != CborReaderState.UnsignedInteger)
-                        {
-                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, intLabel));
-                        }
-                        reader.SkipValue();
-                        break;
-                    case KnownHeaders.Kid:
-                        if (initialState != CborReaderState.ByteString)
-                        {
-                            throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, intLabel));
-                        }
-                        reader.SkipValue();
-                        break;
-                    default:
-                        reader.SkipValue();
-                        break;
+                            reader.SkipValue();
+                            break;
+                        default:
+                            reader.SkipValue();
+                            break;
+                    }
+                }
+
+                if (reader.BytesRemaining != 0)
+                {
+                    throw new CborContentException(SR.CoseHeaderMapCborEncodedValueNotValid);
                 }
             }
-
-            if (reader.BytesRemaining != 0)
+            catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new ArgumentException(SR.Format(SR.CoseHeaderMapArgumentCoseHeaderValueIncorrect, label.LabelName), ex);
             }
         }
 

@@ -56,13 +56,13 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var map = new CoseHeaderMap();
             // only accepts int or tstr
-            Assert.Throws<InvalidOperationException>(() => SetValue(map, CoseHeaderLabel.Algorithm, ReadOnlySpan<byte>.Empty, method));
+            Assert.Throws<ArgumentException>(() => SetValue(map, CoseHeaderLabel.Algorithm, ReadOnlySpan<byte>.Empty, method));
             // [ +label ] (non-empty array)
-            Assert.Throws<InvalidOperationException>(() => SetValue(map, CoseHeaderLabel.CriticalHeaders, ReadOnlySpan<byte>.Empty, method));
+            Assert.Throws<ArgumentException>(() => SetValue(map, CoseHeaderLabel.CriticalHeaders, ReadOnlySpan<byte>.Empty, method));
             // tstr / uint
-            Assert.Throws<InvalidOperationException>(() => SetValue(map, CoseHeaderLabel.ContentType, -1, method));
+            Assert.Throws<ArgumentException>(() => SetValue(map, CoseHeaderLabel.ContentType, -1, method));
             // bstr
-            Assert.Throws<InvalidOperationException>(() => SetValue(map, CoseHeaderLabel.KeyIdentifier, "foo", method));
+            Assert.Throws<ArgumentException>(() => SetValue(map, CoseHeaderLabel.KeyIdentifier, "foo", method));
         }
 
         [Theory]
@@ -80,17 +80,41 @@ namespace System.Security.Cryptography.Cose.Tests
 
             var map = new CoseHeaderMap();
             // only accepts int or tstr
-            Assert.Throws<InvalidOperationException>(() => SetEncodedValue(map, CoseHeaderLabel.Algorithm, encodedNullValue, method));
+            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.Algorithm, encodedNullValue, method));
             // [ +label ] (non-empty array)
-            Assert.Throws<InvalidOperationException>(() => SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, encodedNullValue, method));
+            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, encodedNullValue, method));
             writer.Reset();
             writer.WriteStartArray(0);
             writer.WriteEndArray();
-            Assert.Throws<InvalidOperationException>(() => SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, writer.Encode(), method));
+            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, writer.Encode(), method));
             // tstr / uint
-            Assert.Throws<InvalidOperationException>(() => SetEncodedValue(map, CoseHeaderLabel.ContentType, encodedNullValue, method));
+            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.ContentType, encodedNullValue, method));
             // bstr
-            Assert.Throws<InvalidOperationException>(() => SetEncodedValue(map, CoseHeaderLabel.KeyIdentifier, encodedNullValue, method));
+            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.KeyIdentifier, encodedNullValue, method));
+        }
+
+        [Fact]
+        public void SetValue_InvalidCoseHeaderValue()
+        {
+            CoseHeaderLabel[] labelsToTest = {
+                new CoseHeaderLabel("foo"),
+                new CoseHeaderLabel(42),
+                CoseHeaderLabel.Algorithm,
+                CoseHeaderLabel.ContentType,
+                CoseHeaderLabel.CriticalHeaders,
+                CoseHeaderLabel.KeyIdentifier
+            };
+
+            foreach (CoseHeaderLabel label in labelsToTest)
+            {
+                var map = new CoseHeaderMap();
+
+                Assert.Throws<ArgumentException>(() => map.Add(label, new CoseHeaderValue()));
+                Assert.Throws<ArgumentException>(() => map[label] = new CoseHeaderValue());
+
+                Assert.Throws<ArgumentException>(() => map.Add(label, default(CoseHeaderValue)));
+                Assert.Throws<ArgumentException>(() => map[label] = default(CoseHeaderValue));
+            }
         }
 
         [Fact]
@@ -387,9 +411,9 @@ namespace System.Security.Cryptography.Cose.Tests
         public static IEnumerable<object[]> SetValueData =>
             new List<object[]>
             {
-                        new object[] { SetValueMethod.ItemSet },
-                        new object[] { SetValueMethod.Add },
-                        new object[] { SetValueMethod.AddShortcut }
+                new object[] { SetValueMethod.ItemSet },
+                new object[] { SetValueMethod.Add },
+                new object[] { SetValueMethod.AddShortcut }
             };
 
         public static IEnumerable<object[]> SetValueGetValueData =>

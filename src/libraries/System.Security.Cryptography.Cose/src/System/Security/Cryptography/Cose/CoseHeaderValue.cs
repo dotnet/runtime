@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Cbor;
 
@@ -16,31 +15,54 @@ namespace System.Security.Cryptography.Cose
             EncodedValue = encodedValue;
         }
 
-        public static CoseHeaderValue FromEncodedValue(ReadOnlySpan<byte> encodedValue)
+        private static CoseHeaderValue FromEncodedValue(ReadOnlyMemory<byte> encodedValue)
         {
             // We don't validate here as we need to know in which label the value is going to be used to validate even more semantics.
-            var encodedValueCopy = new ReadOnlyMemory<byte>(encodedValue.ToArray());
-            CoseHeaderValue value = new CoseHeaderValue(encodedValueCopy);
+            CoseHeaderValue value = new CoseHeaderValue(encodedValue);
             return value;
         }
 
+        public static CoseHeaderValue FromEncodedValue(ReadOnlySpan<byte> encodedValue)
+        {
+            var encodedValueCopy = new ReadOnlyMemory<byte>(encodedValue.ToArray());
+            return FromEncodedValue(encodedValueCopy);
+        }
+
         public static CoseHeaderValue FromEncodedValue(byte[] encodedValue)
-            => FromEncodedValue(encodedValue.AsSpan());
+        {
+            if (encodedValue == null)
+            {
+                throw new ArgumentNullException(nameof(encodedValue));
+            }
+
+            return FromEncodedValue(encodedValue.AsSpan());
+        }
 
         public static CoseHeaderValue FromInt32(int value)
         {
             var writer = new CborWriter();
             writer.WriteInt32(value);
 
-            return FromEncodedValue(writer.Encode());
+            byte[] encodedValue = new byte[writer.BytesWritten];
+            writer.Encode(encodedValue);
+
+            return FromEncodedValue(encodedValue.AsMemory());
         }
 
         public static CoseHeaderValue FromString(string value)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             var writer = new CborWriter();
             writer.WriteTextString(value);
 
-            return FromEncodedValue(writer.Encode());
+            byte[] encodedValue = new byte[writer.BytesWritten];
+            writer.Encode(encodedValue);
+
+            return FromEncodedValue(encodedValue.AsMemory());
         }
 
         public static CoseHeaderValue FromBytes(ReadOnlySpan<byte> value)
@@ -48,21 +70,35 @@ namespace System.Security.Cryptography.Cose
             var writer = new CborWriter();
             writer.WriteByteString(value);
 
-            return FromEncodedValue(writer.Encode());
+            byte[] encodedValue = new byte[writer.BytesWritten];
+            writer.Encode(encodedValue);
+
+            return FromEncodedValue(encodedValue.AsMemory());
         }
 
         public static CoseHeaderValue FromBytes(byte[] value)
         {
-            var writer = new CborWriter();
-            writer.WriteByteString(value);
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
-            return FromEncodedValue(writer.Encode());
+            return FromBytes(value.AsSpan());
         }
 
         public int GetValueAsInt32()
         {
             var reader = new CborReader(EncodedValue);
-            int retVal = reader.ReadInt32();
+            int retVal;
+
+            try
+            {
+                retVal = reader.ReadInt32();
+            }
+            catch (Exception ex) when (ex is CborContentException or InvalidOperationException or OverflowException)
+            {
+                throw new InvalidOperationException(SR.CoseHeaderValueErrorWhileDecoding, ex);
+            }
 
             if (reader.BytesRemaining != 0)
             {
@@ -75,7 +111,16 @@ namespace System.Security.Cryptography.Cose
         public string GetValueAsString()
         {
             var reader = new CborReader(EncodedValue);
-            string retVal = reader.ReadTextString();
+            string retVal;
+
+            try
+            {
+                retVal = reader.ReadTextString();
+            }
+            catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
+            {
+                throw new InvalidOperationException(SR.CoseHeaderValueErrorWhileDecoding, ex);
+            }
 
             if (reader.BytesRemaining != 0)
             {
@@ -88,7 +133,16 @@ namespace System.Security.Cryptography.Cose
         public byte[] GetValueAsBytes()
         {
             var reader = new CborReader(EncodedValue);
-            byte[] retVal = reader.ReadByteString();
+            byte[] retVal;
+
+            try
+            {
+                retVal = reader.ReadByteString();
+            }
+            catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
+            {
+                throw new InvalidOperationException(SR.CoseHeaderValueErrorWhileDecoding, ex);
+            }
 
             if (reader.BytesRemaining != 0)
             {
@@ -101,7 +155,19 @@ namespace System.Security.Cryptography.Cose
         public int GetValueAsBytes(Span<byte> destination)
         {
             var reader = new CborReader(EncodedValue);
-            reader.TryReadByteString(destination, out int bytesWritten);
+            int bytesWritten;
+
+            try
+            {
+                if (!reader.TryReadByteString(destination, out bytesWritten))
+                {
+                    throw new ArgumentException(SR.Argument_EncodeDestinationTooSmall);
+                }
+            }
+            catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
+            {
+                throw new InvalidOperationException(SR.CoseHeaderValueErrorWhileDecoding, ex);
+            }
 
             if (reader.BytesRemaining != 0)
             {
@@ -115,7 +181,15 @@ namespace System.Security.Cryptography.Cose
 
         public bool Equals(CoseHeaderValue other) => EncodedValue.Span.SequenceEqual(other.EncodedValue.Span);
 
-        public override int GetHashCode() => EncodedValue.GetHashCode();
+        public override int GetHashCode()
+        {
+            HashCode hashCode = default;
+            foreach (byte b in EncodedValue.Span)
+            {
+                hashCode.Add(b);
+            }
+            return hashCode.ToHashCode();
+        }
 
         public static bool operator ==(CoseHeaderValue left, CoseHeaderValue right) => left.Equals(right);
 
