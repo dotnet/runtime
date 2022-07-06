@@ -22,7 +22,7 @@ namespace Microsoft.Interop
         ToManaged = 0x10,
         GuaranteedUnmarshal = 0x20,
         Free = 0x40,
-        NotifyInvokeSucceeded = 0x80,
+        OnInvoked = 0x80,
     }
 
     public static class ShapeMemberNames
@@ -36,7 +36,7 @@ namespace Microsoft.Interop
             public static class Stateless
             {
                 public const string ConvertToManaged = nameof(ConvertToManaged);
-                public const string ConvertToManagedGuaranteed = nameof(ConvertToManagedGuaranteed);
+                public const string ConvertToManagedFinally = nameof(ConvertToManagedFinally);
                 public const string ConvertToUnmanaged = nameof(ConvertToUnmanaged);
             }
 
@@ -47,11 +47,11 @@ namespace Microsoft.Interop
                 public const string ToUnmanaged = nameof(ToUnmanaged);
                 // Unmanaged to managed
                 public const string ToManaged = nameof(ToManaged);
-                public const string ToManagedGuaranteed = nameof(ToManagedGuaranteed);
+                public const string ToManagedFinally = nameof(ToManagedFinally);
                 public const string FromUnmanaged = nameof(FromUnmanaged);
                 // Optional features
                 public const string Free = nameof(Free);
-                public const string NotifyInvokeSucceeded = nameof(NotifyInvokeSucceeded);
+                public const string OnInvoked = nameof(OnInvoked);
             }
         }
 
@@ -66,7 +66,7 @@ namespace Microsoft.Interop
 
                 // Unmanaged to managed
                 public const string AllocateContainerForManagedElements = nameof(AllocateContainerForManagedElements);
-                public const string AllocateContainerForManagedElementsGuaranteed = nameof(AllocateContainerForManagedElementsGuaranteed);
+                public const string AllocateContainerForManagedElementsFinally = nameof(AllocateContainerForManagedElementsFinally);
                 public const string GetManagedValuesDestination = nameof(GetManagedValuesDestination);
                 public const string GetUnmanagedValuesSource = nameof(GetUnmanagedValuesSource);
             }
@@ -82,11 +82,11 @@ namespace Microsoft.Interop
                 public const string GetManagedValuesDestination = nameof(GetManagedValuesDestination);
                 public const string GetUnmanagedValuesSource = nameof(GetUnmanagedValuesSource);
                 public const string ToManaged = nameof(ToManaged);
-                public const string ToManagedGuaranteed = nameof(ToManagedGuaranteed);
+                public const string ToManagedFinally = nameof(ToManagedFinally);
                 public const string FromUnmanaged = nameof(FromUnmanaged);
                 // Optional features
                 public const string Free = nameof(Free);
-                public const string NotifyInvokeSucceeded = nameof(NotifyInvokeSucceeded);
+                public const string OnInvoked = nameof(OnInvoked);
             }
         }
     }
@@ -98,7 +98,7 @@ namespace Microsoft.Interop
             public IMethodSymbol? ToUnmanaged;
             public IMethodSymbol? ToUnmanagedWithBuffer;
             public IMethodSymbol? ToManaged;
-            public IMethodSymbol? ToManagedGuaranteed;
+            public IMethodSymbol? ToManagedFinally;
 
             // Linear collection
             public IMethodSymbol? ManagedValuesSource;
@@ -142,7 +142,7 @@ namespace Microsoft.Interop
 
                 // Unmanaged -> Managed
                 IMethodSymbol? allocateManaged = LinearCollection.AllocateContainerForManagedElements(marshallerType, managedType);
-                IMethodSymbol? allocateManagedGuaranteed = LinearCollection.AllocateContainerForManagedElementsGuaranteed(marshallerType, managedType, spanOfT);
+                IMethodSymbol? allocateManagedGuaranteed = LinearCollection.AllocateContainerForManagedElementsFinally(marshallerType, managedType, spanOfT);
                 IMethodSymbol? managedDestination = LinearCollection.GetManagedValuesDestination(marshallerType, managedType, spanOfT);
                 IMethodSymbol? unmanagedSource = LinearCollection.GetUnmanagedValuesSource(marshallerType, readOnlySpanOfT);
                 if ((allocateManaged is not null || allocateManagedGuaranteed is not null)
@@ -158,7 +158,7 @@ namespace Microsoft.Interop
                     methods = methods with
                     {
                         ToManaged = allocateManaged,
-                        ToManagedGuaranteed = allocateManagedGuaranteed,
+                        ToManagedFinally = allocateManagedGuaranteed,
                         ManagedValuesDestination = managedDestination,
                         UnmanagedValuesSource = unmanagedSource
                     };
@@ -178,8 +178,8 @@ namespace Microsoft.Interop
                 if (toManaged is not null)
                     shape |= MarshallerShape.ToManaged;
 
-                IMethodSymbol? toManagedGuaranteed = Value.ConvertToManagedGuaranteed(marshallerType, managedType);
-                if (toManagedGuaranteed is not null)
+                IMethodSymbol? toManagedFinally = Value.ConvertToManagedFinally(marshallerType, managedType);
+                if (toManagedFinally is not null)
                     shape |= MarshallerShape.GuaranteedUnmarshal;
 
                 methods = methods with
@@ -187,7 +187,7 @@ namespace Microsoft.Interop
                     ToUnmanaged = toUnmanaged,
                     ToUnmanagedWithBuffer = toUnmanagedWithBuffer,
                     ToManaged = toManaged,
-                    ToManagedGuaranteed = toManagedGuaranteed
+                    ToManagedFinally = toManagedFinally
                 };
             }
 
@@ -275,10 +275,10 @@ namespace Microsoft.Interop
                         && SymbolEqualityComparer.Default.Equals(managedType, m.ReturnType));
             }
 
-            internal static IMethodSymbol? ConvertToManagedGuaranteed(ITypeSymbol type, ITypeSymbol managedType)
+            internal static IMethodSymbol? ConvertToManagedFinally(ITypeSymbol type, ITypeSymbol managedType)
             {
-                // static TManaged ConvertToManagedGuaranteed(TNative unmanaged)
-                return type.GetMembers(ShapeMemberNames.Value.Stateless.ConvertToManagedGuaranteed)
+                // static TManaged ConvertToManagedFinally(TNative unmanaged)
+                return type.GetMembers(ShapeMemberNames.Value.Stateless.ConvertToManagedFinally)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 1, ReturnsVoid: false }
                         && SymbolEqualityComparer.Default.Equals(managedType, m.ReturnType));
@@ -349,9 +349,9 @@ namespace Microsoft.Interop
                         && managedType.IsConstructedFromEqualTypes(m.ReturnType));
             }
 
-            internal static IMethodSymbol? AllocateContainerForManagedElementsGuaranteed(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
+            internal static IMethodSymbol? AllocateContainerForManagedElementsFinally(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
             {
-                // static TCollection AllocateContainerForManagedElementsGuaranteed(TNative unmanaged, int length);
+                // static TCollection AllocateContainerForManagedElementsFinally(TNative unmanaged, int length);
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false }
@@ -392,7 +392,7 @@ namespace Microsoft.Interop
             public IMethodSymbol? FromUnmanaged { get; init; }
             public IMethodSymbol? ToUnmanaged { get; init; }
             public IMethodSymbol? Free { get; init; }
-            public IMethodSymbol? NotifyInvokeSucceeded { get; init; }
+            public IMethodSymbol? OnInvoked { get; init; }
         }
 
         public static (MarshallerShape shape, MarshallerMethods methods) GetShapeForType(ITypeSymbol marshallerType, ITypeSymbol managedType, Compilation compilation)
@@ -431,11 +431,11 @@ namespace Microsoft.Interop
             }
 
             IMethodSymbol toManaged = GetToManagedMethod(marshallerType, managedType);
-            IMethodSymbol toManagedGuaranteed = GetToManagedGuaranteedMethod(marshallerType, managedType);
+            IMethodSymbol toManagedFinally = GetToManagedFinallyMethod(marshallerType, managedType);
             IMethodSymbol fromUnmanaged = GetFromUnmanagedMethod(marshallerType, unmanagedType);
-            if ((toManaged, toManagedGuaranteed) is not (null, null) && fromUnmanaged is not null)
+            if ((toManaged, toManagedFinally) is not (null, null) && fromUnmanaged is not null)
             {
-                if (toManagedGuaranteed is not null)
+                if (toManagedFinally is not null)
                 {
                     shape |= MarshallerShape.GuaranteedUnmarshal;
                 }
@@ -447,7 +447,7 @@ namespace Microsoft.Interop
                 {
                     FromUnmanaged = fromUnmanaged,
                     ToManaged = toManaged,
-                    ToManagedGuranteed = toManagedGuaranteed
+                    ToManagedGuranteed = toManagedFinally
                 };
             }
 
@@ -458,11 +458,11 @@ namespace Microsoft.Interop
                 methods = methods with { Free = free };
             }
 
-            IMethodSymbol notifyInvokeSucceeded = GetNotifyInvokeSucceededMethod(marshallerType);
-            if (notifyInvokeSucceeded is not null)
+            IMethodSymbol OnInvoked = GetOnInvokedMethod(marshallerType);
+            if (OnInvoked is not null)
             {
-                shape |= MarshallerShape.NotifyInvokeSucceeded;
-                methods = methods with { NotifyInvokeSucceeded = notifyInvokeSucceeded };
+                shape |= MarshallerShape.OnInvoked;
+                methods = methods with { OnInvoked = OnInvoked };
             }
 
             if (GetStatelessGetPinnableReference(marshallerType, managedType) is not null)
@@ -531,9 +531,9 @@ namespace Microsoft.Interop
                     && SymbolEqualityComparer.Default.Equals(managedType, m.ReturnType));
         }
 
-        private static IMethodSymbol? GetToManagedGuaranteedMethod(ITypeSymbol type, ITypeSymbol managedType)
+        private static IMethodSymbol? GetToManagedFinallyMethod(ITypeSymbol type, ITypeSymbol managedType)
         {
-            return type.GetMembers(ShapeMemberNames.Value.Stateful.ToManagedGuaranteed)
+            return type.GetMembers(ShapeMemberNames.Value.Stateful.ToManagedFinally)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: false, ReturnsByRef: false, ReturnsByRefReadonly: false }
                     && SymbolEqualityComparer.Default.Equals(managedType, m.ReturnType));
@@ -587,9 +587,9 @@ namespace Microsoft.Interop
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: true });
         }
 
-        private static IMethodSymbol? GetNotifyInvokeSucceededMethod(ITypeSymbol type)
+        private static IMethodSymbol? GetOnInvokedMethod(ITypeSymbol type)
         {
-            return type.GetMembers(ShapeMemberNames.Value.Stateful.NotifyInvokeSucceeded)
+            return type.GetMembers(ShapeMemberNames.Value.Stateful.OnInvoked)
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: true });
         }
