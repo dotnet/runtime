@@ -3342,10 +3342,8 @@ static long opcode_counts[MINT_LASTOP];
 	if (tracing > 1) { \
 		output_indent (); \
 		char *mn = mono_method_full_name (frame->imethod->method, FALSE); \
-		char *disasm = mono_interp_dis_mintop ((gint32)(ip - frame->imethod->code), TRUE, ip + 1, *ip); \
-		g_print ("(%p) %s -> %s\n", mono_thread_internal_current (), mn, disasm); \
+		g_print ("(%p) %s -> IL_%04x: %-10s\n", mono_thread_internal_current (), mn, (gint32)(ip - frame->imethod->code), mono_interp_opname (*ip)); \
 		g_free (mn); \
-		g_free (disasm); \
 	}
 #else
 #define DUMP_INSTR()

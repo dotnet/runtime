@@ -77,8 +77,8 @@ namespace Microsoft.Extensions.Hosting.Internal
         private void OnApplicationStarted()
         {
             Logger.LogInformation("Application started. Press Ctrl+C to shut down.");
-            Logger.LogInformation("Hosting environment: {envName}", Environment.EnvironmentName);
-            Logger.LogInformation("Content root path: {contentRoot}", Environment.ContentRootPath);
+            Logger.LogInformation("Hosting environment: {EnvName}", Environment.EnvironmentName);
+            Logger.LogInformation("Content root path: {ContentRoot}", Environment.ContentRootPath);
         }
 
         private void OnApplicationStopping()

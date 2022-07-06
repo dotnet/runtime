@@ -117,11 +117,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.MarshalUsingCollectionWithNullElementName, 2, 0 };
 
             // Generic collection marshaller has different arity than collection.
-            yield return new object[] { CodeSnippets.GenericCollectionMarshallingArityMismatch, 2, 0 };
+            yield return new object[] { CodeSnippets.CustomCollectionMarshalling.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
+            yield return new object[] { CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionMarshallingArityMismatch, 2, 0 };
 
             yield return new object[] { CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 2, 0 };
-            yield return new object[] { CodeSnippets.GenericCollectionWithCustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
-            yield return new object[] { CodeSnippets.GenericCollectionWithCustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionWithCustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
+            yield return new object[] { CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionWithCustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
             yield return new object[] { CodeSnippets.RecursiveCountElementNameOnReturnValue, 2, 0 };
             yield return new object[] { CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };
             yield return new object[] { CodeSnippets.MutuallyRecursiveCountElementNameOnParameter, 4, 0 };

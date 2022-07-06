@@ -7,12 +7,15 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
     public class DelegateTests : DebuggerTests
     {
+        public DelegateTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(0, 53, 8, "DelegatesTest", false)]

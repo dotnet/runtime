@@ -406,7 +406,7 @@ namespace System
     }
 
     public static class ShiftOperatorsHelper<TSelf, TResult>
-        where TSelf : IShiftOperators<TSelf, TResult>
+        where TSelf : IShiftOperators<TSelf, int, TResult>
     {
         public static TResult op_LeftShift(TSelf value, int shiftAmount) => value << shiftAmount;
 

@@ -1266,6 +1266,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	return_if_nok (error);
 	image = mono_dynamic_image_create (assembly, assembly_name, g_strdup ("RefEmit_YouForgotToDefineAModule"));
 	image->initial_image = TRUE;
+	image->image.alc = alc;
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
 

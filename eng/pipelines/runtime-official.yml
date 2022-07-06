@@ -10,7 +10,7 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
-    - /**/*.md
+    - '**.md'
     - .github/*
     - docs/*
     - LICENSE.TXT

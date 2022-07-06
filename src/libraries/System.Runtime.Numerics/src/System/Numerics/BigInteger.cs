@@ -5124,7 +5124,7 @@ namespace System.Numerics
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
         public static BigInteger operator >>>(BigInteger value, int shiftAmount)
         {
             value.AssertValid();

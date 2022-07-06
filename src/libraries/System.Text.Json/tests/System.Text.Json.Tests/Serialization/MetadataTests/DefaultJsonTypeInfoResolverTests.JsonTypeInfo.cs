@@ -218,6 +218,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(testObj.IntProp, deserialized.IntProp);
         }
 
+        [Theory]
+        [InlineData(typeof(List<int>), JsonTypeInfoKind.Enumerable)]
+        [InlineData(typeof(Dictionary<string, int>), JsonTypeInfoKind.Dictionary)]
+        [InlineData(typeof(object), JsonTypeInfoKind.None)]
+        [InlineData(typeof(string), JsonTypeInfoKind.None)]
+        public static void AddingPropertyToNonObjectJsonTypeInfoKindThrows(Type type, JsonTypeInfoKind expectedKind)
+        {
+            JsonSerializerOptions options = new();
+            DefaultJsonTypeInfoResolver resolver = new();
+            JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
+            Assert.Equal(expectedKind, typeInfo.Kind);
+
+            JsonPropertyInfo property = typeInfo.CreateJsonPropertyInfo(typeof(int), "test");
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(property));
+        }
+
         [Fact]
         public static void RecursiveTypeNumberHandling()
         {
@@ -888,6 +904,65 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Assert.Fail("this ctor should not be used");
             }
+        }
+
+        [Fact]
+        public static void PropertyOrderIsRespected()
+        {
+            JsonSerializerOptions options = new()
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        ti =>
+                        {
+                            if (ti.Type == typeof(ClassWithExplicitOrderOfProperties))
+                            {
+                                Assert.Equal(5, ti.Properties.Count);
+                                Assert.Equal("A", ti.Properties[0].Name);
+                                Assert.Equal("B", ti.Properties[1].Name);
+                                Assert.Equal("C", ti.Properties[2].Name);
+                                Assert.Equal("D", ti.Properties[3].Name);
+                                Assert.Equal("E", ti.Properties[4].Name);
+
+                                // swapping A,B (both with Order property)
+                                (ti.Properties[0], ti.Properties[1]) = (ti.Properties[1], ti.Properties[0]);
+
+                                // swapping E,C (one with Order property one without)
+                                (ti.Properties[2], ti.Properties[4]) = (ti.Properties[4], ti.Properties[2]);
+                            }
+                        }
+                    }
+                }
+            };
+
+            ClassWithExplicitOrderOfProperties obj = new()
+            {
+                A = "a",
+                B = "b",
+                C = "c",
+                D = "d",
+                E = "e",
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"B":"b","A":"a","E":"e","D":"d","C":"c"}""", json);
+        }
+
+        private class ClassWithExplicitOrderOfProperties
+        {
+            public string C { get; set; }
+            public string D { get; set; }
+
+            [JsonPropertyOrder(1)]
+            public string E { get; set; }
+
+            [JsonPropertyOrder(-1)]
+            public string B { get; set; }
+
+            [JsonPropertyOrder(-2)]
+            public string A { get; set; }
         }
     }
 }
