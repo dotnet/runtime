@@ -301,6 +301,12 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
     return (value === undefined) || (value === null);
 }
 
+/// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
+/// to 'never' after you handle all the cases it knows about.
+export function assertNever(x: never): never {
+    throw new Error("Unexpected value: " + x);
+}
+
 /// returns true if the given value is not Thenable
 ///
 /// Useful if some function returns a value or a promise of a value.

@@ -1,14 +1,9 @@
 
-interface MockRemoteEventMap {
-    "open": Event;
-    "close": CloseEvent;
-    "message": MessageEvent;
-    "error": Event;
-}
 
 export interface MockRemoteSocket extends EventTarget {
-    addEventListener(event: keyof MockRemoteEventMap, listener: (event: MockRemoteEventMap[keyof MockRemoteEventMap]) => void): void;
-    removeEventListener(event: keyof MockRemoteEventMap, listener: (event: MockRemoteEventMap[keyof MockRemoteEventMap]) => void): void;
+    addEventListener<T extends keyof WebSocketEventMap>(type: T, listener: (this: MockRemoteSocket, ev: WebSocketEventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(event: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener(event: string, listener: EventListenerOrEventListenerObject): void;
     send(data: string | ArrayBuffer | Uint8Array | Blob | DataView): void;
     close(): void;
 }
@@ -36,13 +31,14 @@ class MockScriptEngineSocketImpl implements MockRemoteSocket {
         }
         this.engine.mockReplyEventTarget.dispatchEvent(event);
     }
-    addEventListener(event: keyof MockRemoteEventMap, listener: (event: Event | CloseEvent | MessageEvent<any>) => void): void {
+    addEventListener<T extends keyof WebSocketEventMap>(event: T, listener: (event: WebSocketEventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(event: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
         if (this.engine.trace) {
             console.debug(`mock ${this.engine.ident} client added listener for ${event}`);
         }
-        this.engine.eventTarget.addEventListener(event, listener);
+        this.engine.eventTarget.addEventListener(event, listener, options);
     }
-    removeEventListener(event: keyof MockRemoteEventMap, listener: (event: Event | CloseEvent | MessageEvent<any>) => void): void {
+    removeEventListener(event: string, listener: EventListenerOrEventListenerObject): void {
         if (this.engine.trace) {
             console.debug(`mock ${this.engine.ident} client removed listener for ${event}`);
         }

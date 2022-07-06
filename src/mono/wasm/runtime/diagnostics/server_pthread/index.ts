@@ -3,10 +3,11 @@
 
 /// <reference lib="webworker" />
 
+import { assertNever } from "../../types";
 import { pthread_self } from "../../pthreads/worker";
 import { Module } from "../../imports";
-import { isDiagnosticMessage } from "../shared/types";
-import { CharPtr } from "../../types/emscripten";
+import { EventPipeSessionIDImpl, isDiagnosticMessage } from "../shared/types";
+import { CharPtr, VoidPtr } from "../../types/emscripten";
 import {
     DiagnosticServerControlCommand,
     makeDiagnosticServerControlReplyStartupResume
@@ -15,6 +16,8 @@ import {
 import { mockScript } from "./mock-remote";
 import type { MockRemoteSocket } from "../mock";
 import { PromiseController } from "../../promise-utils";
+import { EventPipeSocketConnection, takeOverSocket } from "./event_pipe";
+import { StreamQueue, allocateQueue } from "./stream-queue";
 
 function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
     return new Promise((resolve) => {
@@ -145,7 +148,8 @@ class DiagnosticServerImpl implements DiagnosticServer {
             case "CollectTracing2": {
                 await this.attachToRuntimeController.promise; // can't start tracing until we've attached to the runtime
                 const session = await createEventPipeStreamingSession(ws, cmd.args);
-                this.postClientReply(ws, "OK", session.id);
+                this.postClientReply(ws, "OK", session.sessionID);
+
                 break;
             }
             case "Stop":
@@ -170,6 +174,39 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 }
 
+class EventPipeStreamingSession {
+
+    constructor(readonly sessionID: EventPipeSessionIDImpl, readonly ws: WebSocket | MockRemoteSocket,
+        readonly queue: StreamQueue, readonly connection: EventPipeSocketConnection) { }
+}
+
+async function createEventPipeStreamingSession(ws: WebSocket | MockRemoteSocket, args: string): Promise<EventPipeStreamingSession> {
+    // First, create the native IPC stream and get its queue.
+    const ipcStreamAddr = mono_wasm_diagnostic_server_create_stream(); // FIXME: this should be a wrapped in a JS object so we can free it when we're done.
+    const queueAddr = mono_wasm_diagnostic_server_get_stream_queue(ipcStreamAddr);
+    // then take over the websocket connection
+    const conn = takeOverSocket(ws);
+    // and set up queue notifications
+    const queue = allocateQueue(queueAddr, conn.write.bind(conn));
+    // create the event pipe session
+    const sessionID = mono_wasm_event_pipe_stream_session_enable(ipcStreamAddr, args);
+    return new EventPipeStreamingSession(sessionID, ws, queue, conn);
+}
+
+function mono_wasm_diagnostic_server_create_stream(): VoidPtr {
+    // this shoudl be in C and it should jsut allocate one of our IPC streams
+    throw new Error("TODO");
+}
+
+function mono_wasm_diagnostic_server_get_stream_queue(streamAddr: VoidPtr): VoidPtr {
+    // TODO: this can probably be in JS if we put the queue at a known address in the stream. (probably offset 0);
+    return streamAddr;
+}
+
+function mono_wasm_event_pipe_stream_session_enable(ipcStreamAddr: VoidPtr, args: string): EventPipeSessionIDImpl {
+    // this should be implemented in C.  and it should call ep_enable.
+    throw new Error("TODO");
+}
 
 /// Called by the runtime  to initialize the diagnostic server workers
 export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUrlPtr: CharPtr): void {
@@ -182,8 +219,4 @@ export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUr
     queueMicrotask(() => {
         server.serverLoop();
     });
-}
-
-function assertNever(t: never): never {
-    throw new Error("Unexpected unreachable result: " + t);
 }

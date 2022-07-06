@@ -1,36 +1,59 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type {
-    EventPipeSessionIDImpl,
-} from "../shared/types";
+import { assertNever } from "../../types";
+import { MockRemoteSocket } from "../mock";
+import { VoidPtr } from "../../types/emscripten";
+import { Module } from "../../imports";
 
 enum ListenerState {
-    AwaitingCommand,
-    DispatchedCommand,
     SendingTrailingData,
     Closed,
     Error
 }
 
-function assertNever(x: never): never {
-    throw new Error("Unexpected object: " + x);
+
+// the common bits that we depend on from a real WebSocket or a MockRemoteSocket used for testing
+interface CommonSocket {
+    addEventListener<T extends keyof WebSocketEventMap>(type: T, listener: (this: CommonSocket, ev: WebSocketEventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(event: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    removeEventListener(event: string, listener: EventListenerOrEventListenerObject): void;
+    send(data: string | ArrayBuffer | Uint8Array | Blob | DataView): void;
+    close(): void;
 }
 
-export class EventPipeServerConnection {
-    readonly type = "eventpipe";
-    private _sessionID: EventPipeSessionIDImpl | null = null;
+type AssignableTo<T, Q> = Q extends T ? true : false;
+
+function static_assert<Cond extends boolean>(x: Cond): asserts x is Cond { /*empty*/ }
+
+{
+    static_assert<AssignableTo<CommonSocket, WebSocket>>(true);
+    static_assert<AssignableTo<CommonSocket, MockRemoteSocket>>(true);
+
+    static_assert<AssignableTo<{ x: number }, { y: number }>>(false); // sanity check that static_assert works
+}
+
+
+class SocketGuts {
+    constructor(private readonly ws: CommonSocket) { }
+    close(): void {
+        this.ws.close();
+    }
+    write(data: VoidPtr, size: number): void {
+        const buf = new ArrayBuffer(size);
+        const view = new Uint8Array(buf);
+        // Can we avoid this copy?
+        view.set(new Uint8Array(Module.HEAPU8.buffer, data as unknown as number, size));
+        this.ws.send(buf);
+    }
+}
+
+export class EventPipeSocketConnection {
     private _state: ListenerState;
-    constructor(readonly socket: WebSocket) {
-        this._state = ListenerState.AwaitingCommand;
-    }
-    get sessionID(): EventPipeSessionIDImpl | null {
-        return this._sessionID;
-    }
-    setSessionID(sessionID: EventPipeSessionIDImpl): void {
-        if (this._sessionID !== null)
-            throw new Error("Session ID already set");
-        this._sessionID = sessionID;
+    readonly stream: SocketGuts;
+    constructor(readonly socket: CommonSocket) {
+        this._state = ListenerState.SendingTrailingData;
+        this.stream = new SocketGuts(socket);
     }
 
     close(): void {
@@ -41,21 +64,15 @@ export class EventPipeServerConnection {
                 return;
             default:
                 this._state = ListenerState.Closed;
-                this.socket.close();
+                this.stream.close();
                 return;
         }
     }
 
-    postMessage(message: string): boolean {
+    write(ptr: VoidPtr, len: number): boolean {
         switch (this._state) {
-            case ListenerState.AwaitingCommand:
-                throw new Error("Unexpected postMessage: " + message);
-            case ListenerState.DispatchedCommand:
-                this._state = ListenerState.SendingTrailingData;
-                this.socket.send(message);
-                return true;
             case ListenerState.SendingTrailingData:
-                this.socket.send(message);
+                this.stream.write(ptr, len);
                 return true;
             case ListenerState.Closed:
                 // ignore
@@ -65,15 +82,12 @@ export class EventPipeServerConnection {
         }
     }
 
-    private _onMessage(/*event: MessageEvent*/) {
+    private _onMessage(event: MessageEvent): void {
         switch (this._state) {
-            case ListenerState.AwaitingCommand:
-                /* TODO process command */
-                this._state = ListenerState.DispatchedCommand;
-                break;
-            case ListenerState.DispatchedCommand:
             case ListenerState.SendingTrailingData:
                 /* unexpected message */
+                console.warn("EventPipe session stream received unexpected message from websocket", event);
+                // TODO notify runtime that the connection had an error
                 this._state = ListenerState.Error;
                 break;
             case ListenerState.Closed:
@@ -96,6 +110,7 @@ export class EventPipeServerConnection {
                 return; /* do nothing */
             default:
                 this._state = ListenerState.Closed;
+                this.stream.close();
                 // TODO: notify runtime that connection is closed
                 return;
         }
@@ -103,6 +118,8 @@ export class EventPipeServerConnection {
 
     private _onError(/*event: Event*/) {
         this._state = ListenerState.Error;
+        this.stream.close();
+        // TODO: notify runtime that connection had an error
     }
 
     addListeners(): void {
@@ -112,3 +129,8 @@ export class EventPipeServerConnection {
     }
 }
 
+export function takeOverSocket(socket: CommonSocket): EventPipeSocketConnection {
+    const connection = new EventPipeSocketConnection(socket);
+    connection.addListeners();
+    return connection;
+}
