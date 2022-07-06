@@ -88,5 +88,46 @@ namespace System.Text.Json.Serialization.Metadata
                 HasSerialize = value != null;
             }
         }
+
+        private protected override JsonPropertyInfo CreatePropertyInfoForTypeInfo()
+        {
+            return new JsonPropertyInfo<T>(
+                declaringType: typeof(T),
+                declaringTypeInfo: null,
+                Options)
+            {
+                DefaultConverterForType = Converter,
+                JsonTypeInfo = this,
+                IsForTypeInfo = true,
+            };
+        }
+
+        private protected void MapInterfaceTypesToCallbacks()
+        {
+            // Callbacks currently only supported in object kinds
+            // TODO: extend to collections/dictionaries
+            if (Kind == JsonTypeInfoKind.Object)
+            {
+                if (typeof(IJsonOnSerializing).IsAssignableFrom(typeof(T)))
+                {
+                    OnSerializing = static obj => ((IJsonOnSerializing)obj).OnSerializing();
+                }
+
+                if (typeof(IJsonOnSerialized).IsAssignableFrom(typeof(T)))
+                {
+                    OnSerialized = static obj => ((IJsonOnSerialized)obj).OnSerialized();
+                }
+
+                if (typeof(IJsonOnDeserializing).IsAssignableFrom(typeof(T)))
+                {
+                    OnDeserializing = static obj => ((IJsonOnDeserializing)obj).OnDeserializing();
+                }
+
+                if (typeof(IJsonOnDeserialized).IsAssignableFrom(typeof(T)))
+                {
+                    OnDeserialized = static obj => ((IJsonOnDeserialized)obj).OnDeserialized();
+                }
+            }
+        }
     }
 }

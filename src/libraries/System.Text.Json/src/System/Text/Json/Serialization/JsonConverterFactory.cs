@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
 
-        internal override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo parentTypeInfo)
+        internal override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
         {
             Debug.Fail("We should never get here.");
 

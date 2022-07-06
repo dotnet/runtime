@@ -576,6 +576,7 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr GetFunctionPointerForDelegate(System.Delegate d) { throw null; }
         public static System.IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. This API will return -1 for modules without a file on disk.")]
         public static System.IntPtr GetHINSTANCE(System.Reflection.Module m) { throw null; }
         public static int GetHRForException(System.Exception? e) { throw null; }
         public static int GetHRForLastWin32Error() { throw null; }

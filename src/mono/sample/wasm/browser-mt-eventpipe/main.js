@@ -1,4 +1,4 @@
-import { createDotnetRuntime } from "./dotnet.js";
+import createDotnetRuntime from "./dotnet.js";
 
 function wasm_exit(exit_code, reason) {
     /* Set result in a tests_done element, to be read by xharness in runonly CI test */

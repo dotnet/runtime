@@ -7,16 +7,20 @@
 
 #define BOOL_CONFIG(name, unused_private_key, unused_public_key, default, unused_doc) \
   bool GCConfig::Get##name() { return s_##name; }                                     \
-  bool GCConfig::s_##name = default;
+  void GCConfig::Set##name(bool value) { s_Updated##name = value; }                   \
+  bool GCConfig::s_##name = default;                                                  \
+  bool GCConfig::s_Updated##name = default;
 
 #define INT_CONFIG(name, unused_private_key, unused_public_key, default, unused_doc)  \
   int64_t GCConfig::Get##name() { return s_##name; }                                  \
-  int64_t GCConfig::s_##name = default;
+  void GCConfig::Set##name(int64_t value) { s_Updated##name = value; }              \
+  int64_t GCConfig::s_##name = default;                                               \
+  int64_t GCConfig::s_Updated##name = default;
 
 // String configs are not cached because 1) they are rare and
 // not on hot paths and 2) they involve transfers of ownership
 // of EE-allocated strings, which is potentially complicated.
-#define STRING_CONFIG(name, private_key, public_key, unused_doc)                   \
+#define STRING_CONFIG(name, private_key, public_key, unused_doc)  \
   GCConfigStringHolder GCConfig::Get##name()                                       \
   {                                                                                \
       const char* resultStr = nullptr;                                             \
@@ -29,6 +33,29 @@ GC_CONFIGURATION_KEYS
 #undef BOOL_CONFIG
 #undef INT_CONFIG
 #undef STRING_CONFIG
+
+void GCConfig::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
+{
+#define INT_CONFIG(name, unused_private_key, public_key, default, unused_doc) \
+    configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::Int64, static_cast<int64_t>(s_Updated##name));
+    
+#define STRING_CONFIG(name, private_key, public_key, unused_doc)                     \
+    {                                                                                \
+        const char* resultStr = nullptr;                                             \
+        GCToEEInterface::GetStringConfigValue(private_key, public_key, &resultStr);  \
+        GCConfigStringHolder holder(resultStr);                                      \
+        configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::StringUtf8, reinterpret_cast<int64_t>(resultStr)); \
+    }
+
+#define BOOL_CONFIG(name, unused_private_key, public_key, default, unused_doc) \
+    configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::Boolean, static_cast<int64_t>(s_Updated##name));
+
+GC_CONFIGURATION_KEYS
+
+#undef BOOL_CONFIG
+#undef INT_CONFIG
+#undef STRING_CONFIG
+}
 
 void GCConfig::Initialize()
 {

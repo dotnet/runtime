@@ -268,6 +268,8 @@ namespace System.Runtime.InteropServices
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
         /// </summary>
+        [RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. " +
+            "This API will return -1 for modules without a file on disk.")]
         public static IntPtr GetHINSTANCE(Module m)
         {
             ArgumentNullException.ThrowIfNull(m);

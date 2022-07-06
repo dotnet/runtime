@@ -47,7 +47,29 @@ PhaseStatus Compiler::optRedundantBranches()
             if (block->bbJumpKind == BBJ_COND)
             {
                 madeChanges |= m_compiler->optRedundantRelop(block);
+
+                BasicBlock* bbNext = block->bbNext;
+                BasicBlock* bbJump = block->bbJumpDest;
+
                 madeChanges |= m_compiler->optRedundantBranch(block);
+
+                // It's possible that either bbNext or bbJump were unlinked and it's proven
+                // to be profitable to pay special attention to their successors.
+                if (madeChanges && (bbNext->countOfInEdges() == 0))
+                {
+                    for (BasicBlock* succ : bbNext->Succs())
+                    {
+                        m_compiler->optRedundantBranch(succ);
+                    }
+                }
+
+                if (madeChanges && (bbJump->countOfInEdges() == 0))
+                {
+                    for (BasicBlock* succ : bbJump->Succs())
+                    {
+                        m_compiler->optRedundantBranch(succ);
+                    }
+                }
             }
         }
     };
@@ -293,8 +315,27 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 relopValue == 0 ? "false" : "true");
     }
 
-    while ((relopValue == -1) && (domBlock != nullptr))
+    bool trySpeculativeDom = false;
+    while ((relopValue == -1) && !trySpeculativeDom)
     {
+        if (domBlock == nullptr)
+        {
+            // It's possible that bbIDom is not up to date at this point due to recent BB modifications
+            // so let's try to quickly calculate new one
+            domBlock = fgGetDomSpeculatively(block);
+            if (domBlock == block->bbIDom)
+            {
+                // We already checked this one
+                break;
+            }
+            trySpeculativeDom = true;
+        }
+
+        if (domBlock == nullptr)
+        {
+            break;
+        }
+
         // Check the current dominator
         //
         if (domBlock->bbJumpKind == BBJ_COND)
@@ -351,6 +392,12 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
                     if (trueReaches && falseReaches && rii.canInferFromTrue && rii.canInferFromFalse)
                     {
+                        // JIT-TP: it didn't produce diffs so let's skip it
+                        if (trySpeculativeDom)
+                        {
+                            break;
+                        }
+
                         // Both dominating compare outcomes reach the current block so we can't infer the
                         // value of the relop.
                         //

@@ -9,12 +9,16 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
     public class BreakpointTests : DebuggerTests
     {
+        public BreakpointTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task CreateGoodBreakpoint()
         {

@@ -35,9 +35,9 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
         }
 
-        public override int GetThreadStaticsSizeForDynamicType(int index, out int numTlsCells)
+        public override IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle typeManagerHandle, int index)
         {
-            return TypeLoaderEnvironment.Instance.TryGetThreadStaticsSizeForDynamicType(index, out numTlsCells);
+            return TypeLoaderEnvironment.Instance.GetThreadStaticGCDescForDynamicType(typeManagerHandle, (uint)index);
         }
 
         public override IntPtr GenericLookupFromContextAndSignature(IntPtr context, IntPtr signature, out IntPtr auxResult)

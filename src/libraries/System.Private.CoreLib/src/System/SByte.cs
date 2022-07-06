@@ -1150,14 +1150,14 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static sbyte IShiftOperators<sbyte, sbyte>.operator <<(sbyte value, int shiftAmount) => (sbyte)(value << shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static sbyte IShiftOperators<sbyte, int, sbyte>.operator <<(sbyte value, int shiftAmount) => (sbyte)(value << shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static sbyte IShiftOperators<sbyte, sbyte>.operator >>(sbyte value, int shiftAmount) => (sbyte)(value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static sbyte IShiftOperators<sbyte, int, sbyte>.operator >>(sbyte value, int shiftAmount) => (sbyte)(value >> shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static sbyte IShiftOperators<sbyte, sbyte>.operator >>>(sbyte value, int shiftAmount) => (sbyte)((byte)value >>> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static sbyte IShiftOperators<sbyte, int, sbyte>.operator >>>(sbyte value, int shiftAmount) => (sbyte)((byte)value >>> shiftAmount);
 
         //
         // ISignedNumber

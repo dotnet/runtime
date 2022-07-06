@@ -2606,7 +2606,13 @@ public:
 
     GenTreeIndir* gtNewIndexIndir(GenTreeIndexAddr* indexAddr);
 
+    void gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block);
+
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
+
+    GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+
+    GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -4540,6 +4546,68 @@ public:
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
+    //------------------------------------------------------------------------------------------------------------
+    // MorphMDArrayTempCache: a simple cache of compiler temporaries in the local variable table, used to minimize
+    // the number of locals allocated when doing early multi-dimensional array operation expansion. Two types of
+    // temps are created and cached (due to the two types of temps needed by the MD array expansion): TYP_INT and
+    // TYP_REF. `GrabTemp` either returns an available temp from the cache or allocates a new temp and returns it
+    // after adding it to the cache. `Reset` makes all the temps in the cache available for subsequent re-use.
+    //
+    class MorphMDArrayTempCache
+    {
+    private:
+        class TempList
+        {
+        public:
+            TempList(Compiler* compiler)
+                : m_compiler(compiler), m_first(nullptr), m_insertPtr(&m_first), m_nextAvail(nullptr)
+            {
+            }
+
+            unsigned GetTemp();
+
+            void Reset()
+            {
+                m_nextAvail = m_first;
+            }
+
+        private:
+            struct Node
+            {
+                Node(unsigned tmp) : next(nullptr), tmp(tmp)
+                {
+                }
+
+                Node*    next;
+                unsigned tmp;
+            };
+
+            Compiler* m_compiler;
+            Node*     m_first;
+            Node**    m_insertPtr;
+            Node*     m_nextAvail;
+        };
+
+        TempList intTemps; // Temps for genActualType() == TYP_INT
+        TempList refTemps; // Temps for TYP_REF
+
+    public:
+        MorphMDArrayTempCache(Compiler* compiler) : intTemps(compiler), refTemps(compiler)
+        {
+        }
+
+        unsigned GrabTemp(var_types type);
+
+        void Reset()
+        {
+            intTemps.Reset();
+            refTemps.Reset();
+        }
+    };
+
+    bool fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock* block, Statement* stmt);
+    PhaseStatus fgMorphArrayOps();
+
     void fgSetOptions();
 
 #ifdef DEBUG
@@ -5177,6 +5245,8 @@ public:
     BasicBlock* fgLastBBInMainFunction();
 
     BasicBlock* fgEndBBAfterMainFunction();
+
+    BasicBlock* fgGetDomSpeculatively(const BasicBlock* block);
 
     void fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd);
 
@@ -6750,19 +6820,25 @@ public:
         }
     };
 
-#define OMF_HAS_NEWARRAY 0x00000001         // Method contains 'new' of an array
-#define OMF_HAS_NEWOBJ 0x00000002           // Method contains 'new' of an object type.
-#define OMF_HAS_ARRAYREF 0x00000004         // Method contains array element loads or stores.
-#define OMF_HAS_NULLCHECK 0x00000008        // Method contains null check.
-#define OMF_HAS_FATPOINTER 0x00000010       // Method contains call, that needs fat pointer transformation.
-#define OMF_HAS_OBJSTACKALLOC 0x00000020    // Method contains an object allocated on the stack.
-#define OMF_HAS_GUARDEDDEVIRT 0x00000040    // Method contains guarded devirtualization candidate
-#define OMF_HAS_EXPRUNTIMELOOKUP 0x00000080 // Method contains a runtime lookup to an expandable dictionary.
-#define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
-#define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
-#define OMF_HAS_FROZEN_STRING 0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
+// clang-format off
+
+#define OMF_HAS_NEWARRAY                       0x00000001 // Method contains 'new' of an SD array
+#define OMF_HAS_NEWOBJ                         0x00000002 // Method contains 'new' of an object type.
+#define OMF_HAS_ARRAYREF                       0x00000004 // Method contains array element loads or stores.
+#define OMF_HAS_NULLCHECK                      0x00000008 // Method contains null check.
+#define OMF_HAS_FATPOINTER                     0x00000010 // Method contains call, that needs fat pointer transformation.
+#define OMF_HAS_OBJSTACKALLOC                  0x00000020 // Method contains an object allocated on the stack.
+#define OMF_HAS_GUARDEDDEVIRT                  0x00000040 // Method contains guarded devirtualization candidate
+#define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
+#define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
+#define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
+#define OMF_HAS_FROZEN_STRING                  0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
-#define OMF_HAS_TAILCALL_SUCCESSOR 0x00001000             // Method has potential tail call in a non BBJ_RETURN block
+#define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
+#define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
+#define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional instrinsic array element loads or stores.
+
+    // clang-format on
 
     bool doesMethodHaveFatPointer()
     {
@@ -9232,6 +9308,10 @@ public:
         static const bool compUseSoftFP = false;
 #endif // ARM_SOFTFP
 #endif // CONFIGURABLE_ARM_ABI
+
+        // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
+        bool compJitEarlyExpandMDArrays;
+
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
@@ -10724,6 +10804,8 @@ public:
             case GT_COPY:
             case GT_RELOAD:
             case GT_ARR_LENGTH:
+            case GT_MDARR_LENGTH:
+            case GT_MDARR_LOWER_BOUND:
             case GT_CAST:
             case GT_BITCAST:
             case GT_CKFINITE:

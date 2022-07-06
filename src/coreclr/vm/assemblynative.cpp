@@ -619,7 +619,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     {
         if (fLoadIfNotFound)
         {
-            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile);
+            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(mdFile);
             modules.Append(pModule);
         }
     }

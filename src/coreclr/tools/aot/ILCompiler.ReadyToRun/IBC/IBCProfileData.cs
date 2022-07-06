@@ -8,10 +8,45 @@ using System.Linq;
 
 namespace ILCompiler.IBC
 {
+    public class MibcConfig
+    {
+        public string FormatVersion = "1.0";
+        public string Os;
+        public string Arch;
+        public string Runtime;
+
+        public override string ToString()
+        {
+            return
+$@"
+FormatVersion: {FormatVersion}
+Runtime:       {Runtime}
+Os:            {Os}
+Arch:          {Arch}
+
+";
+        }
+
+        public static MibcConfig FromKeyValueMap(Dictionary<string, string> kvMap)
+        {
+            MibcConfig config = new();
+            foreach (var kvPair in kvMap)
+            {
+                switch (kvPair.Key)
+                {
+                    case nameof(FormatVersion): config.FormatVersion = kvPair.Value; break;
+                    case nameof(Os): config.Os = kvPair.Value; break;
+                    case nameof(Arch): config.Arch = kvPair.Value; break;
+                    case nameof(Runtime): config.Runtime = kvPair.Value; break;
+                }
+            }
+            return config;
+        }
+    }
 
     public class IBCProfileData : ProfileData
     {
-        public IBCProfileData(bool partialNGen, IEnumerable<MethodProfileData> methodData)
+        public IBCProfileData(MibcConfig config, bool partialNGen, IEnumerable<MethodProfileData> methodData)
         {
             MethodProfileData[] dataArray = methodData.ToArray();
             foreach (MethodProfileData data in dataArray)
@@ -22,12 +57,16 @@ namespace ILCompiler.IBC
                 }
             }
             _partialNGen = partialNGen;
+            _config = config;
         }
 
         private readonly Dictionary<MethodDesc, MethodProfileData> _methodData = new Dictionary<MethodDesc, MethodProfileData>();
         private readonly bool _partialNGen;
+        private readonly MibcConfig _config;
 
-        public override bool PartialNGen { get { return _partialNGen; } }
+        public override MibcConfig Config => _config;
+
+        public override bool PartialNGen => _partialNGen;
 
         public override MethodProfileData GetMethodProfileData(MethodDesc m)
         {
