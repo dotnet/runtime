@@ -114,7 +114,7 @@ namespace System
 
             if ((mantissa >> DiyFp.DoubleImplicitBitIndex) != 0)
             {
-                mantissaHighBitIdx = DiyFp.DoubleImplicitBitIndex;
+                mantissaHighBitIdx = DiyFp.DoubleImplicitBitIndex; // Enters Here
                 hasUnequalMargins = (mantissa == (1UL << DiyFp.DoubleImplicitBitIndex));
             }
             else
@@ -125,13 +125,58 @@ namespace System
 
             Dragon4State state = Dragon4GetScaleValueMargin(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
 
-            Debug.Assert(state.scaledValue.GetLength() < 5);
-            // scaledValue is scaled up by 2 by the Dragon4 algorithm, undo that
-            BigInteger.SetUInt32(out BigInteger Two, 2);
-            BigInteger.DivRem(ref state.scaledValue, ref Two, out BigInteger descaledValue, out _); // TODO this could be optimized as a right shift
-            Debug.Assert(descaledValue.GetLength() < 4);
+            // At this point, here is the state
+            // scaledValue / scale =  value * 10 / 10^digitExponent
+            // scaledValue * 10^(digitExponent - 1) / scale =  value
+            //
+            // value = decimalMantissa / 10^decimalExponent
+            //
+            // scaledValue * 10^(digitExponent - 1) / scale = decimalMantissa / 10^decimalExponent
+            //
+            // scaledValue * 10^(digitExponent - 1) * 10^decimalExponent / scale = decimalMantissa
+            //
+            // Given that we have 28 whole-number digits to work with in decimal, we can choose decimalExponent based on
+            // digitExponent, by doing (28 - digitExponent)
 
-            var len = descaledValue.GetLength();
+            int maxDecimalDigits = 29;
+            int maxDecimalScale = 28;
+
+            int decimalExponent = maxDecimalDigits - state.digitExponent;
+
+            // We must now adjust the decialExponent to fit within the limits of (0, 28)
+            if (decimalExponent < 0)
+            {
+                // if decimalExponent is negative, we should normalize it to 0. We can do this by multiplying our final result by 10^(the difference)
+                // To do this, we multiply scaledValue by 10^(0 - decimalExponent)
+                state.scaledValue.MultiplyPow10((uint)-decimalExponent);
+                decimalExponent = 0;
+            }
+            else if (decimalExponent > maxDecimalScale)
+            {
+                // If state.decimalExponent is more than 28, we should normalize it to 28. We can do this by dividing our final result by 10^(the difference)
+                // To do this, we multiply scale by 10^(decimalExponent - 28)
+                state.scale.MultiplyPow10((uint)decimalExponent - (uint)maxDecimalScale);
+                decimalExponent = maxDecimalScale;
+            }
+
+
+            // Compute the numerator or denomonator by multiplying scaledValue by 10^(digitExponent - 1) and 10^decimalExponent
+            int totalExtraScale = state.digitExponent + decimalExponent - 1;
+            if (totalExtraScale >= 0)
+            {
+                state.scaledValue.MultiplyPow10((uint)totalExtraScale);
+            }
+            else
+            {
+                state.scale.MultiplyPow10((uint)-totalExtraScale);
+            }
+
+            // Divide scaledValue by scale to get our final result, decimalMantissa
+            BigInteger.DivRem(ref state.scaledValue, ref state.scale, out BigInteger decimalMantissa, out _);
+
+            int len = decimalMantissa.GetLength();
+
+            Debug.Assert(len < 4);
 
             uint low = 0;
             uint mid = 0;
@@ -139,20 +184,28 @@ namespace System
 
             if (len > 0)
             {
-                low = descaledValue.GetBlock(0);
+                low = decimalMantissa.GetBlock(0);
             }
             if (len > 1)
             {
-                mid = descaledValue.GetBlock(1);
+                mid = decimalMantissa.GetBlock(1);
             }
             if (len > 2)
             {
-                high = descaledValue.GetBlock(2);
+                high = decimalMantissa.GetBlock(2);
             }
             if (len > 3)
             {
-                uint idk = descaledValue.GetBlock(3);
-                throw new Exception("TODO handle this somehow" + idk);
+                uint idk = decimalMantissa.GetBlock(3);
+                UInt128 valueUInt128 = 0;
+                valueUInt128 += idk;
+                valueUInt128 = valueUInt128 << 32;
+                valueUInt128 += high;
+                valueUInt128 = valueUInt128 << 32;
+                valueUInt128 += mid;
+                valueUInt128 = valueUInt128 << 32;
+                valueUInt128 += low;
+                throw new Exception("TODO handle this somehow, descaledValue has ended up too big. 4th block: " + idk + ", decimalExponent: " + decimalExponent + ", decimalMantissa: " + valueUInt128.ToString());
             }
 
 /*          UInt128 valueUInt128 = 0;
@@ -161,13 +214,10 @@ namespace System
             valueUInt128 += mid;
             valueUInt128 = valueUInt128 << 32;
             valueUInt128 += low;
-            Console.WriteLine(valueUInt128.ToString());
-*/ 
+            Console.WriteLine(valueUInt128.ToString()); */
 
-            // Since the scale in the Decimal type is representing dividing by 10^e, we want to invert decimalScale
-            uint decimalScale = 28 - ((uint)state.digitExponent - 1);
-            Debug.Assert(decimalScale <= 28 && decimalScale > 0);
-            return (low, mid, high, decimalScale);
+            Debug.Assert(decimalExponent <= maxDecimalScale && decimalExponent >= 0);
+            return (low, mid, high, (uint)decimalExponent);
 
         }
 
@@ -601,7 +651,7 @@ namespace System
                 estimateTooLow = BigInteger.Compare(ref state.scaledValue, ref state.scale) >= 0;
             }
 
-            // Was our estimate for digitExponent was too low?
+            // Was our estimate for digitExponent too low?
             if (estimateTooLow)
             {
                 // The exponent estimate was incorrect.
