@@ -592,6 +592,8 @@ namespace System.Text.Json.Serialization.Metadata
         [MemberNotNull(nameof(_properties))]
         private void PopulatePropertyList()
         {
+            Debug.Assert(!Monitor.IsEntered(_configureLock), "should not be invoked from Configure");
+            
             if (!_isConfigured)
             {
                 // For mutable instances we need to synchronize access
