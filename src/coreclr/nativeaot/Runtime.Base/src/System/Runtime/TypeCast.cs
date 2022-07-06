@@ -830,7 +830,7 @@ assigningNull:
             }
 
             ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            return ref Unsafe.Add(ref rawData, (int)index);
+            return ref Unsafe.Add(ref rawData, index);
         }
 
         internal static unsafe bool IsDerived(MethodTable* pDerivedType, MethodTable* pBaseType)
