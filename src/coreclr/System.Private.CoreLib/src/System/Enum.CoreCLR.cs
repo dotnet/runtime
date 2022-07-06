@@ -25,48 +25,22 @@ namespace System
 
         internal static RuntimeType InternalGetUnderlyingType(RuntimeType enumType)
         {
-            Type type;
-            TypeCode typeCode = Type.GetTypeCode(enumType);
-            switch (typeCode)
+            Type type = Type.GetTypeCode(enumType) switch
             {
-                case TypeCode.Boolean:
-                    type = typeof(bool);
-                    break;
-                case TypeCode.Char:
-                    type = typeof(char);
-                    break;
-                case TypeCode.SByte:
-                    type = typeof(sbyte);
-                    break;
-                case TypeCode.Byte:
-                    type = typeof(byte);
-                    break;
-                case TypeCode.Int16:
-                    type = typeof(short);
-                    break;
-                case TypeCode.UInt16:
-                    type = typeof(ushort);
-                    break;
-                case TypeCode.Int32:
-                    type = typeof(int);
-                    break;
-                case TypeCode.UInt32:
-                    type = typeof(uint);
-                    break;
-                case TypeCode.Int64:
-                    type = typeof(long);
-                    break;
-                case TypeCode.UInt64:
-                    type = typeof(ulong);
-                    break;
-                case TypeCode.Single:
-                    type = typeof(float);
-                    break;
-                default:
-                    Debug.Assert(typeCode == TypeCode.Double);
-                    type = typeof(double);
-                    break;
-            }
+                TypeCode.Boolean => typeof(bool),
+                TypeCode.Char => typeof(char),
+                TypeCode.SByte => typeof(sbyte),
+                TypeCode.Byte => typeof(byte),
+                TypeCode.Int16 => typeof(short),
+                TypeCode.UInt16 => typeof(ushort),
+                TypeCode.Int32 => typeof(int),
+                TypeCode.UInt32 => typeof(uint),
+                TypeCode.Int64 => typeof(long),
+                TypeCode.UInt64 => typeof(ulong),
+                TypeCode.Single => typeof(float),
+                TypeCode.Double => typeof(double),
+                _ => InternalGetUnderlyingTypeImpl(enumType);
+            };
             return (RuntimeType)type;
         }
 
