@@ -4197,12 +4197,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             switch (ni)
                             {
                                 case NI_System_Type_get_IsValueType:
-                                    retNode = gtNewIconNode(
-                                        (eeIsValueClass(hClass) &&
-                                         // pointers are not value types (e.g. typeof(int*).IsValueType is false)
-                                         info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
-                                            ? 1
-                                            : 0);
+                                    retNode = gtNewIconNode(eeIsValueClass(hClass) ? 1 : 0);
                                     break;
                                 case NI_System_Type_get_IsByRefLike:
                                     retNode = gtNewIconNode(
