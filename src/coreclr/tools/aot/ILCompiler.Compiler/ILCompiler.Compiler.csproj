@@ -20,6 +20,11 @@
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+
+    <PackageReference Include="StaticCs" Version="$(StaticCsVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -332,6 +337,8 @@
     <Compile Include="Compiler\Dataflow\GenericParameterProxy.cs" />
     <Compile Include="Compiler\Dataflow\GenericParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\HandleCallAction.cs" />
+    <Compile Include="Compiler\Dataflow\HoistedLocalKey.cs" />
+    <Compile Include="Compiler\Dataflow\InterproceduralState.cs" />
     <Compile Include="Compiler\Dataflow\IValueWithStaticType.cs" />
     <Compile Include="Compiler\Dataflow\LocalVariableReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodBodyScanner.cs" />

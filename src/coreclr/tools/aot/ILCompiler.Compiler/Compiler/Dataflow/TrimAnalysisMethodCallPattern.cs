@@ -4,6 +4,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using ILCompiler.Logging;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -50,6 +51,29 @@ namespace ILCompiler.Dataflow
                 Arguments = builder.ToImmutableArray();
             }
             Origin = origin;
+        }
+
+        public TrimAnalysisMethodCallPattern Merge(ValueSetLattice<SingleValue> lattice, TrimAnalysisMethodCallPattern other)
+        {
+            Debug.Assert(MethodBody.OwningMethod == other.MethodBody.OwningMethod);
+            Debug.Assert(Operation == other.Operation);
+            Debug.Assert(Offset == other.Offset);
+            Debug.Assert(Origin == other.Origin);
+            Debug.Assert(CalledMethod == other.CalledMethod);
+            Debug.Assert(Arguments.Length == other.Arguments.Length);
+
+            var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue>();
+            for (int i = 0; i < Arguments.Length; i++)
+                argumentsBuilder.Add(lattice.Meet(Arguments[i], other.Arguments[i]));
+
+            return new TrimAnalysisMethodCallPattern(
+                MethodBody,
+                Operation,
+                Offset,
+                CalledMethod,
+                lattice.Meet(Instance, other.Instance),
+                argumentsBuilder.ToImmutable(),
+                Origin);
         }
 
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, Logger logger)

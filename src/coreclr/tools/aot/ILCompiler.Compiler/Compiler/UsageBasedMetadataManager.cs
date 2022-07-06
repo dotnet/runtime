@@ -3,31 +3,29 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.PortableExecutable;
-using System.Reflection.Metadata;
 using System.IO;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Xml;
+
+using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Metadata;
+using ILLink.Shared;
 
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using ILCompiler.Metadata;
-using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysisFramework;
-using ILLink.Shared;
-
-using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
-using Debug = System.Diagnostics.Debug;
+using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
 using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
+using Debug = System.Diagnostics.Debug;
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using EcmaModule = Internal.TypeSystem.Ecma.EcmaModule;
 using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
-using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
-using CustomAttributeTypeProvider = Internal.TypeSystem.Ecma.CustomAttributeTypeProvider;
-using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
-using ILCompiler.Dataflow;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 namespace ILCompiler
 {
@@ -499,8 +497,12 @@ namespace ILCompiler
             {
                 if (FlowAnnotations.RequiresDataflowAnalysis(method))
                 {
-                    dependencies = dependencies ?? new DependencyList();
-                    dependencies.Add(factory.DataflowAnalyzedMethod(methodIL.GetMethodILDefinition()), "Method has annotated parameters");
+                    MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
+                    if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
+                    {
+                        dependencies = dependencies ?? new DependencyList();
+                        dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), "Method has annotated parameters");
+                    }
                 }
 
                 if ((method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any)))
@@ -616,8 +618,12 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations, writtenField))
             {
-                dependencies = dependencies ?? new DependencyList();
-                dependencies.Add(factory.DataflowAnalyzedMethod(methodIL.GetMethodILDefinition()), "Access to interesting field");
+                MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
+                if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
+                {
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), "Access to interesting field");
+                }
             }
 
             string reason = "Use of a field";
@@ -680,8 +686,12 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations, calledMethod))
             {
-                dependencies = dependencies ?? new DependencyList();
-                dependencies.Add(factory.DataflowAnalyzedMethod(methodIL.GetMethodILDefinition()), "Call to interesting method");
+                MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
+                if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
+                {
+                    dependencies = dependencies ?? new DependencyList();
+                    dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), "Call to interesting method");
+                }
             }
         }
 

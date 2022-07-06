@@ -26,7 +26,7 @@ namespace ILLink.Shared.TrimAnalysis
     /// <summary>
     /// Caches dataflow annotations for type members.
     /// </summary>
-    public partial class FlowAnnotations
+    sealed public partial class FlowAnnotations
     {
         private readonly TypeAnnotationsHashtable _hashtable;
         private readonly Logger _logger;

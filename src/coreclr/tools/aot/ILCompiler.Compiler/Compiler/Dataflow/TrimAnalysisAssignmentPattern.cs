@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Diagnostics;
 using ILCompiler.Logging;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
@@ -25,6 +26,17 @@ namespace ILCompiler.Dataflow
             Target = target.Clone();
             Origin = origin;
             MemberWithRequirements = memberWithRequirements;
+        }
+
+        public TrimAnalysisAssignmentPattern Merge(ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
+        {
+            Debug.Assert(Origin == other.Origin);
+
+            return new TrimAnalysisAssignmentPattern(
+                lattice.Meet(Source, other.Source),
+                lattice.Meet(Target, other.Target),
+                Origin,
+                MemberWithRequirements);
         }
 
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, Logger logger)

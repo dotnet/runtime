@@ -4,13 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata;
+
 using ILCompiler.Logging;
+
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
+
 using Internal.IL;
 using Internal.TypeSystem;
 
@@ -45,8 +48,8 @@ namespace ILCompiler.Dataflow
 
     abstract partial class MethodBodyScanner
     {
+        protected readonly InterproceduralStateLattice InterproceduralStateLattice;
         protected static ValueSetLattice<SingleValue> MultiValueLattice => default;
-        protected static ValueSetLattice<MethodProxy> MethodLattice => default;
 
         protected readonly FlowAnnotations _annotations;
 
@@ -55,6 +58,7 @@ namespace ILCompiler.Dataflow
         protected MethodBodyScanner(FlowAnnotations annotations)
         {
             _annotations = annotations;
+            InterproceduralStateLattice = new InterproceduralStateLattice(annotations.ILProvider, default, default);
         }
 
         protected virtual void WarnAboutInvalidILInMethod(MethodIL method, int ilOffset)
@@ -287,116 +291,63 @@ namespace ILCompiler.Dataflow
 
         // Scans the method as well as any nested functions (local functions or lambdas) and state machines
         // reachable from it.
-        public virtual void InterproceduralScan(MethodIL methodBody)
+        public virtual void InterproceduralScan(MethodIL startingMethodBody)
         {
-            Debug.Assert(methodBody.OwningMethod.IsTypicalMethodDefinition);
+            MethodDesc startingMethod = startingMethodBody.OwningMethod;
+            Debug.Assert(startingMethod.IsTypicalMethodDefinition);
 
-            var methodsInGroup = new ValueSet<MethodProxy>(methodBody.OwningMethod);
+            // We should never have created a DataFlowAnalyzedMethodNode for compiler generated methods
+            // since their data flow analysis is handled as part of their parent method analysis.
+            Debug.Assert(!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(startingMethod));
 
-            // Optimization to prevent multiple scans of a method.
-            // Eventually we will need to allow re-scanning in some cases, for example
-            // when we discover new inputs to a method. But we aren't doing dataflow across
-            // lambdas and local functions yet, so no need for now.
-            HashSet<MethodDesc> scannedMethods = new HashSet<MethodDesc>();
+            // Note that the default value of a hoisted local will be MultiValueLattice.Top, not UnknownValue.Instance.
+            // This ensures that there are no warnings for the "unassigned state" of a parameter.
+            // Definite assignment should ensure that there is no way for this to be an analysis hole.
+            var interproceduralState = InterproceduralStateLattice.Top;
 
-            while (true)
+            var oldInterproceduralState = interproceduralState.Clone();
+            interproceduralState.TrackMethod(startingMethodBody);
+
+            while (!interproceduralState.Equals(oldInterproceduralState))
             {
-                if (!TryGetNextMethodToScan(out MethodIL? methodToScan))
-                    break;
+                oldInterproceduralState = interproceduralState.Clone();
 
-                scannedMethods.Add(methodToScan.OwningMethod);
-                Scan(methodToScan, ref methodsInGroup);
-
-                // For state machine methods, also scan the state machine members.
-                // Simplification: assume that all generated methods of the state machine type are
-                // invoked at the point where the state machine method is called.			
-                if (CompilerGeneratedState.TryGetStateMachineType(methodToScan.OwningMethod, out MetadataType? stateMachineType))
-                {
-                    foreach (var method in stateMachineType.GetMethods())
-                    {
-                        Debug.Assert(!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name));
-                        if (TryGetMethodBody(method, out var stateMachineBody))
-                            Scan(stateMachineBody, ref methodsInGroup);
-                    }
-                }
+                // Flow state through all methods encountered so far, as long as there
+                // are changes discovered in the hoisted local state on entry to any method.
+                foreach (var methodBodyValue in oldInterproceduralState.MethodBodies)
+                    Scan(methodBodyValue.MethodBody, ref interproceduralState);
             }
 
 #if DEBUG
             // Validate that the compiler-generated callees tracked by the compiler-generated state
             // are the same set of methods that we discovered and scanned above.
-            if (_annotations.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(methodBody.OwningMethod, out List<TypeSystemEntity>? compilerGeneratedCallees))
+            if (_annotations.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(startingMethod, out List<TypeSystemEntity>? compilerGeneratedCallees))
             {
-                var calleeMethods = compilerGeneratedCallees.OfType<MethodDesc>();
-                Debug.Assert(methodsInGroup.Count() == 1 + calleeMethods.Count());
-                foreach (var method in calleeMethods)
-                    Debug.Assert(methodsInGroup.Contains(method));
+                var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition>();
+                // https://github.com/dotnet/linker/issues/2845
+                // Disabled asserts due to a bug
+                // Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
+                // foreach (var method in calleeMethods)
+                // 	Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
             }
             else
             {
-                Debug.Assert(methodsInGroup.Count() == 1);
+                Debug.Assert(interproceduralState.MethodBodies.Count() == 1);
             }
 #endif
-
-            bool TryGetNextMethodToScan([NotNullWhen(true)] out MethodIL? method)
-            {
-                foreach (var candidate in methodsInGroup)
-                {
-                    var candidateMethod = candidate.Method;
-                    if (!scannedMethods.Contains(candidateMethod))
-                    {
-                        if (TryGetMethodBody(candidateMethod, out method))
-                            return true;
-                    }
-                }
-                method = null;
-                return false;
-            }
-
-            bool TryGetMethodBody(MethodDesc method, [NotNullWhen(true)] out MethodIL? methodBody)
-            {
-                MethodIL methodIL = _annotations.ILProvider.GetMethodIL(method);
-                if (methodIL == null)
-                {
-                    methodBody = null;
-                    return false;
-                }
-
-                Debug.Assert(methodIL.GetMethodILDefinition() == methodIL);
-                if (methodIL.OwningMethod.HasInstantiation || methodIL.OwningMethod.OwningType.HasInstantiation)
-                {
-                    // We instantiate the body over the generic parameters.
-                    //
-                    // This will transform references like "call Foo<!0>.Method(!0 arg)" into
-                    // "call Foo<T>.Method(T arg)". We do this to avoid getting confused about what
-                    // context the generic variables refer to - in the above example, we would see
-                    // two !0's - one refers to the generic parameter of the type that owns the method with
-                    // the call, but the other one (in the signature of "Method") actually refers to
-                    // the generic parameter of Foo.
-                    //
-                    // If we don't do this translation, retrieving the signature of the called method
-                    // would attempt to do bogus substitutions.
-                    //
-                    // By doing the following transformation, we ensure we don't see the generic variables
-                    // that need to be bound to the context of the currently analyzed method.
-                    methodIL = new InstantiatedMethodIL(methodIL.OwningMethod, methodIL);
-                }
-
-                methodBody = methodIL;
-                return true;
-            }
         }
 
-        void TrackNestedFunctionReference(MethodDesc method, ref ValueSet<MethodProxy> methodsInGroup)
+        void TrackNestedFunctionReference(MethodDesc referencedMethod, ref InterproceduralState interproceduralState)
         {
-            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+            MethodDesc method = referencedMethod.GetTypicalMethodDefinition();
 
-            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(methodDefinition.Name))
+            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
                 return;
 
-            methodsInGroup = MethodLattice.Meet(methodsInGroup, new(methodDefinition));
+            interproceduralState.TrackMethod(method);
         }
 
-        protected virtual void Scan(MethodIL methodBody, ref ValueSet<MethodProxy> methodsInGroup)
+        protected virtual void Scan(MethodIL methodBody, ref InterproceduralState interproceduralState)
         {
             MethodDesc thisMethod = methodBody.OwningMethod;
 
@@ -533,7 +484,7 @@ namespace ILCompiler.Dataflow
                         {
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
-                                TrackNestedFunctionReference(methodOperand, ref methodsInGroup);
+                                TrackNestedFunctionReference(methodOperand, ref interproceduralState);
                             }
 
                             PushUnknown(currentStack);
@@ -661,7 +612,7 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldsfld:
                     case ILOpcode.ldflda:
                     case ILOpcode.ldsflda:
-                        ScanLdfld(methodBody, offset, opcode, (FieldDesc)methodBody.GetObject(reader.ReadILToken()), currentStack);
+                        ScanLdfld(methodBody, offset, opcode, (FieldDesc)methodBody.GetObject(reader.ReadILToken()), currentStack, ref interproceduralState);
                         break;
 
                     case ILOpcode.newarr:
@@ -710,7 +661,7 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.stfld:
                     case ILOpcode.stsfld:
-                        ScanStfld(methodBody, offset, opcode, (FieldDesc)methodBody.GetObject(reader.ReadILToken()), currentStack);
+                        ScanStfld(methodBody, offset, opcode, (FieldDesc)methodBody.GetObject(reader.ReadILToken()), currentStack, ref interproceduralState);
                         break;
 
                     case ILOpcode.cpobj:
@@ -799,8 +750,8 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.newobj:
                         {
                             MethodDesc methodOperand = (MethodDesc)methodBody.GetObject(reader.ReadILToken());
-                            TrackNestedFunctionReference(methodOperand, ref methodsInGroup);
-                            HandleCall(methodBody, opcode, offset, methodOperand, currentStack, locals, curBasicBlock);
+                            TrackNestedFunctionReference(methodOperand, ref interproceduralState);
+                            HandleCall(methodBody, opcode, offset, methodOperand, currentStack, locals, ref interproceduralState, curBasicBlock);
                         }
                         break;
 
@@ -840,7 +791,7 @@ namespace ILCompiler.Dataflow
                                 StackSlot retValue = PopUnknown(currentStack, 1, methodBody, offset);
                                 // If the return value is a reference, treat it as the value itself for now
                                 //	We can handle ref return values better later
-                                ReturnValue = MultiValueLattice.Meet(ReturnValue, DereferenceValue(retValue.Value, locals));
+                                ReturnValue = MultiValueLattice.Meet(ReturnValue, DereferenceValue(retValue.Value, locals, ref interproceduralState));
                             }
                             ClearStack(ref currentStack);
                             break;
@@ -1113,19 +1064,28 @@ namespace ILCompiler.Dataflow
             int offset,
             ILOpcode opcode,
             FieldDesc field,
-            Stack<StackSlot> currentStack
-            )
+            Stack<StackSlot> currentStack,
+            ref InterproceduralState interproceduralState)
         {
             if (opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda)
                 PopUnknown(currentStack, 1, methodBody, offset);
 
             bool isByRef = opcode == ILOpcode.ldflda || opcode == ILOpcode.ldsflda;
 
-            MultiValue newValue = isByRef ?
-                new FieldReferenceValue(field)
-                : GetFieldValue(field);
-            StackSlot slot = new(newValue);
-            currentStack.Push(slot);
+            MultiValue value;
+            if (isByRef)
+            {
+                value = new FieldReferenceValue(field);
+            }
+            else if (CompilerGeneratedState.IsHoistedLocal(field))
+            {
+                value = interproceduralState.GetHoistedLocal(new HoistedLocalKey(field));
+            }
+            else
+            {
+                value = GetFieldValue(field);
+            }
+            currentStack.Push(new StackSlot(value));
         }
 
         protected virtual void HandleStoreField(MethodIL method, int offset, FieldValue field, MultiValue valueToStore)
@@ -1149,11 +1109,18 @@ namespace ILCompiler.Dataflow
             int offset,
             ILOpcode opcode,
             FieldDesc field,
-            Stack<StackSlot> currentStack)
+            Stack<StackSlot> currentStack,
+            ref InterproceduralState interproceduralState)
         {
             StackSlot valueToStoreSlot = PopUnknown(currentStack, 1, methodBody, offset);
             if (opcode == ILOpcode.stfld)
                 PopUnknown(currentStack, 1, methodBody, offset);
+
+            if (CompilerGeneratedState.IsHoistedLocal(field))
+            {
+                interproceduralState.SetHoistedLocal(new HoistedLocalKey(field), valueToStoreSlot.Value);
+                return;
+            }
 
             foreach (var value in GetFieldValue(field))
             {
@@ -1196,7 +1163,7 @@ namespace ILCompiler.Dataflow
             return methodParams;
         }
 
-        internal MultiValue DereferenceValue(MultiValue maybeReferenceValue, ValueBasicBlockPair?[] locals)
+        internal MultiValue DereferenceValue(MultiValue maybeReferenceValue, ValueBasicBlockPair?[] locals, ref InterproceduralState interproceduralState)
         {
             MultiValue dereferencedValue = MultiValueLattice.Top;
             foreach (var value in maybeReferenceValue)
@@ -1206,7 +1173,9 @@ namespace ILCompiler.Dataflow
                     case FieldReferenceValue fieldReferenceValue:
                         dereferencedValue = MultiValue.Meet(
                             dereferencedValue,
-                            GetFieldValue(fieldReferenceValue.FieldDefinition));
+                            CompilerGeneratedState.IsHoistedLocal(fieldReferenceValue.FieldDefinition)
+                                ? interproceduralState.GetHoistedLocal(new HoistedLocalKey(fieldReferenceValue.FieldDefinition))
+                                : GetFieldValue(fieldReferenceValue.FieldDefinition));
                         break;
                     case ParameterReferenceValue parameterReferenceValue:
                         dereferencedValue = MultiValue.Meet(
@@ -1259,6 +1228,7 @@ namespace ILCompiler.Dataflow
             MethodDesc calledMethod,
             Stack<StackSlot> currentStack,
             ValueBasicBlockPair?[] locals,
+            ref InterproceduralState interproceduralState,
             int curBasicBlock)
         {
             bool isNewObj = opcode == ILOpcode.newobj;
@@ -1266,15 +1236,17 @@ namespace ILCompiler.Dataflow
             SingleValue? newObjValue;
             ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
                                                              offset, out newObjValue);
-            ValueNodeList dereferencedMethodArguments = new(methodArguments.Select(argument => DereferenceValue(argument, locals)).ToList());
 
+            var dereferencedMethodParams = new List<MultiValue>();
+            foreach (var argument in methodArguments)
+                dereferencedMethodParams.Add(DereferenceValue(argument, locals, ref interproceduralState));
             MultiValue methodReturnValue;
             bool handledFunction = HandleCall(
                 callingMethodBody,
                 calledMethod,
                 opcode,
                 offset,
-                dereferencedMethodArguments,
+                new ValueNodeList(dereferencedMethodParams),
                 out methodReturnValue);
 
             // Handle the return value or newobj result

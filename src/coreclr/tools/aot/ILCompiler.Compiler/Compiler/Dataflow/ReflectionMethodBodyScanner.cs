@@ -29,7 +29,7 @@ using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
 namespace ILCompiler.Dataflow
 {
-    class ReflectionMethodBodyScanner : MethodBodyScanner
+    sealed class ReflectionMethodBodyScanner : MethodBodyScanner
     {
         private readonly Logger _logger;
         private readonly NodeFactory _factory;
@@ -86,7 +86,7 @@ namespace ILCompiler.Dataflow
             _factory = factory;
             _origin = origin;
             _reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlow: false, enabled: false);
-            TrimAnalysisPatterns = new TrimAnalysisPatternStore(logger);
+            TrimAnalysisPatterns = new TrimAnalysisPatternStore(MultiValueLattice, logger);
         }
 
         public override void InterproceduralScan(MethodIL methodBody)
@@ -98,10 +98,10 @@ namespace ILCompiler.Dataflow
             TrimAnalysisPatterns.MarkAndProduceDiagnostics(_reflectionMarker);
         }
 
-        protected override void Scan(MethodIL methodBody, ref ValueSet<MethodProxy> methodsInGroup)
+        protected override void Scan(MethodIL methodBody, ref InterproceduralState interproceduralState)
         {
             _origin = new MessageOrigin(methodBody.OwningMethod);
-            base.Scan(methodBody, ref methodsInGroup);
+            base.Scan(methodBody, ref interproceduralState);
 
             if (!methodBody.OwningMethod.Signature.ReturnType.IsVoid)
             {

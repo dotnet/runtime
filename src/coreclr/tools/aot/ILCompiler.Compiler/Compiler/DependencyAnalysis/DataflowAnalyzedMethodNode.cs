@@ -9,6 +9,7 @@ using Internal.TypeSystem;
 using Internal.Runtime;
 using Internal.IL;
 
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
@@ -23,6 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         public DataflowAnalyzedMethodNode(MethodIL methodIL)
         {
             Debug.Assert(methodIL.OwningMethod.IsTypicalMethodDefinition);
+            Debug.Assert(!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodIL.OwningMethod));
             _methodIL = methodIL;
         }
         
