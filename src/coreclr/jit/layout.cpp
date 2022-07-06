@@ -322,7 +322,7 @@ ClassLayout* Compiler::typGetObjLayout(CORINFO_CLASS_HANDLE classHandle)
 
 ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
 {
-    bool     isValueClass = compiler->info.compCompHnd->isValueClass(classHandle);
+    bool     isValueClass = compiler->eeIsValueClass(classHandle);
     unsigned size;
 
     if (isValueClass)
