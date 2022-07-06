@@ -12225,7 +12225,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Don't bother with inline expansion when jit is trying to
     // generate code quickly, or the cast is in code that won't run very
     // often, or the method already is pretty big.
-    if (compCurBB->isRunRarely() || opts.OptimizationDisabled())
+    if (opts.OptimizationDisabled())
     {
         // not worth the code expansion if jitting fast or in a rarely run block
         shouldExpandInline = false;
@@ -12262,19 +12262,20 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         if (isCastClass)
         {
             // Jit can only inline expand the normal CHKCASTCLASS helper.
-            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS);
+            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) && !compCurBB->isRunRarely();
         }
         else
         {
             if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
             {
                 // If the class is exact, the jit can expand the IsInst check inline.
+                // NOTE: we're going to expand it even for cold blocks since it's cheap
                 canExpandInline = impIsClassExact(pResolvedToken->hClass);
             }
         }
 
         // Check if this cast helper have some profile data
-        if (impIsCastHelperMayHaveProfileData(helper))
+        if (!compCurBB->isRunRarely() && impIsCastHelperMayHaveProfileData(helper))
         {
             const int               maxLikelyClasses = 32;
             LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
