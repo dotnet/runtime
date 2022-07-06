@@ -13675,6 +13675,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp       = JITtype2varType(info.compCompHnd->asCorInfoType(ldelemClsHnd));
 
                 // If it's a value class / pointer array, or a readonly access, we don't need a type check.
+                // TODO-CQ: adapt "impCanSkipCovariantStoreCheck" to handle "ldelema"s and call it here to
+                // skip using the helper in more cases.
                 if ((lclTyp != TYP_REF) || ((prefixFlags & PREFIX_READONLY) != 0))
                 {
                     goto ARR_LD;
