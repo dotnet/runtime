@@ -6808,7 +6808,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_INIT_VAL, // Not strictly a pass-through.
                                                  GT_MDARR_LENGTH,
                                                  GT_MDARR_LOWER_BOUND, // 'dim' value must be considered
-                                                 GT_BITCAST,  // Needs to encode the target type.
+                                                 GT_BITCAST,           // Needs to encode the target type.
 
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
