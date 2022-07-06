@@ -1786,39 +1786,6 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
 }
 
 //------------------------------------------------------------------------------
-// fgIsSafeToClone: If the node is an unaliased local or constant,
-//                  then it is safe to clone.
-//
-// Arguments:
-//    tree - The node to check if it is safe to clone.
-//
-// Return Value:
-//    True if the tree is cloneable. False if the tree is not cloneable.
-//
-// Notes:
-//    This is conservative as this will return False if the local's address
-//    is exposed.
-//
-bool Compiler::fgIsSafeToClone(GenTree* tree)
-{
-    if (tree->IsInvariant())
-    {
-        return true;
-    }
-    else if (tree->IsLocal())
-    {
-        // Can't rely on GTF_GLOB_REF here.
-        //
-        if (!lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed())
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------------
 // fgMakeTemp: Make a temp variable with a right-hand side expression as the assignment.
 //
 // Arguments:
@@ -1865,18 +1832,18 @@ TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= 
 //    A fresh GT_LCL_VAR node referencing the temp which has not been used
 //
 // Notes:
-//    Caller must ensure that if the node is an unaliased local, the second use this
-//    creates will be evaluated before the local can be reassigned.
-//
-//    Can be safely called in morph preorder, before GTF_GLOB_REF is reliable.
+//    This function will clone invariant nodes and locals, so this function
+//    should only be used in situations where no interference between the
+//    original use and new use is possible. Otherwise, fgInsertCommaFormTemp
+//    should be used directly.
 //
 GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
 {
     GenTree* const tree = *pOp;
 
-    if (fgIsSafeToClone(tree))
+    if (tree->IsInvariant() || tree->OperIsLocal())
     {
-        return gtClone(tree);
+        return gtCloneExpr(tree);
     }
 
     return fgInsertCommaFormTemp(pOp, structType);
@@ -13816,20 +13783,43 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 
     GenTreeOp* const div = tree;
 
+    assert(!div->IsReverseOp());
+
     GenTree* dividend = div->gtGetOp1();
     GenTree* divisor  = div->gtGetOp2();
 
-    TempInfo tempInfos[2]{};
+    TempInfo tempInfos[2];
     int      tempInfoCount = 0;
 
-    if (!fgIsSafeToClone(dividend))
+    // This transform runs in pre-morph so we cannot rely on GTF_GLOB_REF.
+    // Furthermore, this logic is somewhat complicated since the divisor and
+    // dividend are arbitrary nodes. For instance, if we spill the divisor and
+    // the dividend is a local, we need to spill the dividend too unless the
+    // divisor could not cause it to be reassigned.
+    // This could be slightly better via GTF_CALL and GTF_ASG checks on the
+    // divisor but the diffs of this were minor and the extra complexity seemed
+    // not worth it.
+    bool spillDividend;
+    bool spillDivisor;
+    if (divisor->IsInvariant() || divisor->OperIsLocal())
+    {
+        spillDivisor  = false;
+        spillDividend = !dividend->IsInvariant() && !dividend->OperIsLocal();
+    }
+    else
+    {
+        spillDivisor  = true;
+        spillDividend = !dividend->IsInvariant();
+    }
+
+    if (spillDividend)
     {
         tempInfos[tempInfoCount] = fgMakeTemp(dividend);
         dividend                 = tempInfos[tempInfoCount].load;
         tempInfoCount++;
     }
 
-    if (!fgIsSafeToClone(divisor))
+    if (spillDivisor)
     {
         tempInfos[tempInfoCount] = fgMakeTemp(divisor);
         divisor                  = tempInfos[tempInfoCount].load;
