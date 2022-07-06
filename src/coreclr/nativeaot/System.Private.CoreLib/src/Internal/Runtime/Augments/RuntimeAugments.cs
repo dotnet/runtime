@@ -349,6 +349,12 @@ namespace Internal.Runtime.Augments
             return ThreadStatics.GetThreadStaticBaseForType(*(TypeManagerSlot**)cookie, (int)*((IntPtr*)(cookie) + 1));
         }
 
+        public static int GetHighestStaticThreadStaticIndex(TypeManagerHandle typeManager)
+        {
+            RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.ThreadStaticRegion, out int length);
+            return length / IntPtr.Size;
+        }
+
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
 
         [DebuggerGuidedStepThroughAttribute]

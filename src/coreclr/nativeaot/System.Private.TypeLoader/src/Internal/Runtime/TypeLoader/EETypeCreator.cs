@@ -40,6 +40,11 @@ namespace Internal.Runtime.TypeLoader
             return rtth.ToEETypePtr()->NumVtableSlots;
         }
 
+        public static unsafe TypeManagerHandle GetTypeManager(this RuntimeTypeHandle rtth)
+        {
+            return rtth.ToEETypePtr()->TypeManager;
+        }
+
         public static unsafe IntPtr GetDictionary(this RuntimeTypeHandle rtth)
         {
             return EETypeCreator.GetDictionary(rtth.ToEETypePtr());
@@ -148,6 +153,7 @@ namespace Internal.Runtime.TypeLoader
             IntPtr gcStaticData = IntPtr.Zero;
             IntPtr nonGcStaticData = IntPtr.Zero;
             IntPtr genericComposition = IntPtr.Zero;
+            IntPtr threadStaticIndex = IntPtr.Zero;
 
             try
             {
@@ -221,6 +227,7 @@ namespace Internal.Runtime.TypeLoader
                     isByRefLike = false;
                     componentSize = checked((ushort)state.TypeBeingBuilt.Instantiation.Length);
                     baseSize = 0;
+                    typeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
                 }
                 else
                 {
@@ -251,6 +258,8 @@ namespace Internal.Runtime.TypeLoader
                         }
                         Debug.Assert(i == state.GenericVarianceFlags.Length);
                     }
+
+                    typeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
                 }
 
                 flags |= (ushort)EETypeFlags.IsDynamicTypeFlag;
@@ -453,7 +462,6 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
                     optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
 
-                    pEEType->PointerToTypeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
                     pEEType->DynamicModule = dynamicModulePtr;
 
                     // Copy VTable entries from template type
@@ -639,22 +647,11 @@ namespace Internal.Runtime.TypeLoader
                     // create GC desc
                     if (state.GcDataSize != 0 && state.GcStaticDesc == IntPtr.Zero)
                     {
-                        if (state.GcStaticEEType != IntPtr.Zero)
-                        {
-                            // Statics are allocated on GC heap
-                            object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticEEType)->ToRuntimeTypeHandle());
-                            gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
-
-                            pEEType->DynamicGcStaticsData = gcStaticData;
-                        }
-                        else
-                        {
-                            int cbStaticGCDesc;
-                            state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
+                        int cbStaticGCDesc;
+                        state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
 #if GENERICS_FORCE_USG
-                            TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
+                        TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
 #endif
-                        }
                     }
 
                     if (state.ThreadDataSize != 0 && state.ThreadStaticDesc == IntPtr.Zero)
@@ -686,8 +683,21 @@ namespace Internal.Runtime.TypeLoader
 
                 if (!isGenericEETypeDef && state.ThreadDataSize != 0)
                 {
-                    // TODO: thread statics
-                    throw new NotSupportedException();
+                    state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue(pEEType->TypeManager);
+
+                    threadStaticIndex = MemoryHelpers.AllocateMemory(IntPtr.Size * 2);
+                    *(IntPtr*)threadStaticIndex = pEEType->PointerToTypeManager;
+                    *(((IntPtr*)threadStaticIndex) + 1) = (IntPtr)state.ThreadStaticOffset;
+                    pEEType->DynamicThreadStaticsIndex = threadStaticIndex;
+                }
+
+                if (!isGenericEETypeDef && state.GcDataSize != 0)
+                {
+                    // Statics are allocated on GC heap
+                    object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
+                    gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
+
+                    pEEType->DynamicGcStaticsData = gcStaticData;
                 }
 
                 if (state.Dictionary != null)
@@ -723,6 +733,8 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(nonGcStaticData);
                     if (writableDataPtr != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(writableDataPtr);
+                    if (threadStaticIndex != IntPtr.Zero)
+                        MemoryHelpers.FreeMemory(threadStaticIndex);
                 }
             }
         }

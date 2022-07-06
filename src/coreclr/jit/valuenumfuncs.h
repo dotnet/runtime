@@ -23,6 +23,9 @@ ValueNumFuncDef(PtrToStatic, 3, false, true, false)         // Pointer (byref) t
                                                             //       1: (VN of) the field sequence, of which the first element is the static itself.
                                                             //       2: (VN of) offset for the constituent struct fields
 
+ValueNumFuncDef(MDArrLength, 2, false, false, false)        // MD array len, Args: 0: array, 1: dimension
+ValueNumFuncDef(MDArrLowerBound, 2, false, false, false)    // MD array lower bound, Args: 0: array, 1: dimension
+
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
 
 ValueNumFuncDef(Cast, 2, false, false, false)           // VNF_Cast: Cast Operation changes the representations size and unsigned-ness.

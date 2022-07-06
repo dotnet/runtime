@@ -2365,6 +2365,12 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return false; // not encodable
 }
 
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+/*static*/ bool emitter::emitIns_valid_imm_for_ccmp(INT64 imm)
+{
+    return ((imm & 0x01f) == imm);
+}
+
 // true if 'imm' can be encoded as an offset in a ldp/stp instruction
 /*static*/ bool emitter::canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr attr)
 {
@@ -7437,7 +7443,7 @@ void emitter::emitIns_R_I_FLAGS_COND(
                 ins = insReverse(ins);
                 imm = -imm;
             }
-            if ((imm >= 0) && (imm <= 31))
+            if (isValidUimm5(imm))
             {
                 cfi.imm5  = imm;
                 cfi.flags = flags;
@@ -12980,7 +12986,7 @@ void emitter::emitDispInsHelp(
             cfi.immCFVal = (unsigned)emitGetInsSC(id);
             emitDispImm(cfi.imm5, true);
             emitDispFlags(cfi.flags);
-            printf(",");
+            printf(", ");
             emitDispCond(cfi.cond);
             break;
 
@@ -13050,7 +13056,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg2(), size, true);
             cfi.immCFVal = (unsigned)emitGetInsSC(id);
             emitDispFlags(cfi.flags);
-            printf(",");
+            printf(", ");
             emitDispCond(cfi.cond);
             break;
 

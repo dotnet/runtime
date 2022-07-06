@@ -668,4 +668,7 @@
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
   </data>
+  <data name="SerializationCallbacksNotSupported" xml:space="preserve">
+    <value>Serialization callbacks are not supported in metadata kind '{0}'.</value>
+  </data>
 </root>
