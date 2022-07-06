@@ -1504,13 +1504,13 @@ static unsafe class Marshaller<T, TUnmanagedElement>
 }
 ";
                 public const string RefNested = @"
-[CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,>.Ref.Nested))]
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,>.Nested.Ref))]
 [ContiguousCollectionMarshaller]
 static unsafe class Marshaller<T, TUnmanagedElement>
 {
-    static class Nested
+    internal static class Nested
     {
-        static class Ref
+        internal static class Ref
         {
             public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
             public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;
@@ -1531,6 +1531,55 @@ static unsafe class Marshaller<T, TUnmanagedElement>
     public static TestCollection<T> AllocateContainerForManagedElements(byte* unmanaged, int length) => throw null;
     public static System.Span<T> GetManagedValuesDestination(TestCollection<T> managed) => throw null;
     public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* unmanaged, int numElements) => throw null;
+}
+";
+                public const string NonBlittableElement = @"
+[NativeMarshalling(typeof(ElementMarshaller))]
+struct Element
+{
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+    public bool b;
+#pragma warning restore CS0649
+}
+";
+                public const string ElementMarshaller = @"
+[CustomMarshaller(typeof(Element), MarshalMode.ElementIn, typeof(ElementMarshaller))]
+[CustomMarshaller(typeof(Element), MarshalMode.ElementRef, typeof(ElementMarshaller))]
+[CustomMarshaller(typeof(Element), MarshalMode.ElementOut, typeof(ElementMarshaller))]
+static class ElementMarshaller
+{
+    public struct Native { }
+    public static Native ConvertToUnmanaged(Element e) => throw null;
+    public static Element ConvertToManaged(Native n) => throw null;
+}
+";
+                public const string ElementIn = @"
+[CustomMarshaller(typeof(Element), MarshalMode.ElementIn, typeof(ElementMarshaller))]
+static class ElementMarshaller
+{
+    public struct Native { }
+    public static Native ConvertToUnmanaged(Element e) => throw null;
+    public static Element ConvertToManaged(Native n) => throw null;
+}
+";
+                public const string ElementOut = @"
+[CustomMarshaller(typeof(Element), MarshalMode.ElementOut, typeof(ElementMarshaller))]
+static class ElementMarshaller
+{
+    public struct Native { }
+    public static Native ConvertToUnmanaged(Element e) => throw null;
+    public static Element ConvertToManaged(Native n) => throw null;
+}
+";
+                public const string CustomIntMarshaller = @"
+[CustomMarshaller(typeof(int), MarshalMode.ElementIn, typeof(CustomIntMarshaller))]
+[CustomMarshaller(typeof(int), MarshalMode.ElementRef, typeof(CustomIntMarshaller))]
+[CustomMarshaller(typeof(int), MarshalMode.ElementOut, typeof(CustomIntMarshaller))]
+static class CustomIntMarshaller
+{
+    public struct Native { }
+    public static Native ConvertToUnmanaged(int e) => throw null;
+    public static int ConvertToManaged(Native n) => throw null;
 }
 ";
                 public static string ByValue<T>() => ByValue(typeof(T).ToString());
@@ -1573,10 +1622,26 @@ static unsafe class Marshaller<T, TUnmanagedElement>
                     + TestCollection()
                     + Out;
 
-                public static string NestedMarshallerParametersAndModifiers<T>() => DefaultMarshallerParametersAndModifiers(typeof(T).ToString());
+                public static string NestedMarshallerParametersAndModifiers<T>() => NestedMarshallerParametersAndModifiers(typeof(T).ToString());
                 public static string NestedMarshallerParametersAndModifiers(string elementType) => MarshalUsingCollectionCountInfoParametersAndModifiers($"TestCollection<{elementType}>")
                     + TestCollection()
                     + RefNested;
+
+                public static string NonBlittableElementParametersAndModifiers => DefaultMarshallerParametersAndModifiers("Element")
+                    + NonBlittableElement
+                    + ElementMarshaller;
+
+                public static string NonBlittableElementByValue => ByValue("Element")
+                    + NonBlittableElement
+                    + ElementIn;
+
+                public static string NonBlittableElementNativeToManagedOnlyOutParameter => NativeToManagedOnlyOutParameter("Element")
+                    + NonBlittableElement
+                    + ElementOut;
+
+                public static string NonBlittableElementNativeToManagedOnlyReturnValue => NativeToManagedOnlyOutParameter("Element")
+                    + NonBlittableElement
+                    + ElementOut;
 
                 public static string GenericCollectionMarshallingArityMismatch => BasicParameterByValue("TestCollection<int>", DisableRuntimeMarshalling)
                     + @"
@@ -1596,6 +1661,59 @@ static unsafe class Marshaller<T, U, TUnmanagedElement>
     public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* unmanaged, int numElements) => throw null;
 }
 ";
+
+                public static string CustomElementMarshalling => $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{DisableRuntimeMarshalling}
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    [return:MarshalUsing(ConstantElementCount=10)]
+    [return:MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)]
+    public static partial TestCollection<int> Method(
+        [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] TestCollection<int> p,
+        [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] in TestCollection<int> pIn,
+        int pRefSize,
+        [MarshalUsing(CountElementName = ""pRefSize""), MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] ref TestCollection<int> pRef,
+        [MarshalUsing(CountElementName = ""pOutSize"")][MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] out TestCollection<int> pOut,
+        out int pOutSize
+        );
+}}
+"
+                    + TestCollection()
+                    + Ref
+                    + CustomIntMarshaller;
+
+                public static string CustomElementMarshallingDuplicateElementIndirectionDepth => $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{DisableRuntimeMarshalling}
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void Method(
+        [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] TestCollection<int> p);
+}}
+"
+                    + TestCollection()
+                    + In
+                    + CustomIntMarshaller;
+
+                public static string CustomElementMarshallingUnusedElementIndirectionDepth => $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{DisableRuntimeMarshalling}
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void Method(
+        [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 2)] TestCollection<int> p);
+}}
+"
+                    + TestCollection()
+                    + In
+                    + CustomIntMarshaller;
             }
         }
 
