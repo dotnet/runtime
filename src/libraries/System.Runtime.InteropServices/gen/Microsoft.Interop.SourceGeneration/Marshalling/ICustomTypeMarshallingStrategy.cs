@@ -583,7 +583,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Marshaller that enables support for marshalling blittable elements of a collection via a native type that implements the LinearCollection marshalling spec.
     /// </summary>
-    internal sealed class StatelessLinearCollectionMarshalling : ICustomTypeMarshallingStrategy
+    internal sealed class StatelessLinearCollectionBlittableElementsMarshalling : ICustomTypeMarshallingStrategy
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
         private readonly TypeSyntax _nativeTypeSyntax;
@@ -592,7 +592,7 @@ namespace Microsoft.Interop
         private readonly TypeSyntax _unmanagedElementType;
         private readonly ExpressionSyntax _numElementsExpression;
 
-        public StatelessLinearCollectionMarshalling(TypeSyntax marshallerTypeSyntax, TypeSyntax nativeTypeSyntax, MarshallerShape shape, TypeSyntax managedElementType, TypeSyntax unmanagedElementType, ExpressionSyntax numElementsExpression)
+        public StatelessLinearCollectionBlittableElementsMarshalling(TypeSyntax marshallerTypeSyntax, TypeSyntax nativeTypeSyntax, MarshallerShape shape, TypeSyntax managedElementType, TypeSyntax unmanagedElementType, ExpressionSyntax numElementsExpression)
         {
             _marshallerTypeSyntax = marshallerTypeSyntax;
             _nativeTypeSyntax = nativeTypeSyntax;

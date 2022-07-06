@@ -275,7 +275,11 @@ namespace Microsoft.Interop
             CustomTypeMarshallerData marshallerData,
             NativeLinearCollectionMarshallingInfo marshalInfo)
         {
-            var elementInfo = new TypePositionInfo(marshallerData.CollectionElementType, marshallerData.CollectionElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
+            var elementInfo = new TypePositionInfo(marshallerData.CollectionElementType, marshallerData.CollectionElementMarshallingInfo)
+            {
+                ManagedIndex = info.ManagedIndex,
+                RefKind = CreateElementRefKind(info.RefKind, info.ByValueContentsMarshalKind)
+            };
             IMarshallingGenerator elementMarshaller = _elementMarshallingGenerator.Create(
                 elementInfo,
                 new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, string.Empty, context));
@@ -298,12 +302,11 @@ namespace Microsoft.Interop
             bool elementIsBlittable = elementMarshaller is BlittableMarshaller;
             if (elementIsBlittable)
             {
-                marshallingStrategy = new StatelessLinearCollectionMarshalling(marshallerTypeSyntax, marshallerData.NativeType.Syntax, marshallerData.Shape, marshallerData.CollectionElementType.Syntax, unmanagedElementType, numElementsExpression);
+                marshallingStrategy = new StatelessLinearCollectionBlittableElementsMarshalling(marshallerTypeSyntax, marshallerData.NativeType.Syntax, marshallerData.Shape, marshallerData.CollectionElementType.Syntax, unmanagedElementType, numElementsExpression);
             }
             else
             {
-                // TODO: Handle linear collection marshalling with non-blittable elements
-                throw new MarshallingNotSupportedException(info, context);
+                marshallingStrategy = new StatelessLinearCollectionNonBlittableElementsMarshalling(marshallerTypeSyntax, marshallerData.NativeType.Syntax, marshallerData.Shape, unmanagedElementType, elementMarshaller, elementInfo, numElementsExpression);
             }
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
