@@ -15,7 +15,9 @@ public class KeyMapperTests
         new XTermData(),
         new GNOMETerminalData(),
         new UXTermData(),
-        new PuTTYData(),
+        new PuTTYData_xterm(),
+        new PuTTYData_linux(),
+        new PuTTYData_putty(),
         new WindowsTerminalData()
     };
 
@@ -334,8 +336,8 @@ public class UXTermData : TerminalData
     }
 }
 
-// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine
-public class PuTTYData : TerminalData
+// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using default settings ("xterm" Terminal-type setting)
+public class PuTTYData_xterm : TerminalData
 {
     protected override string EncodingCharset => "";
     protected override string Term => "xterm";
@@ -350,6 +352,122 @@ public class PuTTYData : TerminalData
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
             yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
+            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
+            yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
+            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
+            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
+            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
+            yield return (new byte[] { 27, 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
+            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
+            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
+        }
+    }
+}
+
+// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using "linux" Terminal-type setting
+public class PuTTYData_linux : TerminalData
+{
+    protected override string EncodingCharset => "";
+    protected override string Term => "linux";
+    internal override byte Verase => 127;
+    protected override string EncodedTerminalDb => "GgEUAB0AEAB9AUUDbGludXh8bGludXggY29uc29sZQAAAQAAAQEAAAAAAAAAAQEAAAAAAAEAAAAAAAABAQD//wgA/////////////////////////////wgAQAASAP//AAACAAQAFQAaACEAJQApAP//NABFAEcASwBXAP//WQBlAP//aQBtAHkAfQD/////gQCDAIgA/////40AkgD/////lwCcAKEApgCvALEA/////7YAuwDBAMcA////////////////2QDdAP//4QD////////jAP//6AD//////////+wA8QD3APwAAQEGAQsBEQEXAR0BIwEoAf//LQH//zEBNgE7Af///////z8B////////////////////////////////////////QwH//0YBTwFYAWEB//9qAXMBfAH//4UB//////////////////+OAf///////5QBlwGiAaUBpwGqAQEC//8EAv///////////////wYC//////////8KAv//TQL/////UQJXAv////9dAv////////////////////9hAv//////////////////////////////////////////////////ZgL//////////////////////////////////////////////////////////////////////////////////2gCbgJ0AnoCgAKGAowCkgKYAp4C//////////////////////////////////////////////////////////////////////////////////////////////////////////////////+kAv////////////////////////////////////////////////////////////+pArQCuQK/AsMCzALQAv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////IQP///////8lAy8D////////////////////////////////////////////////OQM/AwcADQAbWyVpJXAxJWQ7JXAyJWRyABtbM2cAG1tIG1tKABtbSwAbW0oAG1slaSVwMSVkRwAbWyVpJXAxJWQ7JXAyJWRIAAoAG1tIABtbPzI1bBtbPzFjAAgAG1s/MjVoG1s/MGMAG1tDABtbQQAbWz8yNWgbWz84YwAbW1AAG1tNAA4AG1s1bQAbWzFtABtbMm0AG1s0aAAbWzdtABtbN20AG1s0bQAbWyVwMSVkWAAPABtbbQ8AG1s0bAAbWzI3bQAbWzI0bQAbWz81aCQ8MjAwLz4bWz81bAAbW0AAG1tMAH8AG1szfgAbW0IAG1tbQQAbWzIxfgAbW1tCABtbW0MAG1tbRAAbW1tFABtbMTd+ABtbMTh+ABtbMTl+ABtbMjB+ABtbMX4AG1syfgAbW0QAG1s2fgAbWzV+ABtbQwAbW0EADQoAG1slcDElZFAAG1slcDElZE0AG1slcDElZEIAG1slcDElZEAAG1slcDElZEwAG1slcDElZEQAG1slcDElZEMAG1slcDElZEEAG2MbXVIAGzgAG1slaSVwMSVkZAAbNwAKABtNABtbMDsxMCU/JXAxJXQ7NyU7JT8lcDIldDs0JTslPyVwMyV0OzclOyU/JXA0JXQ7NSU7JT8lcDUldDsyJTslPyVwNiV0OzElO20lPyVwOSV0DiVlDyU7ABtIAAkAG1tHACsrLCwtLS4uMDBfX2BgYWFmZmdnaGhpaWpqa2tsbG1tbm5vb3BwcXFycnNzdHR1dXZ2d3d4eHl5enp7e3x8fWN+fgAbW1oAG1s/N2gAG1s/N2wAGykwABtbNH4AGgAbWzIzfgAbWzI0fgAbWzI1fgAbWzI2fgAbWzI4fgAbWzI5fgAbWzMxfgAbWzMyfgAbWzMzfgAbWzM0fgAbWzFLABtbJWklZDslZFIAG1s2bgAbWz82YwAbW2MAG1szOTs0OW0AG11SABtdUCVwMSV4JXAyJXsyNTV9JSolezEwMDB9JS8lMDJ4JXAzJXsyNTV9JSolezEwMDB9JS8lMDJ4JXA0JXsyNTV9JSolezEwMDB9JS8lMDJ4ABtbTQAbWzMlcDElZG0AG1s0JXAxJWRtABtbMTFtABtbMTBtAAABAAEAAQAEAA4AAQABAAAAAAADAAYAG1szSgBBWABVOABFMwA="; // /lib/terminfo/l/linux
+
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
+    {
+        get
+        {
+            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
+            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
+            yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
+            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
+            yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
+            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
+            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
+            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
+            yield return (new byte[] { 27, 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
+            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
+            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.NumPad1, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+        }
+    }
+}
+
+// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using "putty" Terminal-type setting
+public class PuTTYData_putty : TerminalData
+{
+    protected override string EncodingCharset => "";
+    protected override string Term => "putty";
+    internal override byte Verase => 127;
+    protected override string EncodedTerminalDb => "GgEeAB0AEAB9AXwEcHV0dHl8UHVUVFkgdGVybWluYWwgZW11bGF0b3IAAQEAAAEAAAAAAQAAAAEBAAAAAAABAAAAAAAAAQEA//8IAP////////////////////////////8IAEAAFgAAAAQABgAIABkAHgAlACkALQD//zgASQBMAFAAVwD//1kAYAD//2QA//9nAGsAbwD//3UAdwB8AIEA/////4gA/////40AkgCXAJwApQCnAKwA//+3ALwAwgDIAP//2gD//9wA/////////gD//wIB////////BAH//wkB//////////8NARMBGQEfASUBKwExATcBPQFDAUkBTgH//1MB//9XAVwBYQFlAWkB//9tAXEBeQH//////////////////////////////////4EB//+EAY0BlgH//58BqAGxAboBwwHMAf/////////////////////VAf/////2AfkBBAIHAgkCDAJUAv//VwJZAv////////////9eAv//////////YgL//5UC/////5kCnwL/////pQL/////////////////////rAL//////////////////////////////////////////////////7EC//////////////////////////////////////////+zAv////////////////////+3Av////////////+7AsECxwLNAtMC2QLfAuUC6wLxAv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////9wL//////////////////////////////////////////////////////////////AIHAwwDEgMWAx8DIwP//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3QD////////eAOCA////////4wDkgOYA/////////////////////////////+eA3AEdgQbW1oABwANABtbJWklcDElZDslcDIlZHIAG1szZwAbW0gbW0oAG1tLABtbSgAbWyVpJXAxJWRHABtbJWklcDElZDslcDIlZEgAG0QAG1tIABtbPzI1bAAIABtbPzI1aAAbW0MAG00AG1tQABtbTQAbXTA7BwAOABtbNW0AG1sxbQAbWz80N2gAG1s0aAAbWzdtABtbN20AG1s0bQAbWyVwMSVkWAAPABtbbQ8AG1syShtbPzQ3bAAbWzRsABtbMjdtABtbMjRtABtbPzVoJDwxMDAvPhtbPzVsAAcAGzcbW3IbW20bWz83aBtbPzE7NDs2bBtbNGwbOBs+G11SABtbTAB/ABtbM34AG09CABtbMTF+ABtbMjF+ABtbMTJ+ABtbMTN+ABtbMTR+ABtbMTV+ABtbMTd+ABtbMTh+ABtbMTl+ABtbMjB+ABtbMX4AG1syfgAbT0QAG1s2fgAbWzV+ABtPQwAbW0IAG1tBABtPQQAbWz8xbBs+ABtbPzFoGz0ADQoAG1slcDElZFAAG1slcDElZE0AG1slcDElZEIAG1slcDElZFMAG1slcDElZEwAG1slcDElZEQAG1slcDElZEMAG1slcDElZFQAG1slcDElZEEAGzwbWyJwG1s1MDs2InAbYxtbPzNsG11SG1s/MTAwMGwAGzgAG1slaSVwMSVkZAAbNwAKABtNABtbMCU/JXAxJXA2JXwldDsxJTslPyVwMiV0OzQlOyU/JXAxJXAzJXwldDs3JTslPyVwNCV0OzUlO20lPyVwOSV0DiVlDyU7ABtIAAkAG10wOwAbW0cAYGBhYWZmZ2dqamtrbGxtbW5ub29wcHFxcnJzc3R0dXV2dnd3eHh5eXp6e3t8fH19fn4AG1taABtbPzdoABtbPzdsABsoQhspMAAbWzR+ABoAG1tEABtbQwAbWzIzfgAbWzI0fgAbWzI1fgAbWzI2fgAbWzI4fgAbWzI5fgAbWzMxfgAbWzMyfgAbWzMzfgAbWzM0fgAbWzFLABtbJWklZDslZFIAG1s2bgAbWz82YwAbW2MAG1szOTs0OW0AG11SABtdUCVwMSV4JXAyJXsyNTV9JSolezEwMDB9JS8lMDJ4JXAzJXsyNTV9JSolezEwMDB9JS8lMDJ4JXA0JXsyNTV9JSolezEwMDB9JS8lMDJ4ABtbPAAbWzMlcDElZG0AG1s0JXAxJWRtABtbMTBtABtbMTFtABtbMTJtACU/JXAxJXs4fSU9JXQbJSVH4peYGyUlQCVlJXAxJXsxMH0lPSV0GyUlR+KXmRslJUAlZSVwMSV7MTJ9JT0ldBslJUfimYAbJSVAJWUlcDElezEzfSU9JXQbJSVH4pmqGyUlQCVlJXAxJXsxNH0lPSV0GyUlR+KZqxslJUAlZSVwMSV7MTV9JT0ldBslJUfimLwbJSVAJWUlcDElezI3fSU9JXQbJSVH4oaQGyUlQCVlJXAxJXsxNTV9JT0ldBslJUfggqIbJSVAJWUlcDElYyU7ABtbMTFtABtbMTBtAAEAAQAEAAoAYQABAAEAAAAFAAoAKgAAAAMABgAJAAwADwAbWzNKABtdMDsAG1s/MTAwNjsxMDAwJT8lcDElezF9JT0ldGglZWwlOwAbWzwlaSVwMyVkOyVwMSVkOyVwMiVkOyU/JXA0JXRNJWVtJTsAWFQAVTgARTMAVFMAWE0AeG0A"; // /usr/share/terminfo/p/putty
+
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
+    {
+        get
+        {
+            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
+            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
+            yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
             yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
             yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
