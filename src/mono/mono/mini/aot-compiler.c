@@ -13314,25 +13314,25 @@ add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod
 
 	int count = 0;
 	MibcGroupMethodEntryState state = FIND_METHOD_TYPE_ENTRY_START;
-	uint8_t *cur = (uint8_t*)mibcGroupMethodHeader->code;
-	uint8_t *end = (uint8_t*)mibcGroupMethodHeader->code + mibcGroupMethodHeader->code_size;
+	const unsigned char *cur = mibcGroupMethodHeader->code;
+	const unsigned char *end = mibcGroupMethodHeader->code + mibcGroupMethodHeader->code_size;
 	while (cur < end) {
 		MonoOpcodeEnum il_op;
-		const unsigned char *opcodeIp = (unsigned char*)cur;
-		const unsigned char *opcodeEnd = (unsigned char*)end;
-		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
+		const int op_size = mono_opcode_value_and_size (&cur, end, &il_op);
 
 		if (state == FIND_METHOD_TYPE_ENTRY_END) {
 			if (il_op == MONO_CEE_POP)
 				state = FIND_METHOD_TYPE_ENTRY_START;
+			cur += op_size;
 			continue;
 		}
 		g_assert (il_op == MONO_CEE_LDTOKEN);
 		state = FIND_METHOD_TYPE_ENTRY_END;
 
-		g_assert (opcodeIp + 4 < opcodeEnd);
-		guint32 mibcGroupMethodEntryToken = read32 (opcodeIp + 1);
+		g_assert (cur + 4 < end); // Assert that there is atleast a 32 bit token before the end
+		guint32 mibcGroupMethodEntryToken = read32 (cur + 1);
 		g_assertf ((mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_MEMBERREF || mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_METHODSPEC), "token %x is not MemberRef or MethodSpec.\n", mibcGroupMethodEntryToken);
+		cur += op_size;
 
 		MonoMethod *methodEntry = mono_get_method_checked (image, mibcGroupMethodEntryToken, mibcModuleClass, context, error);
 		mono_error_assert_ok (error);
@@ -13415,24 +13415,26 @@ compatible_mibc_profile_config (MonoImage *image, MonoClass *mibcModuleClass)
 
 	gboolean isConfigCompatible = FALSE;
 	MibcConfigParserState state = PARSING_MIBC_CONFIG_NONE;
-	uint8_t *cur = (uint8_t*)mibcConfigHeader->code;
-	uint8_t *end = (uint8_t*)mibcConfigHeader->code + mibcConfigHeader->code_size;
-	while (cur < end) {
+	const unsigned char *cur = mibcConfigHeader->code;
+	const unsigned char *end = mibcConfigHeader->code + mibcConfigHeader->code_size;
+	while (cur < end && !isConfigCompatible) {
 		MonoOpcodeEnum il_op;
-		const unsigned char *opcodeIp = (unsigned char*)cur;
-		const unsigned char *opcodeEnd = (unsigned char*)end;
-		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
-		// opcodeIp gets moved to point at end of opcode
-		// il opcode arg is opcodeIp + 1
-		// we only care about args of ldstr, which are 32bits/4bytes
-		if (il_op == MONO_CEE_POP)
-			continue;
+		const int op_size = mono_opcode_value_and_size (&cur, end, &il_op);
 
+		// MibcConfig ends with a Ret
 		if (il_op == MONO_CEE_RET)
 			break;
 
-		g_assert (opcodeIp + 4 < opcodeEnd);
-		guint32 token = read32 (opcodeIp + 1);
+		// we only care about args of ldstr, which are 32bits/4bytes
+		// ldstr arg is cur + 1
+		if (il_op != MONO_CEE_LDSTR) {
+			cur += op_size;
+			continue;
+		}
+
+		g_assert (cur + 4 < end); // Assert that there is atleast a 32 bit token before the end
+		guint32 token = read32 (cur + 1);
+		cur += op_size;
 
 		char *value = mono_ldstr_utf8 (image, mono_metadata_token_index (token), error);
 		mono_error_assert_ok (error);
@@ -13504,21 +13506,22 @@ add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
 	mono_error_assert_ok (error);
 
 	int count = 0;
-	uint8_t *cur = (uint8_t*)header->code;
-	uint8_t *end = (uint8_t*)header->code + header->code_size;
+	const unsigned char *cur = header->code;
+	const unsigned char *end = header->code + header->code_size;
 	while (cur < end) {
 		MonoOpcodeEnum il_op;
-		const unsigned char *opcodeIp = (unsigned char*)cur;
-		const unsigned char *opcodeEnd = (unsigned char*)end;
-		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
-		// opcodeIp gets moved to point at end of opcode
-		// il opcode arg is opcodeIp + 1
-		// we only care about args of ldtoken's, which are 32bits/4bytes
-		if (il_op != MONO_CEE_LDTOKEN)
-			continue;
+		const int op_size = mono_opcode_value_and_size (&cur, end, &il_op);
 
-		g_assert (opcodeIp + 4 < opcodeEnd);
-		guint32 token = read32 (opcodeIp + 1);
+		// we only care about args of ldtoken's, which are 32bits/4bytes
+		// ldtoken arg is cur + 1
+		if (il_op != MONO_CEE_LDTOKEN) {
+			cur += op_size;
+			continue;
+		}
+
+		g_assert (cur + 4 < end); // Assert that there is atleast a 32 bit token before the end
+		guint32 token = read32 (cur + 1);
+		cur += op_size;
 
 		MonoMethod *mibcGroupMethod = mono_get_method_checked (image, token, mibcModuleClass, context, error);
 		mono_error_assert_ok (error);
