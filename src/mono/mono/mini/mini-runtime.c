@@ -4384,13 +4384,14 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	mono_interp_stub_init ();
+	mono_components_init ();
+
+	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
+	
 #ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
-	mono_components_init ();
-	
-	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 
