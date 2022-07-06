@@ -472,9 +472,9 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     }
 }
 
-export function setup_proxy_console(id: string, originalConsole: Console, origin: string, ...args: any[]): void {
+export function setup_proxy_console(id: string, originalConsole: Console, origin: string): void {
     function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
-        return function () {
+        return function (...args: any[]) {
             try {
                 let payload = args[0];
                 if (payload === undefined) payload = "undefined";

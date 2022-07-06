@@ -4,7 +4,7 @@
 import { Module } from "./imports";
 import { mono_assert } from "./types";
 
-class OperationFailedError extends Error {}
+class OperationFailedError extends Error { }
 
 const ERR_ARGS = -1;
 const ERR_WORKER_FAILED = -2;
@@ -200,10 +200,6 @@ class LibraryChannel {
                 console.log(`send_msg, waiting for idle now, ${state}`);
             state = this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
 
-            // FIXME: it won't get to this line for !IDLE
-            if (state !== this.STATE_IDLE) {
-                throw new Error(`OWNER: Invalid sync communication channel state ${state}`);
-            }
             this.send_request(msg);
             return this.read_response();
         } catch (err) {
@@ -294,7 +290,6 @@ class LibraryChannel {
     private read_response(): string {
         let response = "";
         for (; ;) {
-            //FIXME: read only when unlocked?
             const state = this.wait_for_state(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
             this.acquire_lock();
 
@@ -327,14 +322,14 @@ class LibraryChannel {
         return response;
     }
 
-    private _change_state_locked(newState: number) : void {
+    private _change_state_locked(newState: number): void {
         Atomics.store(this.comm, this.STATE_IDX, newState);
     }
 
-    private wait_for_state(is_ready: (state: number) => boolean, msg: string) : number {
+    private wait_for_state(is_ready: (state: number) => boolean, msg: string): number {
         // Wait for webworker
         //  - Atomics.wait() is not permissible on the main thread.
-        for (;;) {
+        for (; ;) {
             const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
             if (lock_state !== this.LOCK_UNLOCKED)
                 continue;
@@ -343,7 +338,6 @@ class LibraryChannel {
             if (state == this.STATE_REQ_FAILED)
                 throw new OperationFailedError(`Worker failed during ${msg} with state=${state}`);
 
-            // FIXME: do we need to check here for the lock too?
             if (is_ready(state))
                 return state;
         }
@@ -356,7 +350,7 @@ class LibraryChannel {
     }
 
     private acquire_lock() {
-        for (;;) {
+        for (; ;) {
             const lock_state = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
 
             if (lock_state === this.LOCK_UNLOCKED) {
