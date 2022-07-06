@@ -310,6 +310,31 @@ namespace System.Transactions
                 }
                 return s_defaultTimeout;
             }
+            set
+            {
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
+                {
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultTimeout");
+                }
+
+                s_defaultTimeout = ValidateTimeout(value);
+
+                if (s_defaultTimeout != DefaultSettingsSection.Timeout)
+                {
+                    if (etwLog.IsEnabled())
+                    {
+                        etwLog.ConfiguredDefaultTimeoutAdjusted();
+                    }
+                }
+
+                s_defaultTimeoutValidated = true;
+
+                if (etwLog.IsEnabled())
+                {
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultTimeout");
+                }
+            }
         }
 
 
@@ -325,7 +350,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
                 }
 
-                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => DefaultSettingsSection.Timeout);
+                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => MachineSettingsSection.MaxTimeout);
 
                 if (etwLog.IsEnabled())
                 {
@@ -333,6 +358,27 @@ namespace System.Transactions
                 }
 
                 return s_maximumTimeout;
+            }
+            set
+            {
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
+                {
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultMaximumTimeout");
+                }
+
+                if(value < TimeSpan.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                s_cachedMaxTimeout = false;
+                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => value);
+
+                if (etwLog.IsEnabled())
+                {
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultMaximumTimeout");
+                }
             }
         }
 
