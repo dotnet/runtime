@@ -18,6 +18,9 @@
     call bool Runtime_71636::ProblemWithLdElem()
     brtrue FAILURE_LDELEM
 
+    call bool Runtime_71636::ProblemWithStElem()
+    brtrue FAILURE_STELEM
+
     ldc.i4 100
     ret
 
@@ -27,6 +30,10 @@
 
   FAILURE_LDELEM:
     ldc.i4 102
+    ret
+
+  FAILURE_STELEM:
+    ldc.i4 103
     ret
   }
 
@@ -85,6 +92,38 @@
     ldloc idx
     ldelem void*
     call void [System.Runtime]System.GC::Collect()
+    stloc lcl
+
+    ldloc lcl
+    ldloca lcl
+    bne.un NOT_EQUAL
+
+    ldc.i4 0
+    ret
+
+  NOT_EQUAL:
+    ldc.i4 1
+    ret
+  }
+
+  .method private static bool ProblemWithStElem() noinlining
+  {
+    .locals (void* lcl, void*[] arr, int32 idx)
+
+    call void*[] Runtime_71636::GetArray()
+    stloc arr
+
+    ldc.i4 0
+    stloc idx
+
+    ldloc arr
+    ldloc idx
+    ldloca lcl
+    stelem void*
+
+    ldloc arr
+    ldloc idx
+    ldelem.i
     stloc lcl
 
     ldloc lcl
