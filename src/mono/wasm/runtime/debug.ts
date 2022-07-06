@@ -514,7 +514,7 @@ export function setup_proxy_console(id: string, originalConsole: Console, origin
         }
     }
 
-    const consoleUrl = `${origin}/console`.replace("http://", "ws://");
+    const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
 
     const consoleWebSocket = new WebSocket(consoleUrl);
     consoleWebSocket.onopen = function () {

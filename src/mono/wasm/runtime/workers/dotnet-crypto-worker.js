@@ -83,7 +83,6 @@ var ChannelWorker = {
                         Atomics.wait(this.comm, this.STATE_IDX, this.STATE_REQ_FAILED);
                         const state = Atomics.load(this.comm, this.STATE_IDX);
                         if (state !== this.STATE_RESET) {
-                            console.error(`aaarghh.. didn't reset`);
                             throw new WorkerFailedError(`expected to RESET, but got ${state}`);
                         }
                     }

@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
             {
                 int res = Interop.BrowserCrypto.SimpleDigestHash(hashName, src, data.Length, dest, destination.Length);
                 if (res != 0)
-                    throw new Exception(SR.Format(SR.Unknown_SubtleCrypto_Error, res));
+                    throw new CryptographicException(SR.Format(SR.Unknown_SubtleCrypto_Error, res));
             }
         }
 
