@@ -262,7 +262,7 @@ namespace NativeExports
 
         [UnmanagedCallersOnly(EntryPoint = "and_bool_struct_array_in")]
         [DNNE.C99DeclCode("struct bool_struct;")]
-        public static byte AndBoolStructsIn([DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative** pArray, int length)
+        public static byte AndBoolStructsIn([DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** pArray, int length)
         {
             bool result = true;
             for (int i = 0; i < length; i++)
@@ -291,7 +291,7 @@ namespace NativeExports
         [UnmanagedCallersOnly(EntryPoint = "negate_bool_struct_array_ref")]
         [DNNE.C99DeclCode("struct bool_struct;")]
         public static void NegateBoolStructsRef(
-            [DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative** array,
+            [DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** array,
             int length)
         {
             for (int i = 0; i < length; i++)
@@ -308,7 +308,7 @@ namespace NativeExports
         public static void NegateBoolStructsOut(
             [DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative* array,
             int length,
-            [DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative** outArray)
+            [DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** outArray)
         {
             *outArray = NegateBoolStructsImpl(array, length);
         }
@@ -318,8 +318,7 @@ namespace NativeExports
         [return: DNNE.C99Type("struct bool_struct*")]
         public static BoolStructMarshaller.BoolStructNative* NegateBoolStructsReturn(
             [DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative* array,
-            int length,
-            [DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative** outArray)
+            int length)
         {
             return NegateBoolStructsImpl(array, length);
         }
