@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Xml;
-using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization

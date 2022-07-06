@@ -10,7 +10,7 @@ using System.Xml.Schema;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.HideStubs
 {
     public sealed class DataContractSet
     {
@@ -75,19 +75,30 @@ namespace System.Runtime.Serialization
     {
         // =======================================================================================================
         // These existed internal in Core
-        public static bool IsTypeSerializable(Type type) { return false; }
-        public XmlQualifiedName StableName => XmlQualifiedName.Empty;
         public Type UnderlyingType => typeof(DataContract);
+        public Type OriginalUnderlyingType => UnderlyingType;
+        public XmlQualifiedName StableName { get => XmlQualifiedName.Empty; internal set { } }
+        public bool HasRoot { get; internal set; }
+        public bool IsBuiltInDataContract { get; }
+        public bool IsISerializable { get; internal set; }
+        public bool IsReference { get; internal set; }
+        public bool IsValueType { get; internal set; }
+        public XmlDictionaryString? TopLevelElementName { get; internal set; }
+        public XmlDictionaryString? TopLevelElementNamespace { get; internal set; }
+        public static bool IsTypeSerializable(Type type) { return false; }
         public static DataContract GetDataContract(Type type) { return new DataContract(); }
         public static DataContract? GetBuiltInDataContract(string name, string ns) { return null; }
+        public static XmlQualifiedName GetStableName(Type type) { return XmlQualifiedName.Empty; }
         // This API exists and is used internally. It can easily be copied externally if we want to reduce the API surface here.
         // But it's also a semi-logical exposure of a DC-intended static utility function. It makes sense to just expose and re-use it.
         public static string EncodeLocalName(string localName) { return "string"; }
+        public XmlQualifiedName GetArrayTypeName(bool isNullable) { return XmlQualifiedName.Empty; }
 
 
         // =======================================================================================================
         // These existed internal in 4.8 and are brought back for schema support
         public GenericInfo? GenericInfo => null;
+        public DataContract BindGenericParameters(DataContract[] paramContracts,  Dictionary<DataContract, DataContract> boundContracts) { return new DataContract(); }
 
 
         // =======================================================================================================
@@ -96,26 +107,6 @@ namespace System.Runtime.Serialization
         // This one - similar to a couple DCSet API's - allows us to keep surrogate execution logic internal to DC/DCSet.
         //  Basically and entry to [surrogate_caller.GetDataContractType()]
         public static Type GetSurrogateType(ISerializationSurrogateProvider surrogateProvider, Type type) { return type; }
-
-        // This is a new API that hides 'HasRoot', 'TopLevelElementName', and 'TopLevelElementNamespace' which already
-        //  exist internally in Core. There are other places that use these properties though. Check those places to see
-        //  if this new API works for them, or if it needs to be re-worked, or if we just stick with exposing those
-        //  niche properties for niche cases.
-        //  Upon further review, we don't even have to do a boolean/out pattern. We can just return
-        //  something or null and our usage pattern here already flows like that. Maybe simplify this.
-        public bool GetRootElementName([NotNullWhen(true)] out XmlQualifiedName? rootElementName) { rootElementName = null; return false; }
-
-
-        // =======================================================================================================
-        // More API's that need exposing
-
-        // DataContract BindGenericParameters(DataContract[],  Dictionary<DataContract, DataContract>)
-        // XmlQualifiedName GetArrayTypeName(bool)
-        // XmlQualifiedName static GetStableName(Type t) {}
-
-        // bool IsBuiltInDataContract
-        // bool IsValueType
-        // Type OriginalUnderlyingType
     }
 
 
@@ -123,18 +114,18 @@ namespace System.Runtime.Serialization
     public class ClassDataContract : DataContract
     {
         // BaseContract
-        // IsISerializable
-        // IsReference
-        // IsValueType
-        // KnownDataContracts
+        // *IsISerializable
+        // *IsReference
+        // *IsValueType
+        // *KnownDataContracts
         // Members
     }
     public class CollectionDataContract : DataContract
     {
-        // IsCollection
+        // IsCollection() static - This could be on base DataContract
         // IsDictionary
         // IsItemTypeNullable
-        // IsReference
+        // *IsReference
         // ItemContract
         // ItemName
         // KeyName
@@ -143,10 +134,11 @@ namespace System.Runtime.Serialization
     public class EnumDataContract : DataContract
     {
         // BaseContractName
-        // GetBaseType
-        // GetStringFromEnumValue
-        // IsFlags
+        // GetBaseType  << and ^^ can be combined into one Type GetType()
+
+        // GetStringFromEnumValue()     This is the one non-data item. Should we bring an enum-specific function up to DCBase? or perhaps this and IsUlong can go away if Values just returns int[] or string[] appropriately
         // IsULong
+        // IsFlags
         // Members
         // Values
     }
@@ -156,12 +148,12 @@ namespace System.Runtime.Serialization
         // IsAnonymous
         // IsTopLevelElementNullable
         // IsTypeDefinedOnImport
-        // IsValueType
+        // *IsValueType
         // XsdType
 
         // These three are actually on DC itself. We worked around with a new API in one case. Can we use that for all cases?
-        // HasRoot
-        // TopLevelElementName
-        // TopLevelElementNamespace
+        // *HasRoot
+        // *TopLevelElementName
+        // *TopLevelElementNamespace
     }
 }

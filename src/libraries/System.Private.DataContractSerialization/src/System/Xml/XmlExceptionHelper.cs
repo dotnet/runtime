@@ -31,8 +31,7 @@ namespace System.Xml
         private static void ThrowXmlException(XmlDictionaryReader reader, string res, string? arg1, string? arg2, string? arg3)
         {
             string s = SR.Format(res, arg1, arg2, arg3);
-            IXmlLineInfo? lineInfo = reader as IXmlLineInfo;
-            if (lineInfo != null && lineInfo.HasLineInfo())
+            if (reader is IXmlLineInfo lineInfo && lineInfo.HasLineInfo())
             {
                 s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
             }
@@ -44,8 +43,7 @@ namespace System.Xml
         public static void ThrowXmlException(XmlDictionaryReader reader, XmlException exception)
         {
             string s = exception.Message;
-            IXmlLineInfo? lineInfo = reader as IXmlLineInfo;
-            if (lineInfo != null && lineInfo.HasLineInfo())
+            if (reader is IXmlLineInfo lineInfo && lineInfo.HasLineInfo())
             {
                 s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
             }

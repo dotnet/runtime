@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using System.Xml.Schema;
 
@@ -217,7 +218,7 @@ namespace System.Runtime.Serialization
                     List<XmlSchemaType>? knownTypes = schemaObjectInfo._knownTypes;
                     if (knownTypes != null)
                     {
-                        DataContractDictionary knownDataContracts = new DataContractDictionary();
+                        Dictionary<XmlQualifiedName, DataContract> knownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
                         foreach (XmlSchemaType knownType in knownTypes)
                         {
                             // Expected: will throw exception if schema set contains types that are not supported
@@ -246,8 +247,7 @@ namespace System.Runtime.Serialization
                 {
                     foreach (XmlSchemaObject schemaObj in schema.SchemaTypes.Values)
                     {
-                        XmlSchemaType? schemaType = schemaObj as XmlSchemaType;
-                        if (schemaType != null)
+                        if (schemaObj is XmlSchemaType schemaType)
                         {
                             knownTypesForObject.Add(schemaType);
 
@@ -285,8 +285,7 @@ namespace System.Runtime.Serialization
                     }
                     foreach (XmlSchemaObject schemaObj in schema.Elements.Values)
                     {
-                        XmlSchemaElement? schemaElement = schemaObj as XmlSchemaElement;
-                        if (schemaElement != null)
+                        if (schemaObj is XmlSchemaElement schemaElement)
                         {
                             XmlQualifiedName currentElementName = new XmlQualifiedName(schemaElement.Name, schema.TargetNamespace);
                             SchemaObjectInfo? schemaObjectInfo;
@@ -403,7 +402,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportType(XmlSchemaType type, XmlQualifiedName typeName, bool isAnonymous)
         {
-            DataContract? dataContract = _dataContractSet[typeName];
+            DataContract? dataContract = _dataContractSet.GetDataContract(typeName);
             if (dataContract != null)
                 return dataContract;
 
@@ -495,8 +494,8 @@ namespace System.Runtime.Serialization
                 return ImportXmlDataType(typeName, type, isAnonymous);
             }
             Type? referencedType;
-            if (_dataContractSet.TryGetReferencedType(typeName, dataContract, out referencedType)
-                || (string.IsNullOrEmpty(type.Name) && _dataContractSet.TryGetReferencedType(ImportActualType(type.Annotation, typeName, typeName), dataContract, out referencedType)))
+            if (_dataContractSet.TryGetReferencedSingleType(typeName, dataContract, out referencedType)
+                || (string.IsNullOrEmpty(type.Name) && _dataContractSet.TryGetReferencedSingleType(ImportActualType(type.Annotation, typeName, typeName), dataContract, out referencedType)))
             {
                 if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(referencedType))
                 {
@@ -517,7 +516,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void RemoveFailedContract(XmlQualifiedName typeName)
         {
-            ClassDataContract? oldContract = _dataContractSet[typeName] as ClassDataContract;
+            ClassDataContract? oldContract = _dataContractSet.GetDataContract(typeName) as ClassDataContract;
             _dataContractSet.Remove(typeName);
             if (oldContract != null)
             {
@@ -587,8 +586,7 @@ namespace System.Runtime.Serialization
         {
             for (int i = 0; i < items.Count; i++)
             {
-                XmlSchemaElement? element = items[i] as XmlSchemaElement;
-                if (element != null && element.RefName != null &&
+                if (items[i] is XmlSchemaElement element && element.RefName != null &&
                    element.RefName.Namespace == Globals.SerializationNamespace &&
                    element.MinOccurs == 0)
                 {
@@ -645,7 +643,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private ClassDataContract ImportClass(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlQualifiedName? baseTypeName, XmlSchemaAnnotation? annotation, bool isReference)
         {
-            ClassDataContract dataContract = new ClassDataContract(Globals.TypeOfSchemaTypePlaceholder);
+            ClassDataContract dataContract = new ClassDataContract(Globals.TypeOfSchemaDefinedType);
             dataContract.StableName = typeName;
             AddDataContract(dataContract);
 
@@ -687,7 +685,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract ImportXmlDataType(XmlQualifiedName typeName, XmlSchemaType xsdType, bool isAnonymous)
         {
-            DataContract? dataContract = _dataContractSet[typeName];
+            DataContract? dataContract = _dataContractSet.GetDataContract(typeName);
             if (dataContract != null)
                 return dataContract;
 
@@ -695,7 +693,7 @@ namespace System.Runtime.Serialization
             if (xmlDataContract != null)
                 return xmlDataContract;
 
-            xmlDataContract = new XmlDataContract(Globals.TypeOfSchemaTypePlaceholder);
+            xmlDataContract = new XmlDataContract(Globals.TypeOfSchemaDefinedType);
             xmlDataContract.StableName = typeName;
             xmlDataContract.IsValueType = false;
             AddDataContract(xmlDataContract);
@@ -728,15 +726,14 @@ namespace System.Runtime.Serialization
         {
             if (!isAnonymous)
                 return null;
-            XmlSchemaComplexType? complexType = xsdType as XmlSchemaComplexType;
-            if (complexType == null)
+            if (xsdType is not XmlSchemaComplexType complexType)
                 return null;
             if (IsXmlAnyElementType(complexType))
             {
                 //check if the type is XElement
                 XmlQualifiedName xlinqTypeName = new XmlQualifiedName("XElement", "http://schemas.datacontract.org/2004/07/System.Xml.Linq");
                 Type? referencedType;
-                if (_dataContractSet.TryGetReferencedType(xlinqTypeName, null, out referencedType)
+                if (_dataContractSet.TryGetReferencedSingleType(xlinqTypeName, null, out referencedType)
                     && Globals.TypeOfIXmlSerializable.IsAssignableFrom(referencedType))
                 {
                     XmlDataContract xmlDataContract = new XmlDataContract(referencedType);
@@ -820,7 +817,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private ClassDataContract ImportISerializable(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlQualifiedName? baseTypeName, XmlSchemaObjectCollection attributes, XmlSchemaAnnotation? annotation)
         {
-            ClassDataContract dataContract = new ClassDataContract(Globals.TypeOfSchemaTypePlaceholder);
+            ClassDataContract dataContract = new ClassDataContract(Globals.TypeOfSchemaDefinedType);
             dataContract.StableName = typeName;
             dataContract.IsISerializable = true;
             AddDataContract(dataContract);
@@ -1049,7 +1046,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private CollectionDataContract ImportCollection(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlSchemaObjectCollection attributes, XmlSchemaAnnotation? annotation, bool isReference)
         {
-            CollectionDataContract dataContract = new CollectionDataContract(Globals.TypeOfSchemaTypePlaceholder, CollectionKind.Array);
+            CollectionDataContract dataContract = new CollectionDataContract(Globals.TypeOfSchemaDefinedType, CollectionKind.Array);
             dataContract.StableName = typeName;
             AddDataContract(dataContract);
 
@@ -1079,7 +1076,7 @@ namespace System.Runtime.Serialization
                 if (element.SchemaType != null)
                 {
                     XmlQualifiedName shortName = new XmlQualifiedName(element.Name, typeName.Namespace);
-                    DataContract? contract = _dataContractSet[shortName];
+                    DataContract? contract = _dataContractSet.GetDataContract(shortName);
                     if (contract == null)
                     {
                         dataContract.ItemContract = ImportAnonymousElement(element, shortName);
@@ -1190,7 +1187,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private EnumDataContract ImportEnum(XmlQualifiedName typeName, XmlSchemaSimpleTypeRestriction restriction, bool isFlags, XmlSchemaAnnotation? annotation)
         {
-            EnumDataContract dataContract = new EnumDataContract(Globals.TypeOfSchemaTypePlaceholder);
+            EnumDataContract dataContract = new EnumDataContract(Globals.TypeOfSchemaDefinedType);
             dataContract.StableName = typeName;
             dataContract.BaseContractName = ImportActualType(annotation, SchemaExporter.DefaultEnumBaseTypeName, typeName);
             dataContract.IsFlags = isFlags;
@@ -1428,8 +1425,7 @@ namespace System.Runtime.Serialization
                 {
                     for (int i = 0; i < markup.Length; i++)
                     {
-                        XmlElement? annotationElement = markup[i] as XmlElement;
-                        if (annotationElement != null && annotationElement.LocalName == annotationQualifiedName.Name && annotationElement.NamespaceURI == annotationQualifiedName.Namespace)
+                        if (markup[i] is XmlElement annotationElement && annotationElement.LocalName == annotationQualifiedName.Name && annotationElement.NamespaceURI == annotationQualifiedName.Namespace)
                             return annotationElement;
                     }
                 }

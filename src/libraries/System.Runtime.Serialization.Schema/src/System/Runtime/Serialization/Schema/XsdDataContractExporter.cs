@@ -185,15 +185,15 @@ namespace System.Runtime.Serialization.Schema
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             EnsureTypeNotGeneric(dataContract.UnderlyingType);
-            //if (dataContract.HasRoot)
-            //{
-            //    return new XmlQualifiedName(dataContract.TopLevelElementName!.Value, dataContract.TopLevelElementNamespace!.Value);
-            //}
-            // TODO smolloy - the above is now done with the new API below.
-            if (dataContract.GetRootElementName(out XmlQualifiedName? root))
+            if (dataContract.HasRoot)
             {
-                return root;
+                return new XmlQualifiedName(dataContract.TopLevelElementName!.Value, dataContract.TopLevelElementNamespace!.Value);
             }
+            // TODO smolloy - the above is now done with the new API below.
+            //if (dataContract.GetRootElementName(out XmlQualifiedName? root))
+            //{
+            //    return root;
+            //}
             else
             {
                 return null;

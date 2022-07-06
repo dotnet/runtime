@@ -2,18 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Reflection;
-using System.Xml;
-using System.Security;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
+using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
-    internal sealed class DataMember
+    public sealed class DataMember
     {
         private readonly CriticalHelper _helper;
 
@@ -27,102 +22,68 @@ namespace System.Runtime.Serialization
             _helper = new CriticalHelper(memberTypeContract, name, isNullable, isRequired, emitDefaultValue, order);
         }
 
-        internal MemberInfo MemberInfo
-        {
-            get
-            { return _helper.MemberInfo; }
-        }
+        internal MemberInfo MemberInfo => _helper.MemberInfo;
 
         public string Name
         {
-            get
-            { return _helper.Name; }
-
-            set
-            { _helper.Name = value; }
+            get => _helper.Name;
+            internal set => _helper.Name = value;
         }
 
         public int Order
         {
-            get
-            { return _helper.Order; }
-
-            set
-            { _helper.Order = value; }
+            get => _helper.Order;
+            internal set => _helper.Order = value;
         }
 
         public bool IsRequired
         {
-            get
-            { return _helper.IsRequired; }
-
-            set
-            { _helper.IsRequired = value; }
+            get => _helper.IsRequired;
+            internal set => _helper.IsRequired = value;
         }
 
         public bool EmitDefaultValue
         {
-            get
-            { return _helper.EmitDefaultValue; }
-
-            set
-            { _helper.EmitDefaultValue = value; }
+            get => _helper.EmitDefaultValue;
+            internal set => _helper.EmitDefaultValue = value;
         }
 
         public bool IsNullable
         {
-            get
-            { return _helper.IsNullable; }
-
-            set
-            { _helper.IsNullable = value; }
+            get => _helper.IsNullable;
+            internal set => _helper.IsNullable = value;
         }
 
-        public bool IsGetOnlyCollection
+        internal bool IsGetOnlyCollection
         {
-            get
-            { return _helper.IsGetOnlyCollection; }
-
-            set
-            { _helper.IsGetOnlyCollection = value; }
+            get => _helper.IsGetOnlyCollection;
+            set => _helper.IsGetOnlyCollection = value;
         }
 
-        internal Type MemberType
-        {
-            get
-            { return _helper.MemberType; }
-        }
+        internal Type MemberType => _helper.MemberType;
 
-        internal DataContract MemberTypeContract
+        public DataContract MemberTypeContract
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            { return _helper.MemberTypeContract; }
+            get => _helper.MemberTypeContract;
         }
 
         internal PrimitiveDataContract? MemberPrimitiveContract
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            { return _helper.MemberPrimitiveContract; }
+            get => _helper.MemberPrimitiveContract;
         }
 
-        public bool HasConflictingNameAndType
+        internal bool HasConflictingNameAndType
         {
-            get
-            { return _helper.HasConflictingNameAndType; }
-
-            set
-            { _helper.HasConflictingNameAndType = value; }
+            get => _helper.HasConflictingNameAndType;
+            set => _helper.HasConflictingNameAndType = value;
         }
 
         internal DataMember? ConflictingMember
         {
-            get
-            { return _helper.ConflictingMember; }
-
-            set
-            { _helper.ConflictingMember = value; }
+            get => _helper.ConflictingMember;
+            set => _helper.ConflictingMember = value;
         }
 
         private FastInvokerBuilder.Getter? _getter;
@@ -163,45 +124,42 @@ namespace System.Runtime.Serialization
                 _memberInfo = memberTypeContract.UnderlyingType;
             }
 
-            internal MemberInfo MemberInfo
-            {
-                get { return _memberInfo; }
-            }
+            internal MemberInfo MemberInfo => _memberInfo;
 
             internal string Name
             {
-                get { return _name; }
-                set { _name = value; }
+                get => _name;
+                set => _name = value;
             }
 
             internal int Order
             {
-                get { return _order; }
-                set { _order = value; }
+                get => _order;
+                set => _order = value;
             }
 
             internal bool IsRequired
             {
-                get { return _isRequired; }
-                set { _isRequired = value; }
+                get => _isRequired;
+                set => _isRequired = value;
             }
 
             internal bool EmitDefaultValue
             {
-                get { return _emitDefaultValue; }
-                set { _emitDefaultValue = value; }
+                get => _emitDefaultValue;
+                set => _emitDefaultValue = value;
             }
 
             internal bool IsNullable
             {
-                get { return _isNullable; }
-                set { _isNullable = value; }
+                get => _isNullable;
+                set => _isNullable = value;
             }
 
             internal bool IsGetOnlyCollection
             {
-                get { return _isGetOnlyCollection; }
-                set { _isGetOnlyCollection = value; }
+                get => _isGetOnlyCollection;
+                set => _isGetOnlyCollection = value;
             }
 
             internal Type MemberType
@@ -210,8 +168,7 @@ namespace System.Runtime.Serialization
                 {
                     if (_memberType == null)
                     {
-                        FieldInfo? field = MemberInfo as FieldInfo;
-                        if (field != null)
+                        if (MemberInfo is FieldInfo field)
                             _memberType = field.FieldType;
                         else
                             _memberType = ((PropertyInfo)MemberInfo).PropertyType;
@@ -228,7 +185,7 @@ namespace System.Runtime.Serialization
                 {
                     if (_memberTypeContract == null)
                     {
-                        if (this.IsGetOnlyCollection)
+                        if (IsGetOnlyCollection)
                         {
                             _memberTypeContract = DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(MemberType.TypeHandle), MemberType.TypeHandle, MemberType);
                         }
@@ -248,14 +205,14 @@ namespace System.Runtime.Serialization
 
             internal bool HasConflictingNameAndType
             {
-                get { return _hasConflictingNameAndType; }
-                set { _hasConflictingNameAndType = value; }
+                get => _hasConflictingNameAndType;
+                set => _hasConflictingNameAndType = value;
             }
 
             internal DataMember? ConflictingMember
             {
-                get { return _conflictingMember; }
-                set { _conflictingMember = value; }
+                get => _conflictingMember;
+                set => _conflictingMember = value;
             }
 
             private PrimitiveDataContract? _memberPrimitiveContract;

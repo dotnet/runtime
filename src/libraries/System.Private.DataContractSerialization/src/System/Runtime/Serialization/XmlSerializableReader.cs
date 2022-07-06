@@ -136,8 +136,7 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                IXmlTextParser? xmlTextParser = InnerReader as IXmlTextParser;
-                if (xmlTextParser == null)
+                if (InnerReader is not IXmlTextParser xmlTextParser)
                     _xmlReader.Normalized = value;
                 else
                     xmlTextParser.Normalized = value;
@@ -153,8 +152,7 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                IXmlTextParser? xmlTextParser = InnerReader as IXmlTextParser;
-                if (xmlTextParser == null)
+                if (InnerReader is not IXmlTextParser xmlTextParser)
                     _xmlReader.WhitespaceHandling = value;
                 else
                     xmlTextParser.WhitespaceHandling = value;

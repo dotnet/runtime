@@ -27,6 +27,7 @@ namespace System.Runtime.Serialization.Schema
         public const string AnyTypeLocalName = "anyType";
         public const string ArrayPrefix = "ArrayOf";
         public const string ClrNamespaceProperty = "ClrNamespace";
+        public const string CollectionsNamespace = "http://schemas.microsoft.com/2003/10/Serialization/Arrays";
         public const string ContextFieldName = "context";
         public const string CurrentPropertyName = "Current";
         public const string DataContractXsdBaseNamespace = "http://schemas.datacontract.org/2004/07/";

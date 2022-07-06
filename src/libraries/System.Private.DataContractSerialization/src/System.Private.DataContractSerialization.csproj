@@ -54,6 +54,7 @@
     <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatWriter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SchemaExporter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SchemaHelper.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SchemaImporter.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ScopedKnownTypes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SerializationOption.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />

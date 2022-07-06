@@ -484,8 +484,7 @@ namespace System.Runtime.Serialization.Schema
 
             // System.Diagnostics.DebuggerStepThroughAttribute not allowed on enums
             // ensure that the attribute is only generated on types that are not enums
-            EnumDataContract? enumDataContract = dataContract as EnumDataContract;
-            if (enumDataContract == null)
+            if (dataContract is not EnumDataContract)
             {
                 typeDecl.CustomAttributes.Add(debuggerStepThroughAttribute);
             }

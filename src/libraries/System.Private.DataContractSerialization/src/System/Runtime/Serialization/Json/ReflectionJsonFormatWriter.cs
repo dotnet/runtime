@@ -27,8 +27,7 @@ namespace System.Runtime.Serialization.Json
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract collectionContract)
         {
-            JsonWriterDelegator? jsonWriter = xmlWriter as JsonWriterDelegator;
-            if (jsonWriter == null)
+            if (xmlWriter is not JsonWriterDelegator jsonWriter)
             {
                 throw new ArgumentException(nameof(xmlWriter));
             }

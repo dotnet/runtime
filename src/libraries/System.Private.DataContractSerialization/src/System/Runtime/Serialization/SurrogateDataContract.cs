@@ -20,13 +20,10 @@ namespace System.Runtime.Serialization
             _helper = (base.Helper as SurrogateDataContractCriticalHelper)!;
         }
 
-        internal ISerializationSurrogate SerializationSurrogate
-        {
-            get { return _helper.SerializationSurrogate; }
-        }
+        internal ISerializationSurrogate SerializationSurrogate => _helper.SerializationSurrogate;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
+        internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             Debug.Assert(context != null);
 
@@ -62,7 +59,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
+        internal override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             Debug.Assert(context != null);
 
@@ -99,10 +96,7 @@ namespace System.Runtime.Serialization
                 SetDataContractName(CreateQualifiedName(name, ns));
             }
 
-            internal ISerializationSurrogate SerializationSurrogate
-            {
-                get { return serializationSurrogate; }
-            }
+            internal ISerializationSurrogate SerializationSurrogate => serializationSurrogate;
         }
     }
 }

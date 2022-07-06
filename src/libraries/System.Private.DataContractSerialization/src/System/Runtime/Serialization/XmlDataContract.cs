@@ -30,63 +30,49 @@ namespace System.Runtime.Serialization
         internal override DataContractDictionary? KnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            { return _helper.KnownDataContracts; }
-
-            set
-            { _helper.KnownDataContracts = value; }
+            get => _helper.KnownDataContracts;
+            set => _helper.KnownDataContracts = value;
         }
 
         internal XmlSchemaType? XsdType
         {
-            get { return _helper.XsdType; }
-            set { _helper.XsdType = value; }
+            get => _helper.XsdType;
+            set => _helper.XsdType = value;
         }
-
 
         internal bool IsAnonymous
         {
-            get
-            { return _helper.IsAnonymous; }
+            get => _helper.IsAnonymous;
         }
 
-        internal override bool HasRoot
+        public override bool HasRoot
         {
-            get
-            { return _helper.HasRoot; }
-
-            set
-            { _helper.HasRoot = value; }
+            get => _helper.HasRoot;
+            internal set => _helper.HasRoot = value;
         }
 
-        internal override XmlDictionaryString? TopLevelElementName
+        public override XmlDictionaryString? TopLevelElementName
         {
-            get
-            { return _helper.TopLevelElementName; }
-
-            set
-            { _helper.TopLevelElementName = value; }
+            get => _helper.TopLevelElementName;
+            internal set => _helper.TopLevelElementName = value;
         }
 
-        internal override XmlDictionaryString? TopLevelElementNamespace
+        public override XmlDictionaryString? TopLevelElementNamespace
         {
-            get
-            { return _helper.TopLevelElementNamespace; }
-
-            set
-            { _helper.TopLevelElementNamespace = value; }
+            get => _helper.TopLevelElementNamespace;
+            internal set => _helper.TopLevelElementNamespace = value;
         }
 
         internal bool IsTopLevelElementNullable
         {
-            get { return _helper.IsTopLevelElementNullable; }
-            set { _helper.IsTopLevelElementNullable = value; }
+            get => _helper.IsTopLevelElementNullable;
+            set => _helper.IsTopLevelElementNullable = value;
         }
 
         internal bool IsTypeDefinedOnImport
         {
-            get { return _helper.IsTypeDefinedOnImport; }
-            set { _helper.IsTypeDefinedOnImport = value; }
+            get => _helper.IsTypeDefinedOnImport;
+            set => _helper.IsTypeDefinedOnImport = value;
         }
 
         internal CreateXmlSerializableDelegate CreateXmlSerializableDelegate
@@ -119,7 +105,7 @@ namespace System.Runtime.Serialization
 
         internal override bool CanContainReferences => false;
 
-        internal override bool IsBuiltInDataContract => UnderlyingType == Globals.TypeOfXmlElement || UnderlyingType == Globals.TypeOfXmlNodeArray;
+        public override bool IsBuiltInDataContract => UnderlyingType == Globals.TypeOfXmlElement || UnderlyingType == Globals.TypeOfXmlNodeArray;
 
         private sealed class XmlDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
@@ -206,53 +192,46 @@ namespace System.Runtime.Serialization
 
             internal XmlSchemaType? XsdType
             {
-                get { return _xsdType; }
-                set { _xsdType = value; }
+                get => _xsdType;
+                set => _xsdType = value;
             }
 
             internal bool IsAnonymous => _xsdType != null;
 
             internal override bool HasRoot
             {
-                get
-                { return _hasRoot; }
-
-                set
-                { _hasRoot = value; }
+                get => _hasRoot;
+                set => _hasRoot = value;
             }
 
             internal override XmlDictionaryString? TopLevelElementName
             {
-                get
-                { return _topLevelElementName; }
-                set
-                { _topLevelElementName = value; }
+                get => _topLevelElementName;
+                set => _topLevelElementName = value;
             }
 
             internal override XmlDictionaryString? TopLevelElementNamespace
             {
-                get
-                { return _topLevelElementNamespace; }
-                set
-                { _topLevelElementNamespace = value; }
+                get => _topLevelElementNamespace;
+                set => _topLevelElementNamespace = value;
             }
 
             internal bool IsTopLevelElementNullable
             {
-                get { return _isTopLevelElementNullable; }
-                set { _isTopLevelElementNullable = value; }
+                get => _isTopLevelElementNullable;
+                set => _isTopLevelElementNullable = value;
             }
 
             internal bool IsTypeDefinedOnImport
             {
-                get { return _isTypeDefinedOnImport; }
-                set { _isTypeDefinedOnImport = value; }
+                get => _isTypeDefinedOnImport;
+                set => _isTypeDefinedOnImport = value;
             }
 
             internal CreateXmlSerializableDelegate? CreateXmlSerializableDelegate
             {
-                get { return _createXmlSerializable; }
-                set { _createXmlSerializable = value; }
+                get => _createXmlSerializable;
+                set => _createXmlSerializable = value;
             }
         }
 
@@ -419,7 +398,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
+        internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             if (context == null)
                 XmlObjectSerializerWriteContext.WriteRootIXmlSerializable(xmlWriter, obj);
@@ -428,7 +407,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
+        internal override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object? o;
             if (context == null)

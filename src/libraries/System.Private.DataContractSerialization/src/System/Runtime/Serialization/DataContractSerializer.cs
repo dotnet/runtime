@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Xml;
+
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
@@ -28,8 +23,8 @@ namespace System.Runtime.Serialization
         private bool _ignoreExtensionDataObject;
         private bool _preserveObjectReferences;
         private ReadOnlyCollection<Type>? _knownTypeCollection;
-        internal IList<Type>? knownTypeList;
-        internal DataContractDictionary? knownDataContracts;
+        internal IList<Type>? _knownTypeList;
+        internal DataContractDictionary? _knownDataContracts;
         private DataContractResolver? _dataContractResolver;
         private ISerializationSurrogateProvider? _serializationSurrogateProvider;
         private bool _serializeReadOnlyTypes;
@@ -119,10 +114,10 @@ namespace System.Runtime.Serialization
 
             if (knownTypes != null)
             {
-                this.knownTypeList = new List<Type>();
+                _knownTypeList = new List<Type>();
                 foreach (Type knownType in knownTypes)
                 {
-                    this.knownTypeList.Add(knownType);
+                    _knownTypeList.Add(knownType);
                 }
             }
 
@@ -158,9 +153,9 @@ namespace System.Runtime.Serialization
             {
                 if (_knownTypeCollection == null)
                 {
-                    if (knownTypeList != null)
+                    if (_knownTypeList != null)
                     {
-                        _knownTypeCollection = new ReadOnlyCollection<Type>(knownTypeList);
+                        _knownTypeCollection = new ReadOnlyCollection<Type>(_knownTypeList);
                     }
                     else
                     {
@@ -176,15 +171,15 @@ namespace System.Runtime.Serialization
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
-                if (this.knownDataContracts == null && this.knownTypeList != null)
+                if (_knownDataContracts == null && _knownTypeList != null)
                 {
                     // This assignment may be performed concurrently and thus is a race condition.
                     // It's safe, however, because at worse a new (and identical) dictionary of
                     // data contracts will be created and re-assigned to this field.  Introduction
                     // of a lock here could lead to deadlocks.
-                    this.knownDataContracts = XmlObjectSerializerContext.GetDataContractsForKnownTypes(this.knownTypeList);
+                    _knownDataContracts = XmlObjectSerializerContext.GetDataContractsForKnownTypes(_knownTypeList);
                 }
-                return this.knownDataContracts;
+                return _knownDataContracts;
             }
         }
 
@@ -358,7 +353,7 @@ namespace System.Runtime.Serialization
                 graph = SurrogateToDataContractType(_serializationSurrogateProvider, graph, declaredType, ref graphType);
             }
 
-            dataContractResolver ??= this.DataContractResolver;
+            dataContractResolver ??= DataContractResolver;
 
             if (graph == null)
             {
@@ -437,7 +432,7 @@ namespace System.Runtime.Serialization
             if (MaxItemsInObjectGraph == 0)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExceededMaxItemsQuota, MaxItemsInObjectGraph)));
 
-            dataContractResolver ??= this.DataContractResolver;
+            dataContractResolver ??= DataContractResolver;
 
             if (verifyObjectName)
             {

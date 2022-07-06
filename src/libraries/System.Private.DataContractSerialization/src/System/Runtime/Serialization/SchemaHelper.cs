@@ -27,12 +27,11 @@ namespace System.Runtime.Serialization
         }
     }
 
-    // TODO smolloy - change name to something without placeholder. Like SchemaDefinedType or something.
-    internal sealed class SchemaTypePlaceholder
+    internal sealed class SchemaDefinedType
     {
         private XmlQualifiedName _stableName;
 
-        public SchemaTypePlaceholder(XmlQualifiedName stableName)
+        public SchemaDefinedType(XmlQualifiedName stableName)
         {
             _stableName = stableName;
         }
@@ -70,8 +69,7 @@ namespace System.Runtime.Serialization
                     outSchema = schema;
                     foreach (XmlSchemaObject schemaObj in schema.Items)
                     {
-                        XmlSchemaType? schemaType = schemaObj as XmlSchemaType;
-                        if (schemaType != null && schemaType.Name == typeQName.Name)
+                        if (schemaObj is XmlSchemaType schemaType && schemaType.Name == typeQName.Name)
                         {
                             return schemaType;
                         }
@@ -103,8 +101,7 @@ namespace System.Runtime.Serialization
                     outSchema = schema;
                     foreach (XmlSchemaObject schemaObj in schema.Items)
                     {
-                        XmlSchemaElement? schemaElement = schemaObj as XmlSchemaElement;
-                        if (schemaElement != null && schemaElement.Name == elementQName.Name)
+                        if (schemaObj is XmlSchemaElement schemaElement && schemaElement.Name == elementQName.Name)
                         {
                             return schemaElement;
                         }

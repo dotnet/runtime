@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization
             )
         {
             this.rootTypeDataContract = rootTypeDataContract;
-            this.serializerKnownTypeList = serializer.knownTypeList;
+            this.serializerKnownTypeList = serializer._knownTypeList;
         }
 
         internal virtual bool IsGetOnlyCollection

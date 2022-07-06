@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization
             {
                 // Remove this if we decide to publish serialization schema at well-known location
                 ExportSerializationSchema();
-                foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in _dataContractSet)
+                foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in _dataContractSet.Contracts)
                 {
                     DataContract dataContract = pair.Value;
                     if (!_dataContractSet.IsContractProcessed(dataContract))
@@ -179,8 +179,7 @@ namespace System.Runtime.Serialization
 
         private static void SetElementType(XmlSchemaElement element, DataContract dataContract, XmlSchema schema)
         {
-            XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
-            if (xmlDataContract != null && xmlDataContract.IsAnonymous)
+            if (dataContract is XmlDataContract xmlDataContract && xmlDataContract.IsAnonymous)
             {
                 element.SchemaType = xmlDataContract.XsdType;
             }
@@ -640,8 +639,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    XmlSchemaType? providerXsdType = typeInfo as XmlSchemaType;
-                    if (providerXsdType != null)
+                    if (typeInfo is XmlSchemaType providerXsdType)
                     {
                         string? typeName = providerXsdType.Name;
                         string? typeNs = null;

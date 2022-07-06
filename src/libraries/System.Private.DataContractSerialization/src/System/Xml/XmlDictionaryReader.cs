@@ -1798,9 +1798,7 @@ namespace System.Xml
 
             public bool HasLineInfo()
             {
-                IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
-
-                if (lineInfo == null)
+                if (_reader is not IXmlLineInfo lineInfo)
                     return false;
 
                 return lineInfo.HasLineInfo();
@@ -1810,9 +1808,7 @@ namespace System.Xml
             {
                 get
                 {
-                    IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
-
-                    if (lineInfo == null)
+                    if (_reader is not IXmlLineInfo lineInfo)
                         return 1;
 
                     return lineInfo.LineNumber;
@@ -1823,9 +1819,7 @@ namespace System.Xml
             {
                 get
                 {
-                    IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
-
-                    if (lineInfo == null)
+                    if (_reader is not IXmlLineInfo lineInfo)
                         return 1;
 
                     return lineInfo.LinePosition;

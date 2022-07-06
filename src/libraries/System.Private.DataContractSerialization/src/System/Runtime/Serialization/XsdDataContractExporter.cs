@@ -138,8 +138,7 @@ namespace System.Runtime.Serialization
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
-            XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
-            if (xmlDataContract != null && xmlDataContract.IsAnonymous)
+            if (dataContract is XmlDataContract xmlDataContract && xmlDataContract.IsAnonymous)
                 return XmlQualifiedName.Empty;
             return dataContract.StableName;
         }
@@ -152,8 +151,7 @@ namespace System.Runtime.Serialization
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
-            XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
-            if (xmlDataContract != null && xmlDataContract.IsAnonymous)
+            if (dataContract is XmlDataContract xmlDataContract && xmlDataContract.IsAnonymous)
                 return xmlDataContract.XsdType;
             return null;
         }

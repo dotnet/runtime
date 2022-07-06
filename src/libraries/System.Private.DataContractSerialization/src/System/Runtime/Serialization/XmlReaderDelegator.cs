@@ -1043,8 +1043,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (reader is not XmlTextReader xmlTextReader)
                 {
                     IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     return (xmlTextParser == null) ? false : xmlTextParser.Normalized;
@@ -1054,11 +1053,9 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (reader is not XmlTextReader xmlTextReader)
                 {
-                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
-                    if (xmlTextParser != null)
+                    if (reader is IXmlTextParser xmlTextParser)
                         xmlTextParser.Normalized = value;
                 }
                 else
@@ -1070,8 +1067,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (reader is not XmlTextReader xmlTextReader)
                 {
                     IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
                     return (xmlTextParser == null) ? WhitespaceHandling.None : xmlTextParser.WhitespaceHandling;
@@ -1081,11 +1077,9 @@ namespace System.Runtime.Serialization
             }
             set
             {
-                XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (reader is not XmlTextReader xmlTextReader)
                 {
-                    IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
-                    if (xmlTextParser != null)
+                    if (reader is IXmlTextParser xmlTextParser)
                         xmlTextParser.WhitespaceHandling = value;
                 }
                 else

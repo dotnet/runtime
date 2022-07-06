@@ -2,17 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Xml;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.IO;
-using System.Security;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization.Json;
+using System.Globalization;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace System.Runtime.Serialization
 {
@@ -176,15 +171,15 @@ namespace System.Runtime.Serialization
 
         internal ArgBuilder GetArg(int index)
         {
-            return (ArgBuilder)_argList[index];
+            return _argList[index];
         }
 
         internal static Type GetVariableType(object var)
         {
-            if (var is ArgBuilder)
-                return ((ArgBuilder)var).ArgType;
-            else if (var is LocalBuilder)
-                return ((LocalBuilder)var).LocalType;
+            if (var is ArgBuilder argBuilder)
+                return argBuilder.ArgType;
+            else if (var is LocalBuilder localBuilder)
+                return localBuilder.LocalType;
             else
                 return var.GetType();
         }
@@ -267,8 +262,7 @@ namespace System.Runtime.Serialization
         {
             foreach (object block in _blockStack)
             {
-                ForState? forState = block as ForState;
-                if (forState != null && (object)forState == userForState)
+                if (block == userForState && block is ForState forState)
                 {
                     if (!forState.RequiresEndLabel)
                     {
@@ -680,20 +674,20 @@ namespace System.Runtime.Serialization
             {
                 _ilGen.Emit(OpCodes.Ldnull);
             }
-            else if (obj is ArgBuilder)
-                Ldarg((ArgBuilder)obj);
-            else if (obj is LocalBuilder)
-                Ldloc((LocalBuilder)obj);
+            else if (obj is ArgBuilder argBuilder)
+                Ldarg(argBuilder);
+            else if (obj is LocalBuilder localBuilder)
+                Ldloc(localBuilder);
             else
                 Ldc(obj);
         }
 
         internal void Store(object var)
         {
-            if (var is ArgBuilder)
-                Starg((ArgBuilder)var);
-            else if (var is LocalBuilder)
-                Stloc((LocalBuilder)var);
+            if (var is ArgBuilder argBuilder)
+                Starg(argBuilder);
+            else if (var is LocalBuilder localBuilder)
+                Stloc(localBuilder);
             else
             {
                 DiagnosticUtility.DebugAssert("Data can only be stored into ArgBuilder or LocalBuilder.");
@@ -711,10 +705,10 @@ namespace System.Runtime.Serialization
 
         internal void LoadAddress(object obj)
         {
-            if (obj is ArgBuilder)
-                LdargAddress((ArgBuilder)obj);
-            else if (obj is LocalBuilder)
-                LdlocAddress((LocalBuilder)obj);
+            if (obj is ArgBuilder argBuilder)
+                LdargAddress(argBuilder);
+            else if (obj is LocalBuilder localBuilder)
+                LdlocAddress(localBuilder);
             else
                 Load(obj);
         }
@@ -802,9 +796,9 @@ namespace System.Runtime.Serialization
         internal void Ldc(object o)
         {
             Type valueType = o.GetType();
-            if (o is Type)
+            if (o is Type t)
             {
-                Ldtoken((Type)o);
+                Ldtoken(t);
                 Call(GetTypeFromHandle);
             }
             else if (valueType.IsEnum)
@@ -1338,8 +1332,8 @@ namespace System.Runtime.Serialization
         internal Type ArgType;
         internal ArgBuilder(int index, Type argType)
         {
-            this.Index = index;
-            this.ArgType = argType;
+            Index = index;
+            ArgType = argType;
         }
     }
 

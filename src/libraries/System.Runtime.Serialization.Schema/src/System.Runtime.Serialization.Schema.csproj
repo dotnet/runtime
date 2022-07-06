@@ -25,17 +25,12 @@ System.Runtime.Serialization.Schema.XsdDataContractImporter</PackageDescription>
   <ItemGroup>
     <Compile Include="System\Runtime\Serialization\Schema\CodeExporter.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\ContractCodeDomInfo.cs" />
-    <None Include="System\Runtime\Serialization\Schema\DataContractSchemaSurrogateCaller.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\DiagnosticUtility.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\_Stubs.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\ExportOptions.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\Globals.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\ImportOptions.cs" />
-    <None Include="System\Runtime\Serialization\Schema\ISerializationSchemaSurrogateProvider.cs" />
-    <None Include="System\Runtime\Serialization\Schema\SchemaExporter.cs" />
-    <None Include="System\Runtime\Serialization\Schema\SchemaHelper - Orig.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\SchemaHelper.cs" />
-    <None Include="System\Runtime\Serialization\Schema\SchemaImporter.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\XsdDataContractExporter.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\XsdDataContractImporter.cs" />
   </ItemGroup>

@@ -375,8 +375,7 @@ namespace System.Xml
 
         public override void WriteNode(XmlReader reader, bool defattr)
         {
-            XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
-            if (dictionaryReader != null)
+            if (reader is XmlDictionaryReader dictionaryReader)
                 WriteNode(dictionaryReader, defattr);
             else
                 base.WriteNode(reader, defattr);

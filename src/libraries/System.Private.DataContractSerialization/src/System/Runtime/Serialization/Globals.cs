@@ -313,17 +313,16 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfDBNull =>
             s_typeOfDBNull ??= typeof(DBNull);
 
-        // TODO smolloy - change name inline with new name from class defined in SchemaHelper
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-        private static Type? s_typeOfSchemaTypePlaceholder;
+        private static Type? s_typeOfSchemaDefinedType;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-        internal static Type TypeOfSchemaTypePlaceholder =>
-            s_typeOfSchemaTypePlaceholder ??= typeof(SchemaTypePlaceholder);
+        internal static Type TypeOfSchemaDefinedType =>
+            s_typeOfSchemaDefinedType ??= typeof(SchemaDefinedType);
 
         // TODO smolloy - change name inline with new name from SchemaHelper
         private static MemberInfo? s_schemaMemberInfoPlaceholder;
         internal static MemberInfo SchemaMemberInfoPlaceholder =>
-            s_schemaMemberInfoPlaceholder ??= TypeOfSchemaTypePlaceholder.GetField("_stableName", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            s_schemaMemberInfoPlaceholder ??= TypeOfSchemaDefinedType.GetField("_stableName", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         private static Uri? s_dataContractXsdBaseNamespaceUri;
         internal static Uri DataContractXsdBaseNamespaceUri =>

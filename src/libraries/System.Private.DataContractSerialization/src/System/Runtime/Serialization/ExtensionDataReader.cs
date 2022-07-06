@@ -105,11 +105,9 @@ namespace System.Runtime.Serialization
             _elements = null;
         }
 
-#pragma warning disable CS8775 // Member must have a non-null value when exiting in some condition.
         [MemberNotNullWhen(true, nameof(_xmlNodeReader))]
         [MemberNotNullWhen(false, nameof(_element))]
         private bool IsXmlDataNode { get { return (_internalNodeType == ExtensionDataNodeType.Xml); } }
-#pragma warning restore CS8775 // Member must have a non-null value when exiting in some condition.
 
         public override XmlNodeType NodeType { get { return IsXmlDataNode ? _xmlNodeReader.NodeType : _nodeType; } }
         public override string LocalName { get { return IsXmlDataNode ? _xmlNodeReader.LocalName : _localName!; } }
