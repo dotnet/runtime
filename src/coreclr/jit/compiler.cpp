@@ -9972,7 +9972,8 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 {
-    static const var_types s_typesBySize[] = { TYP_UNDEF, TYP_BYTE, TYP_SHORT, TYP_UNDEF, TYP_INT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_LONG };
+    static const var_types s_typesBySize[] = {TYP_UNDEF, TYP_BYTE,  TYP_SHORT, TYP_UNDEF, TYP_INT,
+                                              TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_LONG};
 
     if (!varTypeIsStruct(tree))
     {
