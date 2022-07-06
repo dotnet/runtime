@@ -74,7 +74,7 @@ namespace Microsoft.Interop
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-            // <managedIdentifier> = <marshallerType>.ConvertToManagedGuaranteed(<nativeIdentifier>);
+            // <managedIdentifier> = <marshallerType>.ConvertToManagedFinally(<nativeIdentifier>);
             yield return ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
@@ -82,7 +82,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             _marshallerTypeSyntax,
-                            IdentifierName(ShapeMemberNames.Value.Stateless.ConvertToManagedGuaranteed)),
+                            IdentifierName(ShapeMemberNames.Value.Stateless.ConvertToManagedFinally)),
                         ArgumentList(SingletonSeparatedList(
                             Argument(IdentifierName(nativeIdentifier)))))));
         }
@@ -324,7 +324,7 @@ namespace Microsoft.Interop
 
             (string managedIdentifier, _) = context.GetIdentifiers(info);
 
-            // <managedIdentifier> = <marshaller>.ToManagedGuaranteed();
+            // <managedIdentifier> = <marshaller>.ToManagedFinally();
             yield return ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
@@ -332,7 +332,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             IdentifierName(context.GetAdditionalIdentifier(info, MarshallerIdentifier)),
-                            IdentifierName(ShapeMemberNames.Value.Stateful.ToManagedGuaranteed)),
+                            IdentifierName(ShapeMemberNames.Value.Stateful.ToManagedFinally)),
                         ArgumentList())));
         }
 
@@ -438,15 +438,15 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_shape.HasFlag(MarshallerShape.NotifyInvokeSucceeded))
+            if (!_shape.HasFlag(MarshallerShape.OnInvoked))
                 yield break;
 
-            // <marshaller>.NotifyInvokeSucceeded();
+            // <marshaller>.OnInvoked();
             yield return ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(context.GetAdditionalIdentifier(info, MarshallerIdentifier)),
-                        IdentifierName(ShapeMemberNames.Value.Stateful.NotifyInvokeSucceeded)),
+                        IdentifierName(ShapeMemberNames.Value.Stateful.OnInvoked)),
                     ArgumentList()));
         }
     }

@@ -627,7 +627,7 @@ namespace Microsoft.Interop
                     else if (type is INamedTypeSymbol namedManagedType)
                     {
                         // Entry point type for linear collection marshalling must have the arity of the managed type + 1
-                        // for the [ElementUnmanagedType] placeholder
+                        // for the element unmanaged type placeholder
                         if (entryPointType.Arity != namedManagedType.Arity + 1)
                         {
                             _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString());
