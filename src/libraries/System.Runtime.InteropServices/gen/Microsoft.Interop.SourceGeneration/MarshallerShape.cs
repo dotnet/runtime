@@ -66,7 +66,7 @@ namespace Microsoft.Interop
 
                 // Unmanaged to managed
                 public const string AllocateContainerForManagedElements = nameof(AllocateContainerForManagedElements);
-                public const string AllocateContainerForManagedElementsGuaranteed = nameof(AllocateContainerForManagedElementsGuaranteed);
+                public const string AllocateContainerForManagedElementsFinally = nameof(AllocateContainerForManagedElementsFinally);
                 public const string GetManagedValuesDestination = nameof(GetManagedValuesDestination);
                 public const string GetUnmanagedValuesSource = nameof(GetUnmanagedValuesSource);
             }
@@ -142,7 +142,7 @@ namespace Microsoft.Interop
 
                 // Unmanaged -> Managed
                 IMethodSymbol? allocateManaged = LinearCollection.AllocateContainerForManagedElements(marshallerType, managedType);
-                IMethodSymbol? allocateManagedGuaranteed = LinearCollection.AllocateContainerForManagedElementsGuaranteed(marshallerType, managedType, spanOfT);
+                IMethodSymbol? allocateManagedGuaranteed = LinearCollection.AllocateContainerForManagedElementsFinally(marshallerType, managedType, spanOfT);
                 IMethodSymbol? managedDestination = LinearCollection.GetManagedValuesDestination(marshallerType, managedType, spanOfT);
                 IMethodSymbol? unmanagedSource = LinearCollection.GetUnmanagedValuesSource(marshallerType, readOnlySpanOfT);
                 if ((allocateManaged is not null || allocateManagedGuaranteed is not null)
@@ -349,9 +349,9 @@ namespace Microsoft.Interop
                         && managedType.IsConstructedFromEqualTypes(m.ReturnType));
             }
 
-            internal static IMethodSymbol? AllocateContainerForManagedElementsGuaranteed(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
+            internal static IMethodSymbol? AllocateContainerForManagedElementsFinally(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
             {
-                // static TCollection AllocateContainerForManagedElementsGuaranteed(TNative unmanaged, int length);
+                // static TCollection AllocateContainerForManagedElementsFinally(TNative unmanaged, int length);
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false }

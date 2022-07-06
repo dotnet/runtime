@@ -8,13 +8,13 @@ namespace System.Runtime.InteropServices.Marshalling
 #endif
 {
     /// <summary>
-    /// An enumeration representing the different marshalling scenarios in our marshalling model.
+    /// An enumeration representing the different marshalling modes in our marshalling model.
     /// </summary>
     public enum MarshalMode
     {
         /// <summary>
-        /// All scenarios. A marshaller specified with this scenario will be used if there is not a specific
-        /// marshaller specified for a given usage scenario.
+        /// All modes. A marshaller specified with this mode will be used if there is not a specific
+        /// marshaller specified for a given usage mode.
         /// </summary>
         Default,
         /// <summary>
