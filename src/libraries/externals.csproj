@@ -9,7 +9,6 @@
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <UseLiveBuiltDotNetHost Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'ppc64le' or '$(TargetArchitecture)' == 'armv6' or '$(TargetsLinuxBionic)' == 'true'">true</UseLiveBuiltDotNetHost>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -21,17 +20,10 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
-  
+
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <PackageReference Include="Microsoft.DiaSymReader.Native"
                       Version="$(MicrosoftDiaSymReaderNativeVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true' and '$(UseLiveBuiltDotNetHost)' != 'true'">
-    <PackageReference Include="Microsoft.NETCore.DotNetHost"
-                      Version="$(MicrosoftNETCoreDotNetHostVersion)" />
-    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy"
-                      Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->
@@ -48,13 +40,7 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'apphost'" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(UseLiveBuiltDotNetHost)' != 'true'">
-      <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'hostfxr' or
-                                                                  '%(ReferenceCopyLocalPaths.Filename)' == 'libhostfxr'" />
-      <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(UseLiveBuiltDotNetHost)' == 'true'">
+    <ItemGroup>
       <CoreHostFiles Include="$(DotNetHostBinDir)*" />
       <HostFxFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostfxr' or
                                                           '%(CoreHostFiles.Filename)' == 'libhostfxr'" />
@@ -78,7 +64,7 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Copy Condition="$(CopyCoreDisToolsToCoreRoot)" 
+    <Copy Condition="$(CopyCoreDisToolsToCoreRoot)"
           SourceFiles="$(CoreDisToolsLibrary)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
           SkipUnchangedFiles="true"
