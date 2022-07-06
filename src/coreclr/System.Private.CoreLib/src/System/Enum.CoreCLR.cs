@@ -39,7 +39,7 @@ namespace System
                 TypeCode.UInt64 => typeof(ulong),
                 TypeCode.Single => typeof(float),
                 TypeCode.Double => typeof(double),
-                _ => InternalGetUnderlyingTypeImpl(enumType);
+                _ => InternalGetUnderlyingTypeImpl(enumType)
             };
             return (RuntimeType)type;
         }
