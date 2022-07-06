@@ -13808,23 +13808,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 stelemClsHnd = resolvedToken.hClass;
+                lclTyp       = JITtype2varType(info.compCompHnd->asCorInfoType(stelemClsHnd));
 
-                // If it's a reference type just behave as though it's a stelem.ref instruction
-                if (!eeIsValueClass(stelemClsHnd))
+                if (lclTyp != TYP_REF)
                 {
-                    goto STELEM_REF_POST_VERIFY;
-                }
-
-                // Otherwise extract the type
-                {
-                    CorInfoType jitTyp = info.compCompHnd->asCorInfoType(stelemClsHnd);
-                    lclTyp             = JITtype2varType(jitTyp);
                     goto ARR_ST;
                 }
+                FALLTHROUGH;
 
             case CEE_STELEM_REF:
-            STELEM_REF_POST_VERIFY:
-
             {
                 GenTree* value = impStackTop(0).val;
                 GenTree* index = impStackTop(1).val;
