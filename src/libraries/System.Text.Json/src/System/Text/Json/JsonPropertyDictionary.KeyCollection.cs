@@ -10,12 +10,12 @@ namespace System.Text.Json
     {
         private KeyCollection? _keyCollection;
 
-        public ICollection<string> GetKeyCollection()
+        public IList<string> GetKeyCollection()
         {
             return _keyCollection ??= new KeyCollection(this);
         }
 
-        private sealed class KeyCollection : ICollection<string>
+        private sealed class KeyCollection : IList<string>
         {
             private readonly JsonPropertyDictionary<T> _parent;
 
@@ -27,6 +27,12 @@ namespace System.Text.Json
             public int Count => _parent.Count;
 
             public bool IsReadOnly => true;
+
+            public string this[int index]
+            {
+                get => _parent.List[index].Key;
+                set => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            }
 
             IEnumerator IEnumerable.GetEnumerator()
             {
@@ -69,6 +75,9 @@ namespace System.Text.Json
             }
 
             bool ICollection<string>.Remove(string propertyName) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            public int IndexOf(string item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            public void Insert(int index, string item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            public void RemoveAt(int index) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
         }
     }
 }

@@ -108,9 +108,8 @@ namespace System.Text.Json.Serialization.Metadata
                 VerifyMutable();
                 _shouldSerialize = value;
                 // By default we will go through faster path (not using delegate) and use IgnoreCondition
-                // If users sets it explicitly we always go through delegate
+                // If user sets it explicitly we always go through delegate
                 _ignoreCondition = null;
-                IsIgnored = false;
                 _shouldSerializeIsExplicitlySet = true;
             }
         }
@@ -123,7 +122,6 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(!_isConfigured);
 
                 _ignoreCondition = value;
-                IsIgnored = value == JsonIgnoreCondition.Always;
                 _shouldSerialize = value != null ? GetShouldSerializeForIgnoreCondition(value.Value) : null;
                 _shouldSerializeIsExplicitlySet = false;
             }
@@ -222,7 +220,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private bool _isConfigured;
+        private volatile bool _isConfigured;
 
         internal void EnsureConfigured()
         {
@@ -239,6 +237,8 @@ namespace System.Text.Json.Serialization.Metadata
         internal void Configure()
         {
             Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(!ParentTypeInfo.IsConfigured);
+
             DeclaringTypeNumberHandling = ParentTypeInfo.NumberHandling;
 
             if (!IsForTypeInfo)
@@ -777,7 +777,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool CanDeserialize { get; private set; }
 
-        internal bool IsIgnored { get; private set; }
+        internal bool IsIgnored => _ignoreCondition == JsonIgnoreCondition.Always;
 
         /// <summary>
         /// Relevant to source generated metadata: did the property have the <see cref="JsonIncludeAttribute"/>?
