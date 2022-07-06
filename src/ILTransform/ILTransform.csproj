@@ -11,10 +11,4 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="ILRewriter.cs" />
-    <Compile Include="TestProject.cs" />
-    <Compile Include="Program.cs" />
-  </ItemGroup>
-
 </Project>
