@@ -252,6 +252,9 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
+// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+#define STATUS_REDHAWK_THREAD_ABORT     0x43
+
 //
 // Rename fields of nested structs
 //
@@ -318,7 +321,7 @@ C_FUNC(\Name):
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    push_nonvol_reg rbp                         // push RBP frame
+    push_nonvol_reg rbp                         // push RBP frame  // TODO: do we need this? not on windows.
     mov             rbp, rsp
     lea             \trashReg, [rsp + 0x10]
     push_register   \trashReg                   // save caller's RSP

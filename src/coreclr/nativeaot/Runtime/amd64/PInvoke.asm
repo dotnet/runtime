@@ -5,7 +5,7 @@ include asmmacros.inc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpWaitForGCNoAbort -- rare path for RhpPInvokeReturn
+;; RhpWaitForGCNoAbort -- rare path for WaitForGCCompletion
 ;;
 ;;
 ;; INPUT: RCX: transition frame

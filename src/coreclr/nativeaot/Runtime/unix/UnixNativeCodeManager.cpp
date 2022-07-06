@@ -319,7 +319,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     *ppPreviousTransitionFrame = NULL;
 
-    if (!VirtualUnwind(pRegisterSet))
+    if (!VirtualUnwind(pRegisterSet)) 
     {
         return false;
     }
@@ -373,11 +373,11 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     GcInfoDecoder decoder(GCInfoToken(p), flags);
 
     // TODO: add support for multireg returns
-    ReturnKind rk = decoder.GetReturnKind();
-    if (rk > ReturnKind::RT_ByRef)
+     ReturnKind rk = decoder.GetReturnKind();
+     if (rk > ReturnKind::RT_ByRef)
         return false;
 
-    GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
+    *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
 
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack
@@ -389,7 +389,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() - sizeof(TADDR));
-    *pRetValueKind = gcRefKind;
     return true;
 
 #elif defined(TARGET_ARM64)
@@ -425,7 +424,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
-    *pRetValueKind = gcRefKind;
     return true;
 #else
     return false;

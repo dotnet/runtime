@@ -517,9 +517,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 #endif // TARGET_ARM
 }
 
-// Prepare to start a stack walk from the context listed in the supplied CONTEXT.
-// The supplied context can describe a location in either managed or unmanaged code.  In the
-// latter case the iterator is left in an invalid state when this function returns.
+// Prepare to start a stack walk from the context listed in the supplied NATIVE_CONTEXT.
+// The supplied context can describe a location in managed code.
 void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pCtx, uint32_t dwFlags)
 {
     ASSERT((dwFlags & MethodStateCalculated) == 0);
@@ -533,10 +532,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     // properly walk it in parallel.
     ResetNextExInfoForSP(pCtx->GetSp());
 
-    // This codepath is used by the hijack stackwalk and we can get arbitrary ControlPCs from there.  If this
-    // context has a non-managed control PC, then we're done.
-    if (!m_pInstance->IsManaged(dac_cast<PTR_VOID>(pCtx->GetIp())))
-        return;
+    // This codepath is used by the hijack stackwalk. It must be in managed code.
+    ASSERT(m_pInstance->IsManaged(dac_cast<PTR_VOID>(pCtx->GetIp())));
 
     //
     // control state

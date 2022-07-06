@@ -637,7 +637,8 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     // we have a thread stopped, and we do not know where exactly.
     // it could be in a system call or in our own runtime holding locks
     // current thread should not block or allocate while we determine whether the location is in managed code.
-    if (pThread->CacheTransitionFrameForSuspend())
+
+    if (pThread->m_pTransitionFrame != NULL)
     {
         // This thread has already made it to preemptive (posted a transition frame)
         // we do not need to hijack it
@@ -657,15 +658,15 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     if (codeManager->IsSafePoint(pvAddress))
     {
         // if we are not given a thread to hijack
-        // perform in-line wait on the current thread
-        if (pThreadToHijack == NULL)
-        {
-            ASSERT(pThread->m_interruptedContext == NULL);
-            pThread->m_interruptedContext = pThreadContext;
-            pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
-            pThread->m_interruptedContext = NULL;
-            return;
-        }
+        //// perform in-line wait on the current thread
+        //if (pThreadToHijack == NULL)
+        //{
+        //    ASSERT(pThread->m_interruptedContext == NULL);
+        //    pThread->m_interruptedContext = pThreadContext;
+        //    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
+        //    pThread->m_interruptedContext = NULL;
+        //    return;
+        //}
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
         if (pThread->Redirect())
@@ -724,18 +725,18 @@ void Thread::HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx)
 // This function is called from a thread to place a return hijack onto its own stack for GC stress cases
 // via Thread::HijackForGcStress above. The only constraint on the suspension is that the
 // stack be crawlable enough to yield the location of the return address.
-bool Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void* pvHijackTargets[])
+void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void* pvHijackTargets[])
 {
     if (IsDoNotTriggerGcSet())
-        return false;
+        return;
 
     StackFrameIterator frameIterator(this, pSuspendCtx);
     if (!frameIterator.IsValid())
     {
-        return false;
+        return;
     }
 
-    return HijackReturnAddressWorker(&frameIterator, pvHijackTargets);
+    HijackReturnAddressWorker(&frameIterator, pvHijackTargets);
 }
 
 // This function is called in one of two scenarios:
@@ -743,18 +744,18 @@ bool Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void* pvHijac
 //    thread is OS suspended someplace in managed code.
 // 2) from a thread to place a return hijack onto its own stack for GC suspension. In this case the target
 //    thread is interrupted at pSuspendCtx in managed code via a signal or similar.
-bool Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void * pvHijackTargets[])
+void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void * pvHijackTargets[])
 {
     if (IsDoNotTriggerGcSet())
-        return false;
+        return;
 
     StackFrameIterator frameIterator(this, pSuspendCtx);
     ASSERT(frameIterator.IsValid());
 
-    return HijackReturnAddressWorker(&frameIterator, pvHijackTargets);
+    HijackReturnAddressWorker(&frameIterator, pvHijackTargets);
 }
 
-bool Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[])
+void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[])
 {
     PTR_PTR_VOID ppvRetAddrLocation;
     GCRefKind retValueKind;
@@ -765,6 +766,12 @@ bool Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
         &ppvRetAddrLocation,
         &retValueKind))
     {
+        ASSERT(ppvRetAddrLocation != NULL);
+
+        // check if hijack location is the same
+        if (m_ppvHijackedReturnAddressLocation == ppvRetAddrLocation)
+            return;
+
         // ARM64 epilogs have a window between loading the hijackable return address into LR and the RET instruction.
         // We cannot hijack or unhijack a thread while it is suspended in that window unless we implement hijacking
         // via LR register modification. Therefore it is important to check our ability to hijack the thread before
@@ -772,10 +779,14 @@ bool Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
         CrossThreadUnhijack();
 
         void* pvRetAddr = *ppvRetAddrLocation;
-        ASSERT(ppvRetAddrLocation != NULL);
-        ASSERT(pvRetAddr != NULL);
+        // ASSERT(pvRetAddr != NULL);
+        // ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
 
-        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
+        // TODO: VS   HACK, HACK
+        //            we should always get a valid address or explicitly not able to get one
+        //            this is a workaround for VirtualUnwind returning bogus locatiaon sometimes
+        if (!StackFrameIterator::IsValidReturnAddress(pvRetAddr))
+            return;
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
@@ -787,12 +798,10 @@ bool Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
         ASSERT_MSG(IsHijackTarget(pvHijackTarget), "unexpected method used as hijack target");
         *ppvRetAddrLocation = pvHijackTarget;
 #endif
+
+        STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
+            GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
     }
-
-    STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
-        GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
-
-    return true;
 }
 
 NATIVE_CONTEXT* Thread::GetInterruptedContext()
