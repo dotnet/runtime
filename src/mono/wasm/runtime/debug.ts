@@ -472,16 +472,15 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     }
 }
 
-export function setup_proxy_console(id: string, originalConsole: any, origin: string): void {
+export function setup_proxy_console(id: string, originalConsole: any, origin: string, ...args: any[]): void {
     function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
         return function () {
             try {
-                const args = [...arguments];
                 let payload = args[0];
-                if (payload === undefined) payload = 'undefined';
-                else if (payload === null) payload = 'null';
-                else if (typeof payload === 'function') payload = payload.toString();
-                else if (typeof payload !== 'string') {
+                if (payload === undefined) payload = "undefined";
+                else if (payload === null) payload = "null";
+                else if (typeof payload === "function") payload = payload.toString();
+                else if (typeof payload !== "string") {
                     try {
                         payload = JSON.stringify(payload);
                     } catch (e) {
@@ -502,22 +501,22 @@ export function setup_proxy_console(id: string, originalConsole: any, origin: st
                     func([prefix + payload, ...args.slice(1)]);
                 }
             } catch (err) {
-                originalConsole.error(`proxyConsole failed: ${err}`)
+                originalConsole.error(`proxyConsole failed: ${err}`);
             }
         };
     }
 
     const methods = ["debug", "trace", "warn", "info", "error"];
-    for (let m of methods) {
+    for (const m of methods) {
         if (typeof (originalConsole[m]) !== "function") {
             originalConsole[m] = proxyConsoleMethod(`console.${m}: `, originalConsole.log, false);
         }
     }
 
-    const consoleUrl = `${origin}/console`.replace('http://', 'ws://');
+    const consoleUrl = `${origin}/console`.replace("http://", "ws://");
 
     const consoleWebSocket = new WebSocket(consoleUrl);
-    consoleWebSocket.onopen = function (event) {
+    consoleWebSocket.onopen = function () {
         originalConsole.log(`browser: [${id}] Console websocket connected.`);
     };
     consoleWebSocket.onerror = function (event) {
@@ -534,10 +533,10 @@ export function setup_proxy_console(id: string, originalConsole: any, origin: st
         else {
             originalConsole.log(msg);
         }
-    }
+    };
 
     // redirect output early, so that when emscripten starts it's already redirected
-    for (let m of ["log", ...methods])
+    for (const m of ["log", ...methods])
         originalConsole[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 

@@ -5,7 +5,6 @@ import { Module } from "./imports";
 import { mono_assert } from "./types";
 
 class OperationFailedError extends Error {}
-class ArgumentsError extends Error {}
 
 const ERR_ARGS = -1;
 const ERR_WORKER_FAILED = -2;
@@ -29,7 +28,7 @@ export function dotnet_browser_simple_digest_hash(ver: number, input_buffer: num
     };
 
     const result = _send_msg_worker(msg);
-    if (typeof result === 'number') {
+    if (typeof result === "number") {
         return result;
     }
 
@@ -51,7 +50,7 @@ export function dotnet_browser_sign(hashAlgorithm: number, key_buffer: number, k
     };
 
     const result = _send_msg_worker(msg);
-    if (typeof result === 'number') {
+    if (typeof result === "number") {
         return result;
     }
 
@@ -80,7 +79,7 @@ export function dotnet_browser_encrypt_decrypt(isEncrypting: boolean, key_buffer
     };
 
     const result = _send_msg_worker(msg);
-    if (typeof result === 'number') {
+    if (typeof result === "number") {
         return result;
     }
 
