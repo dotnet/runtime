@@ -1173,6 +1173,8 @@ void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inli
                                           uint32_t                          numMappings)
 {
     mc->cr->AddCall("reportRichMappings");
+    // TODO: record these mappings
+    original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
 /*-------------------------- Misc ---------------------------------------*/

@@ -1025,6 +1025,9 @@ void MyICJI::reportRichMappings(
     uint32_t                          numMappings)
 {
     jitInstance->mc->cr->AddCall("reportRichMappings");
+    // TODO: record these mappings
+    freeArray(inlineTreeNodes);
+    freeArray(mappings);
 }
 
 /*-------------------------- Misc ---------------------------------------*/
