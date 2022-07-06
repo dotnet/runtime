@@ -964,5 +964,142 @@ namespace System.Text.Json.Serialization.Tests
             [JsonPropertyOrder(-2)]
             public string A { get; set; }
         }
+
+        [Fact]
+        public static void RecursiveTypeWithResolverResolvingOnlyThatType()
+        {
+            TestResolver resolver = new(ResolveTypeInfo);
+
+            JsonSerializerOptions options = new();
+            options.TypeInfoResolver = resolver;
+
+            string json = JsonSerializer.Serialize(new RecursiveType() { Next = new RecursiveType() }, options);
+            Assert.Equal("""{"Next":{"Next":null}}""", json);
+
+            RecursiveType deserialized = JsonSerializer.Deserialize<RecursiveType>(json, options);
+            Assert.NotNull(deserialized);
+            Assert.Equal(2, deserialized.Value);
+            Assert.NotNull(deserialized.Next);
+            Assert.Equal(1, deserialized.Next.Value);
+            Assert.Null(deserialized.Next.Next);
+
+            static JsonTypeInfo? ResolveTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                int value = 1;
+                if (type == typeof(RecursiveType))
+                {
+                    JsonTypeInfo<RecursiveType> ti = JsonTypeInfo.CreateJsonTypeInfo<RecursiveType>(options);
+                    ti.CreateObject = () => new RecursiveType();
+                    JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(RecursiveType), "Next");
+                    prop.Get = (obj) => ((RecursiveType)obj).Next;
+                    prop.Set = (obj, val) =>
+                    {
+                        RecursiveType recursiveObj = (RecursiveType)obj;
+                        recursiveObj.Next = (RecursiveType)val;
+                        recursiveObj.Value = value++;
+                    };
+                    ti.Properties.Add(prop);
+                    return ti;
+                }
+
+                return null;
+            }
+        }
+
+        [Fact]
+        public static void RecursiveTypeWithResolverResolvingOnlyThatTypeThrowsWhenPropertyOfDifferentType()
+        {
+            TestResolver resolver = new(ResolveTypeInfo);
+
+            JsonSerializerOptions options = new();
+            options.TypeInfoResolver = resolver;
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new RecursiveType() { Next = new RecursiveType() }, options));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<RecursiveType>("""{"Next":{"Next":null}}""", options));
+
+            static JsonTypeInfo? ResolveTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                if (type == typeof(RecursiveType))
+                {
+                    JsonTypeInfo<RecursiveType> ti = JsonTypeInfo.CreateJsonTypeInfo<RecursiveType>(options);
+                    ti.CreateObject = () => new RecursiveType();
+                    {
+                        JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(RecursiveType), "Next");
+                        prop.Get = (obj) => ((RecursiveType)obj).Next;
+                        prop.Set = (obj, val) => ((RecursiveType)obj).Next = (RecursiveType)val;
+                        ti.Properties.Add(prop);
+                    }
+                    {
+                        JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(int), "Value");
+                        prop.Get = (obj) => ((RecursiveType)obj).Value;
+                        prop.Set = (obj, val) => ((RecursiveType)obj).Value = (int)val;
+                        ti.Properties.Add(prop);
+                    }
+
+                    return ti;
+                }
+
+                return null;
+            }
+        }
+
+        [Fact]
+        public static void RecursiveTypeWithResolverResolvingOnlyUsedTypes()
+        {
+            TestResolver resolver = new(ResolveTypeInfo);
+
+            JsonSerializerOptions options = new();
+            options.TypeInfoResolver = resolver;
+
+            RecursiveType obj = new RecursiveType()
+            {
+                Value = 13,
+                Next = new RecursiveType() { Value = 7 },
+            };
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"Next":{"Next":null,"Value":7},"Value":13}""", json);
+
+            RecursiveType deserialized = JsonSerializer.Deserialize<RecursiveType>(json, options);
+            Assert.NotNull(deserialized);
+            Assert.Equal(13, deserialized.Value);
+            Assert.NotNull(deserialized.Next);
+            Assert.Equal(7, deserialized.Next.Value);
+            Assert.Null(deserialized.Next.Next);
+
+            static JsonTypeInfo? ResolveTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                if (type == typeof(RecursiveType))
+                {
+                    JsonTypeInfo<RecursiveType> ti = JsonTypeInfo.CreateJsonTypeInfo<RecursiveType>(options);
+                    ti.CreateObject = () => new RecursiveType();
+                    {
+                        JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(RecursiveType), "Next");
+                        prop.Get = (obj) => ((RecursiveType)obj).Next;
+                        prop.Set = (obj, val) => ((RecursiveType)obj).Next = (RecursiveType)val;
+                        ti.Properties.Add(prop);
+                    }
+                    {
+                        JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(int), "Value");
+                        prop.Get = (obj) => ((RecursiveType)obj).Value;
+                        prop.Set = (obj, val) => ((RecursiveType)obj).Value = (int)val;
+                        ti.Properties.Add(prop);
+                    }
+                    return ti;
+                }
+
+                if (type == typeof(int))
+                {
+                    return JsonTypeInfo.CreateJsonTypeInfo<int>(options);
+                }
+
+                return null;
+            }
+        }
+
+        private class RecursiveType
+        {
+            public int Value { get; set; }
+            public RecursiveType? Next { get; set; }
+        }
     }
 }

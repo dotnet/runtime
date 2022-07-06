@@ -9,8 +9,8 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <remarks>
     /// This attribute is recognized by the runtime-provided source generators for source-generated interop scenarios.
     /// It is not used by the interop marshalling system at runtime.
-    /// <seealso cref="LibraryImportAttribute"/>
     /// </remarks>
+    /// <seealso cref="LibraryImportAttribute"/>
     [AttributeUsage(AttributeTargets.Struct)]
     public sealed class CustomTypeMarshallerAttribute : Attribute
     {

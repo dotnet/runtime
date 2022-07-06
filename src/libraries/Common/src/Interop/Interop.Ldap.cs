@@ -50,7 +50,7 @@ namespace System.DirectoryServices.Protocols
         public int packageListLength;
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
+        [CustomMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
         internal static class Marshaller
         {
             public static Native ConvertToUnmanaged(SEC_WINNT_AUTH_IDENTITY_EX managed)

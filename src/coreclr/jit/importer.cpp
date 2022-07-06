@@ -13711,7 +13711,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTree* type  = op1;
                     GenTree* index = impPopStack().val;
                     GenTree* arr   = impPopStack().val;
-                    op1            = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
+#ifdef TARGET_64BIT
+                    // The CLI Spec allows an array to be indexed by either an int32 or a native int.
+                    // The array helper takes a native int for array length.
+                    // So if we have an int, explicitly extend it to be a native int.
+                    if (genActualType(index->TypeGet()) != TYP_I_IMPL)
+                    {
+                        if (index->IsIntegralConst())
+                        {
+                            index->gtType = TYP_I_IMPL;
+                        }
+                        else
+                        {
+                            bool isUnsigned = false;
+                            index           = gtNewCastNode(TYP_I_IMPL, index, isUnsigned, TYP_I_IMPL);
+                        }
+                    }
+#endif // TARGET_64BIT
+                    op1 = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -13852,7 +13869,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 impPopStack(3);
 
-                // Else call a helper function to do the assignment
+// Else call a helper function to do the assignment
+#ifdef TARGET_64BIT
+                // The CLI Spec allows an array to be indexed by either an int32 or a native int.
+                // The array helper takes a native int for array length.
+                // So if we have an int, explicitly extend it to be a native int.
+                if (genActualType(index->TypeGet()) != TYP_I_IMPL)
+                {
+                    if (index->IsIntegralConst())
+                    {
+                        index->gtType = TYP_I_IMPL;
+                    }
+                    else
+                    {
+                        bool isUnsigned = false;
+                        index           = gtNewCastNode(TYP_I_IMPL, index, isUnsigned, TYP_I_IMPL);
+                    }
+                }
+#endif // TARGET_64BIT
                 op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
                 goto SPILL_APPEND;
             }

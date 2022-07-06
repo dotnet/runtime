@@ -3956,26 +3956,11 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
     TypeHandle th(clsHnd);
     _ASSERTE (!th.IsGenericVariable());
 
-    MethodTable    *pMT = th.GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
-
-    // Is it a non primitive struct such as
-    // RuntimeTypeHandle, RuntimeMethodHandle, RuntimeArgHandle?
-    if (pMT->IsValueType() &&
-        !pMT->IsTruePrimitive()  &&
-        !pMT->IsEnum())
+    CorElementType elementType = th.GetVerifierCorElementType();
+    if (CorIsPrimitiveType(elementType))
     {
-        // default value CORINFO_TYPE_UNDEF is what we want
+        result = asCorInfoType(elementType);
     }
-    else
-    {
-        CorElementType elementType = th.GetInternalCorElementType();
-        if (CorIsPrimitiveType(elementType))
-        {
-            result = asCorInfoType(elementType);
-        }
-    }
-
     EE_TO_JIT_TRANSITION();
 
     return result;

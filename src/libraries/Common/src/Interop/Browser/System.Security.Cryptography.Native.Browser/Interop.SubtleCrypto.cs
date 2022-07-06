@@ -18,12 +18,36 @@ internal static partial class Interop
             Sha512,
         };
 
+        internal static readonly bool CanUseSubtleCrypto = CanUseSubtleCryptoImpl() == 1;
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_CanUseSubtleCryptoImpl")]
-        internal static partial int CanUseSubtleCryptoImpl();
+        private static partial int CanUseSubtleCryptoImpl();
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_SimpleDigestHash")]
         internal static unsafe partial int SimpleDigestHash(
             SimpleDigest hash,
+            byte* input_buffer,
+            int input_len,
+            byte* output_buffer,
+            int output_len);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_Sign")]
+        internal static unsafe partial int Sign(
+            SimpleDigest hashAlgorithm,
+            byte* key_buffer,
+            int key_len,
+            byte* input_buffer,
+            int input_len,
+            byte* output_buffer,
+            int output_len);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_EncryptDecrypt")]
+        internal static unsafe partial int EncryptDecrypt(
+            int encrypting,
+            byte* key_buffer,
+            int key_len,
+            byte* iv_buffer,
+            int iv_len,
             byte* input_buffer,
             int input_len,
             byte* output_buffer,
