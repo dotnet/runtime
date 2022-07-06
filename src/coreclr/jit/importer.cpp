@@ -17406,39 +17406,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
             OBJ:
-
+                lclTyp   = JITtype2varType(info.compCompHnd->asCorInfoType(resolvedToken.hClass));
                 tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
 
-                if (eeIsValueClass(resolvedToken.hClass))
+                if (lclTyp != TYP_STRUCT)
                 {
-                    lclTyp = TYP_STRUCT;
-                }
-                else
-                {
-                    lclTyp = TYP_REF;
-                    opcode = CEE_LDIND_REF;
                     goto LDIND;
                 }
 
                 op1 = impPopStack().val;
 
-                assertImp(op1->TypeGet() == TYP_BYREF || op1->TypeGet() == TYP_I_IMPL);
+                assertImp((genActualType(op1) == TYP_I_IMPL) || op1->TypeIs(TYP_BYREF));
 
-                CorInfoType jitTyp = info.compCompHnd->asCorInfoType(resolvedToken.hClass);
-                if (impIsPrimitive(jitTyp))
-                {
-                    op1 = gtNewOperNode(GT_IND, JITtype2varType(jitTyp), op1);
-
-                    // Could point anywhere, example a boxed class static int
-                    op1->gtFlags |= GTF_GLOB_REF;
-                    assertImp(varTypeIsArithmetic(op1->gtType));
-                }
-                else
-                {
-                    // OBJ returns a struct
-                    // and an inline argument which is the class token of the loaded obj
-                    op1 = gtNewObjNode(resolvedToken.hClass, op1);
-                }
+                op1 = gtNewObjNode(resolvedToken.hClass, op1);
                 op1->gtFlags |= GTF_EXCEPT;
 
                 if (prefixFlags & PREFIX_UNALIGNED)
