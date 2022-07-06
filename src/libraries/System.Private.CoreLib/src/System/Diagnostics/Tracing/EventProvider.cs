@@ -447,14 +447,6 @@ namespace System.Diagnostics.Tracing
 #endif
         unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
         {
-            // We wish the EventSource package to be legal for Windows Store applications.
-            // Currently EnumerateTraceGuidsEx is not an allowed API, so we avoid its use here
-            // and use the information in the registry instead.  This means that ETW controllers
-            // that do not publish their intent to the registry (basically all controllers EXCEPT
-            // TraceEventSesion) will not work properly
-
-            // However the framework version of EventSource DOES have ES_SESSION_INFO defined and thus
-            // does not have this issue.
 #if TARGET_WINDOWS
             int buffSize = 256;     // An initial guess that probably works most of the time.
             byte* stackSpace = stackalloc byte[buffSize];
@@ -511,56 +503,7 @@ namespace System.Diagnostics.Tracing
                     Marshal.FreeHGlobal((IntPtr)buffer);
                 }
             }
-#else
-#if TARGET_WINDOWS
-            // This code is only used in the Nuget Package Version of EventSource.  because
-            // the code above is using APIs baned from UWP apps.
-            //
-            // TODO: In addition to only working when TraceEventSession enables the provider, this code
-            // also has a problem because TraceEvent does not clean up if the registry is stale
-            // It is unclear if it is worth keeping, but for now we leave it as it does work
-            // at least some of the time.
 
-            // Determine our session from what is in the registry.
-            string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerName + "}";
-            if (IntPtr.Size == 8)
-                regKey = @"Software" + @"\Wow6432Node" + regKey;
-            else
-                regKey = @"Software" + regKey;
-
-            using (var key = Registry.LocalMachine.OpenSubKey(regKey))
-            {
-                if (key != null)
-                {
-                    foreach (string valueName in key.GetValueNames())
-                    {
-                        if (valueName.StartsWith("ControllerData_Session_", StringComparison.Ordinal))
-                        {
-                            string strId = valueName.Substring(23);      // strip of the ControllerData_Session_
-                            int etwSessionId;
-                            if (int.TryParse(strId, out etwSessionId))
-                            {
-                                var data = key.GetValue(valueName) as byte[];
-                                if (data != null)
-                                {
-                                    var dataAsString = System.Text.Encoding.UTF8.GetString(data);
-                                    int keywordIdx = dataAsString.IndexOf("EtwSessionKeyword", StringComparison.Ordinal);
-                                    if (0 <= keywordIdx)
-                                    {
-                                        int startIdx = keywordIdx + 18;
-                                        int endIdx = dataAsString.IndexOf('\0', startIdx);
-                                        string keywordBitString = dataAsString.Substring(startIdx, endIdx - startIdx);
-                                        int keywordBit;
-                                        if (0 < endIdx && int.TryParse(keywordBitString, out keywordBit))
-                                            action(etwSessionId, 1L << keywordBit, ref sessionList);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-#endif
 #endif
         }
 
