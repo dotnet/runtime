@@ -359,9 +359,7 @@ namespace System.Diagnostics.Tracing
                     }
                     else
                     {
-                        // TODO FIXME - differentiate between AD inside PCL
-                        int appDomainID = 0;
-                        appDomainID = System.Threading.Thread.GetDomainID();
+                        int appDomainID = System.Threading.Thread.GetDomainID();
                         // We start with the appdomain number to make this unique among appdomains.
                         activityPathGuidOffsetStart = AddIdToGuid(outPtr, activityPathGuidOffsetStart, (uint)appDomainID);
                     }
