@@ -26,6 +26,9 @@
     call bool Runtime_71636::ProblemWithCpObj()
     brtrue FAILURE_CPOBJ
 
+    call bool Runtime_71636::ProblemWithLdObj()
+    brtrue FAILURE_LDOBJ
+
     ldc.i4 100
     ret
 
@@ -43,6 +46,10 @@
 
   FAILURE_CPOBJ:
     ldc.i4 104
+    ret
+
+  FAILURE_LDOBJ:
+    ldc.i4 105
     ret
   }
 
@@ -191,6 +198,40 @@
     ldloc idx
     ldelem.i
     ldloc lcl
+    bne.un NOT_EQUAL
+
+    ldc.i4 0
+    ret
+
+  NOT_EQUAL:
+    ldc.i4 1
+    ret
+  }
+
+  .method private static bool ProblemWithLdObj() noinlining
+  {
+    .locals (void* lcl, void*[] arr, int32 idx)
+
+    call void*[] Runtime_71636::GetArray()
+    stloc arr
+
+    ldc.i4 0
+    stloc idx
+
+    ldloc arr
+    ldloc idx
+    ldloca lcl
+    stelem.i
+
+    ldloc arr
+    ldloc idx
+    ldelema void*
+    ldobj void*
+    call void [System.Runtime]System.GC::Collect()
+    stloc lcl
+
+    ldloc lcl
+    ldloca lcl
     bne.un NOT_EQUAL
 
     ldc.i4 0
