@@ -5,66 +5,104 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public static class DefaultBinderTests
+    public class DefaultBinderTests
     {
         private const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
         private const BindingFlags invokeFlags = flags | BindingFlags.InvokeMethod | BindingFlags.OptionalParamBinding;
+        private static Binder binder = Type.DefaultBinder;
 
         [Fact]
-        public static void DefualtBinderAllUnspecifiedParametersHasDefaultsTest()
+        public static void DefaultBinderAllUnspecifiedParametersHasDefaultsTest()
         {
             MethodInfo[] methods = typeof(Sample).GetMethods();
             object[] methodArgs = new object[] { "value" };
-            MethodBase method = Type.DefaultBinder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "par1" }, out var _);
+            MethodBase method = binder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "par1" }, out var _);
             Assert.NotNull(method);
             Assert.Equal("MethodMoreParameters", method.Name);
         }
 
         [Fact]
-        public static void DefualtBinderNamedParametersInOrderTest()
+        public static void DefaultBinderNamedParametersInOrderTest()
         {
             MethodInfo[] methods = typeof(Sample).GetMethods();
             object[] methodArgs = new object[] { "value", 1 };
-            MethodBase method = Type.DefaultBinder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "param1", "param2" }, out var _);
+            MethodBase method = binder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "param1", "param2" }, out var _);
             Assert.NotNull(method);
             Assert.Equal("SampleMethod", method.Name);
         }
 
         [Fact]
-        public static void DefualtBinderNamedParametersOutOrderTest()
+        public static void DefaultBinderNamedParametersOutOrderTest()
         {
             MethodInfo[] methods = typeof(Sample).GetMethods();
-            object[] methodArgs = new object[] { 1,  "value" };
-            MethodBase method = Type.DefaultBinder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "param2", "param1" }, out var _);
+            object[] methodArgs = new object[] { 1, "value" };
+            MethodBase method = binder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "param2", "param1" }, out var _);
             Assert.NotNull(method);
             Assert.Equal("SampleMethod", method.Name);
         }
 
         [Fact]
-        public static void DefualtBinderNamedParametersSkippedOrderTest()
+        public static void DefaultBinderNamedParametersSkippedOrderTest()
         {
             MethodInfo[] methods = typeof(Sample).GetMethods();
             object[] methodArgs = new object[] { "value", true };
-            MethodBase method = Type.DefaultBinder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "param1", "param3" }, out var _);
+            MethodBase method = binder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "param1", "param3" }, out var _);
             Assert.NotNull(method);
             Assert.Equal("SampleMethod", method.Name);
         }
 
         [Fact]
-        public static void DefualtBinderNamedParametersMissingRequiredParameterThrowsMissingMethodException()
+        public static void DefaultBinderNamedParametersMissingRequiredParameterThrowsMissingMethodException()
         {
-            MethodInfo methods = typeof(Sample).GetMethod("NoDefaultParameterMethod");
+            MethodInfo[] methods = new MethodInfo[] { typeof(Sample).GetMethod("NoDefaultParameterMethod") };
             object[] methodArgs = new object[] { "value", 1 };
-            Assert.Throws<MissingMethodException>(() => Type.DefaultBinder.BindToMethod(flags,
-                new MethodBase[] { methods }, ref methodArgs, null, null, new[] { "param1", "param2" }, out var _));
+            Assert.Throws<MissingMethodException>(() => binder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "param1", "param2" }, out var _));
         }
 
         [Fact]
-        public static void DefualtBinderNamedParametersSkippedAndOutOfOrderTest()
+        public static void DefaultBinderNamedParametersMixedOrderNoDefaults ()
+        {
+            MethodInfo[] methods = typeof(Sample).GetMethods();
+            object[] methodArgs = new object[] { true, "value", 3.14, 1 };
+            MethodBase method = binder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "param3", "param1", "param4", "param2" }, out var _);
+            Assert.NotNull(method);
+            Assert.Equal("NoDefaultParameterMethod", method.Name);
+        }
+
+        [Fact]
+        public static void DefaultBinderNoNamedParametersInOrderNoDefaults()
+        {
+            MethodInfo[] methods = typeof(Sample).GetMethods();
+            object[] methodArgs = new object[] { "value", 1, true, 3.14 };
+            MethodBase method = binder.BindToMethod(flags, methods, ref methodArgs, null, null, null, out var _);
+            Assert.NotNull(method);
+            Assert.Equal("NoDefaultParameterMethod", method.Name);
+        }
+
+        [Fact]
+        public static void DefaultBinderNoNamedParametersNoArgumentsAllDefaults()
+        {
+            MethodInfo[] methods = typeof(Test).GetMethods();
+            object[] methodArgs = new object[] { null, null };
+            MethodBase method = binder.BindToMethod(flags, methods, ref methodArgs, null, null, null, out var _);
+            Assert.NotNull(method);
+            Assert.Equal("SampleMethod", method.Name);
+        }
+
+        [Fact]
+        public static void DefaultBinderNoNamedParametersOutOrderThrows()
+        {
+            MethodInfo[] methods = typeof(Sample).GetMethods();
+            object[] methodArgs = new object[] { true, "value", 3.14, 1 };
+            Assert.Throws<MissingMethodException>(() => binder.BindToMethod(flags, methods, ref methodArgs, null, null, null, out var _));
+        }
+
+        [Fact]
+        public static void DefaultBinderNamedParametersSkippedAndOutOfOrderTest()
         {
             MethodInfo[] methods = typeof(Sample).GetMethods();
             object[] methodArgs = new object[] { 8, "value" };
-            MethodBase method = Type.DefaultBinder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "par5", "par1" }, out var _);
+            MethodBase method = binder.BindToMethod(flags, methods, ref methodArgs, null, null, new[] { "par5", "par1" }, out var _);
             Assert.NotNull(method);
             Assert.Equal("MethodMoreParameters", method.Name);
         }
@@ -129,9 +167,15 @@ namespace System.Reflection.Tests
             Assert.Equal(8, result);
         }
 
+        public class Test
+        {
+            public void TestMethod(int param1) { }
+            public void SampleMethod(int param2 = 2, bool param3 = false) { }
+        }
+
         public class Sample
         {
-            public static int SampleMethod(int param2 = 2)
+            public static int SampleMethod(int param1 = 2)
             {
                 return 1;
             }
@@ -141,7 +185,7 @@ namespace System.Reflection.Tests
                 return 1;
             }
 
-            public void NoDefaultParameterMethod(string param1, int param2, bool param3) { }
+            public void NoDefaultParameterMethod(string param1, int param2, bool param3, double param4) { }
 
             public static int SampleMethod(string param1, int param2 = 2, bool param3 = false)
             {

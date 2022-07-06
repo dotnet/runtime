@@ -121,7 +121,6 @@
     <Compile Include="System\PseudoCustomAttributeTests.cs" />
     <Compile Include="System\RangeTests.cs" />
     <Compile Include="System\RankExceptionTests.cs" />
-    <Compile Include="System\Reflection\DefaultBinderTests.cs" />
     <Compile Include="System\Reflection\NullabilityInfoContextTests.cs" />
     <Compile Include="System\Reflection\RuntimeTypeMemberCacheTests.cs" />
     <Compile Include="System\SByteTests.cs" />

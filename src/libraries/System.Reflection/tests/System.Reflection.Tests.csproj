@@ -16,16 +16,14 @@
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Reflection\MockParameterInfo.cs"
-             Link="Common\System\Reflection\MockParameterInfo.cs" />
-    <Compile Include="$(CommonTestPath)System\MockType.cs"
-             Link="Common\System\MockType.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
-             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\Reflection\MockParameterInfo.cs" Link="Common\System\Reflection\MockParameterInfo.cs" />
+    <Compile Include="$(CommonTestPath)System\MockType.cs" Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
     <Compile Include="AssemblyNameTests.cs" />
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="CustomAttributeTests.cs" />
+    <Compile Include="DefaultBinderTests.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="GetTypeTests.cs" />

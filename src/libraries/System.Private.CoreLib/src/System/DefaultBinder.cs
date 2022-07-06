@@ -218,7 +218,7 @@ namespace System
                         // now do a "classic" type check
                         if (pCls.IsPrimitive)
                         {
-                            if (argTypes[index] == null || !CanChangePrimitive(args[index]?.GetType(), pCls))
+                            if (argTypes[index] == null || !CanChangePrimitive(args[index]!.GetType(), pCls))
                             {
                                 break;
                             }
