@@ -10,22 +10,6 @@ namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
-        [UnsupportedOSPlatformGuard("browser")]
-        internal static bool HasSymmetricEncryption { get; } =
-#if NETCOREAPP
-            !OperatingSystem.IsBrowser();
-#else
-            true;
-#endif
-
-        [UnsupportedOSPlatformGuard("browser")]
-        internal static bool HasHMAC { get; } =
-#if NETCOREAPP
-            !OperatingSystem.IsBrowser();
-#else
-            true;
-#endif
-
 #if NETCOREAPP
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]

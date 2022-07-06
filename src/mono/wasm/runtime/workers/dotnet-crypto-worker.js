@@ -256,6 +256,24 @@ async function sign(type, key, data) {
     return Array.from(new Uint8Array(signResult));
 }
 
+async function derive_bits(password, salt, iterations, hashAlgorithm, lengthInBytes) {
+    const hash_name = get_hash_name(hashAlgorithm);
+
+    const passwordKey = await importKey(password, "PBKDF2", ["deriveBits"]);
+    const result = await crypto.subtle.deriveBits(
+        {
+            name: "PBKDF2",
+            salt: salt,
+            iterations: iterations,
+            hash: hash_name
+        },
+        passwordKey,
+        lengthInBytes * 8 // deriveBits takes number of bits
+    );
+
+    return Array.from(new Uint8Array(result));
+}
+
 function get_hash_name(type) {
     switch (type) {
         case 0: return "SHA-1";
@@ -272,7 +290,7 @@ const AesBlockSizeBytes = 16; // 128 bits
 async function encrypt_decrypt(isEncrypting, key, iv, data) {
     const algorithmName = "AES-CBC";
     const keyUsage = isEncrypting ? ["encrypt"] : ["encrypt", "decrypt"];
-    const cryptoKey = await importKey(key, algorithmName, keyUsage);
+    const cryptoKey = await importKey(new Uint8Array(key), algorithmName, keyUsage);
     const algorithm = {
         name: algorithmName,
         iv: new Uint8Array(iv)
@@ -328,7 +346,7 @@ async function decrypt(algorithm, cryptoKey, data) {
 function importKey(key, algorithmName, keyUsage) {
     return crypto.subtle.importKey(
         "raw",
-        new Uint8Array(key),
+        key,
         {
             name: algorithmName
         },
@@ -348,6 +366,9 @@ async function handle_req_async(msg) {
     }
     else if (req.func === "encrypt_decrypt") {
         return await encrypt_decrypt(req.isEncrypting, req.key, req.iv, req.data);
+    }
+    else if (req.func === "derive_bits") {
+        return await derive_bits(new Uint8Array(req.password), new Uint8Array(req.salt), req.iterations, req.hashAlgorithm, req.lengthInBytes);
     }
     else {
         throw new ArgumentsError("CRYPTO: Unknown request: " + req.func);
