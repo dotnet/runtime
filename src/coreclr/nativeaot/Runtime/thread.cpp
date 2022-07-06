@@ -658,15 +658,15 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     if (codeManager->IsSafePoint(pvAddress))
     {
         // if we are not given a thread to hijack
-        //// perform in-line wait on the current thread
-        //if (pThreadToHijack == NULL)
-        //{
-        //    ASSERT(pThread->m_interruptedContext == NULL);
-        //    pThread->m_interruptedContext = pThreadContext;
-        //    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
-        //    pThread->m_interruptedContext = NULL;
-        //    return;
-        //}
+        // perform in-line wait on the current thread
+        if (pThreadToHijack == NULL)
+        {
+            ASSERT(pThread->m_interruptedContext == NULL);
+            pThread->m_interruptedContext = pThreadContext;
+            pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
+            pThread->m_interruptedContext = NULL;
+            return;
+        }
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
         if (pThread->Redirect())
