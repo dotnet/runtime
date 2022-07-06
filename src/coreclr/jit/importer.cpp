@@ -17336,25 +17336,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                if (eeIsValueClass(resolvedToken.hClass))
-                {
-                    lclTyp = TYP_STRUCT;
-                }
-                else
-                {
-                    lclTyp = TYP_REF;
-                }
+                lclTyp = JITtype2varType(info.compCompHnd->asCorInfoType(resolvedToken.hClass));
 
-                if (lclTyp == TYP_REF)
+                if (lclTyp != TYP_STRUCT)
                 {
-                    opcode = CEE_STIND_REF;
-                    goto STIND;
-                }
-
-                CorInfoType jitTyp = info.compCompHnd->asCorInfoType(resolvedToken.hClass);
-                if (impIsPrimitive(jitTyp))
-                {
-                    lclTyp = JITtype2varType(jitTyp);
                     goto STIND;
                 }
 
