@@ -41,12 +41,14 @@ namespace DependencyLogViewer
             this.label1 = new System.Windows.Forms.Label();
             this.browseButton = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // help
@@ -55,7 +57,7 @@ namespace DependencyLogViewer
             this.help.Location = new System.Drawing.Point(0, 0);
             this.help.Margin = new System.Windows.Forms.Padding(4);
             this.help.Name = "help";
-            this.help.Size = new System.Drawing.Size(374, 150);
+            this.help.Size = new System.Drawing.Size(371, 128);
             this.help.TabIndex = 3;
             this.help.Text = "Information on DependencyGraphViewer";
             this.help.UseVisualStyleBackColor = true;
@@ -67,7 +69,7 @@ namespace DependencyLogViewer
             this.explore.Location = new System.Drawing.Point(0, 0);
             this.explore.Margin = new System.Windows.Forms.Padding(4);
             this.explore.Name = "explore";
-            this.explore.Size = new System.Drawing.Size(746, 150);
+            this.explore.Size = new System.Drawing.Size(741, 128);
             this.explore.TabIndex = 4;
             this.explore.Text = "Explore Selected Graph";
             this.explore.UseVisualStyleBackColor = true;
@@ -75,8 +77,7 @@ namespace DependencyLogViewer
             // 
             // splitContainer1
             // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 698);
+            this.splitContainer1.Location = new System.Drawing.Point(4, 704);
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer1.Name = "splitContainer1";
             // 
@@ -87,22 +88,21 @@ namespace DependencyLogViewer
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.explore);
-            this.splitContainer1.Size = new System.Drawing.Size(1125, 150);
-            this.splitContainer1.SplitterDistance = 374;
+            this.splitContainer1.Size = new System.Drawing.Size(1117, 128);
+            this.splitContainer1.SplitterDistance = 371;
             this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 7;
             this.splitContainer1.TabStop = false;
             // 
             // listBox1
             // 
-            this.listBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.listBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listBox1.FormattingEnabled = true;
             this.listBox1.ItemHeight = 30;
             this.listBox1.Location = new System.Drawing.Point(3, 31);
+            this.listBox1.MinimumSize = new System.Drawing.Size(1108, 100);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(1108, 514);
+            this.listBox1.Size = new System.Drawing.Size(1114, 525);
             this.listBox1.TabIndex = 2;
             this.listBox1.DoubleClick += new System.EventHandler(this.explore_Click);
             // 
@@ -112,9 +112,10 @@ namespace DependencyLogViewer
             this.groupBox1.Controls.Add(this.ETWButton);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.browseButton);
-            this.groupBox1.Location = new System.Drawing.Point(0, 0);
+            this.groupBox1.Location = new System.Drawing.Point(3, 3);
+            this.groupBox1.MinimumSize = new System.Drawing.Size(1119, 100);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(1117, 123);
+            this.groupBox1.Size = new System.Drawing.Size(1119, 129);
             this.groupBox1.TabIndex = 12;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Graph Creation";
@@ -160,27 +161,43 @@ namespace DependencyLogViewer
             // 
             // groupBox2
             // 
-            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox2.AutoSize = true;
             this.groupBox2.Controls.Add(this.listBox1);
-            this.groupBox2.Location = new System.Drawing.Point(3, 129);
+            this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox2.Location = new System.Drawing.Point(3, 138);
+            this.groupBox2.MinimumSize = new System.Drawing.Size(1117, 150);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(1117, 562);
-            this.groupBox2.TabIndex = 13;
+            this.groupBox2.Size = new System.Drawing.Size(1120, 559);
+            this.groupBox2.TabIndex = 0;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Loaded Graphs";
+            // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 1;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Controls.Add(this.groupBox1, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.groupBox2, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.splitContainer1, 0, 2);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.GrowStyle = System.Windows.Forms.TableLayoutPanelGrowStyle.AddColumns;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 3;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 19.32555F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80.67445F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 135F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1126, 836);
+            this.tableLayoutPanel1.TabIndex = 3;
             // 
             // DependencyGraphs
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1125, 848);
-            this.Controls.Add(this.groupBox2);
-            this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.splitContainer1);
+            this.ClientSize = new System.Drawing.Size(1126, 836);
+            this.Controls.Add(this.tableLayoutPanel1);
             this.Margin = new System.Windows.Forms.Padding(4);
+            this.MinimumSize = new System.Drawing.Size(1150, 400);
             this.Name = "DependencyGraphs";
             this.Text = "DependencyGraphs";
             this.splitContainer1.Panel1.ResumeLayout(false);
@@ -190,8 +207,9 @@ namespace DependencyLogViewer
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
+            this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
@@ -207,6 +225,7 @@ namespace DependencyLogViewer
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Button ETWButton;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }
 

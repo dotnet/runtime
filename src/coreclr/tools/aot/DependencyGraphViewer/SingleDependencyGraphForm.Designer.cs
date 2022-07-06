@@ -51,7 +51,7 @@ namespace DependencyLogViewer
             this.filteredNodes.Location = new System.Drawing.Point(3, 31);
             this.filteredNodes.Margin = new System.Windows.Forms.Padding(4);
             this.filteredNodes.Name = "filteredNodes";
-            this.filteredNodes.Size = new System.Drawing.Size(1199, 644);
+            this.filteredNodes.Size = new System.Drawing.Size(1098, 608);
             this.filteredNodes.TabIndex = 0;
             this.filteredNodes.DoubleClick += new System.EventHandler(this.exploreNode_Click);
             // 
@@ -67,14 +67,14 @@ namespace DependencyLogViewer
             this.groupBox1.Controls.Add(this.filterTextBox);
             this.groupBox1.Location = new System.Drawing.Point(3, 2);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(1220, 162);
+            this.groupBox1.Size = new System.Drawing.Size(1119, 165);
             this.groupBox1.TabIndex = 3;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Select and Explore Nodes";
             // 
             // filterButton
             // 
-            this.filterButton.Location = new System.Drawing.Point(837, 29);
+            this.filterButton.Location = new System.Drawing.Point(733, 29);
             this.filterButton.Margin = new System.Windows.Forms.Padding(4);
             this.filterButton.Name = "filterButton";
             this.filterButton.Size = new System.Drawing.Size(184, 71);
@@ -86,16 +86,16 @@ namespace DependencyLogViewer
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(16, 101);
+            this.label2.Location = new System.Drawing.Point(0, 104);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(1166, 30);
+            this.label2.Size = new System.Drawing.Size(1031, 30);
             this.label2.TabIndex = 4;
-            this.label2.Text = "Enter text to filter nodes with, then select \'Filter\'. Explore Depnedents and Dep" +
-    "endees of a selected node with \'Explore Node\'";
+            this.label2.Text = "Enter text to filter nodes with, then select \'Filter\'. Explore dependencies of a " +
+    "selected node with \'Explore Node\'";
             // 
             // exploreNode
             // 
-            this.exploreNode.Location = new System.Drawing.Point(1029, 29);
+            this.exploreNode.Location = new System.Drawing.Point(925, 29);
             this.exploreNode.Margin = new System.Windows.Forms.Padding(4);
             this.exploreNode.Name = "exploreNode";
             this.exploreNode.Size = new System.Drawing.Size(184, 71);
@@ -110,7 +110,7 @@ namespace DependencyLogViewer
             this.filterTextBox.Location = new System.Drawing.Point(3, 47);
             this.filterTextBox.Margin = new System.Windows.Forms.Padding(4);
             this.filterTextBox.Name = "filterTextBox";
-            this.filterTextBox.Size = new System.Drawing.Size(822, 35);
+            this.filterTextBox.Size = new System.Drawing.Size(718, 35);
             this.filterTextBox.TabIndex = 0;
             // 
             // groupBox2
@@ -121,7 +121,7 @@ namespace DependencyLogViewer
             this.groupBox2.Controls.Add(this.filteredNodes);
             this.groupBox2.Location = new System.Drawing.Point(10, 165);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(1205, 678);
+            this.groupBox2.Size = new System.Drawing.Size(1104, 642);
             this.groupBox2.TabIndex = 4;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Filtered Nodes";
@@ -131,7 +131,7 @@ namespace DependencyLogViewer
             this.AcceptButton = this.filterButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1227, 872);
+            this.ClientSize = new System.Drawing.Size(1126, 836);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Margin = new System.Windows.Forms.Padding(4);
