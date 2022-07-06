@@ -32,3 +32,10 @@ export type DiagnosticServerControlReply =
 export interface DiagnosticServerControlReplyStartupResume extends DiagnosticMessage {
     cmd: "startup_resume",
 }
+
+export function makeDiagnosticServerControlReplyStartupResume(): DiagnosticServerControlReplyStartupResume {
+    return {
+        type: "diagnostic_server",
+        cmd: "startup_resume",
+    };
+}
