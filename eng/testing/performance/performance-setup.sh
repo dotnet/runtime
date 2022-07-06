@@ -349,7 +349,7 @@ if [[ "$use_baseline_core_run" == true ]]; then
   mv $baseline_core_root_directory $new_baseline_core_root
 fi
 
-if [[ "$iosmono" == "true" ]]; then
+if [[ "$iosmono" == "true" ]]; then # TODO: This is major part that will have to be figured out
     if [[ "$iosllvmbuild" == "True" ]]; then
         # LLVM Mono .app
         mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
