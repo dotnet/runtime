@@ -680,10 +680,11 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 // enum used by the runtime.
 GCRefKind GetGcRefKind(ReturnKind returnKind)
 {
-    static_assert((GCRefKind)ReturnKind::RT_Scalar == GCRK_Scalar, "ReturnKind::RT_Scalar does not match GCRK_Scalar");
-    static_assert((GCRefKind)ReturnKind::RT_Object == GCRK_Object, "ReturnKind::RT_Object does not match GCRK_Object");
-    static_assert((GCRefKind)ReturnKind::RT_ByRef  == GCRK_Byref, "ReturnKind::RT_ByRef does not match GCRK_Byref");
-    ASSERT((returnKind == RT_Scalar) || (returnKind == RT_Object) || (returnKind == RT_ByRef));
+#ifdef TARGET_ARM64
+    ASSERT((returnKind >= RT_Scalar) && (returnKind <= RT_ByRef_ByRef));
+#else
+    ASSERT((returnKind >= RT_Scalar) && (returnKind <= RT_ByRef));
+#endif
 
     return (GCRefKind)returnKind;
 }
@@ -724,7 +725,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #endif // TARGET_ARM || TARGET_ARM64
     GcInfoDecoder decoder(GCInfoToken(p), flags);
 
-    GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
+    *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
 
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack
@@ -750,7 +751,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                     NULL);
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)(context.Rsp - sizeof (PVOID));
-    *pRetValueKind = gcRefKind;
     return true;
 #elif defined(TARGET_ARM64)
 
@@ -799,7 +799,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)contextPointers.Lr;
-    *pRetValueKind = gcRefKind;
     return true;
 #else
     return false;

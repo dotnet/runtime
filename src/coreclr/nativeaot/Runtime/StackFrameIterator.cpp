@@ -292,15 +292,11 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     if (pFrame->m_Flags & PTFF_SAVE_R11)  { m_RegDisplay.pR11 = pPreservedRegsCursor++; }
 #endif // TARGET_AMD64
 
-    if (pFrame->m_Flags & PTFF_RAX_IS_GCREF)
+    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
+    if (retValueKind != GCRK_Scalar)
     {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pRax;
-        m_HijackedReturnValueKind = GCRK_Object;
-    }
-    if (pFrame->m_Flags & PTFF_RAX_IS_BYREF)
-    {
-        m_pHijackedReturnValue = (PTR_RtuObjectRef) m_RegDisplay.pRax;
-        m_HijackedReturnValueKind = GCRK_Byref;
+        m_pHijackedReturnValue = (PTR_RtuObjectRef)m_RegDisplay.pRax;
+        m_HijackedReturnValueKind = retValueKind;
     }
 
 #endif // TARGET_ARM

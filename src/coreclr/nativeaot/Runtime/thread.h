@@ -83,7 +83,7 @@ struct ThreadBuffer
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
 #ifdef HOST_64BIT
-    uintptr_t              m_uHijackedReturnValueFlags;            // used on ARM64 only; however, ARM64 and AMD64 share field offsets
+    uintptr_t               m_uHijackedReturnValueFlags;             // used on ARM64 and UNIX only; however, ARM64 and AMD64 share field offsets
 #endif // HOST_64BIT
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort

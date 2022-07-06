@@ -28,7 +28,7 @@ enum GCRefKind : unsigned char
     GCRK_Scalar         = 0x00,
     GCRK_Object         = 0x01,
     GCRK_Byref          = 0x02,
-#ifdef TARGET_ARM64
+#ifdef TARGET_64BIT
     // Composite return kinds for value types returned in two registers (encoded with two bits per register)
     GCRK_Scalar_Obj     = (GCRK_Object << 2) | GCRK_Scalar,
     GCRK_Obj_Obj        = (GCRK_Object << 2) | GCRK_Object,
@@ -78,6 +78,43 @@ inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
     ASSERT(returnKind <= GCRK_LastValid);
     return (GCRefKind)(returnKind >> 2);
 }
+
+#else 
+
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
+C_ASSERT(PTFF_RAX_IS_BYREF == ((uint64_t)GCRK_Byref << 16));
+C_ASSERT(PTFF_RDX_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 16));
+C_ASSERT(PTFF_RDX_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 16));
+
+inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    if (returnKind == GCRK_Scalar)
+        return 0;
+
+    return PTFF_SAVE_RAX | PTFF_SAVE_RDX | ((uint64_t)returnKind << 16);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_RAX_IS_GCREF | PTFF_RAX_IS_BYREF | PTFF_RDX_IS_GCREF | PTFF_RDX_IS_BYREF)) >> 16);
+    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_RAX) && (transFrameFlags & PTFF_SAVE_RDX)));
+    return returnKind;
+}
+
+// Extract individual GCRefKind components from a composite return kind
+inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
+{
+    ASSERT(returnKind <= GCRK_LastValid);
+    return (GCRefKind)(returnKind & (GCRK_Object | GCRK_Byref));
+}
+
+inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
+{
+    ASSERT(returnKind <= GCRK_LastValid);
+    return (GCRefKind)(returnKind >> 2);
+}
+
 #endif // TARGET_ARM64
 
 //

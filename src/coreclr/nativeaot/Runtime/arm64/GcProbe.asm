@@ -187,64 +187,6 @@ __PPF_ThreadReg SETS "x2"
         EPILOG_RETURN
     MEND
 
-;; In order to avoid trashing VFP registers across the loop hijack we must save all user registers, so that
-;; registers used by the loop being hijacked will not be affected. Unlike ARM32 where neon registers (NQ0, ..., NQ15)
-;; are fully covered by the floating point registers D0 ... D31, we have 32 neon registers Q0, ... Q31 on ARM64
-;; which are not fully covered by the register D0 ... D31. Therefore we must explicitly save all Q registers.
-EXTRA_SAVE_SIZE equ (32*16)
-
-    MACRO
-        ALLOC_LOOP_HIJACK_FRAME
-
-        PROLOG_STACK_ALLOC EXTRA_SAVE_SIZE
-
-        ;; Save all neon registers
-        PROLOG_NOP stp         q0, q1,   [sp]
-        PROLOG_NOP stp         q2, q3,   [sp, #0x20]
-        PROLOG_NOP stp         q4, q5,   [sp, #0x40]
-        PROLOG_NOP stp         q6, q7,   [sp, #0x60]
-        PROLOG_NOP stp         q8, q9,   [sp, #0x80]
-        PROLOG_NOP stp         q10, q11, [sp, #0xA0]
-        PROLOG_NOP stp         q12, q13, [sp, #0xC0]
-        PROLOG_NOP stp         q14, q15, [sp, #0xE0]
-        PROLOG_NOP stp         q16, q17, [sp, #0x100]
-        PROLOG_NOP stp         q18, q19, [sp, #0x120]
-        PROLOG_NOP stp         q20, q21, [sp, #0x140]
-        PROLOG_NOP stp         q22, q23, [sp, #0x160]
-        PROLOG_NOP stp         q24, q25, [sp, #0x180]
-        PROLOG_NOP stp         q26, q27, [sp, #0x1A0]
-        PROLOG_NOP stp         q28, q29, [sp, #0x1C0]
-        PROLOG_NOP stp         q30, q31, [sp, #0x1E0]
-
-        ALLOC_PROBE_FRAME 0, {false}
-    MEND
-
-    MACRO
-        FREE_LOOP_HIJACK_FRAME
-
-        FREE_PROBE_FRAME 0, {false}
-
-        ;; restore all neon registers
-        PROLOG_NOP ldp         q0, q1,   [sp]
-        PROLOG_NOP ldp         q2, q3,   [sp, #0x20]
-        PROLOG_NOP ldp         q4, q5,   [sp, #0x40]
-        PROLOG_NOP ldp         q6, q7,   [sp, #0x60]
-        PROLOG_NOP ldp         q8, q9,   [sp, #0x80]
-        PROLOG_NOP ldp         q10, q11, [sp, #0xA0]
-        PROLOG_NOP ldp         q12, q13, [sp, #0xC0]
-        PROLOG_NOP ldp         q14, q15, [sp, #0xE0]
-        PROLOG_NOP ldp         q16, q17, [sp, #0x100]
-        PROLOG_NOP ldp         q18, q19, [sp, #0x120]
-        PROLOG_NOP ldp         q20, q21, [sp, #0x140]
-        PROLOG_NOP ldp         q22, q23, [sp, #0x160]
-        PROLOG_NOP ldp         q24, q25, [sp, #0x180]
-        PROLOG_NOP ldp         q26, q27, [sp, #0x1A0]
-        PROLOG_NOP ldp         q28, q29, [sp, #0x1C0]
-        PROLOG_NOP ldp         q30, q31, [sp, #0x1E0]
-
-        EPILOG_STACK_FREE EXTRA_SAVE_SIZE
-    MEND
-
 ;;
 ;; Macro to clear the hijack state. This is safe to do because the suspension code will not Unhijack this
 ;; thread if it finds it at an IP that isn't managed code.

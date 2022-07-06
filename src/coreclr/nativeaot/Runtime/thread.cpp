@@ -440,19 +440,22 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
     if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
     {
-#ifdef TARGET_ARM64
+#ifdef TARGET_64BIT
         GCRefKind reg0Kind = ExtractReg0ReturnKind(returnValueKind);
-        GCRefKind reg1Kind = ExtractReg1ReturnKind(returnValueKind);
-
-        // X0 and X1 are saved next to each other in this order
         if (reg0Kind != GCRK_Scalar)
         {
             RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
         }
+
+#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
+        GCRefKind reg1Kind = ExtractReg1ReturnKind(returnValueKind);
         if (reg1Kind != GCRK_Scalar)
         {
+            // X0/X1 or RAX/RDX are saved in hijack frame next to each other in this order
             RedhawkGCInterface::EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
         }
+#endif  // TARGET_ARM64 || TARGET_UNIX
+
 #else
         RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, returnValueKind, pfnEnumCallback, pvCallbackData);
 #endif
@@ -547,7 +550,14 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
 EXTERN_C void FASTCALL RhpSuspendRedirected();
 
-#ifndef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
+EXTERN_C void FASTCALL RhpGcProbeHijack();
+
+static void* NormalHijackTargets[1] =
+{
+    reinterpret_cast<void*>(RhpGcProbeHijack)
+};
+#else // TARGET_ARM64 || TARGET_UNIX
 EXTERN_C void FASTCALL RhpGcProbeHijackScalar();
 EXTERN_C void FASTCALL RhpGcProbeHijackObject();
 EXTERN_C void FASTCALL RhpGcProbeHijackByref();
@@ -558,14 +568,7 @@ static void* NormalHijackTargets[3] =
     reinterpret_cast<void*>(RhpGcProbeHijackObject), // GCRK_Object = 1,
     reinterpret_cast<void*>(RhpGcProbeHijackByref)   // GCRK_Byref  = 2,
 };
-#else // TARGET_ARM64
-EXTERN_C void FASTCALL RhpGcProbeHijack();
-
-static void* NormalHijackTargets[1] =
-{
-    reinterpret_cast<void*>(RhpGcProbeHijack)
-};
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_UNIX
 
 #ifdef FEATURE_GC_STRESS
 #ifndef TARGET_ARM64
@@ -662,10 +665,16 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
         if (pThreadToHijack == NULL)
         {
             ASSERT(pThread->m_interruptedContext == NULL);
+
+// TODO: async suspend should work on ARM64/UNIX, but
+//       considering that return address hijaking for ARM64/UNIX is NYI,
+//       enabling this may just cause more tests to fail, so not enabling for now
+#ifndef TARGET_ARM64
             pThread->m_interruptedContext = pThreadContext;
             pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
             pThread->m_interruptedContext = NULL;
             return;
+#endif
         }
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
@@ -790,7 +799,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
         m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retValueKind);
         *ppvRetAddrLocation = pvHijackTargets[0];
 #else
@@ -886,9 +895,7 @@ void Thread::UnhijackWorker()
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
     m_pvHijackedReturnAddress           = NULL;
-#ifdef TARGET_ARM64
     m_uHijackedReturnValueFlags         = 0;
-#endif
 }
 
 #if _DEBUG

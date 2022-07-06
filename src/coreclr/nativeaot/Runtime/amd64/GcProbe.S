@@ -76,9 +76,10 @@
 //  RCX: trashed
 //
 .macro ClearHijackState
-        xor         ecx, ecx
-        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], rcx
-        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
+        xor         r9, r9
+        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
+        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
+        mov         [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
 .endm
 
 
@@ -91,6 +92,7 @@
 //
 // Register state on exit:
 //  R11: thread pointer
+//  RCX: return value flags
 //  RAX, RDX preserved, other volatile regs trashed
 //
 .macro FixupHijackedCallstack
@@ -110,6 +112,8 @@
         //
         mov         rcx, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
+
+        mov         rcx, [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
         ClearHijackState
 .endm
@@ -161,34 +165,17 @@ LOCAL_LABEL(NoWait):
 
 .endm
 
+//
+//
+//
+// GC Probe Hijack target
+//
+//
 
-// TODO: what to do with this?
-// EXTERN RhpPInvokeExceptionGuard : PROC
-
-//
-//
-//
-// GC Probe Hijack targets
-//
-//
-NESTED_ENTRY RhpGcProbeHijackScalar, _TEXT, NoHandler
+NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         END_PROLOGUE
         FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS
-        jmp         C_FUNC(RhpGcProbe)
-NESTED_END RhpGcProbeHijackScalar, _TEXT
-
-NESTED_ENTRY RhpGcProbeHijackObject, _TEXT, NoHandler
-        END_PROLOGUE
-        FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_GCREF
-        jmp         C_FUNC(RhpGcProbe)
-NESTED_END RhpGcProbeHijackObject, _TEXT
-
-NESTED_ENTRY RhpGcProbeHijackByref, _TEXT, NoHandler
-        END_PROLOGUE
-        FixupHijackedCallstack
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_BYREF
+        or          ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX
         jmp         C_FUNC(RhpGcProbe)
 NESTED_END RhpGcProbeHijackByref, _TEXT
 
