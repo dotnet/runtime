@@ -216,26 +216,25 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
         if (pinnedObject != _pinnedObject)
         {
             _failures++;
-            printf("HandlesProfiler::GarbageCollectionFinished: FAIL: pinned handle object address has changed.\n");
+            printf("HandlesProfiler::GarbageCollectionFinished(#1): FAIL: pinned handle object address has changed.\n");
         }
         else
         {
-            printf("HandlesProfiler::GarbageCollectionFinished: pinned handle object address did not changed as expected.\n");
+            printf("HandlesProfiler::GarbageCollectionFinished(#1): pinned handle object address did not changed as expected.\n");
         }
     }
-    else
-    if (_gcCount == 2)
+    else if (_gcCount == 2)
     {
         if (_strongHandle == NULL)
         {
             _failures++;
-            printf("HandlesProfiler::GarbageCollectionFinished: FAIL: null strong handle.\n");
+            printf("HandlesProfiler::GarbageCollectionFinished(#2): FAIL: null strong handle.\n");
             return S_OK;
         }
         if (_pinnedHandle == NULL)
         {
             _failures++;
-            printf("HandlesProfiler::GarbageCollectionFinished: FAIL: null pinned handle.\n");
+            printf("HandlesProfiler::GarbageCollectionFinished(#2): FAIL: null pinned handle.\n");
             return S_OK;
         }
 
@@ -249,11 +248,11 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
         if (FAILED(hr))
         {
             _failures++;
-            printf("HandlesProfiler::GarbageCollectionFinished: FAIL: DestroyHandle failed for strong handle.\n");
+            printf("HandlesProfiler::GarbageCollectionFinished(#2): FAIL: DestroyHandle failed for strong handle.\n");
         }
         else
         {
-            printf("HandlesProfiler::GarbageCollectionFinished: strong handle destroyed.\n");
+            printf("HandlesProfiler::GarbageCollectionFinished(#2): strong handle destroyed.\n");
             pCorProfilerInfo->CreateHandle(strongObject, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK, &_strongHandle);
         }
 
@@ -261,17 +260,18 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
         if (FAILED(hr))
         {
             _failures++;
-            printf("HandlesProfiler::GarbageCollectionFinished: FAIL: DestroyHandle failed for pinned handle.\n");
+            printf("HandlesProfiler::GarbageCollectionFinished(#2): FAIL: DestroyHandle failed for pinned handle.\n");
         }
         else
         {
-            printf("HandlesProfiler::GarbageCollectionFinished: pinned handle destroyed.\n");
+            printf("HandlesProfiler::GarbageCollectionFinished(#2): pinned handle destroyed.\n");
             pCorProfilerInfo->CreateHandle(pinnedObject, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK, &_pinnedHandle);
         }
     }
-    else
-    if (_gcCount == 3)
+    else if (_gcCount == 3)
     {
+        printf("HandlesProfiler::GarbageCollectionFinished(#3): Checking handles:\n");
+
         // Check that instances wrapped by strong and pinned handles are not here any more
         CheckIfAlive("strong", _strongHandle, false);
         CheckIfAlive("pinned", _pinnedHandle, false);
