@@ -737,7 +737,7 @@ namespace Microsoft.Interop
                     GetMarshallingInfo(elementType, useSiteAttributes, indirectionLevel + 1, inspectedElements, ref maxIndirectionDepthUsed));
             }
 
-            return CreateNativeMarshallingInfoForValue(
+            return CreateNativeMarshallingInfoForValue_V1(
                 type,
                 nativeType,
                 attrData,
@@ -746,7 +746,7 @@ namespace Microsoft.Interop
                 useDefaultMarshalling: !isMarshalUsingAttribute);
         }
 
-        private MarshallingInfo CreateNativeMarshallingInfoForValue(
+        private MarshallingInfo CreateNativeMarshallingInfoForValue_V1(
             ITypeSymbol type,
             INamedTypeSymbol nativeType,
             AttributeData attrData,
@@ -974,10 +974,21 @@ namespace Microsoft.Interop
             if (stringMarshaller is null)
                 return new MissingSupportMarshallingInfo();
 
+            if (ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(stringMarshaller))
+            {
+                if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(stringMarshaller, type, _compilation, out CustomTypeMarshallers? marshallers))
+                {
+                    return new NativeMarshallingAttributeInfo(
+                        EntryPointType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(stringMarshaller),
+                        Marshallers: marshallers.Value,
+                        IsPinnableManagedType: false);
+                }
+            }
+
             var (_, _, customTypeMarshallerData) = ManualTypeMarshallingHelper_V1.GetMarshallerShapeInfo(stringMarshaller);
             Debug.Assert(customTypeMarshallerData is not null);
 
-            return CreateNativeMarshallingInfoForValue(
+            return CreateNativeMarshallingInfoForValue_V1(
                 type,
                 stringMarshaller,
                 null,
