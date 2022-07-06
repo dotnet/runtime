@@ -622,7 +622,7 @@ namespace System.Text
             // this method is running.
 
             return ((Sse2.IsSupported || AdvSimd.IsSupported) && BitConverter.IsLittleEndian)
-                ? GetIndexOfFirstNonAsciiChar_Intrinsifed(pBuffer, bufferLength)
+                ? GetIndexOfFirstNonAsciiChar_Intrinsified(pBuffer, bufferLength)
                 : GetIndexOfFirstNonAsciiChar_Default(pBuffer, bufferLength);
         }
 
@@ -762,7 +762,7 @@ namespace System.Text
             goto Finish;
         }
 
-        private static unsafe nuint GetIndexOfFirstNonAsciiChar_Intrinsifed(char* pBuffer, nuint bufferLength /* in chars */)
+        private static unsafe nuint GetIndexOfFirstNonAsciiChar_Intrinsified(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.
             // Much of the logic in this method will be elided by JIT once we determine which specific ISAs we support.
@@ -1542,7 +1542,7 @@ namespace System.Text
         FoundNonAsciiDataInLoop:
 
             // Can we at least narrow the high vector?
-            // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
+            // See comments in GetIndexOfFirstNonAsciiChar_Intrinsified for information about how this works.
             if (VectorContainsNonAsciiChar(utf16VectorFirst))
             {
                 goto Finish;
