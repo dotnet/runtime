@@ -132,7 +132,7 @@ public abstract class TerminalData
     internal ConsolePal.TerminalFormatStrings TerminalDb => _terminalDb ??=
         new ConsolePal.TerminalFormatStrings(new TermInfo.Database(Term, Convert.FromBase64String(EncodedTerminalDb)));
 
-    internal Encoding ConsoleEncoding => _consoleEncoding ??= Encoding.GetEncoding(EncodingCharset).RemovePreamble();
+    internal Encoding ConsoleEncoding => _consoleEncoding ??= (string.IsNullOrEmpty(EncodingCharset) ? Encoding.Default : Encoding.GetEncoding(EncodingCharset)).RemovePreamble();
 }
 
 // Ubuntu 18.04 x64
