@@ -835,7 +835,7 @@ mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 		for (i = 0; i < gi->nlocs; ++i) {
 			MonoDwarfLocListEntry *entry = &gi->locations [i];
 
-			if (offset >= GINT_TO_UINT(entry->from) && (offset < GINT_TO_UINT(entry->to) || entry->to == 0)) {
+			if (offset >= GINT_TO_SIZE(entry->from) && (offset < GINT_TO_UINT(entry->to) || entry->to == 0)) {
 				if (entry->is_reg)
 					info = (gpointer)mono_arch_context_get_int_reg (ctx, entry->reg);
 				else
