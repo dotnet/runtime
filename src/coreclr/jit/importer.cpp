@@ -4201,8 +4201,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                     retNode = gtNewIconNode(
                                         (eeIsValueClass(hClass) &&
                                          // getTypeForPrimitiveNumericClass seems to not normalize enums
-                                         info.compCompHnd->getTypeForPrimitiveNumericClass(hClass)
-                                            == CORINFO_TYPE_UNDEF &&
+                                         info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) ==
+                                            CORINFO_TYPE_UNDEF &&
                                          info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
                                             ? 1
                                             : 0);
