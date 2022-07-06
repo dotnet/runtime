@@ -4173,6 +4173,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsByRefLike:
             {
@@ -4196,6 +4197,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             switch (ni)
                             {
+                                case NI_System_Type_get_IsEnum:
+                                    retNode = gtNewIconNode(
+                                        (eeIsValueClass(hClass) &&
+                                         // getTypeForPrimitiveNumericClass seems to not normalize enums
+                                         info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) == CORINFO_TYPE_UNDEF &&
+                                         info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
+                                            ? 1
+                                            : 0);
+                                    break;
                                 case NI_System_Type_get_IsValueType:
                                     retNode = gtNewIconNode(
                                         (eeIsValueClass(hClass) &&
@@ -5787,6 +5797,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "GetTypeCode") == 0)
             {
                 result = NI_System_Type_GetTypeCode;
+            }
+            else if (strcmp(methodName, "get_IsEnum") == 0)
+            {
+                result = NI_System_Type_get_IsEnum;
             }
         }
         else if (strcmp(className, "String") == 0)

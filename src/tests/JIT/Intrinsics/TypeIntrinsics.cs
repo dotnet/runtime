@@ -99,6 +99,18 @@ public partial class Program
 
         TestIsAssignableFrom();
 
+        IsFalse(typeof(byte).IsEnum);
+        IsFalse(typeof(int).IsEnum);
+        IsFalse(typeof(int?).IsEnum);
+        IsFalse(typeof(int*).IsEnum);
+        IsFalse(typeof(void).IsEnum);
+        IsFalse(typeof(object).IsEnum);
+        IsFalse(typeof(Enum).IsEnum);
+        IsFalse(typeof(ValueType).IsEnum);
+        IsFalse(typeof(GenericStruct<int>).IsEnum);
+        IsFalse(typeof(SimpleStruct).IsEnum);
+        IsTrue (typeof(SimpleEnum).IsValueType);
+
         AreSame(Type.GetTypeCode(null),                       TypeCode.Empty);
         AreSame(Type.GetTypeCode(typeof(bool)),               TypeCode.Boolean);
         AreSame(Type.GetTypeCode(typeof(char)),               TypeCode.Char);
