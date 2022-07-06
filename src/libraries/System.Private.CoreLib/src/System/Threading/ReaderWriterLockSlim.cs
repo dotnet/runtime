@@ -1562,7 +1562,9 @@ namespace System.Threading
                 {
                     // - Spin-wait until the Sleep(0) threshold
                     // - Beyond the Sleep(0) threshold, alternate between sleeping and spinning. Avoid using only Sleep(0), as
-                    //   it may be ineffective when there are no other threads waiting to run.
+                    //   it may be ineffective when there are no other threads waiting to run. Thread.SpinWait() is not used
+                    //   where there is a single processor since it would be unlikely for a meaningful change in state to occur
+                    //   during that.
                     // - Don't Sleep(1) here, as it can lead to long latencies in the reader/writer lock operations
                     if ((spinIndex < LockSleep0SpinThreshold || (spinIndex - LockSleep0SpinThreshold) % 2 != 0) &&
                         !Environment.IsSingleProcessor)
