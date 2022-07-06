@@ -138,14 +138,6 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
     _ASSERTE(isBooleanRef != NULL);
     _ASSERTE(appContextConfigNameRef != NULL);
 
-    if (!ThreadpoolMgr::UsePortableThreadPool())
-    {
-        *configValueRef = 0;
-        *isBooleanRef = false;
-        *appContextConfigNameRef = NULL;
-        return -1;
-    }
-
     auto TryGetConfig =
         [=](const CLRConfig::ConfigDWORDInfo &configInfo, bool isBoolean, const WCHAR *appContextConfigName) -> bool
     {
@@ -164,8 +156,7 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
     switch (configVariableIndex)
     {
         case 0:
-            // Special case for UsePortableThreadPool and similar, which don't go into the AppContext
-            *configValueRef = ThreadpoolMgr::UsePortableThreadPoolForIO() ? 2 : 1;
+            *configValueRef = 2;
             *isBooleanRef = false;
             *appContextConfigNameRef = NULL;
             return 1;
@@ -205,7 +196,6 @@ FCIMPLEND
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorCanSetMinIOCompletionThreads, DWORD ioCompletionThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL result = ThreadpoolMgr::CanSetMinIOCompletionThreads(ioCompletionThreads);
     FC_RETURN_BOOL(result);
@@ -216,216 +206,8 @@ FCIMPLEND
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorCanSetMaxIOCompletionThreads, DWORD ioCompletionThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL result = ThreadpoolMgr::CanSetMaxIOCompletionThreads(ioCompletionThreads);
-    FC_RETURN_BOOL(result);
-}
-FCIMPLEND
-
-/*****************************************************************************************************/
-FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorSetMaxThreads,DWORD workerThreads, DWORD completionPortThreads)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    BOOL bRet = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    bRet = ThreadpoolMgr::SetMaxThreads(workerThreads,completionPortThreads);
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(bRet);
-}
-FCIMPLEND
-
-/*****************************************************************************************************/
-FCIMPL2(VOID, ThreadPoolNative::CorGetMaxThreads,DWORD* workerThreads, DWORD* completionPortThreads)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    ThreadpoolMgr::GetMaxThreads(workerThreads,completionPortThreads);
-    return;
-}
-FCIMPLEND
-
-/*****************************************************************************************************/
-FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorSetMinThreads,DWORD workerThreads, DWORD completionPortThreads)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    BOOL bRet = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    bRet = ThreadpoolMgr::SetMinThreads(workerThreads,completionPortThreads);
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(bRet);
-}
-FCIMPLEND
-
-/*****************************************************************************************************/
-FCIMPL2(VOID, ThreadPoolNative::CorGetMinThreads,DWORD* workerThreads, DWORD* completionPortThreads)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    ThreadpoolMgr::GetMinThreads(workerThreads,completionPortThreads);
-    return;
-}
-FCIMPLEND
-
-/*****************************************************************************************************/
-FCIMPL2(VOID, ThreadPoolNative::CorGetAvailableThreads,DWORD* workerThreads, DWORD* completionPortThreads)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    ThreadpoolMgr::GetAvailableThreads(workerThreads,completionPortThreads);
-    return;
-}
-FCIMPLEND
-
-/*****************************************************************************************************/
-FCIMPL0(INT32, ThreadPoolNative::GetThreadCount)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    return ThreadpoolMgr::GetThreadCount();
-}
-FCIMPLEND
-
-/*****************************************************************************************************/
-extern "C" INT64 QCALLTYPE ThreadPool_GetCompletedWorkItemCount()
-{
-    QCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    INT64 result = 0;
-
-    BEGIN_QCALL;
-
-    result = (INT64)Thread::GetTotalThreadPoolCompletionCount();
-
-    END_QCALL;
-    return result;
-}
-
-/*****************************************************************************************************/
-FCIMPL0(INT64, ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-
-    return PerAppDomainTPCountList::GetUnmanagedTPCount()->GetNumRequests();
-}
-FCIMPLEND
-
-/*****************************************************************************************************/
-
-FCIMPL0(VOID, ThreadPoolNative::NotifyRequestProgress)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-    _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
-
-    ThreadpoolMgr::NotifyWorkItemCompleted();
-
-    if (ThreadpoolMgr::ShouldAdjustMaxWorkersActive())
-    {
-        DangerousNonHostedSpinLockTryHolder tal(&ThreadpoolMgr::ThreadAdjustmentLock);
-        if (tal.Acquired())
-        {
-            HELPER_METHOD_FRAME_BEGIN_0();
-            ThreadpoolMgr::AdjustMaxWorkersActive();
-            HELPER_METHOD_FRAME_END();
-        }
-        else
-        {
-            // the lock is held by someone else, so they will take care of this for us.
-        }
-    }
-}
-FCIMPLEND
-
-FCIMPL1(VOID, ThreadPoolNative::ReportThreadStatus, CLR_BOOL isWorking)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-
-    ThreadpoolMgr::ReportThreadStatus(isWorking);
-}
-FCIMPLEND
-
-FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-    _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
-
-    ThreadpoolMgr::NotifyWorkItemCompleted();
-
-    //
-    // Now we need to possibly do one or both of:  reset the thread's state, and/or perform a
-    // "worker thread adjustment" (i.e., invoke Hill Climbing).  We try to avoid these at all costs,
-    // because they require an expensive helper method frame.  So we first try a minimal thread reset,
-    // then check if it covered everything that was needed, and we ask ThreadpoolMgr whether
-    // we need a thread adjustment, before setting up the frame.
-    //
-    Thread *pThread = GetThread();
-
-    INT32 priority = pThread->ResetManagedThreadObjectInCoopMode(ThreadNative::PRIORITY_NORMAL);
-
-    bool needReset =
-        priority != ThreadNative::PRIORITY_NORMAL ||
-        !pThread->IsBackground();
-
-    bool shouldAdjustWorkers = ThreadpoolMgr::ShouldAdjustMaxWorkersActive();
-
-    //
-    // If it's time for a thread adjustment, try to get the lock.  This is just a "try," it won't block,
-    // so it's ok to do this in cooperative mode.  If we can't get the lock, then some other thread is
-    // already doing the thread adjustment, so we needn't bother.
-    //
-    DangerousNonHostedSpinLockTryHolder tal(&ThreadpoolMgr::ThreadAdjustmentLock, shouldAdjustWorkers);
-    if (!tal.Acquired())
-        shouldAdjustWorkers = false;
-
-    if (needReset || shouldAdjustWorkers)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        if (shouldAdjustWorkers)
-        {
-            ThreadpoolMgr::AdjustMaxWorkersActive();
-            tal.Release();
-        }
-
-        if (needReset)
-            pThread->InternalReset(TRUE, TRUE, FALSE);
-
-        HELPER_METHOD_FRAME_END();
-    }
-
-    //
-    // Finally, ask ThreadpoolMgr whether it's ok to keep running work on this thread.  Maybe Hill Climbing
-    // wants this thread back.
-    //
-    BOOL result = ThreadpoolMgr::ShouldWorkerKeepRunning() ? TRUE : FALSE;
-    FC_RETURN_BOOL(result);
-}
-FCIMPLEND
-
-
-/*****************************************************************************************************/
-
-FCIMPL0(FC_BOOL_RET, ThreadPoolNative::GetEnableWorkerTracking)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-
-    BOOL result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking) ? TRUE : FALSE;
     FC_RETURN_BOOL(result);
 }
 FCIMPLEND
@@ -503,64 +285,6 @@ VOID NTAPI RegisterWaitForSingleObjectCallback(PVOID delegateInfo, BOOLEAN Timer
     ManagedThreadBase::ThreadPool(RegisterWaitForSingleObjectCallback_Worker, &args);
 }
 
-FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
-                                        Object* waitObjectUNSAFE,
-                                        Object* stateUNSAFE,
-                                        UINT32 timeout,
-                                        CLR_BOOL executeOnlyOnce,
-                                        Object* registeredWaitObjectUNSAFE)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-
-    HANDLE handle = 0;
-    struct _gc
-    {
-        WAITHANDLEREF waitObject;
-        OBJECTREF state;
-        OBJECTREF registeredWaitObject;
-    } gc;
-    gc.waitObject = (WAITHANDLEREF) ObjectToOBJECTREF(waitObjectUNSAFE);
-    gc.state = (OBJECTREF) stateUNSAFE;
-    gc.registeredWaitObject = (OBJECTREF) registeredWaitObjectUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    if(gc.waitObject == NULL)
-        COMPlusThrow(kArgumentNullException);
-
-    _ASSERTE(gc.registeredWaitObject != NULL);
-
-    ULONG flag = executeOnlyOnce ? WAIT_SINGLE_EXECUTION | WAIT_FREE_CONTEXT : WAIT_FREE_CONTEXT;
-
-    HANDLE hWaitHandle = gc.waitObject->GetWaitHandle();
-    _ASSERTE(hWaitHandle);
-
-    Thread* pCurThread = GetThread();
-
-    DelegateInfoHolder delegateInfo = DelegateInfo::MakeDelegateInfo(
-                                                                &gc.state,
-                                                                (OBJECTREF *)&gc.waitObject,
-                                                                &gc.registeredWaitObject);
-
-    if (!(ThreadpoolMgr::RegisterWaitForSingleObject(&handle,
-                                          hWaitHandle,
-                                          RegisterWaitForSingleObjectCallback,
-                                          (PVOID) delegateInfo,
-                                          (ULONG) timeout,
-                                          flag)))
-
-    {
-        _ASSERTE(GetLastError() != ERROR_CALL_NOT_IMPLEMENTED);
-
-        COMPlusThrowWin32();
-    }
-
-    delegateInfo.SuppressRelease();
-    HELPER_METHOD_FRAME_END();
-    return (LPVOID) handle;
-}
-FCIMPLEND
-
 VOID QueueUserWorkItemManagedCallback(PVOID pArg)
 {
     CONTRACTL
@@ -577,125 +301,6 @@ VOID QueueUserWorkItemManagedCallback(PVOID pArg)
     MethodDescCallSite dispatch(METHOD__TP_WAIT_CALLBACK__PERFORM_WAIT_CALLBACK);
     *wasNotRecalled = dispatch.Call_RetBool(NULL);
 }
-
-extern "C" BOOL QCALLTYPE ThreadPool_RequestWorkerThread()
-{
-    QCALL_CONTRACT;
-
-    BOOL res = FALSE;
-
-    BEGIN_QCALL;
-
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-
-    ThreadpoolMgr::EnsureInitialized();
-    ThreadpoolMgr::SetAppDomainRequestsActive();
-
-    res = ThreadpoolMgr::QueueUserWorkItem(NULL,
-                                           NULL,
-                                           0,
-                                           FALSE);
-    if (!res)
-    {
-        if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
-            COMPlusThrow(kNotSupportedException);
-        else
-            COMPlusThrowWin32();
-    }
-
-    END_QCALL;
-    return res;
-}
-
-extern "C" BOOL QCALLTYPE ThreadPool_PerformGateActivities(INT32 cpuUtilization)
-{
-    QCALL_CONTRACT;
-
-    bool needGateThread = false;
-
-    BEGIN_QCALL;
-
-    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool() && !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    ThreadpoolMgr::PerformGateActivities(cpuUtilization);
-    needGateThread = ThreadpoolMgr::NeedGateThreadForIOCompletions();
-
-    END_QCALL;
-
-    return needGateThread;
-}
-
-/********************************************************************************************************************/
-
-FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorUnregisterWait, LPVOID WaitHandle, Object* objectToNotify)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-
-    BOOL retVal = false;
-    SAFEHANDLEREF refSH = (SAFEHANDLEREF) ObjectToOBJECTREF(objectToNotify);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refSH);
-
-    HANDLE hWait = (HANDLE) WaitHandle;
-    HANDLE hObjectToNotify = NULL;
-
-    ThreadpoolMgr::WaitInfo *pWaitInfo = (ThreadpoolMgr::WaitInfo *)hWait;
-    _ASSERTE(pWaitInfo != NULL);
-
-    ThreadpoolMgr::WaitInfoHolder   wiHolder(NULL);
-
-    if (refSH != NULL)
-    {
-        // Create a GCHandle in the WaitInfo, so that it can hold on to the safe handle
-        pWaitInfo->ExternalEventSafeHandle = GetAppDomain()->CreateHandle(NULL);
-
-        // Holder will now release objecthandle in face of exceptions
-        wiHolder.Assign(pWaitInfo);
-
-        // Store SafeHandle in object handle. Holder will now release both safehandle and objecthandle
-        // in case of exceptions
-        StoreObjectInHandle(pWaitInfo->ExternalEventSafeHandle, refSH);
-
-        // Acquire safe handle to examine its handle, then release.
-        SafeHandleHolder shHolder(&refSH);
-
-        if (refSH->GetHandle() == INVALID_HANDLE_VALUE)
-        {
-            hObjectToNotify = INVALID_HANDLE_VALUE;
-            // We do not need the ObjectHandle, refcount on the safehandle etc
-            wiHolder.Release();
-            _ASSERTE(pWaitInfo->ExternalEventSafeHandle == NULL);
-        }
-    }
-
-    _ASSERTE(hObjectToNotify == NULL || hObjectToNotify == INVALID_HANDLE_VALUE);
-
-    // When hObjectToNotify is NULL ExternalEventSafeHandle contains event to notify (if it is non NULL).
-    // When hObjectToNotify is INVALID_HANDLE_VALUE, UnregisterWaitEx blocks until dispose is complete.
-    retVal = ThreadpoolMgr::UnregisterWaitEx(hWait, hObjectToNotify);
-
-    if (retVal)
-        wiHolder.SuppressRelease();
-
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
-/********************************************************************************************************************/
-FCIMPL1(void, ThreadPoolNative::CorWaitHandleCleanupNative, LPVOID WaitHandle)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    HANDLE hWait = (HANDLE)WaitHandle;
-    ThreadpoolMgr::WaitHandleCleanup(hWait);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
 /********************************************************************************************************************/
 
@@ -787,71 +392,6 @@ void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
     WRAPPER_NO_CONTRACT;
     BindIoCompletionCallbackStubEx(ErrorCode, numBytesTransferred, lpOverlapped, TRUE);
 }
-
-FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorBindIoCompletionCallback, HANDLE fileHandle)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    BOOL retVal = FALSE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    HANDLE hFile = (HANDLE) fileHandle;
-    DWORD errCode = 0;
-
-    retVal = ThreadpoolMgr::BindIoCompletionCallback(hFile,
-                                           BindIoCompletionCallbackStub,
-                                           0,     // reserved, must be 0
-                                           OUT errCode);
-    if (!retVal)
-    {
-        if (errCode == ERROR_CALL_NOT_IMPLEMENTED)
-            COMPlusThrow(kPlatformNotSupportedException);
-        else
-        {
-            SetLastError(errCode);
-            COMPlusThrowWin32();
-        }
-    }
-
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped)
-{
-    FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    OVERLAPPEDDATAREF   overlapped = ObjectToOVERLAPPEDDATAREF(OverlappedDataObject::GetOverlapped(lpOverlapped));
-
-    BOOL res = FALSE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(overlapped);
-
-    // OS doesn't signal handle, so do it here
-    lpOverlapped->Internal = 0;
-
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIOEnqueue))
-        FireEtwThreadPoolIOEnqueue(lpOverlapped, OBJECTREFToObject(overlapped), false, GetClrInstanceId());
-
-    res = ThreadpoolMgr::PostQueuedCompletionStatus(lpOverlapped,
-        BindIoCompletionCallbackStub);
-
-    if (!res)
-    {
-        if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
-            COMPlusThrow(kPlatformNotSupportedException);
-        else
-            COMPlusThrowWin32();
-    }
-
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(res);
-}
-FCIMPLEND
 
 
 /********************************************************************************************************************/
