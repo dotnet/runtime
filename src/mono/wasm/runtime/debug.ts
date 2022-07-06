@@ -472,7 +472,7 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     }
 }
 
-export function setup_proxy_console(id: string, originalConsole: any, origin: string, ...args: any[]): void {
+export function setup_proxy_console(id: string, originalConsole: Console, origin: string, ...args: any[]): void {
     function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
         return function () {
             try {
@@ -506,10 +506,11 @@ export function setup_proxy_console(id: string, originalConsole: any, origin: st
         };
     }
 
+    const originalConsoleObj : any = originalConsole;
     const methods = ["debug", "trace", "warn", "info", "error"];
     for (const m of methods) {
-        if (typeof (originalConsole[m]) !== "function") {
-            originalConsole[m] = proxyConsoleMethod(`console.${m}: `, originalConsole.log, false);
+        if (typeof (originalConsoleObj[m]) !== "function") {
+            originalConsoleObj[m] = proxyConsoleMethod(`console.${m}: `, originalConsole.log, false);
         }
     }
 
@@ -537,7 +538,7 @@ export function setup_proxy_console(id: string, originalConsole: any, origin: st
 
     // redirect output early, so that when emscripten starts it's already redirected
     for (const m of ["log", ...methods])
-        originalConsole[m] = proxyConsoleMethod(`console.${m}`, send, true);
+        originalConsoleObj[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
 type CallDetails = {
