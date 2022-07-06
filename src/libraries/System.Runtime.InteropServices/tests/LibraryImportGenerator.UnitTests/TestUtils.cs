@@ -63,7 +63,7 @@ namespace LibraryImportGenerator.UnitTests
 
         internal static void Use<T>(T _)
         {
-            // Method to avoid unused parameter warning.
+            // Workaround for - xUnit1026 // Theory methods should use all of their parameters
         }
 
         /// <summary>
