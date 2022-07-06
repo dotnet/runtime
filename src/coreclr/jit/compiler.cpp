@@ -9965,7 +9965,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 }
 
 //------------------------------------------------------------------------------
-// gtTypeForNullCheck: helper to get the most optimal type for nullcheck
+// gtTypeForNullCheck: helper to get the most optimal and correct type for nullcheck
 //
 // Arguments:
 //    tree - the node for nullcheck;
@@ -9974,7 +9974,7 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 {
     static const var_types s_typesBySize[] = { TYP_UNDEF, TYP_BYTE, TYP_SHORT, TYP_UNDEF, TYP_INT, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_LONG };
 
-    if (varTypeIsStruct(tree))
+    if (!varTypeIsStruct(tree))
     {
 #if defined(TARGET_XARCH)
         // Just an optimization for XARCH - smaller mov
@@ -9987,7 +9987,6 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
         assert((genTypeSize(tree) < ARRAY_SIZE(s_typesBySize)) && (s_typesBySize[genTypeSize(tree)] != TYP_UNDEF));
         return s_typesBySize[genTypeSize(tree)];
     }
-
     // for the rest: probe a single byte to avoid potential AVEs
     return TYP_BYTE;
 }

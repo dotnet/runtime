@@ -7142,6 +7142,17 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
     // they only appear as the source of a block copy operation or a return node.
     if (!ind->TypeIs(TYP_STRUCT) || ind->IsUnusedValue())
     {
+#ifndef TARGET_XARCH
+        // On non-xarch, whether or not we can contain an address mode will depend on the access width
+        // which may be changed when transforming an unused indir, so do that first.
+        // On xarch, it is the opposite: we transform to indir/nullcheck based on whether we contained the
+        // address mode, so in that case we must do this transformation last.
+        if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
+        {
+            TransformUnusedIndirection(ind, comp, m_block);
+        }
+#endif
+
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
@@ -7158,10 +7169,12 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         TryCreateAddrMode(ind->Addr(), isContainable, ind);
         ContainCheckIndir(ind);
 
+#ifdef TARGET_XARCH
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
         {
             TransformUnusedIndirection(ind, comp, m_block);
         }
+#endif
     }
     else
     {
@@ -7202,47 +7215,10 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
-    var_types nullCheckType = comp->gtTypeForNullCheck(ind);
+    ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool useNullCheck = true;
-
-    // Changing the width of the access may make the indirection
-    // unrepresentable if we contained an address mode, so get the width from
-    // the address mode if possible.
-    if (ind->gtGetOp1()->isContained() && ind->gtGetOp1()->OperIs(GT_LEA))
-    {
-        unsigned addrModeScale = ind->gtGetOp1()->AsAddrMode()->gtScale;
-        unsigned existingWidth = ind->OperIs(GT_NULLCHECK) ? genTypeSize(ind) : ind->AsIndir()->Size();
-
-        // We cannot allow the indir to read more bytes, but we can allow it to read fewer.
-        if (existingWidth < addrModeScale)
-        {
-            ind->gtGetOp1()->ClearContained();
-        }
-        else
-        {
-            switch (addrModeScale)
-            {
-                case 1:
-                    nullCheckType = TYP_BYTE;
-                    break;
-                case 2:
-                    nullCheckType = TYP_SHORT;
-                    break;
-                case 4:
-                    nullCheckType = TYP_INT;
-                    break;
-                case 8:
-                    nullCheckType = TYP_LONG;
-                    break;
-                default:
-                    assert(!"Unexpected address mode scale");
-                    break;
-            }
-        }
-    }
-
 #elif TARGET_ARM
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
@@ -7260,8 +7236,6 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
         ind->ChangeOper(GT_IND);
         ind->SetUnusedValue();
     }
-
-    ind->ChangeType(nullCheckType);
 }
 
 //------------------------------------------------------------------------
