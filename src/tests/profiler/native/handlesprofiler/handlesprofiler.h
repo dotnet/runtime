@@ -14,7 +14,8 @@ public:
         _isInduced(false),
         _weakHandle(NULL),
         _strongHandle(NULL),
-        _pinnedHandle(NULL)
+        _pinnedHandle(NULL),
+        _pinnedObject(NULL)
     {}
 
 	static GUID GetClsid();
@@ -25,7 +26,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ObjectAllocated(ObjectID objectId, ClassID classId);
 
 private:
-    void CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive);
+    ObjectID CheckIfAlive(const char* name, ObjectHandleID handle, bool shouldBeAlive);
 
 private:
     std::atomic<int> _gcCount;
@@ -34,4 +35,5 @@ private:
     ObjectHandleID _weakHandle;
     ObjectHandleID _strongHandle;
     ObjectHandleID _pinnedHandle;
+    ObjectID _pinnedObject;
 };

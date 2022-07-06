@@ -69,10 +69,11 @@ namespace Profiler.Tests
         //   --> HandlesProfiler ensures:
         //       - weak wrapped objects are no more alive
         //       - strong and pinned wrapped objects are still alive
-        //   4. A gen1 is triggered.
-        //   5. HandlesProfiler destroys strong and pinned handles.
-        //   6. A gen2 is triggered.
-        //   7. HandlesProfiler ensures that no more instances are alive.
+        //   4. A gen0 is triggered.
+        //   --> HandlesProfiler destroys strong and pinned handles + wrap the corresponding
+        //       instances with a weak reference
+        //   5. A gen0 is triggered.
+        //   --> HandlesProfiler ensures that no more instances are alive.
         //
         public static void DoWork(object parameter)
         {
@@ -86,14 +87,14 @@ namespace Profiler.Tests
             Console.WriteLine($"weak = {objects._pinned.Tag}");
             objects._pinned = null;
 
-            Console.WriteLine("Collection #0");
+            Console.WriteLine("Collection #1");
             GC.Collect(0);
 
-            Console.WriteLine("Collection #1");
-            GC.Collect(1);
-
             Console.WriteLine("Collection #2");
-            GC.Collect(2);
+            GC.Collect(0);
+
+            Console.WriteLine("Collection #3");
+            GC.Collect(0);
         }
 
         private static void AllocateInstances(Objects objects)

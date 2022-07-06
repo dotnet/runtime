@@ -26,10 +26,11 @@ GUID HandlesProfiler::GetClsid()
 //   --> HandlesProfiler ensures:
 //       - weak wrapped objects are no more alive
 //       - strong and pinned wrapped objects are still alive
-//   4. A gen1 is triggered.
-//   5. HandlesProfiler destroys strong and pinned handles.
-//   6. A gen2 is triggered.
-//   7. HandlesProfiler ensures that no more instances are alive.
+//   4. A gen0 is triggered.
+//   --> HandlesProfiler destroys strong and pinned handles + wrap the corresponding
+//       instances with a weak reference
+//   5. A gen0 is triggered.
+//   --> HandlesProfiler ensures that no more instances are alive.
 //
 HRESULT HandlesProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
@@ -84,13 +85,8 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
 {
     // Create handles for TestClassForWeakHandle, TestClassForStrongHandle and TestClassForPinnedHandle instances
     String typeName = GetClassIDName(classId);
-    //wprintf(L"HandlesProfiler::ObjectAllocated: + %s\n", typeName.ToCStr());
 
     HRESULT hr = S_OK;
-    if (typeName == WCHAR("Profiler.Tests.HandlesTests.Objects"))
-    {
-        printf("HandlesProfiler::ObjectAllocated: objects holder\n");
-    }
     if (typeName == WCHAR("Profiler.Tests.TestClassForWeakHandle"))
     {
         hr = pCorProfilerInfo->CreateHandle(objectId, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK, &_weakHandle);
@@ -104,8 +100,7 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
             printf("HandlesProfiler::ObjectAllocated: weak handle created.\n");
         }
     }
-    else
-    if (typeName == WCHAR("Profiler.Tests.TestClassForStrongHandle"))
+    else if (typeName == WCHAR("Profiler.Tests.TestClassForStrongHandle"))
     {
         hr = pCorProfilerInfo->CreateHandle(objectId, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_STRONG, &_strongHandle);
         if (FAILED(hr))
@@ -118,9 +113,12 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
             printf("HandlesProfiler::ObjectAllocated: strong handle created.\n");
         }
     }
-    else
-    if (typeName == WCHAR("Profiler.Tests.TestClassForPinnedHandle"))
+    else if (typeName == WCHAR("Profiler.Tests.TestClassForPinnedHandle"))
     {
+        // Keep track of the address of the p�nned object to be able
+        // to check that it will not be moved by the next collection
+        _pinnedObject = objectId;
+
         hr = pCorProfilerInfo->CreateHandle(objectId, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_PINNED, &_pinnedHandle);
         if (FAILED(hr))
         {
@@ -135,13 +133,13 @@ HRESULT HandlesProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
     return S_OK;
 }
 
-void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
+ObjectID HandlesProfiler::CheckIfAlive(const char* name, ObjectHandleID handle, bool shouldBeAlive)
 {
     if (handle == NULL)
     {
         _failures++;
-        printf("HandlesProfiler::CheckIfAlive: FAIL: null handle.\n");
-        return;
+        printf("HandlesProfiler::CheckIfAlive(%s): FAIL: null handle.\n", name);
+        return NULL;
     }
 
     ObjectID objectId{0};
@@ -149,8 +147,8 @@ void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
     if (FAILED(hr))
     {
         _failures++;
-        printf("HandlesProfiler::CheckIfAlive: FAIL: GetObjectIDFromHandle failed.\n");
-        return;
+        printf("HandlesProfiler::CheckIfAlive(%s): FAIL: GetObjectIDFromHandle failed.\n", name);
+        return NULL;
     }
 
     if (shouldBeAlive)
@@ -158,11 +156,11 @@ void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
         if (objectId == NULL)
         {
             _failures++;
-            printf("HandlesProfiler::CheckIfAlive: FAIL: the object should be alive.\n");
+            printf("HandlesProfiler::CheckIfAlive(%s): FAIL: the object should be alive.\n", name);
         }
         else
         {
-            printf("HandlesProfiler::CheckIfAlive: object alive as expected ");
+            printf("HandlesProfiler::CheckIfAlive(%s): object alive as expected ", name);
             ClassID classId{0};
             hr = pCorProfilerInfo->GetClassFromObject(objectId, &classId);
             if (FAILED(hr))
@@ -173,7 +171,9 @@ void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
             else
             {
                 String typeName = GetClassIDName(classId);
-                wcout << typeName.ToWString() << std::endl;
+                wcout << "("<< typeName.ToWString() << ")" << std::endl;
+
+                return objectId;
             }
         }
     }
@@ -182,13 +182,15 @@ void HandlesProfiler::CheckIfAlive(ObjectHandleID handle, bool shouldBeAlive)
         if (objectId != NULL)
         {
             _failures++;
-            printf("HandlesProfiler::CheckIfAlive: FAIL: the object should not be alive anymore.\n");
+            printf("HandlesProfiler::CheckIfAlive(%s): FAIL: the object should not be alive anymore.\n", name);
         }
         else
         {
-            printf("HandlesProfiler::CheckIfAlive: object not alive as expected.\n");
+            printf("HandlesProfiler::CheckIfAlive(%s): object not alive as expected.\n", name);
         }
     }
+
+    return NULL;
 }
 
 HRESULT HandlesProfiler::GarbageCollectionFinished()
@@ -203,12 +205,23 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
     HRESULT hr = S_OK;
     if (_gcCount == 1)
     {
-        // weak should not be here anymore
-        CheckIfAlive(_weakHandle, false);
+        // Weak should not be here anymore
+        CheckIfAlive("weak", _weakHandle, false);
 
-        // the others should still be alive
-        CheckIfAlive(_strongHandle, true);
-        CheckIfAlive(_pinnedHandle, true);
+        // The others should still be alive
+        CheckIfAlive("strong", _strongHandle, true);
+        ObjectID pinnedObject = CheckIfAlive("pinned", _pinnedHandle, true);
+
+        // Check that pinned object was not moved by the previous collection
+        if (pinnedObject != _pinnedObject)
+        {
+            _failures++;
+            printf("HandlesProfiler::GarbageCollectionFinished: FAIL: pinned handle object address has changed.\n");
+        }
+        else
+        {
+            printf("HandlesProfiler::GarbageCollectionFinished: pinned handle object address did not changed as expected.\n");
+        }
     }
     else
     if (_gcCount == 2)
@@ -226,6 +239,11 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
             return S_OK;
         }
 
+        // Keep a weak reference on them to be able to ensure that the instances
+        // will be released after the next collection
+        ObjectID strongObject = CheckIfAlive("strong", _strongHandle, true);
+        ObjectID pinnedObject = CheckIfAlive("pinned", _pinnedHandle, true);
+
         // Destroy strong and pinned handles so next GC will release the objects
         HRESULT hr = pCorProfilerInfo->DestroyHandle(_strongHandle);
         if (FAILED(hr))
@@ -236,6 +254,7 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
         else
         {
             printf("HandlesProfiler::GarbageCollectionFinished: strong handle destroyed.\n");
+            pCorProfilerInfo->CreateHandle(strongObject, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK, &_strongHandle);
         }
 
         hr = pCorProfilerInfo->DestroyHandle(_pinnedHandle);
@@ -247,13 +266,15 @@ HRESULT HandlesProfiler::GarbageCollectionFinished()
         else
         {
             printf("HandlesProfiler::GarbageCollectionFinished: pinned handle destroyed.\n");
+            pCorProfilerInfo->CreateHandle(pinnedObject, COR_PRF_HANDLE_TYPE::COR_PRF_HANDLE_TYPE_WEAK, &_pinnedHandle);
         }
     }
     else
     if (_gcCount == 3)
     {
-        // TODO: Check that instances wrapped by strong and pinned handles are not here any more
-        // ?? is it supported to get object from a destroyed handle ??
+        // Check that instances wrapped by strong and pinned handles are not here any more
+        CheckIfAlive("strong", _strongHandle, false);
+        CheckIfAlive("pinned", _pinnedHandle, false);
     }
     else
     {

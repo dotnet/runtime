@@ -7481,10 +7481,12 @@ HRESULT ProfToEEInterfaceImpl::CreateHandle(
     {
         return E_INVALIDARG;
     }
+
     if (pHandle == NULL)
     {
         return E_INVALIDARG;
     }
+
     AppDomain* appDomain = GetAppDomain();
     if (appDomain == NULL)
     {
@@ -7507,9 +7509,13 @@ HRESULT ProfToEEInterfaceImpl::CreateHandle(
         break;
 
         default:
-            handle = NULL;
+        {
+            *pHandle = NULL;
+            return E_INVALIDARG;
+        }
         break;
     }
+
     *pHandle = (ObjectHandleID)handle;
 
     return (handle == NULL) ? E_FAIL : S_OK;
@@ -7527,7 +7533,7 @@ HRESULT ProfToEEInterfaceImpl::DestroyHandle(
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach,
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: DestroyHandle.\n"));
@@ -7558,7 +7564,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectIDFromHandle(
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach,
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetObjectIDFromHandle.\n"));
@@ -7567,6 +7573,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectIDFromHandle(
     {
         return E_INVALIDARG;
     }
+
     if (pObject == NULL)
     {
         return E_INVALIDARG;
