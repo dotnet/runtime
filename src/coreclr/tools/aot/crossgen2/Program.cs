@@ -18,6 +18,7 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.IBC;
 
 namespace ILCompiler
 {
@@ -582,9 +583,9 @@ namespace ILCompiler
                 ICompilation compilation;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
-
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
+                    HashSet<EcmaModule> crossModuleInlineableCode = new HashSet<EcmaModule>();
 
                     foreach (var inputFile in inFilePaths)
                     {
@@ -605,6 +606,24 @@ namespace ILCompiler
                         EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
                         inputModules.Add(module);
                         versionBubbleModulesHash.Add(module);
+                    }
+
+                    if (_commandLineOptions.CrossModuleInlining != null)
+                    {
+                        foreach (var crossModulePgoAssemblyName in _commandLineOptions.CrossModuleInlining)
+                        {
+                            foreach (var module in _referenceableModules)
+                            {
+                                if (!versionBubbleModulesHash.Contains(module))
+                                {
+                                    if (crossModulePgoAssemblyName == "*" ||
+                                         (String.Compare(crossModulePgoAssemblyName, module.Assembly.GetName().Name, StringComparison.OrdinalIgnoreCase) == 0))
+                                    {
+                                        crossModuleInlineableCode.Add((EcmaModule)module);
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     //
@@ -629,6 +648,7 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
                     }
 
+
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
                     ReadyToRunCompilationModuleGroupConfig groupConfig = new ReadyToRunCompilationModuleGroupConfig();
@@ -638,8 +658,57 @@ namespace ILCompiler
                     groupConfig.CompilationModuleSet = inputModules;
                     groupConfig.VersionBubbleModuleSet = versionBubbleModules;
                     groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = _commandLineOptions.CompileBubbleGenerics;
-                    groupConfig.CrossModuleGenericCompilation = _commandLineOptions.CrossModuleGenericCompilation;
-                    groupConfig.CrossModuleInlining = _commandLineOptions.CrossModuleInlining;
+                    groupConfig.CrossModuleGenericCompilation = crossModuleInlineableCode.Count > 0;
+                    groupConfig.CrossModuleInlining = groupConfig.CrossModuleGenericCompilation; // Currently we set these flags to the same values
+                    groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
+                    groupConfig.CompileAllPossibleCrossModuleCode = false;
+
+                    // Handle non-local generics command line option
+                    ModuleDesc nonLocalGenericsHome = _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null;
+                    if (_commandLineOptions.NonLocalGenericsModule == "*")
+                    {
+                        groupConfig.CompileAllPossibleCrossModuleCode = true;
+                        nonLocalGenericsHome = inputModules[0];
+                    }
+                    else if (_commandLineOptions.NonLocalGenericsModule == "")
+                    {
+                        // Nothing was specified
+                    }
+                    else
+                    {
+                        bool matchFound = false;
+
+                        // Allow module to be specified by assembly name or by filename
+                        if (_commandLineOptions.NonLocalGenericsModule.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                            _commandLineOptions.NonLocalGenericsModule = Path.GetFileNameWithoutExtension(_commandLineOptions.NonLocalGenericsModule);
+                        foreach (var module in inputModules)
+                        {
+                            if (String.Compare(module.Assembly.GetName().Name, _commandLineOptions.NonLocalGenericsModule, StringComparison.OrdinalIgnoreCase) == 0)
+                            {
+                                matchFound = true;
+                                nonLocalGenericsHome = module;
+                                groupConfig.CompileAllPossibleCrossModuleCode = true;
+                                break;
+                            }
+                        }
+
+                        if (!matchFound)
+                        {
+                            foreach (var module in _referenceableModules)
+                            {
+                                if (String.Compare(module.Assembly.GetName().Name, _commandLineOptions.NonLocalGenericsModule, StringComparison.OrdinalIgnoreCase) == 0)
+                                {
+                                    matchFound = true;
+                                    break;
+                                }
+                            }
+
+                            if (!matchFound)
+                            {
+                                throw new CommandLineException(string.Format(SR.ErrorNonLocalGenericsModule, _commandLineOptions.NonLocalGenericsModule));
+                            }
+                        }
+                    }
 
                     if (singleMethod != null)
                     {
@@ -668,22 +737,32 @@ namespace ILCompiler
                     }
 
                     // Examine profile guided information as appropriate
+                    MIbcProfileParser.MibcGroupParseRules parseRule;
+                    if (nonLocalGenericsHome != null)
+                    {
+                        parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule2;
+                    }
+                    else
+                    {
+                        parseRule = MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule1;
+                    }
+
                     ProfileDataManager profileDataManager =
                         new ProfileDataManager(logger,
                         _referenceableModules,
                         inputModules,
                         versionBubbleModules,
-                        _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
+                        crossModuleInlineableCode,
+                        nonLocalGenericsHome,
                         mibcFiles,
+                        parseRule,
                         jsonProfile,
                         typeSystemContext,
                         compilationGroup,
-                        _commandLineOptions.EmbedPgoData);
+                        _commandLineOptions.EmbedPgoData,
+                        crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
 
-                    if (_commandLineOptions.Partial)
-                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
-                    else
-                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
+                    compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, _commandLineOptions.Partial);
 
                     if ((singleMethod == null) && !_commandLineOptions.CompileNoMethods)
                     {

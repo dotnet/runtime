@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -20,8 +22,8 @@ namespace System.Formats.Tar
         internal const byte EqualsChar = 0x3d;
         internal const byte NewLineChar = 0xa;
 
-        internal const TarFileMode DefaultMode = // 644 in octal
-            TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.OtherRead;
+        internal const UnixFileMode DefaultMode = // 644 in octal
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
 
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
         internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
@@ -32,14 +34,33 @@ namespace System.Formats.Tar
             }
             else if (bytesToDiscard > 0)
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
                 while (bytesToDiscard > 0)
                 {
                     int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    if (archiveStream.Read(buffer.AsSpan(0, currentLengthToRead)) != currentLengthToRead)
-                    {
-                        throw new EndOfStreamException();
-                    }
+                    archiveStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
+                    bytesToDiscard -= currentLengthToRead;
+                }
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        // Asynchronously helps advance the stream a total number of bytes larger than int.MaxValue.
+        internal static async ValueTask AdvanceStreamAsync(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (archiveStream.CanSeek)
+            {
+                archiveStream.Position += bytesToDiscard;
+            }
+            else if (bytesToDiscard > 0)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
+                while (bytesToDiscard > 0)
+                {
+                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
+                    await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
                     bytesToDiscard -= currentLengthToRead;
                 }
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -49,15 +70,29 @@ namespace System.Formats.Tar
         // Helps copy a specific number of bytes from one stream into another.
         internal static void CopyBytes(Stream origin, Stream destination, long bytesToCopy)
         {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: MaxBufferLength);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
             while (bytesToCopy > 0)
             {
                 int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                if (origin.Read(buffer.AsSpan(0, currentLengthToRead)) != currentLengthToRead)
-                {
-                    throw new EndOfStreamException();
-                }
+                origin.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
                 destination.Write(buffer.AsSpan(0, currentLengthToRead));
+                bytesToCopy -= currentLengthToRead;
+            }
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        // Asynchronously helps copy a specific number of bytes from one stream into another.
+        internal static async ValueTask CopyBytesAsync(Stream origin, Stream destination, long bytesToCopy, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
+            while (bytesToCopy > 0)
+            {
+                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
+                Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
+                await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
+                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
                 bytesToCopy -= currentLengthToRead;
             }
             ArrayPool<byte>.Shared.Return(buffer);
@@ -102,37 +137,28 @@ namespace System.Formats.Tar
         }
 
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
-        internal static bool IsAllNullBytes(Span<byte> buffer)
-        {
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                if (buffer[i] != 0)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+        internal static bool IsAllNullBytes(Span<byte> buffer) =>
+            buffer.IndexOfAnyExcept((byte)0) < 0;
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
         internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
             new DateTimeOffset((secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
-        internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(double secondsSinceUnixEpoch) =>
+        private static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
             new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
         // Converts the specified DateTimeOffset to the number of seconds that have passed since the Unix Epoch.
-        internal static double GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
-            ((double)(dateTimeOffset.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+        private static decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
+            ((decimal)(dateTimeOffset.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
 
-        // If the specified fieldName is found in the provided dictionary and it is a valid double number, returns true and sets the value in 'dateTimeOffset'.
+        // If the specified fieldName is found in the provided dictionary and it is a valid decimal number, returns true and sets the value in 'dateTimeOffset'.
         internal static bool TryGetDateTimeOffsetFromTimestampString(Dictionary<string, string>? dict, string fieldName, out DateTimeOffset dateTimeOffset)
         {
             dateTimeOffset = default;
             if (dict != null &&
                 dict.TryGetValue(fieldName, out string? value) &&
-                double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double secondsSinceEpoch))
+                decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch))
             {
                 dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
                 return true;
@@ -143,8 +169,10 @@ namespace System.Formats.Tar
         // Converts the specified DateTimeOffset to the string representation of seconds since the Unix Epoch.
         internal static string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
         {
-            double secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
-            return secondsSinceEpoch.ToString("F9", CultureInfo.InvariantCulture); // 6 decimals, no commas
+            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+
+            // Use 'G' to ensure the decimals get preserved (avoid losing precision).
+            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
         // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.
@@ -179,6 +207,14 @@ namespace System.Formats.Tar
             return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt32(str, fromBase: 8);
         }
 
+        // Receives a byte array that represents an ASCII string containing a number in octal base.
+        // Converts the array to an octal base number, then transforms it to ten base and returns it.
+        internal static long GetTenBaseLongFromOctalAsciiChars(Span<byte> buffer)
+        {
+            string str = GetTrimmedAsciiString(buffer);
+            return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt64(str, fromBase: 8);
+        }
+
         // Returns the string contained in the specified buffer of bytes,
         // in the specified encoding, removing the trailing null or space chars.
         private static string GetTrimmedString(ReadOnlySpan<byte> buffer, Encoding encoding)
@@ -209,6 +245,18 @@ namespace System.Formats.Tar
         {
             int bytesToSkip = CalculatePadding(size);
             AdvanceStream(archiveStream, bytesToSkip);
+            return bytesToSkip;
+        }
+
+        // After the file contents, there may be zero or more null characters,
+        // which exist to ensure the data is aligned to the record size.
+        // Asynchronously skip them and set the stream position to the first byte of the next entry.
+        internal static async ValueTask<int> SkipBlockAlignmentPaddingAsync(Stream archiveStream, long size, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int bytesToSkip = CalculatePadding(size);
+            await AdvanceStreamAsync(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
             return bytesToSkip;
         }
 
@@ -252,9 +300,10 @@ namespace System.Formats.Tar
                         TarEntryType.RegularFile or
                         TarEntryType.SymbolicLink)
                     {
+                        // GlobalExtendedAttributes is handled via PaxGlobalExtendedAttributesEntry
+
                         // Not supported for writing - internally autogenerated:
                         // - ExtendedAttributes
-                        // - GlobalExtendedAttributes
                         return;
                     }
                     break;

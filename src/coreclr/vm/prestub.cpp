@@ -503,32 +503,38 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 
     PCODE pCode = NULL;
 #ifdef FEATURE_READYTORUN
-    Module * pModule = GetLoaderModule();
+    ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
+    Module * pModule = GetModule();
     if (pModule->IsReadyToRun())
     {
-        pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+        pAlreadyExaminedInfos[0] = pModule->GetReadyToRunInfo();
+        pCode = pAlreadyExaminedInfos[0]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
     }
 
     //  Generics may be located in several places
     if (pCode == NULL && HasClassOrMethodInstantiation())
     {
-        Module* pDefiningModule = GetModule();
-        // Lookup in the defining module of the generic (which is where in inputbubble scenarios
-        // the methods may be placed.
-        if (pDefiningModule != pModule && pDefiningModule->IsReadyToRun())
+        // Generics have an alternative location that is looked up which is based on the first generic
+        // argument that the crossgen2 compiler will consider as requiring the cross module compilation logic to kick in.
+        pAlreadyExaminedInfos[1] = ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(this);
+
+        if (pAlreadyExaminedInfos[1] != NULL &&  pAlreadyExaminedInfos[1] != pAlreadyExaminedInfos[0])
         {
-            pCode = pDefiningModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+            pCode = pAlreadyExaminedInfos[1]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
         }
 
-        // Lookup in the entry point assembly for a R2R entrypoint (generics with large version bubble enabled)
-        if (pCode == NULL && (SystemDomain::System()->DefaultDomain()->GetRootAssembly() != NULL))
+        if (pCode == NULL)
         {
-            pModule = SystemDomain::System()->DefaultDomain()->GetRootAssembly()->GetModule();
-            _ASSERT(pModule != NULL);
-
-            if (pModule->IsReadyToRun() && pModule->IsInSameVersionBubble(GetModule()))
+            // R2R also supports a concept of R2R code that has code for "Unrelated" generics embedded within it
+            // A linked list of these are formed as those modules are loaded, and this restricted set of modules
+            // is examined for all generic method lookups
+            ReadyToRunInfo* pUnrelatedInfo = ReadyToRunInfo::GetUnrelatedR2RModules();
+            for (;pUnrelatedInfo != NULL && pCode == NULL; pUnrelatedInfo = pUnrelatedInfo->GetNextUnrelatedR2RModule())
             {
-                pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+                if (pUnrelatedInfo == pAlreadyExaminedInfos[0]) continue;
+                if (pUnrelatedInfo == pAlreadyExaminedInfos[1]) continue;
+
+                pCode = pUnrelatedInfo->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
             }
         }
     }

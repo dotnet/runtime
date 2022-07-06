@@ -50,11 +50,8 @@ namespace System.Formats.Tar.Tests
             using TarWriter writerGnu = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true);
             Assert.Equal(TarEntryFormat.Gnu, writerGnu.Format);
 
-            using TarWriter writerNullGeaDefaultPax = new TarWriter(archiveStream, leaveOpen: true, globalExtendedAttributes: null);
-            Assert.Equal(TarEntryFormat.Pax, writerNullGeaDefaultPax.Format);
-
-            using TarWriter writerValidGeaDefaultPax = new TarWriter(archiveStream, leaveOpen: true, globalExtendedAttributes: new Dictionary<string, string>());
-            Assert.Equal(TarEntryFormat.Pax, writerValidGeaDefaultPax.Format);
+            using TarWriter writerNoFormat = new TarWriter(archiveStream, leaveOpen: true);
+            Assert.Equal(TarEntryFormat.Pax, writerNoFormat.Format);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, TarEntryFormat.Unknown));
             Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, (TarEntryFormat)int.MinValue));

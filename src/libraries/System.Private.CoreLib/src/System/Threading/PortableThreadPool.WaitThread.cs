@@ -45,11 +45,7 @@ namespace System.Threading
             _waitThreadLock.Acquire();
             try
             {
-                WaitThreadNode? current = _waitThreadsHead;
-                if (current == null) // Lazily create the first wait thread.
-                {
-                    _waitThreadsHead = current = new WaitThreadNode(new WaitThread());
-                }
+                WaitThreadNode? current = _waitThreadsHead ??= new WaitThreadNode(new WaitThread()); // Lazily create the first wait thread.
 
                 // Register the wait handle on the first wait thread that is not at capacity.
                 WaitThreadNode prev;

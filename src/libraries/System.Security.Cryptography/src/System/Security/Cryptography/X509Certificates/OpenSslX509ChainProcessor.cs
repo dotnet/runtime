@@ -262,10 +262,7 @@ namespace System.Security.Cryptography.X509Certificates
                         break;
                     }
 
-                    if (downloadedCerts == null)
-                    {
-                        downloadedCerts = new List<X509Certificate2>();
-                    }
+                    downloadedCerts ??= new List<X509Certificate2>();
 
                     AddToStackAndUpRef(downloaded.Handle, _untrustedLookup);
                     downloadedCerts.Add(downloaded);
@@ -760,8 +757,8 @@ namespace System.Security.Cryptography.X509Certificates
             using (SafeOcspRequestHandle req = Interop.Crypto.X509ChainBuildOcspRequest(_storeCtx, chainDepth))
             {
                 ArraySegment<byte> encoded = Interop.Crypto.OpenSslRentEncode(
-                    handle => Interop.Crypto.GetOcspRequestDerSize(handle),
-                    (handle, buf) => Interop.Crypto.EncodeOcspRequest(handle, buf),
+                    Interop.Crypto.GetOcspRequestDerSize,
+                    Interop.Crypto.EncodeOcspRequest,
                     req);
 
                 ArraySegment<char> urlEncoded = UrlBase64Encoding.RentEncode(encoded);
@@ -917,10 +914,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (failsPolicyChecks)
             {
-                if (overallStatus == null)
-                {
-                    overallStatus = new List<X509ChainStatus>();
-                }
+                overallStatus ??= new List<X509ChainStatus>();
 
                 X509ChainStatus chainStatus = new X509ChainStatus
                 {
@@ -1303,7 +1297,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return s_errorStrings.GetOrAdd(
                 code.Code,
-                c => Interop.Crypto.GetX509VerifyCertErrorString(c));
+                Interop.Crypto.GetX509VerifyCertErrorString);
         }
 
         private sealed class WorkingChain : IDisposable

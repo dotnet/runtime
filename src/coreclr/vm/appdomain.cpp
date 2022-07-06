@@ -1362,12 +1362,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // the SZArrayHelper class here.
     g_pSZArrayHelperClass = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
 
-    // Load ByReference class
-    //
-    // NOTE: ByReference<T> must be the first by-ref-like system type to be loaded,
-    //       because MethodTable::ClassifyEightBytesWithManagedLayout depends on it.
-    g_pByReferenceClass = CoreLibBinder::GetClass(CLASS__BYREFERENCE);
-
     // Load Nullable class
     g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);
 
@@ -1376,6 +1370,9 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // We have delayed allocation of CoreLib's static handles until we load the object class
     CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+
+    // Int32 has to be loaded first to break cycle in IShiftOperators
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4);
 
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)

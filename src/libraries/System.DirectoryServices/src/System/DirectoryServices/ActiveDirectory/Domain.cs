@@ -858,11 +858,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedDomainControllers == null)
-                {
-                    _cachedDomainControllers = FindAllDomainControllers();
-                }
-                return _cachedDomainControllers;
+                return _cachedDomainControllers ??= FindAllDomainControllers();
             }
         }
 
@@ -871,11 +867,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedChildren == null)
-                {
-                    _cachedChildren = new DomainCollection(GetChildDomains());
-                }
-                return _cachedChildren;
+                return _cachedChildren ??= new DomainCollection(GetChildDomains());
             }
         }
 
@@ -937,11 +929,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedRidRoleOwner == null)
-                {
-                    _cachedRidRoleOwner = GetRoleOwner(ActiveDirectoryRole.RidRole);
-                }
-                return _cachedRidRoleOwner;
+                return _cachedRidRoleOwner ??= GetRoleOwner(ActiveDirectoryRole.RidRole);
             }
         }
 
@@ -950,11 +938,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedInfrastructureRoleOwner == null)
-                {
-                    _cachedInfrastructureRoleOwner = GetRoleOwner(ActiveDirectoryRole.InfrastructureRole);
-                }
-                return _cachedInfrastructureRoleOwner;
+                return _cachedInfrastructureRoleOwner ??= GetRoleOwner(ActiveDirectoryRole.InfrastructureRole);
             }
         }
 

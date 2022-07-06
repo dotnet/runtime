@@ -297,7 +297,7 @@ namespace Internal.JitInterface
 
             // The OwningType/OwningTypeNotDerivedFromToken shoud be equivalent if the above conditions are equal.
             Debug.Assert(OwningTypeNotDerivedFromToken == other.OwningTypeNotDerivedFromToken);
-            Debug.Assert(OwningType == other.OwningType);
+            Debug.Assert(OwningTypeNotDerivedFromToken || (OwningType == other.OwningType));
 
             if (OwningTypeNotDerivedFromToken != other.OwningTypeNotDerivedFromToken)
             {
@@ -474,6 +474,21 @@ namespace Internal.JitInterface
             }
         }
 
+        // At the moment, cross module code embedding does not support embedding cross module references within the EH clauses of a method
+        // Obviously this could be fixed, but it is not necessary to demonstrate significant value from the feature as written now.
+        private static bool FunctionHasNonReferenceableTypedILCatchClause(MethodIL methodIL, CompilationModuleGroup compilationGroup)
+        {
+            if (!compilationGroup.VersionsWithMethodBody(methodIL.OwningMethod.GetTypicalMethodDefinition()))
+            {
+                foreach (var clause in methodIL.GetExceptionRegions())
+                {
+                    if (clause.Kind == ILExceptionRegionKind.Catch)
+                        return true;
+                }
+            }
+            return false;
+        }
+
         public static bool IsMethodCompilable(Compilation compilation, MethodDesc method)
         {
             // This logic must mirror the logic in CompileMethod used to get to the point of calling CompileMethodInternal
@@ -485,6 +500,9 @@ namespace Internal.JitInterface
                 return false;
 
             if (FunctionJustThrows(methodIL))
+                return false;
+
+            if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, compilation.NodeFactory.CompilationModuleGroup))
                 return false;
 
             return true;
@@ -522,6 +540,13 @@ namespace Internal.JitInterface
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it always throws an exception");
+                    return;
+                }
+
+                if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, _compilation.NodeFactory.CompilationModuleGroup))
+                {
+                    if (logger.IsVerbose)
+                        logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has a non referenceable catch clause");
                     return;
                 }
 
@@ -2476,6 +2501,12 @@ namespace Internal.JitInterface
                 }
                 // ENCODE_NONE
             }
+            else if (TypeCannotUseBasePlusOffsetEncoding(pMT.BaseType as MetadataType))
+            {
+                // ENCODE_CHECK_FIELD_OFFSET
+                AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                // No-op other than generating the check field offset fixup
+            }
             else
             {
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
@@ -2494,6 +2525,22 @@ namespace Internal.JitInterface
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
                 pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldBaseOffset(field.OwningType));
             }
+        }
+
+        private bool TypeCannotUseBasePlusOffsetEncoding(MetadataType type)
+        {
+            if (type == null)
+                return true;
+
+            // Types which are encoded with sequential or explicit layout do not support an aligned base offset, and so we just encode with the exact offset
+            // of the field, and if that offset is incorrect, the method cannot be used.
+            if (type.IsSequentialLayout || type.IsExplicitLayout)
+                return true;
+            else if (type.BaseType is MetadataType metadataType)
+            {
+                return TypeCannotUseBasePlusOffsetEncoding(metadataType);
+            }
+            return false;
         }
 
         private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
@@ -2620,6 +2667,13 @@ namespace Internal.JitInterface
                 if (method.IsRawPInvoke())
                 {
                     return false;
+                }
+
+                // If this method is in another versioning unit, then the compilation cannot inline the pinvoke (as we aren't currently
+                // able to construct a token correctly to refer to the pinvoke method.
+                if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(method))
+                {
+                    return true;
                 }
 
                 MethodIL stubIL = null;
@@ -2769,8 +2823,7 @@ namespace Internal.JitInterface
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
                 if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod) &&
-                    typicalMethod is EcmaMethod ecmaMethod &&
-                    ecmaMethod.Module == typicalMethod.Context.SystemModule) // NonVersionable code in System.Collections.Immutable is causing problems and needs to be treated specially
+                    typicalMethod is EcmaMethod ecmaMethod)
                 {
                     Debug.Assert(_compilation.CompilationModuleGroup.CrossModuleInlineable(typicalMethod) ||
                                  _compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod));

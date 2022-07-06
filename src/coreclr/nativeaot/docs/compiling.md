@@ -1,10 +1,13 @@
 # Compiling with Native AOT
 
-This document explains how to compile and publish your project using Native AOT toolchain. First, please _ensure that [pre-requisites](prerequisites.md) are installed_. If you are starting a new project, you may find the [HelloWorld sample](https://github.com/dotnet/samples/tree/main/core/nativeaot/HelloWorld/README.md) directions useful.
+Please consult [documentation](https://docs.microsoft.com/dotnet/core/deploying/native-aot) for instructions how to compile and publish application.
 
-## Add ILCompiler package reference
+The rest of this document covers advanced topics only.
 
-To use Native AOT with your project, you need to add a reference to the ILCompiler NuGet package containing the Native AOT compiler and runtime. Make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
+
+## Using daily builds
+
+For using daily builds, you need to make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
 ```xml
 <add key="dotnet7" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json" />
 <add key="nuget" value="https://api.nuget.org/v3/index.json" />
@@ -28,20 +31,6 @@ or by adding the following element to the project file:
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-*" />
   </ItemGroup>
 ```
-
-## Compile and publish your app
-
-Use the `dotnet publish` command to compile and publish your app:
-```bash
-> dotnet publish -r <RID> -c <Configuration>
-```
-
-where `<Configuration>` is your project configuration (such as Debug or Release) and `<RID>` is the runtime identifier reflecting your host OS and architecture (one of win-x64, linux-x64, osx-x64). For example, to publish the Release build of your app for Windows x64, run the following command:
-```bash
-> dotnet publish -r win-x64 -c Release
-```
-
-If the compilation succeeds, the native executable will be placed under the `bin/<Configuration>/net6.0/<RID>/publish/` path relative to your project's root directory.
 
 ## Cross-architecture compilation
 

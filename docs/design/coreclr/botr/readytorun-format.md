@@ -133,7 +133,8 @@ struct READYTORUN_CORE_HEADER
 | READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS    | 0x00000008 | PInvoke stubs compiled into image are non-shareable (no secret parameter)
 | READYTORUN_FLAG_EMBEDDED_MSIL              | 0x00000010 | Input MSIL is embedded in the R2R image.
 | READYTORUN_FLAG_COMPONENT                  | 0x00000020 | This is a component assembly of a composite R2R image
-| READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
+| READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.3, all modules are assumed to possibly have this characteristic)
+| READYTORUN_FLAG_UNRELATED_R2R_CODE         | 0x00000080 | This R2R module has code in it that would not be naturally encoded into this module
 
 ## READYTORUN_SECTION
 
@@ -274,7 +275,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_Verify_FieldOffset      | 0x31 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
 | READYTORUN_FIXUP_Verify_TypeLayout       | 0x32 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
 | READYTORUN_FIXUP_Check_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
-| READYTORUN_FIXUP_Verify_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Verify_VirtualFunctionOverride | 0x34 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
 | READYTORUN_FIXUP_Check_IL_Body           |  0x35 | Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. See[IL Body signatures](il-body-signatures) for details.
 | READYTORUN_FIXUP_Verify_IL_Body          |  0x36 | Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. See[IL Body signatures](il-body-signatures) for details.
 | READYTORUN_FIXUP_ModuleOverride          |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
@@ -503,6 +504,14 @@ composite R2R images. It represents all generics needed by all assemblies within
 executable. As mentioned elsewhere in this document, CoreCLR runtime requires changes to
 properly look up methods stored in this section in the composite R2R case.
 
+**Note:** Generic methods and non-generic methods on generic types are encoded into this table
+and the runtime is expected to lookup into this table in potentially multiple modules. First the
+runtime is expected to lookup into this table for the module which defines the method, then it is
+expected to use the "alternate" generics location which is defined as the module which is NOT the
+defining module which is the defining module of one of the generic arguments to the method. This
+alternate lookup is not currently a deeply nested algorithm. If that lookup fails, then lookup
+will proceed to every module which specified `READYTORUN_FLAG_UNRELATED_R2R_CODE` as a flag.
+
 ## ReadyToRunSectionType.InliningInfo (v2.1+)
 
 **TODO**: document inlining info encoding
@@ -523,7 +532,7 @@ the `READYTORUN_FIXUP_ModuleOverride` bit flag on the signature fixup byte or th
 **Note:** It doesn't make sense to use references to assemblies external to the version bubble
 in the manifest metadata via the `READYTORUN_FIXUP_ModuleOverride` or `ELEMENT_TYPE_MODULE_ZAPSIG` concept
 as there's no guarantee that their metadata token values remain constant; thus we cannot encode signatures relative to them.
-However, as of R2R version 6.2, the native manifest metadata may contain tokens to be further resolved to actual
+However, as of R2R version 6.3, the native manifest metadata may contain tokens to be further resolved to actual
 implementation assemblies.
 
 The module override index translation algorithm is as follows (**ILAR** = *the number of `AssemblyRef` rows in the input MSIL*):

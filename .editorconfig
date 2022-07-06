@@ -154,6 +154,9 @@ csharp_space_between_square_brackets = false
 # License header
 file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.
 
+# Marshaller type must have CustomTypeMarshallerAttribute attribute
+dotnet_diagnostic.SYSLIB1056.severity = silent
+
 # C++ Files
 [*.{cpp,h,in}]
 curly_bracket_next_line = true

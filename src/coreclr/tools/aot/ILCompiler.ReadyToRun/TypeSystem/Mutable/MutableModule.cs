@@ -10,6 +10,9 @@ using System.Reflection.PortableExecutable;
 using System.Diagnostics;
 using System.IO;
 
+using ILCompiler;
+using System.Runtime.CompilerServices;
+
 namespace Internal.TypeSystem.Ecma
 {
     public partial class MutableModule : ModuleDesc, IEcmaModule
@@ -18,6 +21,9 @@ namespace Internal.TypeSystem.Ecma
         {
             Dictionary<ModuleDesc, EntityHandle> _moduleRefs = new Dictionary<ModuleDesc, EntityHandle>();
             List<string> _moduleRefStrings = new List<string>();
+            readonly Func<ModuleDesc, int> _moduleToIndex;
+            
+            MutableModule _mutableModule;
 
             protected override EntityHandle GetNonNestedResolutionScope(MetadataType metadataType)
             {
@@ -29,22 +35,102 @@ namespace Internal.TypeSystem.Ecma
                     return result;
                 }
 
-                if (module != _typeSystemContext.SystemModule)
+                string moduleRefString;
+                if (!_mutableModule._moduleToModuleRefString.TryGetValue(module, out moduleRefString))
                 {
-                    throw new NotImplementedException();
-                    // No support for non-system module references yet
+                    Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences != null &&
+                        _mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences));
+
+                    if (module == _typeSystemContext.SystemModule)
+                    {
+                        moduleRefString = "System.Private.CoreLib";
+                    }
+                    else
+                    {
+                        if (_mutableModule._compilationGroup.CrossModuleInlineableModule(module) || _mutableModule._compilationGroup.VersionsWithModule(module))
+                        {
+                            // References to modules that are explicitly permitted are done via ModuleIndex
+                            int index = _moduleToIndex(module);
+                            Debug.Assert(index != -1);
+                            moduleRefString = $"#:{index.ToStringInvariant()}";
+                        }
+                        else
+                        {
+                            // Further depedencies are handled by specifying a module which has a further assembly dependency on the correct module
+                            string asmReferenceName = GetNameOfAssemblyRefWhichResolvesToType(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences, metadataType);
+                            int index = _moduleToIndex(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences);
+                            Debug.Assert(index != -1);
+                            moduleRefString = $"#{asmReferenceName}:{index.ToStringInvariant()}";
+                        }
+                    }
+
+                    _mutableModule._moduleToModuleRefString.Add(module, moduleRefString);
                 }
 
-                _moduleRefStrings.Add("System.Private.CoreLib");
+                _moduleRefStrings.Add(moduleRefString);
                 result = MetadataTokens.ModuleReferenceHandle(_moduleRefStrings.Count);
-                result = Builder.AddModuleReference(Builder.GetOrAddString("System.Private.CoreLib"));
+                result = Builder.AddModuleReference(Builder.GetOrAddString(moduleRefString));
                 _moduleRefs.Add(module, result);
                 return result;
             }
 
-            public ManagedBinaryEmitterForInternalUse(AssemblyName assemblyName, TypeSystemContext typeSystemContext, AssemblyFlags assemblyFlags, byte[] publicKeyArray, AssemblyHashAlgorithm hashAlgorithm)
+            public ManagedBinaryEmitterForInternalUse(AssemblyName assemblyName,
+                                                      TypeSystemContext typeSystemContext,
+                                                      AssemblyFlags assemblyFlags,
+                                                      byte[] publicKeyArray,
+                                                      AssemblyHashAlgorithm hashAlgorithm,
+                                                      Func<ModuleDesc, int> moduleToIndex,
+                                                      MutableModule mutableModule)
                 : base(assemblyName, typeSystemContext, assemblyFlags, publicKeyArray, hashAlgorithm)
             {
+                _moduleToIndex = moduleToIndex;
+                _mutableModule = mutableModule;
+            }
+
+            static ConditionalWeakTable<ModuleDesc, Dictionary<MetadataType, string>> s_assemblyNameFromTypeLookups = new ConditionalWeakTable<ModuleDesc, Dictionary<MetadataType, string>>();
+
+            static Dictionary<MetadataType, string> ComputeTypeLookupTable(ModuleDesc module)
+            {
+                Dictionary<MetadataType, string> result = new Dictionary<MetadataType, string>();
+                if (!(module is EcmaModule ecmaModule))
+                {
+                    return result;
+                }
+
+                foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
+                {
+                    try
+                    {
+                        MetadataType typeFromTypeRef = ecmaModule.GetType(typeRefHandle) as MetadataType;
+                        if (typeFromTypeRef == null)
+                            continue;
+                        if (!result.ContainsKey(typeFromTypeRef))
+                        {
+                            var reader = ecmaModule.MetadataReader;
+                            var resolutionScope = reader.GetTypeReference(typeRefHandle).ResolutionScope;
+                            if (resolutionScope.Kind == HandleKind.AssemblyReference)
+                            {
+                                var assemblyName = reader.GetString(reader.GetAssemblyReference((AssemblyReferenceHandle)resolutionScope).Name);
+
+                                result.Add(typeFromTypeRef, assemblyName);
+                            }
+                        }
+                    }
+                    catch (TypeSystemException) { }
+
+                }
+                return result;
+            }
+
+            static string GetNameOfAssemblyRefWhichResolvesToType(ModuleDesc module, MetadataType type)
+            {
+                if (!s_assemblyNameFromTypeLookups.TryGetValue(module, out var lookupTable))
+                {
+                    lookupTable = ComputeTypeLookupTable(module);
+                    s_assemblyNameFromTypeLookups.AddOrUpdate(module, lookupTable);
+                }
+
+                return lookupTable[type];
             }
         }
 
@@ -63,8 +149,9 @@ namespace Internal.TypeSystem.Ecma
             byte[] _publicKeyArray;
             Version _version;
             AssemblyHashAlgorithm _hashAlgorithm;
+            Func<ModuleDesc, int> _moduleToIndex;
 
-            public Cache(MutableModule module, string assemblyName, AssemblyFlags assemblyFlags, byte[] publicKeyArray, Version version, AssemblyHashAlgorithm hashAlgorithm)
+            public Cache(MutableModule module, string assemblyName, AssemblyFlags assemblyFlags, byte[] publicKeyArray, Version version, AssemblyHashAlgorithm hashAlgorithm, Func<ModuleDesc, int> moduleToIndex)
             {
                 _module = module;
                 _assemblyName = assemblyName;
@@ -72,6 +159,7 @@ namespace Internal.TypeSystem.Ecma
                 _publicKeyArray = publicKeyArray;
                 _version = version;
                 _hashAlgorithm = hashAlgorithm;
+                _moduleToIndex = moduleToIndex;
                 ResetEmitter();
             }
 
@@ -82,7 +170,7 @@ namespace Internal.TypeSystem.Ecma
                 assemblyName.Name = _assemblyName;
                 assemblyName.Version = _version;
 
-                _currentBinaryEmitter = new ManagedBinaryEmitterForInternalUse(assemblyName, _module.Context, _assemblyFlags, _publicKeyArray, _hashAlgorithm);
+                _currentBinaryEmitter = new ManagedBinaryEmitterForInternalUse(assemblyName, _module.Context, _assemblyFlags, _publicKeyArray, _hashAlgorithm, _moduleToIndex, _module);
                 foreach (var entry in _values)
                 {
                     var perMetadata = _perMetadata[entry.Item1];
@@ -197,9 +285,17 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public MutableModule(TypeSystemContext context, string assemblyName, AssemblyFlags assemblyFlags, byte[] publicKeyArray, Version version, AssemblyHashAlgorithm hashAlgorithm) : base(context, null)
+        public MutableModule(TypeSystemContext context,
+                             string assemblyName,
+                             AssemblyFlags assemblyFlags,
+                             byte[] publicKeyArray,
+                             Version version,
+                             AssemblyHashAlgorithm hashAlgorithm,
+                             Func<ModuleDesc, int> moduleToIndex,
+                             ReadyToRunCompilationModuleGroupBase compilationGroup) : base(context, null)
         {
-            _cache = new Cache(this, assemblyName, assemblyFlags, publicKeyArray, version, hashAlgorithm);
+            _compilationGroup = compilationGroup;
+            _cache = new Cache(this, assemblyName, assemblyFlags, publicKeyArray, version, hashAlgorithm, moduleToIndex);
             TryGetHandle = _cache.CreateCacheFunc<TypeSystemEntity>(GetHandleForTypeSystemEntity);
             TryGetStringHandle = _cache.CreateCacheFunc<string>(GetUserStringHandle);
             TryGetAssemblyRefHandle = _cache.CreateCacheFunc<AssemblyName>(GetAssemblyRefHandle);
@@ -208,6 +304,9 @@ namespace Internal.TypeSystem.Ecma
         class DisableNewTokensException : Exception { }
 
         public bool DisableNewTokens;
+        public ModuleDesc ModuleThatIsCurrentlyTheSourceOfNewReferences;
+        private ReadyToRunCompilationModuleGroupBase _compilationGroup;
+        private Dictionary<ModuleDesc, string> _moduleToModuleRefString = new Dictionary<ModuleDesc, string>();
 
         private int GetHandleForTypeSystemEntity(TypeSystemMetadataEmitter emitter, object type)
         {

@@ -708,10 +708,7 @@ namespace System.Globalization
                             i++;
                             if (hasLowerCase)
                             {
-                                if (lowercaseData == null)
-                                {
-                                    lowercaseData = ToLower(str);
-                                }
+                                lowercaseData ??= ToLower(str);
                                 result.Append(lowercaseData, lowercaseStart, i - lowercaseStart);
                             }
                             else
@@ -740,10 +737,7 @@ namespace System.Globalization
                     {
                         if (hasLowerCase)
                         {
-                            if (lowercaseData == null)
-                            {
-                                lowercaseData = ToLower(str);
-                            }
+                            lowercaseData ??= ToLower(str);
                             result.Append(lowercaseData, lowercaseStart, count);
                         }
                         else

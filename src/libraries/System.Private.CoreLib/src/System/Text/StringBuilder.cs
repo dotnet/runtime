@@ -129,10 +129,8 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
 
-            if (value == null)
-            {
-                value = string.Empty;
-            }
+            value ??= string.Empty;
+
             if (startIndex > value.Length - length)
             {
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
@@ -212,10 +210,7 @@ namespace System.Text
             }
 
             // Check values and set defaults
-            if (persistedString == null)
-            {
-                persistedString = string.Empty;
-            }
+            persistedString ??= string.Empty;
             if (persistedMaxCapacity < 1 || persistedString.Length > persistedMaxCapacity)
             {
                 throw new SerializationException(SR.Serialization_StringBuilderMaxCapacity);

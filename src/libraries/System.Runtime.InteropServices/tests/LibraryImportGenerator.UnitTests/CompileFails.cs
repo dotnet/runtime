@@ -92,11 +92,20 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 2, 0 };
 
             // Custom type marshalling with invalid members
-            yield return new object[] { CodeSnippets.CustomStructMarshalling.TwoStageRefReturn, 3, 0 };
-            yield return new object[] { CodeSnippets.CustomStructMarshalling.ManagedToNativeOnlyOutParameter, 1, 0 };
-            yield return new object[] { CodeSnippets.CustomStructMarshalling.ManagedToNativeOnlyReturnValue, 1, 0 };
-            yield return new object[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyInParameter, 1, 0 };
-            yield return new object[] { CodeSnippets.CustomStructMarshalling.StackallocOnlyRefParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.NonStaticMarshallerEntryPoint, 2, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.Stateless.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.Stateless.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.Stateless.StackallocOnlyRefParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.Stateful.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.Stateful.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.Stateful.StackallocOnlyRefParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.TwoStageRefReturn, 3, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling_V1.StackallocOnlyRefParameter, 1, 0 };
 
             // Abstract SafeHandle type by reference
             yield return new object[] { CodeSnippets.BasicParameterWithByRefModifier("ref", "System.Runtime.InteropServices.SafeHandle"), 1, 0 };
@@ -108,11 +117,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.MarshalUsingCollectionWithNullElementName, 2, 0 };
 
             // Generic collection marshaller has different arity than collection.
-            yield return new object[] { CodeSnippets.GenericCollectionMarshallingArityMismatch, 2, 0 };
+            yield return new object[] { CodeSnippets.CustomCollectionMarshalling.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
+            yield return new object[] { CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionMarshallingArityMismatch, 2, 0 };
 
             yield return new object[] { CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 2, 0 };
-            yield return new object[] { CodeSnippets.GenericCollectionWithCustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
-            yield return new object[] { CodeSnippets.GenericCollectionWithCustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionWithCustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
+            yield return new object[] { CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionWithCustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
             yield return new object[] { CodeSnippets.RecursiveCountElementNameOnReturnValue, 2, 0 };
             yield return new object[] { CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };
             yield return new object[] { CodeSnippets.MutuallyRecursiveCountElementNameOnParameter, 4, 0 };

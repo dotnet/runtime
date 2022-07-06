@@ -1815,7 +1815,15 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
-            bool recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || (methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation)) && owningType is EcmaType;
+            bool recordToken;
+            if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodIL.OwningMethod.GetTypicalMethodDefinition()))
+            {
+                recordToken = (methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation) && owningType is EcmaType;
+            }
+            else
+            {
+                recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
+            }
 #endif
 
             if (result is MethodDesc method)
@@ -2321,11 +2329,6 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
-
-            if (type.IsByReferenceOfT)
-            {
-                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
-            }
 
             foreach (var field in type.GetFields())
             {
@@ -2942,15 +2945,6 @@ namespace Internal.JitInterface
             else
             {
                 type = asCorInfoType(fieldType);
-            }
-
-            Debug.Assert(!fieldDesc.OwningType.IsByReferenceOfT ||
-                fieldDesc.OwningType.GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
-            if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
-            {
-                Debug.Assert(structType == null || *structType == null);
-                Debug.Assert(fieldDesc.Offset.AsInt == 0);
-                type = CorInfoType.CORINFO_TYPE_BYREF;
             }
 
             return type;

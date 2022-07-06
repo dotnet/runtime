@@ -61,7 +61,7 @@ class PEAssembly;
 class PEImage;
 
 #ifndef DACCESS_COMPILE
-ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *m_pManifestMetadata, AllocMemTracker *pamTracker);
+ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *m_pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker);
 #endif
 
 // This class represents a  ReadyToRun image with native OS-specific envelope. As of today,

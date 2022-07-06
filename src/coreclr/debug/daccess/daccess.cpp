@@ -2501,7 +2501,7 @@ namespace serialization { namespace bin {
                 return ErrOverflow;
             }
 
-            memcpy_s(dest, destSize, s.GetUTF8NoConvert(), cnt);
+            memcpy_s(dest, destSize, s.GetUTF8(), cnt);
 
             return cnt;
         }

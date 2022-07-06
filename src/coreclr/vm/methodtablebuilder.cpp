@@ -1349,8 +1349,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     {
         StackSString debugName(SString::Utf8, GetDebugClassName());
         TypeString::AppendInst(debugName, bmtGenerics->GetInstantiation(), TypeString::FormatBasic);
-        StackScratchBuffer buff;
-        const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+        const char* pDebugNameUTF8 = debugName.GetUTF8();
         S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
         if(safeLen.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
@@ -1894,8 +1893,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
                     StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    const char* pDebugNameUTF8 = name.GetUTF8();
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();
@@ -1909,8 +1907,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
                     StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    const char* pDebugNameUTF8 = name.GetUTF8();
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();
@@ -8806,10 +8803,6 @@ MethodTableBuilder::HandleExplicitLayout(
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMT->IsByRefLike());
 
-    // ByReference<T> is an indication for a byref field, treat it as such.
-    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-         return MarkTagType(pFieldLayout, TARGET_POINTER_SIZE, byref);
-
     ExplicitClassTrust explicitClassTrust;
 
     ExplicitFieldTrust::TrustLevel trust;
@@ -9905,9 +9898,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
         if (g_pNullableClass != NULL)
         {
-            _ASSERTE(g_pByReferenceClass != NULL);
-            _ASSERTE(g_pByReferenceClass->IsByRefLike());
-
             _ASSERTE(g_pNullableClass->IsNullable());
 
             // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient

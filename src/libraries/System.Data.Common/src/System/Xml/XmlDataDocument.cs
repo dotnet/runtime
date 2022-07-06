@@ -357,10 +357,8 @@ namespace System.Xml
             // fBoundToDataSet and fBoundToDocument should have the same value
             Debug.Assert(_fBoundToDataSet ? _fBoundToDocument : (!_fBoundToDocument));
 #endif
-            if (prefix == null)
-                prefix = string.Empty;
-            if (namespaceURI == null)
-                namespaceURI = string.Empty;
+            prefix ??= string.Empty;
+            namespaceURI ??= string.Empty;
 
             if (!_fAssociateDataRow)
             {
@@ -474,12 +472,12 @@ namespace System.Xml
             if (docelem == null)
             {
                 string docElemName = XmlConvert.EncodeLocalName(DataSet.DataSetName);
-                if (docElemName == null || docElemName.Length == 0)
+                if (string.IsNullOrEmpty(docElemName))
+                {
                     docElemName = "Xml";
-                string ns = DataSet.Namespace;
-                if (ns == null)
-                    ns = string.Empty;
-                docelem = new XmlBoundElement(string.Empty, docElemName, ns, this);
+                }
+
+                docelem = new XmlBoundElement(string.Empty, docElemName, DataSet.Namespace ?? string.Empty, this);
                 AppendChild(docelem);
             }
 
@@ -730,11 +728,14 @@ namespace System.Xml
                                         Debug.Assert(col.ColumnMapping == MappingType.SimpleContent);
                                         newNode = CreateTextNode(col.ConvertObjectToXml(value));
                                         if (node.FirstChild != null)
+                                        {
                                             node.InsertBefore(newNode, node.FirstChild);
+                                        }
                                         else
+                                        {
                                             node.AppendChild(newNode);
-                                        if (priorNode == null)
-                                            priorNode = newNode;
+                                        }
+                                        priorNode ??= newNode;
                                     }
                                 }
                             }
@@ -1477,7 +1478,9 @@ namespace System.Xml
                         _bHasXSINIL = true;
                     }
                     else
+                    {
                         attr.Value = Keywords.TRUE;
+                    }
                 }
                 else
                 {

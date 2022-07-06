@@ -88,10 +88,7 @@ namespace System.Xml
 
             if (_strings.TryGetValue(s.Value, out key))
             {
-                if (keys == null)
-                {
-                    keys = AddKeys(s.Dictionary, s.Key + 1);
-                }
+                keys ??= AddKeys(s.Dictionary, s.Key + 1);
 
                 keys[s.Key] = (key + 1);
                 return true;

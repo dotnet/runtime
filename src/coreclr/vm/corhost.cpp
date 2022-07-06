@@ -426,15 +426,13 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
         Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
 
         SString szTypeName(pwzTypeName);
-        StackScratchBuffer buff1;
-        const char* szTypeNameUTF8 = szTypeName.GetUTF8(buff1);
+        const char* szTypeNameUTF8 = szTypeName.GetUTF8();
         MethodTable *pMT = ClassLoader::LoadTypeByNameThrowing(pAssembly,
                                                             NULL,
                                                             szTypeNameUTF8).AsMethodTable();
 
         SString szMethodName(pwzMethodName);
-        StackScratchBuffer buff;
-        const char* szMethodNameUTF8 = szMethodName.GetUTF8(buff);
+        const char* szMethodNameUTF8 = szMethodName.GetUTF8();
         MethodDesc *pMethodMD = MemberLoader::FindMethod(pMT, szMethodNameUTF8, &gsig_SM_Str_RetInt);
 
         if (!pMethodMD)

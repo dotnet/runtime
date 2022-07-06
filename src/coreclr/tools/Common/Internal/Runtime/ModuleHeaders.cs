@@ -67,7 +67,7 @@ namespace Internal.Runtime
         OwnerCompositeExecutable = 116, // Added in 4.1
         PgoInstrumentationData = 117, // Added in 5.2
         ManifestAssemblyMvids = 118, // Added in 5.3
-        CrossModuleInlineInfo = 119, // Added in 6.2
+        CrossModuleInlineInfo = 119, // Added in 6.3
 
         //
         // NativeAOT ReadyToRun sections
@@ -79,10 +79,10 @@ namespace Internal.Runtime
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        GCStaticDesc = 207,
+        // 207 is unused - it was used by GCStaticDesc
         ThreadStaticOffsetRegion = 208,
-        ThreadStaticGCDescRegion = 209,
-        ThreadStaticIndex = 210,
+        // 209 is unused - it was used by ThreadStaticGCDescRegion
+        // 210 is unused - it was used by ThreadStaticIndex
         // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Encodings.Web;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.Unicode;
 using Xunit;
 
@@ -31,21 +32,28 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
 
-            // Verify these do not throw.
-            options.Converters.Clear();
-            TestConverter tc = new TestConverter();
-            options.Converters.Add(tc);
-            options.Converters.Insert(0, new TestConverter());
-            options.Converters.Remove(tc);
-            options.Converters.RemoveAt(0);
+            TestIListNonThrowingOperationsWhenMutable(options.Converters, () => new TestConverter());
+
+            // Verify TypeInfoResolver throws on null resolver
+            Assert.Throws<ArgumentNullException>(() => options.TypeInfoResolver = null);
+
+            // Verify default TypeInfoResolver throws
+            Action<JsonTypeInfo> tiModifier = (ti) => { };
+            Assert.Throws<InvalidOperationException>(() => (options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers.Clear());
+            Assert.Throws<InvalidOperationException>(() => (options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers.Add(tiModifier));
+            Assert.Throws<InvalidOperationException>(() => (options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers.Insert(0, tiModifier));
+
+            // Now set DefaultTypeInfoResolver
+            options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+            TestIListNonThrowingOperationsWhenMutable((options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers, () => (ti) => { });
 
             // Add one item for later.
+            TestConverter tc = new TestConverter();
             options.Converters.Add(tc);
+            (options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers.Add(tiModifier);
 
-            // Verify converter collection throws on null adds.
-            Assert.Throws<ArgumentNullException>(() => options.Converters.Add(null));
-            Assert.Throws<ArgumentNullException>(() => options.Converters.Insert(0, null));
-            Assert.Throws<ArgumentNullException>(() => options.Converters[0] = null);
+            TestIListThrowingOperationsWhenMutable(options.Converters);
+            TestIListThrowingOperationsWhenMutable((options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers);
 
             // Perform serialization.
             JsonSerializer.Deserialize<int>("1", options);
@@ -62,14 +70,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
             Assert.False(options.WriteIndented);
 
-            Assert.Equal(tc, options.Converters[0]);
-            Assert.True(options.Converters.Contains(tc));
-            options.Converters.CopyTo(new JsonConverter[1] { null }, 0);
-            Assert.Equal(1, options.Converters.Count);
-            Assert.False(options.Converters.Equals(tc));
-            Assert.NotNull(options.Converters.GetEnumerator());
-            Assert.Equal(0, options.Converters.IndexOf(tc));
-            Assert.False(options.Converters.IsReadOnly);
+            TestIListNonThrowingOperationsWhenImmutable(options.Converters, tc);
+            TestIListNonThrowingOperationsWhenImmutable((options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers, tiModifier);
 
             // Setters should always throw; we don't check to see if the value is the same or not.
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
@@ -82,13 +84,102 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.PropertyNamingPolicy = options.PropertyNamingPolicy);
             Assert.Throws<InvalidOperationException>(() => options.ReadCommentHandling = options.ReadCommentHandling);
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
+            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = options.TypeInfoResolver);
 
-            Assert.Throws<InvalidOperationException>(() => options.Converters[0] = tc);
-            Assert.Throws<InvalidOperationException>(() => options.Converters.Clear());
-            Assert.Throws<InvalidOperationException>(() => options.Converters.Add(tc));
-            Assert.Throws<InvalidOperationException>(() => options.Converters.Insert(0, new TestConverter()));
-            Assert.Throws<InvalidOperationException>(() => options.Converters.Remove(tc));
-            Assert.Throws<InvalidOperationException>(() => options.Converters.RemoveAt(0));
+            TestIListThrowingOperationsWhenImmutable(options.Converters, tc);
+            TestIListThrowingOperationsWhenImmutable((options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers, tiModifier);
+
+            static void TestIListNonThrowingOperationsWhenMutable<T>(IList<T> list, Func<T> newT)
+            {
+                list.Clear();
+                T el = newT();
+                list.Add(el);
+                Assert.Equal(1, list.Count);
+                list.Insert(0, newT());
+                Assert.Equal(2, list.Count);
+                list.Remove(el);
+                Assert.Equal(1, list.Count);
+                list.RemoveAt(0);
+                Assert.Equal(0, list.Count);
+                Assert.False(list.IsReadOnly, "List should not be read-only");
+            }
+
+            static void TestIListThrowingOperationsWhenMutable<T>(IList<T> list) where T : class
+            {
+                // Verify collection throws on null adds.
+                Assert.Throws<ArgumentNullException>(() => list.Add(null));
+                Assert.Throws<ArgumentNullException>(() => list.Insert(0, null));
+                Assert.Throws<ArgumentNullException>(() => list[0] = null);
+            }
+
+            static void TestIListNonThrowingOperationsWhenImmutable<T>(IList<T> list, T onlyElement)
+            {
+                Assert.Equal(onlyElement, list[0]);
+                Assert.True(list.Contains(onlyElement));
+                list.CopyTo(new T[1] { default(T) }, 0);
+                Assert.Equal(1, list.Count);
+                Assert.False(list.Equals(onlyElement));
+                Assert.NotNull(list.GetEnumerator());
+                Assert.Equal(0, list.IndexOf(onlyElement));
+                Assert.True(list.IsReadOnly, "List should be read-only");
+            }
+
+            static void TestIListThrowingOperationsWhenImmutable<T>(IList<T> list, T firstElement)
+            {
+                Assert.Throws<InvalidOperationException>(() => list[0] = firstElement);
+                Assert.Throws<InvalidOperationException>(() => list.Clear());
+                Assert.Throws<InvalidOperationException>(() => list.Add(firstElement));
+                Assert.Throws<InvalidOperationException>(() => list.Insert(0, firstElement));
+                Assert.Throws<InvalidOperationException>(() => list.Remove(firstElement));
+                Assert.Throws<InvalidOperationException>(() => list.RemoveAt(0));
+            }
+        }
+
+        [Fact]
+        public static void TypeInfoResolverIsNotNullAndCorrectType()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.NotNull(options.TypeInfoResolver);
+            Assert.IsType<DefaultJsonTypeInfoResolver>(options.TypeInfoResolver);
+            Assert.Same(options.TypeInfoResolver, options.TypeInfoResolver);
+        }
+
+        [Fact]
+        public static void TypeInfoResolverCannotBeSetAfterAddingContext()
+        {
+            var options = new JsonSerializerOptions();
+            options.AddContext<JsonContext>();
+            Assert.IsType<JsonContext>(options.TypeInfoResolver);
+            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = new DefaultJsonTypeInfoResolver());
+        }
+
+        [Fact]
+        public static void TypeInfoResolverCannotBeSetOnOptionsCreatedFromContext()
+        {
+            var context = new JsonContext();
+            var options = context.Options;
+            Assert.Same(context, options.TypeInfoResolver);
+            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = new DefaultJsonTypeInfoResolver());
+        }
+
+        [Fact]
+        public static void WhenAddingContextTypeInfoResolverAsContextOptionsAreSameAsOptions()
+        {
+            var options = new JsonSerializerOptions();
+            options.AddContext<JsonContext>();
+            Assert.Same(options, (options.TypeInfoResolver as JsonContext).Options);
+        }
+
+        [Fact]
+        public static void TypeInfoResolverCannotBeSetAfterContextIsSetThroughTypeInfoResolver()
+        {
+            var options = new JsonSerializerOptions();
+            IJsonTypeInfoResolver resolver = new JsonContext();
+            options.TypeInfoResolver = resolver;
+            Assert.Same(resolver, options.TypeInfoResolver);
+
+            resolver = new DefaultJsonTypeInfoResolver();
+            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = resolver);
         }
 
         [Fact]
@@ -587,13 +678,6 @@ namespace System.Text.Json.Serialization.Tests
                     options.Converters.Add(new JsonStringEnumConverter());
                     options.Converters.Add(new ConverterForInt32());
                 }
-                else if (propertyType == typeof(IList<JsonPolymorphicTypeConfiguration>))
-                {
-                    options.PolymorphicTypeConfigurations.Add(
-                        new JsonPolymorphicTypeConfiguration<ITestClass>()
-                            .WithDerivedType<Point_With_Array>("point_with_array")
-                            .WithDerivedType<Point_With_Dictionary>("point_with_dictionary"));
-                }
                 else if (propertyType == typeof(JavaScriptEncoder))
                 {
                     options.Encoder = JavaScriptEncoder.Default;
@@ -606,6 +690,10 @@ namespace System.Text.Json.Serialization.Tests
                 else if (propertyType == typeof(ReferenceHandler))
                 {
                     options.ReferenceHandler = ReferenceHandler.Preserve;
+                }
+                else if (propertyType == typeof(IJsonTypeInfoResolver))
+                {
+                    options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
                 }
                 else if (propertyType.IsValueType)
                 {
@@ -643,17 +731,6 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     var list1 = (IList<JsonConverter>)property.GetValue(options);
                     var list2 = (IList<JsonConverter>)property.GetValue(newOptions);
-
-                    Assert.Equal(list1.Count, list2.Count);
-                    for (int i = 0; i < list1.Count; i++)
-                    {
-                        Assert.Same(list1[i], list2[i]);
-                    }
-                }
-                else if (propertyType == typeof(IList<JsonPolymorphicTypeConfiguration>))
-                {
-                    var list1 = (IList<JsonPolymorphicTypeConfiguration>)property.GetValue(options);
-                    var list2 = (IList<JsonPolymorphicTypeConfiguration>)property.GetValue(newOptions);
 
                     Assert.Equal(list1.Count, list2.Count);
                     for (int i = 0; i < list1.Count; i++)

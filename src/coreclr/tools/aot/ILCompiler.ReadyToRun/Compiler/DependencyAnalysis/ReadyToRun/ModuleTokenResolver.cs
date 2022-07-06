@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
-                if (_compilationModuleGroup.VersionsWithMethodBody(method))
+                if (_compilationModuleGroup.VersionsWithMethodBody(ecmaMethod))
                 {
                     return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
                 }

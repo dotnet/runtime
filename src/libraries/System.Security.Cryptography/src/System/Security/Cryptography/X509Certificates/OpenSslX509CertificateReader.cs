@@ -376,8 +376,8 @@ namespace System.Security.Cryptography.X509Certificates
             get
             {
                 return Interop.Crypto.OpenSslEncode(
-                    x => Interop.Crypto.GetX509DerSize(x),
-                    (x, buf) => Interop.Crypto.EncodeX509(x, buf),
+                    Interop.Crypto.GetX509DerSize,
+                    Interop.Crypto.EncodeX509,
                     _cert);
             }
         }

@@ -54,13 +54,12 @@ namespace System.Text.Json.Serialization.Converters
 
             Debug.Assert(typeInfo.ParameterCache != null);
 
-            List<KeyValuePair<string, JsonParameterInfo?>> cache = typeInfo.ParameterCache.List;
+            List<KeyValuePair<string, JsonParameterInfo>> cache = typeInfo.ParameterCache.List;
             object?[] arguments = ArrayPool<object>.Shared.Rent(cache.Count);
 
             for (int i = 0; i < typeInfo.ParameterCount; i++)
             {
-                JsonParameterInfo? parameterInfo = cache[i].Value;
-                Debug.Assert(parameterInfo != null);
+                JsonParameterInfo parameterInfo = cache[i].Value;
                 arguments[parameterInfo.ClrInfo.Position] = parameterInfo.DefaultValue;
             }
 

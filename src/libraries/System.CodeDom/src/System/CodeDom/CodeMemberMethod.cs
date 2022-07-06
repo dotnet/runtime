@@ -61,10 +61,7 @@ namespace System.CodeDom
         {
             get
             {
-                if (_implementationTypes == null)
-                {
-                    _implementationTypes = new CodeTypeReferenceCollection();
-                }
+                _implementationTypes ??= new CodeTypeReferenceCollection();
 
                 if ((_populated & ImplTypesCollection) == 0)
                 {

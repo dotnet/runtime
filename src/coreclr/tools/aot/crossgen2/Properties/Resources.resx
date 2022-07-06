@@ -372,13 +372,16 @@
   <data name="ImageBase" xml:space="preserve">
     <value>Hexademical value to set target PE-file ImageBase field</value>
   </data>
-  <data name="CrossModuleGenericCompilation" xml:space="preserve">
-    <value>EXPERIMENTAL: When compiling, compile generic code defined in other modules in a version resilient manner. Defaults to disabled.</value>
-  </data>
   <data name="CrossModuleInlining" xml:space="preserve">
-    <value>EXPERIMENTAL: When compiling, inline code from other modules in a version resilient manner. Defaults to disabled.</value>
+    <value>Allow inclusion of code from the specified module into the module being compiled. In addition to specifying an assembly by name, the special value of "*" is recognized as indicating that code from all modules may be included. Any module specified in this way MUST be loadable from the first moment the R2R module is loaded, as loads of these modules may be triggered unpredictably.</value>
   </data>
   <data name="AsyncModuleOptimization" xml:space="preserve">
-    <value>EXPERIMENTAL: Attempt to compile as much async infrastructure as possible for async methods. Defaults to disabled.</value>
+    <value>Attempt to compile as much async infrastructure as possible for async methods. Defaults to enabled. To disable, specify false to this flag explicitly.</value>
+  </data>
+  <data name="NonLocalGenericsModule" xml:space="preserve">
+    <value>Specify the module which is permitted to contain generics defined or instantiated in any other module. Specify "*" to indicate that any module may hold arbitrary generics.</value>
+  </data>
+  <data name="ErrorNonLocalGenericsModule" xml:space="preserve">
+    <value>"{0}" was specified to the --non-local-generics-module switch, but was not in the set of modules associated with the compile</value>
   </data>
 </root>

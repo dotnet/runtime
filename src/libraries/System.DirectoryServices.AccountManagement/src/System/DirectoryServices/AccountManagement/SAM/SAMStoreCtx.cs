@@ -131,8 +131,7 @@ namespace System.DirectoryServices.AccountManagement
                 //                {
                 foreach (Hashtable propertyMappingTableByProperty in byPropertyTables)
                 {
-                    if (propertyMappingTableByProperty[propertyName] == null)
-                        propertyMappingTableByProperty[propertyName] = new ArrayList();
+                    propertyMappingTableByProperty[propertyName] ??= new ArrayList();
 
                     ((ArrayList)propertyMappingTableByProperty[propertyName]).Add(propertyEntry);
                 }
@@ -147,8 +146,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     foreach (Hashtable propertyMappingTableByWinNT in byWinNTTables)
                     {
-                        if (propertyMappingTableByWinNT[winNTAttributeLower] == null)
-                            propertyMappingTableByWinNT[winNTAttributeLower] = new ArrayList();
+                        propertyMappingTableByWinNT[winNTAttributeLower] ??= new ArrayList();
 
                         ((ArrayList)propertyMappingTableByWinNT[winNTAttributeLower]).Add(propertyEntry);
                     }

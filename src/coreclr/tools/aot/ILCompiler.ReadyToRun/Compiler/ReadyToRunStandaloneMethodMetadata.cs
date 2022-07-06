@@ -94,8 +94,8 @@ namespace ILCompiler
 
                 if (localsBlob.Length == 0)
                 {
-                    // No locals. Encode a 0 to indicate this
-                    _nonCodeAlternateBlob.WriteByte(0);
+                    // No locals. Encode a 2 to indicate this
+                    _nonCodeAlternateBlob.WriteByte(2);
                 }
                 else
                 {

@@ -75,6 +75,12 @@ CrashInfo::EnumerateAndSuspendThreads()
         m_threads.push_back(thread);
     }
 
+    result = ::vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threadList), threadCount * sizeof(thread_act_t));
+    if (result != KERN_SUCCESS)
+    {
+        TRACE("vm_deallocate FAILED %x %s\n", result, mach_error_string(result));
+    }
+
     return true;
 }
 

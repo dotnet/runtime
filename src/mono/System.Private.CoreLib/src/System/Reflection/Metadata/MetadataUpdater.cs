@@ -51,16 +51,19 @@ namespace System.Reflection.Metadata
 
         public static bool IsSupported { get; } = ApplyUpdateEnabled(justComponentCheck: 0) != 0;
 
-        private static Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(() => InitializeApplyUpdateCapabilities());
+        private static readonly Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(InitializeApplyUpdateCapabilities);
 
         private static string InitializeApplyUpdateCapabilities()
         {
-            const string caps = "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition";
-            return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? caps : string.Empty ;
+            string caps = GetApplyUpdateCapabilities();
+            return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? caps : string.Empty;
         }
 
         [MethodImpl (MethodImplOptions.InternalCall)]
         private static extern int ApplyUpdateEnabled (int justComponentCheck);
+
+        [MethodImpl (MethodImplOptions.InternalCall)]
+        private static extern string GetApplyUpdateCapabilities();
 
         [MethodImpl (MethodImplOptions.InternalCall)]
         private static extern unsafe void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);

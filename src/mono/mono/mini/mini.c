@@ -3261,6 +3261,18 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->gsctx_context = context;
 
 		cfg->gsharedvt = TRUE;
+		if (cfg->llvm_only) {
+			/*
+			 * Enable a minimal version of gsharedvt where only
+			 * methods which don't really depend on their generic
+			 * arguments are supported, like List<T>.get_Count ().
+			 * - no signatures or locals with variable length types
+			 * - no calls with signatures with variable length types
+			 * etc.
+			 */
+			cfg->gsharedvt_min = TRUE;
+		}
+
 		if (!cfg->llvm_only) {
 			cfg->disable_llvm = TRUE;
 			cfg->exception_message = g_strdup ("gsharedvt");
@@ -3294,7 +3306,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
-	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && !cfg->gsharedvt && header->num_clauses) {
+	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
 		cfg->deopt = TRUE;
 		/* Can't reconstruct inlined state */
 		cfg->disable_inline = TRUE;
@@ -4405,7 +4417,7 @@ mini_class_is_system_array (MonoClass *klass)
  *
  *   query pagesize used to determine if an implicit NRE can be used
  */
-int
+guint
 mono_target_pagesize (void)
 {
 	/* We could query the system's pagesize via mono_pagesize (), however there

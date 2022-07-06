@@ -2,6 +2,15 @@
 
 Documentation on compatibility guidance and the current state. The version headings act as a rolling delta between the previous version.
 
+## Version 2
+
+The focus of version 2 is to support all repos that make up the .NET Product, including ASP.NET Core and Windows Forms, as well as all packages in dotnet/runtime.
+
+### User defined type marshalling
+
+Support for user-defined type marshalling in the source-generated marshalling is described in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md). This support replaces the designs specified in [StructMarshalling.md](StructMarshalling.md) and [SpanMarshallers.md](SpanMarshallers.md).
+
+
 ## Version 1
 
 The focus of version 1 is to support `NetCoreApp`. This implies that anything not needed by `NetCoreApp` is subject to change.
