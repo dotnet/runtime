@@ -225,7 +225,7 @@ namespace System.Tests
         [InlineData(double.PositiveInfinity)]
         [InlineData(double.NegativeInfinity)]
         [InlineData(79228162514264337593543950335.0)]
-        public void Ctor_LargeDouble_ThrowsOverlowException(double value)
+        public void Ctor_LargeDouble_ThrowsOverflowException(double value)
         {
             Assert.Throws<OverflowException>(() => new decimal(value));
         }
@@ -234,19 +234,17 @@ namespace System.Tests
         public void Ctor_LargeDouble_RoundtripCastSucceeds()
         {
             // Decrementing Decimal's MaxValue to get a number that shouldn't lose precision when cast back and forth
-            double x = Math.BitDecrement(79228162514264337593543950335.0);
+            double largeDouble = Math.BitDecrement(79228162514264337593543950335.0);
 
             // Cast to a decimal
-            decimal y = new decimal(x);
+            decimal largeDecimal = new decimal(largeDouble);
 
-            // Use strings to compare values of double and decimal, ensuring no precision loss
-            string x_string = x.ToString("G99");
-            string y_string =  y.ToString("G99");
-            Assert.Equal(x_string, y_string);
+            // Construct a second decimal via string parsing to compare, ensuring no precision loss
+            Assert.Equal(largeDecimal, decimal.Parse(largeDouble.ToString("G99")));
 
             // Cast back to double, ensuring no precision loss
-            double z = (double)y;
-            Assert.Equal(x, z);
+            double largeRoundTripDouble = (double)largeDecimal;
+            Assert.Equal(largeDouble, largeRoundTripDouble);
 
         }
 
