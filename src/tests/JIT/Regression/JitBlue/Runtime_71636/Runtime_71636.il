@@ -8,6 +8,8 @@
 
 .class Runtime_71636 extends [System.Runtime]System.Object
 {
+  .field private static native int s_globalCounter;
+
   .method public static int32 Main()
   {
     .entrypoint
@@ -20,6 +22,9 @@
 
     call bool Runtime_71636::ProblemWithStElem()
     brtrue FAILURE_STELEM
+
+    call bool Runtime_71636::ProblemWithCpObj()
+    brtrue FAILURE_CPOBJ
 
     ldc.i4 100
     ret
@@ -34,6 +39,10 @@
 
   FAILURE_STELEM:
     ldc.i4 103
+    ret
+
+  FAILURE_CPOBJ:
+    ldc.i4 104
     ret
   }
 
@@ -128,6 +137,60 @@
 
     ldloc lcl
     ldloca lcl
+    bne.un NOT_EQUAL
+
+    ldc.i4 0
+    ret
+
+  NOT_EQUAL:
+    ldc.i4 1
+    ret
+  }
+
+  .method private static bool ProblemWithCpObj() noinlining
+  {
+    .locals (void* lcl, void*[] arr, int32 idx, native int loopIdx)
+
+    call void*[] Runtime_71636::GetArray()
+    stloc arr
+
+    ldc.i4 0
+    stloc idx
+
+    ldloca lcl
+    stloc lcl
+
+    // A loop to force fully interruptible code - this test case could only fail under GCStress(=0xC).
+    //
+    ldloc arr
+    ldloc idx
+    ldelem.i
+    stloc loopIdx
+  LOOP:
+    ldloc loopIdx
+    ldc.i4 -1
+    add
+    stloc loopIdx
+
+    ldsfld native int Runtime_71636::s_globalCounter
+    ldloc loopIdx
+    add
+    stsfld native int Runtime_71636::s_globalCounter
+
+    ldloc loopIdx
+    ldc.i4 0
+    bge LOOP
+
+    ldloc arr
+    ldloc idx
+    ldelema void*
+    ldloca lcl
+    cpobj void*
+
+    ldloc arr
+    ldloc idx
+    ldelem.i
+    ldloc lcl
     bne.un NOT_EQUAL
 
     ldc.i4 0
