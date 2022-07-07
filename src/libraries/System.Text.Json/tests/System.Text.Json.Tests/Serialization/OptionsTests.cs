@@ -444,6 +444,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, options));
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void Options_JsonSerializerContext_GetConverter_FallsBackToReflectionConverter()
         {
