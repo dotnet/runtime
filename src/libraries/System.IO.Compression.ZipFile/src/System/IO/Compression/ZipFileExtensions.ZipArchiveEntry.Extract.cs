@@ -74,15 +74,13 @@ namespace System.IO.Compression
             };
 
             // Restore Unix permissions.
-            if (!OperatingSystem.IsWindows() && source.ExternalAttributes != 0)
+            // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
+            // We don't apply UnixFileMode.None because .zip files created on Windows and .zip files created
+            // with previous versions of .NET don't include permissions.
+            UnixFileMode mode = (UnixFileMode)((source.ExternalAttributes >> 16) & 0x1FF);
+            if (mode != UnixFileMode.None && !OperatingSystem.IsWindows())
             {
-                // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
-                UnixFileMode mode = (UnixFileMode)((source.ExternalAttributes >> 16) & 0x1FF);
-
-                if (mode != UnixFileMode.None) // .zip files created on Windows don't include permissions.
-                {
-                    fileStreamOptions.UnixCreateMode = mode;
-                }
+                fileStreamOptions.UnixCreateMode = mode;
             }
 
             using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))

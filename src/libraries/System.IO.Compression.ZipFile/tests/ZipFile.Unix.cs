@@ -15,7 +15,7 @@ namespace System.IO.Compression.Tests
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes
-            string[] testPermissions = new[] { "700", "755", "644", "600", "7600" };
+            string[] testPermissions = new[] { "777", "755", "644", "600", "7600" };
 
             using (var tempFolder = new TempDirectory(Path.Combine(GetTestFilePath(), "testFolder")))
             {
@@ -60,7 +60,7 @@ namespace System.IO.Compression.Tests
         public void UnixExtractSetsFilePermissionsFromExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits don't get extracted to file permissions
-            string[] testPermissions = new[] { "700", "755", "644", "754", "7600" };
+            string[] testPermissions = new[] { "777", "755", "644", "754", "7600" };
 
             string archivePath = GetTestFilePath();
             using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
@@ -126,6 +126,8 @@ namespace System.IO.Compression.Tests
 
         private static void EnsureFilePermissions(string filename, string permissions)
         {
+            permissions = GetExpectedPermissions(permissions);
+
             Interop.Sys.FileStatus status;
             Assert.Equal(0, Interop.Sys.Stat(filename, out status));
 
