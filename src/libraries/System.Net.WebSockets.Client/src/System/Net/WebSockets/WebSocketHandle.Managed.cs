@@ -242,10 +242,13 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (options.CollectHttpResponseDetails && response != null)
+                if (response != null)
                 {
                     HttpStatusCode = response.StatusCode;
-                    HttpResponseHeaders = new HttpResponseHeadersReadOnlyCollection(response.Headers);
+                    if (options.CollectHttpResponseDetails)
+                    {
+                        HttpResponseHeaders = new HttpResponseHeadersReadOnlyCollection(response.Headers);
+                    }
                 }
 
                 if (disposeResponse)
