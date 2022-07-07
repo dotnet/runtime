@@ -57,6 +57,45 @@ namespace ILLink.Tasks.Tests
 		};
 
 		[Theory]
+		[InlineData ("full", AssemblyAction.Link)]
+		[InlineData ("partial", AssemblyAction.Copy)]
+		public void TrimModeFullAndPartial (string trimMode, AssemblyAction expectedDefaultAction)
+		{
+			var task = new MockTask () {
+				TrimMode = trimMode
+			};
+			using (var driver = task.CreateDriver ()) {
+				Assert.Equal (AssemblyAction.Link, driver.Context.TrimAction);
+				Assert.Equal (expectedDefaultAction, driver.Context.DefaultAction);
+			}
+		}
+
+		[Theory]
+		[InlineData ("full")]
+		[InlineData ("partial")]
+		public void TrimModeAssemblyPaths (string trimMode)
+		{
+			var assemblyPaths = new ITaskItem[] {
+				new TaskItem("Assembly1.dll", new Dictionary<string, string> {{ "IsTrimmable", "true" }}),
+				new TaskItem("Assembly2.dll", new Dictionary<string, string> ()),
+				new TaskItem("Assembly3.dll", new Dictionary<string, string> {{ "IsTrimmable", "false" }}),
+			};
+			var task = new MockTask () {
+				TrimMode = trimMode,
+				AssemblyPaths = assemblyPaths
+			};
+			using var driver = task.CreateDriver ();
+			var context = driver.Context;
+			var references = driver.GetReferenceAssemblies ();
+			Assert.Equal ("", assemblyPaths[0].GetMetadata ("TrimMode"));
+			Assert.Equal (AssemblyAction.Link, context.Actions["Assembly1"]);
+			Assert.Equal ("", assemblyPaths[1].GetMetadata ("TrimMode"));
+			Assert.False (context.Actions.ContainsKey ("Assembly2"));
+			Assert.Equal ("", assemblyPaths[2].GetMetadata ("TrimMode"));
+			Assert.Equal (AssemblyAction.Copy, context.Actions["Assembly3"]);
+		}
+
+		[Theory]
 		[MemberData (nameof (AssemblyPathsCases))]
 		public void TestAssemblyPaths (ITaskItem[] assemblyPaths)
 		{

@@ -33,11 +33,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="sdk/Sdk.props" PackagePath="Sdk/" />
-    <Content Include="build/$(PackageId).props" PackagePath="build/" />
+    <Content Include="sdk/Sdk.props" PackagePath="Sdk/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="build/$(PackageId).props" PackagePath="build/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <!-- Note: this should not match the package name, because we don't want the targets
          to be imported by nuget. The SDK will import them in the right order. -->
-    <Content Include="build/Microsoft.NET.ILLink.targets" PackagePath="build/" />
+    <Content Include="build/Microsoft.NET.ILLink.targets" PackagePath="build/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
