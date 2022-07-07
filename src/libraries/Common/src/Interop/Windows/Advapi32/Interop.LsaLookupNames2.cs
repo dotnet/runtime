@@ -27,8 +27,8 @@ internal static partial class Interop
             internal ushort MaximumLength;
             internal string Buffer;
 
-            [CustomMarshaller(typeof(MARSHALLED_UNICODE_STRING), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
-            [CustomMarshaller(typeof(MARSHALLED_UNICODE_STRING), Scenario.ElementIn, typeof(Marshaller))]
+            [CustomMarshaller(typeof(MARSHALLED_UNICODE_STRING), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+            [CustomMarshaller(typeof(MARSHALLED_UNICODE_STRING), MarshalMode.ElementIn, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(MARSHALLED_UNICODE_STRING managed)

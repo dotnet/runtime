@@ -38,7 +38,7 @@ namespace System.Drawing.Imaging
         internal ref byte GetPinnableReference() => ref Unsafe.As<MetafileType, byte>(ref type);
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(MetafileHeaderEmf), Scenario.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        [CustomMarshaller(typeof(MetafileHeaderEmf), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
         internal static unsafe class PinningMarshaller
         {
             public static ref byte GetPinnableReference(MetafileHeaderEmf managed) => ref (managed is null ? ref Unsafe.NullRef<byte>() : ref managed.GetPinnableReference());

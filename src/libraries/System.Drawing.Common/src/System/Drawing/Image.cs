@@ -45,7 +45,7 @@ namespace System.Drawing
         public delegate bool GetThumbnailImageAbort();
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(GetThumbnailImageAbort), Scenario.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        [CustomMarshaller(typeof(GetThumbnailImageAbort), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
         internal static class GetThumbnailImageAbortMarshaller
         {
             internal unsafe struct KeepAliveMarshaller
@@ -72,7 +72,7 @@ namespace System.Drawing
                     return _nativeFunction;
                 }
 
-                public void NotifyInvokeSucceeded()
+                public void OnInvoked()
                 {
                     GC.KeepAlive(_managed);
                 }

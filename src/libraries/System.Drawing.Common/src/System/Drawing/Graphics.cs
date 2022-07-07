@@ -65,7 +65,7 @@ namespace System.Drawing
         public delegate bool DrawImageAbort(IntPtr callbackdata);
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(DrawImageAbort), Scenario.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        [CustomMarshaller(typeof(DrawImageAbort), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
         internal static class DrawImageAbortMarshaller
         {
             internal unsafe struct KeepAliveMarshaller
@@ -84,7 +84,7 @@ namespace System.Drawing
                     return _nativeFunction;
                 }
 
-                public void NotifyInvokeSucceeded()
+                public void OnInvoked()
                 {
                     GC.KeepAlive(_managed);
                 }
@@ -113,7 +113,7 @@ namespace System.Drawing
             PlayRecordCallback? callbackData);
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(EnumerateMetafileProc), Scenario.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        [CustomMarshaller(typeof(EnumerateMetafileProc), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
         internal static class EnumerateMetafileProcMarshaller
         {
             internal unsafe struct KeepAliveMarshaller
@@ -138,7 +138,7 @@ namespace System.Drawing
                     return _nativeFunction;
                 }
 
-                public void NotifyInvokeSucceeded()
+                public void OnInvoked()
                 {
                     GC.KeepAlive(_managed);
                 }

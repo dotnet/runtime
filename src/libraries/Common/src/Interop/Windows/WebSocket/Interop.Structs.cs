@@ -50,8 +50,8 @@ internal static partial class Interop
             internal string Value;
             internal uint ValueLength;
 
-            [CustomMarshaller(typeof(HttpHeader), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
-            [CustomMarshaller(typeof(HttpHeader), Scenario.ElementIn, typeof(Marshaller))]
+            [CustomMarshaller(typeof(HttpHeader), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+            [CustomMarshaller(typeof(HttpHeader), MarshalMode.ElementIn, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(HttpHeader managed)

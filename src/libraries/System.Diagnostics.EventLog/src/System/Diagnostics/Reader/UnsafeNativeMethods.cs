@@ -356,7 +356,7 @@ namespace Microsoft.Win32
             public CoTaskMemUnicodeSafeHandle Password;
             public int Flags;
 #if NET7_0_OR_GREATER
-            [CustomMarshaller(typeof(EvtRpcLogin), Scenario.ManagedToUnmanagedRef, typeof(ValueMarshaller))]
+            [CustomMarshaller(typeof(EvtRpcLogin), MarshalMode.ManagedToUnmanagedRef, typeof(ValueMarshaller))]
             public static class Marshaller
             {
                 public struct ValueMarshaller

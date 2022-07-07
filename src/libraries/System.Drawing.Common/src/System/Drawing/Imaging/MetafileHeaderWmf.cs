@@ -59,7 +59,7 @@ namespace System.Drawing.Imaging
         public int LogicalDpiY;
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(MetafileHeaderWmf), Scenario.ManagedToUnmanagedRef, typeof(InPlaceMarshaller))]
+        [CustomMarshaller(typeof(MetafileHeaderWmf), MarshalMode.ManagedToUnmanagedRef, typeof(InPlaceMarshaller))]
         internal static class Marshaller
         {
             internal unsafe struct InPlaceMarshaller

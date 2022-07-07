@@ -186,7 +186,7 @@ namespace System.DirectoryServices.Protocols
         public IntPtr bv_val = IntPtr.Zero;
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(BerVal), Scenario.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        [CustomMarshaller(typeof(BerVal), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
         internal static unsafe class PinningMarshaller
         {
             public static ref int GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.bv_len);
@@ -220,9 +220,9 @@ namespace System.DirectoryServices.Protocols
 #if NET7_0_OR_GREATER
         public static readonly unsafe int Size = sizeof(Marshaller.MarshalValue.Native);
 
-        [CustomMarshaller(typeof(LdapReferralCallback), Scenario.ManagedToUnmanagedIn, typeof(MarshalValue))]
-        [CustomMarshaller(typeof(LdapReferralCallback), Scenario.ManagedToUnmanagedRef, typeof(MarshalValue))]
-        [CustomMarshaller(typeof(LdapReferralCallback), Scenario.ManagedToUnmanagedOut, typeof(MarshalValue))]
+        [CustomMarshaller(typeof(LdapReferralCallback), MarshalMode.ManagedToUnmanagedIn, typeof(MarshalValue))]
+        [CustomMarshaller(typeof(LdapReferralCallback), MarshalMode.ManagedToUnmanagedRef, typeof(MarshalValue))]
+        [CustomMarshaller(typeof(LdapReferralCallback), MarshalMode.ManagedToUnmanagedOut, typeof(MarshalValue))]
         public static class Marshaller
         {
             public unsafe struct MarshalValue
@@ -262,7 +262,7 @@ namespace System.DirectoryServices.Protocols
                     };
                 }
 
-                public void NotifyInvokeSucceeded() => GC.KeepAlive(_managed);
+                public void OnInvoked() => GC.KeepAlive(_managed);
             }
         }
 #else

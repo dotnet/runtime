@@ -400,7 +400,7 @@ namespace System.Drawing.Imaging
         internal ref float GetPinnableReference() => ref _matrix00;
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(ColorMatrix), Scenario.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        [CustomMarshaller(typeof(ColorMatrix), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
         internal static unsafe class PinningMarshaller
         {
             public static ref float GetPinnableReference(ColorMatrix managed) => ref (managed is null ? ref Unsafe.NullRef<float>() : ref managed.GetPinnableReference());

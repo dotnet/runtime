@@ -113,7 +113,7 @@ namespace System.Drawing.Imaging
         internal ref int GetPinnableReference() => ref _width;
 
 #if NET7_0_OR_GREATER
-        [CustomMarshaller(typeof(BitmapData), Scenario.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        [CustomMarshaller(typeof(BitmapData), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
         internal static unsafe class PinningMarshaller
         {
             public static ref int GetPinnableReference(BitmapData managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.GetPinnableReference());
