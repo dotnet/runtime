@@ -301,7 +301,8 @@ namespace
 
     BOOL TypeHasGCPointers(CorElementType corElemType, TypeHandle pNestedType)
     {
-        if (CorTypeInfo::IsPrimitiveType(corElemType) || corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR)
+        if (CorTypeInfo::IsPrimitiveType(corElemType) || corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR ||
+            corElemType == ELEMENT_TYPE_BYREF)
         {
             return FALSE;
         }

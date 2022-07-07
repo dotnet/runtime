@@ -178,7 +178,7 @@ namespace System.Text.Json
 
                 if (value is null)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
                 }
 
                 if (value is JsonSerializerContext ctx)

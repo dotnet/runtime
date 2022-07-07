@@ -690,7 +690,7 @@ public struct S
 }}
 ";
             private static string NonStatic = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
 public class Marshaller
 {
     public struct Native { }
@@ -705,7 +705,7 @@ public class Marshaller
             public static class Stateless
             {
                 private static string In = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -714,7 +714,7 @@ public static class Marshaller
 }
 ";
                 private static string InBuffer = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -725,7 +725,7 @@ public static class Marshaller
 ";
 
                 public static string InPinnable = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
 public static unsafe class Marshaller
 {
     public static byte* ConvertToUnmanaged(S s) => default;
@@ -733,7 +733,7 @@ public static unsafe class Marshaller
 }
 ";
                 private static string Out = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -742,16 +742,16 @@ public static class Marshaller
 }
 ";
                 private static string OutGuaranteed = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
 
-    public static S ConvertToManagedGuaranteed(Native n) => default;
+    public static S ConvertToManagedFinally(Native n) => default;
 }
 ";
                 public static string Ref = @"
-[CustomMarshaller(typeof(S), Scenario.Default, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -761,8 +761,8 @@ public static class Marshaller
 }
 ";
                 public static string RefBuffer = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(Marshaller))]
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -773,7 +773,7 @@ public static class Marshaller
 }
 ";
                 public static string RefOptionalBuffer = @"
-[CustomMarshaller(typeof(S), Scenario.Default, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -793,7 +793,7 @@ public static class Marshaller
                     + NonBlittableUserDefinedType()
                     + Out;
 
-                public static string NativeToManagedGuaranteedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                public static string NativeToManagedFinallyOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
                     + NonBlittableUserDefinedType()
                     + OutGuaranteed;
 
@@ -805,7 +805,7 @@ public static class Marshaller
                     + NonBlittableUserDefinedType()
                     + Out;
 
-                public static string NativeToManagedGuaranteedOnlyReturnValue => BasicReturnType("S")
+                public static string NativeToManagedFinallyOnlyReturnValue => BasicReturnType("S")
                     + NonBlittableUserDefinedType()
                     + Out;
 
@@ -844,7 +844,7 @@ public static class Marshaller
             public static class Stateful
             {
                 private static string In = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -858,7 +858,7 @@ public static class Marshaller
 ";
 
                 public static string InStatelessPinnable = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
 public static class Marshaller
 {
     public unsafe struct M
@@ -872,7 +872,7 @@ public static class Marshaller
 ";
 
                 public static string InPinnable = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
 public static class Marshaller
 {
     public unsafe struct M
@@ -886,7 +886,7 @@ public static class Marshaller
 ";
 
                 private static string InBuffer = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -900,7 +900,7 @@ public static class Marshaller
 }
 ";
                 private static string Out = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -913,7 +913,7 @@ public static class Marshaller
 }
 ";
                 private static string OutGuaranteed = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -921,12 +921,12 @@ public static class Marshaller
     public struct M
     {
         public void FromUnmanaged(Native n) {}
-        public S ToManagedGuaranteed() => default;
+        public S ToManagedFinally() => default;
     }
 }
 ";
                 public static string Ref = @"
-[CustomMarshaller(typeof(S), Scenario.Default, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -941,7 +941,7 @@ public static class Marshaller
 }
 ";
                 public static string RefWithFree = @"
-[CustomMarshaller(typeof(S), Scenario.Default, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -956,8 +956,8 @@ public static class Marshaller
     }
 }
 ";
-                public static string RefWithNotifyInvokeSucceeded = @"
-[CustomMarshaller(typeof(S), Scenario.Default, typeof(M))]
+                public static string RefWithOnInvoked = @"
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -968,13 +968,13 @@ public static class Marshaller
         public Native ToUnmanaged() => default;
         public void FromUnmanaged(Native n) {}
         public S ToManaged() => default;
-        public void NotifyInvokeSucceeded() {}
+        public void OnInvoked() {}
     }
 }
 ";
                 public static string RefBuffer = @"
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedIn, typeof(M))]
-[CustomMarshaller(typeof(S), Scenario.ManagedToUnmanagedOut, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -990,7 +990,7 @@ public static class Marshaller
 }
 ";
                 public static string RefOptionalBuffer = @"
-[CustomMarshaller(typeof(S), Scenario.Default, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -1015,7 +1015,7 @@ public static class Marshaller
                     + NonBlittableUserDefinedType()
                     + Out;
 
-                public static string NativeToManagedGuaranteedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                public static string NativeToManagedFinallyOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
                     + NonBlittableUserDefinedType()
                     + OutGuaranteed;
 
@@ -1027,7 +1027,7 @@ public static class Marshaller
                     + NonBlittableUserDefinedType()
                     + Out;
 
-                public static string NativeToManagedGuaranteedOnlyReturnValue => BasicReturnType("S")
+                public static string NativeToManagedFinallyOnlyReturnValue => BasicReturnType("S")
                     + NonBlittableUserDefinedType()
                     + Out;
 
@@ -1043,9 +1043,9 @@ public static class Marshaller
                     + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                     + RefWithFree;
 
-                public static string ParametersAndModifiersWithNotifyInvokeSucceeded = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+                public static string ParametersAndModifiersWithOnInvoked = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                     + NonBlittableUserDefinedType(defineNativeMarshalling: true)
-                    + RefWithNotifyInvokeSucceeded;
+                    + RefWithOnInvoked;
 
                 public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Marshaller")
                     + NonBlittableUserDefinedType(defineNativeMarshalling: false)
@@ -1457,8 +1457,9 @@ partial class Test
             public static class Stateless
             {
                 public const string In = @"
-[CustomMarshaller(typeof(TestCollection<>), Scenario.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
     public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;
@@ -1466,8 +1467,9 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 }
 ";
                 public const string InPinnable = @"
-[CustomMarshaller(typeof(TestCollection<>), Scenario.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
     public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;
@@ -1477,8 +1479,9 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 }
 ";
                 public const string InBuffer = @"
-[CustomMarshaller(typeof(TestCollection<>), Scenario.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller<,>))]
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public const int BufferSize = 0x100;
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, System.Span<byte> buffer, out int numElements) => throw null;
@@ -1487,8 +1490,9 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 }
 ";
                 public const string Ref = @"
-[CustomMarshaller(typeof(TestCollection<>), Scenario.Default, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,>))]
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
     public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;
@@ -1500,8 +1504,9 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 }
 ";
                 public const string RefNested = @"
-[CustomMarshaller(typeof(TestCollection<>), Scenario.Default, typeof(Marshaller<,>.Ref.Nested))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,>.Ref.Nested))]
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     static class Nested
     {
@@ -1519,8 +1524,9 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 }
 ";
                 public const string Out = @"
-[CustomMarshaller(typeof(TestCollection<>), Scenario.ManagedToUnmanagedOut, typeof(Marshaller<,>))]
-static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller<,>))]
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, TUnmanagedElement>
 {
     public static TestCollection<T> AllocateContainerForManagedElements(byte* unmanaged, int length) => throw null;
     public static System.Span<T> GetManagedValuesDestination(TestCollection<T> managed) => throw null;
@@ -1577,8 +1583,9 @@ static unsafe class Marshaller<T, [ElementUnmanagedType] TUnmanagedElement>
 [NativeMarshalling(typeof(Marshaller<,,>))]
 class TestCollection<T> {}
 
-[CustomMarshaller(typeof(TestCollection<>), Scenario.Default, typeof(Marshaller<,,>))]
-static unsafe class Marshaller<T, U, [ElementUnmanagedType] TUnmanagedElement>
+[CustomMarshaller(typeof(TestCollection<>), MarshalMode.Default, typeof(Marshaller<,,>))]
+[ContiguousCollectionMarshaller]
+static unsafe class Marshaller<T, U, TUnmanagedElement>
 {
     public static byte* AllocateContainerForUnmanagedElements(TestCollection<T> managed, out int numElements) => throw null;
     public static System.ReadOnlySpan<T> GetManagedValuesSource(TestCollection<T> managed) => throw null;

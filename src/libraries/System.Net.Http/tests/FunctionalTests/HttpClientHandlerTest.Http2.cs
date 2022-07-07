@@ -129,6 +129,38 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        public async Task Http2_StreamResetByServerBeforePrefix_RequestFailsWithGoawayProtocolError()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                Http2LoopbackConnection connection = await server.AcceptConnectionAsync(timeout: null);
+                _ = await connection.ReadSettingsAsync();
+
+                GoAwayFrame goAwayFrame = new GoAwayFrame(lastStreamId: 0, (int)ProtocolErrors.HTTP_1_1_REQUIRED, additionalDebugData: Array.Empty<byte>(), streamId: 0);
+                await connection.WriteFrameAsync(goAwayFrame);
+
+                var ex = await Assert.ThrowsAnyAsync<Exception>(() => sendTask);
+
+                // Position of HttpProtocolException in exception hierarchy can change depending on timing.
+                var current = ex;
+                do
+                {
+                    if (current is HttpProtocolException protocolException)
+                    {
+                        Assert.Equal((long)ProtocolErrors.HTTP_1_1_REQUIRED, protocolException.ErrorCode);
+                        return;
+                    }
+                } while ((current = current.InnerException) != null);
+
+                Assert.Fail($"Couldn't find {nameof(HttpProtocolException)} with matching error code in exception: {ex}");
+            }
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_NoResponseBody_Success()

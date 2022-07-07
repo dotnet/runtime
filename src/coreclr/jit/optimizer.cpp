@@ -205,7 +205,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     for (BasicBlock* const curBlk : BasicBlockRangeList(begBlk, endBlk))
     {
         // Don't change the block weight if it came from profile data.
-        if (curBlk->hasProfileWeight())
+        if (curBlk->hasProfileWeight() && fgHaveProfileData())
         {
             reportBlockWeight(curBlk, "; unchanged: has profile weight");
             continue;
@@ -4671,7 +4671,7 @@ Compiler::fgWalkResult Compiler::optInvertCountTreeInfo(GenTree** pTree, fgWalkD
         o->sharedStaticHelperCount += 1;
     }
 
-    if ((*pTree)->OperGet() == GT_ARR_LENGTH)
+    if ((*pTree)->OperIsArrLength())
     {
         o->arrayLengthCount += 1;
     }
@@ -5001,9 +5001,9 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     assert(foundCondTree);
 
     // Flag the block that received the copy as potentially having an array/vtable
-    // reference, nullcheck, object/array allocation if the block copied from did;
+    // reference, nullcheck, object allocation if the block copied from did;
     // this is a conservative guess.
-    if (auto copyFlags = bTest->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK | BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY))
+    if (auto copyFlags = bTest->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_NULLCHECK | BBF_HAS_NEWOBJ))
     {
         bNewCond->bbFlags |= copyFlags;
     }
@@ -6318,7 +6318,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
 
-    preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK));
+    preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_NULLCHECK));
 
     Statement* hoistStmt = gtNewStmt(hoist);
 

@@ -840,7 +840,7 @@ bool Compiler::optValnumCSE_Locate()
                     noway_assert(((unsigned)tree->gtCSEnum) == CSEindex);
                 }
 
-                if (IS_CSE_INDEX(CSEindex) && (tree->OperGet() == GT_ARR_LENGTH))
+                if (IS_CSE_INDEX(CSEindex) && tree->OperIsArrLength())
                 {
                     stmtHasArrLenCandidate = true;
                 }
@@ -3580,6 +3580,8 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             return true;
 
         case GT_LCL_VAR:

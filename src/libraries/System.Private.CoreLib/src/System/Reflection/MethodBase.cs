@@ -207,6 +207,17 @@ namespace System.Reflection
                         }
                         else
                         {
+                            if (arg != null && sigType.IsNullableOfT)
+                            {
+                                // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
+                                // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
+                                Type argumentType = sigType.GetGenericArguments()[0];
+                                if (argumentType.IsEnum)
+                                {
+                                    arg = Enum.ToObject(argumentType, arg);
+                                }
+                            }
+
                             isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                         }
                     }

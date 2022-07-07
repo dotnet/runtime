@@ -537,6 +537,7 @@ namespace System.Numerics
         public Vector(T[] values) { throw null; }
         public Vector(T[] values, int index) { throw null; }
         public static int Count { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public T this[int index] { get { throw null; } }
         public static System.Numerics.Vector<T> One { get { throw null; } }
         public static System.Numerics.Vector<T> Zero { get { throw null; } }

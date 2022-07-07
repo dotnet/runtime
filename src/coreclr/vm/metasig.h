@@ -604,6 +604,8 @@ DEFINE_METASIG(GM(RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, _, M(0)))
 DEFINE_METASIG_T(SM(Array_Int_Array_Int_Int_RetVoid, C(ARRAY) i C(ARRAY) i i, v))
 DEFINE_METASIG_T(SM(Array_Int_Obj_RetVoid, C(ARRAY) i j, v))
 DEFINE_METASIG_T(SM(Array_Int_PtrVoid_RetRefObj, C(ARRAY) i P(v), r(j)))
+DEFINE_METASIG_T(SM(Array_IntPtr_Obj_RetVoid, C(ARRAY) I j, v))
+DEFINE_METASIG_T(SM(Array_IntPtr_PtrVoid_RetRefObj, C(ARRAY) I P(v), r(j)))
 
 DEFINE_METASIG(SM(Obj_IntPtr_Bool_RetVoid, j I F, v))
 DEFINE_METASIG(SM(IntPtr_Obj_RetVoid, I j, v))

@@ -33,8 +33,8 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// The <paramref name="buffer"/> must not be movable - that is, it should not be
         /// on the managed heap or it should be pinned.
-        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         /// </remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         public Utf8StringMarshaller(string? str, Span<byte> buffer)
         {
             _allocated = false;
@@ -69,18 +69,14 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Returns the native value representing the string.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
         public byte* ToNativeValue() => _nativeValue;
 
         /// <summary>
         /// Sets the native value representing the string.
         /// </summary>
         /// <param name="value">The native value.</param>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
         public void FromNativeValue(byte* value)
         {
             _nativeValue = value;
@@ -90,17 +86,13 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Returns the managed string.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
         public string? ToManaged() => Marshal.PtrToStringUTF8((IntPtr)_nativeValue);
 
         /// <summary>
         /// Frees native resources.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
-        /// </remarks>
         public void FreeNative()
         {
             if (_allocated)

@@ -54,6 +54,35 @@ export function dotnet_browser_sign(hashAlgorithm: number, key_buffer: number, k
     return 1;
 }
 
+const AesBlockSizeBytes = 16; // 128 bits
+
+export function dotnet_browser_encrypt_decrypt(isEncrypting: boolean, key_buffer: number, key_len: number, iv_buffer: number, iv_len: number, input_buffer: number, input_len: number, output_buffer: number, output_len: number): number {
+    mono_assert(!!mono_wasm_crypto, "subtle crypto not initialized");
+
+    if (input_len <= 0 || input_len % AesBlockSizeBytes !== 0) {
+        throw "ENCRYPT DECRYPT: data was not a full block: " + input_len;
+    }
+
+    const msg = {
+        func: "encrypt_decrypt",
+        isEncrypting: isEncrypting,
+        key: Array.from(Module.HEAPU8.subarray(key_buffer, key_buffer + key_len)),
+        iv: Array.from(Module.HEAPU8.subarray(iv_buffer, iv_buffer + iv_len)),
+        data: Array.from(Module.HEAPU8.subarray(input_buffer, input_buffer + input_len))
+    };
+
+    const response = mono_wasm_crypto.channel.send_msg(JSON.stringify(msg));
+    const result = JSON.parse(response);
+
+    if (result.length > output_len) {
+        console.info("dotnet_browser_encrypt_decrypt: about to throw!");
+        throw "ENCRYPT DECRYPT: Encrypt/Decrypt length exceeds output length: " + result.length + " > " + output_len;
+    }
+
+    Module.HEAPU8.set(result, output_buffer);
+    return result.length;
+}
+
 export function init_crypto(): void {
     if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.subtle !== "undefined"
         && typeof SharedArrayBuffer !== "undefined"
