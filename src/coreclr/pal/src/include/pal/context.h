@@ -1022,7 +1022,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define BSDREG_Lr(reg) BSD_REGS_STYLE(reg,Lr,lr)
 #define BSDREG_Cpsr(reg) BSD_REGS_STYLE(reg,Spsr,spsr)
 
-#endif // HOST_AMD64
+#endif // HOST_ARM64
 
 #else // HOST_64BIT
 
