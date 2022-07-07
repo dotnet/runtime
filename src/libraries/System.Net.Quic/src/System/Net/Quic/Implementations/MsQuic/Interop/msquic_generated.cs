@@ -1,9 +1,19 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+#pragma warning disable IDE0073
+//
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+//
+#pragma warning restore IDE0073
 
 #pragma warning disable CS0649
 
-using System.Runtime.CompilerServices;
+// Polyfill for MemoryMarshal on .NET Standard
+#if NETSTANDARD && !NETSTANDARD2_1_OR_GREATER
+using MemoryMarshal = Microsoft.Quic.Polyfill.MemoryMarshal;
+#else
+using MemoryMarshal = System.Runtime.InteropServices.MemoryMarshal;
+#endif
+
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Quic
@@ -247,7 +257,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.CertificateHash;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref this, 1)).Anonymous.CertificateHash;
             }
         }
 
@@ -255,7 +265,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.CertificateHashStore;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref this, 1)).Anonymous.CertificateHashStore;
             }
         }
 
@@ -263,7 +273,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.CertificateContext;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref this, 1)).Anonymous.CertificateContext;
             }
         }
 
@@ -271,7 +281,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.CertificateFile;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref this, 1)).Anonymous.CertificateFile;
             }
         }
 
@@ -279,7 +289,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.CertificateFileProtected;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref this, 1)).Anonymous.CertificateFileProtected;
             }
         }
 
@@ -287,7 +297,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.CertificatePkcs12;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref this, 1)).Anonymous.CertificatePkcs12;
             }
         }
 
@@ -840,7 +850,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.IsSetFlags;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.IsSetFlags, 1));
             }
         }
 
@@ -848,7 +858,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.IsSet;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.IsSet, 1));
             }
         }
 
@@ -1085,7 +1095,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.IsSetFlags;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.IsSetFlags, 1));
             }
         }
 
@@ -1093,7 +1103,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.IsSet;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.IsSet, 1));
             }
         }
 
@@ -1726,7 +1736,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.NEW_CONNECTION;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.NEW_CONNECTION, 1));
             }
         }
 
@@ -1734,7 +1744,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.STOP_COMPLETE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.STOP_COMPLETE, 1));
             }
         }
 
@@ -1824,7 +1834,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.CONNECTED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.CONNECTED, 1));
             }
         }
 
@@ -1832,7 +1842,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.SHUTDOWN_INITIATED_BY_TRANSPORT;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.SHUTDOWN_INITIATED_BY_TRANSPORT, 1));
             }
         }
 
@@ -1840,7 +1850,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.SHUTDOWN_INITIATED_BY_PEER;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.SHUTDOWN_INITIATED_BY_PEER, 1));
             }
         }
 
@@ -1848,7 +1858,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.SHUTDOWN_COMPLETE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.SHUTDOWN_COMPLETE, 1));
             }
         }
 
@@ -1856,7 +1866,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.LOCAL_ADDRESS_CHANGED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.LOCAL_ADDRESS_CHANGED, 1));
             }
         }
 
@@ -1864,7 +1874,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.PEER_ADDRESS_CHANGED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.PEER_ADDRESS_CHANGED, 1));
             }
         }
 
@@ -1872,7 +1882,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.PEER_STREAM_STARTED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.PEER_STREAM_STARTED, 1));
             }
         }
 
@@ -1880,7 +1890,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.STREAMS_AVAILABLE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.STREAMS_AVAILABLE, 1));
             }
         }
 
@@ -1888,7 +1898,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.IDEAL_PROCESSOR_CHANGED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.IDEAL_PROCESSOR_CHANGED, 1));
             }
         }
 
@@ -1896,7 +1906,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.DATAGRAM_STATE_CHANGED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.DATAGRAM_STATE_CHANGED, 1));
             }
         }
 
@@ -1904,7 +1914,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.DATAGRAM_RECEIVED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.DATAGRAM_RECEIVED, 1));
             }
         }
 
@@ -1912,7 +1922,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.DATAGRAM_SEND_STATE_CHANGED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.DATAGRAM_SEND_STATE_CHANGED, 1));
             }
         }
 
@@ -1920,7 +1930,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.RESUMED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.RESUMED, 1));
             }
         }
 
@@ -1928,7 +1938,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.RESUMPTION_TICKET_RECEIVED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.RESUMPTION_TICKET_RECEIVED, 1));
             }
         }
 
@@ -1936,7 +1946,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.PEER_CERTIFICATE_RECEIVED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.PEER_CERTIFICATE_RECEIVED, 1));
             }
         }
 
@@ -2193,7 +2203,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.START_COMPLETE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.START_COMPLETE, 1));
             }
         }
 
@@ -2201,7 +2211,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.RECEIVE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.RECEIVE, 1));
             }
         }
 
@@ -2209,7 +2219,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.SEND_COMPLETE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.SEND_COMPLETE, 1));
             }
         }
 
@@ -2217,7 +2227,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.PEER_SEND_ABORTED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.PEER_SEND_ABORTED, 1));
             }
         }
 
@@ -2225,7 +2235,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.PEER_RECEIVE_ABORTED;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.PEER_RECEIVE_ABORTED, 1));
             }
         }
 
@@ -2233,7 +2243,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.SEND_SHUTDOWN_COMPLETE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.SEND_SHUTDOWN_COMPLETE, 1));
             }
         }
 
@@ -2241,7 +2251,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.SHUTDOWN_COMPLETE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.SHUTDOWN_COMPLETE, 1));
             }
         }
 
@@ -2249,7 +2259,7 @@ namespace Microsoft.Quic
         {
             get
             {
-                return ref Unsafe.AsRef(in this).Anonymous.IDEAL_SEND_BUFFER_SIZE;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.IDEAL_SEND_BUFFER_SIZE, 1));
             }
         }
 

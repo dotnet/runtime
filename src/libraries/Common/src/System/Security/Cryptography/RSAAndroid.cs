@@ -121,7 +121,7 @@ namespace System.Security.Cryptography
                 // To prevent the OOB write, decrypt into a temporary buffer.
                 if (destination.Length < keySizeBytes)
                 {
-                    scoped Span<byte> tmp = default;
+                    scoped Span<byte> tmp;
                     byte[]? rent = null;
 
                     // RSA up through 4096 stackalloc

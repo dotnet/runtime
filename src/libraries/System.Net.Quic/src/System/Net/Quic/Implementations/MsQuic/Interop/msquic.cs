@@ -1,11 +1,21 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+#pragma warning disable IDE0073
+//
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+//
+#pragma warning restore IDE0073
 
 using System;
 using System.Diagnostics;
 using System.Net.Quic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+#if NETSTANDARD
+using OperatingSystem = Microsoft.Quic.Polyfill.OperatingSystem;
+#else
+using OperatingSystem = System.OperatingSystem;
+#endif
 
 namespace Microsoft.Quic
 {

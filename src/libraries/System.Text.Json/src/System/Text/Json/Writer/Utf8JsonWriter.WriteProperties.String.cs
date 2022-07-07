@@ -125,7 +125,6 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    // Cannot create a span directly since it gets assigned to parameter and passed down.
                     escapedPropertyName = stackalloc char[JsonConstants.StackallocCharThreshold];
                 }
 

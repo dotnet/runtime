@@ -528,7 +528,6 @@ namespace System.Text.Json
             }
             else
             {
-                // Cannot create a span directly since it gets passed to instance methods on a ref struct.
                 otherUtf8Text = stackalloc byte[JsonConstants.StackallocByteThreshold];
             }
 
