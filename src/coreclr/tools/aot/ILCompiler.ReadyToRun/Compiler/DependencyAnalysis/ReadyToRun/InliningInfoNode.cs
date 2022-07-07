@@ -105,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         continue;
                     }
 
-                    if (inlinee.IsNonVersionable())
+                    if (inlinee.IsNonVersionable() && !factory.CompilationModuleGroup.VersionsWithMethodBody(inlinee))
                     {
                         // Non-versionable methods don't need to be reported
                         continue;
