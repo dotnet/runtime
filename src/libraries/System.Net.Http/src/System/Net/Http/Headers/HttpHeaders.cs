@@ -1111,12 +1111,12 @@ namespace System.Net.Http.Headers
             {
                 int length = GetValueCount(info);
 
-                Span<string?> values;
+                scoped Span<string?> values;
                 singleValue = null;
                 if (length == 1)
                 {
                     multiValue = null;
-                    values = MemoryMarshal.CreateSpan(ref singleValue, 1);
+                    values = new Span<string?>(ref singleValue);
                 }
                 else
                 {

@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowFormatException(DataType.TimeOnly);
             }
 
-            ReadOnlySpan<byte> source = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> source;
             if (!reader.HasValueSequence && !reader.ValueIsEscaped)
             {
                 source = reader.ValueSpan;

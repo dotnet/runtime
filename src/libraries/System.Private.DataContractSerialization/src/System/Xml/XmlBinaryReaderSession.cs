@@ -32,8 +32,7 @@ namespace System.Xml
             xmlString = new XmlDictionaryString(this, value, id);
             if (id >= MaxArrayEntries)
             {
-                if (_stringDict == null)
-                    _stringDict = new Dictionary<int, XmlDictionaryString>();
+                _stringDict ??= new Dictionary<int, XmlDictionaryString>();
 
                 _stringDict.Add(id, xmlString);
             }

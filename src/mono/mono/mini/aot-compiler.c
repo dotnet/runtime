@@ -8772,6 +8772,8 @@ is_concrete_type (MonoType *t)
 	MonoClass *klass;
 	int i;
 
+	if (m_type_is_byref (t))
+		return TRUE;
 	if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR)
 		return FALSE;
 	if (t->type == MONO_TYPE_GENERICINST) {
@@ -13109,6 +13111,9 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 				if (mdata->inst->inst) {
 					MonoGenericContext ctx;
 
+					if (m->is_generic && mono_method_get_generic_container (m)->context.method_inst->type_argc != mdata->inst->inst->type_argc)
+						continue;
+
 					memset (&ctx, 0, sizeof (ctx));
 					ctx.method_inst = mdata->inst->inst;
 
@@ -13314,25 +13319,25 @@ add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod
 
 	int count = 0;
 	MibcGroupMethodEntryState state = FIND_METHOD_TYPE_ENTRY_START;
-	uint8_t *cur = (uint8_t*)mibcGroupMethodHeader->code;
-	uint8_t *end = (uint8_t*)mibcGroupMethodHeader->code + mibcGroupMethodHeader->code_size;
+	const unsigned char *cur = mibcGroupMethodHeader->code;
+	const unsigned char *end = mibcGroupMethodHeader->code + mibcGroupMethodHeader->code_size;
 	while (cur < end) {
 		MonoOpcodeEnum il_op;
-		const unsigned char *opcodeIp = (unsigned char*)cur;
-		const unsigned char *opcodeEnd = (unsigned char*)end;
-		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
+		const int op_size = mono_opcode_value_and_size (&cur, end, &il_op);
 
 		if (state == FIND_METHOD_TYPE_ENTRY_END) {
 			if (il_op == MONO_CEE_POP)
 				state = FIND_METHOD_TYPE_ENTRY_START;
+			cur += op_size;
 			continue;
 		}
 		g_assert (il_op == MONO_CEE_LDTOKEN);
 		state = FIND_METHOD_TYPE_ENTRY_END;
 
-		g_assert (opcodeIp + 4 < opcodeEnd);
-		guint32 mibcGroupMethodEntryToken = read32 (opcodeIp + 1);
+		g_assert (cur + 4 < end); // Assert that there is atleast a 32 bit token before the end
+		guint32 mibcGroupMethodEntryToken = read32 (cur + 1);
 		g_assertf ((mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_MEMBERREF || mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_METHODSPEC), "token %x is not MemberRef or MethodSpec.\n", mibcGroupMethodEntryToken);
+		cur += op_size;
 
 		MonoMethod *methodEntry = mono_get_method_checked (image, mibcGroupMethodEntryToken, mibcModuleClass, context, error);
 		mono_error_assert_ok (error);
@@ -13350,6 +13355,109 @@ add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod
 	return count;
 }
 
+typedef enum {
+	PARSING_MIBC_CONFIG_NONE,
+	PARSING_MIBC_CONFIG_RUNTIME_FIELD,
+} MibcConfigParserState;
+
+//---------------------------------------------------------------------------------------
+//
+// compatible_mibc_profile_config is responsible for ensuring that the .mibc profile
+// used is compatible with Mono. An incompatible .mibc profile contains types that
+// cannot be found on Mono, exemplified by a .mibc generated from a .nettrace collected
+// from a CoreCLR based app, as it will contain Canon types not found on Mono. If the
+// MibcConfig can be found and the associated runtime is not Mono, return false. If there
+// is no MibcConfig, consider the .mibc having been generated prior to the introduction of
+// the MibcConfig and permit it.
+//
+// Sample MibcConfig format
+//
+// Method 'MibcConfig' (#1443) (0x06000001)
+// {
+//   // Code size       49 (0x31)
+//   .maxstack  8
+//   IL_0000:  ldstr      0x70000001	// FormatVersion
+//   IL_0005:  ldstr      0x7000001D	// 1.0
+//   IL_000a:  pop
+//   IL_000b:  pop
+//   IL_000c:  ldstr      0x70000025	// Os
+//   IL_0011:  ldstr      0x7000002B	// macOS
+//   IL_0016:  pop
+//   IL_0017:  pop
+//   IL_0018:  ldstr      0x70000037	// Arch
+//   IL_001d:  ldstr      0x70000041	// arm64
+//   IL_0022:  pop
+//   IL_0023:  pop
+//   IL_0024:  ldstr      0x7000004D	// Runtime
+//   IL_0029:  ldstr      0x7000005D	// Mono (or 4)
+//   IL_002e:  pop
+//   IL_002f:  pop
+//   IL_0030:  ret
+// }
+//
+// Arguments:
+//	* image - the MonoImage corresponding to the .mibc
+// 	* mibcModuleClass - the MonoClass containing the MibcConfig
+//
+// Return Value:
+//	gboolean pertaining to the compatibility of the provided mibc with mono runtime
+//
+
+static gboolean
+compatible_mibc_profile_config (MonoImage *image, MonoClass *mibcModuleClass)
+{
+	ERROR_DECL (error);
+
+	MonoMethod *mibcConfig = mono_class_get_method_from_name_checked (mibcModuleClass, "MibcConfig", 0, 0, error);
+	mono_error_assert_ok (error);
+
+	// If there is no MibcConfig, assume it was a .mibc generated prior to MibcConfig addition
+	if (!mibcConfig)
+		return TRUE;
+
+	MonoMethodHeader *mibcConfigHeader = mono_method_get_header_internal (mibcConfig, error);
+	mono_error_assert_ok (error);
+
+	gboolean isConfigCompatible = FALSE;
+	MibcConfigParserState state = PARSING_MIBC_CONFIG_NONE;
+	const unsigned char *cur = mibcConfigHeader->code;
+	const unsigned char *end = mibcConfigHeader->code + mibcConfigHeader->code_size;
+	while (cur < end && !isConfigCompatible) {
+		MonoOpcodeEnum il_op;
+		const int op_size = mono_opcode_value_and_size (&cur, end, &il_op);
+
+		// MibcConfig ends with a Ret
+		if (il_op == MONO_CEE_RET)
+			break;
+
+		// we only care about args of ldstr, which are 32bits/4bytes
+		// ldstr arg is cur + 1
+		if (il_op != MONO_CEE_LDSTR) {
+			cur += op_size;
+			continue;
+		}
+
+		g_assert (cur + 4 < end); // Assert that there is atleast a 32 bit token before the end
+		guint32 token = read32 (cur + 1);
+		cur += op_size;
+
+		char *value = mono_ldstr_utf8 (image, mono_metadata_token_index (token), error);
+		mono_error_assert_ok (error);
+
+		if (state == PARSING_MIBC_CONFIG_RUNTIME_FIELD)
+			isConfigCompatible = !strcmp(value, "Mono") || !strcmp(value, "4");
+
+		if (!strcmp(value, "Runtime"))
+			state = PARSING_MIBC_CONFIG_RUNTIME_FIELD;
+		else
+			state = PARSING_MIBC_CONFIG_NONE;
+
+		g_free (value);
+	}
+
+	return isConfigCompatible;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // add_mibc_profile_methods is the overarching method that adds methods within a .mibc
@@ -13357,7 +13465,8 @@ add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod
 // methods grouped under mibcGroupMethods, which are summarized within the global
 // function AssemblyDictionary. This method obtains the AssemblyDictionary and iterates
 // over il opcodes and arguments to retrieve mibcGroupMethods and thereafter calls
-// add_mibc_group_method_methods.
+// add_mibc_group_method_methods. A .mibc also may contain a MibcConfig, which we
+// check for compatibility with mono.
 //
 // Sample AssemblyDictionary format
 //
@@ -13389,6 +13498,11 @@ add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
 	MonoClass *mibcModuleClass = mono_class_from_name_checked (image, "", "<Module>", error);
 	mono_error_assert_ok (error);
 
+	if (!compatible_mibc_profile_config (image, mibcModuleClass)) {
+		aot_printf (acfg, "Skipping .mibc profile '%s' as it is not compatible with the mono runtime. The MibcConfig within the .mibc does not record the Runtime flavor 'Mono'.\n", filename);
+		return;
+	}
+
 	MonoMethod *assemblyDictionary = mono_class_get_method_from_name_checked (mibcModuleClass, "AssemblyDictionary", 0, 0, error);
 	MonoGenericContext *context = mono_method_get_context (assemblyDictionary);
 	mono_error_assert_ok (error);
@@ -13397,21 +13511,22 @@ add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
 	mono_error_assert_ok (error);
 
 	int count = 0;
-	uint8_t *cur = (uint8_t*)header->code;
-	uint8_t *end = (uint8_t*)header->code + header->code_size;
+	const unsigned char *cur = header->code;
+	const unsigned char *end = header->code + header->code_size;
 	while (cur < end) {
 		MonoOpcodeEnum il_op;
-		const unsigned char *opcodeIp = (unsigned char*)cur;
-		const unsigned char *opcodeEnd = (unsigned char*)end;
-		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
-		// opcodeIp gets moved to point at end of opcode
-		// il opcode arg is opcodeIp + 1
-		// we only care about args of ldtoken's, which are 32bits/4bytes
-		if (il_op != MONO_CEE_LDTOKEN)
-			continue;
+		const int op_size = mono_opcode_value_and_size (&cur, end, &il_op);
 
-		g_assert (opcodeIp + 4 < opcodeEnd);
-		guint32 token = read32 (opcodeIp + 1);
+		// we only care about args of ldtoken's, which are 32bits/4bytes
+		// ldtoken arg is cur + 1
+		if (il_op != MONO_CEE_LDTOKEN) {
+			cur += op_size;
+			continue;
+		}
+
+		g_assert (cur + 4 < end); // Assert that there is atleast a 32 bit token before the end
+		guint32 token = read32 (cur + 1);
+		cur += op_size;
 
 		MonoMethod *mibcGroupMethod = mono_get_method_checked (image, token, mibcModuleClass, context, error);
 		mono_error_assert_ok (error);
@@ -14223,6 +14338,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		return 1;
 	}
 #endif
+
+	if (acfg->aot_opts.llvm_only)
+		acfg->jit_opts |= MONO_OPT_GSHAREDVT;
 
 	if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);

@@ -236,10 +236,7 @@ namespace System.Xml
                     (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
                     (matchPos == position))
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     if (matchPos == position)
                         if (en!.MoveNext())
                         {
@@ -1513,10 +1510,7 @@ namespace System.Xml
                 char ch = value[i];
                 if ((int)ch < 0x20 || ch == '"')
                 {
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(value.Length + 4);
-                    }
+                    sb ??= new StringBuilder(value.Length + 4);
                     if (i - start > 0)
                     {
                         sb.Append(value, start, i - start);

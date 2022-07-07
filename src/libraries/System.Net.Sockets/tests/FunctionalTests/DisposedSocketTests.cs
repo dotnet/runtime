@@ -16,9 +16,9 @@ namespace System.Net.Sockets.Tests
         private static readonly IList<ArraySegment<byte>> s_buffers = new List<ArraySegment<byte>> { new ArraySegment<byte>(s_buffer) };
         private static readonly SocketAsyncEventArgs s_eventArgs = new SocketAsyncEventArgs();
 
-        private static Socket GetDisposedSocket(AddressFamily addressFamily = AddressFamily.InterNetwork)
+        private static Socket GetDisposedSocket(AddressFamily addressFamily = AddressFamily.InterNetwork, SocketType socketType = SocketType.Stream, ProtocolType protocolType = ProtocolType.Tcp)
         {
-            using (var socket = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp))
+            using (var socket = new Socket(addressFamily, socketType, protocolType))
             {
                 return socket;
             }
@@ -245,7 +245,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void EnableBroadcast_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EnableBroadcast);
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket(socketType: SocketType.Dgram, protocolType: ProtocolType.Udp).EnableBroadcast);
         }
 
         [Fact]
@@ -253,7 +253,7 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ObjectDisposedException>(() =>
             {
-                GetDisposedSocket().EnableBroadcast = true;
+                GetDisposedSocket(socketType: SocketType.Dgram, protocolType: ProtocolType.Udp).EnableBroadcast = true;
             });
         }
 
@@ -374,7 +374,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SendTo_Buffer_Size_Throws_ObjectDisposed()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SendTo(s_buffer,  s_buffer.Length, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1)));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SendTo(s_buffer, s_buffer.Length, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1)));
         }
 
         [Fact]
@@ -459,7 +459,7 @@ namespace System.Net.Sockets.Tests
         public void ReceiveFrom_Buffer_Size_Throws_ObjectDisposed()
         {
             EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().ReceiveFrom(s_buffer,  s_buffer.Length, SocketFlags.None, ref remote));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().ReceiveFrom(s_buffer, s_buffer.Length, SocketFlags.None, ref remote));
         }
 
         [Fact]

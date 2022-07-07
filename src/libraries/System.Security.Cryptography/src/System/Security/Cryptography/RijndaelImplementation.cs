@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -17,7 +16,6 @@ namespace System.Security.Cryptography
     {
         private readonly Aes _impl;
 
-        [UnsupportedOSPlatform("browser")]
         internal RijndaelImplementation()
         {
             LegalBlockSizesValue = new KeySizes[] { new KeySizes(minSize: 128, maxSize: 128, skipSize: 0) };

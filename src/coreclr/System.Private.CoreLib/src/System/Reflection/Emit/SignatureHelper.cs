@@ -52,10 +52,7 @@ namespace System.Reflection.Emit
             SignatureHelper sigHelp;
             MdSigCallingConvention intCall;
 
-            if (returnType == null)
-            {
-                returnType = typeof(void);
-            }
+            returnType ??= typeof(void);
 
             intCall = MdSigCallingConvention.Default;
 
@@ -150,10 +147,7 @@ namespace System.Reflection.Emit
         {
             SignatureHelper sigHelp;
 
-            if (returnType == null)
-            {
-                returnType = typeof(void);
-            }
+            returnType ??= typeof(void);
 
             MdSigCallingConvention intCall = MdSigCallingConvention.Property;
 

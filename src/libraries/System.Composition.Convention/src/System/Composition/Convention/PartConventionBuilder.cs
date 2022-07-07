@@ -433,10 +433,7 @@ namespace System.Composition.Convention
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
 
-            if (_metadataItems == null)
-            {
-                _metadataItems = new List<Tuple<string, object>>();
-            }
+            _metadataItems ??= new List<Tuple<string, object>>();
             _metadataItems.Add(Tuple.Create(name, value));
             return this;
         }
@@ -463,10 +460,7 @@ namespace System.Composition.Convention
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
 
-            if (_metadataItemFuncs == null)
-            {
-                _metadataItemFuncs = new List<Tuple<string, Func<Type, object>>>();
-            }
+            _metadataItemFuncs ??= new List<Tuple<string, Func<Type, object>>>();
             _metadataItemFuncs.Add(Tuple.Create(name, getValueFromPartType));
             return this;
         }
@@ -651,10 +645,7 @@ namespace System.Composition.Convention
 
         private static void ConfigureConstructorAttributes(ConstructorInfo constructorInfo, ref List<Tuple<object, List<Attribute>>> configuredMembers, Action<ParameterInfo, ImportConventionBuilder> configureConstuctorImports)
         {
-            if (configuredMembers == null)
-            {
-                configuredMembers = new List<Tuple<object, List<Attribute>>>();
-            }
+            configuredMembers ??= new List<Tuple<object, List<Attribute>>>();
 
             // Make its attribute
             configuredMembers.Add(Tuple.Create((object)constructorInfo, s_importingConstructorList));
@@ -753,10 +744,8 @@ namespace System.Composition.Convention
                     // Run through the import specifications see if any match
                     foreach (Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ImportConventionBuilder>> importSpecification in _propertyImports)
                     {
-                        if (underlyingPi == null)
-                        {
-                            underlyingPi = pi.DeclaringType.GetRuntimeProperty(pi.Name);
-                        }
+                        underlyingPi ??= pi.DeclaringType.GetRuntimeProperty(pi.Name);
+
                         if (importSpecification.Item1 != null && importSpecification.Item1(underlyingPi))
                         {
                             var importBuilder = new ImportConventionBuilder();
@@ -792,10 +781,7 @@ namespace System.Composition.Convention
                     // Run through the export specifications see if any match
                     foreach (Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ExportConventionBuilder>, Type> exportSpecification in _propertyExports)
                     {
-                        if (underlyingPi == null)
-                        {
-                            underlyingPi = pi.DeclaringType.GetRuntimeProperty(pi.Name);
-                        }
+                        underlyingPi ??= pi.DeclaringType.GetRuntimeProperty(pi.Name);
 
                         if (exportSpecification.Item1 != null && exportSpecification.Item1(underlyingPi))
                         {
@@ -828,10 +814,7 @@ namespace System.Composition.Convention
 
                     if (attributes != null)
                     {
-                        if (configuredMembers == null)
-                        {
-                            configuredMembers = new List<Tuple<object, List<Attribute>>>();
-                        }
+                        configuredMembers ??= new List<Tuple<object, List<Attribute>>>();
 
                         configuredMembers.Add(Tuple.Create((object)pi, attributes));
                     }

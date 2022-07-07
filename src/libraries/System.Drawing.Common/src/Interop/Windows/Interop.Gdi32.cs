@@ -188,7 +188,7 @@ internal static partial class Interop
             internal int fwType;
 
 #if NET7_0_OR_GREATER
-            [ManagedToUnmanagedMarshallers(typeof(DOCINFO), InMarshaller = typeof(Marshaller))]
+            [CustomMarshaller(typeof(DOCINFO), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(DOCINFO managed) => new(managed);

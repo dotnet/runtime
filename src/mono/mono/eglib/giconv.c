@@ -476,34 +476,59 @@ g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 }
 
 static FORCE_INLINE (int)
-g_unichar_to_utf16 (gunichar c, gunichar2 *outbuf)
+g_unichar_to_utf16_endian (gunichar c, gunichar2 *outbuf, unsigned endian)
 {
 	gunichar c2;
 
 	if (c < 0xd800) {
 		if (outbuf)
-			*outbuf = (gunichar2) c;
+			*outbuf = (gunichar2) (endian == G_BIG_ENDIAN ? GUINT16_TO_BE(c) : GUINT16_TO_LE(c));
 
 		return 1;
 	} else if (c < 0xe000) {
 		return -1;
 	} else if (c < 0x10000) {
 		if (outbuf)
-			*outbuf = (gunichar2) c;
+			*outbuf = (gunichar2) (endian == G_BIG_ENDIAN ? GUINT16_TO_BE(c) : GUINT16_TO_LE(c));
 
 		return 1;
 	} else if (c < 0x110000) {
 		if (outbuf) {
 			c2 = c - 0x10000;
 
-			outbuf[0] = (gunichar2) ((c2 >> 10) + 0xd800);
-			outbuf[1] = (gunichar2) ((c2 & 0x3ff) + 0xdc00);
+			gunichar2 part1 = (c2 >> 10) + 0xd800;
+			gunichar2 part2 = (c2 & 0x3ff) + 0xdc00;
+			if (endian == G_BIG_ENDIAN) {
+				outbuf[0] = (gunichar2) GUINT16_TO_BE(part1);
+				outbuf[1] = (gunichar2) GUINT16_TO_BE(part2);
+			} else {
+				outbuf[0] = (gunichar2) GUINT16_TO_LE(part1);
+				outbuf[1] = (gunichar2) GUINT16_TO_LE(part2);
+			}
 		}
 
 		return 2;
 	} else {
 		return -1;
 	}
+}
+
+static FORCE_INLINE (int)
+g_unichar_to_utf16 (gunichar c, gunichar2 *outbuf)
+{
+	return g_unichar_to_utf16_endian (c, outbuf, G_BYTE_ORDER);
+}
+
+static FORCE_INLINE (int)
+g_unichar_to_utf16be (gunichar c, gunichar2 *outbuf)
+{
+	return g_unichar_to_utf16_endian (c, outbuf, G_BIG_ENDIAN);
+}
+
+static FORCE_INLINE (int)
+g_unichar_to_utf16le (gunichar c, gunichar2 *outbuf)
+{
+	return g_unichar_to_utf16_endian (c, outbuf, G_LITTLE_ENDIAN);
 }
 
 gunichar *
@@ -534,7 +559,7 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 }
 
 static gunichar2 *
-eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, unsigned endian)
 {
 	gunichar2 *outbuf, *outptr;
 	size_t outlen = 0;
@@ -564,7 +589,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 		if (c == 0 && !include_nuls)
 			break;
 
-		if ((u = g_unichar_to_utf16 (c, NULL)) < 0) {
+		if ((u = g_unichar_to_utf16_endian (c, NULL, endian)) < 0) {
 			if (replace_invalid_codepoints) {
 				u = 2;
 			} else {
@@ -604,7 +629,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 		if (c == 0 && !include_nuls)
 			break;
 
-		u = g_unichar_to_utf16 (c, outptr);
+		u = g_unichar_to_utf16_endian (c, outptr, endian);
 		if ((u < 0) && replace_invalid_codepoints) {
 			outptr[0] = 0xFFFD;
 			outptr[1] = 0xFFFD;
@@ -646,25 +671,49 @@ error:
 gunichar2 *
 g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, NULL, NULL, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, NULL, NULL, err, G_BYTE_ORDER);
+}
+
+gunichar2 *
+g_utf8_to_utf16be (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, NULL, NULL, err, G_BIG_ENDIAN);
+}
+
+gunichar2 *
+g_utf8_to_utf16le (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, NULL, NULL, err, G_LITTLE_ENDIAN);
 }
 
 gunichar2 *
 g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err, G_BYTE_ORDER);
+}
+
+gunichar2 *
+g_utf8_to_utf16be_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+{
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err, G_BIG_ENDIAN);
+}
+
+gunichar2 *
+g_utf8_to_utf16le_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+{
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err, G_LITTLE_ENDIAN);
 }
 
 gunichar2 *
 eg_utf8_to_utf16_with_nuls (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, FALSE, NULL, NULL, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, FALSE, NULL, NULL, err, G_BYTE_ORDER);
 }
 
 gunichar2 *
 eg_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, TRUE, NULL, NULL, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, TRUE, NULL, NULL, err, G_BYTE_ORDER);
 }
 
 gunichar *
@@ -741,7 +790,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 
 static
 gchar *
-eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, unsigned endian)
 {
 	char *inptr, *outbuf, *outptr;
 	size_t outlen = 0;
@@ -761,7 +810,7 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 	inleft = len * 2;
 
 	while (inleft > 0) {
-		if ((n = decode_utf16 (inptr, inleft, &c)) < 0) {
+		if ((n = decode_utf16_endian (inptr, inleft, &c, endian)) < 0) {
 			if (n == -2 && inleft > 2) {
 				/* This means that the first UTF-16 char was read, but second failed */
 				inleft -= 2;
@@ -816,7 +865,7 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 	inleft = len * 2;
 
 	while (inleft > 0) {
-		if ((n = decode_utf16 (inptr, inleft, &c)) < 0)
+		if ((n = decode_utf16_endian (inptr, inleft, &c, endian)) < 0)
 			break;
 		else if (c == 0)
 			break;
@@ -834,13 +883,25 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 gchar *
 g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err);
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err, G_BYTE_ORDER);
+}
+
+gchar *
+g_utf16le_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err, G_LITTLE_ENDIAN);
+}
+
+gchar *
+g_utf16be_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err, G_BIG_ENDIAN);
 }
 
 gchar *
 g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
-	return eg_utf16_to_utf8_general (str, len, items_read, items_written, custom_alloc_func, custom_alloc_data, err);
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, custom_alloc_func, custom_alloc_data, err, G_BYTE_ORDER);
 }
 
 gunichar *

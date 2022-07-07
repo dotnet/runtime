@@ -690,9 +690,7 @@ namespace System.Collections.Concurrent
                 if (waitForSemaphoreWasSuccessful == false && millisecondsTimeout != 0)
                 {
                     // create the linked token if it is not created yet
-                    if (linkedTokenSource == null)
-                        linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                                                                                          _consumersCancellationTokenSource.Token);
+                    linkedTokenSource ??= CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
                     waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(millisecondsTimeout, linkedTokenSource.Token);
                 }
             }
@@ -1765,10 +1763,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ObjectDisposedException">If the collection has been disposed.</exception>
         private void CheckDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(BlockingCollection<T>), SR.BlockingCollection_Disposed);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
     }
 

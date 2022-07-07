@@ -557,10 +557,7 @@ namespace System.Configuration
 
                 Type type = GetType();
 
-                if (_context == null)
-                {
-                    _context = new SettingsContext();
-                }
+                _context ??= new SettingsContext();
                 _context["GroupName"] = type.FullName;
                 _context["SettingsKey"] = SettingsKey;
                 _context["SettingsClassType"] = type;
@@ -568,15 +565,8 @@ namespace System.Configuration
                 PropertyInfo[] properties = SettingsFilter(type.GetProperties(BindingFlags.Instance | BindingFlags.Public));
                 _classAttributes = type.GetCustomAttributes(false);
 
-                if (_settings == null)
-                {
-                    _settings = new SettingsPropertyCollection();
-                }
-
-                if (_providers == null)
-                {
-                    _providers = new SettingsProviderCollection();
-                }
+                _settings ??= new SettingsPropertyCollection();
+                _providers ??= new SettingsProviderCollection();
 
                 for (int i = 0; i < properties.Length; i++)
                 {

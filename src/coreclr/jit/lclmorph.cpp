@@ -1068,7 +1068,7 @@ private:
         // | Partial    | LCL_FLD | LCL_FLD | LCL_FLD |
         // |------------|---------|---------|---------|
         //
-        // * - On XArch only.
+        // * - On XArch/Arm64/LA only.
         //
         // |------------|------|------|--------|----------|
         // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
@@ -1086,9 +1086,9 @@ private:
 
         if (user->IsCall())
         {
-#if !defined(TARGET_XARCH)
+#ifdef TARGET_ARM
             return IndirTransform::None;
-#endif // !defined(TARGET_XARCH)
+#endif // TARGET_ARM
         }
 
         if (match == StructMatch::Compatible)

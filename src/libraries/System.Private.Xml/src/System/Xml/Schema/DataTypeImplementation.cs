@@ -471,17 +471,8 @@ namespace System.Xml.Schema
 
         internal override FacetsChecker FacetsChecker { get { return miscFacetsChecker; } }
 
-        internal override XmlValueConverter ValueConverter
-        {
-            get
-            {
-                if (_valueConverter == null)
-                {
-                    _valueConverter = CreateValueConverter(_parentSchemaType!);
-                }
-                return _valueConverter;
-            }
-        }
+        internal override XmlValueConverter ValueConverter =>
+            _valueConverter ??= CreateValueConverter(_parentSchemaType!);
 
         public override XmlTokenizedType TokenizedType { get { return XmlTokenizedType.None; } }
 
@@ -944,10 +935,8 @@ namespace System.Xml.Schema
                 } while (simpleType != null && simpleType != DatatypeImplementation.AnySimpleType);
             }
 
-            if (listItemType == null)
-            { //Get built-in simple type for the typecode
-                listItemType = DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType!.Datatype!.TypeCode);
-            }
+            //Get built-in simple type for the typecode
+            listItemType ??= DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType!.Datatype!.TypeCode);
 
             return XmlListConverter.Create(listItemType.ValueConverter);
         }

@@ -127,17 +127,25 @@ namespace System.Formats.Tar
         public override int ReadByte()
         {
             byte b = default;
-            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
             ValidateBufferArguments(buffer, offset, count);
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
             ThrowIfDisposed();
             ThrowIfBeyondEndOfStream();
             return ReadAsyncCore(buffer, cancellationToken);
@@ -146,6 +154,8 @@ namespace System.Formats.Tar
         protected async ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(!_hasReachedEnd);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (_positionInSuperStream > _endInSuperStream - buffer.Length)
             {

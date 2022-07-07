@@ -1421,10 +1421,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void ThrowIfDisposed()
         {
-            if (_disposed == 1)
-            {
-                throw new ObjectDisposedException(nameof(MsQuicStream));
-            }
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
         }
 
         private static int HandleEventConnectionClose(State state)

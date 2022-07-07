@@ -90,6 +90,13 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            Assert.Equal(0xFFFF_FFFF, BitConverter.SingleToUInt32Bits(BinaryNumberHelper<float>.AllBitsSet));
+            Assert.Equal(0U, ~BitConverter.SingleToUInt32Bits(BinaryNumberHelper<float>.AllBitsSet));
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<float>.IsPow2(float.NegativeInfinity));

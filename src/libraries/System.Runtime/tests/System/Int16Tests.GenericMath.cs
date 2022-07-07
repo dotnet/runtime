@@ -195,6 +195,13 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            Assert.Equal(unchecked((short)0xFFFF), BinaryNumberHelper<short>.AllBitsSet);
+            Assert.Equal((short)0, ~BinaryNumberHelper<short>.AllBitsSet);
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<short>.IsPow2((short)0x0000));

@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (!_stackGuard.TryEnterOnCurrentStack())
             {
-                return _stackGuard.RunOnEmptyStack((type, chain) => CreateCallSite(type, chain), serviceType, callSiteChain);
+                return _stackGuard.RunOnEmptyStack(CreateCallSite, serviceType, callSiteChain);
             }
 
             // We need to lock the resolution process for a single service type at a time:

@@ -840,14 +840,7 @@ namespace System.Runtime.Serialization
         internal static MethodInfo WriteExtensionDataMethod
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            {
-                if (s_writeExtensionDataMethod == null)
-                {
-                    s_writeExtensionDataMethod = typeof(XmlObjectSerializerWriteContext).GetMethod("WriteExtensionData", Globals.ScanAllMembers)!;
-                }
-                return s_writeExtensionDataMethod;
-            }
+            get => s_writeExtensionDataMethod ??= typeof(XmlObjectSerializerWriteContext).GetMethod("WriteExtensionData", Globals.ScanAllMembers)!;
         }
 
         private static MethodInfo? s_writeXmlValueMethod;

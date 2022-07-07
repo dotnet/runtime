@@ -155,14 +155,12 @@ namespace System.DirectoryServices.AccountManagement
                 // (it's probably read-only, e.g., "lastLogon").
                 if (toLdap != null)
                 {
-                    if (mappingTableByProperty[propertyName] == null)
-                        mappingTableByProperty[propertyName] = new ArrayList();
+                    mappingTableByProperty[propertyName] ??= new ArrayList();
 
                     ((ArrayList)mappingTableByProperty[propertyName]).Add(propertyEntry);
                 }
 
-                if (mappingTableByPropertyFull[propertyName] == null)
-                    mappingTableByPropertyFull[propertyName] = new ArrayList();
+                mappingTableByPropertyFull[propertyName] ??= new ArrayList();
 
                 ((ArrayList)mappingTableByPropertyFull[propertyName]).Add(propertyEntry);
 
@@ -173,8 +171,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     string ldapAttributeLower = ldapAttribute.ToLowerInvariant();
 
-                    if (mappingTableByLDAP[ldapAttributeLower] == null)
-                        mappingTableByLDAP[ldapAttributeLower] = new ArrayList();
+                    mappingTableByLDAP[ldapAttributeLower] ??= new ArrayList();
 
                     ((ArrayList)mappingTableByLDAP[ldapAttributeLower]).Add(propertyEntry);
                 }

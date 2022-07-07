@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -13,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.Runtime.ExceptionServices;
+using Xunit.Abstractions;
 
 #nullable enable
 
@@ -37,28 +37,35 @@ namespace DebuggerTests
         private Exception? _isFailingWithException;
 
         protected static Lazy<ILoggerFactory> s_loggerFactory = new(() =>
-        {
-            return LoggerFactory.Create(builder =>
+            LoggerFactory.Create(builder =>
+            {
+                if (TestOptions.LogToConsole)
+                {
                     builder
-                        // .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
                         .AddSimpleConsole(options =>
                             {
                                 options.SingleLine = true;
                                 options.TimestampFormat = "[HH:mm:ss] ";
                             })
-                           .AddFilter(null, LogLevel.Trace));
-        });
+                           .AddFilter(null, LogLevel.Debug);
+                        // .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
+                }
+            }));
 
         protected ILogger _logger;
         public int Id { get; init; }
 
-        public Inspector(int testId)
+        public Inspector(int testId, ITestOutputHelper testOutput)
         {
             Id = testId;
             _cancellationTokenSource = new CancellationTokenSource();
             Token = _cancellationTokenSource.Token;
 
-            _logger = s_loggerFactory.Value.CreateLogger($"{nameof(Inspector)}-{Id}");
+            if (Id == 0)
+                s_loggerFactory.Value.AddXunit(testOutput);
+
+            _logger = s_loggerFactory.Value
+                            .CreateLogger($"{nameof(Inspector)}-{Id}");
             if (DebuggerTestBase.RunningOnChrome)
                 Client = new InspectorClient(_logger);
             else
@@ -146,7 +153,7 @@ namespace DebuggerTests
             }
         }
 
-        private static string FormatConsoleAPICalled(JObject args)
+        private (string line, string type) FormatConsoleAPICalled(JObject args)
         {
             string? type = args?["type"]?.Value<string>();
             List<string> consoleArgs = new();
@@ -156,8 +163,9 @@ namespace DebuggerTests
                     consoleArgs.Add(arg!["value"]!.ToString());
             }
 
+            type ??= "log";
             if (consoleArgs.Count == 0)
-                return "console: <message missing>";
+                return (line: "console: <message missing>", type);
 
             int position = 1;
             string first = consoleArgs[0];
@@ -180,7 +188,7 @@ namespace DebuggerTests
                     output = output[..^1];
             }
 
-            return $"console.{type}: {output}";
+            return ($"console.{type}: {output}", type);
         }
 
         async Task OnMessage(string method, JObject args, CancellationToken token)
@@ -196,8 +204,17 @@ namespace DebuggerTests
                     break;
                 case "Runtime.consoleAPICalled":
                 {
-                    string line = FormatConsoleAPICalled(args);
-                    _logger.LogInformation(line);
+                    (string line, string type) = FormatConsoleAPICalled(args);
+                    switch (type)
+                    {
+                        case "log": _logger.LogInformation(line); break;
+                        case "debug": _logger.LogDebug(line); break;
+                        case "error": _logger.LogError(line); break;
+                        case "warn": _logger.LogWarning(line); break;
+                        case "trace": _logger.LogTrace(line); break;
+                        default: _logger.LogInformation(line); break;
+                    }
+
                     if (DetectAndFailOnAssertions &&
                             (line.Contains("console.error: [MONO]") || line.Contains("console.warning: [MONO]")))
                     {

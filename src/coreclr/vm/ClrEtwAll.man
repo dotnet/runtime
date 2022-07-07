@@ -611,6 +611,7 @@
                     <bitMap name="RuntimeSkuMap">
                         <map value="0x1" message="$(string.RuntimePublisher.RuntimeSku.DesktopCLRMapMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.RuntimeSku.CoreCLRMapMessage)"/>
+                        <map value="0x4" message="$(string.RuntimePublisher.RuntimeSku.MonoMapMessage)"/>
                     </bitMap>
                     <bitMap name="ExceptionThrownFlagsMap">
                         <map value="0x1" message="$(string.RuntimePublisher.ExceptionThrown.HasInnerExceptionMapMessage)"/>
@@ -2566,6 +2567,27 @@
                       </UserData>
                     </template>
 
+                    <template tid="MethodILToNativeMap_V1">
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="MethodExtent" inType="win:UInt8" />
+                      <data name="CountOfMapEntries" inType="win:UInt16" />
+                      <data name="ILOffsets" count="CountOfMapEntries" inType="win:UInt32" />
+                      <data name="NativeOffsets" count="CountOfMapEntries" inType="win:UInt32" />
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <data name="ILVersionID" inType="win:UInt64" />
+                      <UserData>
+                        <MethodILToNativeMap xmlns="myNs">
+                          <MethodID> %1 </MethodID>
+                          <ReJITID> %2 </ReJITID>
+                          <MethodExtent> %3 </MethodExtent>
+                          <CountOfMapEntries> %4 </CountOfMapEntries>
+                          <ClrInstanceID> %5 </ClrInstanceID>
+                          <ILVersionID> %6 </ILVersionID>
+                        </MethodILToNativeMap>
+                      </UserData>
+                    </template>
+
                     <template tid="ClrStackWalk">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="Reserved1" inType="win:UInt8" />
@@ -3820,6 +3842,12 @@
                            symbol="MethodILToNativeMap"
                            message="$(string.RuntimePublisher.MethodILToNativeMapEventMessage)"/>
 
+                    <event value="190" version="1" level="win:Verbose"  template="MethodILToNativeMap_V1"
+                           keywords ="JittedMethodILToNativeMapKeyword" opcode="MethodILToNativeMap"
+                           task="CLRMethod"
+                           symbol="MethodILToNativeMap_V1"
+                           message="$(string.RuntimePublisher.MethodILToNativeMapEventMessage_V1)"/>
+
                     <event value="191" version="0" level="win:Verbose"  template="MethodJitTailCallFailed"
                            keywords ="JitTracingKeyword" opcode="JitTailCallFailed"
                            task="CLRMethod"
@@ -4309,6 +4337,7 @@
                     <bitMap name="RuntimeSkuMap">
                         <map value="0x1" message="$(string.RundownPublisher.RuntimeSku.DesktopCLRMapMessage)"/>
                         <map value="0x2" message="$(string.RundownPublisher.RuntimeSku.CoreCLRMapMessage)"/>
+                        <map value="0x4" message="$(string.RundownPublisher.RuntimeSku.MonoMapMessage)"/>
                     </bitMap>
                     <bitMap name="StartupFlagsMap">
                         <map value="0x000001" message="$(string.RundownPublisher.Startup.CONCURRENT_GCMapMessage)"/>
@@ -4753,6 +4782,27 @@
                       </UserData>
                     </template>
 
+                    <template tid="MethodILToNativeMapRundown_V1">
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="MethodExtent" inType="win:UInt8" />
+                      <data name="CountOfMapEntries" inType="win:UInt16" />
+                      <data name="ILOffsets" count="CountOfMapEntries" inType="win:UInt32" />
+                      <data name="NativeOffsets" count="CountOfMapEntries" inType="win:UInt32" />
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <data name="ILVersionID" inType="win:UInt64" />
+                      <UserData>
+                        <MethodILToNativeMap_V1 xmlns="myNs">
+                          <MethodID> %1 </MethodID>
+                          <ReJITID> %2 </ReJITID>
+                          <MethodExtent> %3 </MethodExtent>
+                          <CountOfMapEntries> %4 </CountOfMapEntries>
+                          <ClrInstanceID> %5 </ClrInstanceID>
+                          <ILVersionID> %6 </ILVersionID>
+                        </MethodILToNativeMap_V1>
+                      </UserData>
+                    </template>
+
                     <template tid="DCStartEnd">
                         <data name="ClrInstanceID" inType="win:UInt16" />
 
@@ -4953,11 +5003,23 @@
                            symbol="MethodDCStartILToNativeMap"
                            message="$(string.RundownPublisher.MethodDCStartILToNativeMapEventMessage)"/>
 
+                    <event value="149" version="1" level="win:Verbose"  template="MethodILToNativeMapRundown_V1"
+                           keywords ="JittedMethodILToNativeMapRundownKeyword" opcode="MethodDCStartILToNativeMap"
+                           task="CLRMethodRundown"
+                           symbol="MethodDCStartILToNativeMap_V1"
+                           message="$(string.RundownPublisher.MethodDCStartILToNativeMapEventMessage_V1)"/>
+
                     <event value="150" version="0" level="win:Verbose"  template="MethodILToNativeMapRundown"
                            keywords ="JittedMethodILToNativeMapRundownKeyword" opcode="MethodDCEndILToNativeMap"
                            task="CLRMethodRundown"
                            symbol="MethodDCEndILToNativeMap"
                            message="$(string.RundownPublisher.MethodDCEndILToNativeMapEventMessage)"/>
+
+                    <event value="150" version="1" level="win:Verbose"  template="MethodILToNativeMapRundown_V1"
+                           keywords ="JittedMethodILToNativeMapRundownKeyword" opcode="MethodDCEndILToNativeMap"
+                           task="CLRMethodRundown"
+                           symbol="MethodDCEndILToNativeMap_V1"
+                           message="$(string.RundownPublisher.MethodDCEndILToNativeMapEventMessage_V1)"/>
 
                     <!-- CLR Loader Rundown Events -->
                     <event value="151" version="0" level="win:Informational"  template="DomainModuleLoadUnloadRundown"
@@ -8360,6 +8422,7 @@
                 <string id="RuntimePublisher.MethodJittingStartedEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodToken=%3;%nMethodILSize=%4;%nMethodNamespace=%5;%nMethodName=%6;%nMethodSignature=%7" />
                 <string id="RuntimePublisher.MethodJittingStarted_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodToken=%3;%nMethodILSize=%4;%nMethodNamespace=%5;%nMethodName=%6;%nMethodSignature=%7;%nClrInstanceID=%8" />
                 <string id="RuntimePublisher.MethodILToNativeMapEventMessage" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5" />
+                <string id="RuntimePublisher.MethodILToNativeMapEventMessage_V1" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5;%nILVersionID=%6" />
                 <string id="RuntimePublisher.DomainModuleLoadEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;%nModuleILPath=%5;ModuleNativePath=%6" />
                 <string id="RuntimePublisher.DomainModuleLoad_V1EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;%nModuleILPath=%5;ModuleNativePath=%6;%nClrInstanceID=%7" />
                 <string id="RuntimePublisher.DomainModuleUnloadEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;%nModuleILPath=%5;ModuleNativePath=%6" />
@@ -8436,7 +8499,9 @@
                 <string id="RundownPublisher.MethodDCEndVerbose_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10" />
                 <string id="RundownPublisher.MethodDCEndVerbose_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10;%nReJITID=%11" />
                 <string id="RundownPublisher.MethodDCStartILToNativeMapEventMessage" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5" />
+                <string id="RundownPublisher.MethodDCStartILToNativeMapEventMessage_V1" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5;%nILVersionID=%6" />
                 <string id="RundownPublisher.MethodDCEndILToNativeMapEventMessage" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5" />
+                <string id="RundownPublisher.MethodDCEndILToNativeMapEventMessage_V1" value="MethodID=%1;%nReJITID=%2;%nMethodExtent=%3;%nCountOfMapEntries=%4;%nClrInstanceID=%5;%nILVersionID=%6" />
                 <string id="RundownPublisher.DomainModuleDCStartEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;ModuleILPath=%5;ModuleNativePath=%6" />
                 <string id="RundownPublisher.DomainModuleDCStart_V1EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;ModuleILPath=%5;ModuleNativePath=%6;%nClrInstanceID=%7" />
                 <string id="RundownPublisher.DomainModuleDCEndEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nAppDomainID=%3;%nModuleFlags=%4;ModuleILPath=%5;ModuleNativePath=%6" />
@@ -8678,6 +8743,7 @@
                 <string id="RuntimePublisher.StartupMode.OtherMapMessage" value="Other" />
                 <string id="RuntimePublisher.RuntimeSku.DesktopCLRMapMessage" value="DesktopClr" />
                 <string id="RuntimePublisher.RuntimeSku.CoreCLRMapMessage" value="CoreClr" />
+                <string id="RuntimePublisher.RuntimeSku.MonoMapMessage" value="Mono" />
                 <string id="RuntimePublisher.ExceptionThrown.HasInnerExceptionMapMessage" value="HasInnerException" />
                 <string id="RuntimePublisher.ExceptionThrown.NestedMapMessage" value="Nested" />
                 <string id="RuntimePublisher.ExceptionThrown.ReThrownMapMessage" value="ReThrown" />
@@ -8808,6 +8874,7 @@
                 <string id="RundownPublisher.StartupMode.OtherMapMessage" value="Other" />
                 <string id="RundownPublisher.RuntimeSku.DesktopCLRMapMessage" value="DesktopClr" />
                 <string id="RundownPublisher.RuntimeSku.CoreCLRMapMessage" value="CoreClr" />
+                <string id="RundownPublisher.RuntimeSku.MonoMapMessage" value="Mono" />
                 <string id="RundownPublisher.Startup.CONCURRENT_GCMapMessage" value="CONCURRENT_GC" />
                 <string id="RundownPublisher.Startup.LOADER_OPTIMIZATION_SINGLE_DOMAINMapMessage" value="LOADER_OPTIMIZATION_SINGLE_DOMAIN" />
                 <string id="RundownPublisher.Startup.LOADER_OPTIMIZATION_MULTI_DOMAINMapMessage" value="LOADER_OPTIMIZATION_MULTI_DOMAIN" />

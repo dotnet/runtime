@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarWriter_WriteEntry_File_Tests : TarTestsBase
+    public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
     {
         [Fact]
         public void ThrowIf_AddFile_AfterDispose()
@@ -205,24 +205,6 @@ namespace System.Formats.Tar.Tests
 
                 Assert.Null(reader.GetNextEntry());
             }
-        }
-
-        partial void VerifyPlatformSpecificMetadata(string filePath, TarEntry entry);
-
-        protected void VerifyPaxTimestamps(PaxTarEntry pax)
-        {
-            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 4);
-            Assert.Contains(PaxEaName, pax.ExtendedAttributes);
-
-            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
-        }
-
-        protected void VerifyGnuTimestamps(GnuTarEntry gnu)
-        {
-            Assert.True(gnu.AccessTime > DateTimeOffset.UnixEpoch);
-            Assert.True(gnu.ChangeTime > DateTimeOffset.UnixEpoch);
         }
     }
 }

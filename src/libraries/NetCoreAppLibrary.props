@@ -127,6 +127,7 @@
       System.Runtime.Extensions;
       System.Runtime.Handles;
       System.Runtime.InteropServices;
+      System.Runtime.InteropServices.JavaScript;
       System.Runtime.InteropServices.RuntimeInformation;
       System.Runtime.Intrinsics;
       System.Runtime.Loader;

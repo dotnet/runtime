@@ -296,8 +296,6 @@ public:
     unsigned InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB);
     unsigned InferOpSizeAlign(GenTree* op, unsigned* alignmentWB);
 
-    void genMarkTreeInReg(GenTree* tree, regNumber reg);
-
     // Methods to abstract target information
 
     bool validImmForInstr(instruction ins, target_ssize_t val, insFlags flags = INS_FLAGS_DONT_CARE);

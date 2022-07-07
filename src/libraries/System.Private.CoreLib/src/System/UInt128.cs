@@ -908,6 +908,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static UInt128 IBinaryNumber<UInt128>.AllBitsSet => new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(UInt128 value) => PopCount(value) == 1U;
 
@@ -1842,7 +1845,7 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
         public static UInt128 operator <<(UInt128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we
@@ -1875,10 +1878,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
         public static UInt128 operator >>(UInt128 value, int shiftAmount) => value >>> shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
         public static UInt128 operator >>>(UInt128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we

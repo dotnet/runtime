@@ -90,7 +90,7 @@ internal static partial class Interop
             CheckValidOpenSslHandle(x);
 
             return SafeInteriorHandle.OpenInteriorHandle(
-                handle => X509GetSerialNumber_private(handle),
+                X509GetSerialNumber_private,
                 x);
         }
 
@@ -117,7 +117,7 @@ internal static partial class Interop
             CheckValidOpenSslHandle(x);
 
             return SafeInteriorHandle.OpenInteriorHandle(
-                (handle, arg) => CryptoNative_X509FindExtensionData(handle, arg),
+                CryptoNative_X509FindExtensionData,
                 x,
                 extensionNid);
         }

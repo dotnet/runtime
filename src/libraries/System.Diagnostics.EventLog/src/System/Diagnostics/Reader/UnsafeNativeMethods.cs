@@ -703,7 +703,7 @@ namespace Microsoft.Win32
             public uint Type;
 
 #if NET7_0_OR_GREATER
-            [ManagedToUnmanagedMarshallers(typeof(EvtStringVariant), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+            [CustomMarshaller(typeof(EvtStringVariant), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(EvtStringVariant managed) => new(managed);

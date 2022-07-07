@@ -104,9 +104,13 @@ namespace System.Reflection.Emit
         internal virtual void RecordTokenFixup()
         {
             if (m_RelocFixupList == null)
+            {
                 m_RelocFixupList = new int[DefaultFixupArraySize];
+            }
             else if (m_RelocFixupList.Length <= m_RelocFixupCount)
+            {
                 m_RelocFixupList = EnlargeArray(m_RelocFixupList);
+            }
 
             m_RelocFixupList[m_RelocFixupCount++] = m_length;
         }
