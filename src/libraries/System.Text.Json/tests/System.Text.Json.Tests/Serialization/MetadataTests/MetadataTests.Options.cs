@@ -102,6 +102,7 @@ namespace System.Text.Json.Serialization.Tests
             IJsonTypeInfoResolver context = new EmptyContext(contextOptions);
 
             Assert.IsAssignableFrom<JsonTypeInfo<int>>(context.GetTypeInfo(typeof(int), contextOptions));
+            Assert.IsAssignableFrom<JsonTypeInfo<int>>(context.GetTypeInfo(typeof(int), null));
             Assert.Throws<InvalidOperationException>(() => context.GetTypeInfo(typeof(int), defaultOptions));
         }
 
