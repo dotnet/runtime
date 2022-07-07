@@ -177,7 +177,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         FixupHijackedCallstack
         or          ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX
         jmp         C_FUNC(RhpGcProbe)
-NESTED_END RhpGcProbeHijackByref, _TEXT
+NESTED_END RhpGcProbeHijack, _TEXT
 
 NESTED_ENTRY RhpGcProbe, _TEXT, NoHandler
         test        dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_TrapThreads
