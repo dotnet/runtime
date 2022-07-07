@@ -1,10 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.IO;
 
 internal static class KeyMapper
 {
+    private const char Escape = '\u001B';
+    private const char Delete = '\u007F';
+
     internal static bool MapBufferToConsoleKey(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
         out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
@@ -48,6 +53,104 @@ internal static class KeyMapper
         key = GetKeyFromCharValue(ch, out isShift, out isCtrl);
         isAlt = false;
         return key != default(ConsoleKey);
+    }
+
+    internal static void MapNew(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
+        out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
+    {
+        if (endIndex - startIndex == 1)
+        {
+            DecodeFromSingleChar(buffer[startIndex], out key, out ch, out isShift, out isCtrl);
+            startIndex++;
+            isAlt = false;
+        }
+        else if (endIndex - startIndex == 2 && buffer[startIndex] == Escape)
+        {
+            DecodeFromSingleChar(buffer[++startIndex], out key, out ch, out isShift, out isCtrl);
+            startIndex++;
+            isAlt = key != default; // two char sequences starting with Escape are Alt+$Key
+        }
+        else
+        {
+            key = default;
+            ch = default;
+            isShift = isAlt = isCtrl = false;
+        }
+    }
+
+    private static void DecodeFromSingleChar(char single, out ConsoleKey key, out char ch, out bool isShift, out bool isCtrl)
+    {
+        isShift = isCtrl = false;
+        ch = single;
+
+        key = single switch
+        {
+            // '\b' is not mapped to ConsoleKey.Backspace on purpose, as it's simply wrong mapping
+            '\t' => ConsoleKey.Tab,
+            '\r' or '\n' => ConsoleKey.Enter,
+            ' ' => ConsoleKey.Spacebar,
+            Escape => ConsoleKey.Escape, // Ctrl+[ and Ctrl+3 are also mapped to 27, but Escape is more likely to be pressed. Limitation: Ctrl+[ and Ctrl+3 can't be mapped.
+            Delete => ConsoleKey.Backspace, // Ctrl+8 and Backspace are mapped to 127, but Backspace is more likely to be pressed. Limitation: Ctrl+8 can't be mapped.
+            '*' => ConsoleKey.Multiply, // We can't distinguish D8+Shift and Multiply (Numeric Keypad). Limitation: Shift+D8 can't be mapped.
+            '/' => ConsoleKey.Divide, // We can't distinguish OemX and Divide (Numeric Keypad). Limitation: OemX keys can't be mapped.
+            '-' => ConsoleKey.Subtract, // We can't distinguish OemMinus and Subtract (Numeric Keypad). Limitation: OemMinus can't be mapped.
+            '+' => ConsoleKey.Add, // We can't distinguish OemPlus and Add (Numeric Keypad). Limitation: OemPlus can't be mapped.
+            '=' => default, // '+' is not mapped to OemPlus, so `=` is not mapped to Shift+OemPlus. Limitation: Shift+OemPlus can't be mapped.
+            '!' or '@' or  '#' or '$' or '%' or '^' or '&' or '&' or '*' or '(' or ')' => default, // We can't make assumptions about keyboard layout neither read it. Limitation: Shift+Dx keys can't be mapped.
+            ',' => ConsoleKey.OemComma, // was not previously mapped this way
+            '.' => ConsoleKey.OemPeriod, // was not previously mapped this way
+            _ when char.IsAsciiLetterLower(single) => ConsoleKey.A + single - 'a',
+            _ when char.IsAsciiLetterUpper(single) => UppercaseCharacter(single, out isShift),
+            _ when char.IsAsciiDigit(single) => ConsoleKey.D0 + single - '0', // We can't distinguish DX and Ctrl+DX as they produce same values. Limitation: Ctrl+DX can't be mapped.
+            _ when char.IsBetween(single, (char)1, (char)26) => ControlAndLetterPressed(single, out ch, out isCtrl),
+            _ when char.IsBetween(single, (char)28, (char)31) => ControlAndDigitPressed(single, out ch, out isCtrl),
+            '\u0000' or Delete => ControlAndDigitPressed(single, out ch, out isCtrl),
+            _ => default
+        };
+
+        // above we map ASCII Delete character to Backspace key, we need to map the char too
+        if (key == ConsoleKey.Backspace)
+        {
+            ch = '\b';
+        }
+
+        static ConsoleKey UppercaseCharacter(char single, out bool isShift)
+        {
+            // Previous implementation assumed that all uppercase characters were typed using Shift.
+            // Limitation: Caps Lock+(a-z) is always mapped to Shift+(a-z).
+            isShift = true;
+            return ConsoleKey.A + single - 'A';
+        }
+
+        static ConsoleKey ControlAndLetterPressed(char single, out char ch, out bool isCtrl)
+        {
+            // Ctrl+(a-z) characters are mapped to values from 1 to 26.
+            // Ctrl+h is mapped to 8, which also maps to Ctrl+Backspace. Ctrl+h is more likely to be pressed. (TODO: discuss with others)
+            // Ctrl+i is mapped to 9, which also maps to Tab. Tab (9) is more likely to be pressed.
+            // Ctrl+j is mapped to 10, which also maps to Enter ('\n') and Ctrl+Enter. Enter is more likely to be pressed.
+            // Ctrl+m is mapped to 13, which also maps to Enter ('\r'). Enter (13) is more likely to be pressed.
+            // Limitation: Ctrl+i, Ctrl+j, Crl+m, Ctrl+Backspace and Ctrl+Enter can't be mapped. More: https://unix.stackexchange.com/questions/563469/conflict-ctrl-i-with-tab-in-normal-mode
+            Debug.Assert(single != '\t' && single != '\n' && single != '\r');
+
+            isCtrl = true;
+            ch = default; // we could use the letter here, but it's impossible to distinguish upper vs lowercase (and Windows doesn't do it as well)
+            return ConsoleKey.A + single - 1;
+        }
+
+        static ConsoleKey ControlAndDigitPressed(char single, out char ch, out bool isCtrl)
+        {
+            // Ctrl+(D3-D7) characters are mapped to values from 27 to 31. Escape (27) is more likely to be pressed.
+            // Limitation: Ctrl+(D1, D3, D8, D9 and D0) can't be mapped.
+            Debug.Assert(single == default || char.IsBetween(single, (char)28, (char)31));
+
+            isCtrl = true;
+            ch = default; // consistent with Windows
+            return single switch
+            {
+                '\u0000' => ConsoleKey.D2, // This is what PuTTY does (was not previously mapped this way)
+                _ => ConsoleKey.D4 + single - 28
+            };
+        }
     }
 
     private static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex,

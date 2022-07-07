@@ -52,8 +52,10 @@ public class KeyMapperTests
     {
         int startIndex = 0;
 
-        Assert.True(KeyMapper.MapBufferToConsoleKey(chars, terminalFormatStrings, 0, verase,
-            out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length));
+        KeyMapper.MapNew(chars, terminalFormatStrings, 0, verase,
+            out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length);
+        //Assert.True(KeyMapper.MapBufferToConsoleKey(chars, terminalFormatStrings, 0, verase,
+        //    out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length));
         Assert.True(startIndex > 0);
 
         return new ConsoleKeyInfo(ch, consoleKey, isShift, isAlt, isCtrl);
@@ -73,21 +75,22 @@ public class KeyMapperTests
             yield return ('*', ConsoleKey.Multiply);
             yield return ('/', ConsoleKey.Divide);
 
-            yield return ('\b', ConsoleKey.Backspace);
-            yield return ((char)(0x7F), ConsoleKey.Delete);
-            yield return ((char)(0x1B), ConsoleKey.Escape);
+            yield return ('.', ConsoleKey.OemPeriod);
+            yield return (',', ConsoleKey.OemComma);
 
-            for (int i = 0; i <= 9; i++)
+            yield return ('\u001B', ConsoleKey.Escape);
+
+            for (char i = '0'; i <= '9'; i++)
             {
-                yield return ((char)(48 + i), ConsoleKey.D0 + i);
+                yield return (i, ConsoleKey.D0 + i - '0');
             }
-            for (int i = 0; i <= 'z' - 'a'; i++)
+            for (char i = 'a'; i <= 'z'; i++)
             {
-                yield return ((char)(97 + i), ConsoleKey.A + i);
+                yield return (i, ConsoleKey.A + i - 'a');
             }
-            for (int i = 0; i <= 'Z' - 'A'; i++)
+            for (char i = 'A'; i <= 'Z'; i++)
             {
-                yield return ((char)(65 + i), ConsoleKey.A + i);
+                yield return (i, ConsoleKey.A + i - 'A');
             }
         }
     }
@@ -114,7 +117,7 @@ public class KeyMapperTests
 
         Assert.Equal(input, consoleKeyInfo.KeyChar);
         Assert.Equal(expectedKey, consoleKeyInfo.Key);
-        Assert.Equal((ConsoleModifiers)0, consoleKeyInfo.Modifiers);
+        Assert.Equal(char.IsAsciiLetterUpper(input) ? ConsoleModifiers.Shift : 0, consoleKeyInfo.Modifiers);
     }
 }
 
@@ -148,30 +151,23 @@ public class GNOMETerminalData : TerminalData
         get
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
-            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.D1, false, false, true));
             yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
             yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
             yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
             yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo(default, ConsoleKey.OemPlus, false, false, true));
-            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -186,13 +182,10 @@ public class GNOMETerminalData : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.NumPad1, false, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.NumPad1, false, false, true));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, true, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
@@ -215,30 +208,24 @@ public class XTermData : TerminalData
         get
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 195, 161 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
             yield return (new byte[] { 194, 129 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.D1, false, false, true));
             yield return (new byte[] { 194, 177 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
             yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
             yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
             yield return (new byte[] { 194, 178 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo(default, ConsoleKey.OemPlus, false, false, true));
-            yield return (new byte[] { 194, 189 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 194, 189 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
             yield return (new byte[] { 195, 191 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 194, 136 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -253,13 +240,8 @@ public class XTermData : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.NumPad1, false, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.NumPad1, false, false, true));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
@@ -282,30 +264,24 @@ public class UXTermData : TerminalData
         get
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 195, 161 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
             yield return (new byte[] { 194, 129 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.D1, false, false, true));
             yield return (new byte[] { 194, 177 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
             yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
             yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
             yield return (new byte[] { 194, 178 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo(default, ConsoleKey.OemPlus, false, false, true));
-            yield return (new byte[] { 194, 189 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 194, 189 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
             yield return (new byte[] { 195, 191 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 194, 136 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -320,13 +296,8 @@ public class UXTermData : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.NumPad1, false, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.NumPad1, false, false, true));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
@@ -349,28 +320,23 @@ public class PuTTYData_xterm : TerminalData
         get
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
-            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
             yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
             yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
             yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
-            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
-            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -383,11 +349,10 @@ public class PuTTYData_xterm : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
+            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 27, 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
+            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, true, false));
         }
     }
 }
@@ -405,28 +370,23 @@ public class PuTTYData_linux : TerminalData
         get
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
-            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
             yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
             yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
             yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
-            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
-            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -439,12 +399,9 @@ public class PuTTYData_linux : TerminalData
             yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.NumPad1, false, false, false));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 27, 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
@@ -466,27 +423,22 @@ public class PuTTYData_putty : TerminalData
         get
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
             yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
-            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
             yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
             yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
             yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
-            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
-            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -499,11 +451,7 @@ public class PuTTYData_putty : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, true, true));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
         }
     }
 }
@@ -521,28 +469,22 @@ public class WindowsTerminalData : TerminalData
         get
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, false, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
-            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, true));
+            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo(default, ConsoleKey.D1, false, false, true));
             yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', ConsoleKey.D1, true, false, false));
+            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
             yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
             yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', ConsoleKey.D2, true, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.OemPlus, true, false, false));
-            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', ConsoleKey.OemPlus, false, true, false));
+            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
+            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, true, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, true));
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 8 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, true));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, true, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -557,11 +499,8 @@ public class WindowsTerminalData : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, true));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, true, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.NumPad1, false, false, false));
-            yield return (new byte[] { 17 }, new ConsoleKeyInfo(default, ConsoleKey.NumPad1, false, false, true));
+            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
