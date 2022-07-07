@@ -1102,7 +1102,7 @@ namespace System.Net.Http
             {
                 if (cts == null) return;
                 if (NetEventSource.Log.IsEnabled())
-                    pool.Trace($"Cancelling pending connection with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms");
+                    pool.Trace($"Cancelling a pending connection attempt with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms");
 
                 try
                 {
