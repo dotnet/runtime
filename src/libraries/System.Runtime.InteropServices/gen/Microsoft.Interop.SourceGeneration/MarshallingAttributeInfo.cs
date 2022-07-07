@@ -37,9 +37,7 @@ namespace Microsoft.Interop
     /// </remarks>
     public abstract record MarshallingInfo
     {
-        // Add a constructor that can only be called by derived types in the same assembly
-        // to enforce that this type cannot be extended by users of this library.
-        private protected MarshallingInfo()
+        protected MarshallingInfo()
         { }
     }
 
