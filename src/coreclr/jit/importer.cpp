@@ -835,22 +835,64 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         BADCODE("not enough arguments for call");
     }
 
-    CORINFO_ARG_LIST_HANDLE sigArg  = sig->args;
-    CallArg*                lastArg = nullptr;
-
-    unsigned spillCheckLevel = verCurrentState.esStackDepth - sig->numArgs;
-    // Args are pushed in order, so last arg is at the top. Process them in
-    // actual order so that we can walk the signature at the same time.
-    for (unsigned stackIndex = sig->numArgs; stackIndex > 0; stackIndex--)
+    struct SigParamInfo
     {
-        const StackEntry& se = impStackTop(stackIndex - 1);
+        CorInfoType          CorType;
+        CORINFO_CLASS_HANDLE ClassHandle;
+    };
 
-        typeInfo ti      = se.seTypeInfo;
-        GenTree* argNode = se.val;
+    SigParamInfo  inlineParams[16];
+    SigParamInfo* params = sig->numArgs <= 16 ? inlineParams : new (this, CMK_CallArgs) SigParamInfo[sig->numArgs];
 
-        CORINFO_CLASS_HANDLE classHnd   = NO_CLASS_HANDLE;
-        CorInfoType          corType    = strip(info.compCompHnd->getArgType(sig, sigArg, &classHnd));
-        var_types            jitSigType = JITtype2varType(corType);
+    // We will iterate and pop the args in reverse order as we sometimes need
+    // to spill some args. However, we need signature information and the
+    // JIT-EE interface only allows us to iterate the signature forwards. We
+    // will collect the needed information here and at the same time notify the
+    // EE that the signature types need to be loaded.
+    CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+    for (unsigned i = 0; i < sig->numArgs; i++)
+    {
+        params[i].CorType = strip(info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle));
+
+        if (params[i].CorType != CORINFO_TYPE_CLASS && params[i].CorType != CORINFO_TYPE_BYREF &&
+            params[i].CorType != CORINFO_TYPE_PTR && params[i].CorType != CORINFO_TYPE_VAR)
+        {
+            CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
+            if (argRealClass != nullptr)
+            {
+                // Make sure that all valuetypes (including enums) that we push are loaded.
+                // This is to guarantee that if a GC is triggered from the prestub of this methods,
+                // all valuetypes in the method signature are already loaded.
+                // We need to be able to find the size of the valuetypes, but we cannot
+                // do a class-load from within GC.
+                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(argRealClass);
+            }
+        }
+
+        sigArg = info.compCompHnd->getArgNext(sigArg);
+    }
+
+    if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
+        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) &&
+        (sig->retType != CORINFO_TYPE_VAR))
+    {
+        // Make sure that all valuetypes (including enums) that we push are loaded.
+        // This is to guarantee that if a GC is triggerred from the prestub of this methods,
+        // all valuetypes in the method signature are already loaded.
+        // We need to be able to find the size of the valuetypes, but we cannot
+        // do a class-load from within GC.
+        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(sig->retTypeSigClass);
+    }
+
+    // Now create the arguments in reverse.
+    for (unsigned i = sig->numArgs; i > 0; i--)
+    {
+        StackEntry se      = impPopStack();
+        typeInfo   ti      = se.seTypeInfo;
+        GenTree*   argNode = se.val;
+
+        var_types            jitSigType = JITtype2varType(params[i - 1].CorType);
+        CORINFO_CLASS_HANDLE classHnd   = params[i - 1].ClassHandle;
 
         if (!impCheckImplicitArgumentCoercion(jitSigType, argNode->TypeGet()))
         {
@@ -865,7 +907,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             JITDUMP("Calling impNormStructVal on:\n");
             DISPTREE(argNode);
 
-            argNode = impNormStructVal(argNode, classHnd, spillCheckLevel);
+            argNode = impNormStructVal(argNode, classHnd, CHECK_SPILL_ALL);
             // For SIMD types the normalization can normalize TYP_STRUCT to
             // e.g. TYP_SIMD16 which we keep (along with the class handle) in
             // the CallArgs.
@@ -890,21 +932,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
         }
 
-        if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR &&
-            corType != CORINFO_TYPE_VAR)
-        {
-            CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
-            if (argRealClass != nullptr)
-            {
-                // Make sure that all valuetypes (including enums) that we push are loaded.
-                // This is to guarantee that if a GC is triggered from the prestub of this methods,
-                // all valuetypes in the method signature are already loaded.
-                // We need to be able to find the size of the valuetypes, but we cannot
-                // do a class-load from within GC.
-                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(argRealClass);
-            }
-        }
-
         NewCallArg arg;
         if (varTypeIsStruct(jitSigType))
         {
@@ -915,33 +942,9 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             arg = NewCallArg::Primitive(argNode, jitSigType);
         }
 
-        if (lastArg == nullptr)
-        {
-            lastArg = call->gtArgs.PushFront(this, arg);
-        }
-        else
-        {
-            lastArg = call->gtArgs.InsertAfterUnchecked(this, lastArg, arg);
-        }
-
+        call->gtArgs.PushFront(this, arg);
         call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
-
-        sigArg = info.compCompHnd->getArgNext(sigArg);
     }
-
-    if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
-        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) &&
-        (sig->retType != CORINFO_TYPE_VAR))
-    {
-        // Make sure that all valuetypes (including enums) that we push are loaded.
-        // This is to guarantee that if a GC is triggerred from the prestub of this methods,
-        // all valuetypes in the method signature are already loaded.
-        // We need to be able to find the size of the valuetypes, but we cannot
-        // do a class-load from within GC.
-        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(sig->retTypeSigClass);
-    }
-
-    impPopStack(sig->numArgs);
 }
 
 static bool TypeIs(var_types type1, var_types type2)
