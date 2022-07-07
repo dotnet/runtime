@@ -36,7 +36,7 @@
       This version is a moving target until we ship.
       It should never go ahead of the Roslyn version included in the SDK version in dotnet/arcade's global.json to avoid causing breaks in product construction.
     -->
-    <MicrosoftCodeAnalysisVersion_4_X>4.2.0-2.final</MicrosoftCodeAnalysisVersion_4_X>
+    <MicrosoftCodeAnalysisVersion_4_X>4.3.0-2.final</MicrosoftCodeAnalysisVersion_4_X>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
