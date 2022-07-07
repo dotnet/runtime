@@ -14,7 +14,8 @@ namespace System.Formats.Tar.Tests
         protected readonly string ModifiedEntryName = "ModifiedEntryName.ext";
 
         // Default values are what a TarEntry created with its constructor will set
-        protected const UnixFileMode DefaultMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
+        protected const UnixFileMode DefaultFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
+        private const UnixFileMode DefaultDirectoryMode = UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupExecute | UnixFileMode.GroupRead | UnixFileMode.OtherExecute | UnixFileMode.OtherRead;
         protected const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute; // Creating archives in Windows always sets the mode to 777
         protected const int DefaultGid = 0;
         protected const int DefaultUid = 0;
@@ -152,7 +153,7 @@ namespace System.Formats.Tar.Tests
         {
             Assert.NotNull(directory);
             Assert.Equal(TarEntryType.Directory, directory.EntryType);
-            SetCommonProperties(directory);
+            SetCommonProperties(directory, isDirectory: true);
         }
 
         protected void SetCommonHardLink(TarEntry hardLink)
@@ -177,7 +178,7 @@ namespace System.Formats.Tar.Tests
             symbolicLink.LinkName = TestLinkName;
         }
 
-        protected void SetCommonProperties(TarEntry entry)
+        protected void SetCommonProperties(TarEntry entry, bool isDirectory = false)
         {
             // Length (Data is checked outside this method)
             Assert.Equal(0, entry.Length);
@@ -190,7 +191,7 @@ namespace System.Formats.Tar.Tests
             entry.Gid = TestGid;
 
             // Mode
-            Assert.Equal(DefaultMode, entry.Mode);
+            Assert.Equal(isDirectory ? DefaultDirectoryMode : DefaultFileMode, entry.Mode);
             entry.Mode = TestMode;
 
             // MTime: Verify the default value was approximately "now" by default

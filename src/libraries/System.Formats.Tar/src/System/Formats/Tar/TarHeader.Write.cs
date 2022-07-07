@@ -258,7 +258,7 @@ namespace System.Formats.Tar
             TarHeader longMetadataHeader = default;
 
             longMetadataHeader._name = GnuLongMetadataName; // Same name for both longpath or longlink
-            longMetadataHeader._mode = (int)TarHelpers.DefaultMode;
+            longMetadataHeader._mode = TarHelpers.GetDefaultMode(entryType);
             longMetadataHeader._uid = 0;
             longMetadataHeader._gid = 0;
             longMetadataHeader._mTime = DateTimeOffset.MinValue; // 0
@@ -317,7 +317,7 @@ namespace System.Formats.Tar
             // The ustar fields (uid, gid, linkName, uname, gname, devmajor, devminor) do not get written.
             // The mode gets the default value.
             _name = GenerateExtendedAttributeName();
-            _mode = (int)TarHelpers.DefaultMode;
+            _mode = TarHelpers.GetDefaultMode(_typeFlag);
             _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
             _linkName = string.Empty;
             _magic = string.Empty;
@@ -338,7 +338,7 @@ namespace System.Formats.Tar
             // The ustar fields (uid, gid, linkName, uname, gname, devmajor, devminor) do not get written.
             // The mode gets the default value.
             _name = GenerateExtendedAttributeName();
-            _mode = (int)TarHelpers.DefaultMode;
+            _mode = TarHelpers.GetDefaultMode(_typeFlag);
             _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
             _linkName = string.Empty;
             _magic = string.Empty;

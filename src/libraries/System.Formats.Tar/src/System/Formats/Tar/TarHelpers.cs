@@ -22,8 +22,18 @@ namespace System.Formats.Tar
         internal const byte EqualsChar = 0x3d;
         internal const byte NewLineChar = 0xa;
 
-        internal const UnixFileMode DefaultMode = // 644 in octal
-            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead;
+        private const UnixFileMode DefaultFileMode =
+            UnixFileMode.UserRead | UnixFileMode.UserWrite |
+            UnixFileMode.GroupRead |
+            UnixFileMode.OtherRead;
+
+        private const UnixFileMode DefaultDirectoryMode =
+            UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite |
+            UnixFileMode.GroupExecute | UnixFileMode.GroupRead |
+            UnixFileMode.OtherExecute | UnixFileMode.OtherRead;
+
+        internal static int GetDefaultMode(TarEntryType type)
+            => type is TarEntryType.Directory or TarEntryType.DirectoryList ? (int)DefaultDirectoryMode : (int)DefaultFileMode;
 
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
         internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
