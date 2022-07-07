@@ -64,7 +64,7 @@ namespace Microsoft.Interop
                         ArgumentList())));
         }
 
-        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
+        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
             if (!_shape.HasFlag(MarshallerShape.ToUnmanaged))
                 yield break;
@@ -136,13 +136,9 @@ namespace Microsoft.Interop
                         Argument(IdentifierName(nativeIdentifier))))));
         }
 
-        public IEnumerable<ArgumentSyntax> GetNativeTypeConstructorArguments(TypePositionInfo info, StubCodeContext context)
-        {
-            return Array.Empty<ArgumentSyntax>();
-        }
-
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            // <marshaller> = new();
             yield return MarshallerHelpers.Declare(
                 _marshallerTypeSyntax,
                 context.GetAdditionalIdentifier(info, MarshallerIdentifier),
@@ -205,14 +201,14 @@ namespace Microsoft.Interop
             return _innerMarshaller.GenerateCleanupStatements(info, context);
         }
 
-        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
+        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
             if (CanUseCallerAllocatedBuffer(info, context))
             {
                 return GenerateCallerAllocatedBufferMarshalStatements();
             }
 
-            return _innerMarshaller.GenerateMarshalStatements(info, context, nativeTypeConstructorArguments);
+            return _innerMarshaller.GenerateMarshalStatements(info, context);
 
             IEnumerable<StatementSyntax> GenerateCallerAllocatedBufferMarshalStatements()
             {
@@ -292,11 +288,6 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
             return _innerMarshaller.GenerateUnmarshalStatements(info, context);
-        }
-
-        public IEnumerable<ArgumentSyntax> GetNativeTypeConstructorArguments(TypePositionInfo info, StubCodeContext context)
-        {
-            return Array.Empty<ArgumentSyntax>();
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
