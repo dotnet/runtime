@@ -206,6 +206,7 @@ namespace System.Net.WebSockets
             _buffer = buffer;
         }
 
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool CollectHttpResponseDetails { get; set; }
 
         #endregion WebSocket settings

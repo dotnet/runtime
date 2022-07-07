@@ -67,7 +67,12 @@ namespace System.Net.WebSockets
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool CollectHttpResponseDetails { get; set; }
+        [UnsupportedOSPlatform("browser")]
+        public bool CollectHttpResponseDetails
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
 
         #endregion HTTP Settings
 

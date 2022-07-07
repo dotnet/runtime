@@ -12,7 +12,6 @@ namespace System.Net.WebSockets
         private WebSocketState _state = WebSocketState.Connecting;
         public HttpStatusCode HttpStatusCode { get; set; }
 
-        // setter to clean up when not needed anymore
         public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders { get; set; }
 
         public WebSocket? WebSocket { get; private set; }

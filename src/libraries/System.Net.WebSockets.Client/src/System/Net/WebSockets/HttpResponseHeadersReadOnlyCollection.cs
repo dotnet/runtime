@@ -10,27 +10,27 @@ namespace System.Net.WebSockets
 {
     internal sealed class HttpResponseHeadersReadOnlyCollection : IReadOnlyDictionary<string, IEnumerable<string>>
     {
-        private readonly Dictionary<string, IEnumerable<string>> _headers = new Dictionary<string, IEnumerable<string>>();
+        private readonly IReadOnlyDictionary<string, HeaderStringValues> _headers;
 
-        public HttpResponseHeadersReadOnlyCollection(HttpResponseHeaders headers)
-        {
-            foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
-            {
-                _headers.Add(header.Key, header.Value);
-            }
-        }
+        public HttpResponseHeadersReadOnlyCollection(HttpResponseHeaders headers) => _headers = headers.NonValidated;
 
         public IEnumerable<string> this[string key] => _headers[key];
 
         public IEnumerable<string> Keys => _headers.Keys;
 
-        public IEnumerable<IEnumerable<string>> Values => _headers.Values;
+        public IEnumerable<IEnumerable<string>> Values => (IEnumerable<IEnumerable<string>>)_headers.Values;
 
         public int Count => _headers.Count;
 
         public bool ContainsKey(string key) => _headers.ContainsKey(key);
-        public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator() => _headers.GetEnumerator();
-        public bool TryGetValue(string key, [MaybeNullWhen(false)] out IEnumerable<string> value) => _headers.TryGetValue(key, out value);
+        public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator() => (IEnumerator<KeyValuePair<string, IEnumerable<string>>>)_headers.GetEnumerator();
+        public bool TryGetValue(string key, [MaybeNullWhen(false)] out IEnumerable<string> value)
+        {
+            bool res = _headers.TryGetValue(key, out HeaderStringValues headerStringValues);
+            value = headerStringValues;
+            return res;
+        }
+
         IEnumerator IEnumerable.GetEnumerator() => _headers.GetEnumerator();
     }
 }

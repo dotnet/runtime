@@ -35,6 +35,7 @@ namespace System.Net.WebSockets
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.CookieContainer? Cookies { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool CollectHttpResponseDetails { get; set; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
