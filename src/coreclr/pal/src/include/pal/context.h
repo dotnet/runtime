@@ -439,11 +439,11 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 #define MCREG_X27(mc) (mc.mc_gpregs.gp_x[27])
 #define MCREG_X28(mc) (mc.mc_gpregs.gp_x[28])
 
-#define MCREG_Cpsr(mc) (mc.mc_fpregs.fp_sr)
-#define MCREG_Lr(mc)  (mc.mc_gpregs.gp_lr)
-#define MCREG_Sp(mc)  (mc.mc_gpregs.gp_sp)
-#define MCREG_Pc(mc)  (mc.mc_gpregs.gp_elr)
-#define MCREG_Fp(mc)  (mc.mc_gpregs.gp_x[29])
+#define MCREG_Cpsr(mc) (mc.mc_gpregs.gp_spsr)
+#define MCREG_Lr(mc)   (mc.mc_gpregs.gp_lr)
+#define MCREG_Sp(mc)   (mc.mc_gpregs.gp_sp)
+#define MCREG_Pc(mc)   (mc.mc_gpregs.gp_elr)
+#define MCREG_Fp(mc)   (mc.mc_gpregs.gp_x[29])
 
 inline
 struct fpregs* GetNativeSigSimdContext(native_context_t *mc)
