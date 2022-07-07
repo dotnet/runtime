@@ -19,7 +19,7 @@ internal sealed class PInvokeTableGenerator
 
     public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
 
-    public bool TryGenPInvokeTable(string[] pinvokeModules, string[] assemblies, string outputPath, [NotNullWhen(true)] out IEnumerable<string>? cookies)
+    public IEnumerable<string> Generate(string[] pinvokeModules, string[] assemblies, string outputPath)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
@@ -30,24 +30,13 @@ internal sealed class PInvokeTableGenerator
         var pinvokes = new List<PInvoke>();
         var callbacks = new List<PInvokeCallback>();
 
-        bool hasError = false;
-
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
         {
             var a = mlc.LoadFromAssemblyPath(aname);
             foreach (var type in a.GetTypes())
-            {
-                if (!CollectPInvokes(pinvokes, callbacks, signatures, type))
-                    hasError = true;
-            }
-        }
-
-        if (hasError)
-        {
-            cookies = null;
-            return false;
+                CollectPInvokes(pinvokes, callbacks, signatures, type);
         }
 
         string tmpFileName = Path.GetTempFileName();
@@ -69,13 +58,11 @@ internal sealed class PInvokeTableGenerator
             File.Delete(tmpFileName);
         }
 
-        cookies = signatures;
-        return true;
+        return signatures;
     }
 
-    private bool CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
+    private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
     {
-        bool hasError = false;
         foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
         {
             try
@@ -84,12 +71,9 @@ internal sealed class PInvokeTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                hasError = true;
-                Log.LogError($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");
+                Log.LogWarning($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");
             }
         }
-
-        return !hasError;
 
         void CollectPInvokesForMethod(MethodInfo method)
         {

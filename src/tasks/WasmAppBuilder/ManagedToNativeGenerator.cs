@@ -68,19 +68,16 @@ public class ManagedToNativeGenerator : Task
         var pinvoke = new PInvokeTableGenerator(Log);
         var icall = new IcallTableGenerator(Log);
 
-        if (pinvoke.TryGenPInvokeTable(PInvokeModules, Assemblies!, PInvokeOutputPath!, out var pinvokeCookies) && icall.TryGenIcallTable(RuntimeIcallTableFile, Assemblies!, IcallOutputPath, out var icallCookies))
-        {
-            IEnumerable<string> cookies = Enumerable.Concat(
-                pinvokeCookies,
-                icallCookies
-            );
+        IEnumerable<string> cookies = Enumerable.Concat(
+            pinvoke.Generate(PInvokeModules, Assemblies!, PInvokeOutputPath!),
+            icall.Generate(RuntimeIcallTableFile, Assemblies!, IcallOutputPath)
+        );
 
-            var m2n = new InterpToNativeGenerator(Log);
-            m2n.Generate(cookies, InterpToNativeOutputPath!);
+        var m2n = new InterpToNativeGenerator(Log);
+        m2n.Generate(cookies, InterpToNativeOutputPath!);
 
-            FileWrites = IcallOutputPath != null
-                ? new string[] { PInvokeOutputPath, IcallOutputPath, InterpToNativeOutputPath }
-                : new string[] { PInvokeOutputPath, InterpToNativeOutputPath };
-        }
+        FileWrites = IcallOutputPath != null
+            ? new string[] { PInvokeOutputPath, IcallOutputPath, InterpToNativeOutputPath }
+            : new string[] { PInvokeOutputPath, InterpToNativeOutputPath };
     }
 }

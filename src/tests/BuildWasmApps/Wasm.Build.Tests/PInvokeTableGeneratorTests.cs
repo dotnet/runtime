@@ -46,8 +46,7 @@ namespace Wasm.Build.Tests
 
             (buildArgs, string output) = BuildForVariadicFunctionTests(code,
                                                           buildArgs with { ProjectName = $"variadic_{buildArgs.Config}_{id}" },
-                                                          id,
-                                                          true);
+                                                          id);
             Assert.Matches("warning.*native function.*sum.*varargs", output);
             Assert.Matches("warning.*sum_(one|two|three)", output);
 
@@ -79,9 +78,12 @@ namespace Wasm.Build.Tests
 
             (buildArgs, string output) = BuildForVariadicFunctionTests(code,
                                                           buildArgs with { ProjectName = $"fnptr_{buildArgs.Config}_{id}" },
-                                                          id,
-                                                          false);
-            Assert.Matches("error.*Could not get pinvoke.*using_sum_one.*function pointer", output);
+                                                          id);
+            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
+            Assert.Matches("warning.*using_sum_one", output);
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running", output);
         }
 
         [Theory]
@@ -105,9 +107,9 @@ namespace Wasm.Build.Tests
 
             (buildArgs, string output) = BuildForVariadicFunctionTests(code,
                                                           buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
-                                                          id,
-                                                          false);
-            Assert.Matches("error.*Could not get pinvoke.*using_sum_one.*function pointer", output);
+                                                          id);
+            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
+            Assert.Matches("warning.*using_sum_one", output);
         }
 
         [Theory]
@@ -161,7 +163,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("square: 25", output);
         }
 
-        private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id, bool expectSuccess)
+        private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id)
         {
             string filename = "variadic.o";
             buildArgs = ExpandBuildArgs(buildArgs,
@@ -178,8 +180,7 @@ namespace Wasm.Build.Tests
                                                             Path.Combine(_projectDir!, filename));
                                             },
                                             Publish: buildArgs.AOT,
-                                            DotnetWasmFromRuntimePack: false,
-                                            ExpectSuccess: expectSuccess));
+                                            DotnetWasmFromRuntimePack: false));
 
             return (buildArgs, output);
         }

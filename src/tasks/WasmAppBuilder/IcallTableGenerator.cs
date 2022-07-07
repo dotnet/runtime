@@ -32,7 +32,7 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public bool TryGenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath, [NotNullWhen(true)] out IEnumerable<string>? cookies)
+    public IEnumerable<string> Generate(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
     {
         _icalls.Clear();
         _signatures.Clear();
@@ -40,23 +40,13 @@ internal sealed class IcallTableGenerator
         if (runtimeIcallTableFile != null)
             ReadTable(runtimeIcallTableFile);
 
-        bool hasError = false;
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
         {
             var a = mlc.LoadFromAssemblyPath(aname);
             foreach (var type in a.GetTypes())
-            {
-                if (!ProcessType(type))
-                    hasError = true;
-            }
-        }
-
-        if (hasError)
-        {
-            cookies = null;
-            return false;
+                ProcessType(type);
         }
 
         if (outputPath != null)
@@ -78,8 +68,7 @@ internal sealed class IcallTableGenerator
             }
         }
 
-        cookies = _signatures;
-        return true;
+        return _signatures;
     }
 
     private void EmitTable(StreamWriter w)
@@ -150,9 +139,8 @@ internal sealed class IcallTableGenerator
         }
     }
 
-    private bool ProcessType(Type type)
+    private void ProcessType(Type type)
     {
-        bool hasError = false;
         foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
         {
             if ((method.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) == 0)
@@ -164,8 +152,7 @@ internal sealed class IcallTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                hasError = true;
-                Log.LogError($"Could not get icall, or callbacks for method {method.Name}: {ex.Message}");
+                Log.LogWarning($"Could not get icall, or callbacks for method {method.Name}: {ex.Message}");
                 continue;
             }
 
@@ -198,8 +185,6 @@ internal sealed class IcallTableGenerator
 
         foreach (var nestedType in type.GetNestedTypes())
             ProcessType(nestedType);
-
-        return !hasError;
 
         string? BuildSignature(MethodInfo method, string className)
         {

@@ -259,10 +259,6 @@
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Windows'">
-    <Compile Include="System\TimeZoneInfoTests.Windows.cs" />
-  </ItemGroup>
-
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />
