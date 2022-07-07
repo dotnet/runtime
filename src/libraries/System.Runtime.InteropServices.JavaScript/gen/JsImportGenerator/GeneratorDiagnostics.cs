@@ -295,62 +295,6 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidJSExportAttributedMethodDescription)));
-        /*
-
-        public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
-            new DiagnosticDescriptor(
-            Ids.InvalidJSImportAttributeUsage,
-            GetResourceString(nameof(SR.InvalidJSImportAttributeUsageTitle)),
-            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationMessage)),
-            Category,
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true,
-            description: GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationDescription)));
-
-        public static readonly DiagnosticDescriptor CannotForwardToDllImport =
-            new DiagnosticDescriptor(
-                Ids.CannotForwardToDllImport,
-                GetResourceString(nameof(SR.CannotForwardToDllImportTitle)),
-                GetResourceString(nameof(SR.CannotForwardToDllImportMessage)),
-                Category,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.CannotForwardToDllImportDescription)));
-
-        /// <summary>
-        /// Report diagnostic for invalid configuration for string marshalling.
-        /// </summary>
-        /// <param name="attributeData">Attribute specifying the invalid configuration</param>
-        /// <param name="methodName">Name of the method</param>
-        /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
-        public void ReportInvalidStringMarshallingConfiguration(
-            AttributeData attributeData,
-            string methodName,
-            string detailsMessage)
-        {
-            _diagnostics.Add(
-                attributeData.CreateDiagnostic(
-                    GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
-                    methodName,
-                    detailsMessage));
-        }
-
-
-        /// <summary>
-        /// Report diagnostic for configuration that cannot be forwarded to <see cref="DllImportAttribute" />
-        /// </summary>
-        /// <param name="method">Method with the configuration that cannot be forwarded</param>
-        /// <param name="name">Configuration name</param>
-        /// <param name="value">Configuration value</param>
-        public void ReportCannotForwardToDllImport(MethodSignatureDiagnosticLocations method, string name, string? value = null)
-        {
-            _diagnostics.Add(
-                Diagnostic.Create(
-                    CannotForwardToDllImport,
-                    method.FallbackLocation,
-                    value is null ? name : $"{name}={value}"));
-        }
-        */
 
         private static LocalizableResourceString GetResourceString(string resourceName)
         {
