@@ -1162,16 +1162,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 {
                     firstOnStackOffs = use.GetOffset();
                 }
-                var_types type = nextArgNode->TypeGet();
-                emitAttr  attr = emitTypeSize(type);
 
-                unsigned offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
+                var_types type   = use.GetType();
+                unsigned  offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
                 // We can't write beyond the outgoing arg area
-                assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax);
+                assert((offset + genTypeSize(type)) <= argOffsetMax);
 
                 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
                 // argument area
-                emit->emitIns_S_R(ins_Store(type), attr, fieldReg, varNumOut, offset);
+                emit->emitIns_S_R(ins_Store(type), emitActualTypeSize(type), fieldReg, varNumOut, offset);
             }
             else
             {
