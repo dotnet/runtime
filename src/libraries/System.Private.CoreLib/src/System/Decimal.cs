@@ -185,14 +185,14 @@ namespace System
         //
         public Decimal(float value)
         {
-            DecCalc.VarDecFromR4(value, out AsMutable(ref this));
+            DecCalc.VarDecFromR4(value, out this);
         }
 
         // Constructs a Decimal from a double value.
         //
         public Decimal(double value)
         {
-            DecCalc.VarDecFromR8(value, out AsMutable(ref this));
+            DecCalc.VarDecFromR8(value, out this);
         }
 
         private Decimal(SerializationInfo info, StreamingContext context)

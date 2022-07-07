@@ -135,8 +135,8 @@ namespace System
             //
             // scaledValue * 10^(digitExponent - 1) * 10^decimalExponent / scale = decimalMantissa
             //
-            // Given that we have 28 whole-number digits to work with in decimal, we can choose decimalExponent based on
-            // digitExponent, by doing (28 - digitExponent)
+            // Given that we have 29 whole-number digits to work with in decimal, we can choose decimalExponent based on
+            // digitExponent, by doing (29 - digitExponent)
 
             int maxDecimalDigits = 29;
             int maxDecimalScale = 28;
@@ -176,45 +176,54 @@ namespace System
 
             int len = decimalMantissa.GetLength();
 
-            Debug.Assert(len < 4);
+            Debug.Assert(len < 3);
 
             uint low = 0;
             uint mid = 0;
             uint high = 0;
 
-            if (len > 0)
+            switch (len)
             {
-                low = decimalMantissa.GetBlock(0);
+                case 3:
+                    {
+                        high = decimalMantissa.GetBlock(2);
+                        goto case 2;
+                    }
+                case 2:
+                    {
+                        mid = decimalMantissa.GetBlock(1);
+                        goto case 1;
+                    }
+                case 1:
+                    {
+                        low = decimalMantissa.GetBlock(0);
+                        break;
+                    }
+                default:
+                    {
+                        ThrowOverflowException(TypeCode.Decimal);
+                        break;
+                    }
             }
-            if (len > 1)
-            {
-                mid = decimalMantissa.GetBlock(1);
-            }
-            if (len > 2)
-            {
-                high = decimalMantissa.GetBlock(2);
-            }
-            if (len > 3)
-            {
-                uint idk = decimalMantissa.GetBlock(3);
-                UInt128 valueUInt128 = 0;
-                valueUInt128 += idk;
-                valueUInt128 = valueUInt128 << 32;
-                valueUInt128 += high;
-                valueUInt128 = valueUInt128 << 32;
-                valueUInt128 += mid;
-                valueUInt128 = valueUInt128 << 32;
-                valueUInt128 += low;
-                throw new Exception("TODO handle this somehow, descaledValue has ended up too big. 4th block: " + idk + ", decimalExponent: " + decimalExponent + ", decimalMantissa: " + valueUInt128.ToString());
-            }
-
-/*          UInt128 valueUInt128 = 0;
-            valueUInt128 += high;
-            valueUInt128 = valueUInt128 << 32;
-            valueUInt128 += mid;
-            valueUInt128 = valueUInt128 << 32;
-            valueUInt128 += low;
-            Console.WriteLine(valueUInt128.ToString()); */
+            /*            if (len > 3)
+                        {
+                            uint idk = decimalMantissa.GetBlock(3);
+                            UInt128 valueUInt128 = 0;
+                            valueUInt128 += idk;
+                            valueUInt128 = valueUInt128 << 32;
+                            valueUInt128 += high;
+                            valueUInt128 = valueUInt128 << 32;
+                            valueUInt128 += mid;
+                            valueUInt128 = valueUInt128 << 32;
+                            valueUInt128 += low;
+                            throw new Exception("TODO handle this somehow, descaledValue has ended up too big. 4th block: " + idk + ", decimalExponent: " + decimalExponent + ", decimalMantissa: " + valueUInt128.ToString());}*/
+            /*          UInt128 valueUInt128 = 0;
+                        valueUInt128 += high;
+                        valueUInt128 = valueUInt128 << 32;
+                        valueUInt128 += mid;
+                        valueUInt128 = valueUInt128 << 32;
+                        valueUInt128 += low;
+                        Console.WriteLine(valueUInt128.ToString()); */
 
             Debug.Assert(decimalExponent <= maxDecimalScale && decimalExponent >= 0);
             return (low, mid, high, (uint)decimalExponent);

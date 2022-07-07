@@ -93,7 +93,6 @@ namespace System
             private const int DEC_SCALE_MAX = 28;
 
             private const uint TenToPowerNine = 1000000000;
-            private const ulong TenToPowerEighteen = 1000000000000000000;
 
             // The maximum power of 10 that a 32 bit integer can store
             private const int MaxInt32Scale = 9;
@@ -1520,177 +1519,17 @@ ReturnZero:
             /// <summary>
             /// Convert float to Decimal
             /// </summary>
-            internal static void VarDecFromR4(float input, out DecCalc result)
+            internal static void VarDecFromR4(float input, out decimal result)
             {
-                result = default;
-
-                // The most we can scale by is 10^28, which is just slightly more
-                // than 2^93.  So a float with an exponent of -94 could just
-                // barely reach 0.5, but smaller exponents will always round to zero.
-                //
-                const uint SNGBIAS = 126;
-                int exp = (int)(GetExponent(input) - SNGBIAS);
-                if (exp < -94)
-                    return; // result should be zeroed out
-
-                if (exp > 96)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
-
-                uint flags = 0;
-                if (input < 0)
-                {
-                    input = -input;
-                    flags = SignMask;
-                }
-
-                // Round the input to a 7-digit integer.  The R4 format has
-                // only 7 digits of precision, and we want to keep garbage digits
-                // out of the Decimal were making.
-                //
-                // Calculate max power of 10 input value could have by multiplying
-                // the exponent by log10(2).  Using scaled integer multiplcation,
-                // log10(2) * 2 ^ 16 = .30103 * 65536 = 19728.3.
-                //
-                double dbl = input;
-                int power = 6 - ((exp * 19728) >> 16);
-                // power is between -22 and 35
-
-                if (power >= 0)
-                {
-                    // We have less than 7 digits, scale input up.
-                    //
-                    if (power > DEC_SCALE_MAX)
-                        power = DEC_SCALE_MAX;
-
-                    dbl *= s_doublePowers10[power];
-                }
-                else
-                {
-                    if (power != -1 || dbl >= 1E7)
-                        dbl /= s_doublePowers10[-power];
-                    else
-                        power = 0; // didn't scale it
-                }
-
-                Debug.Assert(dbl < 1E7);
-                if (dbl < 1E6 && power < DEC_SCALE_MAX)
-                {
-                    dbl *= 10;
-                    power++;
-                    Debug.Assert(dbl >= 1E6);
-                }
-
-                // Round to integer
-                //
-                uint mant;
-                // with SSE4.1 support ROUNDSD can be used
-                if (X86.Sse41.IsSupported)
-                    mant = (uint)(int)Math.Round(dbl);
-                else
-                {
-                    mant = (uint)(int)dbl;
-                    dbl -= (int)mant;  // difference between input & integer
-                    if (dbl > 0.5 || dbl == 0.5 && (mant & 1) != 0)
-                        mant++;
-                }
-
-                if (mant == 0)
-                    return;  // result should be zeroed out
-
-                if (power < 0)
-                {
-                    // Add -power factors of 10, -power <= (29 - 7) = 22.
-                    //
-                    power = -power;
-                    if (power < 10)
-                    {
-                        result.Low64 = UInt32x32To64(mant, s_powers10[power]);
-                    }
-                    else
-                    {
-                        // Have a big power of 10.
-                        //
-                        if (power > 18)
-                        {
-                            ulong low64 = UInt32x32To64(mant, s_powers10[power - 18]);
-                            UInt64x64To128(low64, TenToPowerEighteen, ref result);
-                        }
-                        else
-                        {
-                            ulong low64 = UInt32x32To64(mant, s_powers10[power - 9]);
-                            ulong hi64 = UInt32x32To64(TenToPowerNine, (uint)(low64 >> 32));
-                            low64 = UInt32x32To64(TenToPowerNine, (uint)low64);
-                            result.Low = (uint)low64;
-                            hi64 += low64 >> 32;
-                            result.Mid = (uint)hi64;
-                            hi64 >>= 32;
-                            result.High = (uint)hi64;
-                        }
-                    }
-                }
-                else
-                {
-                    // Factor out powers of 10 to reduce the scale, if possible.
-                    // The maximum number we could factor out would be 6.  This
-                    // comes from the fact we have a 7-digit number, and the
-                    // MSD must be non-zero -- but the lower 6 digits could be
-                    // zero.  Note also the scale factor is never negative, so
-                    // we can't scale by any more than the power we used to
-                    // get the integer.
-                    //
-                    int lmax = power;
-                    if (lmax > 6)
-                        lmax = 6;
-
-                    if ((mant & 0xF) == 0 && lmax >= 4)
-                    {
-                        const uint den = 10000;
-                        uint div = mant / den;
-                        if (mant == div * den)
-                        {
-                            mant = div;
-                            power -= 4;
-                            lmax -= 4;
-                        }
-                    }
-
-                    if ((mant & 3) == 0 && lmax >= 2)
-                    {
-                        const uint den = 100;
-                        uint div = mant / den;
-                        if (mant == div * den)
-                        {
-                            mant = div;
-                            power -= 2;
-                            lmax -= 2;
-                        }
-                    }
-
-                    if ((mant & 1) == 0 && lmax >= 1)
-                    {
-                        const uint den = 10;
-                        uint div = mant / den;
-                        if (mant == div * den)
-                        {
-                            mant = div;
-                            power--;
-                        }
-                    }
-
-                    flags |= (uint)power << ScaleShift;
-                    result.Low = mant;
-                }
-
-                result.uflags = flags;
+                VarDecFromR8(input, out result);
             }
 
             /// <summary>
             /// Convert double to Decimal
             /// </summary>
 
-            internal static void VarDecFromR8(double input, out DecCalc result)
+            internal static void VarDecFromR8(double input, out decimal result)
             {
-                result = default;
 
                 // The smallest non-zero decimal we can represent is 10^-28, which is just slightly more
                 // than 2^-93.  So a float with an exponent of -94 could just
@@ -1699,7 +1538,8 @@ ReturnZero:
                 //
                 if (input.Exponent < -94)
                 {
-                    return; // result should be zeroed out
+                    result = 0.0m;
+                    return;
                 }
 
                 // The smallest double with an exponent of 96 is just over decimal.MaxValue. This
@@ -1716,12 +1556,12 @@ ReturnZero:
                     flags = SignMask;
                 }
 
-                (result.Low, result.Mid, result.High, uint scale) = Number.Dragon4DoubleToDecimal(input, 29, true);
+                (uint low, uint mid, uint high, uint scale) = Number.Dragon4DoubleToDecimal(input, 29, true);
 
                 flags |= scale << ScaleShift;
-                result.uflags = flags;
 
-                return;
+                // Construct the decimal and canonicalize it, removing extra trailing zeros with a division
+                result = new decimal((int)low, (int)mid, (int)high, (int)flags) / 1.0000000000000000000000000000m;
             }
 
             /// <summary>
