@@ -26,14 +26,15 @@ namespace System.Text.Json
         /// <summary>
         /// This method returns configured non-null JsonTypeInfo
         /// </summary>
-        internal JsonTypeInfo GetOrAddJsonTypeInfo(Type type)
+        internal JsonTypeInfo GetJsonTypeInfoCached(Type type)
         {
-            if (_cachingContext == null)
+            JsonTypeInfo? typeInfo = null;
+
+            if (IsLockedInstance)
             {
                 InitializeCachingContext();
+                typeInfo = _cachingContext.GetOrAddJsonTypeInfo(type);
             }
-
-            JsonTypeInfo? typeInfo = _cachingContext.GetOrAddJsonTypeInfo(type);
 
             if (typeInfo == null)
             {
@@ -42,11 +43,10 @@ namespace System.Text.Json
             }
 
             typeInfo.EnsureConfigured();
-
             return typeInfo;
         }
 
-        internal bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
+        internal bool TryGetJsonTypeInfoCached(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
             if (_cachingContext == null)
             {
@@ -57,20 +57,18 @@ namespace System.Text.Json
             return _cachingContext.TryGetJsonTypeInfo(type, out typeInfo);
         }
 
-        internal bool IsJsonTypeInfoCached(Type type) => _cachingContext?.IsJsonTypeInfoCached(type) == true;
-
         /// <summary>
         /// Return the TypeInfo for root API calls.
         /// This has an LRU cache that is intended only for public API calls that specify the root type.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal JsonTypeInfo GetOrAddJsonTypeInfoForRootType(Type type)
+        internal JsonTypeInfo GetJsonTypeInfoForRootType(Type type)
         {
             JsonTypeInfo? jsonTypeInfo = _lastTypeInfo;
 
             if (jsonTypeInfo?.Type != type)
             {
-                jsonTypeInfo = GetOrAddJsonTypeInfo(type);
+                jsonTypeInfo = GetJsonTypeInfoCached(type);
                 _lastTypeInfo = jsonTypeInfo;
             }
 
@@ -86,8 +84,7 @@ namespace System.Text.Json
         [MemberNotNull(nameof(_cachingContext))]
         private void InitializeCachingContext()
         {
-            _isLockedInstance = true;
-            _cachingContext = TrackedCachingContexts.GetOrCreate(this);
+            _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
         }
 
         /// <summary>
@@ -117,17 +114,16 @@ namespace System.Text.Json
                     return typeInfo;
                 }
 
-                typeInfo = Options.GetTypeInfoInternal(type);
+                typeInfo = Options.GetTypeInfoNoCaching(type);
                 if (typeInfo != null)
                 {
-                    return _jsonTypeInfoCache.GetOrAdd(type, _ => typeInfo);
+                    return _jsonTypeInfoCache.GetOrAdd(type, typeInfo);
                 }
 
                 return null;
             }
 
             public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo) => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
-            public bool IsJsonTypeInfoCached(Type type) => _jsonTypeInfoCache.ContainsKey(type);
 
             public void Clear()
             {
@@ -147,12 +143,12 @@ namespace System.Text.Json
                 new(concurrencyLevel: 1, capacity: MaxTrackedContexts, new EqualityComparer());
 
             private const int EvictionCountHistory = 16;
-            private static Queue<int> s_recentEvictionCounts = new(EvictionCountHistory);
+            private static readonly Queue<int> s_recentEvictionCounts = new(EvictionCountHistory);
             private static int s_evictionRunsToSkip;
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
-                Debug.Assert(options._isLockedInstance, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
+                Debug.Assert(options.IsLockedInstance, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
                 ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;
 
                 if (cache.TryGetValue(options, out WeakReference<CachingContext>? wr) && wr.TryGetTarget(out CachingContext? ctx))
@@ -187,12 +183,7 @@ namespace System.Text.Json
 
                     // Use a defensive copy of the options instance as key to
                     // avoid capturing references to any caching contexts.
-                    var key = new JsonSerializerOptions(options)
-                    {
-                        // Copy fields ignored by the copy constructor
-                        // but are necessary to determine equivalence.
-                        _typeInfoResolver = options._typeInfoResolver,
-                    };
+                    var key = new JsonSerializerOptions(options);
                     Debug.Assert(key._cachingContext == null);
 
                     ctx = new CachingContext(options);
@@ -371,8 +362,9 @@ namespace System.Text.Json
             }
 
             // An options instance might be locked but not initialized for reflection serialization yet.
+            // Ensure hashing is consistent before and after rooting by returning null when the default resolver is used.
             private static IJsonTypeInfoResolver? NormalizeResolver(IJsonTypeInfoResolver? resolver)
-                => resolver ?? DefaultJsonTypeInfoResolver.DefaultInstance;
+                => resolver == DefaultJsonTypeInfoResolver.DefaultInstance ? null : resolver;
 
 #if !NETCOREAPP
             /// <summary>

@@ -13,16 +13,35 @@ namespace System.Text.Json.Serialization
     {
         private bool? _canUseSerializationLogic;
 
-        internal JsonSerializerOptions? _options;
+        private JsonSerializerOptions? _options;
 
         /// <summary>
         /// Gets the run time specified options of the context. If no options were passed
         /// when instanciating the context, then a new instance is bound and returned.
         /// </summary>
         /// <remarks>
-        /// The instance cannot be mutated once it is bound to the context instance.
+        /// The options instance cannot be mutated once it is bound to the context instance.
         /// </remarks>
-        public JsonSerializerOptions Options => _options ??= new JsonSerializerOptions { TypeInfoResolver = this };
+        public JsonSerializerOptions Options
+        {
+            get
+            {
+                if (_options is null)
+                {
+                    var options = new JsonSerializerOptions { TypeInfoResolver = this, IsLockedInstance = true };
+                    _options = options;
+                }
+
+                return _options;
+            }
+
+            internal set
+            {
+                value.TypeInfoResolver = this;
+                value.IsLockedInstance = true;
+                _options = value;
+            }
+        }
 
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
@@ -84,8 +103,7 @@ namespace System.Text.Json.Serialization
         {
             if (options != null)
             {
-                options.TypeInfoResolver = this;
-                Debug.Assert(_options == options, "options.TypeInfoResolver setter did not assign options");
+                Options = options;
             }
         }
 
@@ -98,12 +116,6 @@ namespace System.Text.Json.Serialization
 
         JsonTypeInfo? IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options)
         {
-            if (options != null && _options != options)
-            {
-                // TODO is this the appropriate exception message to throw?
-                ThrowHelper.ThrowInvalidOperationException_SerializerContextOptionsImmutable();
-            }
-
             return GetTypeInfo(type);
         }
     }
