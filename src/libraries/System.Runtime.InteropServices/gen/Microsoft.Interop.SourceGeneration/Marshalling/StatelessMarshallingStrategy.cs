@@ -621,7 +621,11 @@ namespace Microsoft.Interop
                             Identifier(nativeSpanIdentifier))
                         .WithInitializer(EqualsValueClause(
                             GetUnmanagedValuesDestination(info, context)))))),
-                GenerateContentsMarshallingStatement(info, context,
+                MarshallerHelpers.LinearCollection.NonBlittableContentsMarshallingStatement(
+                    info,
+                    context,
+                    _elementInfo,
+                    _elementMarshaller,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(info, context)),
                         IdentifierName("Length")),
@@ -703,7 +707,11 @@ namespace Microsoft.Interop
                                 Identifier(managedSpanIdentifier))
                             .WithInitializer(EqualsValueClause(
                                 GetManagedValuesDestination(info, context)))))),
-                    GenerateContentsMarshallingStatement(info, context,
+                    MarshallerHelpers.LinearCollection.NonBlittableContentsMarshallingStatement(
+                        info,
+                        context,
+                        _elementInfo,
+                        _elementMarshaller,
                         IdentifierName(numElementsIdentifier),
                         StubCodeContext.Stage.UnmarshalCapture,
                         StubCodeContext.Stage.Unmarshal));
@@ -775,51 +783,6 @@ namespace Microsoft.Interop
                     _marshallerTypeSyntax,
                     IdentifierName(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination)),
                 ArgumentList(SingletonSeparatedList(Argument(IdentifierName(managedIdentifier)))));
-        }
-
-        private StatementSyntax GenerateContentsMarshallingStatement(TypePositionInfo info, StubCodeContext context, ExpressionSyntax lengthExpression, params StubCodeContext.Stage[] stagesToGeneratePerElement)
-        {
-            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
-            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
-            var elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
-                StubCodeContext.Stage.Setup,
-                managedSpanIdentifier,
-                nativeSpanIdentifier,
-                context);
-
-            TypePositionInfo localElementInfo = _elementInfo with
-            {
-                InstanceIdentifier = info.InstanceIdentifier,
-                RefKind = info.IsByRef ? info.RefKind : info.ByValueContentsMarshalKind.GetRefKindForByValueContentsKind(),
-                ManagedIndex = info.ManagedIndex,
-                NativeIndex = info.NativeIndex
-            };
-
-            List<StatementSyntax> elementStatements = new();
-            foreach (var stage in stagesToGeneratePerElement)
-            {
-                var elementSubContext = elementSetupSubContext with { CurrentStage = stage };
-                elementStatements.AddRange(_elementMarshaller.Generate(localElementInfo, elementSubContext));
-            }
-
-            if (elementStatements.Any())
-            {
-                StatementSyntax marshallingStatement = Block(
-                    List(_elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
-                        .Concat(elementStatements)));
-
-                if (_elementMarshaller.AsNativeType(_elementInfo) is PointerTypeSyntax elementNativeType)
-                {
-                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
-                    marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
-                }
-
-                // Iterate through the elements of the native collection to marshal them
-                return MarshallerHelpers.GetForLoop(lengthExpression, elementSetupSubContext.IndexerIdentifier)
-                    .WithStatement(marshallingStatement);
-            }
-
-            return EmptyStatement();
         }
 
         private StatementSyntax GenerateByValueUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
@@ -897,52 +860,14 @@ namespace Microsoft.Interop
                 numElementsStatement,
                 managedValuesDeclaration,
                 unmanagedValuesDeclaration,
-                GenerateContentsMarshallingStatement(info, context,
+                MarshallerHelpers.LinearCollection.NonBlittableContentsMarshallingStatement(
+                    info,
+                    context,
+                    _elementInfo,
+                    _elementMarshaller,
                     IdentifierName(numElementsIdentifier),
                     StubCodeContext.Stage.UnmarshalCapture,
                     StubCodeContext.Stage.Unmarshal));
-        }
-
-        /// <summary>
-        /// Rewrite assignment expressions to the native identifier to cast to IntPtr.
-        /// This handles the case where the native type of a non-blittable managed type is a pointer,
-        /// which are unsupported in generic type parameters.
-        /// </summary>
-        private sealed class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
-        {
-            private readonly string _nativeIdentifier;
-            private readonly PointerTypeSyntax _nativeType;
-
-            public PointerNativeTypeAssignmentRewriter(string nativeIdentifier, PointerTypeSyntax nativeType)
-            {
-                _nativeIdentifier = nativeIdentifier;
-                _nativeType = nativeType;
-            }
-
-            public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
-            {
-                if (node.Left.ToString() == _nativeIdentifier)
-                {
-                    return node.WithRight(
-                        CastExpression(MarshallerHelpers.SystemIntPtrType, node.Right));
-                }
-                if (node.Right.ToString() == _nativeIdentifier)
-                {
-                    return node.WithRight(CastExpression(_nativeType, node.Right));
-                }
-
-                return node;
-            }
-
-            public override SyntaxNode? VisitArgument(ArgumentSyntax node)
-            {
-                if (node.Expression.ToString() == _nativeIdentifier)
-                {
-                    return node.WithExpression(
-                        CastExpression(_nativeType, node.Expression));
-                }
-                return node;
-            }
         }
     }
 }

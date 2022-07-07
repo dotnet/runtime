@@ -344,7 +344,7 @@ namespace Microsoft.Interop
             }
             if (marshallerType.IsValueType)
             {
-                return GetStatefulMarshallerDataForType(marshallerType, direction, managedType, compilation);
+                return GetStatefulMarshallerDataForType(marshallerType, direction, managedType, isLinearCollectionMarshaller, compilation, getMarshallingInfo);
             }
             return null;
         }
@@ -436,11 +436,18 @@ namespace Microsoft.Interop
                 collectionElementMarshallingInfo);
         }
 
-        private static CustomTypeMarshallerData? GetStatefulMarshallerDataForType(ITypeSymbol marshallerType, MarshallingDirection direction, ITypeSymbol managedType, Compilation compilation)
+        private static CustomTypeMarshallerData? GetStatefulMarshallerDataForType(
+            ITypeSymbol marshallerType,
+            MarshallingDirection direction,
+            ITypeSymbol managedType,
+            bool isLinearCollectionMarshaller,
+            Compilation compilation,
+            Func<ITypeSymbol, MarshallingInfo>? getMarshallingInfo)
         {
-            (MarshallerShape shape, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, compilation);
+            (MarshallerShape shape, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, isLinearCollectionMarshaller, compilation);
 
             ITypeSymbol? nativeType = null;
+            ITypeSymbol? collectionElementType = null;
             if (direction.HasFlag(MarshallingDirection.ManagedToUnmanaged))
             {
                 if (!shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
@@ -449,6 +456,12 @@ namespace Microsoft.Interop
                 if (methods.ToUnmanaged is not null)
                 {
                     nativeType = methods.ToUnmanaged.ReturnType;
+                }
+
+                if (isLinearCollectionMarshaller)
+                {
+                    // Element type is the type parameter of the ReadOnlySpan returned by GetManagedValuesSource
+                    collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesSource.ReturnType).TypeArguments[0];
                 }
             }
 
@@ -460,6 +473,12 @@ namespace Microsoft.Interop
                 if (methods.FromUnmanaged is not null)
                 {
                     nativeType = methods.FromUnmanaged.Parameters[0].Type;
+                }
+
+                if (isLinearCollectionMarshaller)
+                {
+                    // Element type is the type parameter of the Span returned by GetManagedValuesDestination
+                    collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
                 }
             }
 
@@ -476,6 +495,14 @@ namespace Microsoft.Interop
                 bufferElementType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(((INamedTypeSymbol)methods.FromManagedWithBuffer.Parameters[1].Type).TypeArguments[0]);
             }
 
+            ManagedTypeInfo? collectionElementTypeInfo = null;
+            MarshallingInfo? collectionElementMarshallingInfo = null;
+            if (collectionElementType is not null)
+            {
+                collectionElementTypeInfo = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(collectionElementType);
+                collectionElementMarshallingInfo = getMarshallingInfo(collectionElementType);
+            }
+
             return new CustomTypeMarshallerData(
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(marshallerType),
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
@@ -483,8 +510,8 @@ namespace Microsoft.Interop
                 shape,
                 nativeType.IsStrictlyBlittable(),
                 bufferElementType,
-                CollectionElementType: null,
-                CollectionElementMarshallingInfo: null);
+                CollectionElementType: collectionElementTypeInfo,
+                CollectionElementMarshallingInfo: collectionElementMarshallingInfo);
         }
     }
 }
