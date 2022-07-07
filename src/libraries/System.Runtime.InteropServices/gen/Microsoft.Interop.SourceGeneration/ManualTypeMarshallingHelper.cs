@@ -24,32 +24,32 @@ namespace Microsoft.Interop
         MarshallingInfo? CollectionElementMarshallingInfo);
 
     public readonly record struct CustomTypeMarshallers(
-        ImmutableDictionary<Scenario, CustomTypeMarshallerData> Scenarios)
+        ImmutableDictionary<MarshalMode, CustomTypeMarshallerData> Modes)
     {
-        public CustomTypeMarshallerData GetScenarioOrDefault(Scenario scenario)
+        public CustomTypeMarshallerData GetModeOrDefault(MarshalMode mode)
         {
             CustomTypeMarshallerData data;
-            if (Scenarios.TryGetValue(scenario, out data))
+            if (Modes.TryGetValue(mode, out data))
                 return data;
 
-            if (Scenarios.TryGetValue(Scenario.Default, out data))
+            if (Modes.TryGetValue(MarshalMode.Default, out data))
                 return data;
 
             // TODO: Hard failure based on previous implementation
             throw new InvalidOperationException();
         }
 
-        public bool TryGetScenarioOrDefault(Scenario scenario, out CustomTypeMarshallerData data)
+        public bool TryGetModeOrDefault(MarshalMode mode, out CustomTypeMarshallerData data)
         {
-            if (Scenarios.TryGetValue(scenario, out data))
+            if (Modes.TryGetValue(mode, out data))
                 return true;
 
-            return Scenarios.TryGetValue(Scenario.Default, out data);
+            return Modes.TryGetValue(MarshalMode.Default, out data);
         }
 
-        public bool IsDefinedOrDefault(Scenario scenario)
+        public bool IsDefinedOrDefault(MarshalMode mode)
         {
-            return Scenarios.ContainsKey(scenario) || Scenarios.ContainsKey(Scenario.Default);
+            return Modes.ContainsKey(mode) || Modes.ContainsKey(MarshalMode.Default);
         }
     }
 
@@ -73,7 +73,7 @@ namespace Microsoft.Interop
         public static bool IsLinearCollectionEntryPoint(INamedTypeSymbol entryPointType)
         {
             return entryPointType.IsGenericType
-                && entryPointType.TypeParameters.Last().GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.ElementUnmanagedTypeAttribute);
+                && entryPointType.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.ContiguousCollectionMarshallerAttribute);
         }
 
         public static bool HasEntryPointMarshallerAttribute(ITypeSymbol entryPointType)
@@ -116,7 +116,7 @@ namespace Microsoft.Interop
             // We expect a callback for getting the element marshalling info when handling linear collection marshalling
             Debug.Assert(!isLinearCollectionMarshalling || getMarshallingInfoForElement is not null);
 
-            Dictionary<Scenario, CustomTypeMarshallerData> scenarios = new();
+            Dictionary<MarshalMode, CustomTypeMarshallerData> modes = new();
             foreach (AttributeData attr in attrs)
             {
                 Debug.Assert(attr.ConstructorArguments.Length == 3);
@@ -136,7 +136,7 @@ namespace Microsoft.Interop
                     && !compilation.HasImplicitConversion(managedType, managedTypeInst))
                     return false;
 
-                var marshallerScenario = (Scenario)attr.ConstructorArguments[1].Value!;
+                var marshalMode = (MarshalMode)attr.ConstructorArguments[1].Value!;
 
                 ITypeSymbol? marshallerTypeOnAttr = attr.ConstructorArguments[2].Value as ITypeSymbol;
                 if (marshallerTypeOnAttr is null)
@@ -168,51 +168,51 @@ namespace Microsoft.Interop
                 }
 
                 // TODO: We can probably get rid of MarshallingDirection and just use Scenario instead
-                MarshallingDirection direction = marshallerScenario switch
+                MarshallingDirection direction = marshalMode switch
                 {
-                    Scenario.Default
+                    MarshalMode.Default
                         => MarshallingDirection.Bidirectional,
 
-                    Scenario.ManagedToUnmanagedIn
-                    or Scenario.UnmanagedToManagedOut
+                    MarshalMode.ManagedToUnmanagedIn
+                    or MarshalMode.UnmanagedToManagedOut
                         => MarshallingDirection.ManagedToUnmanaged,
 
-                    Scenario.ManagedToUnmanagedOut
-                    or Scenario.UnmanagedToManagedIn
+                    MarshalMode.ManagedToUnmanagedOut
+                    or MarshalMode.UnmanagedToManagedIn
                         => MarshallingDirection.UnmanagedToManaged,
 
-                    Scenario.ManagedToUnmanagedRef
-                    or Scenario.UnmanagedToManagedRef
+                    MarshalMode.ManagedToUnmanagedRef
+                    or MarshalMode.UnmanagedToManagedRef
                         => MarshallingDirection.Bidirectional,
 
-                    Scenario.ElementIn
-                    or Scenario.ElementRef
-                    or Scenario.ElementOut
+                    MarshalMode.ElementIn
+                    or MarshalMode.ElementRef
+                    or MarshalMode.ElementOut
                         => MarshallingDirection.Bidirectional,
 
                     _ => throw new UnreachableException()
                 };
 
-                // TODO: Report invalid shape for scenario
-                //       Skip checking for bidirectional support for Default scenario - always take / store marshaller data
+                // TODO: Report invalid shape for mode
+                //       Skip checking for bidirectional support for Default mode - always take / store marshaller data
                 CustomTypeMarshallerData? data = GetMarshallerDataForType(marshallerType, direction, managedType, isLinearCollectionMarshalling, compilation, getMarshallingInfoForElement);
 
-                // TODO: Should we fire a diagnostic for duplicated scenarios or just take the last one?
+                // TODO: Should we fire a diagnostic for duplicated modes or just take the last one?
                 if (data is null
-                    || scenarios.ContainsKey(marshallerScenario))
+                    || modes.ContainsKey(marshalMode))
                 {
                     continue;
                 }
 
-                scenarios.Add(marshallerScenario, data.Value);
+                modes.Add(marshalMode, data.Value);
             }
 
-            if (scenarios.Count == 0)
+            if (modes.Count == 0)
                 return false;
 
             marshallers = new CustomTypeMarshallers()
             {
-                Scenarios = scenarios.ToImmutableDictionary()
+                Modes = modes.ToImmutableDictionary()
             };
 
             return true;
@@ -392,10 +392,10 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    // Native type is the first parameter of ConvertToManaged or ConvertToManagedGuaranteed
-                    if (methods.ToManagedGuaranteed is not null)
+                    // Native type is the first parameter of ConvertToManaged or ConvertToManagedFinally
+                    if (methods.ToManagedFinally is not null)
                     {
-                        nativeType = methods.ToManagedGuaranteed.Parameters[0].Type;
+                        nativeType = methods.ToManagedFinally.Parameters[0].Type;
                     }
                     else if (methods.ToManaged is not null)
                     {

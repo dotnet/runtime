@@ -39,20 +39,45 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
             [return: MarshalUsing(typeof(ListMarshaller<,>), ConstantElementCount = sizeof(long))]
             public static partial List<byte> GetLongBytes(long l);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool AndAllMembers([MarshalUsing(typeof(ListMarshaller<,>))] List<BoolStruct> pArray, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array_in")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool AndAllMembersIn([MarshalUsing(typeof(ListMarshaller<,>))] in List<BoolStruct> pArray, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_ref")]
+            public static partial void NegateBools(
+                [MarshalUsing(typeof(ListMarshaller<,>), CountElementName = "numValues")] ref List<BoolStruct> boolStruct,
+                int numValues);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_out")]
+            public static partial void NegateBools(
+                [MarshalUsing(typeof(ListMarshaller<,>))] List<BoolStruct> boolStruct,
+                int numValues,
+                [MarshalUsing(typeof(ListMarshaller<,>), CountElementName = "numValues")] out List<BoolStruct> pBoolStructOut);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_return")]
+            [return: MarshalUsing(typeof(ListMarshaller<,>), CountElementName = "numValues")]
+            public static partial List<BoolStruct> NegateBools(
+                [MarshalUsing(typeof(ListMarshaller<,>))] List<BoolStruct> boolStruct,
+                int numValues);
         }
     }
 
     public class CollectionTests
     {
         [Fact]
-        public void BlittableElementColllectionMarshalledToNativeAsExpected()
+        public void BlittableElementColllection_ByValue()
         {
             var list = new List<int> { 1, 5, 79, 165, 32, 3 };
             Assert.Equal(list.Sum(), NativeExportsNE.Collections.Sum(list, list.Count));
         }
 
         [Fact]
-        public void BlittableElementColllectionMarshalledToNativeWithPinningAsExpected()
+        public void BlittableElementColllection_WithPinning()
         {
             var data = new List<int> { 1, 5, 79, 165, 32, 3 };
             var list = data.Select(i => new BlittableIntWrapper { i = i }).ToList();
@@ -61,20 +86,20 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void NullBlittableElementColllectionMarshalledToNativeAsExpected()
+        public void BlittableElementColllection_ByValue_Null()
         {
             Assert.Equal(-1, NativeExportsNE.Collections.Sum(null, 0));
         }
 
         [Fact]
-        public void BlittableElementColllectionInParameter()
+        public void BlittableElementColllection_In()
         {
             var list = new List<int> { 1, 5, 79, 165, 32, 3 };
             Assert.Equal(list.Sum(), NativeExportsNE.Collections.SumInArray(list, list.Count));
         }
 
         [Fact]
-        public void BlittableElementCollectionRefParameter()
+        public void BlittableElementCollection_Ref()
         {
             var list = new List<int> { 1, 5, 79, 165, 32, 3 };
             var newList = list;
@@ -83,7 +108,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void BlittableElementCollectionReturnedFromNative()
+        public void BlittableElementCollection_OutReturn()
         {
             int start = 5;
             int end = 20;
@@ -97,7 +122,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void NullBlittableElementCollectionReturnedFromNative()
+        public void BlittableElementCollection_OutReturn_Null()
         {
             Assert.Null(NativeExportsNE.Collections.CreateRange(1, 0, out _));
 
@@ -126,5 +151,107 @@ namespace LibraryImportGenerator.IntegrationTests
 
             Assert.Equal(longVal, MemoryMarshal.Read<long>(CollectionsMarshal.AsSpan(NativeExportsNE.Collections.GetLongBytes(longVal))));
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void NonBlittableElementCollection_ByValue(bool result)
+        {
+            List<BoolStruct> list = GetBoolStructsToAnd(result);
+            Assert.Equal(result, NativeExportsNE.Collections.AndAllMembers(list, list.Count));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void NonBlittableElementCollection_In(bool result)
+        {
+            List<BoolStruct> list = GetBoolStructsToAnd(result);
+            Assert.Equal(result, NativeExportsNE.Collections.AndAllMembersIn(list, list.Count));
+        }
+
+        [Fact]
+        public void NonBlittableElementCollection_Ref()
+        {
+            List<BoolStruct> list = GetBoolStructsToNegate();
+            List<BoolStruct> expected = GetNegatedBoolStructs(list);
+
+            NativeExportsNE.Collections.NegateBools(ref list, list.Count);
+            Assert.Equal(expected, list);
+        }
+
+        [Fact]
+        public void NonBlittableElementCollection_Out()
+        {
+            List<BoolStruct> list = GetBoolStructsToNegate();
+            List<BoolStruct> expected = GetNegatedBoolStructs(list);
+
+            List<BoolStruct> result;
+            NativeExportsNE.Collections.NegateBools(list, list.Count, out result);
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void NonBlittableElementCollection_Return()
+        {
+            List<BoolStruct> list = GetBoolStructsToNegate();
+            List<BoolStruct> expected = GetNegatedBoolStructs(list);
+
+            List<BoolStruct> result = NativeExportsNE.Collections.NegateBools(list, list.Count);
+            Assert.Equal(expected, result);
+        }
+
+        private static List<BoolStruct> GetBoolStructsToAnd(bool result) => new List<BoolStruct>
+            {
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true,
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true,
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = result,
+                },
+            };
+
+        private static List<BoolStruct> GetBoolStructsToNegate() => new List<BoolStruct>()
+            {
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = false,
+                    b3 = true
+                },
+                new BoolStruct
+                {
+                    b1 = false,
+                    b2 = true,
+                    b3 = false
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true
+                },
+                new BoolStruct
+                {
+                    b1 = false,
+                    b2 = false,
+                    b3 = false
+                }
+            };
+
+        private static List<BoolStruct> GetNegatedBoolStructs(List<BoolStruct> toNegate)
+            => toNegate.Select(b => new BoolStruct() { b1 = !b.b1, b2 = !b.b2, b3 = !b.b3 }).ToList();
     }
 }

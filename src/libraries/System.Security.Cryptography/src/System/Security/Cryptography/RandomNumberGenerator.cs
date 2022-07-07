@@ -122,13 +122,14 @@ namespace System.Security.Cryptography
             mask |= mask >> 8;
             mask |= mask >> 16;
 
-            Span<uint> resultSpan = stackalloc uint[1];
+            uint oneUint = 0;
+            Span<byte> oneUintBytes = MemoryMarshal.AsBytes(new Span<uint>(ref oneUint));
             uint result;
 
             do
             {
-                RandomNumberGeneratorImplementation.FillSpan(MemoryMarshal.AsBytes(resultSpan));
-                result = mask & resultSpan[0];
+                RandomNumberGeneratorImplementation.FillSpan(oneUintBytes);
+                result = mask & oneUint;
             }
             while (result > range);
 

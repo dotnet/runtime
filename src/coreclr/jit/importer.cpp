@@ -2520,7 +2520,7 @@ inline void Compiler::impEvalSideEffects()
  *  i is the stack entry which will be checked and spilled.
  */
 
-inline void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(const char* reason))
+void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(const char* reason))
 {
     assert(i <= verCurrentState.esStackDepth);
 
@@ -4880,6 +4880,96 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_BitConverter_DoubleToInt64Bits:
+            {
+                GenTree* op1 = impStackTop().val;
+                assert(varTypeIsFloating(op1));
+
+                if (op1->IsCnsFltOrDbl())
+                {
+                    impPopStack();
+
+                    double f64Cns = op1->AsDblCon()->gtDconVal;
+                    retNode       = gtNewLconNode(*reinterpret_cast<int64_t*>(&f64Cns));
+                }
+#if TARGET_64BIT
+                else
+                {
+                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    impPopStack();
+
+                    if (op1->TypeGet() != TYP_DOUBLE)
+                    {
+                        op1 = gtNewCastNode(TYP_DOUBLE, op1, false, TYP_DOUBLE);
+                    }
+                    retNode = gtNewBitCastNode(TYP_LONG, op1);
+                }
+#endif
+                break;
+            }
+
+            case NI_System_BitConverter_Int32BitsToSingle:
+            {
+                GenTree* op1 = impPopStack().val;
+                assert(varTypeIsInt(op1));
+
+                if (op1->IsIntegralConst())
+                {
+                    int32_t i32Cns = (int32_t)op1->AsIntConCommon()->IconValue();
+                    retNode        = gtNewDconNode(*reinterpret_cast<float*>(&i32Cns), TYP_FLOAT);
+                }
+                else
+                {
+                    retNode = gtNewBitCastNode(TYP_FLOAT, op1);
+                }
+                break;
+            }
+
+            case NI_System_BitConverter_Int64BitsToDouble:
+            {
+                GenTree* op1 = impStackTop().val;
+                assert(varTypeIsLong(op1));
+
+                if (op1->IsIntegralConst())
+                {
+                    impPopStack();
+
+                    int64_t i64Cns = op1->AsIntConCommon()->LngValue();
+                    retNode        = gtNewDconNode(*reinterpret_cast<double*>(&i64Cns));
+                }
+#if TARGET_64BIT
+                else
+                {
+                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    impPopStack();
+
+                    retNode = gtNewBitCastNode(TYP_DOUBLE, op1);
+                }
+#endif
+                break;
+            }
+
+            case NI_System_BitConverter_SingleToInt32Bits:
+            {
+                GenTree* op1 = impPopStack().val;
+                assert(varTypeIsFloating(op1));
+
+                if (op1->IsCnsFltOrDbl())
+                {
+                    float f32Cns = (float)op1->AsDblCon()->gtDconVal;
+                    retNode      = gtNewIconNode(*reinterpret_cast<int32_t*>(&f32Cns));
+                }
+                else
+                {
+                    if (op1->TypeGet() != TYP_FLOAT)
+                    {
+                        op1 = gtNewCastNode(TYP_FLOAT, op1, false, TYP_FLOAT);
+                    }
+                    retNode = gtNewBitCastNode(TYP_INT, op1);
+                }
+                break;
+            }
+
             default:
                 break;
         }
@@ -5518,6 +5608,53 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_Activator_DefaultConstructorOf;
             }
         }
+        else if (strcmp(className, "BitConverter") == 0)
+        {
+            if (methodName[0] == 'D')
+            {
+                if (strcmp(methodName, "DoubleToInt64Bits") == 0)
+                {
+                    result = NI_System_BitConverter_DoubleToInt64Bits;
+                }
+                else if (strcmp(methodName, "DoubleToUInt64Bits") == 0)
+                {
+                    result = NI_System_BitConverter_DoubleToInt64Bits;
+                }
+            }
+            else if (methodName[0] == 'I')
+            {
+                if (strcmp(methodName, "Int32BitsToSingle") == 0)
+                {
+                    result = NI_System_BitConverter_Int32BitsToSingle;
+                }
+                else if (strcmp(methodName, "Int64BitsToDouble") == 0)
+                {
+                    result = NI_System_BitConverter_Int64BitsToDouble;
+                }
+            }
+            else if (methodName[0] == 'S')
+            {
+                if (strcmp(methodName, "SingleToInt32Bits") == 0)
+                {
+                    result = NI_System_BitConverter_SingleToInt32Bits;
+                }
+                else if (strcmp(methodName, "SingleToUInt32Bits") == 0)
+                {
+                    result = NI_System_BitConverter_SingleToInt32Bits;
+                }
+            }
+            else if (methodName[0] == 'U')
+            {
+                if (strcmp(methodName, "UInt32BitsToSingle") == 0)
+                {
+                    result = NI_System_BitConverter_Int32BitsToSingle;
+                }
+                else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
+                {
+                    result = NI_System_BitConverter_Int64BitsToDouble;
+                }
+            }
+        }
         else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
         {
             if (strcmp(methodName, "Abs") == 0)
@@ -6137,29 +6274,46 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
     }
 }
 
-/*****************************************************************************/
-
+//------------------------------------------------------------------------
+// impArrayAccessIntrinsic: try to replace a multi-dimensional array intrinsics with IR nodes.
+//
+// Arguments:
+//    clsHnd        - handle for the intrinsic method's class
+//    sig           - signature of the intrinsic method
+//    memberRef     - the token for the intrinsic method
+//    readonlyCall  - true if call has a readonly prefix
+//    intrinsicName - the intrinsic to expand: one of NI_Array_Address, NI_Array_Get, NI_Array_Set
+//
+// Return Value:
+//    The intrinsic expansion, or nullptr if the expansion was not done (and a function call should be made instead).
+//
 GenTree* Compiler::impArrayAccessIntrinsic(
     CORINFO_CLASS_HANDLE clsHnd, CORINFO_SIG_INFO* sig, int memberRef, bool readonlyCall, NamedIntrinsic intrinsicName)
 {
-    /* If we are generating SMALL_CODE, we don't want to use intrinsics for
-       the following, as it generates fatter code.
-    */
+    assert((intrinsicName == NI_Array_Address) || (intrinsicName == NI_Array_Get) || (intrinsicName == NI_Array_Set));
 
+    // If we are generating SMALL_CODE, we don't want to use intrinsics, as it generates fatter code.
     if (compCodeOpt() == SMALL_CODE)
     {
+        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic due to SMALL_CODE\n");
         return nullptr;
     }
 
-    /* These intrinsics generate fatter (but faster) code and are only
-       done if we don't need SMALL_CODE */
-
     unsigned rank = (intrinsicName == NI_Array_Set) ? (sig->numArgs - 1) : sig->numArgs;
 
-    // The rank 1 case is special because it has to handle two array formats
-    // we will simply not do that case
-    if (rank > GT_ARR_MAX_RANK || rank <= 1)
+    // Handle a maximum rank of GT_ARR_MAX_RANK (3). This is an implementation choice (larger ranks are expected
+    // to be rare) and could be increased.
+    if (rank > GT_ARR_MAX_RANK)
     {
+        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because rank (%d) > GT_ARR_MAX_RANK (%d)\n", rank,
+                GT_ARR_MAX_RANK);
+        return nullptr;
+    }
+
+    // The rank 1 case is special because it has to handle two array formats. We will simply not do that case.
+    if (rank <= 1)
+    {
+        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because rank (%d) <= 1\n", rank);
         return nullptr;
     }
 
@@ -6168,7 +6322,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     // For the ref case, we will only be able to inline if the types match
     // (verifier checks for this, we don't care for the nonverified case and the
-    // type is final (so we don't need to do the cast)
+    // type is final (so we don't need to do the cast))
     if ((intrinsicName != NI_Array_Get) && !readonlyCall && varTypeIsGC(elemType))
     {
         // Get the call site signature
@@ -6203,6 +6357,8 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         // if it's not final, we can't do the optimization
         if (!(info.compCompHnd->getClassAttribs(actualElemClsHnd) & CORINFO_FLG_FINAL))
         {
+            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd (%p) is not final\n",
+                    dspPtr(actualElemClsHnd));
             return nullptr;
         }
     }
@@ -6211,7 +6367,6 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if (elemType == TYP_STRUCT)
     {
         assert(arrElemClsHnd);
-
         arrayElemSize = info.compCompHnd->getClassSize(arrElemClsHnd);
     }
     else
@@ -6223,6 +6378,8 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         // arrayElemSize would be truncated as an unsigned char.
         // This means the array element is too large. Don't do the optimization.
+        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because arrayElemSize (%d) is too large\n",
+                arrayElemSize);
         return nullptr;
     }
 
@@ -6231,32 +6388,48 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if (intrinsicName == NI_Array_Set)
     {
         // Assignment of a struct is more work, and there are more gets than sets.
+        // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
         if (elemType == TYP_STRUCT)
         {
+            JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT"
+                    " (implementation limitation)\n",
+                    arrayElemSize);
             return nullptr;
         }
 
         val = impPopStack().val;
-        assert(genActualType(elemType) == genActualType(val->gtType) ||
+        assert((genActualType(elemType) == genActualType(val->gtType)) ||
                (elemType == TYP_FLOAT && val->gtType == TYP_DOUBLE) ||
                (elemType == TYP_INT && val->gtType == TYP_BYREF) ||
                (elemType == TYP_DOUBLE && val->gtType == TYP_FLOAT));
     }
+
+    // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
+    optMethodFlags |= OMF_HAS_MDARRAYREF;
+    compCurBB->bbFlags |= BBF_HAS_MDARRAYREF;
 
     noway_assert((unsigned char)GT_ARR_MAX_RANK == GT_ARR_MAX_RANK);
 
     GenTree* inds[GT_ARR_MAX_RANK];
     for (unsigned k = rank; k > 0; k--)
     {
-        inds[k - 1] = impPopStack().val;
+        // The indices should be converted to `int` type, as they would be if the intrinsic was not expanded.
+        GenTree* argVal = impPopStack().val;
+        if (impInlineRoot()->opts.compJitEarlyExpandMDArrays)
+        {
+            // This is only enabled when early MD expansion is set because it causes small
+            // asm diffs (only in some test cases) otherwise. The GT_ARR_ELEM lowering code "accidentally" does
+            // this cast, but the new code requires it to be explicit.
+            argVal = impImplicitIorI4Cast(argVal, TYP_INT);
+        }
+        inds[k - 1] = argVal;
     }
 
     GenTree* arr = impPopStack().val;
     assert(arr->gtType == TYP_REF);
 
-    GenTree* arrElem =
-        new (this, GT_ARR_ELEM) GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank),
-                                               static_cast<unsigned char>(arrayElemSize), elemType, &inds[0]);
+    GenTree* arrElem = new (this, GT_ARR_ELEM) GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank),
+                                                              static_cast<unsigned char>(arrayElemSize), &inds[0]);
 
     if (intrinsicName != NI_Array_Address)
     {
@@ -8144,8 +8317,8 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     node->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
 
-    // Remember that this basic block contains 'new' of a md array
-    compCurBB->bbFlags |= BBF_HAS_NEWARRAY;
+    // Remember that this function contains 'new' of a MD array.
+    optMethodFlags |= OMF_HAS_MDNEWARRAY;
 
     impPushOnStack(node, typeInfo(TI_REF, pResolvedToken->hClass));
 }
@@ -13675,7 +13848,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTree* type  = op1;
                     GenTree* index = impPopStack().val;
                     GenTree* arr   = impPopStack().val;
-                    op1            = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
+#ifdef TARGET_64BIT
+                    // The CLI Spec allows an array to be indexed by either an int32 or a native int.
+                    // The array helper takes a native int for array length.
+                    // So if we have an int, explicitly extend it to be a native int.
+                    if (genActualType(index->TypeGet()) != TYP_I_IMPL)
+                    {
+                        if (index->IsIntegralConst())
+                        {
+                            index->gtType = TYP_I_IMPL;
+                        }
+                        else
+                        {
+                            bool isUnsigned = false;
+                            index           = gtNewCastNode(TYP_I_IMPL, index, isUnsigned, TYP_I_IMPL);
+                        }
+                    }
+#endif // TARGET_64BIT
+                    op1 = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -13816,7 +14006,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 impPopStack(3);
 
-                // Else call a helper function to do the assignment
+// Else call a helper function to do the assignment
+#ifdef TARGET_64BIT
+                // The CLI Spec allows an array to be indexed by either an int32 or a native int.
+                // The array helper takes a native int for array length.
+                // So if we have an int, explicitly extend it to be a native int.
+                if (genActualType(index->TypeGet()) != TYP_I_IMPL)
+                {
+                    if (index->IsIntegralConst())
+                    {
+                        index->gtType = TYP_I_IMPL;
+                    }
+                    else
+                    {
+                        bool isUnsigned = false;
+                        index           = gtNewCastNode(TYP_I_IMPL, index, isUnsigned, TYP_I_IMPL);
+                    }
+                }
+#endif // TARGET_64BIT
                 op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
                 goto SPILL_APPEND;
             }
@@ -16402,9 +16609,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
 
-                /* Remember that this basic block contains 'new' of an sd array */
-
-                block->bbFlags |= BBF_HAS_NEWARRAY;
+                // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;
 
                 /* Push the result of the call on the stack */

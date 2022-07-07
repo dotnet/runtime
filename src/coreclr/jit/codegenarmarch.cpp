@@ -367,6 +367,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCompare(treeNode->AsOp());
             break;
 
+#ifdef TARGET_ARM64
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            genCodeForConditional(treeNode->AsConditional());
+            break;
+#endif
+
         case GT_JTRUE:
             genCodeForJumpTrue(treeNode->AsOp());
             break;
@@ -1150,16 +1162,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 {
                     firstOnStackOffs = use.GetOffset();
                 }
-                var_types type = nextArgNode->TypeGet();
-                emitAttr  attr = emitTypeSize(type);
 
-                unsigned offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
+                var_types type   = use.GetType();
+                unsigned  offset = treeNode->getArgOffset() + use.GetOffset() - firstOnStackOffs;
                 // We can't write beyond the outgoing arg area
-                assert(offset + EA_SIZE_IN_BYTES(attr) <= argOffsetMax);
+                assert((offset + genTypeSize(type)) <= argOffsetMax);
 
                 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
                 // argument area
-                emit->emitIns_S_R(ins_Store(type), attr, fieldReg, varNumOut, offset);
+                emit->emitIns_S_R(ins_Store(type), emitActualTypeSize(type), fieldReg, varNumOut, offset);
             }
             else
             {
@@ -1492,10 +1503,9 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     regNumber tmpReg = arrIndex->GetSingleTempReg();
     assert(tgtReg != tmpReg);
 
-    unsigned  dim      = arrIndex->gtCurrDim;
-    unsigned  rank     = arrIndex->gtArrRank;
-    var_types elemType = arrIndex->gtArrElemType;
-    unsigned  offset;
+    unsigned dim  = arrIndex->gtCurrDim;
+    unsigned rank = arrIndex->gtArrRank;
+    unsigned offset;
 
     offset = compiler->eeGetMDArrayLowerBoundOffset(rank, dim);
     emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
@@ -1546,10 +1556,9 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
         regNumber tmpReg = arrOffset->GetSingleTempReg();
 
-        unsigned  dim      = arrOffset->gtCurrDim;
-        unsigned  rank     = arrOffset->gtArrRank;
-        var_types elemType = arrOffset->gtArrElemType;
-        unsigned  offset   = compiler->eeGetMDArrayLengthOffset(rank, dim);
+        unsigned dim    = arrOffset->gtCurrDim;
+        unsigned rank   = arrOffset->gtArrRank;
+        unsigned offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
 
         // Load tmpReg with the dimension size and evaluate
         // tgtReg = offsetReg*tmpReg + indexReg.
