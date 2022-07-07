@@ -610,7 +610,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 assembly = store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
-                return Result.Err("Assembly '" + aname + "' not found.");
+                return Result.Err($"Assembly '{aname}' not found," +
+                                    $"needed to get method location of '{typeName}:{methodName}'");
             }
 
             TypeInfo type = assembly.GetTypeByName(typeName);
@@ -1129,7 +1130,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             if (urlSymbolServerList.Count == 0)
                 return null;
-            if (asm.TriedToLoadSymbolsOnDemand || !asm.PdbInformationAvailable)
+            if (asm.TriedToLoadSymbolsOnDemand || !asm.CodeViewInformationAvailable)
                 return null;
             asm.TriedToLoadSymbolsOnDemand = true;
             var pdbName = Path.GetFileName(asm.PdbName);

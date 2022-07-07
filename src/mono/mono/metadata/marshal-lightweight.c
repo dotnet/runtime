@@ -771,7 +771,7 @@ emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignatu
 			}
 			else if (sig->params[i]->type == MONO_TYPE_VALUETYPE) {
 				MonoMarshalType *marshal_type = mono_marshal_load_type_info (mono_class_from_mono_type_internal (sig->params [i]));
-				for (int field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
+				for (guint32 field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
 					if (marshal_type->fields [field_idx].mspec && marshal_type->fields [field_idx].mspec->native == MONO_NATIVE_CUSTOM) {
 						mono_mb_emit_exception_full (mb, "System", "TypeLoadException", g_strdup ("Value type includes custom marshaled fields"));
 						return FALSE;
@@ -2016,9 +2016,18 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 
 	/*static methods with bound first arg can have null target and still be bound*/
 	if (!static_method_with_first_arg_bound) {
+		/* if bound */
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, bound));
+		/* bound: MonoBoolean */
+		mono_mb_emit_byte (mb, CEE_LDIND_I1);
+		int pos_bound = mono_mb_emit_branch (mb, CEE_BRTRUE);
+
 		/* if target != null */
 		mono_mb_emit_ldloc (mb, local_target);
 		pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+		mono_mb_patch_branch (mb, pos_bound);
 
 		/* then call this->method_ptr nonstatic */
 		if (callvirt) {
@@ -2435,7 +2444,7 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 			} else if (sig->params[i]->type == MONO_TYPE_VALUETYPE) {
 				MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 				MonoMarshalType *marshal_type = mono_marshal_load_type_info (klass);
-				for (int field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
+				for (guint32 field_idx = 0; field_idx < marshal_type->num_fields; ++field_idx) {
 					if (marshal_type->fields [field_idx].mspec && marshal_type->fields [field_idx].mspec->native == MONO_NATIVE_CUSTOM) {
 						mono_error_set_type_load_class (error, klass, "Value type includes custom marshaled fields");
 						return FALSE;

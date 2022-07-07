@@ -50,8 +50,8 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// The <paramref name="buffer"/> must not be movable - that is, it should not be
         /// on the managed heap or it should be pinned.
-        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         /// </remarks>
+        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         public ArrayMarshaller(T[]? array, Span<byte> buffer, int sizeOfNativeElement)
         {
             _allocatedMemory = default;
@@ -83,9 +83,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Gets a span that points to the memory where the managed values of the array are stored.
         /// </summary>
         /// <returns>Span over managed values of the array.</returns>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.In"/>
-        /// </remarks>
         public ReadOnlySpan<T> GetManagedValuesSource() => _managedArray;
 
         /// <summary>
@@ -93,9 +91,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="length">Length of the array.</param>
         /// <returns>Span where managed values of the array should be stored.</returns>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
         public Span<T> GetManagedValuesDestination(int length) => _allocatedMemory == IntPtr.Zero ? null : _managedArray = new T[length];
 
         /// <summary>
@@ -103,9 +99,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="length">Length of the array.</param>
         /// <returns>Span over the native values of the array.</returns>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
         public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
             if (_allocatedMemory == IntPtr.Zero)
@@ -120,9 +114,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Returns a span that points to the memory where the native values of the array should be stored.
         /// </summary>
         /// <returns>Span where native values of the array should be stored.</returns>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.In"/>
-        /// </remarks>
         public Span<byte> GetNativeValuesDestination() => _span;
 
         /// <summary>
@@ -133,18 +125,14 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Returns the native value representing the array.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
         public byte* ToNativeValue() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
 
         /// <summary>
         /// Sets the native value representing the array.
         /// </summary>
         /// <param name="value">The native value.</param>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        /// </remarks>
         public void FromNativeValue(byte* value)
         {
             _allocatedMemory = (IntPtr)value;
@@ -153,17 +141,13 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Returns the managed array.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        /// </remarks>
         public T[]? ToManaged() => _managedArray;
 
         /// <summary>
         /// Frees native resources.
         /// </summary>
-        /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
-        /// </remarks>
         public void FreeNative()
         {
             Marshal.FreeCoTaskMem(_allocatedMemory);

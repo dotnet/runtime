@@ -143,7 +143,7 @@ namespace System.Security.Cryptography
                     secretLength = (int)secretLengthU;
 
                     // Indicate that secret can hold stackallocs from nested scopes
-                    Span<byte> secret = stackalloc byte[0];
+                    scoped Span<byte> secret;
 
                     // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
                     const int StackAllocMax = 66;

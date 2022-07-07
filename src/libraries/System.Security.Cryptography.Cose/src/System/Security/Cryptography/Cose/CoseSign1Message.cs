@@ -509,7 +509,7 @@ namespace System.Security.Cryptography.Cose
                 _toBeSignedHash = hash;
             }
 #else
-            Span<byte> hash = stackalloc byte[0];
+            scoped Span<byte> hash;
             if (_content != null)
             {
                 hash = _toBeSignedHash = hasher.GetHashAndReset();

@@ -50,7 +50,7 @@ namespace System.Reflection
 
             bool isInherited = declaredType != reflectedType;
 
-            Span<IntPtr> genericArgumentHandles = stackalloc IntPtr[0];
+            scoped Span<IntPtr> genericArgumentHandles = default;
             RuntimeType[] genericArguments = declaredType.TypeHandle.GetInstantiationInternal();
             if (genericArguments != null)
             {

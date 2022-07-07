@@ -1566,7 +1566,6 @@ void EEJitManager::SetCpuInfo()
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         CPUCompileFlags.Set(InstructionSet_Atomics);
-        g_arm64_atomics_present = true;
     }
 
     // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)
@@ -1583,6 +1582,11 @@ void EEJitManager::SetCpuInfo()
         //
         // We set the flag when the instruction is permitted and the block size is 64 bytes.
         CPUCompileFlags.Set(InstructionSet_Dczva);
+    }
+
+    if (CPUCompileFlags.IsSet(InstructionSet_Atomics))
+    {
+        g_arm64_atomics_present = true;
     }
 #endif // TARGET_ARM64
 
