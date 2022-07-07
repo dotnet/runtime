@@ -59,8 +59,7 @@ namespace System.Text.Json
 
             if (IsLockedInstance)
             {
-                InitializeCachingContext();
-                converter = _cachingContext.GetOrAddJsonTypeInfo(typeToConvert)?.Converter;
+                converter = GetCachingContext()?.GetOrAddJsonTypeInfo(typeToConvert)?.Converter;
             }
             else
             {

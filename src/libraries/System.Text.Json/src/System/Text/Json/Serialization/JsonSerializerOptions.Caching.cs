@@ -32,8 +32,7 @@ namespace System.Text.Json
 
             if (IsLockedInstance)
             {
-                InitializeCachingContext();
-                typeInfo = _cachingContext.GetOrAddJsonTypeInfo(type);
+                typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
             }
 
             if (typeInfo == null)
@@ -81,10 +80,16 @@ namespace System.Text.Json
             _lastTypeInfo = null;
         }
 
-        [MemberNotNull(nameof(_cachingContext))]
-        private void InitializeCachingContext()
+        private CachingContext? GetCachingContext()
         {
-            _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
+            Debug.Assert(IsLockedInstance);
+
+            if (_cachingContext is null && _typeInfoResolver is not null)
+            {
+                _cachingContext = TrackedCachingContexts.GetOrCreate(this);
+            }
+
+            return _cachingContext;
         }
 
         /// <summary>
@@ -95,7 +100,7 @@ namespace System.Text.Json
         /// </summary>
         internal sealed class CachingContext
         {
-            private readonly ConcurrentDictionary<Type, JsonTypeInfo> _jsonTypeInfoCache = new();
+            private readonly ConcurrentDictionary<Type, JsonTypeInfo?> _jsonTypeInfoCache = new();
 
             public CachingContext(JsonSerializerOptions options)
             {
@@ -107,22 +112,7 @@ namespace System.Text.Json
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _jsonTypeInfoCache.Count;
 
-            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type)
-            {
-                if (_jsonTypeInfoCache.TryGetValue(type, out JsonTypeInfo? typeInfo))
-                {
-                    return typeInfo;
-                }
-
-                typeInfo = Options.GetTypeInfoNoCaching(type);
-                if (typeInfo != null)
-                {
-                    return _jsonTypeInfoCache.GetOrAdd(type, typeInfo);
-                }
-
-                return null;
-            }
-
+            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, Options.GetTypeInfoNoCaching);
             public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo) => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
 
             public void Clear()
@@ -149,6 +139,8 @@ namespace System.Text.Json
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
                 Debug.Assert(options.IsLockedInstance, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
+                Debug.Assert(options._typeInfoResolver != null);
+
                 ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;
 
                 if (cache.TryGetValue(options, out WeakReference<CachingContext>? wr) && wr.TryGetTarget(out CachingContext? ctx))
@@ -303,7 +295,7 @@ namespace System.Text.Json
                     left._includeFields == right._includeFields &&
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
-                    NormalizeResolver(left._typeInfoResolver) == NormalizeResolver(right._typeInfoResolver) &&
+                    left._typeInfoResolver == right._typeInfoResolver &&
                     CompareLists(left._converters, right._converters);
 
                 static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
@@ -347,7 +339,7 @@ namespace System.Text.Json
                 hc.Add(options._includeFields);
                 hc.Add(options._propertyNameCaseInsensitive);
                 hc.Add(options._writeIndented);
-                hc.Add(NormalizeResolver(options._typeInfoResolver));
+                hc.Add(options._typeInfoResolver);
                 GetHashCode(ref hc, options._converters);
 
                 static void GetHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
@@ -360,11 +352,6 @@ namespace System.Text.Json
 
                 return hc.ToHashCode();
             }
-
-            // An options instance might be locked but not initialized for reflection serialization yet.
-            // Ensure hashing is consistent before and after rooting by returning null when the default resolver is used.
-            private static IJsonTypeInfoResolver? NormalizeResolver(IJsonTypeInfoResolver? resolver)
-                => resolver == DefaultJsonTypeInfoResolver.DefaultInstance ? null : resolver;
 
 #if !NETCOREAPP
             /// <summary>

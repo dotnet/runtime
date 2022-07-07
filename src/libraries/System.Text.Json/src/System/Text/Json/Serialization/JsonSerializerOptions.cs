@@ -620,13 +620,15 @@ namespace System.Text.Json
                 DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
                 _typeInfoResolver ??= defaultResolver;
                 IsLockedInstance = true;
-                InitializeCachingContext();
 
-                if (_cachingContext.Options != this)
+                CachingContext? context = GetCachingContext();
+                Debug.Assert(context != null);
+
+                if (context.Options != this)
                 {
                     // We're using a shared caching context deriving from a different options instance;
                     // for coherence ensure that it has been opted in for reflection-based serialization as well.
-                    _cachingContext.Options.InitializeForReflectionSerializer();
+                    context.Options.InitializeForReflectionSerializer();
                 }
 
                 _isInitializedForReflectionSerializer = true;
