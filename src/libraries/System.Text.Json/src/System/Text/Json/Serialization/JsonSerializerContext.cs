@@ -109,6 +109,11 @@ namespace System.Text.Json.Serialization
 
         JsonTypeInfo? IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options)
         {
+            if (options != null && options != _options)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ResolverTypeInfoOptionsNotCompatible();
+            }
+
             return GetTypeInfo(type);
         }
     }
