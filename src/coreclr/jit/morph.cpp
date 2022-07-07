@@ -13783,10 +13783,12 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 
     GenTreeOp* const div = tree;
 
-    assert(!div->IsReverseOp());
-
-    GenTree* dividend = div->gtGetOp1();
-    GenTree* divisor  = div->gtGetOp2();
+    GenTree* opA = div->gtGetOp1();
+    GenTree* opB = div->gtGetOp2();
+    if (div->IsReverseOp())
+    {
+        std::swap(opA, opB);
+    }
 
     TempInfo tempInfos[2];
     int      tempInfoCount = 0;
@@ -13796,43 +13798,47 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     // dividend are arbitrary nodes. For instance, if we spill the divisor and
     // the dividend is a local, we need to spill the dividend too unless the
     // divisor could not cause it to be reassigned.
+    // There is even more complexity due to needing to handle GTF_REVERSE_OPS.
+    //
     // This could be slightly better via GTF_CALL and GTF_ASG checks on the
     // divisor but the diffs of this were minor and the extra complexity seemed
     // not worth it.
-    bool spillDividend;
-    bool spillDivisor;
-    if (divisor->IsInvariant() || divisor->OperIsLocal())
+    bool spillA;
+    bool spillB;
+    if (opB->IsInvariant() || opB->OperIsLocal())
     {
-        spillDivisor  = false;
-        spillDividend = !dividend->IsInvariant() && !dividend->OperIsLocal();
+        spillB = false;
+        spillA = !opA->IsInvariant() && !opA->OperIsLocal();
     }
     else
     {
-        spillDivisor  = true;
-        spillDividend = !dividend->IsInvariant();
+        spillB = true;
+        spillA = !opA->IsInvariant();
     }
 
-    if (spillDividend)
+    if (spillA)
     {
-        tempInfos[tempInfoCount] = fgMakeTemp(dividend);
-        dividend                 = tempInfos[tempInfoCount].load;
+        tempInfos[tempInfoCount] = fgMakeTemp(opA);
+        opA                      = tempInfos[tempInfoCount].load;
         tempInfoCount++;
     }
 
-    if (spillDivisor)
+    if (spillB)
     {
-        tempInfos[tempInfoCount] = fgMakeTemp(divisor);
-        divisor                  = tempInfos[tempInfoCount].load;
+        tempInfos[tempInfoCount] = fgMakeTemp(opB);
+        opB                      = tempInfos[tempInfoCount].load;
         tempInfoCount++;
     }
 
-    var_types type = div->gtType;
+    GenTree* dividend = div->IsReverseOp() ? opB : opA;
+    GenTree* divisor  = div->IsReverseOp() ? opA : opB;
 
     div->gtOp1 = gtClone(dividend);
     div->gtOp2 = gtClone(divisor);
 
-    GenTree* const mul = gtNewOperNode(GT_MUL, type, div, divisor);
-    GenTree* const sub = gtNewOperNode(GT_SUB, type, dividend, mul);
+    var_types      type = div->gtType;
+    GenTree* const mul  = gtNewOperNode(GT_MUL, type, div, divisor);
+    GenTree* const sub  = gtNewOperNode(GT_SUB, type, dividend, mul);
 
     GenTree* result = sub;
     // We loop backwards as it is easier to create new commas
