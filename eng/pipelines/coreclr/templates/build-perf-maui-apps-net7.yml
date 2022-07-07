@@ -344,7 +344,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
         includeRootFolder: true
         displayName: Maui Android App
-        artifactName: ${{ parameters.artifactName }}
+        artifactName: MauiAndroidApp
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -354,7 +354,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroidDefault.apk
         includeRootFolder: true
         displayName: Maui Blazor Android App
-        artifactName: ${{ parameters.artifactName }}
+        artifactName: MauiBlazorAndroidApp
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -364,7 +364,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
         includeRootFolder: true
         displayName: Maui Android Podcast
-        artifactName: ${{ parameters.artifactName }}
+        artifactName: MauiAndroidPodcast
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -374,7 +374,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiiOSDefault.ipa
         includeRootFolder: true
         displayName: Maui iOS IPA
-        artifactName: ${{ parameters.artifactName }}
+        artifactName: MauiiOSDefaultIPA
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -384,7 +384,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazoriOSDefault.ipa
         includeRootFolder: true
         displayName: Maui Blazor iOS IPA
-        artifactName: ${{ parameters.artifactName }}
+        artifactName: MauiBlazoriOSDefaultIPA
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -394,7 +394,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile/MauiiOSPodcast.ipa
         includeRootFolder: true
         displayName: Maui iOS Podcast IPA
-        artifactName: ${{ parameters.artifactName }}
+        artifactName: MauiiOSPodcastIPA
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -404,7 +404,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalystDefault.app
         includeRootFolder: true
         displayName: Maui MacCatalyst App
-        artifactName: ${{ parameters.artifactName }}
+        artifactName: MauiMacCatalystDefault
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -414,7 +414,7 @@ steps:
         rootFolder: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorMacCatalystDefault.app
         includeRootFolder: true
         displayName: Maui Blazor MacCatalyst App
-        artifactName: ${{ parameters.artifactName }}
+        artifactName: MauiBlazorMacCatalystDefault
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz

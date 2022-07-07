@@ -186,21 +186,21 @@ jobs:
           unpackFolder: $(Build.SourcesDirectory)
           cleanUnpackFolder: false
           artifactFileName: 'MauiAndroidApp.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet7'
+          artifactName: 'MauiAndroidApp'
           displayName: 'Maui Android App'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)
           cleanUnpackFolder: false
           artifactFileName: 'MauiAndroidPodcast.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet7'
+          artifactName: 'MauiAndroidPodcast'
           displayName: 'Maui Android Podcast'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)
           cleanUnpackFolder: false
           artifactFileName: 'MauiBlazorAndroidApp.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet7'
+          artifactName: 'MauiBlazorAndroidApp'
           displayName: 'Maui Blazor Android App'
 
     # Download Maui Android net6 stuff
@@ -209,22 +209,22 @@ jobs:
         parameters:
           unpackFolder: $(Build.SourcesDirectory)
           cleanUnpackFolder: false
-          artifactFileName: 'MauiAndroidApp.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet6'
+          artifactFileName: 'MauiAndroidAppNet6.tar.gz'
+          artifactName: 'MauiAndroidAppNet6'
           displayName: 'Maui Android App'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)
           cleanUnpackFolder: false
-          artifactFileName: 'MauiAndroidPodcast.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet6'
+          artifactFileName: 'MauiAndroidPodcastNet6.tar.gz'
+          artifactName: 'MauiAndroidPodcastNet6'
           displayName: 'Maui Android Podcast'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)
           cleanUnpackFolder: false
-          artifactFileName: 'MauiBlazorAndroidApp.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet6'
+          artifactFileName: 'MauiBlazorAndroidAppNet6.tar.gz'
+          artifactName: 'MauiBlazorAndroidAppNet6'
           displayName: 'Maui Blazor Android App'
           
 
@@ -267,35 +267,35 @@ jobs:
           unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefaultIPA
           cleanUnpackFolder: false
           artifactFileName: 'MauiiOSDefaultIPA.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet7'
+          artifactName: 'MauiiOSDefaultIPA'
           displayName: 'Maui iOS IPA'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiMacCatalystDefault
           cleanUnpackFolder: false
           artifactFileName: 'MauiMacCatalystDefault.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet7'
+          artifactName: 'MauiMacCatalystDefault'
           displayName: 'Maui MacCatalyst App'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiiOSPodcastIPA
           cleanUnpackFolder: false
           artifactFileName: 'MauiiOSPodcastIPA.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet7'
+          artifactName: 'MauiiOSPodcastIPA'
           displayName: 'Maui iOS Podcast IPA'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiBlazoriOSDefaultIPA
           cleanUnpackFolder: false
           artifactFileName: 'MauiBlazoriOSDefaultIPA.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet7'
+          artifactName: 'MauiBlazoriOSDefaultIPA'
           displayName: 'Maui Blazor iOS IPA'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiBlazorMacCatalystDefault
           cleanUnpackFolder: false
           artifactFileName: 'MauiBlazorMacCatalystDefault.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet7'
+          artifactName: 'MauiBlazorMacCatalystDefault'
           displayName: 'Maui Blazor MacCatalyst App'
 
 
@@ -305,36 +305,36 @@ jobs:
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefaultIPA
           cleanUnpackFolder: false
-          artifactFileName: 'MauiiOSDefaultIPA.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet6'
+          artifactFileName: 'MauiiOSDefaultIPANet6.tar.gz'
+          artifactName: 'MauiiOSDefaultIPANet6'
           displayName: 'Maui iOS IPA'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiMacCatalystDefault
           cleanUnpackFolder: false
-          artifactFileName: 'MauiMacCatalystDefault.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet6'
+          artifactFileName: 'MauiMacCatalystDefaultNet6.tar.gz'
+          artifactName: 'MauiMacCatalystDefaultNet6'
           displayName: 'Maui MacCatalyst App'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiiOSPodcastIPA
           cleanUnpackFolder: false
-          artifactFileName: 'MauiiOSPodcastIPA.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet6'
+          artifactFileName: 'MauiiOSPodcastIPANet6.tar.gz'
+          artifactName: 'MauiiOSPodcastIPANet6'
           displayName: 'Maui iOS Podcast IPA'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiBlazoriOSDefaultIPA
           cleanUnpackFolder: false
-          artifactFileName: 'MauiBlazoriOSDefaultIPA.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet6'
+          artifactFileName: 'MauiBlazoriOSDefaultIPANet6.tar.gz'
+          artifactName: 'MauiBlazoriOSDefaultIPANet6'
           displayName: 'Maui Blazor iOS IPA'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiBlazorMacCatalystDefault
           cleanUnpackFolder: false
-          artifactFileName: 'MauiBlazorMacCatalystDefault.tar.gz'
-          artifactName: 'MACiOSAndroidMauiArmNet6'
+          artifactFileName: 'MauiBlazorMacCatalystDefaultNet6.tar.gz'
+          artifactName: 'MauiBlazorMacCatalystDefaultNet6'
           displayName: 'Maui Blazor MacCatalyst App'
 
     # Create Core_Root
