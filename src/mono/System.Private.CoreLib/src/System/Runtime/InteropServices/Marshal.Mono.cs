@@ -118,9 +118,15 @@ namespace System.Runtime.InteropServices
 
         private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
+        private static unsafe void SetInvokeArgs(ref string cookie, IntPtr *params_byref)
+        {
+            ByReference objRef = ByReference.Create(ref cookie);
+            *(ByReference*)params_byref = objRef;
+        }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of MarshalAs.CustomMarshaler")]
-        internal static ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
+        internal static unsafe ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
         {
             var key = (type, cookie);
 
@@ -163,7 +169,10 @@ namespace System.Runtime.InteropServices
                 Exception? exc;
                 try
                 {
-                    result = (ICustomMarshaler?)getInstanceMethod.InternalInvoke(null, new object[] { cookie }, out exc);
+                    IntPtr byrefStorage = default;
+                    IntPtr *pbyrefStorage = &byrefStorage;
+                    SetInvokeArgs(ref cookie, pbyrefStorage);
+                    result = (ICustomMarshaler?)getInstanceMethod.InternalInvoke(null, pbyrefStorage, out exc);
                 }
                 catch (Exception e)
                 {
