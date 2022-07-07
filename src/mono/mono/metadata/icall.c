@@ -1812,6 +1812,10 @@ guint32
 ves_icall_RuntimeTypeHandle_IsInstanceOfType (MonoQCallTypeHandle type_handle, MonoObjectHandle obj, MonoError *error)
 {
 	MonoType *type = type_handle.type;
+
+	if (m_type_is_byref (type))
+		return FALSE;
+
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, FALSE);
