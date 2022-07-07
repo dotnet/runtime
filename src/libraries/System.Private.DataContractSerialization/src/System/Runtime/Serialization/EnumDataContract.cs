@@ -123,7 +123,7 @@ namespace System.Runtime.Serialization
                 Type baseType = Enum.GetUnderlyingType(type);
                 XmlQualifiedName baseTypeName = GetBaseContractName(baseType);
                 _baseContract = DataContract.GetBuiltInDataContract(baseTypeName.Name, baseTypeName.Namespace)!;
-                // TODO smolloy - Setting StableName might be redundant. But I don't want to miss an edge case.
+                // NOTE TODO smolloy - Setting StableName might be redundant. But I don't want to miss an edge case.
                 _baseContract.StableName = baseTypeName;
                 ImportBaseType(baseType);
                 IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
@@ -164,7 +164,7 @@ namespace System.Runtime.Serialization
                                 SR.Format(SR.InvalidEnumBaseType, value.Name, value.Namespace, StableName.Name, StableName.Namespace));
                     ImportBaseType(baseType);
                     _baseContract = DataContract.GetBuiltInDataContract(value.Name, value.Namespace)!;
-                    // TODO smolloy - Setting StableName might be redundant. But I don't want to miss an edge case.
+                    // NOTE TODO smolloy - Setting StableName might be redundant. But I don't want to miss an edge case.
                     _baseContract.StableName = value;
                 }
             }

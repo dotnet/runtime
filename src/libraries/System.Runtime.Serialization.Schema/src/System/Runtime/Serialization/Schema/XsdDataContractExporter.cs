@@ -13,7 +13,7 @@ using ExceptionUtil = System.Runtime.Serialization.Schema.DiagnosticUtility.Exce
 
 namespace System.Runtime.Serialization.Schema
 {
-    public class XsdDataContractExporter
+    public sealed class XsdDataContractExporter
     {
         private ExportOptions? _options;
         private XmlSchemaSet? _schemas;
@@ -39,10 +39,6 @@ namespace System.Runtime.Serialization.Schema
             get
             {
                 XmlSchemaSet schemaSet = GetSchemaSet();
-                // TODO smolloy - what to do. Looks like this particular method can live easily anywhere we want. But...
-                // the home of SchemaImporter is yet to be determined. If it lives externally here, then use it like this.
-                // If it lives internally... which is probably preferred if possible... then we will need to duplicate this
-                // method out here, or find a way to call into it over there.
                 DataContractSet.CompileSchemaSet(schemaSet);
                 return schemaSet;
             }
@@ -64,11 +60,7 @@ namespace System.Runtime.Serialization.Schema
             {
                 if (_dataContractSet == null)
                 {
-                    // TODO smolloy - This used to pass the surrogate to DCSet in 4.8. We can't do that here. We need to pair
-                    // the two somehow. For now, just pass nulls and see where down the line we need to resurface the surrogate provider
-                    // so we can best figure how to pair these.
-                    // _dataContractSet = new DataContractSet(Options?.GetSurrogate(), null, null);
-                    _dataContractSet = new DataContractSet(null, null, null);
+                    _dataContractSet = new DataContractSet(Options?.SurrogateProvider, null, null);
                 }
                 return _dataContractSet;
             }
@@ -187,11 +179,6 @@ namespace System.Runtime.Serialization.Schema
             {
                 return new XmlQualifiedName(dataContract.TopLevelElementName!.Value, dataContract.TopLevelElementNamespace!.Value);
             }
-            // TODO smolloy - the above is now done with the new API below.
-            //if (dataContract.GetRootElementName(out XmlQualifiedName? root))
-            //{
-            //    return root;
-            //}
             else
             {
                 return null;
@@ -201,7 +188,6 @@ namespace System.Runtime.Serialization.Schema
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         private Type GetSurrogatedType(Type type)
         {
-            // TODO smolloy - This is the DCS surrogate, not the extended one. Hmmmmm... guess inheritence is still the way to go.
             ISerializationSurrogateProvider? surrogate = Options?.SurrogateProvider;
             if (surrogate != null)
                 type = DataContract.GetSurrogateType(surrogate, type);
@@ -227,9 +213,6 @@ namespace System.Runtime.Serialization.Schema
         {
             AddKnownTypes();
             DataContractSet.ExportSchemaSet(GetSchemaSet());
-            // TODO smolloy - done with the new API above. Keeps SchemaExporter internal.
-            //SchemaExporter schemaExporter = new SchemaExporter(GetSchemaSet(), DataContractSet);
-            //schemaExporter.Export();
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]

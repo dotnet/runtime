@@ -547,9 +547,9 @@ namespace System.Runtime.Serialization.Schema
                 typeReference = GetReferencedGenericType(dataContract.GenericInfo, out referencedContract);
                 if (referencedContract != null && !referencedContract.Equals(dataContract))
                 {
-                    // NOTE TODO smolloy - Is this right? Looking at 'GetReferenceGenericType()'  it is possible to get a non-null referencedContract, but a null typeReference. Is that supposed to happen?
-                    // Are we supposed to only check the dataContract if we did not fail to get a typeReference? Should GetReferenceGenericType() be consistent with the two return parameters?
-                    // For now... assert to get out of the way of compilation. But come revisit this.
+                    // NOTE TODO smolloy - This is the 4.8 code... but feels like a bug? Looking at 'GetReferenceGenericType()'  it is possible to get return
+                    // a non-null 'referencedContract', but also null 'typeReference'.
+                    // For now... assert to get out of the way of compilation. But should we add a check here?
                     Debug.Assert(typeReference != null);
                     type = (Type?)typeReference.UserData[s_codeUserDataActualTypeKey];
                     throw ExceptionUtil.ThrowHelperError(new InvalidOperationException(SR.Format(SR.ReferencedTypeDoesNotMatch,
@@ -954,7 +954,6 @@ namespace System.Runtime.Serialization.Schema
         {
             Debug.Assert(classDataContract.Is(DataContractType.ClassDataContract));
 
-            // TODO smolloy - This is still not public
             if (handledContracts.ContainsKey(classDataContract))
                 return classDataContract.KnownDataContracts;
 

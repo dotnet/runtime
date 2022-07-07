@@ -124,7 +124,7 @@ namespace System.Runtime.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public void Add(Type type) { throw null; }
         public static void CompileSchemaSet(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
-        public DataContractSet(ISerializationExtendedSurrogateProvider? dataContractExtendedSurrogate, System.Collections.Generic.ICollection<Type>? referencedTypes, System.Collections.Generic.ICollection<Type>? referencedCollectionTypes) { throw null; }
+        public DataContractSet(ISerializationSurrogateProvider? dataContractSurrogate, System.Collections.Generic.ICollection<Type>? referencedTypes, System.Collections.Generic.ICollection<Type>? referencedCollectionTypes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractSet(DataContractSet dataContractSet) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]

@@ -16,17 +16,19 @@ namespace System.Runtime.Serialization
     {
         private DataContractDictionary? _contracts;
         private Dictionary<DataContract, object>? _processedContracts;
+        private readonly ISerializationSurrogateProvider? _surrogateProvider;
         private readonly ISerializationExtendedSurrogateProvider? _extendedSurrogateProvider;
         private Hashtable? _surrogateDataTable;
         private DataContractDictionary? _knownTypesForObject;
         private readonly ICollection<Type>? _referencedTypes;
         private readonly ICollection<Type>? _referencedCollectionTypes;
 
-        public DataContractSet(ISerializationExtendedSurrogateProvider? dataContractExtendedSurrogate, ICollection<Type>? referencedTypes, ICollection<Type>? referencedCollectionTypes)
+        public DataContractSet(ISerializationSurrogateProvider? dataContractSurrogate, ICollection<Type>? referencedTypes, ICollection<Type>? referencedCollectionTypes)
         {
             _referencedTypes = referencedTypes;
             _referencedCollectionTypes = referencedCollectionTypes;
-            _extendedSurrogateProvider = dataContractExtendedSurrogate;
+            _surrogateProvider = dataContractSurrogate;
+            _extendedSurrogateProvider = dataContractSurrogate as ISerializationExtendedSurrogateProvider;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -201,9 +203,9 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal XmlQualifiedName GetStableName(Type clrType)
         {
-            if (_extendedSurrogateProvider != null)
+            if (_surrogateProvider != null)
             {
-                Type dcType = DataContractSurrogateCaller.GetDataContractType(_extendedSurrogateProvider, clrType);
+                Type dcType = DataContractSurrogateCaller.GetDataContractType(_surrogateProvider, clrType);
                 return DataContract.GetStableName(dcType);
             }
             return DataContract.GetStableName(clrType);
@@ -212,16 +214,16 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContract GetDataContract(Type type)
         {
-            if (_extendedSurrogateProvider == null)
+            if (_surrogateProvider == null)
                 return DataContract.GetDataContract(type);
 
             DataContract? dataContract = DataContract.GetBuiltInDataContract(type);
             if (dataContract != null)
                 return dataContract;
 
-            Type dcType = DataContractSurrogateCaller.GetDataContractType(_extendedSurrogateProvider, type);
+            Type dcType = DataContractSurrogateCaller.GetDataContractType(_surrogateProvider, type);
             dataContract = DataContract.GetDataContract(dcType);
-            if (!SurrogateDataTable.Contains(dataContract))
+            if (_extendedSurrogateProvider != null && !SurrogateDataTable.Contains(dataContract))
             {
                 object? customData = DataContractSurrogateCaller.GetCustomDataToExport(_extendedSurrogateProvider, type, dcType);
                 if (customData != null)
@@ -248,9 +250,9 @@ namespace System.Runtime.Serialization
             Type dataMemberType = dataMember.MemberType;
             if (dataMember.IsGetOnlyCollection)
             {
-                if (_extendedSurrogateProvider != null)
+                if (_surrogateProvider != null)
                 {
-                    Type dcType = DataContractSurrogateCaller.GetDataContractType(_extendedSurrogateProvider, dataMemberType);
+                    Type dcType = DataContractSurrogateCaller.GetDataContractType(_surrogateProvider, dataMemberType);
                     if (dcType != dataMemberType)
                     {
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupported,

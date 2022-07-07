@@ -9,7 +9,7 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.Serialization.Schema
 {
-    public class ImportOptions
+    public sealed class ImportOptions
     {
         private ICollection<Type>? _referencedTypes;
         private ICollection<Type>? _referencedCollectionTypes;
@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Schema
 
         public bool EnableDataBinding { get; set; }
 
-        public ISerializationExtendedSurrogateProvider? ExtendedSurrogateProvider { get; set; }
+        public ISerializationSurrogateProvider? SurrogateProvider { get; set; }
 
         public bool GenerateInternal { get; set; }
 

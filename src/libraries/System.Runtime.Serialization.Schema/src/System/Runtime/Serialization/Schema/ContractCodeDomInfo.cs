@@ -14,7 +14,7 @@ namespace System.Runtime.Serialization.Schema
     internal sealed class ContractCodeDomInfo
     {
         private string? _clrNamespace;
-        // TODO smolloy - This was a Dictionary<string,object?> previously, so adding a duplicate entry would throw an exception.
+        // NOTE TODO smolloy - This was a Dictionary<string,object?> previously, so adding a duplicate entry would throw an exception.
         // HashSet does not allow duplicates either, but it just returns false instead of throwing. I think it's safe to not
         // throw in that case here, so long as we don't add duplicates. It's just a string list.
         private HashSet<string>? _memberNames;

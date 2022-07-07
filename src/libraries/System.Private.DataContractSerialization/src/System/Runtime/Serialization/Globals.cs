@@ -319,7 +319,6 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfSchemaDefinedType =>
             s_typeOfSchemaDefinedType ??= typeof(SchemaDefinedType);
 
-        // TODO smolloy - change name inline with new name from SchemaHelper
         private static MemberInfo? s_schemaMemberInfoPlaceholder;
         internal static MemberInfo SchemaMemberInfoPlaceholder =>
             s_schemaMemberInfoPlaceholder ??= TypeOfSchemaDefinedType.GetField("_stableName", BindingFlags.NonPublic | BindingFlags.Instance)!;

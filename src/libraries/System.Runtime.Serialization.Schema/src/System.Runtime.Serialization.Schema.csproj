@@ -6,12 +6,9 @@
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
 
-    <!-- TODO smolloy - remove this once ref project is filled in -->
-    <RunApiCompat>false</RunApiCompat>
-    
     <IsTrimmable>false</IsTrimmable>
 
-    <!-- TODO smolloy - This should be true... but this package needs to be added to some nuget feed first. dotnet build fails
+    <!-- NOTE TODO smolloy - This probably should be true... but this package needs to be added to some nuget feed first. dotnet build fails
           if it looks for a package listing and doesn't find one... presumably because we say this should be
           published as a package? -->
     <IsPackable>false</IsPackable>
@@ -26,7 +23,6 @@ System.Runtime.Serialization.Schema.XsdDataContractImporter</PackageDescription>
     <Compile Include="System\Runtime\Serialization\Schema\CodeExporter.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\ContractCodeDomInfo.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\DiagnosticUtility.cs" />
-    <None Include="System\Runtime\Serialization\Schema\_Stubs.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\ExportOptions.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\Globals.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\ImportOptions.cs" />
@@ -35,11 +31,9 @@ System.Runtime.Serialization.Schema.XsdDataContractImporter</PackageDescription>
     <Compile Include="System\Runtime\Serialization\Schema\XsdDataContractImporter.cs" />
   </ItemGroup>
 
-  <!-- TODO smolloy - Is this the right way to include CodeDom? Probably not. Feels like it should be a nuget dependency somehow.
+  <!-- NOTE TODO smolloy - Is this the right way to include CodeDom? Probably not. Feels like it should be a nuget dependency somehow.
     But we want to bring in the package from this repo, not just any package.
     Let's just do it this way for now and revisit once we've got all the rest of the heavy lifting done.
-
-    Actually, thinking about this some more... should this live in the WCF repo instead? (dotnet/wcf... not corewcf)
   -->
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />

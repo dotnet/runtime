@@ -707,7 +707,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                // TODO smolloy - I think this might be dead code. It doesn't appear like xsdType can be null in this method.
+                // NOTE TODO smolloy - I think this might be dead code. It doesn't appear like xsdType can be null in this method.
                 //Value type can be used by both nillable and non-nillable elements but reference type cannot be used by non nillable elements
                 xmlDataContract.IsValueType = true;
                 xmlDataContract.IsTypeDefinedOnImport = false;

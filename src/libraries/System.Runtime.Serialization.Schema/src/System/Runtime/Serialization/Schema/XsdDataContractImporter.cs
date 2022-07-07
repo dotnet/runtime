@@ -12,7 +12,7 @@ using ExceptionUtil = System.Runtime.Serialization.Schema.DiagnosticUtility.Exce
 
 namespace System.Runtime.Serialization.Schema
 {
-    public class XsdDataContractImporter
+    public sealed class XsdDataContractImporter
     {
         private CodeCompileUnit _codeCompileUnit = null!;   // Not directly referenced. Always lazy initialized by property getter.
         private DataContractSet? _dataContractSet;
@@ -42,13 +42,13 @@ namespace System.Runtime.Serialization.Schema
                 if (_dataContractSet == null)
                 {
                     _dataContractSet = Options == null ? new DataContractSet(null, null, null) :
-                                                        new DataContractSet(Options.ExtendedSurrogateProvider, Options.ReferencedTypes, Options.ReferencedCollectionTypes);
+                                                        new DataContractSet(Options.SurrogateProvider, Options.ReferencedTypes, Options.ReferencedCollectionTypes);
                 }
                 return _dataContractSet;
             }
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas)
         {
             if (schemas == null)
@@ -57,7 +57,7 @@ namespace System.Runtime.Serialization.Schema
             InternalImport(schemas, null, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas, ICollection<XmlQualifiedName> typeNames)
         {
             if (schemas == null)
@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization.Schema
             InternalImport(schemas, typeNames, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas, XmlQualifiedName typeName)
         {
             if (schemas == null)
@@ -82,7 +82,7 @@ namespace System.Runtime.Serialization.Schema
             InternalImport(schemas, SingleTypeNameArray, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public XmlQualifiedName? Import(XmlSchemaSet schemas, XmlSchemaElement element)
         {
             if (schemas == null)
@@ -96,7 +96,7 @@ namespace System.Runtime.Serialization.Schema
             return SingleTypeNameArray[0];
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas)
         {
             if (schemas == null)
@@ -105,7 +105,7 @@ namespace System.Runtime.Serialization.Schema
             return InternalCanImport(schemas, null, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName> typeNames)
         {
             if (schemas == null)
@@ -117,7 +117,7 @@ namespace System.Runtime.Serialization.Schema
             return InternalCanImport(schemas, typeNames, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, XmlQualifiedName typeName)
         {
             if (schemas == null)
@@ -129,7 +129,7 @@ namespace System.Runtime.Serialization.Schema
             return InternalCanImport(schemas, new XmlQualifiedName[] { typeName }, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, XmlSchemaElement element)
         {
             if (schemas == null)
@@ -142,7 +142,7 @@ namespace System.Runtime.Serialization.Schema
             return InternalCanImport(schemas, s_emptyTypeNameArray, SingleElementArray, SingleTypeNameArray);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public CodeTypeReference GetCodeTypeReference(XmlQualifiedName typeName)
         {
             DataContract dataContract = FindDataContract(typeName);
@@ -150,7 +150,7 @@ namespace System.Runtime.Serialization.Schema
             return codeExporter.GetCodeTypeReference(dataContract);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public CodeTypeReference GetCodeTypeReference(XmlQualifiedName typeName, XmlSchemaElement element)
         {
             if (element == null)
@@ -162,7 +162,7 @@ namespace System.Runtime.Serialization.Schema
             return codeExporter.GetElementTypeReference(dataContract, element.IsNillable);
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         internal DataContract FindDataContract(XmlQualifiedName typeName)
         {
             if (typeName == null)
@@ -178,7 +178,7 @@ namespace System.Runtime.Serialization.Schema
             return dataContract;
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public ICollection<CodeTypeReference>? GetKnownTypeReferences(XmlQualifiedName typeName)
         {
             if (typeName == null)
@@ -216,16 +216,13 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         private void InternalImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement> elements, XmlQualifiedName[] elementTypeNames/*filled on return*/)
         {
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 DataContractSet.ImportSchemaSet(schemas, typeNames, elements, elementTypeNames/*filled on return*/, ImportXmlDataType);
-                // TODO smolloy - The above used to be done as below... but to keep SchemaImporter internal it is now done as above.
-                //SchemaImporter schemaImporter = new SchemaImporter(schemas, typeNames, elements, elementTypeNames/*filled on return*/, DataContractSet, ImportXmlDataType);
-                //schemaImporter.Import();
 
                 CodeExporter codeExporter = new CodeExporter(DataContractSet, Options, CodeCompileUnit);
                 codeExporter.Export();
@@ -245,16 +242,13 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
-        [RequiresUnreferencedCode("Placeholder Warning")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         private bool InternalCanImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement> elements, XmlQualifiedName[] elementTypeNames)
         {
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 DataContractSet.ImportSchemaSet(schemas, typeNames, elements, elementTypeNames/*filled on return*/, ImportXmlDataType);
-                // TODO smolloy - The above used to be done as below... but to keep SchemaImporter internal it is now done as above.
-                //SchemaImporter schemaImporter = new SchemaImporter(schemas, typeNames, elements, elementTypeNames, DataContractSet, ImportXmlDataType);
-                //schemaImporter.Import();
                 return true;
             }
             catch (ArgumentException)
