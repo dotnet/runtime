@@ -3155,24 +3155,18 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         {
             // Bingo - add it to our table
             regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), regType);
+            slots     = 1;
 
-            noway_assert(regArgNum < argMax);
-            // We better not have added it already (there better not be multiple vars representing this argument
-            // register)
-            noway_assert(regArgTab[regArgNum].slot == 0);
-
-#if defined(UNIX_AMD64_ABI)
-            // Set the register type.
-            regArgTab[regArgNum].type = regType;
-#endif // defined(UNIX_AMD64_ABI)
-
-            regArgTab[regArgNum].varNum = varNum;
-            regArgTab[regArgNum].slot   = 1;
-
-            slots = 1;
-
+            if (TargetArchitecture::IsArm32)
+            {
+                int lclSize = compiler->lvaLclSize(varNum);
+                if (lclSize > REGSIZE_BYTES)
+                {
+                    slots = lclSize / REGSIZE_BYTES;
+                }
+            }
 #if FEATURE_MULTIREG_ARGS
-            if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+            else if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
             {
                 if (varDsc->lvIsHfaRegArg())
                 {
@@ -3186,47 +3180,40 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     // We have a non-HFA multireg argument, set slots to two
                     slots = 2;
                 }
-
-                // Note that regArgNum+1 represents an argument index not an actual argument register.
-                // see genMapRegArgNumToRegNum(unsigned argNum, var_types type)
-
-                // This is the setup for the rest of a multireg struct arg
-
-                for (int i = 1; i < slots; i++)
-                {
-                    noway_assert((regArgNum + i) < argMax);
-
-                    // We better not have added it already (there better not be multiple vars representing this argument
-                    // register)
-                    noway_assert(regArgTab[regArgNum + i].slot == 0);
-
-                    regArgTab[regArgNum + i].varNum = varNum;
-                    regArgTab[regArgNum + i].slot   = (char)(i + 1);
-                }
             }
 #endif // FEATURE_MULTIREG_ARGS
-        }
 
-#ifdef TARGET_ARM
-        int lclSize = compiler->lvaLclSize(varNum);
-
-        if (lclSize > REGSIZE_BYTES)
-        {
-            unsigned maxRegArgNum = doingFloat ? MAX_FLOAT_REG_ARG : MAX_REG_ARG;
-            slots                 = lclSize / REGSIZE_BYTES;
-            if (regArgNum + slots > maxRegArgNum)
+            // Handle args split between registers and stack. The arm64 fixed ret buf arg is never split.
+            if (compFeatureArgSplit() && (fixedRetBufIndex != regArgNum))
             {
-                slots = maxRegArgNum - regArgNum;
+                unsigned maxRegArgNum = doingFloat ? MAX_FLOAT_REG_ARG : MAX_REG_ARG;
+                if (regArgNum + slots > maxRegArgNum)
+                {
+                    JITDUMP("Splitting V%02u: %u registers, %u stack slots\n", varNum, maxRegArgNum - regArgNum,
+                            regArgNum + slots - maxRegArgNum);
+                    slots = maxRegArgNum - regArgNum;
+                }
+            }
+
+            // Note that regArgNum + 1 represents an argument index not an actual argument register;
+            // see genMapRegArgNumToRegNum().
+
+            for (int i = 0; i < slots; i++)
+            {
+                noway_assert((regArgNum + i) < argMax);
+
+                // We better not have added it already (there better not be multiple vars representing this argument
+                // register)
+                noway_assert(regArgTab[regArgNum + i].slot == 0);
+
+                regArgTab[regArgNum + i].varNum = varNum;
+                regArgTab[regArgNum + i].slot   = static_cast<char>(i + 1);
+
+#if defined(UNIX_AMD64_ABI)
+                regArgTab[regArgNum + i].type = regType; // Set the register type.
+#endif                                                   // defined(UNIX_AMD64_ABI)
             }
         }
-        C_ASSERT((char)MAX_REG_ARG == MAX_REG_ARG);
-        assert(slots < INT8_MAX);
-        for (int i = 1; i < slots; i++)
-        {
-            regArgTab[regArgNum + i].varNum = varNum;
-            regArgTab[regArgNum + i].slot   = static_cast<char>(i + 1);
-        }
-#endif // TARGET_ARM
 
         for (int i = 0; i < slots; i++)
         {
