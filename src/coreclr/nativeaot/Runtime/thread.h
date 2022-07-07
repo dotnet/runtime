@@ -156,9 +156,6 @@ private:
     void CrossThreadUnhijack();
     void UnhijackWorker();
     void EnsureRuntimeInitialized();
-#ifdef _DEBUG
-    bool DebugIsSuspended();
-#endif
 
     //
     // SyncState members

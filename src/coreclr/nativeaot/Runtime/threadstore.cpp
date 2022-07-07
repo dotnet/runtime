@@ -232,14 +232,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
                 keepWaiting = true;
                 pTargetThread->Hijack();
             }
-            else if (pTargetThread->DangerousCrossThreadIsHijacked())
-            {
-                // Once a thread is safely in preemptive mode, we must wait until it is also
-                // unhijacked.  This is done because, otherwise, we might race on into the
-                // stackwalk and find the hijack still on the stack, which will cause the
-                // stackwalking code to crash.
-                keepWaiting = true;
-            }
         }
         END_FOREACH_THREAD
 

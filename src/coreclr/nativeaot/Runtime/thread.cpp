@@ -77,7 +77,6 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         // set preemptive mode
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, pTransitionFrame);
 
-        Unhijack();
         RedhawkGCInterface::WaitForGCCompletion();
 
         // must be in cooperative mode when checking the trap flag
@@ -139,8 +138,6 @@ void Thread::EnablePreemptiveMode()
 #if !defined(HOST_WASM)
     ASSERT(m_pDeferredTransitionFrame != NULL);
 #endif
-
-    Unhijack();
 
     // set preemptive mode
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
@@ -388,10 +385,12 @@ void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
 
 void Thread::GcScanRoots(void * pfnEnumCallback, void * pvCallbackData)
 {
+    this->CrossThreadUnhijack();
+
 #ifdef HOST_WASM
     GcScanWasmShadowStack(pfnEnumCallback, pvCallbackData);
 #else
-    StackFrameIterator  frameIterator(this, GetTransitionFrame());
+    StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
 #endif
 }
@@ -791,9 +790,10 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
         // ASSERT(pvRetAddr != NULL);
         // ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
 
-        // TODO: VS   HACK, HACK
-        //            we should always get a valid address or explicitly not able to get one
-        //            this is a workaround for VirtualUnwind returning bogus locatiaon sometimes
+        // TODO:      HACK, HACK
+        //            we should always get a valid address or explicitly be unable to get one
+        //            this is a workaround for VirtualUnwind returning bogus location sometimes
+        //            We need to find a more reliable way to detect cases when VirtualUnwind may not work.
         if (!StackFrameIterator::IsValidReturnAddress(pvRetAddr))
             return;
 
@@ -863,18 +863,36 @@ bool Thread::Redirect()
 void Thread::Unhijack()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
+    ASSERT(IsCurrentThreadInCooperativeMode());
+
     UnhijackWorker();
 }
 
-// This unhijack routine is only called from Thread::InternalHijack() to undo a possibly existing
-// hijack before placing a new one. Although there are many code sequences (here and in asm) to
-// perform an unhijack operation, they will never execute concurrently. A thread may unhijack itself
-// at any time so long as it does so from unmanaged code. This ensures that another thread will not
-// suspend it and attempt to unhijack it, since we only suspend threads that are executing managed
-// code.
+// This unhijack routine is called to undo a hijack, that is potentially on a different thread.
+// 
+// Although there are many code sequences (here and in asm) to
+// perform an unhijack operation, they will never execute concurrently:
+// 
+// - A thread may unhijack itself at any time so long as it does that from unmanaged code while in coop mode.
+//   This ensures that coop thread can access its stack synchronously.
+//   Unhijacking from unmanaged code ensures that another thread will not attempt to hijack it,
+//   since we only hijack threads that are executing managed code.
+// 
+// - A GC thread may access a thread asynchronously, including unhijacking it.
+//   Asynchronously accessed thread must be in preemptive mode and should not
+//   access the managed portion of its stack.
+// 
+// - A thread that owns the suspension can access another thread as long as the other thread is
+//   in preemptive mode or suspended in managed code.
+//   Either way the other thread cannot be accessing its hijack.
+//
 void Thread::CrossThreadUnhijack()
 {
-    ASSERT((ThreadStore::GetCurrentThread() == this) || DebugIsSuspended());
+    ASSERT(((ThreadStore::GetCurrentThread() == this) && IsCurrentThreadInCooperativeMode()) ||
+        ThreadStore::GetCurrentThread()->IsGCSpecial() ||
+        ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread()
+    );
+
     UnhijackWorker();
 }
 
@@ -897,22 +915,6 @@ void Thread::UnhijackWorker()
     m_pvHijackedReturnAddress           = NULL;
     m_uHijackedReturnValueFlags         = 0;
 }
-
-#if _DEBUG
-bool Thread::DebugIsSuspended()
-{
-    ASSERT(ThreadStore::GetCurrentThread() != this);
-#if 0
-    PalSuspendThread(m_hPalThread);
-    uint32_t suspendCount = PalResumeThread(m_hPalThread);
-    return (suspendCount > 0);
-#else
-    // @TODO: I don't trust the above implementation, so I want to implement this myself
-    // by marking the thread state as "yes, we suspended it" and checking that state here.
-    return true;
-#endif
-}
-#endif
 
 // @TODO: it would be very, very nice if we did not have to bleed knowledge of hijacking
 // and hijack state to other components in the runtime. For now, these are only used
