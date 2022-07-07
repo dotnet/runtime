@@ -6,20 +6,18 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-#if !NETCOREAPP
-	[Reference ("System.Core.dll")]
-#endif
-	[SkipKeptItemsValidation]
 	[SetupLinkAttributesFile ("AddSuppressionsBeforeAttributeRemoval.xml")]
-	[LogDoesNotContain ("IL2067: Mono.Linker.Tests.Cases.Warnings.WarningSuppression.AddSuppressionsBeforeAttributeRemoval.Main()")]
+
+	[ExpectedNoWarnings]
 	public class AddSuppressionsBeforeAttributeRemoval
 	{
+		[Kept]
 		public static Type TriggerUnrecognizedPattern ()
 		{
 			return typeof (AddedPseudoAttributeAttribute);
 		}
 
-		[UnconditionalSuppressMessage ("ILLinker", "IL2067")]
+		[UnconditionalSuppressMessage ("ILLinker", "IL2072")]
 		public static void Main ()
 		{
 			Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
