@@ -834,7 +834,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
 
     if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        if (FastInterlockCompareExchangePointer(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
+        if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
         {
             ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
             shuffleThunkWriterHolder.GetRW()->DecRef();
@@ -843,7 +843,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     }
     else
     {
-        if (FastInterlockCompareExchangePointer(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
+        if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
         {
             ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
             shuffleThunkWriterHolder.GetRW()->DecRef();
@@ -924,9 +924,9 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
 
     // get the name in UTF8 format
-    SString wszName(SString::Literal, gc.methodName->GetBuffer());
-    StackScratchBuffer utf8Name;
-    LPCUTF8 szNameStr = wszName.GetUTF8(utf8Name);
+    StackSString szName;
+    szName.SetAndConvertToUTF8(gc.methodName->GetBuffer());
+    LPCUTF8 szNameStr = szName.GetUTF8();
 
     // pick a proper compare function
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
@@ -1273,7 +1273,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
                 uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pInvokeMeth);
 
-                if (FastInterlockCompareExchangePointer(&(pClass->m_pUMThunkMarshInfo),
+                if (InterlockedCompareExchangeT(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
                 {
@@ -1487,34 +1487,6 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
     return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
-
-
-
-FCIMPL2(FC_BOOL_RET, COMDelegate::CompareUnmanagedFunctionPtrs, Object *refDelegate1UNSAFE, Object *refDelegate2UNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(refDelegate1UNSAFE != NULL);
-        PRECONDITION(refDelegate2UNSAFE != NULL);
-    }
-    CONTRACTL_END;
-
-    DELEGATEREF refD1 = (DELEGATEREF) ObjectToOBJECTREF(refDelegate1UNSAFE);
-    DELEGATEREF refD2 = (DELEGATEREF) ObjectToOBJECTREF(refDelegate2UNSAFE);
-    BOOL ret = FALSE;
-
-    // Make sure this is an unmanaged function pointer wrapped in a delegate.
-    CONSISTENCY_CHECK(DELEGATE_MARKER_UNMANAGEDFPTR == refD1->GetInvocationCount());
-    CONSISTENCY_CHECK(DELEGATE_MARKER_UNMANAGEDFPTR == refD2->GetInvocationCount());
-
-    ret = (refD1->GetMethodPtr() == refD2->GetMethodPtr() &&
-           refD1->GetMethodPtrAux() == refD2->GetMethodPtrAux());
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
 
 void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
 {
@@ -2028,30 +2000,6 @@ FCIMPL1(Object*, COMDelegate::InternalAllocLike, Object* pThis)
     return OBJECTREFToObject(refRetVal);
 }
 FCIMPLEND
-
-FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualTypes, Object* pThis, Object *pThat)
-{
-    FCALL_CONTRACT;
-
-    MethodTable *pThisMT = pThis->GetMethodTable();
-    MethodTable *pThatMT = pThat->GetMethodTable();
-
-    _ASSERTE(pThisMT != NULL && pThisMT->IsDelegate());
-    _ASSERTE(pThatMT != NULL);
-
-    BOOL bResult = (pThisMT == pThatMT);
-
-    if (!bResult)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        bResult = pThisMT->IsEquivalentTo(pThatMT);
-        HELPER_METHOD_FRAME_END();
-    }
-
-    FC_RETURN_BOOL(bResult);
-}
-FCIMPLEND
-
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {

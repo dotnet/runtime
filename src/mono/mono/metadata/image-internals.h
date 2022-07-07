@@ -9,16 +9,27 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader-internals.h>
 
+typedef struct {
+	gboolean dont_care_about_cli : 1;
+	gboolean dont_care_about_pecoff : 1;
+} MonoImageLoadOptions;
+
+typedef struct {
+	MonoImageLoadOptions load_options;
+	int not_executable : 1;
+	int metadata_only : 1;
+} MonoImageOpenOptions;
+
 MonoImage*
 mono_image_loaded_internal (MonoAssemblyLoadContext *alc, const char *name);
 
 MonoImage*
-mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError *error);
+mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, MonoError *error);
 
 MonoImage*
-mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error);
+mono_image_load_module_checked (MonoImage *image, uint32_t idx, MonoError *error);
 
 MonoImage *
-mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
+mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, const MonoImageOpenOptions *options);
 
 #endif /* __MONO_METADATA_IMAGE_INTERNALS_H__ */

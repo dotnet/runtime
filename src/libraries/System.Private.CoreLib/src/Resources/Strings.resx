@@ -1098,6 +1098,9 @@
   <data name="Argument_InvalidPreallocateMode" xml:space="preserve">
     <value>Preallocation size can be requested only for new files.</value>
   </data>
+  <data name="Argument_InvalidUnixCreateMode" xml:space="preserve">
+    <value>UnixCreateMode can be requested only for modes that can create new files.</value>
+  </data>
   <data name="Argument_InvalidArgumentForComparison" xml:space="preserve">
     <value>Type of argument is not compatible with the generic comparer.</value>
   </data>
@@ -2266,6 +2269,9 @@
   <data name="Format_InvalidString" xml:space="preserve">
     <value>Input string was not in a correct format.</value>
   </data>
+  <data name="Format_InvalidStringWithValue" xml:space="preserve">
+    <value>The input string '{0}' was not in a correct format.</value>
+  </data>
   <data name="Format_MissingIncompleteDate" xml:space="preserve">
     <value>There must be at least a partial date with a year present in the input string '{0}'.</value>
   </data>
@@ -2791,6 +2797,9 @@
   <data name="NotSupported_ByRefLikeArray" xml:space="preserve">
     <value>Cannot create arrays of ByRef-like values.</value>
   </data>
+  <data name="CannotUseByRefLikeTypeInInstantiation" xml:space="preserve">
+    <value>Cannot instantiate a generic type on a ByRef-like type.</value>
+  </data>
   <data name="NotSupported_ByRefToByRefLikeReturn" xml:space="preserve">
     <value>ByRef to ByRef-like return values are not supported in reflection invocation.</value>
   </data>
@@ -3087,6 +3096,9 @@
   </data>
   <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
     <value>Strong-name signing is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_UnixFileMode" xml:space="preserve">
+    <value>Unix file modes are not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_OverlappedIO" xml:space="preserve">
     <value>This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.</value>
@@ -3529,6 +3541,15 @@
   <data name="Arg_NullArgumentNullRef" xml:space="preserve">
     <value>The method was called with a null array argument.</value>
   </data>
+  <data name="Argument_AggressiveGCRequiresMaxGeneration" xml:space="preserve">
+    <value>AggressiveGC requires setting the generation parameter to MaxGeneration</value>
+  </data>
+  <data name="Argument_AggressiveGCRequiresBlocking" xml:space="preserve">
+    <value>AggressiveGC requires setting the blocking parameter to true.</value>
+  </data>
+  <data name="Argument_AggressiveGCRequiresCompacting" xml:space="preserve">
+    <value>AggressiveGC requires setting the compacting parameter to true.</value>
+  </data>
   <data name="Argument_CannotPrepareAbstract" xml:space="preserve">
     <value>Abstract methods cannot be prepared.</value>
   </data>
@@ -3748,6 +3769,9 @@
   <data name="Arg_InvalidFileAttrs" xml:space="preserve">
     <value>Invalid File or Directory attributes value.</value>
   </data>
+  <data name="Arg_InvalidUnixFileMode" xml:space="preserve">
+    <value>Invalid UnixFileMode value.</value>
+  </data>
   <data name="Arg_Path2IsRooted" xml:space="preserve">
     <value>Second path fragment must not be a drive or UNC name.</value>
   </data>
@@ -3930,5 +3954,38 @@
   </data>
   <data name="DelegateMarshalling_MissingInteropData" xml:space="preserve">
     <value>{0} is missing delegate marshalling data. To enable delegate marshalling data, add a MarshalDelegate directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+  </data>
+  <data name="Argument_AssemblyGetTypeCannotSpecifyAssembly" xml:space="preserve">
+    <value>Type names passed to Assembly.GetType() must not specify an assembly.</value>
+  </data>
+  <data name="NoMetadataTokenAvailable" xml:space="preserve">
+    <value>There is no metadata token available for the given member.</value>
+  </data>
+  <data name="ArgumentException_InvalidTypeArgument" xml:space="preserve">
+    <value>The type '{0}' may not be used as a type argument.</value>
+  </data>
+  <data name="ArgumentException_InvalidArrayElementType" xml:space="preserve">
+    <value>The type '{0}' may not be used as an array element type.</value>
+  </data>
+  <data name="PlatformNotSupported_NoTypeHandleForOpenTypes" xml:space="preserve">
+    <value>TypeHandles are not supported for types that return true for ContainsGenericParameters.</value>
+  </data>
+  <data name="Reflection_CustomReflectionObjectsNotSupported" xml:space="preserve">
+    <value>The type '{0}' was created by a custom ReflectionContext and cannot be used here.</value>
+  </data>
+  <data name="CannotCreateByRefOfByRef" xml:space="preserve">
+    <value>Cannot create a byref of a byref: {0}</value>
+  </data>
+  <data name="CannotCreatePointerOfByRef" xml:space="preserve">
+    <value>Cannot create a pointer to a byref: {0}</value>
+  </data>
+  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
+    <value>The type '{0}' cannot be found.</value>
+  </data>
+  <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
+    <value>The type '{0}' cannot be found in assembly '{1}'.</value>
+  </data>
+  <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
+    <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
   </data>
 </root>

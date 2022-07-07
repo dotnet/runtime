@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml;
+using System.Xml.XPath;
+using MS.Internal.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Xml;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
-
     internal sealed class ActionFrame
     {
         private int _state;         // Action execution state
@@ -109,27 +109,19 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void SetParameter(XmlQualifiedName name, object value)
         {
-            if (_withParams == null)
-            {
-                _withParams = new Hashtable();
-            }
+            _withParams ??= new Hashtable();
             Debug.Assert(!_withParams.Contains(name), "We should check duplicate params at compile time");
             _withParams[name] = value;
         }
 
         internal void ResetParams()
         {
-            if (_withParams != null)
-                _withParams.Clear();
+            _withParams?.Clear();
         }
 
         internal object? GetParameter(XmlQualifiedName name)
         {
-            if (_withParams != null)
-            {
-                return _withParams[name];
-            }
-            return null;
+            return _withParams?[name];
         }
 
         internal void InitNodeSet(XPathNodeIterator nodeSet)

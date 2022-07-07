@@ -8,9 +8,10 @@ namespace Sample
 {
     public class Test
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
+            return 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

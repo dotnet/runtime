@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Text;
+using System.IO;
+using System.Net;
+using System.Diagnostics;
+using System.Xml.Schema;
+using System.Xml.XPath;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Collections;
-    using System.Text;
-    using System.IO;
-    using System.Net;
-    using System.Diagnostics;
-    using System.Xml.Schema;
-    using System.Xml.XPath;
-    using System.Diagnostics.CodeAnalysis;
-
 #pragma warning disable 618
 
     internal sealed class DtdValidator : BaseValidator
@@ -417,17 +417,13 @@ namespace System.Xml.Schema
             // Note: It used to be true that we only called this if _fValidate was true,
             // but due to the fact that you can now dynamically type somethign as an ID
             // that is no longer true.
-            if (_IDs == null)
-            {
-                _IDs = new Hashtable();
-            }
-
+            _IDs ??= new Hashtable();
             _IDs.Add(name, node);
         }
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs?[name];
         }
 
         private bool GenEntity(XmlQualifiedName qname)
@@ -570,10 +566,7 @@ namespace System.Xml.Schema
         {
             try
             {
-                if (baseUriStr == null)
-                {
-                    baseUriStr = string.Empty;
-                }
+                baseUriStr ??= string.Empty;
                 XmlSchemaDatatype dtype = attdef.Datatype;
                 if (dtype == null)
                 {

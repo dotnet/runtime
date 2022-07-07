@@ -22,4 +22,24 @@ PALEXPORT int32_t SystemCryptoNativeBrowser_SimpleDigestHash(
     uint8_t* output_buffer,
     int32_t output_len);
 
-PALEXPORT int32_t SystemCryptoNativeBrowser_CanUseSimpleDigestHash(void);
+PALEXPORT int32_t SystemCryptoNativeBrowser_Sign(
+    enum simple_digest ver,
+    uint8_t* key_buffer,
+    int32_t key_len,
+    uint8_t* input_buffer,
+    int32_t input_len,
+    uint8_t* output_buffer,
+    int32_t output_len);
+
+PALEXPORT int32_t SystemCryptoNativeBrowser_EncryptDecrypt(
+    int32_t encrypting,
+    uint8_t* key_buffer,
+    int32_t key_len,
+    uint8_t* iv_buffer,
+    int32_t iv_len,
+    uint8_t* input_buffer,
+    int32_t input_len,
+    uint8_t* output_buffer,
+    int32_t output_len);
+
+PALEXPORT int32_t SystemCryptoNativeBrowser_CanUseSubtleCryptoImpl(void);

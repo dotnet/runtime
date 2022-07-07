@@ -214,8 +214,6 @@ export function mono_wasm_web_socket_close_ref(webSocket_js_handle: JSHandle, co
             const { then_js_handle } = _wrap_js_thenable_as_task_root(promise, result_root);
             // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
             Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
-
-            return;
         }
         else {
             if (!mono_wasm_web_socket_close_warning) {
@@ -229,7 +227,6 @@ export function mono_wasm_web_socket_close_ref(webSocket_js_handle: JSHandle, co
             }
             Module.setValue(thenable_js_handle, 0, "i32");
             result_root.clear();
-            return;
         }
     }
     catch (ex) {

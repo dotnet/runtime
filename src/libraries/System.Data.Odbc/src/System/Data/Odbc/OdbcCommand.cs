@@ -163,8 +163,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                string? value = _commandText;
-                return ((null != value) ? value : string.Empty);
+                return _commandText ?? string.Empty;
             }
             set
             {
@@ -412,10 +411,7 @@ namespace System.Data.Odbc
                 _connection.AddWeakReference(this, OdbcReferenceCollection.CommandTag);
             }
 
-            if (_cmdWrapper._dataReaderBuf == null)
-            {
-                _cmdWrapper._dataReaderBuf = new CNativeBuffer(4096);
-            }
+            _cmdWrapper._dataReaderBuf ??= new CNativeBuffer(4096);
 
             // if there is already a statement handle we need to do some cleanup
             //

@@ -109,9 +109,7 @@ namespace System.Security.Cryptography
                 wszUpgrade = UpgradeDSS(dwType, providerNameString);
             }
 
-            return wszUpgrade != null ?
-                wszUpgrade : // Overwrite the provider name with the upgraded provider name
-                providerNameString;
+            return wszUpgrade ?? providerNameString;
         }
 
         /// <summary>
@@ -1034,9 +1032,7 @@ namespace System.Security.Cryptography
             if (nameOrOid == null)
                 return CapiHelper.CALG_SHA1;
 
-            string? oidValue = CryptoConfig.MapNameToOID(nameOrOid);
-            if (oidValue == null)
-                oidValue = nameOrOid; // we were probably passed an OID value directly
+            string oidValue = CryptoConfig.MapNameToOID(nameOrOid) ?? nameOrOid; // we were probably passed an OID value directly
 
             int algId = GetAlgIdFromOid(oidValue, oidGroup);
             if (algId == 0 || algId == -1)

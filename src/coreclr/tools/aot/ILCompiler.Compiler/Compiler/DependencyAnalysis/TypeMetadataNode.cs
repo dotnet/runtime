@@ -46,11 +46,14 @@ namespace ILCompiler.DependencyAnalysis
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             if (_type.IsDelegate)
             {
-                // A delegate type metadata is rather useless without the Invoke method.
-                // If someone reflects on a delegate, chances are they're going to look at the signature.
+                // We've decided as a policy that delegate Invoke methods will be generated in full.
+                // The libraries (e.g. System.Linq.Expressions) have trimming warning suppressions
+                // in places where they assume IL-level trimming (where the method cannot be removed).
+                // We ask for a full reflectable method with its method body instead of just the
+                // metadata.
                 var invokeMethod = _type.GetMethod("Invoke", null);
                 if (!mdManager.IsReflectionBlocked(invokeMethod))
-                    dependencies.Add(factory.MethodMetadata(invokeMethod), "Delegate invoke method metadata");
+                    dependencies.Add(factory.ReflectableMethod(invokeMethod), "Delegate invoke method");
             }
 
             if (_type.IsEnum)
@@ -58,6 +61,16 @@ namespace ILCompiler.DependencyAnalysis
                 // A lot of the enum reflection actually happens on top of the respective MethodTable (e.g. getting the underlying type),
                 // so for enums also include their MethodTable.
                 dependencies.Add(factory.MaximallyConstructableType(_type), "Reflectable enum");
+
+                // Enums are not useful without their literal fields. The literal fields are not referenced
+                // from anywhere (source code reference to enums compiles to the underlying numerical constants in IL).
+                foreach (FieldDesc enumField in _type.GetFields())
+                {
+                    if (enumField.IsLiteral)
+                    {
+                        dependencies.Add(factory.FieldMetadata(enumField), "Value of a reflectable enum");
+                    }
+                }
             }
 
             // If the user asked for complete metadata to be generated for all types that are getting metadata, ensure that.

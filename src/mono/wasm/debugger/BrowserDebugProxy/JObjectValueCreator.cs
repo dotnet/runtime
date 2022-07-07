@@ -75,12 +75,15 @@ internal sealed class JObjectValueCreator
             _ => null
         };
 
-    public static JObject CreateNull(string className!!)
-        => Create<object>(value: null,
+    public static JObject CreateNull(string className)
+    {
+        ArgumentNullException.ThrowIfNull(className);
+        return Create<object>(value: null,
                           type: "object",
                           description: className,
                           className: className,
                           subtype: "null");
+    }
 
     public async Task<JObject> ReadAsVariableValue(
         MonoBinaryReader retDebuggerCmdReader,

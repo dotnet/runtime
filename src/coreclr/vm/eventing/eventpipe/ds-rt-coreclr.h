@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
+#include <clrconfignocache.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
@@ -342,13 +343,15 @@ ds_rt_server_log_pause_message (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	CLRConfigStringHolder ports(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend ();
+	const char diagPortsName[] = "DOTNET_DiagnosticPorts";
+	CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
+	LPCSTR ports = diagPorts.AsString();
 
-	DWORD dotnetDiagnosticPortSuspend = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend);
-	wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n"));
-	wprintf(W("DOTNET_DiagnosticPorts=\"%s\"\n"), ports == nullptr ? W("") : ports.GetValue());
-	wprintf(W("DOTNET_DefaultDiagnosticPortSuspend=%d\n"), port_suspended);
+	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend();
+
+	printf("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
+	printf("%s=\"%s\"\n", diagPortsName, ports == nullptr ? "" : ports);
+	printf("DOTNET_DefaultDiagnosticPortSuspend=%u\n", port_suspended);
 	fflush(stdout);
 }
 

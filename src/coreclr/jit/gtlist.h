@@ -46,6 +46,7 @@ GTNODE(CNS_INT          , GenTreeIntCon      ,0,GTK_LEAF)
 GTNODE(CNS_LNG          , GenTreeLngCon      ,0,GTK_LEAF)
 GTNODE(CNS_DBL          , GenTreeDblCon      ,0,GTK_LEAF)
 GTNODE(CNS_STR          , GenTreeStrCon      ,0,GTK_LEAF)
+GTNODE(CNS_VEC          , GenTreeVecCon      ,0,GTK_LEAF)
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):
@@ -89,7 +90,9 @@ GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) 
 GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
-GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)
+GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
+GTNODE(MDARR_LENGTH     , GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension
+GTNODE(MDARR_LOWER_BOUND, GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array lower bound of a specific dimension
 GTNODE(FIELD            , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Member-field
 GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // object allocator
 
@@ -143,15 +146,21 @@ GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
+GTNODE(SELECT           , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CEQ              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CNE              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CLT              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CLE              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CGE              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CGT              , GenTreeConditional ,0,GTK_SPECIAL)
+
 GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(QMARK            , GenTreeQmark       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)
 GTNODE(COLON            , GenTreeColon       ,0,GTK_BINOP|DBK_NOTLIR)
 
-GTNODE(INDEX            , GenTreeIndex       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR) // SZ-array-element.
-GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,GTK_BINOP|GTK_EXOP)            // Addr of SZ-array-element; used when aiming to minimize compile times.
-
+GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,GTK_BINOP|GTK_EXOP)   // Address of SZ-array-element.
 GTNODE(MKREFANY         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
-GTNODE(LEA              , GenTreeAddrMode    ,0,GTK_BINOP|GTK_EXOP)
+GTNODE(LEA              , GenTreeAddrMode    ,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 
 #if !defined(TARGET_64BIT)
 // A GT_LONG node simply represents the long value produced by the concatenation
@@ -220,6 +229,7 @@ GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
+GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditional, negate, signed less than result
 #endif
 
 //-----------------------------------------------------------------------------

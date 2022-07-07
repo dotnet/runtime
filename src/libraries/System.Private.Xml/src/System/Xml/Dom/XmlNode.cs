@@ -581,11 +581,7 @@ namespace System.Xml
         // Adds the specified node to the end of the list of children of this node.
         public virtual XmlNode? AppendChild(XmlNode newChild)
         {
-            XmlDocument? thisDoc = OwnerDocument;
-            if (thisDoc == null)
-            {
-                thisDoc = this as XmlDocument;
-            }
+            XmlDocument? thisDoc = OwnerDocument ?? this as XmlDocument;
             if (!IsContainer)
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Contain);
 
@@ -778,7 +774,7 @@ namespace System.Xml
                                 firstChildTextLikeNode = null;
                             }
 
-                            sb.Remove(0, sb.Length);
+                            sb.Clear();
                             break;
                         }
                 }
@@ -1166,8 +1162,7 @@ namespace System.Xml
         // the prefix defined in that declaration.
         public virtual string GetPrefixOfNamespace(string namespaceURI)
         {
-            string? prefix = GetPrefixOfNamespaceStrict(namespaceURI);
-            return prefix != null ? prefix : string.Empty;
+            return GetPrefixOfNamespaceStrict(namespaceURI) ?? string.Empty;
         }
 
         internal string? GetPrefixOfNamespaceStrict(string namespaceURI)

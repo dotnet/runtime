@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -19,7 +20,7 @@ using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal sealed class MsQuicConnection : QuicConnectionProvider
+    internal sealed class MsQuicConnection : IDisposable
     {
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
@@ -140,11 +141,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             try
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_CONNECTION_EVENT*, int> nativeCallback = &NativeCallback;
-                MsQuicApi.Api.ApiTable->SetCallbackHandler(
-                    _state.Handle.QuicHandle,
-                    nativeCallback,
-                    (void*)GCHandle.ToIntPtr(_state.StateGCHandle));
+                MsQuicApi.Api.ApiTable->SetConnectionCallback(_state.Handle.QuicHandle, &NativeCallback, (void*)GCHandle.ToIntPtr(_state.StateGCHandle));
             }
             catch
             {
@@ -198,15 +195,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override IPEndPoint? LocalEndPoint => _localEndPoint;
+        internal IPEndPoint? LocalEndPoint => _localEndPoint;
 
-        internal override EndPoint RemoteEndPoint => _remoteEndPoint;
+        internal EndPoint RemoteEndPoint => _remoteEndPoint;
 
-        internal override X509Certificate? RemoteCertificate => _state.RemoteCertificate;
+        internal X509Certificate? RemoteCertificate => _state.RemoteCertificate;
 
-        internal override SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedAlpnProtocol;
+        internal SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedAlpnProtocol;
 
-        internal override bool Connected => _state.Connected;
+        internal bool Connected => _state.Connected;
 
         private static unsafe int HandleEventConnected(State state, ref QUIC_CONNECTION_EVENT connectionEvent)
         {
@@ -443,7 +440,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
+        internal async ValueTask<MsQuicStream> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -461,7 +458,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        private async ValueTask<QuicStreamProvider> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
+        private async ValueTask<MsQuicStream> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             if (!Connected)
@@ -484,24 +481,24 @@ namespace System.Net.Quic.Implementations.MsQuic
             return stream;
         }
 
-        internal override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
+        internal ValueTask<MsQuicStream> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default)
             => OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL, cancellationToken);
-        internal override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default)
+        internal ValueTask<MsQuicStream> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default)
             => OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS.NONE, cancellationToken);
 
-        internal override int GetRemoteAvailableUnidirectionalStreamCount()
+        internal int GetRemoteAvailableUnidirectionalStreamCount()
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_LOCAL_UNIDI_STREAM_COUNT);
         }
 
-        internal override int GetRemoteAvailableBidirectionalStreamCount()
+        internal int GetRemoteAvailableBidirectionalStreamCount()
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_LOCAL_BIDI_STREAM_COUNT);
         }
 
-        internal unsafe override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        internal unsafe ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -540,15 +537,32 @@ namespace System.Net.Quic.Implementations.MsQuic
                 // We don't have way how to set separate SNI and name for connection at this moment.
                 // If the name is actually IP address we can use it to make at least some cases work for people
                 // who want to bypass DNS but connect to specific virtual host.
-                if (!string.IsNullOrEmpty(_state.TargetHost) && !dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && IPAddress.TryParse(dnsHost, out IPAddress? address))
+                if (!dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(_state.TargetHost))
                 {
-                    // This is form of IPAddress and _state.TargetHost is set to different string
-                    Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                    MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, new IPEndPoint(address, port));
                     targetHost = _state.TargetHost!;
+                    if (IPAddress.TryParse(dnsHost, out IPAddress? address))
+                    {
+                        // This is form of IPAddress and _state.TargetHost is set to different string
+                        Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+                        MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, new IPEndPoint(address, port));
+                    }
+                    else
+                    {
+                        IPAddress[] addresses = Dns.GetHostAddressesAsync(dnsHost, cancellationToken).GetAwaiter().GetResult();
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (addresses.Length == 0)
+                        {
+                            throw new SocketException((int)SocketError.HostNotFound);
+                        }
+                        Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+                        // We can do something better than just using first IP but that is what
+                        // MsQuic does today anyway.
+                        MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, new IPEndPoint(addresses[0], port));
+                    }
                 }
                 else
                 {
+                    // We defer everything to MsQuic.
                     targetHost = dnsHost;
                 }
             }
@@ -684,7 +698,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -761,7 +775,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // TODO: this appears abortive and will cause prior successfully shutdown and closed streams to drop data.
         // It's unclear how to gracefully wait for a connection to be 100% done.
-        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
+        internal ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             if (_disposed == 1)
             {

@@ -165,7 +165,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldloc (mb, index_var);
 				mono_mb_emit_byte (mb, CEE_LDELEM_REF);
 				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
-				mono_mb_emit_byte (mb, stind_op);
+				mono_mb_emit_byte (mb, GINT_TO_UINT8 (stind_op));
 			} else {
 				/* set the src_ptr */
 				mono_mb_emit_ldloc (mb, src_var);
@@ -181,8 +181,8 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_marshal_shared_emit_struct_conv_full (mb, eklass, FALSE, 0, eklass == mono_defaults.char_class ? encoding : (MonoMarshalNative)-1);
 			}
 
-			mono_mb_emit_add_to_local (mb, index_var, 1);
-			mono_mb_emit_add_to_local (mb, dest_ptr, esize);
+			mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (index_var), 1);
+			mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (dest_ptr), esize);
 
 			mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
@@ -334,8 +334,8 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				}
 			}
 
-			mono_mb_emit_add_to_local (mb, index_var, 1);
-			mono_mb_emit_add_to_local (mb, src_ptr, esize);
+			mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (index_var), 1);
+			mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (src_ptr), esize);
 
 			mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
@@ -560,8 +560,8 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			return conv_arg;
 		}
 
-		mono_mb_emit_add_to_local (mb, index_var, 1);
-		mono_mb_emit_add_to_local (mb, src_ptr, esize);
+		mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (index_var), 1);
+		mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (src_ptr), esize);
 
 		mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
@@ -675,7 +675,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LDELEM_REF);
 
 			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
-			mono_mb_emit_byte (mb, stind_op);
+			mono_mb_emit_byte (mb, GINT_TO_UINT8 (stind_op));
 		}
 		else {
 			char *msg = g_strdup ("Marshalling of non-string and non-blittable arrays to managed code is not implemented.");
@@ -683,8 +683,8 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			return conv_arg;
 		}
 
-		mono_mb_emit_add_to_local (mb, index_var, 1);
-		mono_mb_emit_add_to_local (mb, dest_ptr, esize);
+		mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (index_var), 1);
+		mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (dest_ptr), esize);
 
 		mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
@@ -772,7 +772,7 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LDELEM_REF);
 
 			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
-			mono_mb_emit_byte (mb, stind_op);
+			mono_mb_emit_byte (mb, GINT_TO_UINT8 (stind_op));
 		}
 		else {
 			char *msg = g_strdup ("Marshalling of non-string arrays to managed code is not implemented.");
@@ -780,8 +780,8 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			return conv_arg;
 		}
 
-		mono_mb_emit_add_to_local (mb, index_var, 1);
-		mono_mb_emit_add_to_local (mb, dest, esize);
+		mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (index_var), 1);
+		mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (dest), esize);
 
 		mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
@@ -1764,7 +1764,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
-			mono_mb_emit_byte (mb, stind_op);
+			mono_mb_emit_byte (mb, GINT_TO_UINT8 (stind_op));
 			need_free = TRUE;
 		}
 
@@ -1831,7 +1831,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldloc (mb, conv_arg);
 				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
-				mono_mb_emit_byte (mb, stind_op);
+				mono_mb_emit_byte (mb, GINT_TO_UINT8 (stind_op));
 			}
 		}
 		break;
@@ -2509,7 +2509,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldloc (mb, conv_arg);
 				mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN, &stind_op));
-				mono_mb_emit_byte (mb, stind_op);
+				mono_mb_emit_byte (mb, GINT_TO_UINT8 (stind_op));
 				break;
 			}
 		}

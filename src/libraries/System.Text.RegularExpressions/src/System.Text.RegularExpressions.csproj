@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
-    <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
     <Compile Include="System\Text\RegularExpressions\ValueMatch.cs" />
     <Compile Include="System\Threading\StackHelper.cs" />
     <Compile Include="System\Text\SegmentStringBuilder.cs" />
@@ -77,10 +76,11 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexInfo.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Dgml.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Explore.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Sample.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexRunnerFactory.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexThresholds.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UInt64Solver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryConditions.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryRanges.cs" />
@@ -90,6 +90,7 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Common\System\Collections\Generic\ValueListBuilder.Pop.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

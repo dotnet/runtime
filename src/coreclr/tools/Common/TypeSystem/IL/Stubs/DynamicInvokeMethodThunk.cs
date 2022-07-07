@@ -388,9 +388,7 @@ namespace Internal.IL.Stubs
             //
             // !if (ReturnType is ByRef)
             //   ByRefNull:
-            //   pop
-            //   call InvokeUtils.get_NullByRefValueSentinel
-            //   ret
+            //   throw NullReferenceException
 
             ILCodeLabel lStaticCall = emitter.NewCodeLabel();
             ILCodeLabel lProcessReturn = emitter.NewCodeLabel();
@@ -512,9 +510,8 @@ namespace Internal.IL.Stubs
             if (lByRefReturnNull != null)
             {
                 returnCodeStream.EmitLabel(lByRefReturnNull);
-                returnCodeStream.Emit(ILOpcode.pop);
-                returnCodeStream.Emit(ILOpcode.call, emitter.NewToken(InvokeUtilsType.GetKnownMethod("get_NullByRefValueSentinel", null)));
-                returnCodeStream.Emit(ILOpcode.ret);
+                MethodDesc nullReferencedExceptionHelper = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowInvokeNullRefReturned");
+                returnCodeStream.EmitCallThrowHelper(emitter, nullReferencedExceptionHelper);                
             }
 
             return emitter.Link(this);

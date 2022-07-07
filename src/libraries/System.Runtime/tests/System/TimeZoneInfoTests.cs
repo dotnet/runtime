@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Tests
@@ -2882,21 +2883,28 @@ namespace System.Tests
             Assert.Equal(TimeSpan.FromHours(12), fijiTZ.GetUtcOffset(utcDT));
             Assert.False(fijiTZ.IsDaylightSavingTime(utcDT));
 
-            utcDT = new DateTime(2022, 10, 1, 10, 0, 0, DateTimeKind.Utc);
-            Assert.Equal(TimeSpan.FromHours(12), fijiTZ.GetUtcOffset(utcDT));
-            Assert.False(fijiTZ.IsDaylightSavingTime(utcDT));
+            TimeZoneInfo.AdjustmentRule [] rules = fijiTZ.GetAdjustmentRules();
 
-            utcDT = new DateTime(2022, 12, 31, 11, 0, 0, DateTimeKind.Utc);
-            Assert.Equal(TimeSpan.FromHours(13), fijiTZ.GetUtcOffset(utcDT));
-            Assert.True(fijiTZ.IsDaylightSavingTime(utcDT));
+            // Some machines got some weird TZ data which not including all supported years' rules
+            // Avoid the test failures in such case.
+            if (rules.Length > 0 && rules[rules.Length - 1].DateStart.Year >= 2023)
+            {
+                utcDT = new DateTime(2022, 10, 1, 10, 0, 0, DateTimeKind.Utc);
+                Assert.Equal(TimeSpan.FromHours(12), fijiTZ.GetUtcOffset(utcDT));
+                Assert.False(fijiTZ.IsDaylightSavingTime(utcDT));
 
-            utcDT = new DateTime(2023, 1, 1, 10, 0, 0, DateTimeKind.Utc);
-            Assert.Equal(TimeSpan.FromHours(13), fijiTZ.GetUtcOffset(utcDT));
-            Assert.True(fijiTZ.IsDaylightSavingTime(utcDT));
+                utcDT = new DateTime(2022, 12, 31, 11, 0, 0, DateTimeKind.Utc);
+                Assert.Equal(TimeSpan.FromHours(13), fijiTZ.GetUtcOffset(utcDT));
+                Assert.True(fijiTZ.IsDaylightSavingTime(utcDT));
 
-            utcDT = new DateTime(2023, 2, 1, 0, 0, 0, DateTimeKind.Utc);
-            Assert.Equal(TimeSpan.FromHours(12), fijiTZ.GetUtcOffset(utcDT));
-            Assert.False(fijiTZ.IsDaylightSavingTime(utcDT));
+                utcDT = new DateTime(2023, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+                Assert.Equal(TimeSpan.FromHours(13), fijiTZ.GetUtcOffset(utcDT));
+                Assert.True(fijiTZ.IsDaylightSavingTime(utcDT));
+
+                utcDT = new DateTime(2023, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+                Assert.Equal(TimeSpan.FromHours(12), fijiTZ.GetUtcOffset(utcDT));
+                Assert.False(fijiTZ.IsDaylightSavingTime(utcDT));
+            }
         }
 
         [Fact]
@@ -2937,6 +2945,14 @@ namespace System.Tests
                 tzDisplayNames.Add(timezone.DisplayName);
             }
             Assert.Equal(tzCollection.Count, tzDisplayNames.Count);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [Trait(XunitConstants.Category, "AdditionalTimezoneChecks")]
+        public static void LocalTzIsNotUtc()
+        {
+            Assert.NotEqual(TimeZoneInfo.Utc.StandardName, TimeZoneInfo.Local.StandardName);
         }
 
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";

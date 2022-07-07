@@ -370,6 +370,22 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            if (nint.Size == sizeof(int))
+            {
+                Assert.Equal(unchecked((int)0xFFFF_FFFF), BinaryNumberHelper<nint>.AllBitsSet);
+                Assert.Equal(0, ~(int)BinaryNumberHelper<nint>.AllBitsSet);
+            }
+            else
+            {
+                Assert.Equal(unchecked((long)0xFFFF_FFFF_FFFF_FFFF), BinaryNumberHelper<nint>.AllBitsSet);
+                Assert.Equal(0L, ~(long)BinaryNumberHelper<nint>.AllBitsSet);
+            }
+
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             if (Environment.Is64BitProcess)

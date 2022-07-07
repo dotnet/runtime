@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.IO;
 using System.Net.Quic.Implementations;
+using System.Net.Quic.Implementations.MsQuic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,9 +13,9 @@ namespace System.Net.Quic
 {
     public sealed class QuicStream : Stream
     {
-        private readonly QuicStreamProvider _provider;
+        private readonly MsQuicStream _provider;
 
-        internal QuicStream(QuicStreamProvider provider)
+        internal QuicStream(MsQuicStream provider)
         {
             _provider = provider;
         }
@@ -122,10 +123,6 @@ namespace System.Net.Quic
         public ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, cancellationToken);
 
         public ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
-
-        public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, cancellationToken);
-
-        public ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default) => _provider.WriteAsync(buffers, endStream, cancellationToken);
 
         public ValueTask ShutdownCompleted(CancellationToken cancellationToken = default) => _provider.ShutdownCompleted(cancellationToken);
 

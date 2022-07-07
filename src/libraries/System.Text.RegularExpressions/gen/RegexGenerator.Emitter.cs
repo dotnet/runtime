@@ -1365,7 +1365,7 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 int numChars = RegexCharClass.GetSetChars(childStart.Str!, setChars);
                                 Debug.Assert(numChars != 0);
-                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(c => Literal(c)))}:");
+                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(Literal))}:");
                             }
                             else
                             {
@@ -2268,7 +2268,6 @@ namespace System.Text.RegularExpressions.Generator
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 // Before we handle general-purpose matching logic for nodes, handle any special-casing.
-                // -
                 if (rm.Tree.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
                     rm.Tree.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
                 {
@@ -3379,8 +3378,9 @@ namespace System.Text.RegularExpressions.Generator
                     // and thus it needs to be pushed on to the backtracking stack.
                     bool isInLoop = rm.Analysis.IsInLoop(node);
                     EmitStackPush(
-                        !isInLoop ? new[] { "pos" } :
-                        iterationMayBeEmpty ? new[] { "pos", iterationCount, startingPos!, sawEmpty! } :
+                        !isInLoop ? (expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } : new[] { "pos" }) :
+                        iterationMayBeEmpty ? (expressionHasCaptures ? new[] { "pos", iterationCount, startingPos!, sawEmpty!, "base.Crawlpos()" } : new[] { "pos", iterationCount, startingPos!, sawEmpty! }) :
+                        expressionHasCaptures ? new[] { "pos", iterationCount, "base.Crawlpos()"} :
                         new[] { "pos", iterationCount });
 
                     string skipBacktrack = ReserveName("LazyLoopSkipBacktrack");
@@ -3395,6 +3395,10 @@ namespace System.Text.RegularExpressions.Generator
                     // We're backtracking.  Check the timeout.
                     EmitTimeoutCheckIfNeeded(writer, rm);
 
+                    if (expressionHasCaptures)
+                    {
+                        EmitUncaptureUntil(StackPop());
+                    }
                     EmitStackPop(
                         !isInLoop ? new[] { "pos" } :
                         iterationMayBeEmpty ? new[] { sawEmpty!, startingPos!, iterationCount, "pos" } :

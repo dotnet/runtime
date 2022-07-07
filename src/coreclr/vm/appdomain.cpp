@@ -84,7 +84,6 @@
 //#define STRICT_CLSINITLOCK_ENTRY_LEAK_DETECTION
 
 static const WCHAR DEFAULT_DOMAIN_FRIENDLY_NAME[] = W("DefaultDomain");
-static const WCHAR OTHER_DOMAIN_FRIENDLY_NAME_PREFIX[] = W("Domain");
 
 #define STATIC_OBJECT_TABLE_BUCKET_SIZE 1020
 
@@ -108,8 +107,6 @@ static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 
 CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
-
-DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
 
 // Constructor for the PinnedHeapHandleBucket class.
 PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
@@ -906,7 +903,7 @@ OBJECTREF AppDomain::GetMissingObject()
         // Retrieve the value static field and store it.
         OBJECTHANDLE hndMissing = CreateHandle(pValueFD->GetStaticOBJECTREF());
 
-        if (FastInterlockCompareExchangePointer(&m_hndMissing, hndMissing, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_hndMissing, hndMissing, NULL) != NULL)
         {
             // Exchanged failed. The m_hndMissing did not equal NULL and was returned.
             DestroyHandle(hndMissing);
@@ -1042,6 +1039,10 @@ void SystemDomain::Attach()
     // Each domain gets its own ReJitManager, and ReJitManager has its own static
     // initialization to run
     ReJitManager::InitStatic();
+
+#ifdef FEATURE_READYTORUN
+    InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 }
 
 
@@ -1361,12 +1362,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // the SZArrayHelper class here.
     g_pSZArrayHelperClass = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
 
-    // Load ByReference class
-    //
-    // NOTE: ByReference<T> must be the first by-ref-like system type to be loaded,
-    //       because MethodTable::ClassifyEightBytesWithManagedLayout depends on it.
-    g_pByReferenceClass = CoreLibBinder::GetClass(CLASS__BYREFERENCE);
-
     // Load Nullable class
     g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);
 
@@ -1375,6 +1370,9 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // We have delayed allocation of CoreLib's static handles until we load the object class
     CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+
+    // Int32 has to be loaded first to break cycle in IShiftOperators
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4);
 
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
@@ -1600,58 +1598,6 @@ struct CallersDataWithStackMark
     MethodDesc* pFoundMethod;
     MethodDesc* pPrevMethod;
 };
-
-/*static*/
-MethodDesc* SystemDomain::GetCallersMethod(StackCrawlMark* stackMark)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-
-    CallersDataWithStackMark cdata;
-    ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
-    cdata.stackMark = stackMark;
-
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
-
-    if(cdata.pFoundMethod) {
-        return cdata.pFoundMethod;
-    } else
-        return NULL;
-}
-
-/*static*/
-MethodTable* SystemDomain::GetCallersType(StackCrawlMark* stackMark)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    CallersDataWithStackMark cdata;
-    ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
-    cdata.stackMark = stackMark;
-
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
-
-    if(cdata.pFoundMethod) {
-        return cdata.pFoundMethod->GetMethodTable();
-    } else
-        return NULL;
-}
 
 /*static*/
 Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
@@ -2445,7 +2391,7 @@ void FileLoadLock::SetError(Exception *ex)
 void FileLoadLock::AddRef()
 {
     LIMITED_METHOD_CONTRACT;
-    FastInterlockIncrement((LONG *) &m_dwRefCount);
+    InterlockedIncrement((LONG *) &m_dwRefCount);
 }
 
 UINT32 FileLoadLock::Release()
@@ -2458,7 +2404,7 @@ UINT32 FileLoadLock::Release()
     }
     CONTRACTL_END;
 
-    LONG count = FastInterlockDecrement((LONG *) &m_dwRefCount);
+    LONG count = InterlockedDecrement((LONG *) &m_dwRefCount);
     if (count == 0)
         delete this;
 
@@ -4089,7 +4035,7 @@ RCWRefCache *AppDomain::GetRCWRefCache()
 
     if (!m_pRCWRefCache) {
         NewHolder<RCWRefCache> pRCWRefCache = new RCWRefCache(this);
-        if (FastInterlockCompareExchangePointer(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
+        if (InterlockedCompareExchangeT(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
         {
             pRCWRefCache.SuppressRelease();
         }

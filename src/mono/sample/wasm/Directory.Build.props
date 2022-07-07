@@ -25,6 +25,7 @@
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <DebuggerSupport>false</DebuggerSupport>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
   </PropertyGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->

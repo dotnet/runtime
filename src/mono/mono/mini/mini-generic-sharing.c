@@ -682,7 +682,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 		 * contiguous.  So this is ok.
 		 */
 		g_assert (!m_field_is_from_update (field));
-		int i = field - m_class_get_fields (m_field_get_parent (field));
+		int i = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
 		gpointer dummy = NULL;
 
 		mono_metadata_free_type (inflated_type);
@@ -1472,7 +1472,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *csig, *gsharedvt_sig;
-	int pindex;
+	guint16 pindex;
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1591,7 +1591,8 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *normal_sig, *csig;
-	int pindex, args_start;
+	gint16 pindex;
+	int args_start;
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1652,7 +1653,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 #endif
 
 #ifndef DISABLE_JIT
-	int ldind_op, stind_op;
+	guint8 ldind_op, stind_op;
 	if (sig->ret->type != MONO_TYPE_VOID)
 		/* Load return address */
 		mono_mb_emit_ldarg (mb, sig->hasthis ? 1 : 0);
@@ -1740,7 +1741,8 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *csig, *entry_sig;
-	int i, pindex;
+	guint16 pindex;
+	int i;
 	static GHashTable *cache;
 	const char *name;
 	gboolean generic = FALSE;
@@ -2009,7 +2011,8 @@ MonoMethodSignature*
 mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count)
 {
 	MonoMethodSignature *sig = g_malloc0 (sizeof (MonoMethodSignature) + ((param_count + 3) * sizeof (MonoType*)));
-	int i, pindex;
+	guint16 pindex;
+	int i;
 	MonoType *int_type = mono_get_int_type ();
 
 	sig->ret = mono_get_void_type ();
@@ -2414,8 +2417,10 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			method = mono_marshal_get_synchronized_wrapper (method);
 
 		if (!virtual_) {
+			/* This might return NULL in llvmonly mode for non aot-ed methods */
 			addr = mono_compile_method_checked (method, error);
-			return_val_if_nok (error, NULL);
+			if (!mono_llvm_only)
+				return_val_if_nok (error, NULL);
 		} else
 			addr = NULL;
 
@@ -2437,8 +2442,13 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		}
 
 		// FIXME: This loads information in the AOT case
-		callee_ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
-		callee_gsharedvt = ji_is_gsharedvt (callee_ji);
+		if (addr) {
+			callee_ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
+			callee_gsharedvt = ji_is_gsharedvt (callee_ji);
+		} else {
+			callee_ji = NULL;
+			callee_gsharedvt = FALSE;
+		}
 
 		/*
 		 * For gsharedvt calls made out of gsharedvt methods, the callee could end up being a gsharedvt method, or a normal
@@ -2465,13 +2475,16 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 					g_assert (!virtual_);
 
 					sig = mono_method_signature_internal (jinfo_get_method (callee_ji));
+
 					gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, FALSE);
 					MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (method, jinfo_get_ftnptr (callee_ji), mini_method_get_rgctx (method));
 
 					/* Returns an ftndesc */
 					addr = mini_llvmonly_create_ftndesc (method, out_wrapper, out_wrapper_arg);
 				} else {
-					addr = mini_llvmonly_create_ftndesc (method, addr, mini_method_get_rgctx (method));
+					gpointer out_arg = NULL;
+					addr = mini_llvmonly_load_method (method, FALSE, FALSE, &out_arg, error);
+					addr = mini_llvmonly_create_ftndesc (method, addr, out_arg);
 				}
 			} else {
 				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, vcall_offset, FALSE);
@@ -2522,7 +2535,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 					addr = mini_llvmonly_create_ftndesc (method, in_wrapper, in_wrapper_arg);
 				} else {
-					addr = mini_llvmonly_create_ftndesc (method, addr, mini_method_get_rgctx (method));
+					gpointer out_arg = NULL;
+					addr = mini_llvmonly_load_method (method, FALSE, FALSE, &out_arg, error);
+					addr = mini_llvmonly_create_ftndesc (method, addr, out_arg);
 				}
 			} else if (call_sig == mono_method_signature_internal (method)) {
 			} else {
@@ -3158,12 +3173,11 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 {
 	MonoRuntimeGenericContext *rgctx, *new_rgctx;
 	gpointer info;
-	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
-
-	error_init (error);
 
 	rgctx = class_vtable->runtime_generic_context;
 	if (G_UNLIKELY (!rgctx)) {
+		MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
+
 		new_rgctx = alloc_rgctx_array (jit_mm->mem_manager, 0, FALSE);
 		/* Make sure that this array is zeroed if other threads access it */
 		mono_memory_write_barrier ();
@@ -4056,7 +4070,7 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		tname = mono_type_full_name (&t);
 		size_t len = strlen (tname);
 		for (size_t i = 0; i < len; ++i)
-			tname [i] = toupper (tname [i]);
+			tname [i] = GINT_TO_CHAR (toupper (tname [i]));
 		res = g_strdup_printf ("%s_%s", name, tname);
 		g_free (tname);
 		return res;
@@ -4278,7 +4292,9 @@ mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, Mon
 	}
 	case MONO_WRAPPER_DELEGATE_INVOKE: {
 		if (info->subtype == WRAPPER_SUBTYPE_NONE) {
-			MonoMethod *ginvoke = mini_get_shared_method_full (info->d.delegate_invoke.method, flags, error);
+			MonoMethod *m = mono_class_inflate_generic_method_checked (info->d.delegate_invoke.method, context, error);
+			return_val_if_nok (error, NULL);
+			MonoMethod *ginvoke = mini_get_shared_method_full (m, flags, error);
 			return_val_if_nok (error, NULL);
 
 			return mono_marshal_get_delegate_invoke (ginvoke, NULL);
@@ -4287,7 +4303,9 @@ mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, Mon
 	}
 	case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
 	case MONO_WRAPPER_DELEGATE_END_INVOKE: {
-		MonoMethod *ginvoke = mini_get_shared_method_full (info->d.delegate_invoke.method, flags, error);
+		MonoMethod *m = mono_class_inflate_generic_method_checked (info->d.delegate_invoke.method, context, error);
+		return_val_if_nok (error, NULL);
+		MonoMethod *ginvoke = mini_get_shared_method_full (m, flags, error);
 		return_val_if_nok (error, NULL);
 
 		if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE)

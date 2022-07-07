@@ -523,7 +523,6 @@ namespace Internal.Runtime.TypeLoader
 
         public IntPtr? ClassConstructorPointer;
         public IntPtr GcStaticDesc;
-        public IntPtr GcStaticEEType;
         public IntPtr ThreadStaticDesc;
         public bool AllocatedStaticGCDesc;
         public bool AllocatedThreadStaticGCDesc;
@@ -695,10 +694,6 @@ namespace Internal.Runtime.TypeLoader
 
                             case BagElementKind.ThreadStaticDesc:
                                 ThreadStaticDesc = NativeLayoutInfo.LoadContext.GetGCStaticInfo(typeInfoParser.GetUnsigned());
-                                break;
-
-                            case BagElementKind.GcStaticEEType:
-                                GcStaticEEType = NativeLayoutInfo.LoadContext.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                                 break;
 
                             default:
@@ -973,10 +968,8 @@ namespace Internal.Runtime.TypeLoader
                 {
                     return checked((ushort)((DefType)TypeBeingBuilt).InstanceFieldAlignment.AsInt);
                 }
-                else if (TypeBeingBuilt is ArrayType)
+                else if (TypeBeingBuilt is ArrayType arrayType)
                 {
-                    ArrayType arrayType = (ArrayType)TypeBeingBuilt;
-
                     if (arrayType.ElementType is DefType)
                     {
                         return checked((ushort)((DefType)arrayType.ElementType).InstanceFieldAlignment.AsInt);

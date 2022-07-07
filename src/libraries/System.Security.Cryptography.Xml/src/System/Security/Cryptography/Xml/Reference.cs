@@ -117,12 +117,7 @@ namespace System.Security.Cryptography.Xml
 
         public TransformChain TransformChain
         {
-            get
-            {
-                if (_transformChain == null)
-                    _transformChain = new TransformChain();
-                return _transformChain;
-            }
+            get => _transformChain ??= new TransformChain();
             set
             {
                 _transformChain = value;
@@ -395,8 +390,7 @@ namespace System.Security.Cryptography.Xml
                         {
                             // If we get here, then we are constructing a Reference to an embedded DataObject
                             // referenced by an Id = attribute. Go find the relevant object
-                            bool discardComments = true;
-                            string idref = Utils.GetIdFromLocalUri(_uri, out discardComments);
+                            string idref = Utils.GetIdFromLocalUri(_uri, out bool discardComments);
                             if (idref == "xpointer(/)")
                             {
                                 // This is a self referencial case

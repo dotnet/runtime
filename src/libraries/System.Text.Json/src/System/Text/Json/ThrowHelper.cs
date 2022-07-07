@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -33,6 +34,18 @@ namespace System.Text.Json
         public static void ThrowArgumentOutOfRangeException_CommentEnumMustBeInRange(string parameterName)
         {
             throw GetArgumentOutOfRangeException(parameterName, SR.CommentHandlingMustBeValid);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_ArrayIndexNegative(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArrayIndexNegative);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_ArrayTooSmall(string paramName)
+        {
+            throw new ArgumentException(SR.ArrayTooSmall, paramName);
         }
 
         private static ArgumentException GetArgumentException(string message)
@@ -628,6 +641,7 @@ namespace System.Text.Json
                 case DataType.DateOnly:
                 case DataType.DateTime:
                 case DataType.DateTimeOffset:
+                case DataType.TimeOnly:
                 case DataType.TimeSpan:
                 case DataType.Guid:
                 case DataType.Version:
@@ -654,6 +668,12 @@ namespace System.Text.Json
         public static void ThrowObjectDisposedException_Utf8JsonWriter()
         {
             throw new ObjectDisposedException(nameof(Utf8JsonWriter));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowObjectDisposedException_JsonDocument()
+        {
+            throw new ObjectDisposedException(nameof(JsonDocument));
         }
     }
 
@@ -723,6 +743,7 @@ namespace System.Text.Json
         DateOnly,
         DateTime,
         DateTimeOffset,
+        TimeOnly,
         TimeSpan,
         Base64String,
         Guid,

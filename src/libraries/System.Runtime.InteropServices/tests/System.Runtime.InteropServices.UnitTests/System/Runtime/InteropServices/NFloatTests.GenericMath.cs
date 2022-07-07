@@ -218,6 +218,21 @@ namespace System.Runtime.InteropServices.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(0xFFFF_FFFF_FFFF_FFFF, BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
+                Assert.Equal(0UL, ~BitConverter.DoubleToUInt64Bits((double)BinaryNumberHelper<NFloat>.AllBitsSet));
+            }
+            else
+            {
+                Assert.Equal(0xFFFF_FFFF, BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
+                Assert.Equal(0U, ~BitConverter.SingleToUInt32Bits((float)BinaryNumberHelper<NFloat>.AllBitsSet));
+            }
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             Assert.False(BinaryNumberHelper<NFloat>.IsPow2(NFloat.NegativeInfinity));
@@ -1855,6 +1870,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateCheckedFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -2221,6 +2237,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateSaturatingFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -2587,6 +2604,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateTruncatingFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)

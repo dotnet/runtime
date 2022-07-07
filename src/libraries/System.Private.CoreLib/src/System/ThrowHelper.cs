@@ -87,6 +87,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_ArgumentNull_TypedRefType()
+        {
+            throw new ArgumentNullException("value", SR.ArgumentNull_TypedRefType);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_CannotExtractScalar(ExceptionArgument argument)
         {
             throw GetArgumentException(ExceptionResource.Argument_CannotExtractScalar, argument);
@@ -104,6 +110,7 @@ namespace System
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
                                                     ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
         }
+
         [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException()
         {
@@ -329,12 +336,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidOperationException_OutstandingReferences()
-        {
-            throw new InvalidOperationException(SR.Memory_OutstandingReferences);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowInvalidOperationException(ExceptionResource resource, Exception e)
         {
             throw new InvalidOperationException(GetResourceString(resource), e);
@@ -350,12 +351,6 @@ namespace System
         internal static void ThrowSerializationException(ExceptionResource resource)
         {
             throw new SerializationException(GetResourceString(resource));
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowSecurityException(ExceptionResource resource)
-        {
-            throw new System.Security.SecurityException(GetResourceString(resource));
         }
 
         [DoesNotReturn]
@@ -389,15 +384,15 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowUnauthorizedAccessException(ExceptionResource resource)
+        internal static void ThrowObjectDisposedException(object? instance)
         {
-            throw new UnauthorizedAccessException(GetResourceString(resource));
+            throw new ObjectDisposedException(instance?.GetType().FullName);
         }
 
         [DoesNotReturn]
-        internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
+        internal static void ThrowObjectDisposedException(Type? type)
         {
-            throw new ObjectDisposedException(objectName, GetResourceString(resource));
+            throw new ObjectDisposedException(type?.FullName);
         }
 
         [DoesNotReturn]
@@ -556,6 +551,12 @@ namespace System
             throw ex;
         }
 
+        [DoesNotReturn]
+        internal static void ThrowFormatInvalidString()
+        {
+            throw new FormatException(SR.Format_InvalidString);
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)
@@ -634,7 +635,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedNumericsVectorBaseType<T>() where T : struct
         {
-            if (!Vector<T>.IsTypeSupported)
+            if (!Vector<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -646,7 +647,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>() where T : struct
         {
-            if (!Vector64<T>.IsTypeSupported)
+            if (!Vector64<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -658,7 +659,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>() where T : struct
         {
-            if (!Vector128<T>.IsTypeSupported)
+            if (!Vector128<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -670,7 +671,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>() where T : struct
         {
-            if (!Vector256<T>.IsTypeSupported)
+            if (!Vector256<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }

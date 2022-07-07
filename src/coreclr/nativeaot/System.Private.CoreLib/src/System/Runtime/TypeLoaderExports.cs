@@ -13,22 +13,6 @@ namespace System.Runtime
     [ReflectionBlocked]
     public static class TypeLoaderExports
     {
-        public static IntPtr GetThreadStaticsForDynamicType(int index)
-        {
-            IntPtr result = RuntimeImports.RhGetThreadLocalStorageForDynamicType(index, 0, 0);
-            if (result != IntPtr.Zero)
-                return result;
-
-            int numTlsCells;
-            int tlsStorageSize = RuntimeAugments.TypeLoaderCallbacks.GetThreadStaticsSizeForDynamicType(index, out numTlsCells);
-            result = RuntimeImports.RhGetThreadLocalStorageForDynamicType(index, tlsStorageSize, numTlsCells);
-
-            if (result == IntPtr.Zero)
-                throw new OutOfMemoryException();
-
-            return result;
-        }
-
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
         {
             EETypePtr pEEType = new EETypePtr(pEETypePtr);
@@ -158,6 +142,7 @@ namespace System.Runtime
             return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
         }
 
+#if FEATURE_UNIVERSAL_GENERICS
         public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
             Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk));
@@ -170,6 +155,7 @@ namespace System.Runtime
             }
             return entry.Result;
         }
+#endif
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {

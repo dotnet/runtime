@@ -491,7 +491,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		}
 	}
 
-	size = ptr - oldptr;
+	size = GPTRDIFF_TO_UINT32 (ptr - oldptr);
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
@@ -1109,6 +1109,19 @@ open_symfile_from_bundle (MonoImage *image)
 		return mono_debug_open_image (image, bsymfile->raw_contents, bsymfile->size);
 	}
 
+	return NULL;
+}
+
+const mono_byte *
+mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
+{
+	BundledSymfile *bsymfile;
+	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
+		if (strcmp (bsymfile->aname, assembly_name))
+			continue;
+		*size = bsymfile->size;
+		return bsymfile->raw_contents;
+	}
 	return NULL;
 }
 

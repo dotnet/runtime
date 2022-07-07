@@ -6450,7 +6450,7 @@ HRESULT DacHeapWalker::MoveToNextObject()
 
 bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
 {
-    // With heap corruption, it's entierly possible that the MethodTable
+    // With heap corruption, it's entirely possible that the MethodTable
     // we get is bad.  This could cause exceptions, which we will catch
     // and return false.  This causes the heapwalker to move to the next
     // segment.
@@ -6463,7 +6463,7 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
         if (cs)
         {
             DWORD tmp = 0;
-            if (mCache.Read(mCurrObj+sizeof(TADDR), &tmp))
+            if (mCache.Read(mCurrObj + sizeof(TADDR), &tmp))
                 cs *= tmp;
             else
                 ret = false;
@@ -6478,6 +6478,12 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
             size = AlignLarge(size);
         else
             size = Align(size);
+
+        // If size == 0, it means we have a heap corruption and
+        // we will stuck in an infinite loop, so better fail the call now.
+        ret &= (0 < size);
+        // Also guard for cases where the size reported is too large and exceeds the high allocation mark.
+        ret &= ((mCurrObj + size) <= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
     }
     EX_CATCH
     {

@@ -125,9 +125,21 @@ The wrapper script used to actually run these tests, accepts:
 
 ### Using a local build of xharness
 
-* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
+* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net7.0/Microsoft.DotNet.XHarness.CLI.dll`
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
+
+### Symbolicating traces
+
+Exceptions thrown after the runtime starts get symbolicating from js itself. Exceptions before that, like asserts containing native traces get symbolicated by xharness using `src/mono/wasm/symbolicator`.
+
+If you need to symbolicate some traces manually, then you need the corresponding `dotnet.js.symbols` file. Then:
+
+```
+src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.js.symbols /path/to/file/with/traces
+```
+
+When not relinking, or not building with AOT, you can find `dotnet.js.symbols` in the runtime pack.
 
 ## Debugger tests on macOS
 
@@ -169,7 +181,7 @@ The wasm templates, located in the `templates` directory, are templates for `dot
 
 For details about using `dotnet new` see the dotnet tool [documentation](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-new).
 
-To test changes in the templates, use `dotnet new -i <path>`.
+To test changes in the templates, use `dotnet new install --force src/mono/wasm/templates/templates/browser`.
 
 Example use of the `wasmconsole` template:
 

@@ -11,6 +11,9 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
@@ -60,6 +63,31 @@ namespace System.Drawing
 
         public delegate bool DrawImageAbort(IntPtr callbackdata);
 
+#if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(DrawImageAbort), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.UnmanagedResources)]
+        internal unsafe struct DrawImageAbortMarshaller
+        {
+            private delegate Interop.BOOL DrawImageAbortNative(IntPtr callbackdata);
+            private DrawImageAbortNative? _managed;
+            private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+            public DrawImageAbortMarshaller(DrawImageAbort? managed)
+            {
+                _managed = managed is null ? null : data => managed(data) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+            }
+
+            public delegate* unmanaged<IntPtr, Interop.BOOL> ToNativeValue()
+            {
+                return _nativeFunction;
+            }
+
+            public void FreeNative()
+            {
+                GC.KeepAlive(_managed);
+            }
+        }
+#endif
+
         /// <summary>
         /// Callback for EnumerateMetafile methods.
         /// This method can then call Metafile.PlayRecord to play the record that was just enumerated.
@@ -75,7 +103,38 @@ namespace System.Drawing
             int flags,
             int dataSize,
             IntPtr data,
-            PlayRecordCallback callbackData);
+            PlayRecordCallback? callbackData);
+
+#if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(EnumerateMetafileProc), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.UnmanagedResources)]
+        internal unsafe struct EnumerateMetafileProcMarshaller
+        {
+            private delegate Interop.BOOL EnumerateMetafileProcNative(
+                EmfPlusRecordType recordType,
+                int flags,
+                int dataSize,
+                IntPtr data,
+                IntPtr callbackData);
+            private EnumerateMetafileProcNative? _managed;
+            private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+            public EnumerateMetafileProcMarshaller(EnumerateMetafileProc? managed)
+            {
+                _managed = managed is null ? null : (recordType, flags, dataSize, data, callbackData) =>
+                    managed(recordType, flags, dataSize, data, callbackData == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<PlayRecordCallback>(callbackData)) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+            }
+
+            public delegate* unmanaged<IntPtr, Interop.BOOL> ToNativeValue()
+            {
+                return _nativeFunction;
+            }
+
+            public void FreeNative()
+            {
+                GC.KeepAlive(_managed);
+            }
+        }
+#endif
 
         /// <summary>
         /// Constructor to initialize this object from a native GDI+ Graphics pointer.

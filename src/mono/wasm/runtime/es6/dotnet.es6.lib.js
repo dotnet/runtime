@@ -4,6 +4,14 @@
 
 "use strict";
 
+#if USE_PTHREADS
+const usePThreads = `true`;
+const isPThread = `ENVIRONMENT_IS_PTHREAD`;
+#else
+const usePThreads = `false`;
+const isPThread = `false`;
+#endif
+
 const DotnetSupportLib = {
     $DOTNET: {},
     // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
@@ -14,9 +22,14 @@ const DotnetSupportLib = {
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of readAsync and fetch
     $DOTNET__postset: `
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
+let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
+if (${usePThreads}) {
+    __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
+    __dotnet_replacement_PThread.threadInit = PThread.threadInit;
+}
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise = import('module').then(mod => {
+    __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => {
         const require = mod.createRequire(import.meta.url);
         const path = require('path');
         const url = require('url');
@@ -49,14 +62,18 @@ if (ENVIRONMENT_IS_NODE) {
     }
 }
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
-    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_exports: EXPORTS, marshaled_imports: IMPORTS },
     __dotnet_replacements);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
+if (${usePThreads}) {
+    PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
+    PThread.threadInit = __dotnet_replacements.pthreadReplacements.threadInit;
+}
 `,
 };
 
@@ -71,6 +88,7 @@ const linked_functions = [
     "mono_wasm_fire_debugger_agent_message",
     "mono_wasm_debugger_log",
     "mono_wasm_add_dbg_command_received",
+    "mono_wasm_set_entrypoint_breakpoint",
 
     // mono-threads-wasm.c
     "schedule_background_exec",
@@ -106,8 +124,15 @@ const linked_functions = [
     "mono_wasm_get_icudt_name",
 
     // pal_crypto_webworker.c
+    "dotnet_browser_can_use_subtle_crypto_impl",
     "dotnet_browser_simple_digest_hash",
-    "dotnet_browser_can_use_simple_digest_hash",
+    "dotnet_browser_sign",
+    "dotnet_browser_encrypt_decrypt",
+
+    /// mono-threads-wasm.c
+    #if USE_PTHREADS
+    "mono_wasm_pthread_on_pthread_attached",
+    #endif
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

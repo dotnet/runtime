@@ -265,6 +265,27 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
+namespace
+{
+    bool is_supported_multi_arch_install(pal::architecture arch)
+    {
+#if defined(TARGET_AMD64)
+        // x64, looking for x86 install or emulating x64, looking for arm64 install
+        return arch == pal::architecture::x86
+            || (arch == pal::architecture::arm64 && pal::is_emulating_x64());
+#elif defined(TARGET_ARM64)
+        // arm64, looking for x64 install
+        return arch == pal::architecture::x64;
+#elif defined(TARGET_X86)
+        // x86 running in WoW64, looking for x64 install
+        return arch == pal::architecture::x64 && pal::is_running_in_wow64();
+#else
+        // Others do not support default install locations on a different architecture
+        return false;
+#endif
+    }
+}
+
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
     //  ***Used only for testing***
@@ -276,11 +297,30 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
+    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+}
+
+bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
+{
+    bool is_current_arch = arch == get_current_arch();
+
+    // Bail out early for unsupported requests for different architectures
+    if (!is_current_arch && !is_supported_multi_arch_install(arch))
+        return false;
+
     const pal::char_t* program_files_dir;
-    if (pal::is_running_in_wow64())
+    if (is_current_arch && pal::is_running_in_wow64())
     {
+        // Running x86 on x64, looking for x86 install
         program_files_dir = _X("ProgramFiles(x86)");
     }
+#if defined(TARGET_AMD64)
+    else if (!is_current_arch && arch == pal::architecture::x86)
+    {
+        // Running x64, looking for x86 install
+        program_files_dir = _X("ProgramFiles(x86)");
+    }
+#endif
     else
     {
         program_files_dir = _X("ProgramFiles");
@@ -292,18 +332,26 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
 
     append_path(recv, _X("dotnet"));
-    if (pal::is_emulating_x64())
+    if (is_current_arch && pal::is_emulating_x64())
     {
         // Install location for emulated x64 should be %ProgramFiles%\dotnet\x64.
-        append_path(recv, _X("x64"));
+        append_path(recv, get_arch_name(arch));
     }
+#if defined(TARGET_ARM64)
+    else if (!is_current_arch)
+    {
+        // Running arm64, looking for x64 install
+        assert(arch == pal::architecture::x64);
+        append_path(recv, get_arch_name(arch));
+    }
+#endif
 
     return true;
 }
 
 namespace
 {
-    void get_dotnet_install_location_registry_path(HKEY * key_hive, pal::string_t * sub_key, const pal::char_t ** value)
+    void get_dotnet_install_location_registry_path(pal::architecture arch, HKEY * key_hive, pal::string_t * sub_key, const pal::char_t ** value)
     {
         *key_hive = HKEY_LOCAL_MACHINE;
         // The registry search occurs in the 32-bit registry in all cases.
@@ -322,7 +370,7 @@ namespace
             dotnet_key_path = environmentRegistryPathOverride;
         }
 
-        *sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch();
+        *sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch_name(arch);
         *value = _X("InstallLocation");
     }
 
@@ -333,20 +381,18 @@ namespace
     }
 }
 
-pal::string_t pal::get_dotnet_self_registered_config_location()
+pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture arch)
 {
     HKEY key_hive;
     pal::string_t sub_key;
     const pal::char_t* value;
-    get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
+    get_dotnet_install_location_registry_path(arch, &key_hive, &sub_key, &value);
 
     return registry_path_as_string(key_hive, sub_key, value);
 }
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-    recv->clear();
-
     //  ***Used only for testing***
     pal::string_t environmentOverride;
     if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environmentOverride))
@@ -356,10 +402,17 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
     //  ***************************
 
+    return get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
+}
+
+bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
+{
+    recv->clear();
+
     HKEY hkeyHive;
     pal::string_t sub_key;
     const pal::char_t* value;
-    get_dotnet_install_location_registry_path(&hkeyHive, &sub_key, &value);
+    get_dotnet_install_location_registry_path(arch, &hkeyHive, &sub_key, &value);
 
     if (trace::is_enabled())
         trace::verbose(_X("Looking for architecture-specific registry value in '%s'."), registry_path_as_string(hkeyHive, sub_key, value).c_str());

@@ -1,19 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
-using System.Threading;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class HotReloadTests : DebuggerTests
     {
+        public HotReloadTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugHotReloadMethodChangedUserBreak()
         {
@@ -408,6 +409,122 @@ namespace DebuggerTests
             JToken top_frame = pause_location["callFrames"]?[0];
             AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 48, 12, scripts, top_frame["location"]);
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReloadMethod_AddingNewMethod()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 55, 12, use_regex: true);
+            var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 59, 12, use_regex: true);
+
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1");
+
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody6", "NewMethodStatic", 1);
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("NewMethodStatic", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 59, 12, scripts, top_frame["location"]);
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 60, 12, "NewMethodStatic",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "i", 20);
+                    await Task.CompletedTask;
+                }
+            );
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReloadMethod_AddingNewStaticField()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 55, 12, use_regex: true);
+            var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 59, 12, use_regex: true);
+
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1");
+
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody6", "NewMethodStatic", 1);
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("NewMethodStatic", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 59, 12, scripts, top_frame["location"]);
+
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 61, 12, "NewMethodStatic",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "i", 20);
+                    await Task.CompletedTask;
+                }, times: 2
+            );
+            await EvaluateOnCallFrameAndCheck(top_frame["callFrameId"].Value<string>(),
+                   ("ApplyUpdateReferencedAssembly.MethodBody6.newStaticField", TNumber(10)));
+
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReloadMethod_AddingNewClass()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 55, 12, use_regex: true);
+            var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 73, 12, use_regex: true);
+            var bp_invalid1 = await SetBreakpoint(".*/MethodBody1.cs$", 83, 12, use_regex: true);
+            var bp_invalid2 = await SetBreakpoint(".*/MethodBody1.cs$", 102, 12, use_regex: true);
+
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1");
+
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody7", "StaticMethod1", 1);
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 73, 12, scripts, top_frame["location"]);
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 83, 12, "InstanceMethod",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "aLocal", 50);
+                    await Task.CompletedTask;
+                }
+            );
+
+            var props = await GetObjectOnFrame(pause_location["callFrames"][0], "this");
+            Assert.Equal(3, props.Count());
+            CheckNumber(props, "attr1", 15);
+            await CheckString(props, "attr2", "20");
+            
+            await EvaluateOnCallFrameAndCheck(pause_location["callFrames"]?[0]["callFrameId"].Value<string>(),
+            ("ApplyUpdateReferencedAssembly.MethodBody7.staticField", TNumber(80)));
+
+            //apply second update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody8", "StaticMethod1", 2);
+
+            top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("InstanceMethod", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 102, 12, scripts, top_frame["location"]);
+
+            await EvaluateOnCallFrameAndCheck(pause_location["callFrames"]?[0]["callFrameId"].Value<string>(),
+            ("ApplyUpdateReferencedAssembly.MethodBody8.staticField", TNumber(80)));
         }
     }
 }

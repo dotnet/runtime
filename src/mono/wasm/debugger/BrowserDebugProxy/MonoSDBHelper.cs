@@ -140,7 +140,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         VmReadMemory = 16,
         VmWriteMemory = 17,
         GetAssemblyByName = 18,
-        GetModuleByGUID = 19
+        GetModuleByGUID = 19,
+        GetAssemblyAndPdbBytes = 20
     }
 
     internal enum CmdFrame {
@@ -750,6 +751,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
+        private int VmMinorVersion { get; set; }
+        private int VmMajorVersion { get; set; }
+
         private Dictionary<int, MethodInfoWithDebugInformation> methods;
         private Dictionary<int, AssemblyInfo> assemblies;
         private Dictionary<int, TypeInfoWithDebugInformation> types;
@@ -770,6 +774,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.proxy = proxy;
             this.logger = logger;
             this.sessionId = sessionId;
+            this.VmMajorVersion = -1;
+            this.VmMinorVersion = -1;
             ValueCreator = new(this, logger);
             ResetStore(null);
         }
@@ -799,8 +805,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 asm = store.GetAssemblyByName(assemblyName);
                 if (asm == null)
                 {
-                    logger.LogDebug($"Unable to find assembly: {assemblyName}");
-                    return null;
+                    asm = new AssemblyInfo(assemblyName, logger);
+                    logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }
             asm.SetDebugId(assemblyId);
@@ -840,17 +846,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
+            string methodName = await GetMethodName(methodId, token);
             if (method == null)
             {
-                logger.LogDebug($"Unable to find method token: {methodToken} assembly name: {asm.Name}");
-                return null;
+                //get information from runtime
+                method = await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
             }
 
-            string methodName = await GetMethodName(methodId, token);
             methods[methodId] = new MethodInfoWithDebugInformation(method, methodId, methodName);
             return methods[methodId];
         }
 
+        public async Task<MethodInfo> CreateMethodInfoFromRuntimeInformation (AssemblyInfo asm, int methodId, string methodName, int methodToken, CancellationToken token )
+        {
+            var typeToken = await GetTypeTokenFromMethodId(methodId, token);
+            TypeInfo typeInfo = asm.TypesByToken[typeToken];
+            var attrs =  await GetAttributesFromMethodId(methodId, token);
+            return new MethodInfo(asm, methodName, methodToken, typeInfo, attrs);
+        }
         public async Task<TypeInfoWithDebugInformation> GetTypeInfo(int typeId, CancellationToken token)
         {
             if (types.TryGetValue(typeId, out TypeInfoWithDebugInformation typeDebugInfo))
@@ -873,8 +886,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (type == null)
             {
-                logger.LogDebug($"Unable to find type token: {typeName} assembly name: {asm.Name}");
-                return null;
+                type = asm.CreateTypeInfo(typeName, typeToken);
             }
 
             types[typeId] = new TypeInfoWithDebugInformation(type, typeId, typeName);
@@ -882,6 +894,18 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public void ClearCache() => ValueCreator.ClearCache();
+
+        public async Task<(int, int)> GetVMVersion(CancellationToken token)
+        {
+            if (VmMajorVersion != -1)
+                return (VmMajorVersion, VmMinorVersion);
+            using var commandParamsWriter = new MonoBinaryWriter();
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.Version, commandParamsWriter, token);
+            retDebuggerCmdReader.ReadString(); //vm version
+            VmMajorVersion = retDebuggerCmdReader.ReadInt32();
+            VmMinorVersion = retDebuggerCmdReader.ReadInt32();
+            return (VmMajorVersion, VmMinorVersion);
+        }
 
         public async Task<bool> SetProtocolVersion(CancellationToken token)
         {
@@ -949,6 +973,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(value);
             using var stringDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAppDomain.CreateString, commandParamsWriter, token);
             return stringDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<MethodAttributes> GetAttributesFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetInfo, commandParamsWriter, token);
+            var flags = retDebuggerCmdReader.ReadInt32();
+            return (MethodAttributes) flags;
+        }
+
+        public async Task<int> GetTypeTokenFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.ClassToken, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadInt32(); //token
         }
 
         public async Task<int> GetMethodToken(int methodId, CancellationToken token)
@@ -1120,13 +1163,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             var methodInfo = await GetMethodInfo(methodId, token);
             if (methodInfo != null)
                 return methodInfo.Info.IsStatic();
-
-            using var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter.Write(methodId);
-
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetInfo, commandParamsWriter, token);
-            var flags = retDebuggerCmdReader.ReadInt32();
-            return (flags & 0x0010) > 0; //check method is static
+            var attrs = await GetAttributesFromMethodId(methodId, token);
+            return (attrs & MethodAttributes.Static) > 0;
         }
 
         public async Task<int> GetParamCount(int methodId, CancellationToken token)
@@ -2131,6 +2169,24 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
+        public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            byte[] assembly_buf = null;
+            byte[] pdb_buf = null;
+            commandParamsWriter.Write(assemblyName);
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyAndPdbBytes, commandParamsWriter, token);
+            int assembly_size = retDebuggerCmdReader.ReadInt32();
+            if (assembly_size > 0)
+                assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
+            int pdb_size = retDebuggerCmdReader.ReadInt32();
+            if (pdb_size > 0)
+                pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
+            byte[][] ret = new byte[2][];
+            ret[0] = assembly_buf;
+            ret[1] = pdb_buf;
+            return ret;
+        }
         private static readonly string[] s_primitiveTypeNames = new[]
             {
             "bool",

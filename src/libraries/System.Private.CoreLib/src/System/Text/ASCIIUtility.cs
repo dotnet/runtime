@@ -198,7 +198,7 @@ namespace System.Text
                 {
                     if (!BitConverter.IsLittleEndian)
                     {
-                        currentUInt32 = currentUInt32 << 16;
+                        currentUInt32 <<= 16;
                     }
                     goto FoundNonAsciiData;
                 }
@@ -1210,9 +1210,9 @@ namespace System.Text
             // pmovmskb, ptest, vpminuw which we know are optimized, and (b) we can avoid downclocking the
             // processor while this method is running.
 
-            if (Sse2.IsSupported)
+            if ((Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
             {
-                Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2 is supported.");
+                Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2/Arm64 is supported.");
 
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
                 {
@@ -1238,7 +1238,7 @@ namespace System.Text
                         }
                     }
 
-                    currentOffset = NarrowUtf16ToAscii_Sse2(pUtf16Buffer, pAsciiBuffer, elementCount);
+                    currentOffset = NarrowUtf16ToAscii_Intrinsified(pUtf16Buffer, pAsciiBuffer, elementCount);
                 }
             }
             else if (Vector.IsHardwareAccelerated)
@@ -1426,10 +1426,73 @@ namespace System.Text
             goto Finish;
         }
 
-        private static unsafe nuint NarrowUtf16ToAscii_Sse2(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
-            // This method contains logic optimized for both SSE2 and SSE41. Much of the logic in this method
-            // will be elided by JIT once we determine which specific ISAs we support.
+            if (Sse2.IsSupported)
+            {
+                if (Sse41.IsSupported)
+                {
+                    Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80);
+                    // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+                    if (!Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16()))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
+                    // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
+                    // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
+                    // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                // First we pick four chars, a larger one from all four pairs of adjecent chars in the vector.
+                // If any of those four chars has a non-ASCII bit set, we have seen non-ASCII data.
+                Vector128<ushort> maxChars = AdvSimd.Arm64.MaxPairwise(utf16Vector, utf16Vector);
+                if ((maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0)
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> ExtractAsciiVector(Vector128<ushort> vectorFirst, Vector128<ushort> vectorSecond)
+        {
+            // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
+            // to a vector of bytes [ b7 ... b0 b7' ... b0'].
+
+            if (Sse2.IsSupported)
+            {
+                return Sse2.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16());
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.UnzipEven(vectorFirst.AsByte(), vectorSecond.AsByte());
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
+        private static unsafe nuint NarrowUtf16ToAscii_Intrinsified(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+        {
+            // This method contains logic optimized using vector instructions for both x64 and AArch64.
+            // Much of the logic in this method will be elided by JIT once we determine which specific ISAs we support.
 
             // JIT turns the below into constants
 
@@ -1440,41 +1503,25 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Debug.Assert(Sse2.IsSupported);
-            Debug.Assert(BitConverter.IsLittleEndian);
+            Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported, "Sse2 or AdvSimd64 required.");
+            Debug.Assert(BitConverter.IsLittleEndian, "This SSE2/Arm64 implementation assumes little-endian.");
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
-            Vector128<short> asciiMaskForTestZ = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
-            Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80); // used for PADDUSW
-            const int NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether the pmovmskb operation saw non-ASCII chars
-
             // First, perform an unaligned read of the first part of the input buffer.
-
-            Vector128<short> utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer); // unaligned load
+            ref ushort utf16Buffer = ref *(ushort*)pUtf16Buffer;
+            Vector128<ushort> utf16VectorFirst = Vector128.LoadUnsafe(ref utf16Buffer);
 
             // If there's non-ASCII data in the first 8 elements of the vector, there's nothing we can do.
-            // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
-
-            if (Sse41.IsSupported)
+            if (VectorContainsNonAsciiChar(utf16VectorFirst))
             {
-                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
-                {
-                    return 0;
-                }
-            }
-            else
-            {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
-                {
-                    return 0;
-                }
+                return 0;
             }
 
             // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
 
-            Vector128<byte> asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
-            Sse2.StoreScalar((ulong*)pAsciiBuffer, asciiVector.AsUInt64()); // ulong* calculated here is UNALIGNED
-
+            ref byte asciiBuffer = ref *pAsciiBuffer;
+            Vector128<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+            asciiVector.GetLower().StoreUnsafe(ref asciiBuffer);
             nuint currentOffsetInElements = SizeOfVector128 / 2; // we processed 8 elements so far
 
             // We're going to get the best performance when we have aligned writes, so we'll take the
@@ -1492,35 +1539,24 @@ namespace System.Text
             {
                 // We need to perform one more partial vector write before we can get the alignment we want.
 
-                utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
+                utf16VectorFirst = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements);
 
-                // See comments earlier in this method for information about how this works.
-                if (Sse41.IsSupported)
+                if (VectorContainsNonAsciiChar(utf16VectorFirst))
                 {
-                    if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
-                    {
-                        goto Finish;
-                    }
-                }
-                else
-                {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
-                    {
-                        goto Finish;
-                    }
+                    goto Finish;
                 }
 
                 // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
-                asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
-                Sse2.StoreScalar((ulong*)(pAsciiBuffer + currentOffsetInElements), asciiVector.AsUInt64()); // ulong* calculated here is UNALIGNED
+                asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+                asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
 
             // Calculate how many elements we wrote in order to get pAsciiBuffer to its next alignment
             // point, then use that as the base offset going forward.
 
             currentOffsetInElements = SizeOfVector128 - ((nuint)pAsciiBuffer & MaskOfAllBitsInVector128);
-            Debug.Assert(0 < currentOffsetInElements && currentOffsetInElements <= SizeOfVector128, "We wrote at least 1 byte but no more than a whole vector.");
 
+            Debug.Assert(0 < currentOffsetInElements && currentOffsetInElements <= SizeOfVector128, "We wrote at least 1 byte but no more than a whole vector.");
             Debug.Assert(currentOffsetInElements <= elementCount, "Shouldn't have overrun the destination buffer.");
             Debug.Assert(elementCount - currentOffsetInElements >= SizeOfVector128, "We should be able to run at least one whole vector.");
 
@@ -1529,32 +1565,20 @@ namespace System.Text
             {
                 // In a loop, perform two unaligned reads, narrow to a single vector, then aligned write one vector.
 
-                utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
-                Vector128<short> utf16VectorSecond = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements + SizeOfVector128 / sizeof(short)); // unaligned load
-                Vector128<short> combinedVector = Sse2.Or(utf16VectorFirst, utf16VectorSecond);
+                utf16VectorFirst = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements);
+                Vector128<ushort> utf16VectorSecond = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements + SizeOfVector128 / sizeof(short));
+                Vector128<ushort> combinedVector = utf16VectorFirst | utf16VectorSecond;
 
-                // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
-                if (Sse41.IsSupported)
+                if (VectorContainsNonAsciiChar(combinedVector))
                 {
-                    if (!Sse41.TestZ(combinedVector, asciiMaskForTestZ))
-                    {
-                        goto FoundNonAsciiDataInLoop;
-                    }
-                }
-                else
-                {
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
-                    {
-                        goto FoundNonAsciiDataInLoop;
-                    }
+                    goto FoundNonAsciiDataInLoop;
                 }
 
                 // Build up the ASCII vector and perform the store.
 
-                asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorSecond);
-
                 Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % SizeOfVector128 == 0, "Write should be aligned.");
-                Sse2.StoreAligned(pAsciiBuffer + currentOffsetInElements, asciiVector); // aligned
+                asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorSecond);
+                asciiVector.StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
 
                 currentOffsetInElements += SizeOfVector128;
             } while (currentOffsetInElements <= finalOffsetWhereCanRunLoop);
@@ -1568,27 +1592,16 @@ namespace System.Text
 
             // Can we at least narrow the high vector?
             // See comments in GetIndexOfFirstNonAsciiChar_Sse2 for information about how this works.
-            if (Sse41.IsSupported)
+            if (VectorContainsNonAsciiChar(utf16VectorFirst))
             {
-                if (!Sse41.TestZ(utf16VectorFirst, asciiMaskForTestZ))
-                {
-                    goto Finish; // found non-ASCII data
-                }
-            }
-            else
-            {
-                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForAddSaturate).AsByte()) & NonAsciiDataSeenMask) != 0)
-                {
-                    goto Finish; // found non-ASCII data
-                }
+                goto Finish;
             }
 
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
-            asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
-
-            Sse2.StoreScalar((ulong*)(pAsciiBuffer + currentOffsetInElements), asciiVector.AsUInt64()); // ulong* calculated here is aligned
+            asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
+            asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += SizeOfVector128 / 2;
 
             goto Finish;
@@ -1680,7 +1693,7 @@ namespace System.Text
                 {
                     if (!BitConverter.IsLittleEndian)
                     {
-                        asciiData = asciiData << 16;
+                        asciiData <<= 16;
                     }
                     goto FoundNonAsciiData;
                 }

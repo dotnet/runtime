@@ -13,6 +13,9 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
+#ifdef HOST_WASM
+#include <emscripten/emscripten.h>
+#endif
 
 extern void ep_rt_mono_component_init (void);
 static bool _event_pipe_component_inited = false;
@@ -119,6 +122,7 @@ static MonoComponentEventPipe fn_table = {
 	&ep_rt_write_event_threadpool_worker_thread_start,
 	&ep_rt_write_event_threadpool_worker_thread_stop,
 	&ep_rt_write_event_threadpool_worker_thread_wait,
+	&ep_rt_write_event_threadpool_min_max_threads,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_sample,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment,
 	&ep_rt_write_event_threadpool_worker_thread_adjustment_stats,
@@ -202,7 +206,7 @@ event_pipe_get_next_event (
 			data->provider_id = (intptr_t)ep_event_get_provider (ep_event);
 			data->event_id = ep_event_get_event_id (ep_event);
 		}
-		data->thread_id = ep_event_instance_get_thread_id (next_instance);
+		data->thread_id = GUINT64_TO_UINT32 (ep_event_instance_get_thread_id (next_instance));
 		data->timestamp = ep_event_instance_get_timestamp (next_instance);
 		memcpy (&data->activity_id, ep_event_instance_get_activity_id_cref (next_instance), EP_ACTIVITY_ID_SIZE);
 		memcpy (&data->related_activity_id, ep_event_instance_get_related_activity_id_cref (next_instance), EP_ACTIVITY_ID_SIZE);

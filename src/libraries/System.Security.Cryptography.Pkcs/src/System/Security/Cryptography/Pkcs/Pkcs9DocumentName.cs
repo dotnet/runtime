@@ -30,6 +30,11 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
+        internal Pkcs9DocumentName(ReadOnlySpan<byte> encodedDocumentName)
+            : base(Oids.DocumentNameOid.CopyOid(), encodedDocumentName)
+        {
+        }
+
         //
         // Public methods.
         //
@@ -38,7 +43,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyDocumentName ?? (_lazyDocumentName = Decode(RawData));
+                return _lazyDocumentName ??= Decode(RawData);
             }
         }
 

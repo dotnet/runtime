@@ -1,108 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma once
+
 //
 // This header contains binder-generated data structures that the runtime consumes.
 //
 #include "TargetPtrs.h"
-
-class GcPollInfo
-{
-public:
-    static const uint32_t indirCellsPerBitmapBit  = 64 / POINTER_SIZE;    // one cache line per bit
-
-    static const uint32_t cbChunkCommonCode_X64   = 17;
-    static const uint32_t cbChunkCommonCode_X86   = 16;
-    static const uint32_t cbChunkCommonCode_ARM   = 32;
-#ifdef TARGET_ARM
-    // on ARM, the index of the indirection cell can be computed
-    // from the pointer to the indirection cell left in R12,
-    // thus we need only one entry point on ARM,
-    // thus entries take no space, and you can have as many as you want
-    static const uint32_t cbEntry                 = 0;
-    static const uint32_t cbBundleCommonCode      = 0;
-    static const uint32_t entriesPerBundle        = 0x7fffffff;
-    static const uint32_t bundlesPerChunk         = 0x7fffffff;
-    static const uint32_t entriesPerChunk         = 0x7fffffff;
-#else
-    static const uint32_t cbEntry                 = 4;    // push imm8 / jmp rel8
-    static const uint32_t cbBundleCommonCode      = 5;    // jmp rel32
-
-    static const uint32_t entriesPerSubBundlePos  = 32;   // for the half with forward jumps
-    static const uint32_t entriesPerSubBundleNeg  = 30;   // for the half with negative jumps
-    static const uint32_t entriesPerBundle        = entriesPerSubBundlePos + entriesPerSubBundleNeg;
-    static const uint32_t bundlesPerChunk         = 4;
-    static const uint32_t entriesPerChunk         = bundlesPerChunk * entriesPerBundle;
-#endif
-
-    static const uint32_t cbFullBundle            = cbBundleCommonCode +
-                                                  (entriesPerBundle * cbEntry);
-
-    static uint32_t EntryIndexToStubOffset(uint32_t entryIndex)
-    {
-# if defined(TARGET_ARM)
-        return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_ARM);
-# elif defined(TARGET_AMD64)
-        return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X64);
-# else
-        return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X86);
-# endif
-    }
-
-    static uint32_t EntryIndexToStubOffset(uint32_t entryIndex, uint32_t cbChunkCommonCode)
-    {
-# if defined(TARGET_ARM)
-        UNREFERENCED_PARAMETER(entryIndex);
-        UNREFERENCED_PARAMETER(cbChunkCommonCode);
-
-        return 0;
-# else
-        uint32_t cbFullChunk              = cbChunkCommonCode +
-                                          (bundlesPerChunk * cbBundleCommonCode) +
-                                          (entriesPerChunk * cbEntry);
-
-        uint32_t numFullChunks             = entryIndex / entriesPerChunk;
-        uint32_t numEntriesInLastChunk     = entryIndex - (numFullChunks * entriesPerChunk);
-
-        uint32_t numFullBundles            = numEntriesInLastChunk / entriesPerBundle;
-        uint32_t numEntriesInLastBundle    = numEntriesInLastChunk - (numFullBundles * entriesPerBundle);
-
-        uint32_t offset                    = (numFullChunks * cbFullChunk) +
-                                          cbChunkCommonCode +
-                                          (numFullBundles * cbFullBundle) +
-                                          (numEntriesInLastBundle * cbEntry);
-
-        if (numEntriesInLastBundle >= entriesPerSubBundlePos)
-            offset += cbBundleCommonCode;
-
-        return offset;
-# endif
-    }
-};
-
-struct StaticGcDesc
-{
-    struct GCSeries
-    {
-        uint32_t m_size;
-        uint32_t m_startOffset;
-    };
-
-    uint32_t   m_numSeries;
-    GCSeries m_series[1];
-
-    uint32_t GetSize()
-    {
-        return (uint32_t)(offsetof(StaticGcDesc, m_series) + (m_numSeries * sizeof(GCSeries)));
-    }
-
-#ifdef DACCESS_COMPILE
-    static uint32_t DacSize(TADDR addr);
-#endif
-};
-
-typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
-typedef DPTR(StaticGcDesc::GCSeries) PTR_StaticGcDescGCSeries;
 
 class MethodTable;
 
@@ -433,29 +337,7 @@ enum PInvokeTransitionFrameFlags : uint64_t
     PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
 
-// TODO: Consider moving the PInvokeTransitionFrameFlags definition to a separate file to simplify header dependencies
-#ifdef ICODEMANAGER_INCLUDED
-// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
-C_ASSERT(PTFF_X0_IS_GCREF == ((uint64_t)GCRK_Object << 32));
-C_ASSERT(PTFF_X0_IS_BYREF == ((uint64_t)GCRK_Byref << 32));
-C_ASSERT(PTFF_X1_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 32));
-C_ASSERT(PTFF_X1_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 32));
 
-inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
-{
-    if (returnKind == GCRK_Scalar)
-        return 0;
-
-    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((uint64_t)returnKind << 32);
-}
-
-inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
-{
-    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_X0_IS_GCREF | PTFF_X0_IS_BYREF | PTFF_X1_IS_GCREF | PTFF_X1_IS_BYREF)) >> 32);
-    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_X0) && (transFrameFlags & PTFF_SAVE_X1)));
-    return returnKind;
-}
-#endif // ICODEMANAGER_INCLUDED
 #else // TARGET_ARM
 enum PInvokeTransitionFrameFlags
 {
@@ -645,3 +527,4 @@ struct ColdToHotMapping
     SubSectionDesc  subSection[/*subSectionCount*/1];
     //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
 };
+

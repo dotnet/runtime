@@ -255,8 +255,7 @@ namespace System.Xml
             //string.Empty) because in DTD, the namespace is not supported
             if (_htElementIDAttrDecl == null || _htElementIDAttrDecl[eleName] == null)
             {
-                if (_htElementIDAttrDecl == null)
-                    _htElementIDAttrDecl = new Hashtable();
+                _htElementIDAttrDecl ??= new Hashtable();
                 _htElementIDAttrDecl.Add(eleName, attrName);
                 return true;
             }
@@ -312,8 +311,7 @@ namespace System.Xml
         {
             if (_htElementIdMap == null || !_htElementIdMap.Contains(id))
             {
-                if (_htElementIdMap == null)
-                    _htElementIdMap = new Hashtable();
+                _htElementIdMap ??= new Hashtable();
                 ArrayList elementList = new ArrayList();
                 elementList.Add(new WeakReference<XmlElement>(elem));
                 _htElementIdMap.Add(id, elementList);
@@ -427,19 +425,8 @@ namespace System.Xml
 
         public XmlSchemaSet Schemas
         {
-            get
-            {
-                if (_schemas == null)
-                {
-                    _schemas = new XmlSchemaSet(NameTable);
-                }
-                return _schemas;
-            }
-
-            set
-            {
-                _schemas = value;
-            }
+            get => _schemas ??= new XmlSchemaSet(NameTable);
+            set => _schemas = value;
         }
 
         internal bool CanReportValidity
@@ -538,8 +525,7 @@ namespace System.Xml
 
         internal override bool CanInsertBefore(XmlNode newChild, XmlNode? refChild)
         {
-            if (refChild == null)
-                refChild = FirstChild;
+            refChild ??= FirstChild;
 
             if (refChild == null)
                 return true;
@@ -581,8 +567,7 @@ namespace System.Xml
 
         internal override bool CanInsertAfter(XmlNode newChild, XmlNode? refChild)
         {
-            if (refChild == null)
-                refChild = LastChild;
+            refChild ??= LastChild;
 
             if (refChild == null)
                 return true;
@@ -1107,13 +1092,8 @@ namespace System.Xml
 
         internal XmlNamedNodeMap Entities
         {
-            get
-            {
-                if (_entities == null)
-                    _entities = new XmlNamedNodeMap(this);
-                return _entities;
-            }
-            set { _entities = value; }
+            get => _entities ??= new XmlNamedNodeMap(this);
+            set => _entities = value;
         }
 
         internal bool IsLoading
@@ -1646,18 +1626,15 @@ namespace System.Xml
                 switch (args.Action)
                 {
                     case XmlNodeChangedAction.Insert:
-                        if (_onNodeInsertingDelegate != null)
-                            _onNodeInsertingDelegate(this, args);
+                        _onNodeInsertingDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Remove:
-                        if (_onNodeRemovingDelegate != null)
-                            _onNodeRemovingDelegate(this, args);
+                        _onNodeRemovingDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Change:
-                        if (_onNodeChangingDelegate != null)
-                            _onNodeChangingDelegate(this, args);
+                        _onNodeChangingDelegate?.Invoke(this, args);
                         break;
                 }
             }
@@ -1670,18 +1647,15 @@ namespace System.Xml
                 switch (args.Action)
                 {
                     case XmlNodeChangedAction.Insert:
-                        if (_onNodeInsertedDelegate != null)
-                            _onNodeInsertedDelegate(this, args);
+                        _onNodeInsertedDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Remove:
-                        if (_onNodeRemovedDelegate != null)
-                            _onNodeRemovedDelegate(this, args);
+                        _onNodeRemovedDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Change:
-                        if (_onNodeChangedDelegate != null)
-                            _onNodeChangedDelegate(this, args);
+                        _onNodeChangedDelegate?.Invoke(this, args);
                         break;
                 }
             }

@@ -92,11 +92,6 @@
         <target state="translated">十六进制位数不足。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">ScanRegex 中的内部错误。</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">无法识别的分组构造。</target>
@@ -212,11 +207,6 @@
         <target state="translated">RegexGenerator 方法必须是分部、无参数、非泛型、非抽象且返回正则表达式</target>
         <note />
       </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">替换模式错误。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">[x-y] 范围的顺序颠倒。</target>
@@ -274,12 +264,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="new">Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</target>
+        <target state="translated">在编译时使用 “RegexGeneratorAttribute” 生成正则表达式实现。</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'RegexGenerator'.</source>
-        <target state="new">Convert to 'RegexGenerator'.</target>
+        <target state="translated">转换为 “RegexGenerator”。</target>
         <note />
       </trans-unit>
     </body>

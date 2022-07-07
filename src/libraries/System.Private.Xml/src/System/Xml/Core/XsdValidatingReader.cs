@@ -2321,14 +2321,7 @@ namespace System.Xml
                 _attributePSVINodes = newPSVINodes;
             }
 
-            attInfo = _attributePSVINodes[attIndex];
-            if (attInfo == null)
-            {
-                attInfo = new AttributePSVIInfo();
-                _attributePSVINodes[attIndex] = attInfo;
-            }
-
-            return attInfo;
+            return _attributePSVINodes[attIndex] ??= new AttributePSVIInfo();
         }
 
         private bool IsXSDRoot(string localName, string ns)
@@ -2383,7 +2376,7 @@ namespace System.Xml
                     if (_validationState == ValidatingReaderState.OnDefaultAttribute)
                     {
                         XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute!;
-                        originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
+                        originalStringValue = schemaAttr.DefaultValue ?? schemaAttr.FixedValue!;
                     }
 
                     return ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue);
@@ -2796,7 +2789,7 @@ namespace System.Xml
                 XmlSchemaElement? schemaElem = _xmlSchemaInfo.SchemaElement;
                 if (schemaElem != null)
                 {
-                    return (schemaElem.DefaultValue != null) ? schemaElem.DefaultValue : schemaElem.FixedValue;
+                    return schemaElem.DefaultValue ?? schemaElem.FixedValue;
                 }
             }
             else

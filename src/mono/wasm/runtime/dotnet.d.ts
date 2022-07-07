@@ -210,6 +210,7 @@ declare type CoverageProfilerOptions = {
 };
 interface EventPipeSessionOptions {
     collectRundownEvents?: boolean;
+    providers: string;
 }
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
@@ -249,7 +250,39 @@ interface EventPipeSession {
     stop(): void;
     getTraceBlob(): Blob;
 }
+declare const eventLevel: {
+    readonly LogAlways: 0;
+    readonly Critical: 1;
+    readonly Error: 2;
+    readonly Warning: 3;
+    readonly Informational: 4;
+    readonly Verbose: 5;
+};
+declare type EventLevel = typeof eventLevel;
+declare type UnnamedProviderConfiguration = Partial<{
+    keyword_mask: string | 0;
+    level: number;
+    args: string;
+}>;
+interface ProviderConfiguration extends UnnamedProviderConfiguration {
+    name: string;
+}
+declare class SessionOptionsBuilder {
+    private _rundown?;
+    private _providers;
+    constructor();
+    static get Empty(): SessionOptionsBuilder;
+    static get DefaultProviders(): SessionOptionsBuilder;
+    setRundownEnabled(enabled: boolean): SessionOptionsBuilder;
+    addProvider(provider: ProviderConfiguration): SessionOptionsBuilder;
+    addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    build(): EventPipeSessionOptions;
+}
 interface Diagnostics {
+    EventLevel: EventLevel;
+    SessionOptionsBuilder: typeof SessionOptionsBuilder;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 
@@ -441,6 +474,8 @@ interface DotnetPublicAPI {
     MONO: typeof MONO;
     BINDING: typeof BINDING;
     INTERNAL: any;
+    EXPORTS: any;
+    IMPORTS: any;
     Module: EmscriptenModule;
     RuntimeId: number;
     RuntimeBuildInfo: {

@@ -1,0 +1,9 @@
+// This is a fake implementation of stdalign.h for when
+// compiler C11 stdaliagn.h support is missing
+
+#ifndef FAKE_STD_ALIGN_H
+#define FAKE_STD_ALIGN_H
+
+#define alignas(x)
+
+#endif // FAKE_STD_ALIGN_H

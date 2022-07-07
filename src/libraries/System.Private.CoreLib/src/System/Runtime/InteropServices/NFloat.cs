@@ -24,6 +24,7 @@ namespace System.Runtime.InteropServices
     /// <summary>Defines an immutable value type that represents a floating type that has the same size as the native integer size.</summary>
     /// <remarks>It is meant to be used as an exchange type at the managed/unmanaged boundary to accurately represent in managed code unmanaged APIs that use a type alias for C or C++'s <c>float</c> on 32-bit platforms or <c>double</c> on 64-bit platforms, such as the CGFloat type in libraries provided by Apple.</remarks>
     [Intrinsic]
+    [NonVersionable] // This only applies to field layout
     public readonly struct NFloat
         : IBinaryFloatingPointIeee754<NFloat>,
           IMinMaxValue<NFloat>
@@ -860,13 +861,6 @@ namespace System.Runtime.InteropServices
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) => _value.TryFormat(destination, out charsWritten, format, provider);
 
         //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static NFloat IAdditionOperators<NFloat, NFloat, NFloat>.operator checked +(NFloat left, NFloat right) => left + right;
-
-        //
         // IAdditiveIdentity
         //
 
@@ -876,6 +870,18 @@ namespace System.Runtime.InteropServices
         //
         // IBinaryNumber
         //
+
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static NFloat IBinaryNumber<NFloat>.AllBitsSet
+        {
+#if TARGET_64BIT
+            [NonVersionable]
+            get => (NFloat)BitConverter.UInt64BitsToDouble(0xFFFF_FFFF_FFFF_FFFF);
+#else
+            [NonVersionable]
+            get => BitConverter.UInt32BitsToSingle(0xFFFF_FFFF);
+#endif
+        }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(NFloat value) => NativeType.IsPow2(value._value);
@@ -942,20 +948,6 @@ namespace System.Runtime.InteropServices
             return new NFloat(result);
 #endif
         }
-
-        //
-        // IDecrementOperators
-        //
-
-        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        static NFloat IDecrementOperators<NFloat>.operator checked --(NFloat value) => --value;
-
-        //
-        // IDivisionOperators
-        //
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static NFloat IDivisionOperators<NFloat, NFloat, NFloat>.operator checked /(NFloat left, NFloat right) => left / right;
 
         //
         // IExponentialFunctions
@@ -1197,13 +1189,6 @@ namespace System.Runtime.InteropServices
         public static NFloat Tanh(NFloat x) => new NFloat(NativeType.Tanh(x._value));
 
         //
-        // IIncrementOperators
-        //
-
-        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        static NFloat IIncrementOperators<NFloat>.operator checked ++(NFloat value) => ++value;
-
-        //
         // ILogarithmicFunctions
         //
 
@@ -1233,13 +1218,6 @@ namespace System.Runtime.InteropServices
         static NFloat IMultiplicativeIdentity<NFloat, NFloat>.MultiplicativeIdentity => new NFloat(NativeType.MultiplicativeIdentity);
 
         //
-        // IMultiplyOperators
-        //
-
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static NFloat IMultiplyOperators<NFloat, NFloat, NFloat>.operator checked *(NFloat left, NFloat right) => left * right;
-
-        //
         // INumber
         //
 
@@ -1247,7 +1225,7 @@ namespace System.Runtime.InteropServices
         public static NFloat Clamp(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.Clamp(value._value, min._value, max._value));
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static NFloat CopySign(NFloat x, NFloat y) => new NFloat(NativeType.CopySign(x._value, y._value));
+        public static NFloat CopySign(NFloat value, NFloat sign) => new NFloat(NativeType.CopySign(value._value, sign._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static NFloat Max(NFloat x, NFloat y) => new NFloat(NativeType.Max(x._value, y._value));
@@ -1734,14 +1712,14 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
         public static NFloat Cbrt(NFloat x) => new NFloat(NativeType.Cbrt(x._value));
 
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
-        // public static NFloat Hypot(NFloat x, NFloat y) => new NFloat(NativeType.Hypot(x._value, y._value));
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static NFloat Hypot(NFloat x, NFloat y) => new NFloat(NativeType.Hypot(x._value, y._value));
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
+        public static NFloat Root(NFloat x, int n) => new NFloat(NativeType.Root(x._value, n));
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static NFloat Sqrt(NFloat x) => new NFloat(NativeType.Sqrt(x._value));
-
-        // /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, TSelf)" />
-        // public static NFloat Root(NFloat x, NFloat n) => new NFloat(NativeType.Root(x._value, n._value));
 
         //
         // ISignedNumber
@@ -1761,21 +1739,20 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out NFloat result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static NFloat ISubtractionOperators<NFloat, NFloat, NFloat>.operator checked -(NFloat left, NFloat right) => left - right;
-
-        //
         // ITrigonometricFunctions
         //
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static NFloat Acos(NFloat x) => new NFloat(NativeType.Acos(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static NFloat AcosPi(NFloat x) => new NFloat(NativeType.AcosPi(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static NFloat Asin(NFloat x) => new NFloat(NativeType.Asin(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static NFloat AsinPi(NFloat x) => new NFloat(NativeType.AsinPi(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static NFloat Atan(NFloat x) => new NFloat(NativeType.Atan(x._value));
@@ -1783,8 +1760,17 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
         public static NFloat Atan2(NFloat y, NFloat x) => new NFloat(NativeType.Atan2(y._value, x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static NFloat Atan2Pi(NFloat y, NFloat x) => new NFloat(NativeType.Atan2Pi(y._value, x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static NFloat AtanPi(NFloat x) => new NFloat(NativeType.AtanPi(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static NFloat Cos(NFloat x) => new NFloat(NativeType.Cos(x._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static NFloat CosPi(NFloat x) => new NFloat(NativeType.CosPi(x._value));
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static NFloat Sin(NFloat x) => new NFloat(NativeType.Sin(x._value));
@@ -1796,35 +1782,13 @@ namespace System.Runtime.InteropServices
             return (new NFloat(sin), new NFloat(cos));
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static NFloat SinPi(NFloat x) => new NFloat(NativeType.SinPi(x._value));
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static NFloat Tan(NFloat x) => new NFloat(NativeType.Tan(x._value));
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
-        // public static NFloat AcosPi(NFloat x) => new NFloat(NativeType.AcosPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
-        // public static NFloat AsinPi(NFloat x) => new NFloat(NativeType.AsinPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
-        // public static NFloat AtanPi(NFloat x) => new NFloat(NativeType.AtanPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
-        // public static NFloat Atan2Pi(NFloat y, NFloat x) => new NFloat(NativeType.Atan2Pi(y._value, x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
-        // public static NFloat CosPi(NFloat x) => new NFloat(NativeType.CosPi(x._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
-        // public static NFloat SinPi(NFloat x) => new NFloat(NativeType.SinPi(x._value, y._value));
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
-        // public static NFloat TanPi(NFloat x) => new NFloat(NativeType.TanPi(x._value, y._value));
-
-        //
-        // IUnaryNegationOperators
-        //
-
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static NFloat IUnaryNegationOperators<NFloat, NFloat>.operator checked -(NFloat value) => -value;
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static NFloat TanPi(NFloat x) => new NFloat(NativeType.TanPi(x._value));
     }
 }

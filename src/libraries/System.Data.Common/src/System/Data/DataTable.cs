@@ -183,7 +183,7 @@ namespace System.Data
         /// </summary>
         public DataTable(string? tableName) : this()
         {
-            _tableName = tableName == null ? "" : tableName;
+            _tableName = tableName ?? "";
         }
 
         public DataTable(string? tableName, string? tableNamespace) : this(tableName)
@@ -543,7 +543,7 @@ namespace System.Data
                 {
                     ForeignKeyConstraint? fk = c as ForeignKeyConstraint;
                     Debug.Assert(fk != null);
-                    bool shouldSerialize = (allConstraints == true) || (fk.Table == this && fk.RelatedTable == this);
+                    bool shouldSerialize = allConstraints || (fk.Table == this && fk.RelatedTable == this);
 
                     if (shouldSerialize)
                     {
@@ -1171,7 +1171,7 @@ namespace System.Data
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public DataRelationCollection ChildRelations =>
-            _childRelationsCollection ?? (_childRelationsCollection = new DataRelationCollection.DataTableRelationCollection(this, false));
+            _childRelationsCollection ??= new DataRelationCollection.DataTableRelationCollection(this, false);
 
         /// <summary>
         /// Gets the collection of columns that belong to this table.
@@ -1186,7 +1186,7 @@ namespace System.Data
             Columns.Clear();
         }
 
-        private CompareInfo CompareInfo => _compareInfo ?? (_compareInfo = Locale.CompareInfo);
+        private CompareInfo CompareInfo => _compareInfo ??= Locale.CompareInfo;
 
         /// <summary>
         /// Gets the collection of constraints maintained by this table.
@@ -1346,7 +1346,7 @@ namespace System.Data
         /// Gets the collection of customized user information.
         /// </summary>
         [Browsable(false)]
-        public PropertyCollection ExtendedProperties => _extendedProperties ?? (_extendedProperties = new PropertyCollection());
+        public PropertyCollection ExtendedProperties => _extendedProperties ??= new PropertyCollection();
 
         internal IFormatProvider FormatProvider
         {
@@ -1543,8 +1543,7 @@ namespace System.Data
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public DataRelationCollection ParentRelations => _parentRelationsCollection ??
-            (_parentRelationsCollection = new DataRelationCollection.DataTableRelationCollection(this, true));
+        public DataRelationCollection ParentRelations => _parentRelationsCollection ??= new DataRelationCollection.DataTableRelationCollection(this, true);
 
         internal bool MergingData
         {
@@ -1768,10 +1767,7 @@ namespace System.Data
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.set_TableName|API> {0}, value='{1}'", ObjectID, value);
                 try
                 {
-                    if (value == null)
-                    {
-                        value = string.Empty;
-                    }
+                    value ??= string.Empty;
                     CultureInfo currentLocale = Locale;
                     if (string.Compare(_tableName, value, true, currentLocale) != 0)
                     {
@@ -1905,7 +1901,7 @@ namespace System.Data
                     {
                         if (_dataSet != null)
                         {
-                            string realNamespace = (value == null ? GetInheritedNamespace(new List<DataTable>()) : value);
+                            string realNamespace = value ?? GetInheritedNamespace(new List<DataTable>());
                             if (realNamespace != Namespace)
                             {
                                 // do this extra check only if the namespace is really going to change
@@ -2062,10 +2058,7 @@ namespace System.Data
             get { return _tablePrefix; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataTable.set_Prefix|API> {0}, value='{1}'", ObjectID, value);
                 if ((XmlConvert.DecodeName(value) == value) && (XmlConvert.EncodeName(value) != value))
                 {
@@ -2357,10 +2350,7 @@ namespace System.Data
 
         private DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
         {
-            if (visitedMap == null)
-            {
-                visitedMap = new Hashtable();
-            }
+            visitedMap ??= new Hashtable();
             if (visitedMap.Contains(sourceTable))
             {
                 return ((DataTable)visitedMap[sourceTable]!);
@@ -5917,10 +5907,7 @@ namespace System.Data
                                 }
                                 else
                                 {
-                                    if (xmlload == null)
-                                    {
-                                        xmlload = new XmlDataLoader(this, fIsXdr, topNode, false);
-                                    }
+                                    xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, false);
                                     xmlload.LoadData(reader);
                                     ret = fSchemaFound ? XmlReadMode.ReadSchema : XmlReadMode.IgnoreSchema;
                                 }
@@ -5942,8 +5929,7 @@ namespace System.Data
                             throw ExceptionBuilder.DataTableInferenceNotSupported();
                         }
 
-                        if (xmlload == null)
-                            xmlload = new XmlDataLoader(this, fIsXdr, false);
+                        xmlload ??= new XmlDataLoader(this, fIsXdr, false);
 
                         // so we InferSchema
                         if (!fDiffsFound)
@@ -6218,10 +6204,7 @@ namespace System.Data
                             {
                                 throw ExceptionBuilder.DataTableInferenceNotSupported();
                             }
-                            if (xmlload == null)
-                            {
-                                xmlload = new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
-                            }
+                            xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
                             xmlload.LoadData(reader);
                         }
                     } //end of the while
@@ -6232,10 +6215,7 @@ namespace System.Data
                     // now top node contains the data part
                     xdoc.AppendChild(topNode);
 
-                    if (xmlload == null)
-                    {
-                        xmlload = new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
-                    }
+                    xmlload ??= new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
 
                     if (mode == XmlReadMode.DiffGram)
                     {
@@ -6813,9 +6793,7 @@ namespace System.Data
 #endif
 
 #if DEBUG
-                if (t_usedTables == null)
-                    t_usedTables = new List<DataTable>();
-                t_usedTables.Add(table);
+                (t_usedTables ??= new List<DataTable>()).Add(table);
 #endif
                 _targetTable = table;
                 table._rowDiffId = null;
@@ -6864,8 +6842,7 @@ namespace System.Data
 #if DEBUG
                 // initialize list of tables out of current tables
                 // note: it might remain empty (still initialization is needed for assert to operate)
-                if (RowDiffIdUsageSection.t_usedTables == null)
-                    RowDiffIdUsageSection.t_usedTables = new List<DataTable>();
+                RowDiffIdUsageSection.t_usedTables ??= new List<DataTable>();
 #endif
                 for (int tableIndex = 0; tableIndex < ds.Tables.Count; ++tableIndex)
                 {
@@ -6915,11 +6892,7 @@ namespace System.Data
                 // assert scope has been created either with RowDiffIdUsageSection.Prepare or DSRowDiffIdUsageSection.Prepare
                 RowDiffIdUsageSection.Assert("missing call to RowDiffIdUsageSection.Prepare or DSRowDiffIdUsageSection.Prepare");
 
-                if (_rowDiffId == null)
-                {
-                    _rowDiffId = new Hashtable();
-                }
-                return _rowDiffId;
+                return _rowDiffId ??= new Hashtable();
             }
         }
 
@@ -6927,10 +6900,7 @@ namespace System.Data
 
         internal void AddDependentColumn(DataColumn expressionColumn)
         {
-            if (_dependentColumns == null)
-            {
-                _dependentColumns = new List<DataColumn>();
-            }
+            _dependentColumns ??= new List<DataColumn>();
 
             if (!_dependentColumns.Contains(expressionColumn))
             {

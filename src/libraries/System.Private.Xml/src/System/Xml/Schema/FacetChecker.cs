@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.Xml.Schema;
+using System.Xml.XPath;
+using System.Diagnostics;
+using System.Collections;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Globalization;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.ComponentModel;
-    using System.Xml.Serialization;
-    using System.Xml.Schema;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Threading;
-    using System.Globalization;
-
     internal abstract class FacetsChecker
     {
         private struct FacetsCompiler
@@ -152,7 +152,7 @@ namespace System.Xml.Schema
             internal void CompilePatternFacet(XmlSchemaPatternFacet facet)
             {
                 CheckProhibitedFlag(facet, RestrictionFlags.Pattern, SR.Sch_PatternFacetProhibited);
-                if (_firstPattern == true)
+                if (_firstPattern)
                 {
                     _regStr = new StringBuilder();
                     _regStr.Append('(');
@@ -171,10 +171,7 @@ namespace System.Xml.Schema
             internal void CompileEnumerationFacet(XmlSchemaFacet facet, IXmlNamespaceResolver nsmgr, XmlNameTable nameTable)
             {
                 CheckProhibitedFlag(facet, RestrictionFlags.Enumeration, SR.Sch_EnumerationFacetProhibited);
-                if (_derivedRestriction.Enumeration == null)
-                {
-                    _derivedRestriction.Enumeration = new ArrayList();
-                }
+                _derivedRestriction.Enumeration ??= new ArrayList();
                 _derivedRestriction.Enumeration.Add(ParseFacetValue(_datatype, facet, SR.Sch_EnumerationFacetInvalid, nsmgr, nameTable));
                 SetFlag(facet, RestrictionFlags.Enumeration);
             }
@@ -357,10 +354,7 @@ namespace System.Xml.Schema
                 //needs to be converted to a RegEx
                 if (_firstPattern == false)
                 {
-                    if (_derivedRestriction.Patterns == null)
-                    {
-                        _derivedRestriction.Patterns = new ArrayList();
-                    }
+                    _derivedRestriction.Patterns ??= new ArrayList();
                     try
                     {
                         _regStr!.Append(')');
@@ -604,10 +598,7 @@ namespace System.Xml.Schema
 
                 if ((_baseFlags & RestrictionFlags.Enumeration) != 0)
                 {
-                    if (_derivedRestriction.Enumeration == null)
-                    {
-                        _derivedRestriction.Enumeration = baseRestriction.Enumeration;
-                    }
+                    _derivedRestriction.Enumeration ??= baseRestriction.Enumeration;
                     SetFlag(RestrictionFlags.Enumeration);
                 }
 
@@ -986,7 +977,7 @@ namespace System.Xml.Schema
             }
             for (int i = 0; i < y; i++)
             {
-                returnValue = returnValue * decimalValue;
+                returnValue *= decimalValue;
             }
             return returnValue;
         }
@@ -1110,7 +1101,7 @@ namespace System.Xml.Schema
             }
             while (decimal.Truncate(value) != value)
             { //Till it has a fraction
-                value = value * 10;
+                value *= 10;
                 powerCnt++;
             }
 

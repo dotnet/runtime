@@ -45,7 +45,7 @@ namespace DebuggerTests
 
         public static void EvaluateLocalsFromAnotherAssembly()
         {
-            var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-source-link.dll");
+            var asm = System.Reflection.Assembly.LoadFrom("lazy-debugger-test.dll");
             var myType = asm.GetType("DebuggerTests.ClassToCheckFieldValue");
             var myMethod = myType.GetConstructor(new Type[] { });
             var a = myMethod.Invoke(new object[]{});
@@ -1915,6 +1915,30 @@ namespace DebuggerTests
             bool localBool = false;
             char localChar = 'Y';
             string localString = "S*T*R";
+        }
+    }
+
+    public static class EvaluateNullableProperties
+    {
+        class TestClass
+        {
+            public List<int> MemberListNull = null;
+            public List<int> MemberList = new List<int>() {1, 2};
+            public TestClass Sibling { get; set; }
+        }
+        static void Evaluate()
+        {
+            #nullable enable
+            List<int>? listNull = null;
+            #nullable disable
+            List<int> list = new List<int>() {1};
+            TestClass tc = new TestClass();
+            TestClass tcNull = null;
+            string str = "str#value";
+            string str_null = null;
+            int x = 5;
+            int? x_null = null;
+            int? x_val = x;
         }
     }
 }

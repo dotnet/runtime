@@ -34,6 +34,12 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace Internal.JitInterface
 {
+    enum CompilationResult
+    {
+        CompilationComplete,
+        CompilationRetryRequested
+    }
+
     internal sealed unsafe partial class CorInfoImpl
     {
         //
@@ -101,20 +107,23 @@ namespace Internal.JitInterface
             private static readonly IntPtr s_jit;
         }
 
-        private struct LikelyClassRecord
+        private struct LikelyClassMethodRecord
         {
-            public IntPtr clsHandle;
+            public IntPtr handle;
             public uint likelihood;
 
-            public LikelyClassRecord(IntPtr clsHandle, uint likelihood)
+            public LikelyClassMethodRecord(IntPtr handle, uint likelihood)
             {
-                this.clsHandle = clsHandle;
+                this.handle = handle;
                 this.likelihood = likelihood;
             }
         }
 
         [DllImport(JitLibrary)]
-        private extern static uint getLikelyClasses(LikelyClassRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+        private extern static uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+
+        [DllImport(JitLibrary)]
+        private extern static uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr GetJitHost(IntPtr configProvider);
@@ -180,11 +189,11 @@ namespace Internal.JitInterface
             _unmanagedCallbacks = GetUnmanagedCallbacks();
         }
 
-        public TextWriter Log
+        private Logger Logger
         {
             get
             {
-                return _compilation.Logger.Writer;
+                return _compilation.Logger;
             }
         }
 
@@ -192,17 +201,18 @@ namespace Internal.JitInterface
 
         public static IEnumerable<PgoSchemaElem> ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(PgoSchemaElem[] pgoData, CompilationModuleGroup compilationModuleGroup)
         {
-            bool hasTypeHistogram = false;
+            bool hasHistogram = false;
             foreach (var elem in pgoData)
             {
-                if (elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes)
+                if (elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes ||
+                    elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramMethods)
                 {
                     // found histogram
-                    hasTypeHistogram = true;
+                    hasHistogram = true;
                     break;
                 }
             }
-            if (!hasTypeHistogram)
+            if (!hasHistogram)
             {
                 foreach (var elem in pgoData)
                 {
@@ -222,9 +232,10 @@ namespace Internal.JitInterface
                     if ((i + 1 < pgoData.Length) &&
                         (pgoData[i].InstrumentationKind == PgoInstrumentationKind.HandleHistogramIntCount ||
                          pgoData[i].InstrumentationKind == PgoInstrumentationKind.HandleHistogramLongCount) &&
-                        (pgoData[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes))
+                        (pgoData[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes ||
+                         pgoData[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramMethods))
                     {
-                        PgoSchemaElem? newElem = ComputeLikelyClass(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
+                        PgoSchemaElem? newElem = ComputeLikelyClassMethod(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
                         if (newElem.HasValue)
                         {
                             yield return newElem.Value;
@@ -249,33 +260,63 @@ namespace Internal.JitInterface
             }
         }
 
-        private static PgoSchemaElem? ComputeLikelyClass(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
+        private static PgoSchemaElem? ComputeLikelyClassMethod(int index, Dictionary<IntPtr, object> handleToObject, PgoInstrumentationSchema[] nativeSchema, byte[] instrumentationData, CompilationModuleGroup compilationModuleGroup)
         {
             // getLikelyClasses will use two entries from the native schema table. There must be at least two present to avoid overruning the buffer
             if (index > (nativeSchema.Length - 2))
                 return null;
 
+            bool isType = nativeSchema[index + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes;
+
             fixed(PgoInstrumentationSchema* pSchema = &nativeSchema[index])
             {
                 fixed(byte* pInstrumentationData = &instrumentationData[0])
                 {
-                    // We're going to store only the most popular type to reduce size of the profile
-                    LikelyClassRecord* likelyClasses = stackalloc LikelyClassRecord[1];
-                    uint numberOfClasses = getLikelyClasses(likelyClasses, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
-
-                    if (numberOfClasses > 0)
+                    // We're going to store only the most popular type/method to reduce size of the profile
+                    LikelyClassMethodRecord* likelyClassMethods = stackalloc LikelyClassMethodRecord[1];
+                    uint numberOfRecords;
+                    if (isType)
                     {
-                        TypeDesc type = (TypeDesc)handleToObject[likelyClasses->clsHandle];
+                        numberOfRecords = getLikelyClasses(likelyClassMethods, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
+                    }
+                    else
+                    {
+                        numberOfRecords = getLikelyMethods(likelyClassMethods, 1, pSchema, 2, pInstrumentationData, nativeSchema[index].ILOffset);
+                    }
+
+                    if (numberOfRecords > 0)
+                    {
+                        TypeSystemEntityOrUnknown[] newData = null;
+                        if (isType)
+                        {
+                            TypeDesc type = (TypeDesc)handleToObject[likelyClassMethods->handle];
 #if READYTORUN
-                        if (compilationModuleGroup.VersionsWithType(type))
+                            if (compilationModuleGroup.VersionsWithType(type))
 #endif
+                            {
+                                newData = new[] { new TypeSystemEntityOrUnknown(type) };
+                            }
+                        }
+                        else
+                        {
+                            MethodDesc method = (MethodDesc)handleToObject[likelyClassMethods->handle];
+
+#if READYTORUN
+                            if (compilationModuleGroup.VersionsWithMethodBody(method))
+#endif
+                            {
+                                newData = new[] { new TypeSystemEntityOrUnknown(method) };
+                            }
+                        }
+
+                        if (newData != null)
                         {
                             PgoSchemaElem likelyClassElem = new PgoSchemaElem();
-                            likelyClassElem.InstrumentationKind = PgoInstrumentationKind.GetLikelyClass;
+                            likelyClassElem.InstrumentationKind = isType ? PgoInstrumentationKind.GetLikelyClass : PgoInstrumentationKind.GetLikelyMethod;
                             likelyClassElem.ILOffset = nativeSchema[index].ILOffset;
                             likelyClassElem.Count = 1;
-                            likelyClassElem.Other = (int)(likelyClasses->likelihood | (numberOfClasses << 8));
-                            likelyClassElem.DataObject = new TypeSystemEntityOrUnknown[] { new TypeSystemEntityOrUnknown(type) };
+                            likelyClassElem.Other = (int)(likelyClassMethods->likelihood | (numberOfRecords << 8));
+                            likelyClassElem.DataObject = newData;
                             return likelyClassElem;
                         }
                     }
@@ -285,7 +326,7 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
+        private CompilationResult CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             // methodIL must not be null
             if (methodIL == null)
@@ -385,9 +426,19 @@ namespace Internal.JitInterface
                     Array.Resize(ref _code, (int)codeSize);
                 }
             }
+
+            CompilationResult compilationCompleteBehavior = CompilationResult.CompilationComplete;
+            DetermineIfCompilationShouldBeRetried(ref compilationCompleteBehavior);
+            if (compilationCompleteBehavior == CompilationResult.CompilationRetryRequested)
+                return compilationCompleteBehavior;
+
             PublishCode();
             PublishROData();
+
+            return CompilationResult.CompilationComplete;
         }
+
+        partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result);
 
         private void PublishCode()
         {
@@ -431,7 +482,18 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
 #if READYTORUN
-            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray(), _compilation.NodeFactory);
+            MethodDesc[] inlineeArray;
+            if (_inlinedMethods != null)
+            {
+                inlineeArray = new MethodDesc[_inlinedMethods.Count];
+                _inlinedMethods.CopyTo(inlineeArray);
+                Array.Sort(inlineeArray, TypeSystemComparer.Instance.Compare);
+            }
+            else
+            {
+                inlineeArray = Array.Empty<MethodDesc>();
+            }
+            _methodCodeNode.InitializeInliningInfo(inlineeArray, _compilation.NodeFactory);
 
             // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
             var baselineSupport = _compilation.InstructionSetSupport;
@@ -460,7 +522,20 @@ namespace Internal.JitInterface
 
                 InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
-                _methodCodeNode.Fixups.Add(node);
+                AddPrecodeFixup(node);
+            }
+
+            Debug.Assert(_stashedPrecodeFixups.Count == 0);
+            if (_precodeFixups != null)
+            {
+                HashSet<ISymbolNode> computedNodes = new HashSet<ISymbolNode>();
+                foreach (var fixup in _precodeFixups)
+                {
+                    if (computedNodes.Add(fixup))
+                    {
+                        _methodCodeNode.Fixups.Add(fixup);
+                    }
+                }
             }
 #else
             var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
@@ -566,9 +641,13 @@ namespace Internal.JitInterface
             _lastException = null;
 
 #if READYTORUN
-            _inlinedMethods = new ArrayBuilder<MethodDesc>();
+            _inlinedMethods = null;
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
+            _precodeFixups = null;
+            _stashedPrecodeFixups.Clear();
+            _stashedInlinedMethods.Clear();
+            _ilBodiesNeeded = null;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
@@ -1178,6 +1257,13 @@ namespace Internal.JitInterface
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
         {
             MethodDesc method = HandleToObject(ftn);
+#if READYTORUN
+            // Add an early CanInline check to see if referring to the IL of the target methods is
+            // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
+            // later.
+            if (!_compilation.CanInline(MethodBeingCompiled, method))
+                return false;
+#endif
             MethodIL methodIL = _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
@@ -1316,7 +1402,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                ModuleToken declToken = resolver.GetModuleTokenForMethod(decl.GetTypicalMethodDefinition(), throwIfNotFound: false);
+                ModuleToken declToken = resolver.GetModuleTokenForMethod(decl.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: false);
                 if (declToken.IsNull)
                 {
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE;
@@ -1354,7 +1440,7 @@ namespace Internal.JitInterface
             else
             {
 #if READYTORUN
-                methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition()), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
+                methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: true), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
 #endif
 
                 info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, impl
@@ -1381,7 +1467,7 @@ namespace Internal.JitInterface
             if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
             {
                 ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
-                _methodCodeNode.Fixups.Add(virtualResolutionNode);
+                AddPrecodeFixup(virtualResolutionNode);
             }
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
@@ -1729,7 +1815,15 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
-            bool recordToken = _compilation.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
+            bool recordToken;
+            if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodIL.OwningMethod.GetTypicalMethodDefinition()))
+            {
+                recordToken = (methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation) && owningType is EcmaType;
+            }
+            else
+            {
+                recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
+            }
 #endif
 
             if (result is MethodDesc method)
@@ -2084,7 +2178,7 @@ namespace Internal.JitInterface
             if (NeedsTypeLayoutCheck(type))
             {
                 ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
-                _methodCodeNode.Fixups.Add(node);
+                AddPrecodeFixup(node);
             }
 #endif
             return (uint)classSize.AsInt;
@@ -2235,11 +2329,6 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
-
-            if (type.IsByReferenceOfT)
-            {
-                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
-            }
 
             foreach (var field in type.GetFields())
             {
@@ -2858,15 +2947,6 @@ namespace Internal.JitInterface
                 type = asCorInfoType(fieldType);
             }
 
-            Debug.Assert(!fieldDesc.OwningType.IsByReferenceOfT ||
-                fieldDesc.OwningType.GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
-            if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
-            {
-                Debug.Assert(structType == null || *structType == null);
-                Debug.Assert(fieldDesc.Offset.AsInt == 0);
-                type = CorInfoType.CORINFO_TYPE_BYREF;
-            }
-
             return type;
         }
 
@@ -3465,8 +3545,8 @@ namespace Internal.JitInterface
 
         private int doAssert(byte* szFile, int iLine, byte* szExpr)
         {
-            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
-            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szExpr));
+            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
+            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szExpr));
 
             return 1;
         }

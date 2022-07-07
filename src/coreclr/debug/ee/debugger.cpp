@@ -1010,7 +1010,7 @@ MemoryRange Debugger::s_hijackFunction[kMaxHijackFunctions] =
                                RedirectedHandledJITCaseForDbgThreadControl_StubEnd),
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForUserSuspend_Stub,
                                RedirectedHandledJITCaseForUserSuspend_StubEnd)
-#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
+#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64) && defined(USE_REDIRECT_FOR_GCSTRESS)
      ,
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForGCStress_Stub,
                                RedirectedHandledJITCaseForGCStress_StubEnd)
@@ -8662,6 +8662,12 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
     return ExceptionContinueSearch;
 }
 
+// Forward declaration
+int NotifyUserOfFaultMessageBox(
+    LPCWSTR title,       // Title
+    LPCWSTR message,     // Text message
+    UINT uType);        // Style of MessageBox
+
 //
 // NotifyUserOfFault notifies the user of a fault (unhandled exception
 // or user breakpoint) in the process, giving them the option to
@@ -8703,14 +8709,20 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
             flags |= MB_OKCANCEL | MB_ICONEXCLAMATION;
         }
 
+        SString text;
+        text.LoadResource(CCompRC::Error, resIDMessage);
+
+        // Format message string using optional parameters
+        StackSString formattedMessage;
+        formattedMessage.Printf((LPWSTR)text.GetUnicode(), pid, pid, tid, tid);
+
         {
             // Another potential hang. This may get run on the helper if we have a stack overflow.
             // Hopefully the odds of 1 thread hitting a stack overflow while another is stuck holding the heap
             // lock is very small.
             SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
-            result = MessageBox(resIDMessage, IDS_DEBUG_SERVICE_CAPTION,
-                flags, TRUE, TRUE, pid, pid, tid, tid);
+            result = NotifyUserOfFaultMessageBox(W("Application Error"), (LPWSTR)formattedMessage.GetUnicode(), flags);
         }
     }
 
@@ -16556,52 +16568,7 @@ void DebuggerHeap::Free(void *pMem)
 #endif // !DACCESS_COMPILE
 }
 
-#ifndef DACCESS_COMPILE
-// forward declare for specific type needed.
-int UtilMessageBoxVA(
-        HWND hWnd,        // Handle to Owner Window
-        UINT uText,       // Resource Identifier for Text message
-        UINT uCaption,    // Resource Identifier for Caption
-        UINT uType,       // Style of MessageBox
-        BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-        BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
-        va_list args);    // Additional Arguments
-
-// Message box API for the left side of the debugger. This API handles calls from the
-// debugger helper thread as well as from normal EE threads. It is the only one that
-// should be used from inside the debugger left side.
-int Debugger::MessageBox(
-                  UINT uText,       // Resource Identifier for Text message
-                  UINT uCaption,    // Resource Identifier for Caption
-                  UINT uType,       // Style of MessageBox
-                  BOOL displayForNonInteractive,    // Display even if the process is running non interactive
-                  BOOL showFileNameInTitle,         // Flag to show FileName in Caption
-                  ...)              // Additional Arguments
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-        MODE_PREEMPTIVE;
-        NOTHROW;
-
-        PRECONDITION(ThisMaybeHelperThread());
-    }
-    CONTRACTL_END;
-
-    va_list marker;
-    va_start(marker, showFileNameInTitle);
-
-    // Add the MB_TASKMODAL style to indicate that the dialog should be displayed on top of the windows
-    // owned by the current thread and should prevent interaction with them until dismissed.
-    uType |= MB_TASKMODAL;
-
-    int result = UtilMessageBoxVA(NULL, uText, uCaption, uType, displayForNonInteractive, showFileNameInTitle, marker);
-    va_end( marker );
-
-    return result;
-}
-
-#else // DACCESS_COMPILE
+#ifdef DACCESS_COMPILE
 void
 Debugger::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
