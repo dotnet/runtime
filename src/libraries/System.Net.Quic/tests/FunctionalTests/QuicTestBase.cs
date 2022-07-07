@@ -46,6 +46,7 @@ namespace System.Net.Quic.Tests
         {
             return new QuicServerConnectionOptions()
             {
+                DefaultStreamErrorCode = 654321,
                 ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
             };
         }
@@ -73,6 +74,7 @@ namespace System.Net.Quic.Tests
         {
             return new QuicClientConnectionOptions()
             {
+                DefaultStreamErrorCode = 123456,
                 RemoteEndPoint = endpoint,
                 ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
             };
@@ -99,7 +101,7 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        internal ValueTask<QuicListener> CreateQuicListener(int MaxInboundUnidirectionalStreams = 100, int MaxInboundBidirectionalStreams = 100)
         {
             var options = CreateQuicListenerOptions();
             return CreateQuicListener(options);
@@ -125,6 +127,7 @@ namespace System.Net.Quic.Tests
             {
                 clientOptions ??= new QuicClientConnectionOptions()
                 {
+                    DefaultStreamErrorCode = 123456,
                     RemoteEndPoint = listener.LocalEndPoint,
                     ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
                 };

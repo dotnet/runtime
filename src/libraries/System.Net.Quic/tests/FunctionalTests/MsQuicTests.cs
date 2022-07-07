@@ -430,8 +430,8 @@ namespace System.Net.Quic.Tests
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
                     var serverOptions = CreateQuicServerOptions();
-                    serverOptions.MaxBidirectionalStreams = 1;
-                    serverOptions.MaxUnidirectionalStreams = 1;
+                    serverOptions.MaxInboundBidirectionalStreams = 1;
+                    serverOptions.MaxInboundUnidirectionalStreams = 1;
                     return ValueTask.FromResult(serverOptions);
                 }
             };
@@ -470,8 +470,8 @@ namespace System.Net.Quic.Tests
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
                     var serverOptions = CreateQuicServerOptions();
-                    serverOptions.MaxBidirectionalStreams = 1;
-                    serverOptions.MaxUnidirectionalStreams = 1;
+                    serverOptions.MaxInboundBidirectionalStreams = 1;
+                    serverOptions.MaxInboundUnidirectionalStreams = 1;
                     return ValueTask.FromResult(serverOptions);
                 }
             };
@@ -540,8 +540,8 @@ namespace System.Net.Quic.Tests
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
                     var serverOptions = CreateQuicServerOptions();
-                    serverOptions.MaxBidirectionalStreams = 1;
-                    serverOptions.MaxUnidirectionalStreams = 1;
+                    serverOptions.MaxInboundBidirectionalStreams = 1;
+                    serverOptions.MaxInboundUnidirectionalStreams = 1;
                     return ValueTask.FromResult(serverOptions);
                 }
             };

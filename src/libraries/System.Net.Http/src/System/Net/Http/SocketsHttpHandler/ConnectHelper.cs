@@ -112,11 +112,12 @@ namespace System.Net.Http
             {
                 return await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
                 {
-                     MaxBidirectionalStreams = 0, // Client doesn't support inbound streams: https://www.rfc-editor.org/rfc/rfc9114.html#name-bidirectional-streams. An extension might change this.
-                     MaxUnidirectionalStreams = 5, // Minimum is 3: https://www.rfc-editor.org/rfc/rfc9114.html#unidirectional-streams (1x control stream + 2x QPACK). Set to 100 if/when support for PUSH streams is added.
-                     IdleTimeout = idleTimeout,
-                     RemoteEndPoint = endPoint,
-                     ClientAuthenticationOptions = clientAuthenticationOptions
+                    MaxInboundBidirectionalStreams = 0, // Client doesn't support inbound streams: https://www.rfc-editor.org/rfc/rfc9114.html#name-bidirectional-streams. An extension might change this.
+                    MaxInboundUnidirectionalStreams = 5, // Minimum is 3: https://www.rfc-editor.org/rfc/rfc9114.html#unidirectional-streams (1x control stream + 2x QPACK). Set to 100 if/when support for PUSH streams is added.
+                    IdleTimeout = idleTimeout,
+                    DefaultStreamErrorCode = (long)Http3ErrorCode.RequestCancelled,
+                    RemoteEndPoint = endPoint,
+                    ClientAuthenticationOptions = clientAuthenticationOptions
                 }, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)

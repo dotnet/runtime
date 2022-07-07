@@ -103,7 +103,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
     /// <summary>
     /// Used by <see cref="AcceptInboundStreamAsync(CancellationToken)" /> to throw in case no stream can be opened from the peer.
-    /// <c>true</c> when at least one of <see cref="QuicConnectionOptions.MaxBidirectionalStreams" /> or <see cref="QuicConnectionOptions.MaxUnidirectionalStreams" /> is greater than <c>0</c>.
+    /// <c>true</c> when at least one of <see cref="QuicConnectionOptions.MaxInboundBidirectionalStreams" /> or <see cref="QuicConnectionOptions.MaxInboundUnidirectionalStreams" /> is greater than <c>0</c>.
     /// </summary>
     private bool _canAccept;
 
@@ -175,7 +175,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
-            _canAccept = options.MaxBidirectionalStreams > 0 || options.MaxUnidirectionalStreams > 0;
+            _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
@@ -261,7 +261,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
-            _canAccept = options.MaxBidirectionalStreams > 0 || options.MaxUnidirectionalStreams > 0;
+            _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
 
             _sslConnectionOptions = new SslConnectionOptions(
                 isClient: false,

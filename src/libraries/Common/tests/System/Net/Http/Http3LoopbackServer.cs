@@ -36,8 +36,9 @@ namespace System.Net.Test.Common
                 {
                     var serverOptions = new QuicServerConnectionOptions()
                     {
-                        MaxBidirectionalStreams = options.MaxBidirectionalStreams,
-                        MaxUnidirectionalStreams = options.MaxUnidirectionalStreams,
+                        DefaultStreamErrorCode = Http3LoopbackConnection.H3_REQUEST_CANCELLED,
+                        MaxInboundBidirectionalStreams = options.MaxInboundBidirectionalStreams,
+                        MaxInboundUnidirectionalStreams = options.MaxInboundUnidirectionalStreams,
                         ServerAuthenticationOptions = new SslServerAuthenticationOptions
                         {
                             EnabledSslProtocols = options.SslProtocols,
@@ -136,16 +137,16 @@ namespace System.Net.Test.Common
     }
     public class Http3Options : GenericLoopbackOptions
     {
-        public int MaxUnidirectionalStreams { get; set; }
+        public int MaxInboundUnidirectionalStreams { get; set; }
 
-        public int MaxBidirectionalStreams { get; set; }
+        public int MaxInboundBidirectionalStreams { get; set; }
 
         public string Alpn { get; set; }
 
         public Http3Options()
         {
-            MaxUnidirectionalStreams = 10;
-            MaxBidirectionalStreams = 100;
+            MaxInboundUnidirectionalStreams = 10;
+            MaxInboundBidirectionalStreams = 100;
             Alpn = SslApplicationProtocol.Http3.ToString();
         }
     }

@@ -36,9 +36,10 @@ namespace System.Net.Quic
     public abstract partial class QuicConnectionOptions
     {
         internal QuicConnectionOptions() { }
+        public required long DefaultStreamErrorCode { get { throw null; } set { } }
         public System.TimeSpan IdleTimeout { get { throw null; } set { } }
-        public int MaxBidirectionalStreams { get { throw null; } set { } }
-        public int MaxUnidirectionalStreams { get { throw null; } set { } }
+        public int MaxInboundBidirectionalStreams { get { throw null; } set { } }
+        public int MaxInboundUnidirectionalStreams { get { throw null; } set { } }
     }
     public partial class QuicException : System.Exception
     {

@@ -103,13 +103,13 @@ internal static class MsQuicConfiguration
         }
 #pragma warning restore SYSLIB0040
 
-        if (options.MaxBidirectionalStreams > ushort.MaxValue)
+        if (options.MaxInboundBidirectionalStreams > ushort.MaxValue)
         {
-            throw new ArgumentException($"{nameof(QuicConnectionOptions.MaxBidirectionalStreams)} overflow.", nameof(options));
+            throw new ArgumentException($"{nameof(QuicConnectionOptions.MaxInboundBidirectionalStreams)} overflow.", nameof(options));
         }
-        if (options.MaxUnidirectionalStreams > ushort.MaxValue)
+        if (options.MaxInboundUnidirectionalStreams > ushort.MaxValue)
         {
-            throw new ArgumentException($"{nameof(QuicConnectionOptions.MaxUnidirectionalStreams)} overflow.", nameof(options));
+            throw new ArgumentException($"{nameof(QuicConnectionOptions.MaxInboundUnidirectionalStreams)} overflow.", nameof(options));
         }
         if (options.IdleTimeout < TimeSpan.Zero && options.IdleTimeout != Timeout.InfiniteTimeSpan)
         {
@@ -118,9 +118,9 @@ internal static class MsQuicConfiguration
 
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
         settings.IsSet.PeerUnidiStreamCount = 1;
-        settings.PeerUnidiStreamCount = (ushort)options.MaxUnidirectionalStreams;
+        settings.PeerUnidiStreamCount = (ushort)options.MaxInboundUnidirectionalStreams;
         settings.IsSet.PeerBidiStreamCount = 1;
-        settings.PeerBidiStreamCount = (ushort)options.MaxBidirectionalStreams;
+        settings.PeerBidiStreamCount = (ushort)options.MaxInboundBidirectionalStreams;
         if (options.IdleTimeout != TimeSpan.Zero)
         {
             settings.IsSet.IdleTimeoutMs = 1;

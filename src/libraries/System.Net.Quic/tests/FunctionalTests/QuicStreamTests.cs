@@ -257,8 +257,8 @@ namespace System.Net.Quic.Tests
         {
             await using QuicListener listener = await CreateQuicListener();
             var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
-            clientOptions.MaxBidirectionalStreams = 1;
-            clientOptions.MaxUnidirectionalStreams = 1;
+            clientOptions.MaxInboundBidirectionalStreams = 1;
+            clientOptions.MaxInboundUnidirectionalStreams = 1;
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
             await using (clientConnection)
             await using (serverConnection)

@@ -20,19 +20,24 @@ public abstract class QuicConnectionOptions
     /// Limit on the number of bidirectional streams the remote peer connection can create on an open connection.
     /// Default 0 for client and 100 for server connection.
     /// </summary>
-    public int MaxBidirectionalStreams { get; set; }
+    public int MaxInboundBidirectionalStreams { get; set; }
 
     /// <summary>
     /// Limit on the number of unidirectional streams the remote peer connection can create on an open connection.
     /// Default 0 for client and 10 for server connection.
     /// </summary>
-    public int MaxUnidirectionalStreams { get; set; }
+    public int MaxInboundUnidirectionalStreams { get; set; }
 
     /// <summary>
     /// Idle timeout for connections, after which the connection will be closed.
     /// Default <see cref="TimeSpan.Zero"/> means underlying implementation default idle timeout.
     /// </summary>
     public TimeSpan IdleTimeout { get; set; } = TimeSpan.Zero;
+
+    /// <summary>
+    /// Error code used when the stream needs to abort read or write side of the stream internally.
+    /// </summary>
+    public required long DefaultStreamErrorCode { get; set; }
 }
 
 /// <summary>
@@ -60,8 +65,8 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
     /// </summary>
     public QuicClientConnectionOptions()
     {
-        MaxBidirectionalStreams = 0;
-        MaxUnidirectionalStreams = 0;
+        MaxInboundBidirectionalStreams = 0;
+        MaxInboundUnidirectionalStreams = 0;
     }
 }
 
@@ -80,7 +85,7 @@ public sealed class QuicServerConnectionOptions : QuicConnectionOptions
     /// </summary>
     public QuicServerConnectionOptions()
     {
-        MaxBidirectionalStreams = 100;
-        MaxUnidirectionalStreams = 10;
+        MaxInboundBidirectionalStreams = 100;
+        MaxInboundUnidirectionalStreams = 10;
     }
 }

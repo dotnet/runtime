@@ -80,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequests_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
@@ -118,7 +118,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendStreamLimitRequestsConcurrently_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
@@ -164,7 +164,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = streamLimit });
             var lastRequestContentStarted = new TaskCompletionSource();
 
             Task serverTask = Task.Run(async () =>
