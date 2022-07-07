@@ -22,18 +22,8 @@ namespace System.Text.Json.Serialization
         /// <remarks>
         /// The options instance cannot be mutated once it is bound to the context instance.
         /// </remarks>
-        public JsonSerializerOptions Options
-        {
-            get
-            {
-                if (_options is null)
-                {
-                    var options = new JsonSerializerOptions { TypeInfoResolver = this, IsLockedInstance = true };
-                    _options = options;
-                }
-
-                return _options;
-            }
+        public JsonSerializerOptions Options =>
+            _options ??= new JsonSerializerOptions { TypeInfoResolver = this, IsLockedInstance = true };
 
             internal set
             {
