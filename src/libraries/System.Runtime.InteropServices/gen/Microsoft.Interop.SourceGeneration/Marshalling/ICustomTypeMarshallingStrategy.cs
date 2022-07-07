@@ -74,7 +74,7 @@ namespace Microsoft.Interop
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-            // <managedIdentifier> = <marshallerType>.ConvertToManagedGuaranteed(<nativeIdentifier>);
+            // <managedIdentifier> = <marshallerType>.ConvertToManagedFinally(<nativeIdentifier>);
             yield return ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
@@ -82,7 +82,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             _marshallerTypeSyntax,
-                            IdentifierName(ShapeMemberNames.Value.Stateless.ConvertToManagedGuaranteed)),
+                            IdentifierName(ShapeMemberNames.Value.Stateless.ConvertToManagedFinally)),
                         ArgumentList(SingletonSeparatedList(
                             Argument(IdentifierName(nativeIdentifier)))))));
         }
@@ -324,7 +324,7 @@ namespace Microsoft.Interop
 
             (string managedIdentifier, _) = context.GetIdentifiers(info);
 
-            // <managedIdentifier> = <marshaller>.ToManagedGuaranteed();
+            // <managedIdentifier> = <marshaller>.ToManagedFinally();
             yield return ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
@@ -332,7 +332,7 @@ namespace Microsoft.Interop
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             IdentifierName(context.GetAdditionalIdentifier(info, MarshallerIdentifier)),
-                            IdentifierName(ShapeMemberNames.Value.Stateful.ToManagedGuaranteed)),
+                            IdentifierName(ShapeMemberNames.Value.Stateful.ToManagedFinally)),
                         ArgumentList())));
         }
 
@@ -438,15 +438,15 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_shape.HasFlag(MarshallerShape.NotifyInvokeSucceeded))
+            if (!_shape.HasFlag(MarshallerShape.OnInvoked))
                 yield break;
 
-            // <marshaller>.NotifyInvokeSucceeded();
+            // <marshaller>.OnInvoked();
             yield return ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(context.GetAdditionalIdentifier(info, MarshallerIdentifier)),
-                        IdentifierName(ShapeMemberNames.Value.Stateful.NotifyInvokeSucceeded)),
+                        IdentifierName(ShapeMemberNames.Value.Stateful.OnInvoked)),
                     ArgumentList()));
         }
     }
@@ -583,7 +583,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Marshaller that enables support for marshalling blittable elements of a collection via a native type that implements the LinearCollection marshalling spec.
     /// </summary>
-    internal sealed class StatelessLinearCollectionMarshalling : ICustomTypeMarshallingStrategy
+    internal sealed class StatelessLinearCollectionBlittableElementsMarshalling : ICustomTypeMarshallingStrategy
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
         private readonly TypeSyntax _nativeTypeSyntax;
@@ -592,7 +592,7 @@ namespace Microsoft.Interop
         private readonly TypeSyntax _unmanagedElementType;
         private readonly ExpressionSyntax _numElementsExpression;
 
-        public StatelessLinearCollectionMarshalling(TypeSyntax marshallerTypeSyntax, TypeSyntax nativeTypeSyntax, MarshallerShape shape, TypeSyntax managedElementType, TypeSyntax unmanagedElementType, ExpressionSyntax numElementsExpression)
+        public StatelessLinearCollectionBlittableElementsMarshalling(TypeSyntax marshallerTypeSyntax, TypeSyntax nativeTypeSyntax, MarshallerShape shape, TypeSyntax managedElementType, TypeSyntax unmanagedElementType, ExpressionSyntax numElementsExpression)
         {
             _marshallerTypeSyntax = marshallerTypeSyntax;
             _nativeTypeSyntax = nativeTypeSyntax;

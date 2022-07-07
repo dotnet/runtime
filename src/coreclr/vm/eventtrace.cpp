@@ -5542,7 +5542,11 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
             _ASSERTE(g_pDebugInterface != NULL);
             g_pDebugInterface->InitializeLazyDataIfNecessary();
 
-            ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetILCodeVersionId());
+            ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc,
+                                                         ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap,
+                                                         pNativeCodeStartAddress,
+                                                         pConfig->GetCodeVersion().GetVersionId(),
+                                                         pConfig->GetCodeVersion().GetILCodeVersionId());
         }
 
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo))
@@ -6870,7 +6874,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
 //      dwEventOptions - Options that tells us, in the rundown case, whether we're
 //                       supposed to fire the start or end rundown events.
 //
-VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, ReJITID ilCodeId)
+VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId)
 {
     CONTRACTL
     {
@@ -6917,15 +6921,16 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     // choosing to fire the event
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap) != 0)
     {
-        FireEtwMethodILToNativeMap(
+        FireEtwMethodILToNativeMap_V1(
             ullMethodIdentifier,
-            ilCodeId,
+            nativeCodeId,
             0,          // Extent:  This event is only sent for JITted (not NGENd) methods, and
             //          currently there is only one extent (hot) for JITted methods.
             cMap,
             rguiILOffset,
             rguiNativeOffset,
-            GetClrInstanceId());
+            GetClrInstanceId(),
+            ilCodeId);
     }
 
     // Rundown provider
@@ -6937,9 +6942,9 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     //
     // (for an explanation of the parameters see the FireEtwMethodILToNativeMap call above)
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::MethodDCStartILToNativeMap) != 0)
-        FireEtwMethodDCStartILToNativeMap(ullMethodIdentifier, 0, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId());
+        FireEtwMethodDCStartILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::MethodDCEndILToNativeMap) != 0)
-        FireEtwMethodDCEndILToNativeMap(ullMethodIdentifier, 0, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId());
+        FireEtwMethodDCEndILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
 }
 
 VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId)
@@ -7108,6 +7113,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
         // allocators, we don't support code versioning so we need to short circuit the call.
         // This also allows our caller to avoid having to pre-enter the relevant locks.
         // see code:#TableLockHolder
+        DWORD nativeCodeVersionId = 0;
         ReJITID ilCodeId = 0;
         NativeCodeVersion nativeCodeVersion;
 #ifdef FEATURE_CODE_VERSIONING
@@ -7125,6 +7131,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             }
             else
             {
+                nativeCodeVersionId = nativeCodeVersion.GetVersionId();
                 ilCodeId = nativeCodeVersion.GetILCodeVersionId();
             }
         }
@@ -7159,7 +7166,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 
         // Send any supplemental events requested for this MethodID
         if (fSendILToNativeMapEvent)
-            ETW::MethodLog::SendMethodILToNativeMapEvent(pMD, dwEventOptions, codeStart, ilCodeId);
+            ETW::MethodLog::SendMethodILToNativeMapEvent(pMD, dwEventOptions, codeStart, nativeCodeVersionId, ilCodeId);
 
         if (fSendRichDebugInfoEvent)
             ETW::MethodLog::SendMethodRichDebugInfo(pMD, codeStart, nativeCodeVersion.GetVersionId(), ilCodeId);

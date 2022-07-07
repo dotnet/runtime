@@ -46,6 +46,31 @@ namespace LibraryImportGenerator.IntegrationTests
                 [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
                 [return: MarshalUsing(typeof(CustomArrayMarshaller<,>), ConstantElementCount = sizeof(long))]
                 public static partial byte[] GetLongBytes(long l);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
+                [return: MarshalAs(UnmanagedType.U1)]
+                public static partial bool AndAllMembers([MarshalUsing(typeof(CustomArrayMarshaller<,>))] BoolStruct[] pArray, int length);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array_in")]
+                [return: MarshalAs(UnmanagedType.U1)]
+                public static partial bool AndAllMembersIn([MarshalUsing(typeof(CustomArrayMarshaller<,>))] in BoolStruct[] pArray, int length);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_ref")]
+                public static partial void NegateBools(
+                    [MarshalUsing(typeof(CustomArrayMarshaller<,>), CountElementName = "numValues")] ref BoolStruct[] boolStruct,
+                    int numValues);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_out")]
+                public static partial void NegateBools(
+                    [MarshalUsing(typeof(CustomArrayMarshaller<,>))] BoolStruct[] boolStruct,
+                    int numValues,
+                    [MarshalUsing(typeof(CustomArrayMarshaller<,>), CountElementName = "numValues")] out BoolStruct[] pBoolStructOut);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_return")]
+                [return: MarshalUsing(typeof(CustomArrayMarshaller<,>), CountElementName = "numValues")]
+                public static partial BoolStruct[] NegateBools(
+                    [MarshalUsing(typeof(CustomArrayMarshaller<,>))] BoolStruct[] boolStruct,
+                    int numValues);
             }
         }
     }
@@ -138,5 +163,108 @@ namespace LibraryImportGenerator.IntegrationTests
 
             Assert.Equal(longVal, MemoryMarshal.Read<long>(NativeExportsNE.Arrays.Custom.GetLongBytes(longVal)));
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void NonBlittableElementArray_ByValue(bool result)
+        {
+            BoolStruct[] array = GetBoolStructsToAnd(result);
+            Assert.Equal(result, NativeExportsNE.Arrays.Custom.AndAllMembers(array, array.Length));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void NonBlittableElementArray_In(bool result)
+        {
+            BoolStruct[] array = GetBoolStructsToAnd(result);
+            Assert.Equal(result, NativeExportsNE.Arrays.Custom.AndAllMembersIn(array, array.Length));
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Ref()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            NativeExportsNE.Arrays.Custom.NegateBools(ref array, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Out()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            BoolStruct[] result;
+            NativeExportsNE.Arrays.Custom.NegateBools(array, array.Length, out result);
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Return()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            BoolStruct[] result = NativeExportsNE.Arrays.Custom.NegateBools(array, array.Length);
+            Assert.Equal(expected, result);
+        }
+
+        private static BoolStruct[] GetBoolStructsToAnd(bool result) => new BoolStruct[]
+            {
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true,
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true,
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = result,
+                },
+            };
+
+        private static BoolStruct[] GetBoolStructsToNegate() => new BoolStruct[]
+            {
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = false,
+                    b3 = true
+                },
+                new BoolStruct
+                {
+                    b1 = false,
+                    b2 = true,
+                    b3 = false
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true
+                },
+                new BoolStruct
+                {
+                    b1 = false,
+                    b2 = false,
+                    b3 = false
+                }
+            };
+
+        private static BoolStruct[] GetNegatedBoolStructs(BoolStruct[] toNegate)
+            => toNegate.Select(b => new BoolStruct() { b1 = !b.b1, b2 = !b.b2, b3 = !b.b3 }).ToArray();
+
     }
 }
