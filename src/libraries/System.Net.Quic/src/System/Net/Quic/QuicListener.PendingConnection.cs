@@ -72,7 +72,7 @@ public sealed partial class QuicListener
                 }
 
                 await connection.CloseAsync(default).ConfigureAwait(false);
-                connection.Dispose();
+                await connection.DisposeAsync().ConfigureAwait(false);
                 _finishHandshakeTask.SetResult(null);
             }
         }

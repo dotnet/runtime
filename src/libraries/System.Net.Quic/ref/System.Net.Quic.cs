@@ -13,24 +13,20 @@ namespace System.Net.Quic
         public System.Net.IPEndPoint? LocalEndPoint { get { throw null; } set { } }
         public required System.Net.EndPoint RemoteEndPoint { get { throw null; } set { } }
     }
-    public sealed partial class QuicConnection : System.IDisposable
+    public sealed partial class QuicConnection : System.IAsyncDisposable
     {
         internal QuicConnection() { }
-        public bool Connected { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
-        public System.Net.IPEndPoint? LocalEndPoint { get { throw null; } }
+        public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }
-        public System.Net.EndPoint RemoteEndPoint { get { throw null; } }
-        public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
+        public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> AcceptInboundStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> ConnectAsync(System.Net.Quic.QuicClientConnectionOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.ValueTask ConnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public void Dispose() { }
-        public int GetRemoteAvailableBidirectionalStreamCount() { throw null; }
-        public int GetRemoteAvailableUnidirectionalStreamCount() { throw null; }
-        public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenBidirectionalStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenUnidirectionalStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenOutboundStreamAsync(System.Net.Quic.QuicStreamType type, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override string ToString() { throw null; }
     }
     public partial class QuicConnectionAbortedException : System.Net.Quic.QuicException
     {
@@ -122,5 +118,10 @@ namespace System.Net.Quic
     {
         public QuicStreamAbortedException(string message, long errorCode) : base (default(string)) { }
         public long ErrorCode { get { throw null; } }
+    }
+    public enum QuicStreamType
+    {
+        Unidirectional = 0,
+        Bidirectional = 1,
     }
 }

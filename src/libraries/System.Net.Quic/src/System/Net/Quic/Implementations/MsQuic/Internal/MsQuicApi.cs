@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.Quic;
 
 using static Microsoft.Quic.MsQuic;
@@ -12,7 +11,7 @@ using static Microsoft.Quic.MsQuic;
 using Microsoft.Win32;
 #endif
 
-namespace System.Net.Quic.Implementations.MsQuic.Internal
+namespace System.Net.Quic
 {
     internal sealed unsafe class MsQuicApi
     {
@@ -27,9 +26,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         // This is workaround for a bug in ILTrimmer.
         // Without these DynamicDependency attributes, .ctor() will be removed from the safe handles.
         // Remove once fixed: https://github.com/mono/linker/issues/1660
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConnectionHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicStreamHandle))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(MsQuicSafeHandle))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(MsQuicContextSafeHandle))]
         private MsQuicApi(QUIC_API_TABLE* apiTable)

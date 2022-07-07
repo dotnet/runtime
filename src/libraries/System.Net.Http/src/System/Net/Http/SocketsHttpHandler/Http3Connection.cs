@@ -132,7 +132,7 @@ namespace System.Net.Http
                 QuicConnection connection = _connection;
                 _connection = null;
 
-                _ = _connectionClosedTask.ContinueWith(closeTask =>
+                _ = _connectionClosedTask.ContinueWith(async closeTask =>
                 {
                     if (closeTask.IsFaulted && NetEventSource.Log.IsEnabled())
                     {
@@ -141,7 +141,7 @@ namespace System.Net.Http
 
                     try
                     {
-                        connection.Dispose();
+                        await connection.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -184,7 +184,7 @@ namespace System.Net.Http
                             queueStartingTimestamp = Stopwatch.GetTimestamp();
                         }
 
-                        quicStream = await conn.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
+                        quicStream = await conn.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
 
                         requestStream = new Http3RequestStream(request, this, quicStream);
                         lock (SyncObj)
@@ -364,7 +364,7 @@ namespace System.Net.Http
         {
             try
             {
-                _clientControl = await _connection!.OpenUnidirectionalStreamAsync().ConfigureAwait(false);
+                _clientControl = await _connection!.OpenOutboundStreamAsync(QuicStreamType.Unidirectional).ConfigureAwait(false);
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -408,7 +408,7 @@ namespace System.Net.Http
                         }
 
                         // No cancellation token is needed here; we expect the operation to cancel itself when _connection is disposed.
-                        streamTask = _connection!.AcceptStreamAsync(CancellationToken.None);
+                        streamTask = _connection!.AcceptInboundStreamAsync(CancellationToken.None);
                     }
 
                     QuicStream stream = await streamTask.ConfigureAwait(false);

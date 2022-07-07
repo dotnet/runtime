@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Quic.Implementations.MsQuic;
-using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -12,6 +10,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Quic;
+using static System.Net.Quic.MsQuicHelpers;
 using static Microsoft.Quic.MsQuic;
 
 using NEW_CONNECTION_DATA = Microsoft.Quic.QUIC_LISTENER_EVENT._Anonymous_e__Union._NEW_CONNECTION_e__Struct;
@@ -146,7 +145,8 @@ public sealed partial class QuicListener : IAsyncDisposable
             "ListenerStart failed");
 
         // Get the actual listening endpoint.
-        LocalEndPoint = MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS, options.ListenEndPoint.AddressFamily);
+        address = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS);
+        LocalEndPoint = address.ToIPEndPoint(options.ListenEndPoint.AddressFamily);
     }
 
     /// <summary>
@@ -195,7 +195,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             return QUIC_STATUS_CONNECTION_REFUSED;
         }
 
-        QuicConnection connection = new QuicConnection(new MsQuicConnection(data.Connection, data.Info));
+        QuicConnection connection = new QuicConnection(data.Connection, data.Info);
         SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
         // Kicks off the rest of the handshake in the background.

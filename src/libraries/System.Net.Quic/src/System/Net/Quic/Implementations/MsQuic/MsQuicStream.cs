@@ -27,15 +27,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private sealed class State
         {
-            public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
-            // Roots the state in GC and it won't get collected while this exist.
-            // It must be kept alive until we receive SHUTDOWN_COMPLETE event
-            public GCHandle StateGCHandle;
+            public MsQuicContextSafeHandle Handle = null!; // set in ctor.
 
             public long StreamId = -1;
 
             public MsQuicStream? Stream; // roots the stream in the pinned state to prevent GC during an async read I/O.
-            public MsQuicConnection.State ConnectionState = null!; // set in ctor.
+            public QuicConnection.State ConnectionState = null!; // set in ctor.
 
             public ReadState ReadState;
 
@@ -93,26 +90,16 @@ namespace System.Net.Quic.Implementations.MsQuic
                 CleanupSendState(this);
                 Handle?.Dispose();
                 SendBuffers.Dispose();
-                if (StateGCHandle.IsAllocated) StateGCHandle.Free();
-                ConnectionState?.RemoveStream(null);
             }
         }
 
         // inbound.
-        internal unsafe MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
+        internal unsafe MsQuicStream(QuicConnection.State connectionState, MsQuicContextSafeHandle connectionHandle, QUIC_HANDLE* handle, QUIC_STREAM_OPEN_FLAGS flags)
         {
-            if (!connectionState.TryAddStream(this))
-            {
-                throw new ObjectDisposedException(nameof(QuicConnection));
-            }
             // this assignment should be done before SetCallbackHandlerDelegate to prevent NRE in HandleEventConnectionClose
-            // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
             _state.ConnectionState = connectionState;
-
             // Inbound streams are already started
             _state.StartCompletionSource.SetResult();
-            _state.Handle = streamHandle;
-            _state.StreamId = GetStreamId(streamHandle);
 
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
@@ -121,59 +108,55 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.SendState = SendState.Closed;
             }
 
-            _state.StateGCHandle = GCHandle.Alloc(_state);
+            GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
             try
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                MsQuicApi.Api.ApiTable->SetStreamCallback(_state.Handle.QuicHandle, &NativeCallback, (void*)GCHandle.ToIntPtr(_state.StateGCHandle));
+                MsQuicApi.Api.ApiTable->SetStreamCallback(_state.Handle.QuicHandle, &NativeCallback, (void*)GCHandle.ToIntPtr(context));
+                _state.Handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->StreamClose, SafeHandleType.Stream, connectionHandle);
             }
             catch
             {
-                _state.StateGCHandle.Free();
+                context.Free();
                 // don't free the streamHandle, it will be freed by the caller
                 throw;
             }
+            _state.StreamId = GetStreamId(_state.Handle);
 
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
                     _state,
                     $"{_state.Handle} Inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in connection {_state.ConnectionState.Handle} with StreamId {_state.StreamId}.");
+                        $"in connection {connectionHandle} with StreamId {_state.StreamId}.");
             }
         }
 
         // outbound.
-        internal unsafe MsQuicStream(MsQuicConnection.State connectionState, QUIC_STREAM_OPEN_FLAGS flags)
+        internal unsafe MsQuicStream(QuicConnection.State connectionState, MsQuicContextSafeHandle connectionHandle, QuicStreamType streamType)
         {
-            Debug.Assert(connectionState.Handle != null);
-
-            if (!connectionState.TryAddStream(this))
-            {
-                throw new ObjectDisposedException(nameof(QuicConnection));
-            }
             // this assignment should be done before StreamOpenDelegate to prevent NRE in HandleEventConnectionClose
-            // but after TryAddStream to prevent unnecessary RemoveStream in finalizer
             _state.ConnectionState = connectionState;
 
-            _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+            _canRead = streamType == QuicStreamType.Bidirectional;
             _canWrite = true;
 
-            _state.StateGCHandle = GCHandle.Alloc(_state);
             if (!_canRead)
             {
                 _state.ReadState = ReadState.Closed;
+
             }
 
+            GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
             try
             {
                 QUIC_HANDLE* handle;
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
                 int status = MsQuicApi.Api.ApiTable->StreamOpen(
-                    connectionState.Handle.QuicHandle,
-                    flags,
+                    connectionHandle.QuicHandle,
+                    streamType == QuicStreamType.Unidirectional ? QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL : QUIC_STREAM_OPEN_FLAGS.NONE,
                     &NativeCallback,
-                    (void*)GCHandle.ToIntPtr(_state.StateGCHandle),
+                    (void*)GCHandle.ToIntPtr(context),
                     &handle);
 
                 if (status == QUIC_STATUS_ABORTED)
@@ -183,12 +166,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
 
                 ThrowIfFailure(status, "Failed to open stream to peer");
-                _state.Handle = new SafeMsQuicStreamHandle(handle);
+                _state.Handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->StreamClose, SafeHandleType.Stream, connectionHandle);
             }
             catch
             {
-                _state.Handle?.Dispose();
-                _state.StateGCHandle.Free();
+                context.Free();
                 throw;
             }
 
@@ -196,8 +178,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"{_state.Handle} Outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in connection {_state.ConnectionState.Handle}.");
+                    $"{_state.Handle} Outbound {streamType} stream created in connection {connectionHandle}.");
             }
         }
 
@@ -1414,7 +1395,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // This can fail if the stream isn't started.
-        private static long GetStreamId(SafeMsQuicStreamHandle handle)
+        private static long GetStreamId(MsQuicSafeHandle handle)
         {
             return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, handle, QUIC_PARAM_STREAM_ID);
         }
@@ -1429,8 +1410,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             long errorCode = state.ConnectionState.AbortErrorCode;
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"{state.Handle} Stream handling connection {state.ConnectionState.Handle} close" +
-                    (errorCode != -1 ? $" with code {errorCode}" : ""));
+                NetEventSource.Info(state, $"{state.Handle} Stream handling connection close with code {errorCode}");
             }
 
             bool shouldCompleteRead = false;

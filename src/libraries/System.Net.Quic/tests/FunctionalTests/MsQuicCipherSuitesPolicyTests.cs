@@ -32,9 +32,8 @@ namespace System.Net.Quic.Tests
 
             var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = clientPolicy;
-            using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
+            await using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
 
-            await clientConnection.ConnectAsync();
             await clientConnection.CloseAsync(0);
         }
 
