@@ -4200,15 +4200,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 case NI_System_Type_get_IsEnum:
                                 {
                                     CorInfoType infoType = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
-                                    retNode = gtNewIconNode(
-                                        (eeIsValueClass(hClass) &&
-                                         // getTypeForPrimitiveNumericClass seems to not normalize enums
-                                         info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) ==
-                                             CORINFO_TYPE_UNDEF &&
-                                             // we need to check for void here
-                                             infoType != CORINFO_TYPE_UNDEF && infoType != CORINFO_TYPE_VOID)
-                                            ? 1
-                                            : 0);
+                                    retNode =
+                                        gtNewIconNode((eeIsValueClass(hClass) &&
+                                                       // getTypeForPrimitiveNumericClass seems to not normalize enums
+                                                       info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) ==
+                                                           CORINFO_TYPE_UNDEF &&
+                                                       // we need to check for void here
+                                                       infoType != CORINFO_TYPE_UNDEF && infoType != CORINFO_TYPE_VOID)
+                                                          ? 1
+                                                          : 0);
                                     break;
                                 }
                                 case NI_System_Type_get_IsValueType:
