@@ -1482,6 +1482,7 @@ typedef struct {
 	guint            no_inline : 1;
 	guint            gshared : 1;
 	guint            gsharedvt : 1;
+	guint            gsharedvt_min : 1;
 	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            interp : 1;

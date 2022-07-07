@@ -44,15 +44,16 @@ export RunningIlasmRoundTrip=
 ]]>
       </IlasmRoundTripBashScript>
 
-      <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+      <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+  <![CDATA[
 # IlasmRoundTrip Script
 # Disable Ilasm round-tripping for Linker tests.
 # Todo: Ilasm round-trip on linked binaries.
 
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
-  echo "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
-  "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
+  echo "$CORE_ROOT/ildasm" -raweh /unicode -out=$(DisassemblyName) $(InputAssemblyName)
+  "$CORE_ROOT/ildasm" -raweh /unicode -out=$(DisassemblyName) $(InputAssemblyName)
   ERRORLEVEL=$?
   if [ $ERRORLEVEL -ne 0 ]
   then
@@ -133,8 +134,8 @@ REM Disable Ilasm round-tripping for Linker tests.
 REM Todo: Ilasm round-trip on linked binaries.
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
-    ECHO %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
-    %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
+    ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
+    %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
 
     IF NOT "!ERRORLEVEL!"=="0" (
       ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!

@@ -93,15 +93,15 @@ file_fast_serialize_func (void *object, FastSerializer *fast_serializer)
 	EP_ASSERT (fast_serializer != NULL);
 
 	EventPipeFile *file = (EventPipeFile *)object;
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->file_open_system_time, sizeof (file->file_open_system_time));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->file_open_timestamp, sizeof (file->file_open_timestamp));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->timestamp_frequency, sizeof (file->timestamp_frequency));
+	ep_fast_serializer_write_system_time (fast_serializer, &file->file_open_system_time);
+	ep_fast_serializer_write_timestamp (fast_serializer, file->file_open_timestamp);
+	ep_fast_serializer_write_int64_t (fast_serializer, file->timestamp_frequency);
 
 	// the beginning of V3
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->pointer_size, sizeof (file->pointer_size));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->current_process_id, sizeof (file->current_process_id));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->number_of_processors, sizeof (file->number_of_processors));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->sampling_rate_in_ns, sizeof (file->sampling_rate_in_ns));
+	ep_fast_serializer_write_uint32_t (fast_serializer, file->pointer_size);
+	ep_fast_serializer_write_uint32_t (fast_serializer, file->current_process_id);
+	ep_fast_serializer_write_uint32_t (fast_serializer, file->number_of_processors);
+	ep_fast_serializer_write_uint32_t (fast_serializer, file->sampling_rate_in_ns);
 }
 
 static

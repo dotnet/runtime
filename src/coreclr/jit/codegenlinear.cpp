@@ -2628,7 +2628,16 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
     assert(jtrue->OperIs(GT_JTRUE));
 
-    GenTreeOp*   relop     = jtrue->gtGetOp1()->AsOp();
+    GenTreeOp* relop;
+    if (jtrue->gtGetOp1()->OperIsCompare())
+    {
+        relop = jtrue->gtGetOp1()->AsOp();
+    }
+    else
+    {
+        assert(jtrue->gtGetOp1()->OperIsConditionalCompare());
+        relop = jtrue->gtGetOp1()->AsConditional();
+    }
     GenCondition condition = GenCondition::FromRelop(relop);
 
     if (condition.PreferSwap())
