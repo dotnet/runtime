@@ -181,7 +181,7 @@ namespace Microsoft.Interop.JavaScript
             IMarshallingGeneratorFactory generatorFactory = new UnsupportedMarshallingFactory();
 
             generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
-            var amOptions = new AttributedMarshallingModelOptions(true, Scenario.ElementIn, Scenario.ElementRef, Scenario.ElementOut);
+            var amOptions = new AttributedMarshallingModelOptions(true, MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut);
             generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelGeneratorFactory(generatorFactory, amOptions), amOptions);
             var jsGeneratorFactory = new JSGeneratorFactory(generatorFactory);
 
