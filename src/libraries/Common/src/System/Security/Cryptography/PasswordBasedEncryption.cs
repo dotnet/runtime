@@ -77,8 +77,26 @@ namespace System.Security.Cryptography
             // Don't check that algorithmIdentifier.Parameters is set here.
             // Maybe some future PBES3 will have one with a default.
 
+            if (algorithmIdentifier.Algorithm == Oids.PasswordBasedEncryptionScheme2)
+            {
+                return Pbes2Decrypt(
+                    algorithmIdentifier.Parameters,
+                    password,
+                    passwordBytes,
+                    encryptedData,
+                    destination);
+            }
+
+            if (!Helpers.HasNonAesSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_UnknownAlgorithmIdentifier,
+                        algorithmIdentifier.Algorithm));
+            }
+
             HashAlgorithmName digestAlgorithmName;
-            SymmetricAlgorithm? cipher = null;
+            SymmetricAlgorithm cipher;
 
             bool pkcs12 = false;
 
@@ -86,9 +104,7 @@ namespace System.Security.Cryptography
             {
                 case Oids.PbeWithMD5AndDESCBC:
                     digestAlgorithmName = HashAlgorithmName.MD5;
-#pragma warning disable CA1416 // DES is unsupported on browser, caller will get PNSE
                     cipher = DES.Create();
-#pragma warning restore CA1416
                     break;
                 case Oids.PbeWithMD5AndRC2CBC:
                     digestAlgorithmName = HashAlgorithmName.MD5;
@@ -96,9 +112,7 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.PbeWithSha1AndDESCBC:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-#pragma warning disable CA1416 // DES is unsupported on browser, caller will get PNSE
                     cipher = DES.Create();
-#pragma warning restore CA1416
                     break;
                 case Oids.PbeWithSha1AndRC2CBC:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
@@ -106,16 +120,12 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.Pkcs12PbeWithShaAnd3Key3Des:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-#pragma warning disable CA1416 // TripleDES is unsupported on browser, caller will get PNSE
                     cipher = TripleDES.Create();
-#pragma warning restore CA1416
                     pkcs12 = true;
                     break;
                 case Oids.Pkcs12PbeWithShaAnd2Key3Des:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-#pragma warning disable CA1416 // TripleDES is unsupported on browser, caller will get PNSE
                     cipher = TripleDES.Create();
-#pragma warning restore CA1416
                     cipher.KeySize = 128;
                     pkcs12 = true;
                     break;
@@ -131,13 +141,6 @@ namespace System.Security.Cryptography
                     cipher.KeySize = 40;
                     pkcs12 = true;
                     break;
-                case Oids.PasswordBasedEncryptionScheme2:
-                    return Pbes2Decrypt(
-                        algorithmIdentifier.Parameters,
-                        password,
-                        passwordBytes,
-                        encryptedData,
-                        destination);
                 default:
                     throw new CryptographicException(
                         SR.Format(
@@ -146,7 +149,6 @@ namespace System.Security.Cryptography
             }
 
             Debug.Assert(digestAlgorithmName.Name != null);
-            Debug.Assert(cipher != null);
 
             using (cipher)
             {
@@ -256,10 +258,8 @@ namespace System.Security.Cryptography
                     cipher.KeySize = 256;
                     encryptionAlgorithmOid = Oids.Aes256Cbc;
                     break;
-                case PbeEncryptionAlgorithm.TripleDes3KeyPkcs12:
-#pragma warning disable CA1416 // TripleDES is unsupported on browser, caller will get PNSE
+                case PbeEncryptionAlgorithm.TripleDes3KeyPkcs12 when Helpers.HasNonAesSymmetricEncryption:
                     cipher = TripleDES.Create();
-#pragma warning restore CA1416
                     cipher.KeySize = 192;
                     encryptionAlgorithmOid = Oids.Pkcs12PbeWithShaAnd3Key3Des;
                     isPkcs12 = true;
@@ -604,6 +604,12 @@ namespace System.Security.Cryptography
                 return aes;
             }
 
+            if (!Helpers.HasNonAesSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_AlgorithmNotSupported, algId));
+            }
+
             if (algId == Oids.TripleDesCbc)
             {
                 // https://tools.ietf.org/html/rfc8018#appendix-B.2.2
@@ -617,9 +623,7 @@ namespace System.Security.Cryptography
                 // The parameters field associated with this OID ... shall have type
                 // OCTET STRING (SIZE(8)) specifying the initialization vector ...
                 ReadIvParameter(encryptionScheme.Parameters, 8, ref iv);
-#pragma warning disable CA1416 // TripleDES is unsupported on browser, caller will get PNSE
                 return TripleDES.Create();
-#pragma warning restore CA1416
             }
 
             if (algId == Oids.Rc2Cbc)
@@ -670,9 +674,7 @@ namespace System.Security.Cryptography
                 // The parameters field associated with this OID ... shall have type
                 // OCTET STRING (SIZE(8)) specifying the initialization vector ...
                 ReadIvParameter(encryptionScheme.Parameters, 8, ref iv);
-#pragma warning disable CA1416 // DES is unsupported on browser, caller will get PNSE
                 return DES.Create();
-#pragma warning restore CA1416
             }
 
             throw new CryptographicException(SR.Cryptography_UnknownAlgorithmIdentifier, algId);

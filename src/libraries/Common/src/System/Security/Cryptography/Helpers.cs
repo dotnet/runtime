@@ -10,6 +10,14 @@ namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+        [UnsupportedOSPlatformGuard("browser")]
+        internal static bool HasNonAesSymmetricEncryption =>
+#if NETCOREAPP
+            !OperatingSystem.IsBrowser();
+#else
+            true;
+#endif
+
 #if NETCOREAPP
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
@@ -21,7 +29,7 @@ namespace Internal.Cryptography
 #if NETCOREAPP
         [UnsupportedOSPlatformGuard("android")]
         [UnsupportedOSPlatformGuard("browser")]
-        public static bool IsRC2Supported => !OperatingSystem.IsAndroid();
+        public static bool IsRC2Supported => !OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser();
 #else
         public static bool IsRC2Supported => true;
 #endif

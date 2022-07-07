@@ -114,11 +114,9 @@ namespace System.Security.Cryptography
             {
                 return HMACSHA384.HashData(key, source, destination);
             }
-            else if (hashAlgorithm == HashAlgorithmName.MD5)
+            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
             {
-#pragma warning disable CA1416 // HMACMD5 is unsupported on browser, caller will get PNSE
                 return HMACMD5.HashData(key, source, destination);
-#pragma warning restore CA1416
             }
 
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));

@@ -51,7 +51,9 @@ namespace System.Security.Cryptography
                     pDestination, destination.Length);
 
                 if (result != 0)
+                {
                     throw new CryptographicException(SR.Format(SR.Unknown_SubtleCrypto_Error, result));
+                }
             }
         }
 
