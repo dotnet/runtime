@@ -5122,7 +5122,7 @@ void CodeGen::genEmitCodeForUnusedIndir(GenTreeIndir* tree)
     GenTree* addr = tree->Addr();
     if (!addr->isContained())
     {
-        GetEmitter()->emitIns_AR_R(INS_cmp, emitTypeSize(tree), addr->GetRegNum(), addr->GetRegNum(), 0);
+        GetEmitter()->emitIns_AR_R(INS_cmp, emitTypeSize(tree), REG_EAX, addr->GetRegNum(), 0);
         return;
     }
 
