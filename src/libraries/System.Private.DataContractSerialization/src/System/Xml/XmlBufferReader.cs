@@ -470,45 +470,38 @@ namespace System.Xml
             return value;
         }
 
-        public unsafe void UnsafeReadArray(byte* dst, byte* dstMax)
+        public void ReadRawArray<T>(Span<T> dst)
+            where T : unmanaged
         {
-            UnsafeReadArray(dst, (int)(dstMax - dst));
+            ReadRawArray(MemoryMarshal.AsBytes(dst));
         }
 
-        private unsafe void UnsafeReadArray(byte* dst, int length)
+        public void ReadRawArray(Span<byte> dst)
         {
-            // TODO: BlockCopy
             if (_stream != null)
             {
                 const int chunk = 256;
-                while (length >= chunk)
+                while (dst.Length >= chunk)
                 {
-                    byte[] _buffer = GetBuffer(chunk, out _offset);
-                    // TODO:  read directly from stream ?
-                    for (int i = 0; i < chunk; i++)
-                    {
-                        *dst++ = _buffer[_offset + i];
-                    }
-                    Advance(chunk);
-                    length -= chunk;
+                    EnsureBytes(chunk);
+                    // Get buffer, with all already read memory, but limit to dst.Length
+                    var buffer = GetBuffer(out _offset, out int offsetMax)
+                        .AsSpan(_offset, Math.Min(dst.Length, offsetMax - _offset));
+
+                    buffer.CopyTo(dst);
+
+                    dst = dst.Slice(buffer.Length);
+                    Advance(buffer.Length);
                 }
             }
 
-            if (length > 0)
+            if (dst.Length > 0)
             {
-                byte[] buffer = GetBuffer(length, out _offset);
-                fixed (byte* _src = &buffer[_offset])
-                {
-                    byte* src = _src;
-                    byte* dstMax = dst + length;
-                    while (dst < dstMax)
-                    {
-                        *dst = *src;
-                        dst++;
-                        src++;
-                    }
-                }
-                Advance(length);
+                GetBuffer(dst.Length, out _offset)
+                    .AsSpan(_offset, dst.Length)
+                    .CopyTo(dst);
+
+                Advance(dst.Length);
             }
         }
 
