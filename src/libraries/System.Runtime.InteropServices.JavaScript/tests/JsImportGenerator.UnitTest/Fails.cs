@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 using LibraryImportGenerator.UnitTests;
+using System.Linq;
 
 namespace JSImportGenerator.Unit.Tests
 {
@@ -21,7 +22,7 @@ namespace JSImportGenerator.Unit.Tests
             yield return new object?[] { CodeSnippets.DefaultReturnMarshaler("System.Func<string>"), null, null };
             yield return new object?[] { CodeSnippets.DefaultReturnMarshaler("System.Action"), new string[] {
                 "TODO Please use JSMarshalAsAttribute to specify marshaling of global::System.Action. The generated source will not handle marshalling of the return value of method 'Import1'.",
-                "TODO Please use JSMarshalAsAttribute to specify marshaling of global::System.Action. The generated source will not handle marshalling of the return value of method 'Import1'.",
+                "TODO Please use JSMarshalAsAttribute to specify marshaling of global::System.Action. The generated source will not handle marshalling of the return value of method 'Export1'.",
             },null };
             yield return new object?[] { CodeSnippets.DefaultReturnMarshaler("System.Span<byte>"), null, null };
             yield return new object?[] { CodeSnippets.DefaultReturnMarshaler("System.Span<long>"), null, null };
@@ -66,18 +67,10 @@ namespace JSImportGenerator.Unit.Tests
             {
                 JSTestUtils.AssertMessages(generatorDiags, generatorMessages);
             }
-            else
-            {
-                Assert.NotEmpty(generatorDiags);
-            }
             var compilationDiags = newComp.GetDiagnostics();
             if (compilerMessages != null)
             {
                 JSTestUtils.AssertMessages(compilationDiags, compilerMessages);
-            }
-            else
-            {
-                Assert.NotEmpty(compilationDiags);
             }
         }
     }
