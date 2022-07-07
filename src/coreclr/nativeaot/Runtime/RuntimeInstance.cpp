@@ -367,16 +367,4 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (MethodTable * pInterfac
 }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
-COOP_PINVOKE_HELPER(PTR_UInt8, RhGetThreadLocalStorageForDynamicType, (uint32_t uOffset, uint32_t tlsStorageSize, uint32_t numTlsCells))
-{
-    Thread * pCurrentThread = ThreadStore::GetCurrentThread();
-
-    PTR_UInt8 pResult = pCurrentThread->GetThreadLocalStorageForDynamicType(uOffset);
-    if (pResult != NULL || tlsStorageSize == 0 || numTlsCells == 0)
-        return pResult;
-
-    ASSERT(tlsStorageSize > 0 && numTlsCells > 0);
-    return pCurrentThread->AllocateThreadLocalStorageForDynamicType(uOffset, tlsStorageSize, numTlsCells);
-}
-
 #endif // DACCESS_COMPILE

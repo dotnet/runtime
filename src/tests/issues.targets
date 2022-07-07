@@ -247,6 +247,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/**">
             <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
+          <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows all architecture excludes -->
@@ -1451,6 +1454,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
             <Issue>https://github.com/dotnet/runtime/issues/61693</Issue>
         </ExcludeList>

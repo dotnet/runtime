@@ -18,6 +18,8 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Checked user-defined operators](#checked-user-defined-operators)
 - [Atomic reads and writes](#atomic-reads-and-writes)
 - [Backward branch constraints](#backward-branch-constraints)
+- [API documentation](#api-documentation)
+- [Debug Interchange Format](#debug-interchange-format)
 
 ## Signatures
 
@@ -1025,3 +1027,11 @@ A conforming CLI shall guarantee that read and write access of *built-in primiti
 ## Backward branch constraints
 
 Section "II.1.7.5 Backward branch constraints" is deleted. These constraints were not enforced by any mainstream .NET runtime and they are not respected by .NET compilers. It means that it is not possible to infer the exact state of the evaluation stack at every instruction with a single forward-pass through the CIL instruction stream.
+
+## API documentation
+
+API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://docs.microsoft.com/en-us/dotnet/api/.
+
+## Debug Interchange Format
+
+The Debug Interchange Format escribed in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).

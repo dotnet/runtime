@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
 
         public HMACNativeHashProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            Debug.Assert(HashProviderDispenser.CanUseSubtleCryptoImpl);
+            Debug.Assert(Interop.BrowserCrypto.CanUseSubtleCrypto);
 
             (_hashAlgorithm, _hashSizeInBytes) = SHANativeHashProvider.HashAlgorithmToPal(hashAlgorithmId);
             _key = key.ToArray();

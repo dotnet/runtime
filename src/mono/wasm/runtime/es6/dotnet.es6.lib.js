@@ -127,6 +127,7 @@ const linked_functions = [
     "dotnet_browser_can_use_subtle_crypto_impl",
     "dotnet_browser_simple_digest_hash",
     "dotnet_browser_sign",
+    "dotnet_browser_encrypt_decrypt",
 
     /// mono-threads-wasm.c
     #if USE_PTHREADS

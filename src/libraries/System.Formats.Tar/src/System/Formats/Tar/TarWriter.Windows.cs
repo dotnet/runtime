@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -13,11 +15,13 @@ namespace System.Formats.Tar
         private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute;
 
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
-        partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
+        private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
         {
-            TarEntryType entryType;
+            Debug.Assert(!string.IsNullOrEmpty(fullPath));
+
             FileAttributes attributes = File.GetAttributes(fullPath);
 
+            TarEntryType entryType;
             if (attributes.HasFlag(FileAttributes.ReparsePoint))
             {
                 entryType = TarEntryType.SymbolicLink;
@@ -64,18 +68,14 @@ namespace System.Formats.Tar
                     Mode = FileMode.Open,
                     Access = FileAccess.Read,
                     Share = FileShare.Read,
-                    Options = FileOptions.None
+                    Options = fileOptions
                 };
 
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = File.Open(fullPath, options);
+                entry._header._dataStream = new FileStream(fullPath, options);
             }
 
-            WriteEntry(entry);
-            if (entry._header._dataStream != null)
-            {
-                entry._header._dataStream.Dispose();
-            }
+            return entry;
         }
     }
 }
