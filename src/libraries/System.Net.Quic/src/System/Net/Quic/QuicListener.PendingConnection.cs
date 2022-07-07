@@ -68,7 +68,7 @@ public sealed partial class QuicListener
 
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(connection, $"Connection handshake failed: {ex}");
+                    NetEventSource.Error(connection, $"{connection} Connection handshake failed: {ex}");
                 }
 
                 await connection.CloseAsync(default).ConfigureAwait(false);

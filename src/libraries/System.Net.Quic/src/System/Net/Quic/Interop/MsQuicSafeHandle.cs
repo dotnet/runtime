@@ -34,7 +34,7 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
 
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, "MsQuicSafeHandle created");
+            NetEventSource.Info(this, $"{this} MsQuicSafeHandle created");
         }
     }
 
@@ -45,7 +45,7 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
 
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, "MsQuicSafeHandle released");
+            NetEventSource.Info(this, $"{this} MsQuicSafeHandle released");
         }
 
         return true;
@@ -97,7 +97,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Info(this, $"{_parent} ref count incremented");
+                    NetEventSource.Info(this, $"{this} {_parent} ref count incremented");
                 }
             }
         }
@@ -112,7 +112,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
             _parent.DangerousRelease();
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"{_parent} ref count decremented");
+                NetEventSource.Info(this, $"{this} {_parent} ref count decremented");
             }
         }
         return true;

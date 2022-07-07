@@ -64,7 +64,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(listener, $"Listener listens on {listener.LocalEndPoint}");
+            NetEventSource.Info(listener, $"{listener} Listener listens on {listener.LocalEndPoint}");
         }
 
         return ValueTask.FromResult(listener);
@@ -240,7 +240,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Process the event.
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(instance, $"Received event {listenerEvent->Type}");
+                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type}");
             }
             return instance.HandleListenerEvent(ref *listenerEvent);
         }
@@ -248,7 +248,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(instance, $"Exception while processing event {listenerEvent->Type}: {ex}");
+                NetEventSource.Error(instance, $"{instance} Exception while processing event {listenerEvent->Type}: {ex}");
             }
             return QUIC_STATUS_INTERNAL_ERROR;
         }

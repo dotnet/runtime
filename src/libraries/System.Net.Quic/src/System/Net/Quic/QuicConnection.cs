@@ -356,7 +356,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"Connection connected {LocalEndPoint} -> {RemoteEndPoint}");
+                NetEventSource.Info(this, $"{this} Connection connected {LocalEndPoint} -> {RemoteEndPoint}");
             }
             return QUIC_STATUS_SUCCESS;
         }
@@ -411,7 +411,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"Certificate validation for '${_remoteCertificate?.Subject}' is ${(isValid ? "" : "not ")}valid");
+                NetEventSource.Info(this, $"{this} Certificate validation for '${_remoteCertificate?.Subject}' is ${(isValid ? "" : "not ")}valid");
             }
             return isValid ? QUIC_STATUS_SUCCESS : QUIC_STATUS_USER_CANCELED;
         }
@@ -441,7 +441,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             // Process the event.
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(instance, $"Received event {connectionEvent->Type}");
+                NetEventSource.Info(instance, $"{instance} Received event {connectionEvent->Type}");
             }
             return instance.HandleConnectionEvent(ref *connectionEvent);
         }
@@ -449,7 +449,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(instance, $"Exception while processing event {connectionEvent->Type}: {ex}");
+                NetEventSource.Error(instance, $"{instance} Exception while processing event {connectionEvent->Type}: {ex}");
             }
             return QUIC_STATUS_INTERNAL_ERROR;
         }
