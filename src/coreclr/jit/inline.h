@@ -614,6 +614,7 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     unsigned               preexistingSpillTemp;
     unsigned               clsAttr;
     unsigned               methAttr;
+    IL_OFFSET              ilOffset; // actual IL offset of instruction that resulted in this inline candidate
     CorInfoInitClassResult initClassResult;
     var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
@@ -742,6 +743,12 @@ public:
 
     // Dump full subtree in xml format
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+    IL_OFFSET GetActualCallOffset()
+    {
+        return m_ActualCallOffset;
+    }
 
     // Get callee handle
     CORINFO_METHOD_HANDLE GetCallee() const
@@ -753,8 +760,6 @@ public:
     {
         return m_Ordinal;
     }
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // Get the parent context for this context.
     InlineContext* GetParent() const
@@ -854,28 +859,28 @@ public:
 private:
     InlineContext(InlineStrategy* strategy);
 
-    InlineStrategy*   m_InlineStrategy;    // overall strategy
-    InlineContext*    m_Parent;            // logical caller (parent)
-    InlineContext*    m_Child;             // first child
-    InlineContext*    m_Sibling;           // next child of the parent
-    const BYTE*       m_Code;              // address of IL buffer for the method
-    unsigned          m_ILSize;            // size of IL buffer for the method
-    unsigned          m_ImportedILSize;    // estimated size of imported IL
-    ILLocation        m_Location;          // inlining statement location within parent
-    InlineObservation m_Observation;       // what lead to this inline success or failure
-    int               m_CodeSizeEstimate;  // in bytes * 10
-    bool              m_Success : 1;       // true if this was a successful inline
-    bool              m_Devirtualized : 1; // true if this was a devirtualized call
-    bool              m_Guarded : 1;       // true if this was a guarded call
-    bool              m_Unboxed : 1;       // true if this call now invokes the unboxed entry
+    InlineStrategy*       m_InlineStrategy;    // overall strategy
+    InlineContext*        m_Parent;            // logical caller (parent)
+    InlineContext*        m_Child;             // first child
+    InlineContext*        m_Sibling;           // next child of the parent
+    const BYTE*           m_Code;              // address of IL buffer for the method
+    CORINFO_METHOD_HANDLE m_Callee;            // handle to the method
+    unsigned              m_ILSize;            // size of IL buffer for the method
+    unsigned              m_ImportedILSize;    // estimated size of imported IL
+    ILLocation            m_Location;          // inlining statement location within parent
+    IL_OFFSET             m_ActualCallOffset;  // IL offset of actual call instruction leading to the inline
+    InlineObservation     m_Observation;       // what lead to this inline success or failure
+    int                   m_CodeSizeEstimate;  // in bytes * 10
+    unsigned              m_Ordinal;           // Ordinal number of this inline
+    bool                  m_Success : 1;       // true if this was a successful inline
+    bool                  m_Devirtualized : 1; // true if this was a devirtualized call
+    bool                  m_Guarded : 1;       // true if this was a guarded call
+    bool                  m_Unboxed : 1;       // true if this call now invokes the unboxed entry
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    InlinePolicy*         m_Policy;           // policy that evaluated this inline
-    CORINFO_METHOD_HANDLE m_Callee;           // handle to the method
-    unsigned              m_TreeID;           // ID of the GenTreeCall in the parent
-    unsigned              m_Ordinal;          // Ordinal number of this inline
-    IL_OFFSET             m_ActualCallOffset; // IL offset of actual call instruction leading to the inline
+    InlinePolicy* m_Policy; // policy that evaluated this inline
+    unsigned      m_TreeID; // ID of the GenTreeCall in the parent
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
