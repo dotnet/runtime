@@ -28,9 +28,8 @@ namespace System.Formats.Tar
             UnixFileMode.OtherRead;
 
         private const UnixFileMode DefaultDirectoryMode =
-            UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite |
-            UnixFileMode.GroupExecute | UnixFileMode.GroupRead |
-            UnixFileMode.OtherExecute | UnixFileMode.OtherRead;
+            DefaultFileMode |
+            UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
         internal static int GetDefaultMode(TarEntryType type)
             => type is TarEntryType.Directory or TarEntryType.DirectoryList ? (int)DefaultDirectoryMode : (int)DefaultFileMode;

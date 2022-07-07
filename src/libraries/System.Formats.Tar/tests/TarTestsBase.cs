@@ -15,7 +15,7 @@ namespace System.Formats.Tar.Tests
 
         // Default values are what a TarEntry created with its constructor will set
         protected const UnixFileMode DefaultFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
-        private const UnixFileMode DefaultDirectoryMode = UnixFileMode.UserExecute | UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupExecute | UnixFileMode.GroupRead | UnixFileMode.OtherExecute | UnixFileMode.OtherRead;
+        private const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internall used as default
         protected const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute; // Creating archives in Windows always sets the mode to 777
         protected const int DefaultGid = 0;
         protected const int DefaultUid = 0;
