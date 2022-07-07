@@ -733,6 +733,7 @@ public:
                                bool         hasOverflowCheck = false);
 
     ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType);
 
     bool IsVNNotAField(ValueNum vn);
 

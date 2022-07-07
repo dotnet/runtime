@@ -4872,6 +4872,9 @@ public:
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
 
+    // Does value-numbering for a bitcast tree.
+    void fgValueNumberBitCast(GenTree* tree);
+
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
 
