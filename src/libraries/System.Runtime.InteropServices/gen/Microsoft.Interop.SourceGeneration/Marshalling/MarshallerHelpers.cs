@@ -142,6 +142,11 @@ namespace Microsoft.Interop
             return context.GetAdditionalIdentifier(info, "nativeSpan");
         }
 
+        public static string GetNumElementsIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "numElements");
+        }
+
         /// <summary>
         /// Generate a topologically sorted collection of elements.
         /// </summary>
@@ -276,102 +281,6 @@ namespace Microsoft.Interop
                 foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
                 {
                     yield return nestedElements;
-                }
-            }
-        }
-
-        public static class LinearCollection
-        {
-            public static StatementSyntax NonBlittableContentsMarshallingStatement(
-                TypePositionInfo info,
-                StubCodeContext context,
-                TypePositionInfo elementInfo,
-                IMarshallingGenerator elementMarshaller,
-                ExpressionSyntax lengthExpression,
-                params StubCodeContext.Stage[] stagesToGeneratePerElement)
-            {
-                string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
-                string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
-                var elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
-                    StubCodeContext.Stage.Setup,
-                    managedSpanIdentifier,
-                    nativeSpanIdentifier,
-                    context);
-
-                TypePositionInfo localElementInfo = elementInfo with
-                {
-                    InstanceIdentifier = info.InstanceIdentifier,
-                    RefKind = info.IsByRef ? info.RefKind : info.ByValueContentsMarshalKind.GetRefKindForByValueContentsKind(),
-                    ManagedIndex = info.ManagedIndex,
-                    NativeIndex = info.NativeIndex
-                };
-
-                List<StatementSyntax> elementStatements = new();
-                foreach (StubCodeContext.Stage stage in stagesToGeneratePerElement)
-                {
-                    var elementSubContext = elementSetupSubContext with { CurrentStage = stage };
-                    elementStatements.AddRange(elementMarshaller.Generate(localElementInfo, elementSubContext));
-                }
-
-                if (elementStatements.Any())
-                {
-                    StatementSyntax marshallingStatement = Block(
-                        List(elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
-                            .Concat(elementStatements)));
-
-                    if (elementMarshaller.AsNativeType(elementInfo) is PointerTypeSyntax elementNativeType)
-                    {
-                        PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
-                        marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
-                    }
-
-                    // Iterate through the elements of the native collection to marshal them
-                    return MarshallerHelpers.GetForLoop(lengthExpression, elementSetupSubContext.IndexerIdentifier)
-                        .WithStatement(marshallingStatement);
-                }
-
-                return EmptyStatement();
-            }
-
-            /// <summary>
-            /// Rewrite assignment expressions to the native identifier to cast to IntPtr.
-            /// This handles the case where the native type of a non-blittable managed type is a pointer,
-            /// which are unsupported in generic type parameters.
-            /// </summary>
-            private sealed class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
-            {
-                private readonly string _nativeIdentifier;
-                private readonly PointerTypeSyntax _nativeType;
-
-                public PointerNativeTypeAssignmentRewriter(string nativeIdentifier, PointerTypeSyntax nativeType)
-                {
-                    _nativeIdentifier = nativeIdentifier;
-                    _nativeType = nativeType;
-                }
-
-                public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
-                {
-                    if (node.Left.ToString() == _nativeIdentifier)
-                    {
-                        return node.WithRight(
-                            CastExpression(MarshallerHelpers.SystemIntPtrType, node.Right));
-                    }
-                    if (node.Right.ToString() == _nativeIdentifier)
-                    {
-                        return node.WithRight(CastExpression(_nativeType, node.Right));
-                    }
-
-                    return node;
-                }
-
-                public override SyntaxNode? VisitArgument(ArgumentSyntax node)
-                {
-                    if (node.Expression.ToString() == _nativeIdentifier)
-                    {
-                        return node.WithExpression(
-                            CastExpression(_nativeType, node.Expression));
-                    }
-                    return node;
                 }
             }
         }
