@@ -261,8 +261,7 @@ namespace System.Data.SqlTypes
         private void SetCompareInfo()
         {
             Debug.Assert(!IsNull);
-            if (m_cmpInfo == null)
-                m_cmpInfo = (CultureInfo.GetCultureInfo(m_lcid)).CompareInfo;
+            m_cmpInfo ??= (CultureInfo.GetCultureInfo(m_lcid)).CompareInfo;
         }
 
         public CompareInfo CompareInfo
@@ -275,7 +274,9 @@ namespace System.Data.SqlTypes
                     return m_cmpInfo!;
                 }
                 else
+                {
                     throw new SqlNullValueException();
+                }
             }
         }
 
@@ -284,9 +285,13 @@ namespace System.Data.SqlTypes
             get
             {
                 if (!IsNull)
+                {
                     return m_flag;
+                }
                 else
+                {
                     throw new SqlNullValueException();
+                }
             }
         }
 

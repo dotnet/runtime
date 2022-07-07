@@ -48,7 +48,7 @@ namespace System
     public abstract class ValueType { }
     public abstract class Enum : ValueType { }
     public struct Nullable<T> where T : struct { }
-    
+
     public sealed class String { }
     public abstract class Array : System.Collections.IList { }
     public abstract class Delegate { }
@@ -68,11 +68,9 @@ namespace System
 
     public ref struct TypedReference
     {
-        private readonly ByReference<byte> _value;
+        private readonly ref byte _value;
         private readonly RuntimeTypeHandle _typeHandle;
     }
-
-    public ref struct ByReference<T> { }
 }
 
 namespace System.Collections

@@ -327,7 +327,7 @@ namespace System.Globalization
         internal static int ScanRepeatChar(string pattern, char ch, int index, out int count)
         {
             count = 1;
-            while (++index < pattern.Length && pattern[index] == ch)
+            while ((uint)++index < (uint)pattern.Length && pattern[index] == ch)
             {
                 count++;
             }
@@ -423,7 +423,7 @@ namespace System.Globalization
                         i = ScanRepeatChar(pattern, 'M', i, out chCount);
                         if (chCount >= 4)
                         {
-                            if (i < pattern.Length && pattern[i] == '\'')
+                            if ((uint)i < (uint)pattern.Length && pattern[i] == '\'')
                             {
                                 i = AddDateWords(pattern, i + 1, "MMMM");
                             }
@@ -538,10 +538,10 @@ namespace System.Globalization
         // the format flag.
         //
         ////////////////////////////////////////////////////////////////////////////
-        internal static FORMATFLAGS GetFormatFlagGenitiveMonth(string[] monthNames, string[] genitveMonthNames, string[] abbrevMonthNames, string[] genetiveAbbrevMonthNames)
+        internal static FORMATFLAGS GetFormatFlagGenitiveMonth(string[] monthNames, string[] genitiveMonthNames, string[] abbrevMonthNames, string[] genitiveAbbrevMonthNames)
         {
             // If we have different names in regular and genitive month names, use genitive month flag.
-            return (!EqualStringArrays(monthNames, genitveMonthNames) || !EqualStringArrays(abbrevMonthNames, genetiveAbbrevMonthNames))
+            return (!monthNames.AsSpan().SequenceEqual(genitiveMonthNames) || !abbrevMonthNames.AsSpan().SequenceEqual(genitiveAbbrevMonthNames))
                 ? FORMATFLAGS.UseGenitiveMonth : 0;
         }
 
@@ -588,39 +588,6 @@ namespace System.Globalization
         {
             return calID == (int)CalendarId.HEBREW ?
                 FORMATFLAGS.UseHebrewParsing | FORMATFLAGS.UseLeapYearMonth : 0;
-        }
-
-        //-----------------------------------------------------------------------------
-        // EqualStringArrays
-        //      compares two string arrays and return true if all elements of the first
-        //      array equals to all elements of the second array.
-        //      otherwise it returns false.
-        //-----------------------------------------------------------------------------
-
-        private static bool EqualStringArrays(string[] array1, string[] array2)
-        {
-            // Shortcut if they're the same array
-            if (array1 == array2)
-            {
-                return true;
-            }
-
-            // This is effectively impossible
-            if (array1.Length != array2.Length)
-            {
-                return false;
-            }
-
-            // Check each string
-            for (int i = 0; i < array1.Length; i++)
-            {
-                if (array1[i] != array2[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         //-----------------------------------------------------------------------------

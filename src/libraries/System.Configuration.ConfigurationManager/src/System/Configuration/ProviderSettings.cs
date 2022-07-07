@@ -113,8 +113,7 @@ namespace System.Configuration
                     if ((prop.Name != "name") && (prop.Name != "type"))
                     {
                         if (_propertyNameCollection.Get(prop.Name) != null) continue;
-                        if (removeList == null)
-                            removeList = new ArrayList();
+                        removeList ??= new ArrayList();
 
                         if ((Values.GetConfigValue(prop.Name).ValueFlags & ConfigurationValueFlags.Locked) != 0)
                             continue;

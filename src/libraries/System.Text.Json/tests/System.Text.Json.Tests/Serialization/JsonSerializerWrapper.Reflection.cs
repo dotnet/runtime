@@ -572,7 +572,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             private static readonly ConditionalWeakTable<JsonSerializerOptions, JsonSerializerOptions> s_smallBufferMap = new();
             private static readonly JsonSerializerOptions s_DefaultOptionsWithSmallBuffer = new JsonSerializerOptions { DefaultBufferSize = 1 };
-            private static readonly FieldInfo s_optionsContextField = typeof(JsonSerializerOptions).GetField("_serializerContext", BindingFlags.NonPublic | BindingFlags.Instance);
 
             public static JsonSerializerOptions ResolveOptionsInstanceWithSmallBuffer(JsonSerializerOptions? options)
             {
@@ -592,19 +591,14 @@ namespace System.Text.Json.Serialization.Tests
                     return resolvedValue;
                 }
 
-                JsonSerializerOptions smallBufferCopy = new JsonSerializerOptions(options) { DefaultBufferSize = 1 };
-                CopyJsonSerializerContext(options, smallBufferCopy);
+                JsonSerializerOptions smallBufferCopy = new JsonSerializerOptions(options)
+                {
+                    // Copy the resolver explicitly until https://github.com/dotnet/aspnetcore/issues/38720 is resolved.
+                    TypeInfoResolver = options.TypeInfoResolver,
+                    DefaultBufferSize = 1,
+                };
                 s_smallBufferMap.Add(options, smallBufferCopy);
                 return smallBufferCopy;
-            }
-
-            private static void CopyJsonSerializerContext(JsonSerializerOptions source, JsonSerializerOptions target)
-            {
-                JsonSerializerContext context = (JsonSerializerContext)s_optionsContextField.GetValue(source);
-                if (context != null)
-                {
-                    s_optionsContextField.SetValue(target, context);
-                }
             }
         }
     }

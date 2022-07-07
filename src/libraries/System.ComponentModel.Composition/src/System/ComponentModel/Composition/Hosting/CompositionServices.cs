@@ -515,10 +515,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Default value is ImportSource.Any
             if (attributedImport != null && attributedImport.Source != ImportSource.Any)
             {
-                if (metadata == null)
-                {
-                    metadata = new Dictionary<string, object?>();
-                }
+                metadata ??= new Dictionary<string, object?>();
                 metadata[CompositionConstants.ImportSourceMetadataName] = attributedImport.Source;
             }
 

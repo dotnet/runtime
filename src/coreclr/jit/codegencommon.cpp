@@ -137,14 +137,9 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
 #ifdef TARGET_ARM64
     genSaveFpLrWithAllCalleeSavedRegisters = false;
+    genForceFuncletFrameType5              = false;
 #endif // TARGET_ARM64
 }
-
-void CodeGenInterface::genMarkTreeInReg(GenTree* tree, regNumber reg)
-{
-    tree->SetRegNum(reg);
-}
-
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 
 //---------------------------------------------------------------------

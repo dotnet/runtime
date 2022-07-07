@@ -48,13 +48,8 @@ namespace System.Xml.Schema
         [XmlNamespaceDeclarations]
         public XmlSerializerNamespaces Namespaces
         {
-            get
-            {
-                if (_namespaces == null)
-                    _namespaces = new XmlSerializerNamespaces();
-                return _namespaces;
-            }
-            set { _namespaces = value; }
+            get => _namespaces ??= new XmlSerializerNamespaces();
+            set => _namespaces = value;
         }
 
         internal virtual void OnAdd(XmlSchemaObjectCollection container, object? item) { }

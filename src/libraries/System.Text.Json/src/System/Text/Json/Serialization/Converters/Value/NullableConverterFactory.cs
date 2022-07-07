@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
 
             Type valueTypeToConvert = typeToConvert.GetGenericArguments()[0];
 
-            JsonConverter valueConverter = options.GetConverterInternal(valueTypeToConvert);
+            JsonConverter valueConverter = options.GetConverterFromTypeInfo(valueTypeToConvert);
             Debug.Assert(valueConverter != null);
 
             // If the value type has an interface or object converter, just return that converter directly.

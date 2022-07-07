@@ -158,6 +158,7 @@ bool IntegralRange::Contains(int64_t value) const
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
 
         case GT_CALL:
@@ -462,12 +463,13 @@ Compiler::fgWalkResult Compiler::optAddCopiesCallback(GenTree** pTree, fgWalkDat
     return WALK_CONTINUE;
 }
 
-/*****************************************************************************
- *
- *  Add new copies before Assertion Prop.
- */
-
-void Compiler::optAddCopies()
+//------------------------------------------------------------------------------
+// optAddCopies: Add new copies before Assertion Prop.
+//
+// Returns:
+//    suitable phase satus
+//
+PhaseStatus Compiler::optAddCopies()
 {
     unsigned   lclNum;
     LclVarDsc* varDsc;
@@ -477,18 +479,15 @@ void Compiler::optAddCopies()
     {
         printf("\n*************** In optAddCopies()\n\n");
     }
-    if (verboseTrees)
-    {
-        printf("Blocks/Trees at start of phase\n");
-        fgDispBasicBlocks(true);
-    }
 #endif
 
     // Don't add any copies if we have reached the tracking limit.
     if (lvaHaveManyLocals())
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    bool modified = false;
 
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
@@ -893,6 +892,8 @@ void Compiler::optAddCopies()
             tree->gtFlags |= (copyAsgn->gtFlags & GTF_ALL_EFFECT);
         }
 
+        modified = true;
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -902,6 +903,8 @@ void Compiler::optAddCopies()
         }
 #endif
     }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------------
@@ -1282,6 +1285,39 @@ Compiler::AssertionDsc* Compiler::optGetAssertion(AssertionIndex assertIndex)
 }
 
 //------------------------------------------------------------------------
+// optCastConstantSmall: Cast a constant to a small type.
+//
+// Parameters:
+//   iconVal - the integer constant
+//   smallType - the small type to cast to
+//
+// Returns:
+//   The cast constant after sign/zero extension.
+//
+ssize_t Compiler::optCastConstantSmall(ssize_t iconVal, var_types smallType)
+{
+    switch (smallType)
+    {
+        case TYP_BYTE:
+            return int8_t(iconVal);
+
+        case TYP_SHORT:
+            return int16_t(iconVal);
+
+        case TYP_USHORT:
+            return uint16_t(iconVal);
+
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return uint8_t(iconVal);
+
+        default:
+            assert(!"Unexpected type to truncate to");
+            return iconVal;
+    }
+}
+
+//------------------------------------------------------------------------
 // optCreateAssertion: Create an (op1 assertionKind op2) assertion.
 //
 // Arguments:
@@ -1344,12 +1380,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp2()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp1();
+                op1 = op1->gtGetOp1()->gtEffectiveVal(/* commaOnly */ true);
             }
             else if (op1->gtGetOp1()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp1()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp2();
+                op1 = op1->gtGetOp2()->gtEffectiveVal(/* commaOnly */ true);
             }
             else
             {
@@ -1554,16 +1590,24 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     if (op2->gtOper == GT_CNS_INT)
                     {
+                        ssize_t iconVal = op2->AsIntCon()->gtIconVal;
+
+                        if (varTypeIsSmall(lclVar))
+                        {
+                            iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                        }
+
 #ifdef TARGET_ARM
                         // Do not Constant-Prop large constants for ARM
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
                         // target_ssize_t type.
-                        if (!codeGen->validImmForMov((target_ssize_t)op2->AsIntCon()->gtIconVal))
+                        if (!codeGen->validImmForMov((target_ssize_t)iconVal))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
 #endif // TARGET_ARM
-                        assertion.op2.u1.iconVal   = op2->AsIntCon()->gtIconVal;
+
+                        assertion.op2.u1.iconVal   = iconVal;
                         assertion.op2.u1.iconFlags = op2->GetIconHandleFlag();
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
@@ -2647,8 +2691,10 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
 
         case GT_ARR_LENGTH:
-            // An array length is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
-            assertionInfo = optCreateAssertion(tree->AsArrLen()->ArrRef(), nullptr, OAK_NOT_EQUAL);
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
+            // An array meta-data access is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
+            assertionInfo = optCreateAssertion(tree->AsArrCommon()->ArrRef(), nullptr, OAK_NOT_EQUAL);
             break;
 
         case GT_NULLCHECK:
@@ -3290,6 +3336,16 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             {
                 return nullptr;
             }
+
+            // We assume that we do not try to do assertion prop on mismatched
+            // accesses (note that we widen normalize-on-load local accesses
+            // and insert casts in morph, which would be problematic to track
+            // here).
+            assert(tree->TypeGet() == lvaGetDesc(lclNum)->TypeGet());
+            // Assertions for small-typed locals should have been normalized
+            // when the assertion was created.
+            assert(!varTypeIsSmall(tree) || (curAssertion->op2.u1.iconVal ==
+                                             optCastConstantSmall(curAssertion->op2.u1.iconVal, tree->TypeGet())));
 
             if (curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK)
             {

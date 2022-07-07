@@ -855,10 +855,7 @@ namespace System.Net.Http
             {
                 lock (SyncObj)
                 {
-                    if (_http3ConnectionCreateLock == null)
-                    {
-                        _http3ConnectionCreateLock = new SemaphoreSlim(1);
-                    }
+                    _http3ConnectionCreateLock ??= new SemaphoreSlim(1);
                 }
             }
 

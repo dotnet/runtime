@@ -29,9 +29,6 @@ static DWORD    g_dwSubsystem=(DWORD)-1,g_dwComImageFlags=(DWORD)-1,g_dwFileAlig
 static ULONGLONG   g_stBaseAddress=0;
 static size_t   g_stSizeOfStackReserve=0;
 extern unsigned int g_uConsoleCP;
-#ifdef TARGET_UNIX
-char * g_pszExeFile;
-#endif
 
 void MakeTestFile(_In_ __nullterminated char* szFileName)
 {
@@ -855,7 +852,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #ifdef TARGET_UNIX
 int main(int argc, char* str[])
 {
-    g_pszExeFile = str[0];
     if (0 != PAL_Initialize(argc, str))
     {
         fprintf(stderr,"Error: Fail to PAL_Initialize\n");

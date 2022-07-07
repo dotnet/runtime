@@ -88,8 +88,7 @@ namespace System.Net
             {
                 lock (_locker)
                 {
-                    if (_handle == null)
-                        _handle = new ManualResetEvent(_completed);
+                    _handle ??= new ManualResetEvent(_completed);
                 }
 
                 return _handle;

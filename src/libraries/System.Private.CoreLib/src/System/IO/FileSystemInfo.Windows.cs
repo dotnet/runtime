@@ -130,6 +130,14 @@ namespace System.IO
             }
         }
 
+#pragma warning disable CA1822
+        internal UnixFileMode UnixFileModeCore
+        {
+            get => (UnixFileMode)(-1);
+            set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
+        }
+#pragma warning restore CA1822
+
         private void EnsureDataInitialized()
         {
             if (_dataInitialized == -1)

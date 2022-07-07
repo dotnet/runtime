@@ -329,7 +329,8 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    byte[] encodedSubjectName = _certContext.CertContext->pCertInfo->Subject.ToByteArray();
+                    // X500DN creates a copy of the data for itself; data is kept alive with GC.KeepAlive.
+                    ReadOnlySpan<byte> encodedSubjectName = _certContext.CertContext->pCertInfo->Subject.DangerousAsSpan();
                     X500DistinguishedName subjectName = new X500DistinguishedName(encodedSubjectName);
                     GC.KeepAlive(this);
                     return subjectName;
@@ -343,7 +344,8 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    byte[] encodedIssuerName = _certContext.CertContext->pCertInfo->Issuer.ToByteArray();
+                    // X500DN creates a copy of the data for itself; data is kept alive with GC.KeepAlive.
+                    ReadOnlySpan<byte> encodedIssuerName = _certContext.CertContext->pCertInfo->Issuer.DangerousAsSpan();
                     X500DistinguishedName issuerName = new X500DistinguishedName(encodedIssuerName);
                     GC.KeepAlive(this);
                     return issuerName;
@@ -365,16 +367,20 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CERT_INFO* pCertInfo = _certContext.CertContext->pCertInfo;
                     int numExtensions = pCertInfo->cExtension;
                     X509Extension[] extensions = new X509Extension[numExtensions];
+
                     for (int i = 0; i < numExtensions; i++)
                     {
                         Interop.Crypt32.CERT_EXTENSION* pCertExtension = (Interop.Crypt32.CERT_EXTENSION*)pCertInfo->rgExtension.ToPointer() + i;
                         string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId)!;
                         Oid oid = new Oid(oidValue, friendlyName: null);
                         bool critical = pCertExtension->fCritical != 0;
-                        byte[] rawData = pCertExtension->Value.ToByteArray();
 
+                        // X509Extension creates a copy of the data for itself. The underlying data
+                        // is kept alive with the KeepAlive below.
+                        ReadOnlySpan<byte> rawData = pCertExtension->Value.DangerousAsSpan();
                         extensions[i] = new X509Extension(oid, rawData, critical);
                     }
+
                     GC.KeepAlive(this);
                     return extensions;
                 }

@@ -390,6 +390,14 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 		g_assert_not_reached ();
 	}
 	return emit_simd_ins_for_sig (cfg, klass, op, -1, arg_type, fsig, args);
+#elif defined(TARGET_WASM)
+	switch (id)
+	{
+	case SN_OnesComplement:
+		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_ONESCOMPLEMENT, -1, arg_type, fsig, args);
+	default:
+		return NULL;
+	}
 #else
 	return NULL;
 #endif
@@ -984,17 +992,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	
 	MonoClass *klass = cmethod->klass;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
-	
-	gboolean supported = FALSE;
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	supported = TRUE;
-#endif
+
+	if (cfg->verbose_level > 1) {
+		char *name = mono_method_full_name (cmethod, TRUE);
+		printf ("  SIMD intrinsic %s\n", name);
+		g_free (name);
+	}
 
 	switch (id) {
 	case SN_get_IsHardwareAccelerated: {
 		MonoInst* ins;
-		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
-		ins->type = STACK_I4;
+		EMIT_NEW_ICONST (cfg, ins, 1);
 		return ins;
 	}
 	case SN_Abs: {
@@ -1817,7 +1825,6 @@ static MonoInst*
 emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
-	gboolean supported = FALSE;
 	int id;
 	MonoType *etype;
 
@@ -1829,10 +1836,6 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 
 	//printf ("%s\n", mono_method_full_name (cmethod, 1));
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	supported = TRUE;
-#endif
-
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
 		printf ("  SIMD intrinsic %s\n", name);
@@ -1841,7 +1844,7 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 
 	switch (id) {
 	case SN_get_IsHardwareAccelerated:
-		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+		EMIT_NEW_ICONST (cfg, ins, 1);
 		ins->type = STACK_I4;
 		return ins;
 	case SN_ConvertToInt32:
@@ -1881,6 +1884,7 @@ static guint16 vector_t_methods [] = {
 	SN_Min,
 	SN_get_AllBitsSet,
 	SN_get_Count,
+	SN_get_IsSupported,
 	SN_get_Item,
 	SN_get_One,
 	SN_get_Zero,
@@ -1921,7 +1925,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	g_assert (size);
 	len = register_size / size;
 
-	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN)
+	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
 
 	if (cfg->verbose_level > 1) {
@@ -1931,6 +1935,10 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	}
 
 	switch (id) {
+	case SN_get_IsSupported: {
+		EMIT_NEW_ICONST (cfg, ins, 1);
+		return ins;
+	}
 	case SN_get_Count:
 		if (!(fsig->param_count == 0 && fsig->ret->type == MONO_TYPE_I4))
 			break;
@@ -3915,6 +3923,7 @@ emit_x86_intrinsics (
 
 static guint16 vector_256_t_methods [] = {
 	SN_get_Count,
+	SN_get_IsSupported,
 };
 
 static MonoInst*
@@ -3937,7 +3946,7 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	g_assert (size);
 	len = 32 / size;
 
-	if (!MONO_TYPE_IS_PRIMITIVE (etype) || etype->type == MONO_TYPE_CHAR || etype->type == MONO_TYPE_BOOLEAN || etype->type == MONO_TYPE_I || etype->type == MONO_TYPE_U)
+	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
 
 	if (cfg->verbose_level > 1) {
@@ -3947,6 +3956,10 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	}
 
 	switch (id) {
+	case SN_get_IsSupported: {
+		EMIT_NEW_ICONST (cfg, ins, 1);
+		return ins;
+	}
 	case SN_get_Count:
 		if (!(fsig->param_count == 0 && fsig->ret->type == MONO_TYPE_I4))
 			break;

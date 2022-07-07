@@ -39,9 +39,9 @@ namespace System.Numerics
         /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
         static abstract TSelf Tau { get; }
 
-        /// <summary>Decrements a value to the smallest value that compares less than a given value.</summary>
+        /// <summary>Decrements a value to the largest value that compares less than a given value.</summary>
         /// <param name="x">The value to be bitwise decremented.</param>
-        /// <returns>The smallest value that compares less than <paramref name="x" />.</returns>
+        /// <returns>The largest value that compares less than <paramref name="x" />.</returns>
         static abstract TSelf BitDecrement(TSelf x);
 
         /// <summary>Increments a value to the smallest value that compares greater than a given value.</summary>

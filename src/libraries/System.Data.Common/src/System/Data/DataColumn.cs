@@ -318,10 +318,7 @@ namespace System.Data
             get { return _caption ?? _columnName; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (_caption == null || string.Compare(_caption, value, true, Locale) != 0)
                 {
@@ -361,10 +358,7 @@ namespace System.Data
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataColumn.set_ColumnName|API> {0}, '{1}'", ObjectID, value);
                 try
                 {
-                    if (value == null)
-                    {
-                        value = string.Empty;
-                    }
+                    value ??= string.Empty;
 
                     if (string.Compare(_columnName, value, true, Locale) != 0)
                     {
@@ -412,10 +406,7 @@ namespace System.Data
         {
             get
             {
-                if (_encodedColumnName == null)
-                {
-                    _encodedColumnName = XmlConvert.EncodeLocalName(ColumnName);
-                }
+                _encodedColumnName ??= XmlConvert.EncodeLocalName(ColumnName);
 
                 Debug.Assert(!string.IsNullOrEmpty(_encodedColumnName));
                 return _encodedColumnName;
@@ -439,10 +430,7 @@ namespace System.Data
             get { return _columnPrefix; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 DataCommonEventSource.Log.Trace("<ds.DataColumn.set_Prefix|API> {0}, '{1}'", ObjectID, value);
 
@@ -733,10 +721,7 @@ namespace System.Data
             {
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataColumn.set_Expression|API> {0}, '{1}'", ObjectID, value);
 
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 try
                 {
@@ -1710,10 +1695,7 @@ namespace System.Data
                     {
                         if (value != null && value != DBNull.Value && ((string)value).Length > MaxLength)
                         {
-                            if (errorText == null)
-                            {
-                                errorText = ExceptionBuilder.MaxLengthViolationText(ColumnName);
-                            }
+                            errorText ??= ExceptionBuilder.MaxLengthViolationText(ColumnName);
                             dr.RowError = errorText;
                             dr.SetColumnError(this, errorText);
                             error = true;
@@ -1723,10 +1705,7 @@ namespace System.Data
                     {
                         if (!DataStorage.IsObjectNull(value) && ((SqlString)value).Value.Length > MaxLength)
                         {
-                            if (errorText == null)
-                            {
-                                errorText = ExceptionBuilder.MaxLengthViolationText(ColumnName);
-                            }
+                            errorText ??= ExceptionBuilder.MaxLengthViolationText(ColumnName);
                             dr.RowError = errorText;
                             dr.SetColumnError(this, errorText);
                             error = true;
@@ -1766,15 +1745,8 @@ namespace System.Data
             OnPropertyChanging(new PropertyChangedEventArgs(name));
         }
 
-        private DataStorage InsureStorage()
-        {
-            if (_storage == null)
-            {
-                _storage = DataStorage.CreateStorage(this, _dataType, _storageType);
-            }
-
-            return _storage;
-        }
+        private DataStorage InsureStorage() =>
+            _storage ??= DataStorage.CreateStorage(this, _dataType, _storageType);
 
         internal void SetCapacity(int capacity)
         {

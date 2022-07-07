@@ -36,18 +36,7 @@ namespace System.Configuration
             }
         }
 
-        private XmlEscaper Escaper
-        {
-            get
-            {
-                if (_escaper == null)
-                {
-                    _escaper = new XmlEscaper();
-                }
-
-                return _escaper;
-            }
-        }
+        private XmlEscaper Escaper => _escaper ??= new XmlEscaper();
 
         /// <summary>
         /// We maintain a single instance of the ClientSettingsStore per instance of provider.
@@ -477,10 +466,7 @@ namespace System.Configuration
                 }
             }
 
-            if (serializedValue == null)
-            {
-                serializedValue = string.Empty;
-            }
+            serializedValue ??= string.Empty;
 
             // We need to escape string serialized values
             if (setting.SerializeAs == SettingsSerializeAs.String)

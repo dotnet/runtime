@@ -196,11 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (cachedPartitions == null)
-                {
-                    cachedPartitions = new ReadOnlyStringCollection(GetPartitions());
-                }
-                return cachedPartitions;
+                return cachedPartitions ??= new ReadOnlyStringCollection(GetPartitions());
             }
         }
 

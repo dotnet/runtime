@@ -45,6 +45,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/options.h>
 #include <string.h>
 #include <errno.h>
 #include "icall-decl.h"
@@ -662,7 +663,12 @@ gc_safe_transition_builder_init (GCSafeTransitionBuilder *builder, MonoMethodBui
 	builder->coop_cominterop_fnptr = -1;
 #endif
 #if defined (TARGET_WASM)
-	return FALSE;
+	#ifndef DISABLE_THREADS
+		return TRUE;
+	#else
+		/* if we're in the AOT compiler, obey the --wasm-gc-safepoints option even if the AOT compiler doesn't have threads enabled */
+		return mono_opt_wasm_gc_safepoints;
+	#endif
 #else
 	return TRUE;
 #endif
@@ -2010,9 +2016,18 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 
 	/*static methods with bound first arg can have null target and still be bound*/
 	if (!static_method_with_first_arg_bound) {
+		/* if bound */
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, bound));
+		/* bound: MonoBoolean */
+		mono_mb_emit_byte (mb, CEE_LDIND_I1);
+		int pos_bound = mono_mb_emit_branch (mb, CEE_BRTRUE);
+
 		/* if target != null */
 		mono_mb_emit_ldloc (mb, local_target);
 		pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+		mono_mb_patch_branch (mb, pos_bound);
 
 		/* then call this->method_ptr nonstatic */
 		if (callvirt) {
@@ -2289,7 +2304,12 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
 #if defined (TARGET_WASM)
-	const gboolean do_blocking_transition = FALSE;
+	/* in the AOT compiler emit blocking transitions if --wasm-gc-safepoints was used */
+	#ifndef DISABLE_THREADS
+		const gboolean do_blocking_transition = TRUE;
+	#else
+		const gboolean do_blocking_transition = mono_opt_wasm_gc_safepoints;
+	#endif
 #else
 	const gboolean do_blocking_transition = TRUE;
 #endif

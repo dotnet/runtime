@@ -921,8 +921,13 @@ namespace System.Configuration
         private void ResetCachedStringWriter()
         {
             if (_cachedStringWriter == null)
+            {
                 _cachedStringWriter = new StringWriter(new StringBuilder(64), CultureInfo.InvariantCulture);
-            else _cachedStringWriter.GetStringBuilder().Length = 0;
+            }
+            else
+            {
+                _cachedStringWriter.GetStringBuilder().Length = 0;
+            }
         }
 
         // Copy a configuration section to a string, and advance the reader.

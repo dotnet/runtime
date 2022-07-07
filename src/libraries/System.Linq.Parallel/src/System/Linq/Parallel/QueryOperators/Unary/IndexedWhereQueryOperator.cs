@@ -167,8 +167,7 @@ namespace System.Linq.Parallel
                 // Iterate through the input until we reach the end of the sequence or find
                 // an element matching the predicate.
 
-                if (_outputLoopCount == null)
-                    _outputLoopCount = new Shared<int>(0);
+                _outputLoopCount ??= new Shared<int>(0);
 
                 while (_source.MoveNext(ref currentElement!, ref currentKey))
                 {

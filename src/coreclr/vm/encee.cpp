@@ -568,9 +568,8 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             errorMessage.AppendASCII("**Error: Probable rude edit.**\n\n"
                                 "EnCModule::JITUpdatedFunction JIT failed with the following exception:\n\n");
             errorMessage.Append(exceptionMessage);
-            StackScratchBuffer buffer;
-            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetANSI(buffer));
-            LOG((LF_ENC, LL_INFO100, errorMessage.GetANSI(buffer)));
+            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetUTF8());
+            LOG((LF_ENC, LL_INFO100, errorMessage.GetUTF8()));
         }
 #endif
     } EX_END_CATCH(SwallowAllExceptions)
@@ -752,6 +751,9 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     STATIC_CONTRACT_GC_TRIGGERS; // Sends IPC event
     STATIC_CONTRACT_THROWS;
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD64 ssp = GetSSP(pContext);
+#endif
     // Create local copies of all structs passed as arguments to prevent them from being overwritten
     CONTEXT context;
     memcpy(&context, pContext, sizeof(CONTEXT));
@@ -832,6 +834,8 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
+#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    ClrRestoreNonvolatileContextWorker(pContext, ssp);
 #else
     ClrRestoreNonvolatileContext(pContext);
 #endif

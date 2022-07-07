@@ -9,12 +9,16 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     // TODO: static async, static method args
     public class EvaluateOnCallFrameTests : DebuggerTests
     {
+        public EvaluateOnCallFrameTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         public static IEnumerable<object[]> InstanceMethodsTestData(string type_name)
         {
             yield return new object[] { type_name, "InstanceMethod", "InstanceMethod", false };
@@ -88,7 +92,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                var DTProp = new DateTime(2010, 9, 8, 7, 6, 5).AddMinutes(10);
-               Console.WriteLine ($"------- test running the bits..");
+               _testOutput.WriteLine ($"------- test running the bits..");
                await EvaluateOnCallFrameAndCheck(id,
                    ("g", TNumber(400)),
                    ("h", TNumber(123)),
@@ -101,7 +105,7 @@ namespace DebuggerTests
                    ("me.DTProp.Second + (me.IntProp - 5)", TNumber(DTProp.Second + 4)))
                     .ConfigureAwait(false);
 
-               Console.WriteLine ($"------- test done!");
+               _testOutput.WriteLine ($"------- test done!");
            });
 
         [Theory]

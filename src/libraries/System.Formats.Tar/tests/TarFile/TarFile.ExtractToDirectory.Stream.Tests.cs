@@ -94,35 +94,56 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        public void Extract_SymbolicLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink);
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Extract_SymbolicLinkEntry_TargetInsideDirectory(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink, format, null);
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
-        public void Extract_HardLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.HardLink);
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Extract_HardLinkEntry_TargetInsideDirectory(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.HardLink, format, null);
 
-        private void Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType entryType)
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Extract_SymbolicLinkEntry_TargetInsideDirectory_LongBaseDir(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink, format, new string('a', 99));
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Extract_HardLinkEntry_TargetInsideDirectory_LongBaseDir(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.HardLink, format, new string('a', 99));
+
+        // This test would not pass for the V7 and Ustar formats in some OSs like MacCatalyst, tvOSSimulator and OSX, because the TempDirectory gets created in
+        // a folder with a path longer than 100 bytes, and those tar formats have no way of handling pathnames and linknames longer than that length.
+        // The rest of the OSs create the TempDirectory in a path that does not surpass the 100 bytes, so the 'subfolder' parameter gives a chance to extend
+        // the base directory past that length, to ensure this scenario is tested everywhere.
+        private void Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType entryType, TarEntryFormat format, string subfolder)
         {
             using TempDirectory root = new TempDirectory();
 
+            string baseDir = string.IsNullOrEmpty(subfolder) ? root.Path : Path.Join(root.Path, subfolder);
+            Directory.CreateDirectory(baseDir);
+
             string linkName = "link";
             string targetName = "target";
-            string targetPath = Path.Join(root.Path, targetName);
+            string targetPath = Path.Join(baseDir, targetName);
 
             File.Create(targetPath).Dispose();
 
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
             {
-                UstarTarEntry entry = new UstarTarEntry(entryType, linkName);
+                TarEntry entry= InvokeTarEntryCreationConstructor(format, entryType, linkName);
                 entry.LinkName = targetPath;
                 writer.WriteEntry(entry);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
 
-            TarFile.ExtractToDirectory(archive, root.Path, overwriteFiles: false);
+            TarFile.ExtractToDirectory(archive, baseDir, overwriteFiles: false);
 
-            Assert.Equal(2, Directory.GetFileSystemEntries(root.Path).Count());
+            Assert.Equal(2, Directory.GetFileSystemEntries(baseDir).Count());
         }
     }
 }

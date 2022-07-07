@@ -8,11 +8,11 @@ var Module = {
         try {
             App.init();
         } catch (error) {
-            set_exit_code(1, error);
+            wasm_exit(1, error);
             throw (error);
         }
     },
     onAbort: (error) => {
-        set_exit_code(1, error);
+        wasm_exit(1, error);
     },
 };

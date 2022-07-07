@@ -610,7 +610,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 assembly = store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
-                return Result.Err("Assembly '" + aname + "' not found.");
+                return Result.Err($"Assembly '{aname}' not found," +
+                                    $"needed to get method location of '{typeName}:{methodName}'");
             }
 
             TypeInfo type = assembly.GetTypeByName(typeName);
@@ -844,7 +845,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             byte[] pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
 
             var assemblyName = await context.SdbAgent.GetAssemblyNameFromModule(moduleId, token);
-            DebugStore store = await LoadStore(sessionId, token);
+            DebugStore store = await LoadStore(sessionId, true, token);
             AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
             var methods = DebugStore.EnC(asm, meta_buf, pdb_buf);
             foreach (var method in methods)
@@ -953,7 +954,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var methodId = retDebuggerCmdReader.ReadInt32();
                 var il_pos = retDebuggerCmdReader.ReadInt32();
                 var flags = retDebuggerCmdReader.ReadByte();
-                DebugStore store = await LoadStore(sessionId, token);
+                DebugStore store = await LoadStore(sessionId, true, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
                 if (await ShouldSkipMethod(sessionId, context, event_kind, j, method, token))
@@ -1129,7 +1130,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             if (urlSymbolServerList.Count == 0)
                 return null;
-            if (asm.TriedToLoadSymbolsOnDemand || !asm.PdbInformationAvailable)
+            if (asm.TriedToLoadSymbolsOnDemand || !asm.CodeViewInformationAvailable)
                 return null;
             asm.TriedToLoadSymbolsOnDemand = true;
             var pdbName = Path.GetFileName(asm.PdbName);
@@ -1252,7 +1253,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             try
             {
-                var store = await LoadStore(sessionId, token);
+                var store = await LoadStore(sessionId, true, token);
                 var assembly_name = eventArgs?["assembly_name"]?.Value<string>();
 
                 if (store.GetAssemblyByName(assembly_name) != null)
@@ -1297,12 +1298,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var argsNew = JObject.FromObject(new
                 {
                     callFrameId = args?["callFrames"]?[0]?["callFrameId"]?.Value<string>(),
-                    expression = "assembly_name_str + '|' + entrypoint_method_token",
+                    expression = "_assembly_name_str + '|' + _entrypoint_method_token",
                 });
                 Result assemblyAndMethodToken = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew, token);
                 if (!assemblyAndMethodToken.IsOk)
                 {
-                    logger.LogDebug("Failure evaluating assembly_name_str + '|' + entrypoint_method_token");
+                    logger.LogDebug("Failure evaluating _assembly_name_str + '|' + _entrypoint_method_token");
                     return;
                 }
                 logger.LogDebug($"Entrypoint assembly and method token {assemblyAndMethodToken.Value["result"]["value"].Value<string>()}");
@@ -1311,7 +1312,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var assemblyName = assemblyAndMethodTokenArr[0];
                 var methodToken = Convert.ToInt32(assemblyAndMethodTokenArr[1]) & 0xffffff; //token
 
-                var store = await LoadStore(sessionId, token);
+                var store = await LoadStore(sessionId, true, token);
                 AssemblyInfo assembly = store.GetAssemblyByName(assemblyName);
                 if (assembly == null)
                 {
@@ -1469,7 +1470,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        internal async Task<DebugStore> LoadStore(SessionId sessionId, CancellationToken token)
+        internal virtual async Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
 
@@ -1486,9 +1487,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 else
                 {
                     var useDebuggerProtocol = false;
-                    (int MajorVersion, int MinorVersion) = await context.SdbAgent.GetVMVersion(token);
-                    if (MajorVersion == 2 && MinorVersion >= 61)
-                        useDebuggerProtocol = true;
+                    if (tryUseDebuggerProtocol)
+                    {
+                        (int MajorVersion, int MinorVersion) = await context.SdbAgent.GetVMVersion(token);
+                        if (MajorVersion == 2 && MinorVersion >= 61)
+                            useDebuggerProtocol = true;
+                    }
 
                     await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, context, useDebuggerProtocol, token))
                     {
@@ -1541,7 +1545,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             await context.SdbAgent.EnableReceiveRequests(EventKind.EnC, token);
             await context.SdbAgent.EnableReceiveRequests(EventKind.MethodUpdate, token);
 
-            DebugStore store = await LoadStore(sessionId, token);
+            DebugStore store = await LoadStore(sessionId, true, token);
             context.ready.SetResult(store);
             await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
             await SendMonoCommand(sessionId, MonoCommands.SetDebuggerAttached(RuntimeId), token);
@@ -1620,7 +1624,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var locations = GetBPReqLocations(store, req);
 
-            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, context.IsRuntimeReady);
+            logger.LogDebug("BP request for '{Req}' runtime ready {Context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
 
@@ -1724,7 +1728,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!SourceId.TryParse(script_id, out SourceId id))
                 return false;
 
-            SourceFile src_file = (await LoadStore(msg_id, token)).GetFileById(id);
+            SourceFile src_file = (await LoadStore(msg_id, true, token)).GetFileById(id);
 
             try
             {

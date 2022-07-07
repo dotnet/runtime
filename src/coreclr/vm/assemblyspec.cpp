@@ -275,13 +275,23 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     AssemblySpec spec;
     spec.InitializeWithAssemblyIdentity(assemblyName);
 
-    StackScratchBuffer nameBuffer;
-    spec.SetName(assemblyName->GetSimpleName().GetUTF8(nameBuffer));
+    StackSString nameBuffer;
+    nameBuffer.SetAndConvertToUTF8(assemblyName->GetSimpleName().GetUnicode());
+    spec.SetName(nameBuffer.GetUTF8());
 
-    StackScratchBuffer cultureBuffer;
+    StackSString cultureBuffer;
     if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
     {
-        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : assemblyName->GetCulture().GetUTF8(cultureBuffer);
+        LPCSTR culture;
+        if (assemblyName->IsNeutralCulture())
+        {
+            culture = "";
+        }
+        else
+        {
+            cultureBuffer.SetAndConvertToUTF8(assemblyName->GetCulture().GetUnicode());
+            culture = cultureBuffer.GetUTF8();
+        }
         spec.SetCulture(culture);
     }
 

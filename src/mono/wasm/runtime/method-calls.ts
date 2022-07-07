@@ -25,6 +25,7 @@ import cwraps from "./cwraps";
 import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
 import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
+import { assembly_load } from "./class-loader";
 
 function _verify_args_for_method_call(args_marshal: string/*ArgsMarshalString*/, args: any) {
     const has_args = args && (typeof args === "object") && args.length > 0;
@@ -68,7 +69,7 @@ to suppress marshaling of the return value, place '!' at the end of args_marshal
 */
 export function call_method_ref(method: MonoMethod, this_arg: WasmRoot<MonoObject> | MonoObjectRef | undefined, args_marshal: string/*ArgsMarshalString*/, args: ArrayLike<any>): any {
     // HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
-    let this_arg_ref : MonoObjectRef | undefined = undefined;
+    let this_arg_ref: MonoObjectRef | undefined = undefined;
     if (typeof (this_arg) === "number")
         this_arg_ref = this_arg;
     else if (typeof (this_arg) === "object")
@@ -197,7 +198,7 @@ export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMar
 export function mono_bind_assembly_entry_point(assembly: string, signature?: string/*ArgsMarshalString*/): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
-    const asm = cwraps.mono_wasm_assembly_load(assembly);
+    const asm = assembly_load(assembly);
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);
 
@@ -392,6 +393,12 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
 
         if (!js_name) {
             globalObj = globalThis;
+        }
+        else if (js_name == "Module") {
+            globalObj = Module;
+        }
+        else if (js_name == "INTERNAL") {
+            globalObj = INTERNAL;
         }
         else {
             globalObj = (<any>globalThis)[js_name];

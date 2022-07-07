@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
+    [StructLayout(LayoutKind.Auto)]
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
@@ -158,7 +160,7 @@ namespace System.Text.Json
             SupportContinuation = supportContinuation;
             SupportAsync = supportAsync;
 
-            return jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            return jsonTypeInfo.Converter;
         }
 
         /// <summary>
@@ -405,7 +407,7 @@ namespace System.Text.Json
             static void AppendStackFrame(StringBuilder sb, ref WriteStackFrame frame)
             {
                 // Append the property name.
-                string? propertyName = frame.JsonPropertyInfo?.ClrName;
+                string? propertyName = frame.JsonPropertyInfo?.MemberName;
                 if (propertyName == null)
                 {
                     // Attempt to get the JSON property name from the property name specified in re-entry.

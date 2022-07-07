@@ -295,7 +295,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (Vector.IsHardwareAccelerated && Vector<T>.IsTypeSupported && (Vector<T>.Count * 2) <= length)
+            if (Vector.IsHardwareAccelerated && Vector<T>.IsSupported && (Vector<T>.Count * 2) <= length)
             {
                 Vector<T> valueVector = new Vector<T>(value);
                 Vector<T> compareVector;

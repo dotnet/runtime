@@ -997,7 +997,7 @@ protected:
                 case IF_LARGELDC:
                     if (isVectorRegister(idReg1()))
                     {
-                        // adrp + ldr + fmov
+                        // (adrp + ldr + fmov) or (adrp + add + ld1)
                         size = 12;
                     }
                     else
@@ -2368,6 +2368,11 @@ public:
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
     void emitSetFrameRangeArgs(int offsLo, int offsHi);
 
+    bool emitIsWithinFrameRangeGCRs(int offs)
+    {
+        return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
+    }
+
     static instruction emitJumpKindToIns(emitJumpKind jumpKind);
     static emitJumpKind emitInsToJumpKind(instruction ins);
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);
@@ -2555,7 +2560,7 @@ public:
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
 #ifdef DEBUG
-    void emitDispDataSec(dataSecDsc* section);
+    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
 #endif
 
     /************************************************************************/

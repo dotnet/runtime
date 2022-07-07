@@ -69,7 +69,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 traversal.Initialize();
                 var traversalClosure = GetTraversalClosure(_innerCatalog.Where(_filter), traversal);
-                return new FilteredCatalog(_innerCatalog, p => traversalClosure.Contains(p));
+                return new FilteredCatalog(_innerCatalog, traversalClosure.Contains);
             }
             finally
             {

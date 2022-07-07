@@ -16,7 +16,7 @@ namespace System.Diagnostics.Metrics.Tests
     public class MetricEventSourceTests
     {
         ITestOutputHelper _output;
-        const double IntervalSecs = 5;
+        const double IntervalSecs = 10;
         static readonly TimeSpan s_waitForEventTimeout = TimeSpan.FromSeconds(60);
 
         public MetricEventSourceTests(ITestOutputHelper output)

@@ -62,10 +62,7 @@ namespace System.Net.NetworkInformation
 
             internal void AddException(Exception e)
             {
-                if (_exceptions == null)
-                {
-                    _exceptions = new List<Exception>();
-                }
+                _exceptions ??= new List<Exception>();
                 _exceptions.Add(e);
             }
         }

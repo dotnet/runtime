@@ -926,10 +926,7 @@ namespace System.Collections.Concurrent
                     }
 
                     // defer allocation to avoid false sharing
-                    if (_localList == null)
-                    {
-                        _localList = new KeyValuePair<long, TSource>[_maxChunkSize];
-                    }
+                    _localList ??= new KeyValuePair<long, TSource>[_maxChunkSize];
 
                     // make the actual call to the enumerable that grabs a chunk
                     return _enumerable.GrabChunk(_localList, requestedChunkSize, ref _currentChunkSize!.Value);
