@@ -53,8 +53,13 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Initializes a new instance of the <see cref="JSImportAttribute"/>.
         /// </summary>
-        /// <param name="functionName">Name of the function to be bound in the IMPORTS object of the runtime instance in the JavaScript page.</param>
-        /// <param name="moduleName">Globally unique identifier of the ES6 module, which need to be loaded by <see cref="JSHost.ImportAsync(string, string, Threading.CancellationToken)"/> before first use.</param>
+        /// <param name="functionName">
+        /// The name of the target JavaScript function. This name will be used as a key to locate the function in the IMPORTS JavaScript object owned by the runtime.
+        /// Functions nested inside of objects can be referred to by using the dot operator to connect one or more names.
+        /// </param>
+        /// <param name="moduleName">
+        /// Globally unique identifier of the ES6 module, if any, that contains the function. The module must be loaded via <see cref="JSHost.ImportAsync(string, string, Threading.CancellationToken)"/> before any attempt to invoke the function.
+        /// </param>
         public JSImportAttribute(string functionName, string moduleName)
         {
             FunctionName = functionName;

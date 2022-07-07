@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Sets the value of the property
+        /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, bool value)
@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Sets the value of the property
+        /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, int value)
@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Sets the value of the property
+        /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, double value)
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Sets the value of the property
+        /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, string? value)
@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Sets the value of the property
+        /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, JSObject? value)
@@ -137,7 +137,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Sets the value of the property
+        /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
         /// <remarks>The method will copy the bytes.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

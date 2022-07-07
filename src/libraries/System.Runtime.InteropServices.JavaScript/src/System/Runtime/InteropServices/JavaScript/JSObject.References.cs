@@ -73,9 +73,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        /// <summary>
-        /// Dispose the JavaScript object handle and release it's reference.
-        /// </summary>
         ~JSObject()
         {
             Dispose(disposing: false);
