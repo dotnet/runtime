@@ -50,6 +50,7 @@ namespace System.Net.WebSockets
             HttpResponseMessage? response = null;
             SocketsHttpHandler? handler = null;
             bool disposeHandler = true;
+            bool disposeResponse = false;
             try
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
@@ -229,6 +230,7 @@ namespace System.Net.WebSockets
                 }
 
                 Abort();
+                disposeResponse = true;
 
                 if (exc is WebSocketException ||
                     (exc is OperationCanceledException && cancellationToken.IsCancellationRequested))
@@ -246,7 +248,11 @@ namespace System.Net.WebSockets
                     HttpResponseHeaders = new HttpResponseHeadersReadOnlyCollection(response.Headers);
                 }
 
-                response?.Dispose();
+                if (disposeResponse)
+                {
+                    response?.Dispose();
+                }
+
                 // Disposing the handler will not affect any active stream wrapped in the WebSocket.
                 if (disposeHandler)
                 {
