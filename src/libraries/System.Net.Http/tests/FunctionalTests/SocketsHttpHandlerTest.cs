@@ -1228,6 +1228,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void CancelPendingRequest_DropsStalledConnectionAttempt_WithGlobalTimeout()
         {
