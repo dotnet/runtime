@@ -64,6 +64,10 @@ const inlineAssert = [
     }];
 const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads }), typescript()];
 
+const externalDependencies = [
+    "node/buffer"
+];
+
 const iffeConfig = {
     treeshake: !isDebug,
     input: "exports.ts",
@@ -83,6 +87,7 @@ const iffeConfig = {
             plugins,
         }
     ],
+    external: externalDependencies,
     plugins: outputCodePlugins
 };
 const typesConfig = {
@@ -95,6 +100,7 @@ const typesConfig = {
             plugins: [writeOnChangePlugin()],
         }
     ],
+    external: externalDependencies,
     plugins: [dts()],
 };
 
