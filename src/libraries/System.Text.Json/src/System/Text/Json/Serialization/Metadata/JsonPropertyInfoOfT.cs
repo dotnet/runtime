@@ -184,8 +184,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter? customConverter = CustomConverter;
             if (customConverter != null)
             {
-                customConverter = Options.ExpandFactoryConverter(customConverter, PropertyType);
-                JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(customConverter, PropertyType);
+                customConverter = Options.ExpandConverterFactory(customConverter, PropertyType);
             }
 
             JsonConverter converter = customConverter ?? DefaultConverterForType ?? Options.GetConverterFromTypeInfo(PropertyType);

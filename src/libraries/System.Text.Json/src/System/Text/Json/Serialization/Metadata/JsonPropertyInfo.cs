@@ -757,7 +757,7 @@ namespace System.Text.Json.Serialization.Metadata
                 else
                 {
                     // GetOrAddJsonTypeInfo already ensures it's configured.
-                    _jsonTypeInfo = Options.GetOrAddJsonTypeInfo(PropertyType);
+                    _jsonTypeInfo = Options.GetJsonTypeInfoCached(PropertyType);
                 }
 
                 return _jsonTypeInfo;
