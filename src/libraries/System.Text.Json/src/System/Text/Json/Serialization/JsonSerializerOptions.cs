@@ -165,7 +165,7 @@ namespace System.Text.Json
         /// A <see langword="null"/> setting is equivalent to using the reflection-based <see cref="DefaultJsonTypeInfoResolver"/>.
         /// </remarks>
         [AllowNull]
-        public IJsonTypeInfoResolver? TypeInfoResolver
+        public IJsonTypeInfoResolver TypeInfoResolver
         {
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
