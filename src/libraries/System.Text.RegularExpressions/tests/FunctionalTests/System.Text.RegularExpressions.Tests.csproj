@@ -9,11 +9,8 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest> <!-- to avoid OOMs with source generation in wasm: https://github.com/dotnet/runtime/pull/60701 -->
 
-    <!-- Undo once the repo moves to a sufficiently high-enough version for file-scoped types -->
+    <!-- Remove once the repo moves to a sufficiently high-enough version for file-scoped types -->
     <MicrosoftCodeAnalysisVersion>4.4.0-1.22356.23</MicrosoftCodeAnalysisVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>4.4.0-1.22356.23</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.4.0-1.22356.23</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0-1.22356.23</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
 
   </PropertyGroup>
   <ItemGroup>
