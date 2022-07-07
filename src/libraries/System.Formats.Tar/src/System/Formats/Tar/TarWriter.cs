@@ -276,7 +276,7 @@ namespace System.Formats.Tar
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            
+
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             return WriteEntryAsyncInternal(entry, cancellationToken);
