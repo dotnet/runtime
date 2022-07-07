@@ -309,7 +309,7 @@ jobs:
         logicalmachine: 'perfpixel4a'
         additionalSetupParameters: "-MauiVersion $env:mauiVersion"
 
-  # run maui iOS scenarios for net6
+  # run maui iOS scenarios for net6 (Maui doesn't need Llmv true build (for net6))
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -328,26 +328,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: False
-        additionalSetupParameters: "--mauiversion $(mauiVersion)"
-
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - OSX_x64
-      variables:
-        - name: mauiVersion
-          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ] # TODO: Get net6.0 version
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSMauiNet6
-        projectFile: ios_scenarios_net6.proj
-        runKind: ios_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
-        iOSLlvmBuild: True
         additionalSetupParameters: "--mauiversion $(mauiVersion)"
 
   # # run mono microbenchmarks perf job
@@ -591,7 +571,7 @@ jobs:
   #      extraStepsParameters:
   #        name: MonoRuntimePacks
   
-  # build maui app
+  # build maui app net7.0
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -619,7 +599,7 @@ jobs:
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
           includeRootFolder: true
-          displayName: MAC, iOS, and Android Maui Artifacts
+          displayName: MAC, iOS, and Android Maui Artifacts Net7
           artifactName: MACiOSAndroidMauiArmNet7
           archiveExtension: '.tar.gz'
           archiveType: tar
@@ -643,7 +623,7 @@ jobs:
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
           includeRootFolder: true
-          displayName: MAC, iOS, and Android Maui Artifacts
+          displayName: MAC, iOS, and Android Maui Artifacts Net6
           artifactName: MACiOSAndroidMauiArmNet6
           archiveExtension: '.tar.gz'
           archiveType: tar
