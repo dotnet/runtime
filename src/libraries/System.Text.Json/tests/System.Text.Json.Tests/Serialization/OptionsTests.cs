@@ -439,20 +439,30 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializer.Serialize(new WeatherForecastWithPOCOs(), options); // type supported by context should succeed serialization
 
             var unsupportedValue = new MyClass();
+            Assert.Null(JsonContext.Default.GetTypeInfo(unsupportedValue.GetType()));
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(unsupportedValue, unsupportedValue.GetType(), JsonContext.Default));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, options));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_JsonSerializerContext_DoesNotFallbackToReflection_GetConverter()
+        public static void Options_JsonSerializerContext_GetConverter_FallsBackToReflectionConverter()
         {
             RemoteExecutor.Invoke(static () =>
             {
-                var options = JsonContext.Default.Options;
-                JsonSerializer.Serialize(new WeatherForecastWithPOCOs(), options); // type supported by context should succeed serialization
-
+                JsonContext context = JsonContext.Default;
                 var unsupportedValue = new MyClass();
-                Assert.Throws<NotSupportedException>(() => options.GetConverter(unsupportedValue.GetType()));
+
+                // Default converters have not been rooted yet
+                Assert.Null(context.GetTypeInfo(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
+
+                // Root converters process-wide by calling a Serialize overload accepting options
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
+
+                // We still can't resolve metadata for MyClass, but we can now resolve a converter using the rooted converters.
+                Assert.Null(context.GetTypeInfo(typeof(MyClass)));
+                Assert.IsAssignableFrom<JsonConverter<MyClass>>(context.Options.GetConverter(typeof(MyClass)));
+
             }).Dispose();
         }
 
@@ -464,8 +474,8 @@ namespace System.Text.Json.Serialization.Tests
                 TypeInfoResolver = JsonTypeInfoResolver.Combine(JsonContext.Default, new DefaultJsonTypeInfoResolver())
             };
 
-            var unsupportedValue = new MyClass();
-            string json = JsonSerializer.Serialize(unsupportedValue, options);
+            var value = new MyClass();
+            string json = JsonSerializer.Serialize(value, options);
             JsonTestHelper.AssertJsonEqual("""{"Value":null,"Thing":null}""", json);
         }
 

@@ -37,6 +37,7 @@ namespace System.Text.Json.Serialization
 
             internal set
             {
+                Debug.Assert(!value.IsLockedInstance);
                 value.TypeInfoResolver = this;
                 value.IsLockedInstance = true;
                 _options = value;
@@ -103,6 +104,7 @@ namespace System.Text.Json.Serialization
         {
             if (options != null)
             {
+                options.VerifyMutable();
                 Options = options;
             }
         }

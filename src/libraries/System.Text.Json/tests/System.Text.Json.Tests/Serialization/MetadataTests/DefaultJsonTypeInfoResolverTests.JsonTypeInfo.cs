@@ -1101,5 +1101,24 @@ namespace System.Text.Json.Serialization.Tests
             public int Value { get; set; }
             public RecursiveType? Next { get; set; }
         }
+
+        [Fact]
+        public static void CreateJsonTypeInfo_ClassWithConverterAttribute_ShouldNotResolveConverterAttribute()
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(ClassWithConverterAttribute), JsonSerializerOptions.Default);
+            Assert.Equal(typeof(ClassWithConverterAttribute), jsonTypeInfo.Type);
+            Assert.IsNotType<ClassWithConverterAttribute.CustomConverter>(jsonTypeInfo.Converter);
+        }
+
+
+        [JsonConverter(typeof(CustomConverter))]
+        public class ClassWithConverterAttribute
+        {
+            public class CustomConverter : JsonConverter<ClassWithConverterAttribute>
+            {
+                public override ClassWithConverterAttribute? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+                public override void Write(Utf8JsonWriter writer, ClassWithConverterAttribute value, JsonSerializerOptions options) => throw new NotImplementedException();
+            }
+        }
     }
 }

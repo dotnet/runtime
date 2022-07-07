@@ -617,8 +617,9 @@ namespace System.Text.Json
         {
             if (!_isInitializedForReflectionSerializer)
             {
+                DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
+                _typeInfoResolver ??= defaultResolver;
                 IsLockedInstance = true;
-                _typeInfoResolver ??= DefaultJsonTypeInfoResolver.RootDefaultInstance();
                 InitializeCachingContext();
 
                 if (_cachingContext.Options != this)
@@ -711,7 +712,7 @@ namespace System.Text.Json
             };
         }
 
-        private void VerifyMutable()
+        internal void VerifyMutable()
         {
             if (_isLockedInstance)
             {
