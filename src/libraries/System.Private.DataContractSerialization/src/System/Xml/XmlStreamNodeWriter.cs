@@ -3,6 +3,8 @@
 
 using System.IO;
 using System.Text;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
@@ -16,6 +18,8 @@ namespace System.Xml
         private bool _ownsStream;
         private const int bufferLength = 512;
         private const int maxBytesPerChar = 3;
+        private const int CharsPerLong = 4;
+        private const ulong LongNonAsciiMask = 0xff80ff80ff80ff80;
         private Encoding? _encoding;
         private static readonly UTF8Encoding s_UTF8Encoding = new UTF8Encoding(false, true);
 
@@ -53,18 +57,6 @@ namespace System.Xml
             get
             {
                 return (int)_stream.Position + _offset;
-            }
-        }
-
-        private int GetByteCount(char[] chars)
-        {
-            if (_encoding == null)
-            {
-                return s_UTF8Encoding.GetByteCount(chars);
-            }
-            else
-            {
-                return _encoding.GetByteCount(chars);
             }
         }
 
@@ -344,37 +336,75 @@ namespace System.Xml
 
         protected unsafe int UnsafeGetUnicodeChars(char* chars, int charCount, byte[] buffer, int offset)
         {
-            char* charsMax = chars + charCount;
-            while (chars < charsMax)
+            if (BitConverter.IsLittleEndian)
             {
-                char value = *chars++;
-                buffer[offset++] = (byte)value;
-                value >>= 8;
-                buffer[offset++] = (byte)value;
+                new ReadOnlySpan<byte>((byte*)chars, 2 * charCount)
+                    .CopyTo(buffer.AsSpan(offset));
             }
+            else
+            {
+                char* charsMax = chars + charCount;
+                while (chars < charsMax)
+                {
+                    char value = *chars++;
+                    buffer[offset++] = (byte)value;
+                    buffer[offset++] = (byte)(value >> 8);
+                }
+            }
+
             return charCount * 2;
         }
 
         protected unsafe int UnsafeGetUTF8Length(char* chars, int charCount)
         {
             char* charsMax = chars + charCount;
-            while (chars < charsMax)
+
+            // This method is only called from 2 places and will use length of at least (128/3 and 256/3) respectivly
+            // AVX is faster for at least 2048 chars, probably more
+            // for other cases the encoding path is better optimized than any fast path done here.
+            if (Avx.IsSupported)
             {
-                if (*chars >= 0x80)
-                    break;
+                char* simdMax = charsMax - (Vector256<ushort>.Count - 1);
+                char* longMax = charsMax - (CharsPerLong - 1);
 
-                chars++;
-            }
+                var mask = Vector256.Create((ushort)0xff80);
+                while (chars < simdMax)
+                {
+                    var l = Vector256.Load((ushort*)chars);
+                    if (!Avx.TestZ(l, mask))
+                    {
+                        if (Sse41.TestZ(l.GetLower(), mask.GetLower()))
+                            chars += Vector128<ushort>.Count;
+                        goto NonAscii;
+                    }
 
-            if (chars == charsMax)
+                    chars += Vector256<ushort>.Count;
+                }
+
+                while (chars < longMax)
+                {
+                    if ((*(ulong*)chars & LongNonAsciiMask) != 0)
+                        goto NonAscii;
+
+                    chars += CharsPerLong;
+                }
+
+                while (chars < charsMax)
+                {
+                    if (*chars >= 0x80)
+                        goto NonAscii;
+
+                    chars++;
+                }
+
                 return charCount;
-
-            char[] chArray = new char[charsMax - chars];
-            for (int i = 0; i < chArray.Length; i++)
-            {
-                chArray[i] = chars[i];
             }
-            return (int)(chars - (charsMax - charCount)) + GetByteCount(chArray);
+
+        NonAscii:
+            int numRemaining = (int)(charsMax - chars);
+            int numAscii = charCount - numRemaining;
+
+            return numAscii + (_encoding ?? s_UTF8Encoding).GetByteCount(chars, numRemaining);
         }
 
         protected unsafe int UnsafeGetUTF8Chars(char* chars, int charCount, byte[] buffer, int offset)
@@ -386,36 +416,64 @@ namespace System.Xml
                     byte* bytes = _bytes;
                     byte* bytesMax = &bytes[buffer.Length - offset];
                     char* charsMax = &chars[charCount];
+                    char* simdMax = &chars[charCount - (Vector128<ushort>.Count - 1)];
+                    char* longMax = &chars[charCount - (CharsPerLong - 1)];
 
-                    while (true)
+                    if (Sse41.IsSupported)
                     {
-                        while (chars < charsMax)
+                        if (chars < simdMax)
                         {
-                            char t = *chars;
-                            if (t >= 0x80)
-                                break;
+                            var mask = Vector128.Create(unchecked((short)0xff80));
+                            do
+                            {
+                                var v = Sse2.LoadVector128((short*)chars);
+                                if (!Sse41.TestZ(v, mask))
+                                    goto NonAscii;
 
-                            *bytes = (byte)t;
-                            bytes++;
-                            chars++;
+                                Sse2.StoreScalar((long*)bytes, Sse2.PackUnsignedSaturate(v, v).AsInt64());
+                                bytes += Vector128<ushort>.Count;
+                                chars += Vector128<ushort>.Count;
+                            } while (chars < simdMax);
                         }
+                    }
+                    // Directly jump to system encoding for larger strings, since it is faster even for the all Ascii case
+                    else if ((BitConverter.IsLittleEndian && charCount > 60)
+                        || (!BitConverter.IsLittleEndian && charCount > 16))
+                    {
+                        goto NonAscii;
+                    }
 
-                        if (chars >= charsMax)
-                            break;
-
-                        char* charsStart = chars;
-                        while (chars < charsMax && *chars >= 0x80)
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        while (chars < longMax)
                         {
-                            chars++;
+                            ulong l = *(ulong*)chars;
+                            if ((l & LongNonAsciiMask) != 0)
+                                goto NonAscii;
+
+                            // 0x00dd00cc_00bb00aa => 0x00ddddcc_ccbbbbaa
+                            l |= (l >> 8);
+                            *(ushort*)bytes = (ushort)l;
+                            *(ushort*)(bytes + 2) = (ushort)(l >> 32);
+                            bytes += CharsPerLong;
+                            chars += CharsPerLong;
                         }
+                    }
 
-                        bytes += (_encoding ?? s_UTF8Encoding).GetBytes(charsStart, (int)(chars - charsStart), bytes, (int)(bytesMax - bytes));
+                    while (chars < charsMax)
+                    {
+                        char t = *chars;
+                        if (t >= 0x80)
+                            goto NonAscii;
 
-                        if (chars >= charsMax)
-                            break;
+                        *bytes = (byte)t;
+                        bytes++;
+                        chars++;
                     }
 
                     return (int)(bytes - _bytes);
+                NonAscii:
+                    return (int)(bytes - _bytes) + (_encoding ?? s_UTF8Encoding).GetBytes(chars, (int)(charsMax - chars), bytes, (int)(bytesMax - bytes));
                 }
             }
             return 0;
