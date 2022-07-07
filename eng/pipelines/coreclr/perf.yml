@@ -302,9 +302,9 @@ jobs:
           value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ] # TODO: Get net6.0 version
       jobParameters:
         testGroup: perf
-        runtimeType: AndroidMauiNet6
+        runtimeType: AndroidMobileNet6
         projectFile: android_scenarios_net6.proj
-        runKind: android_scenarios
+        runKind: android_scenarios_net6
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
         additionalSetupParameters: "-MauiVersion $env:mauiVersion"
@@ -322,9 +322,9 @@ jobs:
           value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ] # TODO: Get net6.0 version
       jobParameters:
         testGroup: perf
-        runtimeType: iOSMauiNet6
+        runtimeType: iOSMobileNet6
         projectFile: ios_scenarios_net6.proj
-        runKind: ios_scenarios
+        runKind: ios_scenarios_net6
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: False
