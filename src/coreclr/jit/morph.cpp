@@ -1019,47 +1019,29 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
+            // We are only able to expand certain "OBJ"s into field lists, so here we spill all the
+            // "mis-sized" ones. We could in theory support them directly with some arithmetic and
+            // shifts, but these cases are rare enough that it is probably not worth the complexity.
+            // No need to do this for stack args as they are directly supported by codegen. Likewise
+            // for "local" "OBJ"s - we can safely load "too much" for them.
+            //
             if (argx->OperIs(GT_OBJ) && (arg.AbiInfo.GetRegNum() != REG_STK))
             {
-                GenTreeObj* argObj     = argx->AsObj();
-                unsigned    structSize = argObj->GetLayout()->GetSize();
-                switch (structSize)
-                {
-                    case 3:
-#ifdef TARGET_64BIT
-                    case 5:
-                    case 6:
-#endif // TARGET_64BIT
-                    case 7:
-                        // If we have a stack based LclVar we can perform a wider read of 4 or 8 bytes
-                        // TODO-ADDR: delete this code once local morph transforms all such OBJs into local nodes.
-                        if (argObj->Addr()->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
-                        {
-                            // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
-                            // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
-                            SetNeedsTemp(&arg);
-                        }
-                        break;
-                    case 11:
-#ifdef TARGET_64BIT
-                    case 13:
-                    case 14:
-#endif // TARGET_64BIT
-                    case 15:
-                        // Spill any GT_OBJ multireg structs that are difficult to extract
-                        //
-                        // When we have a GT_OBJ of a struct with the above sizes we would need
-                        // to use 3 or 4 load instructions to load the exact size of this struct.
-                        // Instead we spill the GT_OBJ into a new GT_LCL_VAR temp and this sequence
-                        // will use a GT_CPBLK to copy the exact size into the GT_LCL_VAR temp.
-                        // Then we can just load all 16 bytes of the GT_LCL_VAR temp when passing
-                        // the argument.
-                        //
-                        SetNeedsTemp(&arg);
-                        break;
+                GenTreeObj* argObj       = argx->AsObj();
+                unsigned    structSize   = argObj->Size();
+                unsigned    lastLoadSize = structSize % TARGET_POINTER_SIZE;
 
-                    default:
-                        break;
+                // TODO-ADDR: delete the "IsLocalAddrExpr" check once local morph transforms all such OBJs into
+                // local nodes.
+                if ((lastLoadSize != 0) && !isPow2(lastLoadSize) && (argObj->Addr()->IsLocalAddrExpr() == nullptr))
+                {
+#ifdef TARGET_ARM
+                    // On ARM we don't expand split args larger than 16 bytes into field lists.
+                    if (!arg.AbiInfo.IsSplit() || (structSize <= 16))
+#endif // TARGET_ARM
+                    {
+                        SetNeedsTemp(&arg);
+                    }
                 }
             }
         }
