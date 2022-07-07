@@ -210,17 +210,17 @@ declare type CoverageProfilerOptions = {
     send_to?: string;
 };
 declare type DiagnosticOptions = {
-    sessions?: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[];
-    server?: boolean | "wait";
+    sessions?: EventPipeSessionOptions[];
+    server?: DiagnosticServerOptions;
 };
-interface EventPipeSessionAutoStopOptions {
-    stop_at?: string;
-    on_session_stopped?: (session: EventPipeSession) => void;
-}
 interface EventPipeSessionOptions {
     collectRundownEvents?: boolean;
     providers: string;
 }
+declare type DiagnosticServerOptions = {
+    connect_url: string;
+    suspend: boolean;
+};
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
@@ -252,13 +252,6 @@ declare type DotnetModuleConfigImports = {
     url?: any;
 };
 declare type EventPipeSessionID = bigint;
-interface EventPipeSession {
-    get sessionID(): EventPipeSessionID;
-    readonly isIPCStreamingSession: boolean;
-    start(): void;
-    stop(): void;
-    getTraceBlob(): Blob;
-}
 
 declare const eventLevel: {
     readonly LogAlways: 0;
@@ -289,6 +282,14 @@ declare class SessionOptionsBuilder {
     addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
     addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
     build(): EventPipeSessionOptions;
+}
+
+interface EventPipeSession {
+    get sessionID(): EventPipeSessionID;
+    isIPCStreamingSession(): boolean;
+    start(): void;
+    stop(): void;
+    getTraceBlob(): Blob;
 }
 interface Diagnostics {
     EventLevel: EventLevel;

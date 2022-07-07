@@ -201,6 +201,7 @@ export const diagnostics: Diagnostics = {
 ///   * The IPC sessions first send an IPC message with the session ID and then they start streaming
 ////  * If the diagnostic server gets more commands it will send us a message through the serverController and we will start additional sessions
 
+let suspendOnStartup = false;
 
 export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Promise<void> {
     if (!is_nullish(options.server)) {
@@ -212,9 +213,10 @@ export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Pr
         const controller = await startDiagnosticServer(url);
         if (controller) {
             if (suspend) {
-                console.debug("waiting for the diagnostic server to resume us");
-                const response = await controller.waitForStartupResume();
-                console.debug("diagnostic server resumed us", response);
+                suspendOnStartup = true;
+                //console.debug("waiting for the diagnostic server to resume us");
+                //const response = await controller.waitForStartupResume();
+                //console.debug("diagnostic server resumed us", response);
             }
         }
     }
@@ -222,9 +224,15 @@ export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Pr
     startup_session_configs.push(...sessions);
 }
 
-export function mono_wasm_diagnostic_server_attach(): void {
+export function mono_wasm_diagnostic_server_on_runtime_server_init(): void {
     const controller = getController();
     controller.postServerAttachToRuntime();
+    if (suspendOnStartup) {
+        /* FIXME: this is a hack. we should just use a condition variable in native. */
+        for (let i = 0; i < 10000; ++i) {
+            (<any>Module)["_emscripten_main_thread_process_queued_calls"]();
+        }
+    }
 }
 
 export default diagnostics;

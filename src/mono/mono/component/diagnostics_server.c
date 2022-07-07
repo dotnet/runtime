@@ -36,6 +36,9 @@ ds_server_wasm_pause_for_diagnostics_monitor (void);
 static void
 ds_server_wasm_disable (void);
 
+extern void
+mono_wasm_diagnostic_server_on_runtime_server_init (void);
+
 static MonoComponentDiagnosticsServer fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &diagnostics_server_available },
 	&ds_server_wasm_init,
@@ -71,6 +74,7 @@ ds_server_wasm_init (void)
 	EM_ASM({
 			console.log ("ds_server_wasm_init");
 		});
+	mono_wasm_diagnostic_server_on_runtime_server_init();
 	return true;
 }
 

@@ -96,6 +96,7 @@ const linked_functions = [
     "mono_wasm_pthread_on_pthread_attached",
     /// diagnostics_server.c
     "mono_wasm_diagnostic_server_on_server_thread_created",
+    "mono_wasm_diagnostic_server_on_runtime_server_init",
     #endif
 ];
 

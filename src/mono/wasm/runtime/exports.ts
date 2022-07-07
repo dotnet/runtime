@@ -54,7 +54,8 @@ import {
     mono_wasm_invoke_js_with_args_ref, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
 import {
-    mono_wasm_event_pipe_early_startup_callback
+    mono_wasm_event_pipe_early_startup_callback,
+    mono_wasm_diagnostic_server_on_runtime_server_init
 } from "./diagnostics";
 import {
     mono_wasm_diagnostic_server_on_server_thread_created,
@@ -369,6 +370,7 @@ const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     mono_wasm_pthread_on_pthread_attached,
     // diagnostics_server.c
     mono_wasm_diagnostic_server_on_server_thread_created,
+    mono_wasm_diagnostic_server_on_runtime_server_init,
 };
 
 // the methods would be visible to EMCC linker
