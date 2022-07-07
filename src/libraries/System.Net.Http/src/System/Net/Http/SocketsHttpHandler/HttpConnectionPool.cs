@@ -680,13 +680,13 @@ namespace System.Net.Http
                 catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
                 {
                     waiter.ConnectionCancellationTokenSource = null;
-                    HandleHttp2ConnectionFailure(queueItem.Waiter, CreateConnectTimeoutException(oce));
+                    HandleHttp2ConnectionFailure(waiter, CreateConnectTimeoutException(oce));
                     return;
                 }
                 catch (Exception e)
                 {
                     waiter.ConnectionCancellationTokenSource = null;
-                    HandleHttp2ConnectionFailure(queueItem.Waiter, e);
+                    HandleHttp2ConnectionFailure(waiter, e);
                     return;
                 }
             }
