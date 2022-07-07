@@ -591,16 +591,6 @@ void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palCont
 #undef ASSIGN_REG
 }
 
-// Update integer registers in Unix native context from PAL_LIMITED_CONTEXT
-void UpdateNativeContextFromPalContext(const void* context, PAL_LIMITED_CONTEXT* palContext)
-{
-    ucontext_t* nativeContext = (ucontext_t*)context;
-
-#define ASSIGN_REG(regNative, regPal) MCREG_##regNative(nativeContext->uc_mcontext) = palContext->regPal;
-    ASSIGN_INTEGER_REGS
-#undef ASSIGN_REG
-}
-
 // Redirect Unix native context to the PAL_LIMITED_CONTEXT and also set the first two argument registers
 void RedirectNativeContext(void* context, const PAL_LIMITED_CONTEXT* palContext, uintptr_t arg0Reg, uintptr_t arg1Reg)
 {
