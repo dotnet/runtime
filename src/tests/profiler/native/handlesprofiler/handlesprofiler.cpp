@@ -22,14 +22,14 @@ GUID HandlesProfiler::GetClsid()
 // SCENARIO:
 //   1. Specific managed types instances are created but no reference are kept.
 //   2. The corresponding native HandlesProfiler creates a handle for each.
-//   3. A gen0 GC is triggered 
+//   3. A gen2 GC is triggered
 //   --> HandlesProfiler ensures:
 //       - weak wrapped objects are no more alive
 //       - strong and pinned wrapped objects are still alive
-//   4. A gen0 is triggered.
+//   4. A gen2 is triggered.
 //   --> HandlesProfiler destroys strong and pinned handles + wrap the corresponding
 //       instances with a weak reference
-//   5. A gen0 is triggered.
+//   5. A gen2 is triggered.
 //   --> HandlesProfiler ensures that no more instances are alive.
 //
 HRESULT HandlesProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
