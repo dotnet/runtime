@@ -11528,8 +11528,9 @@ DONE_MORPHING_CHILDREN:
                                 LclVarDsc* fieldVarDsc = lvaGetDesc(lclNumFld);
 
                                 // Also make sure that the tree type matches the fieldVarType and that it's lvFldOffset
-                                // is zero
-                                if (fieldVarDsc->TypeGet() == typ && (fieldVarDsc->lvFldOffset == 0))
+                                // is same as that of tree's offset.
+                                if (fieldVarDsc->TypeGet() == typ &&
+                                    (fieldVarDsc->lvFldOffset == temp->AsLclVarCommon()->GetLclOffs()))
                                 {
                                     // We can just use the existing promoted field LclNum
                                     temp->AsLclVarCommon()->SetLclNum(lclNumFld);
