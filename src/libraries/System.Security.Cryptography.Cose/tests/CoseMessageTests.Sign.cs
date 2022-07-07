@@ -19,6 +19,10 @@ namespace System.Security.Cryptography.Cose.Tests
         internal abstract List<CoseAlgorithm> CoseAlgorithms { get; }
         internal abstract CoseMessageKind MessageKind { get; }
 
+        internal abstract void AddSignature(CoseMultiSignMessage msg, byte[] content, CoseSigner signer, byte[]? associatedData = null);
+
+        internal abstract CoseMessage Decode(ReadOnlySpan<byte> cborPayload);
+
         internal abstract byte[] Sign(byte[] content,
             CoseSigner signer,
             CoseHeaderMap? protectedHeaders = null,
@@ -27,7 +31,6 @@ namespace System.Security.Cryptography.Cose.Tests
             bool isDetached = false);
 
         internal abstract bool Verify(CoseMessage msg, T key, byte[] content, byte[]? associatedData = null);
-        internal abstract CoseMessage Decode(ReadOnlySpan<byte> cborPayload);
 
         internal IEnumerable<(T Key, HashAlgorithmName Hash, CoseAlgorithm Algorithm, RSASignaturePadding? Padding)> GetKeyHashAlgorithmPaddingQuadruplet(bool useNonPrivateKey = false)
         {
@@ -168,7 +171,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void MultiSign_AddSignature()
         {
-            if (MessageKind != CoseMessageKind.MultiSign || OnlySupportsDetachedContent)
+            if (MessageKind != CoseMessageKind.MultiSign)
             {
                 return;
             }
@@ -179,7 +182,7 @@ namespace System.Security.Cryptography.Cose.Tests
             ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
 
             signer = GetCoseSigner(DefaultKey, DefaultHash);
-            multiSignMsg.AddSignature(signer);
+            AddSignature(multiSignMsg, s_sampleContent, signer);
             Assert.Equal(2, signatures.Count);
 
             // Encode/Decode
@@ -196,7 +199,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(true)]
         public void MultiSign_RemoveSignature(bool useIndex)
         {
-            if (MessageKind != CoseMessageKind.MultiSign || OnlySupportsDetachedContent)
+            if (MessageKind != CoseMessageKind.MultiSign)
             {
                 return;
             }
@@ -218,7 +221,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(true)]
         public void MultiSign_RemoveThenAddSignature(bool useIndex)
         {
-            if (MessageKind != CoseMessageKind.MultiSign || OnlySupportsDetachedContent)
+            if (MessageKind != CoseMessageKind.MultiSign)
             {
                 return;
             }
@@ -231,7 +234,7 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(0, signatures.Count);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
-            multiSignMsg.AddSignature(signer);
+            AddSignature(multiSignMsg, s_sampleContent, signer);
             Assert.Equal(1, signatures.Count);
 
             // Encode/Decode
@@ -248,7 +251,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData(true)]
         public void MultiSign_AddThenRemoveSignature(bool useIndex)
         {
-            if (MessageKind != CoseMessageKind.MultiSign || OnlySupportsDetachedContent)
+            if (MessageKind != CoseMessageKind.MultiSign)
             {
                 return;
             }
@@ -259,7 +262,7 @@ namespace System.Security.Cryptography.Cose.Tests
             ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
 
             signer = GetCoseSigner(DefaultKey, DefaultHash);
-            multiSignMsg.AddSignature(signer);
+            AddSignature(multiSignMsg, s_sampleContent, signer);
             Assert.Equal(2, signatures.Count);
 
             RemoveSignature(multiSignMsg, signatures[0], useIndex);

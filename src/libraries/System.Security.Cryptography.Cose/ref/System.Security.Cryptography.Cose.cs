@@ -92,8 +92,12 @@ namespace System.Security.Cryptography.Cose
     {
         internal CoseMultiSignMessage() { }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Security.Cryptography.Cose.CoseSignature> Signatures { get { throw null; } }
-        public void AddSignature(System.Security.Cryptography.Cose.CoseSigner signer, byte[]? associatedData = null) { }
-        public void AddSignature(System.Security.Cryptography.Cose.CoseSigner signer, System.ReadOnlySpan<byte> associatedData) { }
+        public void AddSignatureForDetached(byte[] detachedContent, System.Security.Cryptography.Cose.CoseSigner signer, byte[]? associatedData = null) { }
+        public void AddSignatureForDetached(System.IO.Stream detachedContent, System.Security.Cryptography.Cose.CoseSigner signer, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
+        public void AddSignatureForDetached(System.ReadOnlySpan<byte> detachedContent, System.Security.Cryptography.Cose.CoseSigner signer, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
+        public System.Threading.Tasks.Task AddSignatureForDetachedAsync(System.IO.Stream detachedContent, System.Security.Cryptography.Cose.CoseSigner signer, System.ReadOnlyMemory<byte> associatedData = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public void AddSignatureForEmbedded(System.Security.Cryptography.Cose.CoseSigner signer, byte[]? associatedData = null) { }
+        public void AddSignatureForEmbedded(System.Security.Cryptography.Cose.CoseSigner signer, System.ReadOnlySpan<byte> associatedData) { }
         public override int GetEncodedLength() { throw null; }
         public void RemoveSignature(int index) { }
         public void RemoveSignature(System.Security.Cryptography.Cose.CoseSignature signature) { }

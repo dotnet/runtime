@@ -247,9 +247,9 @@ namespace System.Security.Cryptography.Cose.Tests
         }
 
         [Fact]
-        public void MultiSign_AddsignatureWithDuplicateHeaderBetweenProtectedAndUnprotected()
+        public void MultiSign_AddSignatureWithDuplicateHeaderBetweenProtectedAndUnprotected()
         {
-            if (MessageKind != CoseMessageKind.MultiSign || OnlySupportsDetachedContent)
+            if (MessageKind != CoseMessageKind.MultiSign)
             {
                 return;
             }
@@ -261,14 +261,14 @@ namespace System.Security.Cryptography.Cose.Tests
             // Algorithm header is duplicated. It is a special case because it is mandatory that the header exists in the protected map.
             unprotectedHeaders.Add(CoseHeaderLabel.Algorithm, (int)DefaultAlgorithm);
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders);
-            Assert.Throws<CryptographicException>(() => msg.AddSignature(signer));
+            Assert.Throws<CryptographicException>(() => AddSignature(msg, s_sampleContent, signer));
 
             // other known header is duplicate.
             Initialize(DefaultAlgorithm);
             protectedHeaders.Add(CoseHeaderLabel.ContentType, ContentTypeDummyValue);
             unprotectedHeaders.Add(CoseHeaderLabel.ContentType, ContentTypeDummyValue);
             signer = GetCoseSigner(DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders);
-            Assert.Throws<CryptographicException>(() => msg.AddSignature(signer));
+            Assert.Throws<CryptographicException>(() => AddSignature(msg, s_sampleContent, signer));
 
             // not-known int header is duplicate.
             Initialize(DefaultAlgorithm);
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.Cose.Tests
             protectedHeaders.Add(myLabel, 42);
             unprotectedHeaders.Add(myLabel, 42);
             signer = GetCoseSigner(DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders);
-            Assert.Throws<CryptographicException>(() => msg.AddSignature(signer));
+            Assert.Throws<CryptographicException>(() => AddSignature(msg, s_sampleContent, signer));
 
             // not-known tstr header is duplicate.
             Initialize(DefaultAlgorithm);
@@ -284,7 +284,7 @@ namespace System.Security.Cryptography.Cose.Tests
             protectedHeaders.Add(myLabel, 42);
             unprotectedHeaders.Add(myLabel, 42);
             signer = GetCoseSigner(DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders);
-            Assert.Throws<CryptographicException>(() => msg.AddSignature(signer));
+            Assert.Throws<CryptographicException>(() => AddSignature(msg, s_sampleContent, signer));
 
             void Initialize(CoseAlgorithm algorithm)
             {
@@ -574,7 +574,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void MultiSign_SignWithCriticalHeaders_AddSignature()
         {
-            if (MessageKind != CoseMessageKind.MultiSign || OnlySupportsDetachedContent)
+            if (MessageKind != CoseMessageKind.MultiSign)
             {
                 return;
             }
@@ -589,7 +589,7 @@ namespace System.Security.Cryptography.Cose.Tests
             AddCriticalHeaders(signProtectedHeaders, expectedSignProtected, includeSpecifiedCritHeader: true);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash, signProtectedHeaders);
-            multiSignMsg.AddSignature(signer);
+            AddSignature(multiSignMsg, s_sampleContent, signer);
 
             AssertCoseSignMessage(multiSignMsg.Encode(), s_sampleContent, DefaultKey, DefaultAlgorithm, expectedProtectedHeaders: expectedSignProtected);
         }
@@ -597,7 +597,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void MultiSign_SignWithCriticalHeaders_NotTransportingTheSpecifiedCriticalHeaderThrows_AddSignature()
         {
-            if (MessageKind != CoseMessageKind.MultiSign || OnlySupportsDetachedContent)
+            if (MessageKind != CoseMessageKind.MultiSign)
             {
                 return;
             }
@@ -611,7 +611,7 @@ namespace System.Security.Cryptography.Cose.Tests
             AddCriticalHeaders(signProtectedHeaders, null, includeSpecifiedCritHeader: false);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash, signProtectedHeaders);
-            Assert.Throws<CryptographicException>(() => multiSignMsg.AddSignature(signer));
+            Assert.Throws<CryptographicException>(() => AddSignature(multiSignMsg, s_sampleContent, signer));
         }
 
         private static void AddCriticalHeaders(

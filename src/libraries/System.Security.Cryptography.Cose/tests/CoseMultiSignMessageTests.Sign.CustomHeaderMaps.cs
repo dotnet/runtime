@@ -10,6 +10,9 @@ namespace System.Security.Cryptography.Cose.Tests
     {
         internal override CoseMessageKind MessageKind => CoseMessageKind.MultiSign;
 
+        internal override void AddSignature(CoseMultiSignMessage msg, byte[] content, CoseSigner signer, byte[]? associatedData = null)
+            => MultiSignAddSignature(msg, content, signer, associatedData);
+
         internal override CoseMessage Decode(ReadOnlySpan<byte> cborPayload)
             => CoseMessage.DecodeMultiSign(cborPayload);
 

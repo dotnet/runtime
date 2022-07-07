@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Cose
 
             if (Message.IsDetached)
             {
-                throw new InvalidOperationException(SR.Sign1VerifyContentWasDetached);
+                throw new InvalidOperationException(SR.ContentWasDetached);
             }
 
             return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Cose
 
             if (Message.IsDetached)
             {
-                throw new InvalidOperationException(SR.Sign1VerifyContentWasDetached);
+                throw new InvalidOperationException(SR.ContentWasDetached);
             }
 
             return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Cose
 
             if (!Message.IsDetached)
             {
-                throw new InvalidOperationException(SR.Sign1VerifyContentWasEmbedded);
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
             return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Cose
 
             if (!Message.IsDetached)
             {
-                throw new InvalidOperationException(SR.Sign1VerifyContentWasEmbedded);
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
             return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Cose
 
             if (!Message.IsDetached)
             {
-                throw new InvalidOperationException(SR.Sign1VerifyContentWasEmbedded);
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
             return VerifyCore(key, default, detachedContent, associatedData, CoseHelpers.GetKeyType(key));
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.Cose
 
             if (!Message.IsDetached)
             {
-                throw new InvalidOperationException(SR.Sign1VerifyContentWasEmbedded);
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
             return VerifyAsyncCore(key, detachedContent, associatedData, CoseHelpers.GetKeyType(key), cancellationToken);

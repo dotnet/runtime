@@ -10,6 +10,10 @@ namespace System.Security.Cryptography.Cose.Tests
     public abstract class CoseSign1MessageTests_Sign<T> : CoseMessageTests_Sign<T> where T : AsymmetricAlgorithm
     {
         internal override CoseMessageKind MessageKind => CoseMessageKind.Sign1;
+
+        internal override void AddSignature(CoseMultiSignMessage msg, byte[] content, CoseSigner signer, byte[]? associatedData = null)
+            => throw new NotSupportedException();
+
         internal override bool Verify(CoseMessage msg, T key, byte[] content, byte[]? associatedData = null)
             => Sign1Verify(msg, key, content, associatedData);
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Formats.Cbor;
 using System.IO;
 using System.Linq;
@@ -451,13 +452,14 @@ namespace System.Security.Cryptography.Cose.Tests
 
         internal static bool MultiSignVerify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, int expectedSignatures, byte[]? associatedData = null)
         {
-            var multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
-            var signatures = multiSignMsg.Signatures;
+            CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
+            ReadOnlyCollection<CoseSignature> signatures = multiSignMsg.Signatures;
             Assert.Equal(expectedSignatures, signatures.Count);
 
             bool isDetached = !multiSignMsg.Content.HasValue;
             bool result = false;
-            foreach (var s in signatures)
+
+            foreach (CoseSignature s in signatures)
             {
                 if (isDetached)
                 {
@@ -475,6 +477,18 @@ namespace System.Security.Cryptography.Cose.Tests
             }
 
             return result;
+        }
+
+        internal static void MultiSignAddSignature(CoseMultiSignMessage msg, byte[] content, CoseSigner signer, byte[]? associatedData = null)
+        {
+            if (msg.Content.HasValue)
+            {
+                msg.AddSignatureForEmbedded(signer, associatedData);
+            }
+            else
+            {
+                msg.AddSignatureForDetached(content, signer, associatedData);
+            }
         }
 
         private class UnseekableMemoryStream : MemoryStream

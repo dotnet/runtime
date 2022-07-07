@@ -120,6 +120,12 @@
   <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
     <value>The destination is too small to hold the encoded value.</value>
   </data>
+  <data name="ContentWasDetached" xml:space="preserve">
+    <value>Content was not included in the message (detached message), provide a content to verify.</value>
+  </data>
+  <data name="ContentWasEmbedded" xml:space="preserve">
+    <value>Content was included in the message (embedded message) and yet another content was provided for verification.</value>
+  </data>
   <data name="CoseHeaderMapArgumentCoseHeaderValueIncorrect" xml:space="preserve">
     <value>Not a valid CBOR encoded value on CoseHeaderValue on header '{0}', see inner exception for details.</value>
   </data>
@@ -215,11 +221,5 @@
   </data>
   <data name="Sign1VerifyAlgIsRequired" xml:space="preserve">
     <value>Algorithm (alg) header is required and it must be a protected header.</value>
-  </data>
-  <data name="Sign1VerifyContentWasDetached" xml:space="preserve">
-    <value>Content was not included in the message (detached message), provide a content to verify.</value>
-  </data>
-  <data name="Sign1VerifyContentWasEmbedded" xml:space="preserve">
-    <value>Content was included in the message (embedded message) and yet another content was provided for verification.</value>
   </data>
 </root>
