@@ -318,7 +318,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.Browser, "SetRequestHeader not supported on Browser")]
         public async Task ConnectAsync_Failed()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
