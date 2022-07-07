@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal void AddInFlight()
         {
-            if (IsDisposed) throw new ObjectDisposedException($"Cannot access a disposed {GetType().Name}.");
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
             lock (this)
             {
                 InFlightCounter++;
