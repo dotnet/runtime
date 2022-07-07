@@ -20,8 +20,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <DsymUtilOptions Condition="'$(TargetOS)' == 'OSX'">--flat</DsymUtilOptions>
-    <ObjCopyName Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'OSX' and '$(CppCompilerAndLinker)' != 'clang'">objcopy</ObjCopyName>
-    <ObjCopyName Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'OSX' and '$(CppCompilerAndLinker)' == 'clang'">llvm-objcopy</ObjCopyName>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -118,6 +116,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CppCompilerAndLinker>$(CppCompilerAndLinkerAlternative)</CppCompilerAndLinker>
       <CppLinker>$(CppCompilerAndLinker)</CppLinker>
       <_WhereLinker>0</_WhereLinker>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'OSX'">
+      <ObjCopyName Condition="'$(CppCompilerAndLinker)' != 'clang'">objcopy</ObjCopyName>
+      <ObjCopyName Condition="'$(CppCompilerAndLinker)' == 'clang'">llvm-objcopy</ObjCopyName>
     </PropertyGroup>
 
     <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />

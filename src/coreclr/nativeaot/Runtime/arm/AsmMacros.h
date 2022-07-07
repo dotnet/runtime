@@ -262,7 +262,6 @@ $Name
 ;;
         EXTERN RhpGcAlloc
         EXTERN RhDebugBreak
-        EXTERN RhpWaitForSuspend2
         EXTERN RhpWaitForGC2
         EXTERN RhpReversePInvokeAttachOrTrapThread2
         EXTERN RhExceptionHandling_FailedAllocation

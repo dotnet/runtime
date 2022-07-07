@@ -71,6 +71,10 @@ namespace System.Formats.Tar
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
             ThrowIfDisposed();
             VerifyPositionInSuperStream();
             return ReadAsyncCore(buffer, cancellationToken);

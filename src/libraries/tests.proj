@@ -394,7 +394,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <!--Needs work to get these tests to pass -->
     <!--These tests have failures-->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj"
+    <!-- System.Collection.Immutable running into https://github.com/dotnet/runtime/issues/70012 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" 
                       Condition="'$(TargetOS)' == 'linux'" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"
                       Condition="'$(TargetOS)' == 'linux'" />
@@ -509,7 +512,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug\tests\System.Diagnostics.Debug.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.FileVersionInfo\tests\System.Diagnostics.FileVersionInfo.Tests\System.Diagnostics.FileVersionInfo.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.PerformanceCounter\tests\System.Diagnostics.PerformanceCounter.Tests.csproj" />
@@ -563,9 +565,7 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
-    <!-- Remove the condition after fix, https://github.com/dotnet/runtime/issues/70010 -->
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj"
-                      Condition="'$(TargetOS)' == 'windows'" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />

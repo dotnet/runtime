@@ -973,14 +973,14 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static nuint IShiftOperators<nuint, nuint>.operator <<(nuint value, int shiftAmount) => value << shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static nuint IShiftOperators<nuint, int, nuint>.operator <<(nuint value, int shiftAmount) => value << shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static nuint IShiftOperators<nuint, nuint>.operator >>(nuint value, int shiftAmount) => value >> shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static nuint IShiftOperators<nuint, int, nuint>.operator >>(nuint value, int shiftAmount) => value >> shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static nuint IShiftOperators<nuint, nuint>.operator >>>(nuint value, int shiftAmount) => value >>> shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static nuint IShiftOperators<nuint, int, nuint>.operator >>>(nuint value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISubtractionOperators

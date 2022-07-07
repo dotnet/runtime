@@ -6763,6 +6763,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		g_assert (bb);
 	}
 
+	if (cfg->gsharedvt_min) {
+		if (mini_is_gsharedvt_variable_signature (sig))
+			GSHAREDVT_FAILURE (*cfg->cil_start);
+
+		for (int i = 0; i < header->num_locals; ++i) {
+			if (mini_is_gsharedvt_variable_type (header->locals [i]))
+				GSHAREDVT_FAILURE (*cfg->cil_start);
+		}
+	}
+
 	/* we use a spare stack slot in SWITCH and NEWOBJ and others */
 	stack_start = sp = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * (header->max_stack + 1));
 
@@ -7268,6 +7278,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			fsig = mini_get_signature (method, token, generic_context, cfg->error);
 			CHECK_CFG_ERROR;
 
+			if (cfg->gsharedvt_min && mini_is_gsharedvt_variable_signature (fsig))
+				GSHAREDVT_FAILURE (il_op);
+
 			if (method->dynamic && fsig->pinvoke) {
 				MonoInst *args [3];
 
@@ -7548,6 +7561,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (cfg->llvm_only && !cfg->method->wrapper_type && (!cmethod || cmethod->is_inflated))
 				cfg->signatures = g_slist_prepend_mempool (cfg->mempool, cfg->signatures, fsig);
+
+			if (cfg->gsharedvt_min && mini_is_gsharedvt_variable_signature (fsig))
+				GSHAREDVT_FAILURE (il_op);
 
 			/* See code below */
 			if (cmethod->klass == mono_defaults.monitor_class && !strcmp (cmethod->name, "Enter") && mono_method_signature_internal (cmethod)->param_count == 1) {
@@ -9028,6 +9044,9 @@ calli_end:
 			n = fsig->param_count;
 			CHECK_STACK (n);
 
+			if (cfg->gsharedvt_min && mini_is_gsharedvt_variable_signature (fsig))
+				GSHAREDVT_FAILURE (il_op);
+
 			/*
 			 * Generate smaller code for the common newobj <exception> instruction in
 			 * argument checking code.
@@ -9248,6 +9267,9 @@ calli_end:
 			mono_save_token_info (cfg, image, token, klass);
 
 			context_used = mini_class_check_context_used (cfg, klass);
+
+			if (cfg->gsharedvt_min && mini_is_gsharedvt_variable_klass (klass))
+				GSHAREDVT_FAILURE (il_op);
 
 			if (mini_is_gsharedvt_klass (klass)) {
 				res = handle_unbox_gsharedvt (cfg, klass, *sp);

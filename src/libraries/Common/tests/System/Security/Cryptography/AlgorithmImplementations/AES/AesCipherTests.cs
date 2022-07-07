@@ -34,6 +34,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AES-192 is not supported on Browser")]
         public static void RandomKeyRoundtrip_192()
         {
             using (Aes aes = AesFactory.Create())
@@ -485,6 +486,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AES-192 is not supported on Browser")]
         public static void VerifyKnownTransform_CBC192_NoPadding()
         {
             TestAesTransformDirectKey(
@@ -525,6 +527,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AES-192 is not supported on Browser")]
         public static void VerifyKnownTransform_CBC192_NoPadding_2()
         {
             TestAesTransformDirectKey(

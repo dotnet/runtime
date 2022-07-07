@@ -576,6 +576,7 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr GetFunctionPointerForDelegate(System.Delegate d) { throw null; }
         public static System.IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. This API will return -1 for modules without a file on disk.")]
         public static System.IntPtr GetHINSTANCE(System.Reflection.Module m) { throw null; }
         public static int GetHRForException(System.Exception? e) { throw null; }
         public static int GetHRForLastWin32Error() { throw null; }
@@ -2168,6 +2169,19 @@ namespace System.Runtime.InteropServices.Marshalling
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }
+
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true)]
+    public sealed partial class CustomMarshallerAttribute : System.Attribute
+    {
+        public CustomMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.MarshalMode marshalMode, System.Type marshallerType) { }
+        public System.Type ManagedType { get { throw null; } }
+        public System.Runtime.InteropServices.Marshalling.MarshalMode MarshalMode { get { throw null; } }
+        public System.Type MarshallerType { get { throw null; } }
+        public struct GenericPlaceholder
+        {
+        }
+    }
+
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
     {
@@ -2202,6 +2216,19 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         Value,
         LinearCollection
+    }
+    public enum MarshalMode
+    {
+        Default = 0,
+        ManagedToUnmanagedIn = 1,
+        ManagedToUnmanagedRef = 2,
+        ManagedToUnmanagedOut = 3,
+        UnmanagedToManagedIn = 4,
+        UnmanagedToManagedRef = 5,
+        UnmanagedToManagedOut = 6,
+        ElementIn = 7,
+        ElementRef = 8,
+        ElementOut = 9
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute

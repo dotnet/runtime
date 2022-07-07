@@ -344,8 +344,8 @@ void PgoManager::ReadPgoData()
 {
     // Skip, if we're not reading, or we're writing profile data, or doing tiered pgo
     //
-    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0) ||
-        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0) ||
+    if (g_pConfig->TieredPGO() ||
+        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0) ||
         (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) == 0))
     {
         return;

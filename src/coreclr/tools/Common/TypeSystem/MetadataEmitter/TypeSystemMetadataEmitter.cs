@@ -315,7 +315,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                EntityHandle typeHandle = GetTypeRef((MetadataType)method.OwningType);
+                EntityHandle typeHandle = GetTypeRef(method.OwningType);
                 StringHandle methodName = _metadataBuilder.GetOrAddString(method.Name);
                 var sig = method.GetTypicalMethodDefinition().Signature;
                 var sigBlob = GetMethodSignatureBlobHandle(sig);
