@@ -1232,7 +1232,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            BufferReader.ReadRawArray(array.AsSpan(offset, actual)));
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual)));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1255,7 +1255,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            BufferReader.ReadRawArray(array.AsSpan(offset, actual));
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1278,7 +1278,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            BufferReader.ReadRawArray(array.AsSpan(offset, actual));
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1301,7 +1301,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            BufferReader.ReadRawArray(array.AsSpan(offset, actual));
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1324,7 +1324,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            BufferReader.ReadRawArray(array.AsSpan(offset, actual));
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1347,7 +1347,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            BufferReader.ReadRawArray(array.AsSpan(offset, actual));
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1370,7 +1370,7 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            BufferReader.ReadRawArray(array.AsSpan(offset, actual));
+            BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
             SkipArrayElements(actual);
             return actual;
         }
@@ -1394,9 +1394,9 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            foreach (ref DateTime item in array.AsSpan(offset, actual))
             {
-                array[offset + i] = BufferReader.ReadDateTime();
+                item = BufferReader.ReadDateTime();
             }
             SkipArrayElements(actual);
             return actual;
@@ -1421,9 +1421,9 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            foreach (ref Guid item in array.AsSpan(offset, actual))
             {
-                array[offset + i] = BufferReader.ReadGuid();
+                item = BufferReader.ReadGuid();
             }
             SkipArrayElements(actual);
             return actual;
@@ -1448,9 +1448,9 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            for (int i = 0; i < actual; i++)
+            foreach (ref TimeSpan item in array.AsSpan(offset, actual))
             {
-                array[offset + i] = BufferReader.ReadTimeSpan();
+                item = BufferReader.ReadTimeSpan();
             }
             SkipArrayElements(actual);
             return actual;

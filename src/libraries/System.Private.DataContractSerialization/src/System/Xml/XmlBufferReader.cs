@@ -470,13 +470,13 @@ namespace System.Xml
             return value;
         }
 
-        public void ReadRawArray<T>(Span<T> dst)
+        public void ReadRawArrayBytes<T>(Span<T> dst)
             where T : unmanaged
         {
-            ReadRawArray(MemoryMarshal.AsBytes(dst));
+            ReadRawArrayBytes(MemoryMarshal.AsBytes(dst));
         }
 
-        public void ReadRawArray(Span<byte> dst)
+        public void ReadRawArrayBytes(Span<byte> dst)
         {
             if (_stream != null)
             {
