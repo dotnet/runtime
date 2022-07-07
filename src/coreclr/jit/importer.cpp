@@ -4198,6 +4198,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             switch (ni)
                             {
                                 case NI_System_Type_get_IsEnum:
+                                {
                                     CorInfoType infoType = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
                                     retNode = gtNewIconNode(
                                         (eeIsValueClass(hClass) &&
@@ -4209,6 +4210,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                             ? 1
                                             : 0);
                                     break;
+                                }
                                 case NI_System_Type_get_IsValueType:
                                     retNode = gtNewIconNode(
                                         (eeIsValueClass(hClass) &&
