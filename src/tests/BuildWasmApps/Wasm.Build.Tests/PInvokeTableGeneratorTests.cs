@@ -110,6 +110,9 @@ namespace Wasm.Build.Tests
                                                           id);
             Assert.Matches("warning.*Skipping.*because.*function pointer", output);
             Assert.Matches("warning.*using_sum_one", output);
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running", output);
         }
 
         [Theory]
