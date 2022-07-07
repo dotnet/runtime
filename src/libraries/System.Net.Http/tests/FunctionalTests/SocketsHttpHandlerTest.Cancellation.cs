@@ -295,6 +295,62 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Fact]
+        public async Task CancelPendingRequest_DropsStalledConnectionAttempt()
+        {
+            const int AttemptCount = 3;
+            const int FirstConnectionDelayMs = 10_000;
+            const int RequestTimeoutMs = 1000;
+            bool firstConnection = true;
+
+            using CancellationTokenSource cts0 = new CancellationTokenSource(RequestTimeoutMs);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using var handler = CreateHttpClientHandler();
+                GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = DoConnect;
+                using var client = CreateHttpClient(handler);
+
+                await Assert.ThrowsAnyAsync<TaskCanceledException>(async () =>
+                {
+                    await client.GetAsync(uri, cts0.Token);
+                });
+
+                for (int i = 0; i < AttemptCount; i++)
+                {
+                    using var cts1 = new CancellationTokenSource(RequestTimeoutMs);
+                    using var response = await client.GetAsync(uri, cts1.Token);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    for (int i = 0; i < AttemptCount; i++)
+                    {
+                        await connection.ReadRequestDataAsync();
+                        await connection.SendResponseAsync();
+                        connection.CompleteRequestProcessing();
+                    }
+                });
+            });
+
+            async ValueTask<Stream> DoConnect(SocketsHttpConnectionContext ctx, CancellationToken cancellationToken)
+            {
+                if (firstConnection)
+                {
+                    firstConnection = false;
+                    await Task.Delay(100, cancellationToken); // Wait for the request to be pushed to the queue
+                    cts0.Cancel(); // cancel the first request faster than RequestTimeoutMs
+                    await Task.Delay(FirstConnectionDelayMs, cancellationToken); // Simulate stalled connection
+                }
+                var s = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                await s.ConnectAsync(ctx.DnsEndPoint, cancellationToken);
+
+                return new NetworkStream(s, ownsSocket: true);
+            }
+        }
+
         private sealed class SetTcsContent : StreamContent
         {
             private readonly TaskCompletionSource<bool> _tcs;

@@ -1227,6 +1227,15 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CancelPendingRequest_DropsStalledConnectionAttempt_WithGlobalTimeout()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION"] = "100";
+
+            RemoteExecutor.Invoke(static () => new SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test(null).CancelPendingRequest_DropsStalledConnectionAttempt(), options).Dispose();
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]

@@ -868,7 +868,7 @@ namespace System.Net.Test.Common
                 return buffer;
             }
 
-            public void CompleteRequestProcessing()
+            public override void CompleteRequestProcessing()
             {
                 _contentLength = 0;
                 _bodyRead = false;
