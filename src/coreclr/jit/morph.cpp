@@ -10210,6 +10210,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     return constNode;
                 }
             }
+            if (op1->IsCall())
+            {
+                GenTreeCall* const call = op1->AsCall();
+                if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(eeGetHelperNum(call->gtCallMethHnd)))
+                {
+                    JITDUMP("\nIND on [%06u] is nonfaulting\n", dspTreeID(call));
+                    tree->gtFlags |= GTF_IND_NONFAULTING;
+                    tree->gtFlags &= ~GTF_EXCEPT;
+                    tree->gtFlags |= op1->gtFlags & GTF_EXCEPT;
+                }
+            }
+
             break;
 
         case GT_DIV:
@@ -10595,24 +10607,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 #endif
-
-        case GT_NULLCHECK:
-        {
-            op1 = tree->AsUnOp()->gtGetOp1();
-            if (op1->IsCall())
-            {
-                GenTreeCall* const call = op1->AsCall();
-                if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(eeGetHelperNum(call->gtCallMethHnd)))
-                {
-                    JITDUMP("\nNULLCHECK on [%06u] will always succeed\n", dspTreeID(call));
-
-                    // TODO: Can we also remove the call?
-                    //
-                    return fgMorphTree(call);
-                }
-            }
-        }
-        break;
 
         default:
             break;

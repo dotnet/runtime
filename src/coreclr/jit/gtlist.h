@@ -88,7 +88,6 @@ GTNODE(STORE_OBJ        , GenTreeObj         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) 
 GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
 GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store
-GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
 GTNODE(MDARR_LENGTH     , GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension

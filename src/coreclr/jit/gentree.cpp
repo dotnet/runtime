@@ -5970,7 +5970,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_INIT_VAL:
         case GT_JTRUE:
         case GT_SWITCH:
-        case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
         case GT_RETURNTRAP:
@@ -6247,6 +6246,27 @@ GenTree* GenTree::gtGetParent(GenTree*** pUse)
     return user;
 }
 
+bool GenTree::gtIsUnusedValue()
+{
+    GenTree* par = gtGetParent(nullptr);
+    if (par == nullptr)
+    {
+        return true;
+    }
+
+    if (par->OperIs(GT_COMMA))
+    {
+        if (par->gtGetOp1() == this)
+        {
+            return true;
+        }
+
+        return par->gtIsUnusedValue();
+    }
+
+    return false;
+}
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.
@@ -6441,7 +6461,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_IND:
         case GT_BLK:
         case GT_OBJ:
-        case GT_NULLCHECK:
         case GT_STORE_BLK:
         case GT_STORE_DYN_BLK:
             if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()))
@@ -6669,7 +6688,6 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
         break;
 
         case GT_IND:
-        case GT_NULLCHECK:
         {
             GenTreeIndir gt;
             res = *reinterpret_cast<VtablePtr*>(&gt);
@@ -9286,7 +9304,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_INIT_VAL:
         case GT_JTRUE:
         case GT_SWITCH:
-        case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
         case GT_BSWAP:

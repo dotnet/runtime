@@ -1268,6 +1268,7 @@ protected:
     void genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
+    void genEmitCodeForUnusedIndir(GenTreeIndir* tree);
     void genCodeForNegNot(GenTree* tree);
     void genCodeForBswap(GenTree* tree);
     bool genCanOmitNormalizationForBswap16(GenTree* tree);
@@ -1285,7 +1286,6 @@ protected:
     void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
 #endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
-    void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
 
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);

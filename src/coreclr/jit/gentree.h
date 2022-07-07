@@ -958,7 +958,7 @@ public:
 
     // This returns true only for GT_IND and GT_STOREIND, and is used in contexts where a "true"
     // indirection is expected (i.e. either a load to or a store from a single register).
-    // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
+    // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc.
     bool isIndir() const;
 
     bool isContainedIntOrIImmed() const
@@ -1605,7 +1605,7 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        return gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK || OperIsBlk(gtOper);
+        return gtOper == GT_IND || gtOper == GT_STOREIND || OperIsBlk(gtOper);
     }
 
     static bool OperIsArrLength(genTreeOps gtOper)
@@ -1863,6 +1863,7 @@ private:
 
 public:
     GenTree* gtGetParent(GenTree*** pUse);
+    bool gtIsUnusedValue();
 
     void ReplaceOperand(GenTree** useEdge, GenTree* replacement);
 

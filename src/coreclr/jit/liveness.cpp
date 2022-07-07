@@ -2271,8 +2271,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             }
             if (nextNode->OperIsIndir())
             {
-                // This must be a non-nullcheck form of indir, or it would not be a def.
-                assert(nextNode->OperGet() != GT_NULLCHECK);
                 if (nextNode->OperIsStore())
                 {
                     // This is a store, which takes a location and a value to be stored.
@@ -2290,7 +2288,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                 }
                 else
                 {
-                    // This is a non-store indirection, and the assignment will com after it.
+                    // This is a non-store indirection, and the assignment will come after it.
                     asgNode = nextNode->gtNext;
                 }
             }

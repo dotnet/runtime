@@ -607,25 +607,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildIndir(tree->AsIndir());
             break;
 
-        case GT_NULLCHECK:
-        {
-            assert(dstCount == 0);
-#ifdef TARGET_X86
-            if (varTypeIsByte(tree))
-            {
-                // on X86 we have to use byte-able regs for byte-wide loads
-                BuildUse(tree->gtGetOp1(), RBM_BYTE_REGS);
-                srcCount = 1;
-                break;
-            }
-#endif
-            // If we have a contained address on a nullcheck, we transform it to
-            // an unused GT_IND, since we require a target register.
-            BuildUse(tree->gtGetOp1());
-            srcCount = 1;
-            break;
-        }
-
         case GT_IND:
             srcCount = BuildIndir(tree->AsIndir());
             assert(dstCount == 1);
@@ -2637,7 +2618,8 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     assert(srcCount <= BYTE_REG_COUNT);
 #endif
 
-    if (indirTree->gtOper != GT_STOREIND)
+    if ((indirTree->gtOper != GT_STOREIND) &&
+        (!indirTree->IsUnusedValue() || indirTree->Addr()->IsIconHandle(GTF_ICON_TLS_HDL)))
     {
         BuildDef(indirTree);
     }

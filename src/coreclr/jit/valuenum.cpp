@@ -6797,8 +6797,8 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
 // Static fields, methods.
 static UINT8      vnfOpAttribs[VNF_COUNT];
 static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
-                                                 GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
-                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_DYN_BLK,
+                                                 GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG, GT_CMPXCHG,
+                                                 GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_DYN_BLK,
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
@@ -8939,13 +8939,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         break;
                     }
 
-                    // These unary nodes do not produce values. Note that for NULLCHECK the
-                    // additional exception will be added below by "fgValueNumberAddExceptionSet".
+                    // These unary nodes do not produce values.
                     case GT_JTRUE:
                     case GT_SWITCH:
                     case GT_RETURN:
                     case GT_RETFILT:
-                    case GT_NULLCHECK:
                         if (tree->gtGetOp1() != nullptr)
                         {
                             tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
@@ -10785,7 +10783,6 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_IND:
             case GT_BLK:
             case GT_OBJ:
-            case GT_NULLCHECK:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIndir()->Addr());
                 break;
 

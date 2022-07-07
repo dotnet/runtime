@@ -1300,12 +1300,11 @@ inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr)
 //    basicBlock  -  Basic block of the node
 //
 // Return Value:
-//    New GT_NULLCHECK node
-
+//    New GT_IND node
 inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
 {
     assert(fgAddrCouldBeNull(addr));
-    GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
+    GenTree* nullCheck = gtNewOperNode(GT_IND, TYP_BYTE, addr);
     nullCheck->gtFlags |= GTF_EXCEPT;
     basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
@@ -4245,7 +4244,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_ARR_ADDR:
         case GT_JTRUE:
         case GT_SWITCH:
-        case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
 #if FEATURE_ARG_SPLIT

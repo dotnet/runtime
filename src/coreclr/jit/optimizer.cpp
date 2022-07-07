@@ -7077,15 +7077,6 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             {
                 return false;
             }
-            else if (node->OperIs(GT_NULLCHECK))
-            {
-                // If a null-check is for `this` object, it is safe to
-                // hoist it out of the loop. Assertionprop will get rid
-                // of left over nullchecks present inside the loop. Also,
-                // since NULLCHECK has no value, it will never be CSE,
-                // hence this check is not present in optIsCSEcandidate().
-                return true;
-            }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
             return m_compiler->optIsCSEcandidate(node);

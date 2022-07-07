@@ -2697,11 +2697,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             assertionInfo = optCreateAssertion(tree->AsArrCommon()->ArrRef(), nullptr, OAK_NOT_EQUAL);
             break;
 
-        case GT_NULLCHECK:
-            // Explicit null checks always create non-null assertions.
-            assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
-            break;
-
         case GT_INTRINSIC:
             if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
             {
@@ -4935,7 +4930,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_OBJ:
         case GT_BLK:
         case GT_IND:
-        case GT_NULLCHECK:
         case GT_STORE_DYN_BLK:
             return optAssertionProp_Ind(assertions, tree, stmt);
 

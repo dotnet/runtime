@@ -167,7 +167,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
     assert(node != nullptr);
     switch (node->gtOper)
     {
-        case GT_NULLCHECK:
         case GT_IND:
             LowerIndir(node->AsIndir());
             break;
@@ -7137,28 +7136,22 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 }
 
 //------------------------------------------------------------------------
-// LowerIndir: a common logic to lower IND load or NullCheck.
+// LowerIndir: common logic to lower IND nodes.
 //
 // Arguments:
 //    ind - the ind node we are lowering.
 //
 void Lowering::LowerIndir(GenTreeIndir* ind)
 {
-    assert(ind->OperIs(GT_IND, GT_NULLCHECK));
+    assert(ind->OperIs(GT_IND));
     // Process struct typed indirs separately unless they are unused;
     // they only appear as the source of a block copy operation or a return node.
     if (!ind->TypeIs(TYP_STRUCT) || ind->IsUnusedValue())
     {
-#ifndef TARGET_XARCH
-        // On non-xarch, whether or not we can contain an address mode will depend on the access width
-        // which may be changed when transforming an unused indir, so do that first.
-        // On xarch, it is the opposite: we transform to indir/nullcheck based on whether we contained the
-        // address mode, so in that case we must do this transformation last.
-        if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
+        if (ind->IsUnusedValue())
         {
             TransformUnusedIndirection(ind, comp, m_block);
         }
-#endif
 
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
@@ -7175,13 +7168,6 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 
         TryCreateAddrMode(ind->Addr(), isContainable, ind);
         ContainCheckIndir(ind);
-
-#ifdef TARGET_XARCH
-        if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
-        {
-            TransformUnusedIndirection(ind, comp, m_block);
-        }
-#endif
     }
     else
     {
@@ -7202,47 +7188,10 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 //
 void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block)
 {
-    // A nullcheck is essentially the same as an indirection with no use.
-    // The difference lies in whether a target register must be allocated.
-    // On XARCH we can generate a compare with no target register as long as the address
-    // is not contained.
-    // On ARM64 we can generate a load to REG_ZR in all cases.
-    // However, on ARM we must always generate a load to a register.
-    // In the case where we require a target register, it is better to use GT_IND, since
-    // GT_NULLCHECK is a non-value node and would therefore require an internal register
-    // to use as the target. That is non-optimal because it will be modeled as conflicting
-    // with the source register(s).
-    // So, to summarize:
-    // - On ARM64, always use GT_NULLCHECK for a dead indirection.
-    // - On ARM, always use GT_IND.
-    // - On XARCH, use GT_IND if we have a contained address, and GT_NULLCHECK otherwise.
-    // In all cases we try to preserve the original type and never make it wider to avoid AVEs.
-    // For structs we conservatively lower it to BYTE. For 8-byte primitives we lower it to TYP_INT
-    // on XARCH as an optimization.
-    //
-    assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
+    assert(ind->OperIs(GT_IND, GT_BLK, GT_OBJ));
 
+    ind->ChangeOper(GT_IND);
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    bool useNullCheck = true;
-#elif TARGET_ARM
-    bool           useNullCheck          = false;
-#else  // TARGET_XARCH
-    bool useNullCheck = !ind->Addr()->isContained();
-    ind->ClearDontExtend();
-#endif // !TARGET_XARCH
-
-    if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
-    {
-        comp->gtChangeOperToNullCheck(ind, block);
-        ind->ClearUnusedValue();
-    }
-    else if (!useNullCheck && !ind->OperIs(GT_IND))
-    {
-        ind->ChangeOper(GT_IND);
-        ind->SetUnusedValue();
-    }
 }
 
 //------------------------------------------------------------------------

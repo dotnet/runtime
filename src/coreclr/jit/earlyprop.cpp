@@ -87,32 +87,32 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
 //    GT_ARR_LENGTH node will then be rewritten to a GT_CNS_INT node if the array length is
 //    constant.
 //
-//    Null check folding tries to find GT_INDIR(obj + const) that GT_NULLCHECK(obj) can be folded into
-//    and removed. Currently, the algorithm only matches GT_INDIR and GT_NULLCHECK in the same basic block.
+//    Null check folding tries to find GT_INDIR(obj + const) that a previous unused indir can be folded into
+//    and removed. Currently, the algorithm only matches indirs in the same basic block.
 //
 //    TODO: support GT_MDARR_LENGTH, GT_MDARRAY_LOWER_BOUND
 //
 PhaseStatus Compiler::optEarlyProp()
 {
-    if (!optDoEarlyPropForFunc())
-    {
-        // We perhaps should verify the OMF are set properly
-        //
-        JITDUMP("no arrays or null checks in the method\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
+    // if (!optDoEarlyPropForFunc())
+    //{
+    //    // We perhaps should verify the OMF are set properly
+    //    //
+    //    JITDUMP("no arrays or null checks in the method\n");
+    //    return PhaseStatus::MODIFIED_NOTHING;
+    //}
 
     assert(fgSsaPassesCompleted == 1);
     unsigned numChanges = 0;
 
     for (BasicBlock* const block : Blocks())
     {
-#ifndef DEBUG
-        if (!optDoEarlyPropForBlock(block))
-        {
-            continue;
-        }
-#endif
+        //#ifndef DEBUG
+        //        if (!optDoEarlyPropForBlock(block))
+        //        {
+        //            continue;
+        //        }
+        //#endif
 
         compCurBB = block;
 
@@ -144,7 +144,7 @@ PhaseStatus Compiler::optEarlyProp()
             if (isRewritten)
             {
                 // Make sure the transformation happens in debug, check, and release build.
-                assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(block));
+                // assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(block));
                 gtSetStmtInfo(stmt);
                 fgSetStmtSeq(stmt);
                 numChanges++;
@@ -404,8 +404,9 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 }
 
 //----------------------------------------------------------------
-// optFoldNullChecks: Try to find a GT_NULLCHECK node that can be folded into the indirection node mark it for removal
-// if possible.
+// optFoldNullChecks:
+//   Try to find a previous unused indirection node that can be folded into a
+//   current indirection node and mark it for removal if possible.
 //
 // Arguments:
 //    tree           - The input indirection tree.
@@ -415,25 +416,23 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 //    true if a null check was folded
 //
 // Notes:
-//    If a GT_NULLCHECK node is post-dominated by an indirection node on the same local and the trees between
-//    the GT_NULLCHECK and the indirection don't have unsafe side effects, the GT_NULLCHECK can be removed.
-//    The indir will cause a NullReferenceException if and only if GT_NULLCHECK will cause the same
-//    NullReferenceException.
-
+//    If an unused indirection node is post-dominated by an indirection node on the same local and the trees between
+//    the two indirections don't have unsafe side effects, the unused indirection can be removed.
+//
 bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-#ifdef DEBUG
-    if (tree->OperGet() == GT_NULLCHECK)
-    {
-        optCheckFlagsAreSet(OMF_HAS_NULLCHECK, "OMF_HAS_NULLCHECK", BBF_HAS_NULLCHECK, "BBF_HAS_NULLCHECK", tree,
-                            compCurBB);
-    }
-#else
-    if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
-    {
-        return false;
-    }
-#endif
+    //#ifdef DEBUG
+    // if (tree->OperGet() == GT_NULLCHECK)
+    //{
+    //    optCheckFlagsAreSet(OMF_HAS_NULLCHECK, "OMF_HAS_NULLCHECK", BBF_HAS_NULLCHECK, "BBF_HAS_NULLCHECK", tree,
+    //                        compCurBB);
+    //}
+    //#else
+    // if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
+    //{
+    //    return false;
+    //}
+    //#endif
 
     GenTree*   nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
     GenTree*   nullCheckParent = nullptr;
@@ -443,8 +442,8 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     {
 #ifdef DEBUG
         // Make sure the transformation happens in debug, check, and release build.
-        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) &&
-               (compCurBB->bbFlags & BBF_HAS_NULLCHECK) != 0);
+        // assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) &&
+        //       (compCurBB->bbFlags & BBF_HAS_NULLCHECK) != 0);
         if (verbose)
         {
             printf("optEarlyProp Marking a null check for removal\n");
@@ -464,39 +463,47 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
             nullCheckParent->gtFlags &= ~GTF_DONT_CSE;
         }
 
-        nullCheckMap->Remove(nullCheckTree->gtGetOp1()->AsLclVarCommon()->GetLclNum());
+        nullCheckMap->Remove(nullCheckTree->AsIndir()->Addr()->AsLclVarCommon()->GetLclNum());
 
         // Re-morph the statement.
         Statement* curStmt = compCurStmt;
-        fgMorphBlockStmt(compCurBB, nullCheckStmt DEBUGARG("optFoldNullCheck"));
-        compCurStmt = curStmt;
+        bool removed       = fgMorphBlockStmt(compCurBB, nullCheckStmt DEBUGARG("optFoldNullCheck"));
+        compCurStmt        = curStmt;
+
+        // Verify that node was removed
+        assert(removed || (gtFindLink(nullCheckStmt, nullCheckTree).result == nullptr));
 
         folded = true;
     }
 
-    if ((tree->OperGet() == GT_NULLCHECK) && (tree->gtGetOp1()->OperGet() == GT_LCL_VAR))
+    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_VAR) &&
+        ((tree->gtFlags & GTF_IND_NONFAULTING) == 0))
     {
-        nullCheckMap->Set(tree->gtGetOp1()->AsLclVarCommon()->GetLclNum(), tree,
-                          LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
+        if (tree->gtIsUnusedValue())
+        {
+            nullCheckMap->Set(tree->AsIndir()->Addr()->AsLclVarCommon()->GetLclNum(), tree,
+                              LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
+        }
     }
 
     return folded;
 }
 
 //----------------------------------------------------------------
-// optFindNullCheckToFold: Try to find a GT_NULLCHECK node that can be folded into the indirection node.
+// optFindNullCheckToFold: Try to find a previous unused indirection that can
+// be folded into the indirection node.
 //
 // Arguments:
 //    tree           - The input indirection tree.
-//    nullCheckMap   - Map of the local numbers to the latest NULLCHECKs on those locals in the current basic block
+//    nullCheckMap   - Map of the local numbers to the latest nullchecks on those locals in the current basic block
 //
 // Notes:
 //    Check for cases where
 //    1. One of the following trees
 //
-//       nullcheck(x)
+//       indir(x) (unused)
 //       or
-//       x = comma(nullcheck(y), add(y, const1))
+//       x = comma(indir(y), add(y, const1))
 //
 //       is post-dominated in the same basic block by one of the following trees
 //
@@ -540,7 +547,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     unsigned       nullCheckLclNum = BAD_VAR_NUM;
 
     // Check if we saw a nullcheck on this local in this basic block
-    // This corresponds to nullcheck(x) tree in the header comment.
+    // This corresponds to the unused indir(x) tree in the header comment.
     if (nullCheckMap->Lookup(lclNum, &nullCheckTree))
     {
         GenTree* nullCheckAddr = nullCheckTree->AsIndir()->Addr();
@@ -556,7 +563,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 
     if (nullCheckTree == nullptr)
     {
-        // Check if we have x = comma(nullcheck(y), add(y, const1)) pattern.
+        // Check if we have x = comma(ind(y), add(y, const1)) pattern.
 
         // Find the definition of the indirected local ('x' in the pattern above).
         LclSsaVarDsc* defLoc = lvaTable[lclNum].GetPerSsaData(ssaNum);
@@ -576,12 +583,12 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         const bool commaOnly              = true;
         GenTree*   commaOp1EffectiveValue = defRHS->gtGetOp1()->gtEffectiveVal(commaOnly);
 
-        if (commaOp1EffectiveValue->OperGet() != GT_NULLCHECK)
+        if (!commaOp1EffectiveValue->OperIsIndir())
         {
             return nullptr;
         }
 
-        GenTree* nullCheckAddress = commaOp1EffectiveValue->gtGetOp1();
+        GenTree* nullCheckAddress = commaOp1EffectiveValue->AsIndir()->Addr();
 
         if ((nullCheckAddress->OperGet() != GT_LCL_VAR) || (defRHS->gtGetOp2()->OperGet() != GT_ADD))
         {
@@ -613,22 +620,23 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 }
 
 //----------------------------------------------------------------
-// optIsNullCheckFoldingLegal: Check the nodes between the GT_NULLCHECK node and the indirection to determine
-//                             if null check folding is legal.
+// optIsNullCheckFoldingLegal:
+//   Check the nodes between the two indirs to determine if null check folding
+//   is legal.
 //
 // Arguments:
 //    tree                - The input indirection tree.
-//    nullCheckTree       - The GT_NULLCHECK tree that is a candidate for removal.
-//    nullCheckParent     - The parent of the GT_NULLCHECK tree that is a candidate for removal (out-parameter).
-//    nullCheckStatement  - The statement of the GT_NULLCHECK tree that is a candidate for removal (out-parameter).
+//    nullCheckTree       - The unused indirection tree that is a candidate for removal.
+//    nullCheckParent     - The parent of nullCheckTree (out-parameter).
+//    nullCheckStatement  - The statement nullCheckTree (out-parameter).
 
 bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
                                           GenTree*    nullCheckTree,
                                           GenTree**   nullCheckParent,
                                           Statement** nullCheckStmt)
 {
-    // Check all nodes between the GT_NULLCHECK and the indirection to see
-    // if any nodes have unsafe side effects.
+    // Check all nodes between the indirs to see if any nodes have unsafe side
+    // effects.
     unsigned       nullCheckLclNum    = nullCheckTree->gtGetOp1()->AsLclVarCommon()->GetLclNum();
     bool           isInsideTry        = compCurBB->hasTryIndex();
     bool           canRemoveNullCheck = true;
@@ -661,15 +669,14 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 
     if (currentTree == tree)
     {
-        // The GT_NULLCHECK and the indirection are in the same statements.
+        // The indirs are in the same statements.
         *nullCheckStmt = compCurStmt;
     }
     else
     {
-        // The GT_NULLCHECK and the indirection are in different statements.
-        // Walk the nodes in the statement containing the indirection
-        // in reverse execution order starting with the indirection's
-        // predecessor.
+        // The indirs are in different statements. Walk the nodes in the
+        // statement containing the indirection in reverse execution order
+        // starting with the indirection's predecessor.
         GenTree* nullCheckStatementRoot = previousTree;
         currentTree                     = tree->gtPrev;
         while (canRemoveNullCheck && (currentTree != nullptr))
@@ -723,7 +730,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 //
 // Arguments:
 //    tree                  - The tree to check.
-//    nullCheckLclNum       - The local variable that GT_NULLCHECK checks.
+//    nullCheckLclNum       - The local variable that the null check checks.
 //    isInsideTry           - True if tree is inside try, false otherwise.
 //    checkSideEffectSummary -If true, check side effect summary flags only,
 //                            otherwise check the side effects of the operation itself.

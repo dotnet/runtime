@@ -1862,10 +1862,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
 
-        case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsIndir());
-            break;
-
         case GT_CATCH_ARG:
 
             noway_assert(handlerGetsXcptnObj(compiler->compCurBB->bbCatchTyp));
@@ -4205,24 +4201,6 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     genProduceReg(tree);
 }
 
-//---------------------------------------------------------------------
-// genCodeForNullCheck - generate code for a GT_NULLCHECK node
-//
-// Arguments
-//    tree - the GT_NULLCHECK node
-//
-// Return value:
-//    None
-//
-void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
-{
-    assert(tree->OperIs(GT_NULLCHECK));
-
-    assert(tree->gtOp1->isUsedFromReg());
-    regNumber reg = genConsumeReg(tree->gtOp1);
-    GetEmitter()->emitIns_AR_R(INS_cmp, emitTypeSize(tree), reg, reg, 0);
-}
-
 //------------------------------------------------------------------------
 // genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
 //                     producing the effective index by subtracting the lower bound.
@@ -5115,11 +5093,49 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     else
     {
         genConsumeAddress(addr);
-        instruction loadIns = tree->DontExtend() ? INS_mov : ins_Load(targetType);
-        emit->emitInsLoadInd(loadIns, emitTypeSize(tree), tree->GetRegNum(), tree);
+
+        if (tree->IsUnusedValue())
+        {
+            genEmitCodeForUnusedIndir(tree);
+        }
+        else
+        {
+            instruction loadIns = tree->DontExtend() ? INS_mov : ins_Load(targetType);
+            emit->emitInsLoadInd(loadIns, emitTypeSize(tree), tree->GetRegNum(), tree);
+        }
     }
 
     genProduceReg(tree);
+}
+
+//---------------------------------------------------------------------
+// genEmitCodeForUnusedIndir - emit code for an unused indirection
+//
+// Arguments
+//    tree - the indirection
+//
+// Return value:
+//    None
+//
+void CodeGen::genEmitCodeForUnusedIndir(GenTreeIndir* tree)
+{
+    GenTree* addr = tree->Addr();
+    if (!addr->isContained())
+    {
+        GetEmitter()->emitIns_AR_R(INS_cmp, emitTypeSize(tree), addr->GetRegNum(), addr->GetRegNum(), 0);
+        return;
+    }
+
+    if (addr->OperIsLocalAddr())
+    {
+        GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+        unsigned             offset  = varNode->GetLclOffs();
+        GetEmitter()->emitIns_S_R(INS_cmp, emitTypeSize(tree), REG_EAX, varNode->GetLclNum(), offset);
+        return;
+    }
+
+    assert(addr->OperIsAddrMode() || addr->IsCnsIntOrI());
+    GetEmitter()->emitIns_R_A(INS_cmp, emitTypeSize(tree), REG_EAX, tree);
 }
 
 //------------------------------------------------------------------------

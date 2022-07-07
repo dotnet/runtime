@@ -688,17 +688,8 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_NULLCHECK:
-#ifdef TARGET_ARM
-            // On Arm32 we never want to use GT_NULLCHECK, as we require a target register.
-            // Previously we used an internal register for this, but that results in a lifetime
-            // that overlaps with all the source registers.
-            assert(!"Should never see GT_NULLCHECK on Arm/32");
-#endif
-            // For Arm64 we simply fall through to the GT_IND case, and will use REG_ZR as the target.
-            FALLTHROUGH;
         case GT_IND:
-            assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
+            assert(dstCount == 1);
             srcCount = BuildIndir(tree->AsIndir());
             break;
 

@@ -5574,10 +5574,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
 
-        case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsIndir());
-            break;
-
         case GT_CATCH_ARG:
 
             noway_assert(handlerGetsXcptnObj(compiler->compCurBB->bbCatchTyp));
@@ -6423,24 +6419,6 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     genProduceReg(tree);
 }
 
-//---------------------------------------------------------------------
-// genCodeForNullCheck - generate code for a GT_NULLCHECK node
-//
-// Arguments
-//    tree - the GT_NULLCHECK node
-//
-// Return value:
-//    None
-//
-void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
-{
-    assert(tree->OperIs(GT_NULLCHECK));
-
-    genConsumeRegs(tree->gtOp1);
-
-    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), REG_R0, tree);
-}
-
 //------------------------------------------------------------------------
 // genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
 //                     producing the effective index by subtracting the lower bound.
@@ -6760,7 +6738,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     var_types   type      = tree->TypeGet();
     instruction ins       = ins_Load(type);
     instruction ins2      = INS_none;
-    regNumber   targetReg = tree->GetRegNum();
+    regNumber   targetReg = tree->IsUnusedValue() ? REG_R0 : tree->GetRegNum();
     regNumber   tmpReg    = targetReg;
     emitAttr    attr      = emitActualTypeSize(type);
     int         offset    = 0;

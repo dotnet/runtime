@@ -10818,7 +10818,6 @@ public:
             case GT_INIT_VAL:
             case GT_JTRUE:
             case GT_SWITCH:
-            case GT_NULLCHECK:
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
             case GT_RETURNTRAP:

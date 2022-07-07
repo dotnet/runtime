@@ -116,7 +116,13 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     int srcCount = BuildIndirUses(indirTree);
     buildInternalRegisterUses();
 
-    if (!indirTree->OperIs(GT_STOREIND, GT_NULLCHECK))
+    bool buildDef = !indirTree->OperIs(GT_STOREIND);
+#ifdef TARGET_ARM64
+    // On arm64 we can just load into XZR if the indirection is unused.
+    buildDef &= !indirTree->IsUnusedValue();
+#endif
+
+    if (buildDef)
     {
         BuildDef(indirTree);
     }

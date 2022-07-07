@@ -3342,7 +3342,7 @@ void emitter::spillIntArgRegsToShadowSlots()
 //
 void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem)
 {
-    assert(mem->OperIs(GT_IND, GT_NULLCHECK));
+    assert(mem->OperIs(GT_IND));
 
     GenTree* addr = mem->Addr();
 
@@ -5023,7 +5023,7 @@ void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTre
     id->idIns(ins);
     id->idReg1(reg1);
 
-    emitHandleMemOp(indir, id, IF_RRW_ARD, ins);
+    emitHandleMemOp(indir, id, ins == INS_cmp ? IF_RRD_ARD : IF_RRW_ARD, ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
