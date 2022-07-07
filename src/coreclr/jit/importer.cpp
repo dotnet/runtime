@@ -10779,36 +10779,6 @@ DONE_CALL:
                         call           = gtNewLclvNode(calliSlot, type);
                     }
                 }
-
-#ifdef TARGET_X86
-                // For non-candidates we must also spill, since we
-                // might have locals live on the eval stack that this
-                // call can modify.
-                //
-                // Suppress this for certain well-known call targets
-                // that we know won't modify locals, eg calls that are
-                // recognized in gtCanOptimizeTypeEquality. Otherwise
-                // we may break key fragile pattern matches later on.
-                bool spillStack = true;
-                if (call->IsCall())
-                {
-                    GenTreeCall* callNode = call->AsCall();
-                    if ((callNode->gtCallType == CT_HELPER) && (gtIsTypeHandleToRuntimeTypeHelper(callNode) ||
-                                                                gtIsTypeHandleToRuntimeTypeHandleHelper(callNode)))
-                    {
-                        spillStack = false;
-                    }
-                    else if ((callNode->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
-                    {
-                        spillStack = false;
-                    }
-                }
-
-                if (spillStack)
-                {
-                    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
-                }
-#endif
             }
         }
 
