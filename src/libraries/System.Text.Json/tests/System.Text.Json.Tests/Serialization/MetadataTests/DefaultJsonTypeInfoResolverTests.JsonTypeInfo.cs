@@ -1110,6 +1110,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsNotType<ClassWithConverterAttribute.CustomConverter>(jsonTypeInfo.Converter);
         }
 
+        [Fact]
+        public static void DefaultJsonTypeInfoResolver_ClassWithConverterAttribute_ShouldResolveConverterAttribute()
+        {
+            var options = JsonSerializerOptions.Default;
+            JsonTypeInfo jsonTypeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(ClassWithConverterAttribute), options);
+            Assert.Equal(typeof(ClassWithConverterAttribute), jsonTypeInfo.Type);
+            Assert.IsType<ClassWithConverterAttribute.CustomConverter>(jsonTypeInfo.Converter);
+        }
 
         [JsonConverter(typeof(CustomConverter))]
         public class ClassWithConverterAttribute
