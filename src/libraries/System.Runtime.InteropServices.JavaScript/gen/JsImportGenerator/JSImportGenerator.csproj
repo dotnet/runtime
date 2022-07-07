@@ -39,8 +39,7 @@
 
   <ItemGroup>
     <Folder Include="Resources\xlf\" />
-    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs"
-             Link="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs" Link="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
   </ItemGroup>
 
 </Project>

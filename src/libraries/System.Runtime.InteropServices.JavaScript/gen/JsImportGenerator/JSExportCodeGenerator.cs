@@ -89,16 +89,8 @@ namespace Microsoft.Interop.JavaScript
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Unmarshal);
 
-            // TODO fixed nesting statements.Pin. NestFixedStatements
-            /*BlockSyntax fixedBlock = Block(statements.PinnedMarshal);
-            foreach (var statement in statements.InvokeStatements)
-            {
-                fixedBlock = fixedBlock.AddStatements(statement);
-            }
-            tryStatements.Add(statements.Pin.NestFixedStatements(fixedBlock));
-            */
             tryStatements.AddRange(statements.InvokeStatements);
-            // <invokeSucceeded> = true;
+
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
                 tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
@@ -119,7 +111,6 @@ namespace Microsoft.Interop.JavaScript
             finallyStatements.AddRange(statements.Cleanup);
             if (finallyStatements.Count > 0)
             {
-                // Add try-finally block if there are any statements in the finally block
                 allStatements.Add(
                     TryStatement(Block(tryStatements), default, FinallyClause(Block(finallyStatements))));
             }
@@ -237,11 +228,6 @@ namespace Microsoft.Interop.JavaScript
             {
                 ExpressionSyntax invocation = InvocationExpression(IdentifierName(_signatureContext.MethodName))
                     .WithArgumentList(ArgumentList(SeparatedList(arguments)));
-                /* TODO if (ReturnSignature.NeedsCast)
-                {
-                    invocation = CastExpression(ReturnSignature.MarshaledType.AsTypeSyntax(), invocation);
-                }*/
-                ;
 
                 (string _, string nativeIdentifier) = _context.GetIdentifiers(_marshallers.ManagedReturnMarshaller.TypeInfo);
 

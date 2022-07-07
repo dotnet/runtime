@@ -10,23 +10,6 @@ using System.Runtime.InteropServices.JavaScript;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal interface IJSMarshallingGenerator : IMarshallingGenerator
-    {
-        IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context);
-    }
-
-    internal sealed class EmptyJSGenerator : IJSMarshallingGenerator
-    {
-        public TypeSyntax AsNativeType(TypePositionInfo info) => info.ManagedType.Syntax;
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
-        public IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context) => Array.Empty<ExpressionSyntax>();
-        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.ManagedTypeAndAttributes;
-        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.ManagedIdentifier;
-        public bool IsSupported(TargetFramework target, Version version) => false;
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
-        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
-    }
-
     internal abstract class BaseJSGenerator : IJSMarshallingGenerator
     {
         protected IMarshallingGenerator _inner;
@@ -84,8 +67,6 @@ namespace Microsoft.Interop.JavaScript
             {
                 case MarshalerType.BigInt64:
                     return IdentifierName(Constants.ToManagedBigMethod);
-                /* FUTURE case MarshalerType.NativeMarshalling:
-                    return IdentifierName(Constants.ToManagedNativeMethod);*/
                 default:
                     return IdentifierName(Constants.ToManagedMethod);
             }
@@ -97,8 +78,6 @@ namespace Microsoft.Interop.JavaScript
             {
                 case MarshalerType.BigInt64:
                     return IdentifierName(Constants.ToJSBigMethod);
-                /* FUTURE case MarshalerType.NativeMarshalling:
-                    return IdentifierName(Constants.ToJSNative);*/
                 default:
                     return IdentifierName(Constants.ToJSMethod);
             }

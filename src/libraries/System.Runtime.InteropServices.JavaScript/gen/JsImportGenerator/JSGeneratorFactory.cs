@@ -89,11 +89,6 @@ namespace Microsoft.Interop.JavaScript
                 case { ManagedType: JSFunctionTypeInfo function }:
                     return Create(info, isToJs, function.KnownType, function.ArgsTypeInfo.Select(a => a.KnownType).ToArray(), jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
-                /* FUTURE MarshalUsing native
-                case { ManagedType: JSNativeMarshallingTypeInfo native } when jsMarshalingInfo.JSType == JSTypeFlags.Array:
-                    return new NativeJSGenerator(_innerFactory.Create(native.Inner, context));
-                */
-
                 default:
                     //throw new MarshallingNotSupportedException(info, context);
                     throw new NotImplementedException(info.ManagedType.GetType().FullName + ": " + info.ManagedType.FullTypeName + " - " + info.ManagedIndex + " " + info.InstanceIdentifier);

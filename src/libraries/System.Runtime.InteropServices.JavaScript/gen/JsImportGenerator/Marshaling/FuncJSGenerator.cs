@@ -10,7 +10,6 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop.JavaScript
 {
-
     internal sealed class FuncJSGenerator : BaseJSGenerator
     {
         private bool _isAction;

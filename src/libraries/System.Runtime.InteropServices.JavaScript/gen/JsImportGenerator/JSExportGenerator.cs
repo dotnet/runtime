@@ -179,9 +179,6 @@ namespace Microsoft.Interop.JavaScript
             MemberDeclarationSyntax containingType = CreateTypeDeclarationWithoutTrivia(stub.StubContainingTypes.First())
                 .AddMembers(stubMethod, sigField);
 
-            // Mark containing type as unsafe such that all the generated functions will be in an unsafe context.
-            // containingType = containingType.WithModifiers(AddToModifiers(containingType.Modifiers, SyntaxKind.UnsafeKeyword));
-
             // Add type to the remaining containing types (skipping the first which was handled above)
             foreach (TypeDeclarationSyntax typeDecl in stub.StubContainingTypes.Skip(1))
             {
@@ -270,13 +267,6 @@ namespace Microsoft.Interop.JavaScript
             IMarshallingGeneratorFactory generatorFactory;
 
             generatorFactory = new UnsupportedMarshallingFactory();
-            /* FUTURE
-            InteropGenerationOptions interopGenerationOptions = new(true);
-            generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
-            generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(true)), new AttributedMarshallingModelOptions(true));
-            generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
-            */
-
             JSGeneratorFactory jsGeneratorFactory = new JSGeneratorFactory(generatorFactory);
 
             return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion, options), jsGeneratorFactory);

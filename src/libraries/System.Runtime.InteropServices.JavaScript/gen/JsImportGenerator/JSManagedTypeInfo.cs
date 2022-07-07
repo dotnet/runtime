@@ -161,17 +161,7 @@ namespace Microsoft.Interop.JavaScript
 
         public static TypePositionInfo CreateForType(TypePositionInfo inner, ITypeSymbol type, MarshallingInfo jsMarshallingInfo, Compilation compilation)
         {
-            ManagedTypeInfo jsTypeInfo;
-            /*  FUTURE
-            if ((inner.ManagedType is ValueTypeInfo || inner.ManagedType is ReferenceTypeInfo) && inner.MarshallingAttributeInfo is NativeMarshallingAttributeInfo)
-            {
-                jsTypeInfo = new JSNativeMarshallingTypeInfo(inner.ManagedType.FullTypeName, inner.ManagedType.DiagnosticFormattedName, inner);
-            }
-            else*/
-            {
-                jsTypeInfo = CreateJSTypeInfoForTypeSymbol(type);
-            }
-
+            ManagedTypeInfo jsTypeInfo = CreateJSTypeInfoForTypeSymbol(type);
             var typeInfo = new TypePositionInfo(jsTypeInfo, jsMarshallingInfo)
             {
                 InstanceIdentifier = inner.InstanceIdentifier,
@@ -199,8 +189,4 @@ namespace Microsoft.Interop.JavaScript
     internal sealed record JSNullableTypeInfo(string FullTypeName, string DiagnosticFormattedName, JSSimpleTypeInfo ResultTypeInfo) : JSTypeInfo(FullTypeName, DiagnosticFormattedName, KnownManagedType.Nullable);
 
     internal sealed record JSFunctionTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsAction, JSSimpleTypeInfo[] ArgsTypeInfo) : JSTypeInfo(FullTypeName, DiagnosticFormattedName, (IsAction ? KnownManagedType.Action : KnownManagedType.Function));
-
-    /* FUTURE
-    internal sealed record JSNativeMarshallingTypeInfo(string FullTypeName, string DiagnosticFormattedName, TypePositionInfo Inner) : JSTypeInfo(FullTypeName, DiagnosticFormattedName, KnownManagedType.Unknown);
-    */
 }
