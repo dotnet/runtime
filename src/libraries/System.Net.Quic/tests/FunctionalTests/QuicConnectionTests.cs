@@ -109,7 +109,7 @@ namespace System.Net.Quic.Tests
 
                     // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
                     // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
-                    // To be revisited once we standartize on exceptions.
+                    // To be revisited once we standardize on exceptions.
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
                     await Assert.ThrowsAnyAsync<QuicException>(() => connectTask);
 

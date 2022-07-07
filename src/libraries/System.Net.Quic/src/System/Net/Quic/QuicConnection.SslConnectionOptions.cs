@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Quic;
+using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
 
@@ -45,7 +47,7 @@ public partial class QuicConnection
             _validationCallback = validationCallback;
         }
 
-        public unsafe bool ValidateCertificate(QUIC_BUFFER* certificatePtr, QUIC_BUFFER* chainPtr, out X509Certificate2? certificate)
+        public unsafe int ValidateCertificate(QUIC_BUFFER* certificatePtr, QUIC_BUFFER* chainPtr, out X509Certificate2? certificate)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             X509Chain? chain = null;
@@ -59,7 +61,7 @@ public partial class QuicConnection
                 chain = new X509Chain();
                 chain.ChainPolicy.RevocationMode = _revocationMode;
                 chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-                chain.ChainPolicy.ApplicationPolicy.Add(_isClient ? s_clientAuthOid : s_serverAuthOid);
+                chain.ChainPolicy.ApplicationPolicy.Add(_isClient ? s_serverAuthOid : s_clientAuthOid);
 
                 if (OperatingSystem.IsWindows())
                 {
@@ -94,10 +96,27 @@ public partial class QuicConnection
 
             if (_validationCallback is not null)
             {
-                return _validationCallback(this, certificate, chain, sslPolicyErrors);
+                if (!_validationCallback(this, certificate, chain, sslPolicyErrors))
+                {
+                    if (_isClient)
+                    {
+                        throw new AuthenticationException(SR.net_quic_cert_custom_validation);
+                    }
+                    return QUIC_STATUS_USER_CANCELED;
+                }
+                return QUIC_STATUS_SUCCESS;
             }
 
-            return sslPolicyErrors == SslPolicyErrors.None;
+            if (sslPolicyErrors != SslPolicyErrors.None)
+            {
+                if (_isClient)
+                {
+                    throw new AuthenticationException(SR.Format(SR.net_quic_cert_chain_validation, sslPolicyErrors));
+                }
+                return QUIC_STATUS_HANDSHAKE_FAILURE;
+            }
+
+            return QUIC_STATUS_SUCCESS;
         }
     }
 }

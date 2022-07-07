@@ -887,31 +887,10 @@ namespace System.Net.Http.Functional.Tests
 
         private SslApplicationProtocol ExtractMsQuicNegotiatedAlpn(Http3LoopbackConnection loopbackConnection)
         {
-            // TODO: rewrite after object structure change
-            // current structure:
-            // Http3LoopbackConnection -> private QuicConnection _connection
-            // QuicConnection -> private QuicConnectionProvider _provider (= MsQuicConnection)
-            // MsQuicConnection -> private SslApplicationProtocol _negotiatedAlpnProtocol
-
             FieldInfo quicConnectionField = loopbackConnection.GetType().GetField("_connection", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(quicConnectionField);
-            object quicConnection = quicConnectionField.GetValue(loopbackConnection);
-            Assert.NotNull(quicConnection);
-            Assert.Equal("QuicConnection", quicConnection.GetType().Name);
-
-            FieldInfo msQuicConnectionField = quicConnection.GetType().GetField("_provider", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(msQuicConnectionField);
-            object msQuicConnection = msQuicConnectionField.GetValue(quicConnection);
-            Assert.NotNull(msQuicConnection);
-            Assert.Equal("MsQuicConnection", msQuicConnection.GetType().Name);
-
-            FieldInfo alpnField = msQuicConnection.GetType().GetField("_negotiatedAlpnProtocol", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(alpnField);
-            object alpn = alpnField.GetValue(msQuicConnection);
-            Assert.NotNull(alpn);
-            Assert.IsType<SslApplicationProtocol>(alpn);
-
-            return (SslApplicationProtocol)alpn;
+            QuicConnection quicConnection = Assert.IsType<QuicConnection>(quicConnectionField.GetValue(loopbackConnection));
+            return quicConnection.NegotiatedApplicationProtocol;
         }
 
         [Theory]

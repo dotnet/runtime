@@ -248,8 +248,22 @@ namespace System.Net.Quic.Tests
                             await serverFinished.WaitAsync();
                         })
                     }.WhenAllOrAnyFailed(millisecondsTimeout);
-                    await serverConnection.CloseAsync(ServerCloseErrorCode);
-                    await clientConnection.CloseAsync(ClientCloseErrorCode);
+                    try
+                    {
+                        await serverConnection.CloseAsync(ServerCloseErrorCode);
+                    }
+                    catch (ObjectDisposedException ex)
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
+                    try
+                    {
+                        await clientConnection.CloseAsync(ClientCloseErrorCode);
+                    }
+                    catch (ObjectDisposedException ex)
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
                 }
             }
         }

@@ -251,6 +251,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 Marshal.FreeCoTaskMem(targetHostPtr);
             }
         }
+
+        await valueTask.ConfigureAwait(false);
     }
 
     internal ValueTask FinishHandshakeAsync(QuicServerConnectionOptions options, string? targetHost, CancellationToken cancellationToken = default)
@@ -364,6 +366,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             ref var data = ref connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT;
             _connectedTcs.TrySetException(new MsQuicException(data.Status));
+            // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
+            // it wasn't our side who shutdown the connection.
+            // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
+            // See: https://github.com/dotnet/runtime/issues/60133
+            _abortErrorCode = 0;
+            _state.AbortErrorCode = _abortErrorCode;
             _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicConnectionAbortedException($"Connection shutdown by transport {MsQuicException.GetErrorCodeForStatus(data.Status)}", _abortErrorCode)));
             return QUIC_STATUS_SUCCESS;
         }
@@ -399,6 +407,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             QuicStream stream = new QuicStream(new Implementations.MsQuic.MsQuicStream(_state, _handle, data.Stream, data.Flags));
             if (!_acceptQueue.Writer.TryWrite(stream))
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Error(this, $"{this} Unable to enqueue incoming stream {stream}");
+                }
                 stream.Dispose();
                 return QUIC_STATUS_SUCCESS;
             }
@@ -407,13 +419,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED)
         {
             ref var data = ref connectionEvent.PEER_CERTIFICATE_RECEIVED;
-            bool isValid = _sslConnectionOptions.ValidateCertificate((QUIC_BUFFER*)data.Certificate, (QUIC_BUFFER*)data.Chain, out _remoteCertificate);
-
-            if (NetEventSource.Log.IsEnabled())
+            try
             {
-                NetEventSource.Info(this, $"{this} Certificate validation for '${_remoteCertificate?.Subject}' is ${(isValid ? "" : "not ")}valid");
+                return _sslConnectionOptions.ValidateCertificate((QUIC_BUFFER*)data.Certificate, (QUIC_BUFFER*)data.Chain, out _remoteCertificate);
             }
-            return isValid ? QUIC_STATUS_SUCCESS : QUIC_STATUS_USER_CANCELED;
+            catch (Exception ex)
+            {
+                _connectedTcs.TrySetException(ex);
+                return QUIC_STATUS_HANDSHAKE_FAILURE;
+            }
         }
 
         return QUIC_STATUS_SUCCESS;
@@ -486,7 +500,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _handle.Dispose();
 
         _configuration?.Dispose();
-        _remoteCertificate?.Dispose();
+        // TODO: Should we dispose the certificate?
+        //_remoteCertificate?.Dispose();
 
         // Flush the queue and dispose all remaining streams.
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));

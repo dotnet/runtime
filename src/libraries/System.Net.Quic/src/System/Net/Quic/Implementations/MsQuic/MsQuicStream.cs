@@ -28,6 +28,9 @@ namespace System.Net.Quic.Implementations.MsQuic
         private sealed class State
         {
             public MsQuicContextSafeHandle Handle = null!; // set in ctor.
+            // Roots the state in GC and it won't get collected while this exist.
+            // It must be kept alive until we receive SHUTDOWN_COMPLETE event
+            public GCHandle StateGCHandle;
 
             public long StreamId = -1;
 
@@ -90,6 +93,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 CleanupSendState(this);
                 Handle?.Dispose();
                 SendBuffers.Dispose();
+                if (StateGCHandle.IsAllocated) StateGCHandle.Free();
             }
         }
 
@@ -108,16 +112,16 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.SendState = SendState.Closed;
             }
 
-            GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
+            _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                MsQuicApi.Api.ApiTable->SetStreamCallback(_state.Handle.QuicHandle, &NativeCallback, (void*)GCHandle.ToIntPtr(context));
-                _state.Handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->StreamClose, SafeHandleType.Stream, connectionHandle);
+                MsQuicApi.Api.ApiTable->SetStreamCallback(handle, &NativeCallback, (void*)GCHandle.ToIntPtr(_state.StateGCHandle));
+                _state.Handle = new MsQuicContextSafeHandle(handle, context: default, MsQuicApi.Api.ApiTable->StreamClose, SafeHandleType.Stream, connectionHandle);
             }
             catch
             {
-                context.Free();
+                _state.StateGCHandle.Free();
                 // don't free the streamHandle, it will be freed by the caller
                 throw;
             }
@@ -141,13 +145,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             _canRead = streamType == QuicStreamType.Bidirectional;
             _canWrite = true;
 
+            _state.StateGCHandle = GCHandle.Alloc(_state);
             if (!_canRead)
             {
                 _state.ReadState = ReadState.Closed;
-
             }
 
-            GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
             try
             {
                 QUIC_HANDLE* handle;
@@ -156,7 +159,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     connectionHandle.QuicHandle,
                     streamType == QuicStreamType.Unidirectional ? QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL : QUIC_STREAM_OPEN_FLAGS.NONE,
                     &NativeCallback,
-                    (void*)GCHandle.ToIntPtr(context),
+                    (void*)GCHandle.ToIntPtr(_state.StateGCHandle),
                     &handle);
 
                 if (status == QUIC_STATUS_ABORTED)
@@ -166,11 +169,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
 
                 ThrowIfFailure(status, "Failed to open stream to peer");
-                _state.Handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->StreamClose, SafeHandleType.Stream, connectionHandle);
+                _state.Handle = new MsQuicContextSafeHandle(handle, context: default, MsQuicApi.Api.ApiTable->StreamClose, SafeHandleType.Stream, connectionHandle);
             }
             catch
             {
-                context.Free();
+                _state.StateGCHandle.Free();
                 throw;
             }
 

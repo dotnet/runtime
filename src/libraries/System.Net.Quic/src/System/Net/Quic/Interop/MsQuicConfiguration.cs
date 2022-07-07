@@ -144,8 +144,8 @@ internal static class MsQuicConfiguration
 
         try
         {
-            QUIC_CREDENTIAL_CONFIG config = default(QUIC_CREDENTIAL_CONFIG);
-            config.Flags = flags;
+            QUIC_CREDENTIAL_CONFIG config = new QUIC_CREDENTIAL_CONFIG { Flags = flags };
+            config.Flags |= (OperatingSystem.IsWindows() ? QUIC_CREDENTIAL_FLAGS.NONE : QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES);
 
             if (cipherSuitesPolicy != null)
             {
@@ -167,7 +167,6 @@ internal static class MsQuicConfiguration
             }
             else
             {
-                config.Flags |= QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES;
                 config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_PKCS12;
 
                 byte[] certificateData;
