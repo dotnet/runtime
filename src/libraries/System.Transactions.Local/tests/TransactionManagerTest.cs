@@ -7,7 +7,6 @@ namespace System.Transactions.Tests
 {
     public class TransactionManagerTest
     {
-
         [Fact]
         public void DefaultTimeout_Set_LessThanMaximum()
         {

@@ -320,7 +320,7 @@ namespace System.Transactions
 
                 s_defaultTimeout = ValidateTimeout(value);
 
-                if (s_defaultTimeout != DefaultSettingsSection.Timeout)
+                if (s_defaultTimeout != value)
                 {
                     if (etwLog.IsEnabled())
                     {
@@ -372,8 +372,10 @@ namespace System.Transactions
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                s_cachedMaxTimeout = false;
-                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => value);
+                s_cachedMaxTimeout = true;
+                s_maximumTimeout = value;
+                s_defaultTimeout = ValidateTimeout(s_defaultTimeout);
+                s_defaultTimeoutValidated = true;
 
                 if (etwLog.IsEnabled())
                 {
