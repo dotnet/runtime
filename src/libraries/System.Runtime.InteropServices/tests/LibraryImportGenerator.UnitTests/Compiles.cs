@@ -324,6 +324,11 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NativeToManagedOnlyOutParameter<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NativeToManagedOnlyReturnValue<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NestedMarshallerParametersAndModifiers<int>() };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementByValue };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementParametersAndModifiers };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementNativeToManagedOnlyOutParameter };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementNativeToManagedOnlyReturnValue };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshalling };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<byte>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<sbyte>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<short>() };
