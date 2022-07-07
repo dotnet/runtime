@@ -40,7 +40,7 @@ internal static partial class Interop
             internal uint nStartPage;
 
 #if NET7_0_OR_GREATER
-            [ManagedToUnmanagedMarshallers(typeof(CRYPTUI_VIEWCERTIFICATE_STRUCTW), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+            [CustomMarshaller(typeof(CRYPTUI_VIEWCERTIFICATE_STRUCTW), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(CRYPTUI_VIEWCERTIFICATE_STRUCTW managed) => new(managed);
@@ -152,7 +152,7 @@ internal static partial class Interop
             internal IntPtr hSelectedCertStore;
 
 #if NET7_0_OR_GREATER
-            [ManagedToUnmanagedMarshallers(typeof(CRYPTUI_SELECTCERTIFICATE_STRUCTW), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+            [CustomMarshaller(typeof(CRYPTUI_SELECTCERTIFICATE_STRUCTW), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(CRYPTUI_SELECTCERTIFICATE_STRUCTW managed) => new(managed);

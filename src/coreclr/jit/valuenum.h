@@ -848,10 +848,10 @@ public:
     // Check if "vn" IsVNNewArr and return <= 0 if arr size cannot be determined, else array size.
     int GetNewArrSize(ValueNum vn);
 
-    // Check if "vn" is "a.len"
+    // Check if "vn" is "a.Length" or "a.GetLength(n)"
     bool IsVNArrLen(ValueNum vn);
 
-    // If "vn" is VN(a.len) then return VN(a); NoVN if VN(a) can't be determined.
+    // If "vn" is VN(a.Length) or VN(a.GetLength(n)) then return VN(a); NoVN if VN(a) can't be determined.
     ValueNum GetArrForLenVn(ValueNum vn);
 
     // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
@@ -1039,10 +1039,6 @@ public:
     // If "vn" represents a function application, returns "true" and set "*funcApp" to
     // the function application it represents; otherwise, return "false."
     bool GetVNFunc(ValueNum vn, VNFuncApp* funcApp);
-
-    // Requires that "vn" represents a "GC heap address" the sum of a "TYP_REF" value and some integer
-    // value.  Returns the TYP_REF value.
-    ValueNum VNForRefInAddr(ValueNum vn);
 
     // Returns "true" iff "vn" is a valid value number -- one that has been previously returned.
     bool VNIsValid(ValueNum vn);

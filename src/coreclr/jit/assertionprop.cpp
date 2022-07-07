@@ -158,6 +158,7 @@ bool IntegralRange::Contains(int64_t value) const
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
 
         case GT_CALL:
@@ -462,12 +463,13 @@ Compiler::fgWalkResult Compiler::optAddCopiesCallback(GenTree** pTree, fgWalkDat
     return WALK_CONTINUE;
 }
 
-/*****************************************************************************
- *
- *  Add new copies before Assertion Prop.
- */
-
-void Compiler::optAddCopies()
+//------------------------------------------------------------------------------
+// optAddCopies: Add new copies before Assertion Prop.
+//
+// Returns:
+//    suitable phase satus
+//
+PhaseStatus Compiler::optAddCopies()
 {
     unsigned   lclNum;
     LclVarDsc* varDsc;
@@ -477,18 +479,15 @@ void Compiler::optAddCopies()
     {
         printf("\n*************** In optAddCopies()\n\n");
     }
-    if (verboseTrees)
-    {
-        printf("Blocks/Trees at start of phase\n");
-        fgDispBasicBlocks(true);
-    }
 #endif
 
     // Don't add any copies if we have reached the tracking limit.
     if (lvaHaveManyLocals())
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
+
+    bool modified = false;
 
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
     {
@@ -893,6 +892,8 @@ void Compiler::optAddCopies()
             tree->gtFlags |= (copyAsgn->gtFlags & GTF_ALL_EFFECT);
         }
 
+        modified = true;
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -902,6 +903,8 @@ void Compiler::optAddCopies()
         }
 #endif
     }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------------
@@ -2688,8 +2691,10 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
 
         case GT_ARR_LENGTH:
-            // An array length is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
-            assertionInfo = optCreateAssertion(tree->AsArrLen()->ArrRef(), nullptr, OAK_NOT_EQUAL);
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
+            // An array meta-data access is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
+            assertionInfo = optCreateAssertion(tree->AsArrCommon()->ArrRef(), nullptr, OAK_NOT_EQUAL);
             break;
 
         case GT_NULLCHECK:

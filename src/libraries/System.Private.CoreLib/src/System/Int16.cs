@@ -397,6 +397,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static short IBinaryNumber<short>.AllBitsSet => NegativeOne;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(short value) => BitOperations.IsPow2(value);
 
@@ -1140,14 +1143,14 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static short IShiftOperators<short, short>.operator <<(short value, int shiftAmount) => (short)(value << shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static short IShiftOperators<short, int, short>.operator <<(short value, int shiftAmount) => (short)(value << shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static short IShiftOperators<short, short>.operator >>(short value, int shiftAmount) => (short)(value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static short IShiftOperators<short, int, short>.operator >>(short value, int shiftAmount) => (short)(value >> shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static short IShiftOperators<short, short>.operator >>>(short value, int shiftAmount) => (short)((ushort)value >>> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static short IShiftOperators<short, int, short>.operator >>>(short value, int shiftAmount) => (short)((ushort)value >>> shiftAmount);
 
         //
         // ISignedNumber

@@ -977,9 +977,22 @@ RtlpGetFunctionEndAddress (
     ULONG64 FunctionLength;
 
     FunctionLength = FunctionEntry->UnwindData;
-    if ((FunctionLength & 3) != 0) {
-        FunctionLength = (FunctionLength >> 2) & 0x7ff;
-    } else {
+    if ((FunctionLength & 3) != 0)
+    {
+        // Compact form pdata.
+        if ((FunctionLength & 7) == 3)
+        {
+            // Long branch pdata, by standard this is 3 so size is 12.
+            FunctionLength = 3;
+        }
+        else
+        {
+            FunctionLength = (FunctionLength >> 2) & 0x7ff;
+        }
+    }
+    else
+    {
+        // Get from the xdata record.
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 

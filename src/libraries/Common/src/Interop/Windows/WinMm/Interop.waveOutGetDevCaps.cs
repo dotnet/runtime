@@ -28,7 +28,7 @@ internal static partial class Interop
             private ushort wReserved1;
             private ushort dwSupport;
 #if NET7_0_OR_GREATER
-            [ManagedToUnmanagedMarshallers(typeof(WAVEOUTCAPS), InMarshaller = typeof(Marshaller), RefMarshaller = typeof(Marshaller), OutMarshaller = typeof(Marshaller))]
+            [CustomMarshaller(typeof(WAVEOUTCAPS), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(WAVEOUTCAPS managed) => new(managed);
@@ -50,33 +50,25 @@ internal static partial class Interop
                         wMid = managed.wMid;
                         wPid = managed.wPid;
                         vDriverVersion = managed.vDriverVersion;
-                        fixed (char* pszPname = szPname)
-                        {
-                            managed.szPname.AsSpan().CopyTo(new Span<char>(pszPname, szPnameLength));
-                        }
+                        managed.szPname.CopyTo(MemoryMarshal.CreateSpan(ref szPname[0], szPnameLength));
                         dwFormats = managed.dwFormats;
                         wChannels = managed.wChannels;
                         wReserved1 = managed.wReserved1;
                         dwSupport = managed.dwSupport;
                     }
 
-                    public WAVEOUTCAPS ToManaged()
-                    {
-                        fixed (char* pszPname = szPname)
+                    public WAVEOUTCAPS ToManaged() =>
+                        new WAVEOUTCAPS
                         {
-                            return new WAVEOUTCAPS
-                            {
-                                wMid = wMid,
-                                wPid = wPid,
-                                vDriverVersion = vDriverVersion,
-                                szPname = new Span<char>(pszPname, szPnameLength).ToString(),
-                                dwFormats = dwFormats,
-                                wChannels = wChannels,
-                                wReserved1 = wReserved1,
-                                dwSupport = dwSupport,
-                            };
-                        }
-                    }
+                            wMid = wMid,
+                            wPid = wPid,
+                            vDriverVersion = vDriverVersion,
+                            szPname = MemoryMarshal.CreateReadOnlySpan(ref szPname[0], szPnameLength).ToString(),
+                            dwFormats = dwFormats,
+                            wChannels = wChannels,
+                            wReserved1 = wReserved1,
+                            dwSupport = dwSupport,
+                        };
                 }
             }
 #endif

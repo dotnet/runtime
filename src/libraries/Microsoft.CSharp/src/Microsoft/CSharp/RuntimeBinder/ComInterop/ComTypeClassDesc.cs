@@ -19,10 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public object CreateInstance()
         {
-            if (_typeObj == null)
-            {
-                _typeObj = Type.GetTypeFromCLSID(Guid);
-            }
+            _typeObj ??= Type.GetTypeFromCLSID(Guid);
             return Activator.CreateInstance(Type.GetTypeFromCLSID(Guid));
         }
 
@@ -50,19 +47,12 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             if (isSourceItf)
             {
-                if (_sourceItfs == null)
-                {
-                    _sourceItfs = new LinkedList<string>();
-                }
+                _sourceItfs ??= new LinkedList<string>();
                 _sourceItfs.AddLast(itfName);
             }
             else
             {
-                if (_itfs == null)
-                {
-                    _itfs = new LinkedList<string>();
-                }
-
+                _itfs ??= new LinkedList<string>();
                 _itfs.AddLast(itfName);
             }
         }

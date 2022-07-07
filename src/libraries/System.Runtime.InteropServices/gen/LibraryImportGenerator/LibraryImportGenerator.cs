@@ -270,12 +270,9 @@ namespace Microsoft.Interop
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the LibraryImport attribute
-            LibraryImportData? libraryImportData = ProcessLibraryImportAttribute(generatedDllImportAttr!);
-
-            if (libraryImportData is null)
-            {
-                libraryImportData = new LibraryImportData("INVALID_CSHARP_SYNTAX");
-            }
+            LibraryImportData libraryImportData =
+                ProcessLibraryImportAttribute(generatedDllImportAttr!) ??
+                new LibraryImportData("INVALID_CSHARP_SYNTAX");
 
             if (libraryImportData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {
@@ -341,6 +338,8 @@ namespace Microsoft.Interop
                     generatorFactory = new UnsupportedMarshallingFactory();
                 }
 
+                generatorFactory = new NoMarshallingInfoErrorMarshallingFactory(generatorFactory);
+
                 // The presence of System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute is tied to TFM,
                 // so we use TFM in the generator factory key instead of the Compilation as the compilation changes on every keystroke.
                 IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
@@ -359,10 +358,13 @@ namespace Microsoft.Interop
                     // Since the char type in an array will not be part of the P/Invoke signature, we can
                     // use the regular blittable marshaller in all cases.
                     new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true),
-                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
                 // We don't need to include the later generator factories for collection elements
                 // as the later generator factories only apply to parameters.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(
+                    generatorFactory,
+                    elementFactory,
+                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }

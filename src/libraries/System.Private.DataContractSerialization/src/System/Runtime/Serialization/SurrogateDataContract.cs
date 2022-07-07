@@ -72,9 +72,7 @@ namespace System.Runtime.Serialization
             context.AddNewObject(obj);
             string objectId = context.GetObjectId();
             SerializationInfo serInfo = context.ReadSerializationInfo(xmlReader, objType);
-            object? newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
-            if (newObj == null)
-                newObj = obj;
+            object? newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext()) ?? obj;
             if (newObj is IDeserializationCallback)
                 ((IDeserializationCallback)newObj).OnDeserialization(null);
             if (newObj is IObjectReference)

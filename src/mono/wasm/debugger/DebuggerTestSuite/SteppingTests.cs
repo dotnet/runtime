@@ -6,11 +6,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class SteppingTests : DebuggerTests
     {
+        public SteppingTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [Fact]
         public async Task TrivalStepping()
         {
@@ -343,7 +347,7 @@ namespace DebuggerTests
                     await CheckObject(locals, "this", "Math.NestedInMath");
                 }
             );
-            Console.WriteLine(wait_res);
+            _testOutput.WriteLine(wait_res.ToString());
 
 #if false // Disabled for now, as we don't have proper async traces
             var locals = await GetProperties(wait_res["callFrames"][2]["callFrameId"].Value<string>());

@@ -75,9 +75,7 @@ namespace System.Xml
 
         internal byte[] ToUTF8()
         {
-            if (_buffer == null)
-                _buffer = System.Text.Encoding.UTF8.GetBytes(_value);
-            return _buffer;
+            return _buffer ??= System.Text.Encoding.UTF8.GetBytes(_value);
         }
 
         public override string ToString()

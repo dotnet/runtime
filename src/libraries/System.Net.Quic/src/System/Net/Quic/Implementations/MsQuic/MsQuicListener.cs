@@ -128,7 +128,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal async ValueTask<MsQuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             try
             {
@@ -325,14 +325,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             connectionHandle?.SetHandleAsInvalid();
             msQuicConnection?.Dispose();
             return QUIC_STATUS_INTERNAL_ERROR;
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(MsQuicStream));
-            }
         }
     }
 }

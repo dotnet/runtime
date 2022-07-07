@@ -9,11 +9,15 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class GetPropertiesTests : DebuggerTests
     {
+        public GetPropertiesTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool> ClassGetPropertiesTestData(bool is_async)
         {
             // FIXME: invoking getter on the hidden(base) properties - is that supported??
@@ -416,7 +420,7 @@ namespace DebuggerTests
             }
         }
 
-        private static void AssertHasOnlyExpectedProperties(string[] expected_names, IEnumerable<JObject> actual)
+        private void AssertHasOnlyExpectedProperties(string[] expected_names, IEnumerable<JObject> actual)
         {
             bool fail = false;
             var exp = new HashSet<string>(expected_names);
@@ -425,7 +429,7 @@ namespace DebuggerTests
             {
                 if (!exp.Contains(obj["name"]?.Value<string>()))
                 {
-                    Console.WriteLine($"Unexpected: {obj}");
+                    _testOutput.WriteLine($"Unexpected: {obj}");
                     fail = true;
                 }
             }
@@ -433,7 +437,7 @@ namespace DebuggerTests
             var act = new HashSet<string>(actual.Select(a => a["name"].Value<string>()));
             foreach (var obj in expected_names.Where(ename => !act.Contains(ename)))
             {
-                Console.WriteLine($"Missing: {obj}");
+                _testOutput.WriteLine($"Missing: {obj}");
                 fail = true;
             }
 

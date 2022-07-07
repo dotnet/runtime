@@ -1920,7 +1920,7 @@ static guint
 mono_generic_class_hash (gconstpointer data)
 {
 	const MonoGenericClass *gclass = (const MonoGenericClass *) data;
-	guint hash = mono_metadata_type_hash (m_class_get_byval_arg (gclass->container_class));
+	guint hash = mono_metadata_str_hash (m_class_get_name (gclass->container_class));
 
 	hash *= 13;
 	hash += gclass->is_tb_open;
@@ -7109,7 +7109,8 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
 	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
-	guint32 i, token, found;
+	locator_t loc;
+	guint32 i, token, found, start;
 	MonoClass *klass, **res;
 	GSList *cons = NULL, *tmp;
 	MonoGenericContext *context = &container->context;
@@ -7120,7 +7121,26 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	found = 0;
 	/* FIXME: metadata-update */
 	guint32 rows = table_info_get_rows (tdef);
-	for (i = 0; i < rows; ++i) {
+
+	loc.idx = owner;
+	loc.col_idx = MONO_GENPARCONSTRAINT_GENERICPAR;
+	loc.t = tdef;
+	loc.result = 0;
+
+	gboolean is_found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
+	if (!is_found && !image->has_updates)
+		return TRUE;
+
+	if (is_found) {
+		/* Find the first entry by searching backwards */
+		while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_GENPARCONSTRAINT_GENERICPAR) == owner))
+			loc.result --;
+		start = loc.result;
+	} else {
+		start = 0;
+	}
+
+	for (i = start; i < rows; ++i) {
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENPARCONSTRAINT_SIZE);
 		if (cols [MONO_GENPARCONSTRAINT_GENERICPAR] == owner) {
 			token = mono_metadata_token_from_dor (cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);

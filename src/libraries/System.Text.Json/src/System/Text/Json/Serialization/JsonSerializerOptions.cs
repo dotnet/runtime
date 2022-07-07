@@ -43,7 +43,6 @@ namespace System.Text.Json
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
         private ConfigurationList<JsonConverter> _converters;
-        private ConfigurationList<JsonPolymorphicTypeConfiguration> _polymorphicTypeConfigurations;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
@@ -66,7 +65,6 @@ namespace System.Text.Json
         public JsonSerializerOptions()
         {
             _converters = new ConverterList(this);
-            _polymorphicTypeConfigurations = new PolymorphicConfigurationList(this);
             TrackOptionsInstance(this);
         }
 
@@ -90,7 +88,6 @@ namespace System.Text.Json
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
             _converters = new ConverterList(this, options._converters);
-            _polymorphicTypeConfigurations = new PolymorphicConfigurationList(this, options._polymorphicTypeConfigurations);
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
@@ -181,7 +178,7 @@ namespace System.Text.Json
 
                 if (value is null)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
                 }
 
                 if (value is JsonSerializerContext ctx)
@@ -747,21 +744,6 @@ namespace System.Text.Json
 
             protected override bool IsLockedInstance => _options._isLockedInstance;
             protected override void VerifyMutable() => _options.VerifyMutable();
-        }
-
-        private sealed class PolymorphicConfigurationList : ConfigurationList<JsonPolymorphicTypeConfiguration>
-        {
-            private readonly JsonSerializerOptions _options;
-
-            public PolymorphicConfigurationList(JsonSerializerOptions options, IList<JsonPolymorphicTypeConfiguration>? source = null)
-                : base(source)
-            {
-                _options = options;
-            }
-
-            protected override bool IsLockedInstance => _options._isLockedInstance;
-            protected override void VerifyMutable() => _options.VerifyMutable();
-            protected override void OnItemAdded(JsonPolymorphicTypeConfiguration config) => config.IsAssignedToOptionsInstance = true;
         }
 
         private static JsonSerializerOptions CreateDefaultImmutableInstance()

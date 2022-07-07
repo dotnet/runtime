@@ -109,8 +109,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(certificate));
             }
 
-            if (_certificates == null)
-                _certificates = new ArrayList();
+            _certificates ??= new ArrayList();
 
             X509Certificate2 x509 = new X509Certificate2(certificate);
             _certificates.Add(x509);
@@ -123,15 +122,13 @@ namespace System.Security.Cryptography.Xml
 
         public void AddSubjectKeyId(byte[] subjectKeyId)
         {
-            if (_subjectKeyIds == null)
-                _subjectKeyIds = new ArrayList();
+            _subjectKeyIds ??= new ArrayList();
             _subjectKeyIds.Add(subjectKeyId);
         }
 
         public void AddSubjectKeyId(string subjectKeyId)
         {
-            if (_subjectKeyIds == null)
-                _subjectKeyIds = new ArrayList();
+            _subjectKeyIds ??= new ArrayList();
             _subjectKeyIds.Add(Utils.DecodeHexString(subjectKeyId));
         }
 
@@ -142,8 +139,7 @@ namespace System.Security.Cryptography.Xml
 
         public void AddSubjectName(string subjectName)
         {
-            if (_subjectNames == null)
-                _subjectNames = new ArrayList();
+            _subjectNames ??= new ArrayList();
             _subjectNames.Add(subjectName);
         }
 
@@ -164,16 +160,14 @@ namespace System.Security.Cryptography.Xml
             if (!BigInteger.TryParse(serialNumber, NumberStyles.AllowHexSpecifier, NumberFormatInfo.CurrentInfo, out h))
                 throw new ArgumentException(SR.Cryptography_Xml_InvalidX509IssuerSerialNumber, nameof(serialNumber));
 
-            if (_issuerSerials == null)
-                _issuerSerials = new ArrayList();
+            _issuerSerials ??= new ArrayList();
             _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, h.ToString()));
         }
 
         // When we load an X509Data from Xml, we know the serial number is in decimal representation.
         internal void InternalAddIssuerSerial(string issuerName, string serialNumber)
         {
-            if (_issuerSerials == null)
-                _issuerSerials = new ArrayList();
+            _issuerSerials ??= new ArrayList();
             _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, serialNumber));
         }
 

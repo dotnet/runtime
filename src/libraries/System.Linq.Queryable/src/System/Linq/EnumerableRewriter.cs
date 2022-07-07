@@ -463,9 +463,14 @@ namespace System.Linq
         {
             LabelTarget? newTarget;
             if (_targetCache == null)
+            {
                 _targetCache = new Dictionary<LabelTarget, LabelTarget>();
+            }
             else if (_targetCache.TryGetValue(node!, out newTarget))
+            {
                 return newTarget;
+            }
+
             Type type = node!.Type;
             if (!typeof(IQueryable).IsAssignableFrom(type))
                 newTarget = base.VisitLabelTarget(node);

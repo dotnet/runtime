@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -12,7 +11,6 @@ namespace System.Security.Cryptography
     {
         private readonly Aes _impl;
 
-        [UnsupportedOSPlatform("browser")]
         public AesCryptoServiceProvider()
         {
             // This class wraps Aes

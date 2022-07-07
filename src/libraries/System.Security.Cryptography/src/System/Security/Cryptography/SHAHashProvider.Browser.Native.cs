@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
 
         public SHANativeHashProvider(string hashAlgorithmId)
         {
-            Debug.Assert(HashProviderDispenser.CanUseSubtleCryptoImpl);
+            Debug.Assert(Interop.BrowserCrypto.CanUseSubtleCrypto);
             (_impl, _hashSizeInBytes) = HashAlgorithmToPal(hashAlgorithmId);
         }
 

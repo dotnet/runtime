@@ -14,7 +14,7 @@
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">需要将指定的参数从托管封送到非托管和从非托管封送到托管，但封送程序类型“{0}”不支持它。</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
@@ -99,12 +99,17 @@
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">需要将指定的参数从托管封送到非托管，但封送程序类型“{0}”不支持它。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="new">The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStatic">
         <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
-        <target state="new">The marshaller type '{0}' for managed type '{1}' must be static.</target>
+        <target state="translated">托管类型“{1}”的封送程序类型“{0}”必须是静态的。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
@@ -159,7 +164,7 @@
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">需要将指定的参数从非托管封送到托管，但封送程序类型“{0}”不支持它。</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">

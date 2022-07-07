@@ -56,6 +56,7 @@
     <Compile Include="System\Net\Http\HttpMessageInvoker.cs" />
     <Compile Include="System\Net\Http\HttpMethod.cs" />
     <Compile Include="System\Net\Http\HttpParseResult.cs" />
+    <Compile Include="System\Net\Http\HttpProtocolException.cs" />
     <Compile Include="System\Net\Http\HttpRequestException.cs" />
     <Compile Include="System\Net\Http\HttpRequestMessage.cs" />
     <Compile Include="System\Net\Http\HttpRequestOptions.cs" />
@@ -175,11 +176,8 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Connection.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ConnectionException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolErrorCode.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamWindowManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
@@ -522,7 +520,7 @@
     <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
   </ItemGroup>
   <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />

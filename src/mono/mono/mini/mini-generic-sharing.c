@@ -2417,8 +2417,10 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			method = mono_marshal_get_synchronized_wrapper (method);
 
 		if (!virtual_) {
+			/* This might return NULL in llvmonly mode for non aot-ed methods */
 			addr = mono_compile_method_checked (method, error);
-			return_val_if_nok (error, NULL);
+			if (!mono_llvm_only)
+				return_val_if_nok (error, NULL);
 		} else
 			addr = NULL;
 
@@ -2440,8 +2442,13 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		}
 
 		// FIXME: This loads information in the AOT case
-		callee_ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
-		callee_gsharedvt = ji_is_gsharedvt (callee_ji);
+		if (addr) {
+			callee_ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
+			callee_gsharedvt = ji_is_gsharedvt (callee_ji);
+		} else {
+			callee_ji = NULL;
+			callee_gsharedvt = FALSE;
+		}
 
 		/*
 		 * For gsharedvt calls made out of gsharedvt methods, the callee could end up being a gsharedvt method, or a normal
@@ -2468,13 +2475,16 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 					g_assert (!virtual_);
 
 					sig = mono_method_signature_internal (jinfo_get_method (callee_ji));
+
 					gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, FALSE);
 					MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (method, jinfo_get_ftnptr (callee_ji), mini_method_get_rgctx (method));
 
 					/* Returns an ftndesc */
 					addr = mini_llvmonly_create_ftndesc (method, out_wrapper, out_wrapper_arg);
 				} else {
-					addr = mini_llvmonly_create_ftndesc (method, addr, mini_method_get_rgctx (method));
+					gpointer out_arg = NULL;
+					addr = mini_llvmonly_load_method (method, FALSE, FALSE, &out_arg, error);
+					addr = mini_llvmonly_create_ftndesc (method, addr, out_arg);
 				}
 			} else {
 				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, vcall_offset, FALSE);
@@ -2525,7 +2535,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 					addr = mini_llvmonly_create_ftndesc (method, in_wrapper, in_wrapper_arg);
 				} else {
-					addr = mini_llvmonly_create_ftndesc (method, addr, mini_method_get_rgctx (method));
+					gpointer out_arg = NULL;
+					addr = mini_llvmonly_load_method (method, FALSE, FALSE, &out_arg, error);
+					addr = mini_llvmonly_create_ftndesc (method, addr, out_arg);
 				}
 			} else if (call_sig == mono_method_signature_internal (method)) {
 			} else {

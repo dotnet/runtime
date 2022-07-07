@@ -65,11 +65,7 @@ namespace System.ComponentModel.Composition.Hosting
                     return Enumerable.Empty<string>();
                 }
 
-                if (_importedContractNames == null)
-                {
-                    _importedContractNames = Part.ImportDefinitions.Select(import => import.ContractName ?? ImportDefinition.EmptyContractName).Distinct().ToArray();
-                }
-                return _importedContractNames;
+                return _importedContractNames ??= Part.ImportDefinitions.Select(import => import.ContractName ?? ImportDefinition.EmptyContractName).Distinct().ToArray();
             }
 
             public CompositionResult TrySetImport(ImportDefinition import, Export[] exports)
@@ -106,11 +102,7 @@ namespace System.ComponentModel.Composition.Hosting
                         SetSavedImport(import, savedExports, null));
                 }
 
-                if (_importCache == null)
-                {
-                    _importCache = new Dictionary<ImportDefinition, Export[]?>();
-                }
-
+                _importCache ??= new Dictionary<ImportDefinition, Export[]?>();
                 _importCache[import] = exports;
             }
 
@@ -154,10 +146,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (export is IDisposable disposableExport)
                     {
-                        if (disposableExports == null)
-                        {
-                            disposableExports = new List<IDisposable>();
-                        }
+                        disposableExports ??= new List<IDisposable>();
                         disposableExports.Add(disposableExport);
                     }
                 }
@@ -185,10 +174,7 @@ namespace System.ComponentModel.Composition.Hosting
                 // Record the new collection
                 if (disposableExports != null)
                 {
-                    if (_importedDisposableExports == null)
-                    {
-                        _importedDisposableExports = new Dictionary<ImportDefinition, List<IDisposable>>();
-                    }
+                    _importedDisposableExports ??= new Dictionary<ImportDefinition, List<IDisposable>>();
                     _importedDisposableExports[import] = disposableExports;
                 }
             }

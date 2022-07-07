@@ -3779,7 +3779,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         case TYP_USHORT:
         case TYP_UINT:
         {
-            node->gtType = TYP_UINT;
+            node->gtType = TYP_INT;
             node->SetSimdBaseJitType(CORINFO_TYPE_UINT);
             node->ChangeHWIntrinsicId(NI_SSE2_ConvertToUInt32);
             break;
