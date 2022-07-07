@@ -208,8 +208,6 @@ public:
 
 public:
 
-    static void ReportThreadStatus(bool isWorking);
-
     // enumeration of different kinds of memory blocks that are recycled
     enum MemType
     {
@@ -253,36 +251,10 @@ public:
 
     static BOOL Initialize();
 
-    static BOOL SetMaxThreadsHelper(DWORD MaxWorkerThreads,
-                                        DWORD MaxIOCompletionThreads);
-
-    static bool CanSetMinIOCompletionThreads(DWORD ioCompletionThreads);
-    static bool CanSetMaxIOCompletionThreads(DWORD ioCompletionThreads);
-
-    static BOOL SetMaxThreads(DWORD MaxWorkerThreads,
-                              DWORD MaxIOCompletionThreads);
-
-    static BOOL GetMaxThreads(DWORD* MaxWorkerThreads,
-                              DWORD* MaxIOCompletionThreads);
-
-    static BOOL SetMinThreads(DWORD MinWorkerThreads,
-                              DWORD MinIOCompletionThreads);
-
-    static BOOL GetMinThreads(DWORD* MinWorkerThreads,
-                              DWORD* MinIOCompletionThreads);
-
-    static BOOL GetAvailableThreads(DWORD* AvailableWorkerThreads,
-                                 DWORD* AvailableIOCompletionThreads);
-
-    static INT32 GetThreadCount();
-
     static BOOL QueueUserWorkItem(LPTHREAD_START_ROUTINE Function,
                                   PVOID Context,
                                   ULONG Flags,
                                   BOOL UnmanagedTPRequest=TRUE);
-
-    static BOOL PostQueuedCompletionStatus(LPOVERLAPPED lpOverlapped,
-                                  LPOVERLAPPED_COMPLETION_ROUTINE Function);
 
     inline static BOOL IsCompletionPortInitialized()
     {

@@ -27,39 +27,9 @@ public:
         UINT32 *configValueRef,
         BOOL *isBooleanRef,
         LPCWSTR *appContextConfigNameRef);
-    static FCDECL1(FC_BOOL_RET, CorCanSetMinIOCompletionThreads, DWORD ioCompletionThreads);
-    static FCDECL1(FC_BOOL_RET, CorCanSetMaxIOCompletionThreads, DWORD ioCompletionThreads);
-    static FCDECL2(FC_BOOL_RET, CorSetMaxThreads, DWORD workerThreads, DWORD completionPortThreads);
-    static FCDECL2(VOID, CorGetMaxThreads, DWORD* workerThreads, DWORD* completionPortThreads);
-    static FCDECL2(FC_BOOL_RET, CorSetMinThreads, DWORD workerThreads, DWORD completionPortThreads);
-    static FCDECL2(VOID, CorGetMinThreads, DWORD* workerThreads, DWORD* completionPortThreads);
-    static FCDECL2(VOID, CorGetAvailableThreads, DWORD* workerThreads, DWORD* completionPortThreads);
-    static FCDECL0(INT32, GetThreadCount);
     static FCDECL0(INT64, GetPendingUnmanagedWorkItemCount);
-
-    static FCDECL0(VOID, NotifyRequestProgress);
-    static FCDECL0(FC_BOOL_RET, NotifyRequestComplete);
-
-    static FCDECL0(FC_BOOL_RET, GetEnableWorkerTracking);
-
-    static FCDECL1(void, ReportThreadStatus, CLR_BOOL isWorking);
-
-    static FCDECL5(LPVOID, CorRegisterWaitForSingleObject,
-                                Object* waitObjectUNSAFE,
-                                Object* stateUNSAFE,
-                                UINT32 timeout,
-                                CLR_BOOL executeOnlyOnce,
-                                Object* registeredWaitObjectUNSAFE);
-
-    static FCDECL1(FC_BOOL_RET, CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped);
-    static FCDECL2(FC_BOOL_RET, CorUnregisterWait, LPVOID WaitHandle, Object * objectToNotify);
-    static FCDECL1(void, CorWaitHandleCleanupNative, LPVOID WaitHandle);
-    static FCDECL1(FC_BOOL_RET, CorBindIoCompletionCallback, HANDLE fileHandle);
 };
 
-extern "C" INT64 QCALLTYPE ThreadPool_GetCompletedWorkItemCount();
-extern "C" BOOL QCALLTYPE ThreadPool_RequestWorkerThread();
-extern "C" BOOL QCALLTYPE ThreadPool_PerformGateActivities(INT32 cpuUtilization);
 extern "C" HANDLE QCALLTYPE AppDomainTimer_Create(INT32 dueTime, INT32 timerId);
 extern "C" BOOL QCALLTYPE AppDomainTimer_Change(HANDLE hTimer, INT32 dueTime);
 extern "C" BOOL QCALLTYPE AppDomainTimer_Delete(HANDLE hTimer);

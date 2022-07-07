@@ -151,9 +151,7 @@ namespace System.Threading
                     return false;
                 }
 
-                if (ThreadPool.UsePortableThreadPoolForIO
-                        ? ioCompletionThreads > _legacy_maxIOCompletionThreads
-                        : !ThreadPool.CanSetMinIOCompletionThreads(ioCompletionThreads))
+                if (ioCompletionThreads > _legacy_maxIOCompletionThreads)
                 {
                     return false;
                 }
@@ -243,9 +241,7 @@ namespace System.Threading
                     return false;
                 }
 
-                if (ThreadPool.UsePortableThreadPoolForIO
-                        ? ioCompletionThreads < _legacy_minIOCompletionThreads
-                        : !ThreadPool.CanSetMaxIOCompletionThreads(ioCompletionThreads))
+                if (ioCompletionThreads < _legacy_minIOCompletionThreads)
                 {
                     return false;
                 }

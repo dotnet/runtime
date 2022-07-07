@@ -73,7 +73,6 @@ typedef OverlappedDataObject* OVERLAPPEDDATAREF;
 
 #endif
 
-FCDECL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, DWORD* numBytes);
 FCDECL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped);
 FCDECL1(void, FreeNativeOverlapped, LPOVERLAPPED lpOverlapped);
 FCDECL1(OverlappedDataObject*, GetOverlappedFromNative, LPOVERLAPPED lpOverlapped);

@@ -1012,8 +1012,6 @@ void SystemDomain::Attach()
     CallCountingStubManager::Init();
 #endif
 
-    PerAppDomainTPCountList::InitAppDomainIndexList();
-
     m_SystemDomainCrst.Init(CrstSystemDomain, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
     m_DelayedUnloadCrst.Init(CrstSystemDomainDelayedUnloadList, CRST_UNSAFE_COOPGC);
 
@@ -1984,11 +1982,6 @@ void AppDomain::Init()
     m_pDelayedLoaderAllocatorUnloadList = NULL;
 
     SetStage( STAGE_CREATING);
-
-    //Allocate the threadpool entry before the appdomain id list. Otherwise,
-    //the thread pool list will be out of sync if insertion of id in
-    //the appdomain fails.
-    m_tpIndex = PerAppDomainTPCountList::AddNewTPIndex();
 
     BaseDomain::Init();
 

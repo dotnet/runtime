@@ -3528,8 +3528,6 @@ public:
         return GetOverflowCount(&s_ioThreadPoolCompletionCountOverflow);
     }
 
-    static UINT64 GetTotalThreadPoolCompletionCount();
-
     static void IncrementMonitorLockContentionCount(Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;

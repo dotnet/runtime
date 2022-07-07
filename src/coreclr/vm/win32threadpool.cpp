@@ -30,7 +30,6 @@ Revision History:
 #include "threads.h"
 #include "appdomain.inl"
 #include "nativeoverlapped.h"
-#include "hillclimbing.h"
 #include "configuration.h"
 
 
@@ -550,86 +549,6 @@ void ThreadpoolMgr::RecycleMemory(LPVOID mem, enum MemType memType)
             _ASSERTE(!"Unknown Memtype");
 
     }
-}
-
-Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpArgs, BOOL *pIsCLRThread)
-{
-    STATIC_CONTRACT_NOTHROW;
-    if (GetThreadNULLOk()) { STATIC_CONTRACT_GC_TRIGGERS;} else {DISABLED(STATIC_CONTRACT_GC_NOTRIGGER);}
-    STATIC_CONTRACT_MODE_ANY;
-    /* cannot use contract because of SEH
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;*/
-
-    Thread* pThread = NULL;
-
-    if (g_fEEStarted) {
-        *pIsCLRThread = TRUE;
-    }
-    else
-        *pIsCLRThread = FALSE;
-    if (*pIsCLRThread) {
-        EX_TRY
-        {
-            pThread = SetupUnstartedThread();
-        }
-        EX_CATCH
-        {
-            pThread = NULL;
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-        if (pThread == NULL) {
-            return NULL;
-        }
-    }
-    DWORD threadId;
-    BOOL bOK = FALSE;
-    HANDLE threadHandle = NULL;
-
-    if (*pIsCLRThread) {
-        // CreateNewThread takes care of reverting any impersonation - so dont do anything here.
-        bOK = pThread->CreateNewThread(0,               // default stack size
-                                       lpStartAddress,
-                                       lpArgs,           //arguments
-                                       W(".NET ThreadPool Worker"));
-    }
-    else {
-#ifndef TARGET_UNIX
-        HandleHolder token;
-        BOOL bReverted = FALSE;
-        bOK = RevertIfImpersonated(&bReverted, &token);
-        if (bOK != TRUE)
-            return NULL;
-#endif // !TARGET_UNIX
-        threadHandle = CreateThread(NULL,               // security descriptor
-                                    0,                  // default stack size
-                                    lpStartAddress,
-                                    lpArgs,
-                                    CREATE_SUSPENDED,
-                                    &threadId);
-
-        SetThreadName(threadHandle, W(".NET ThreadPool Worker"));
-#ifndef TARGET_UNIX
-        UndoRevert(bReverted, token);
-#endif // !TARGET_UNIX
-    }
-
-    if (*pIsCLRThread && !bOK)
-    {
-        pThread->DecExternalCount(FALSE);
-        pThread = NULL;
-    }
-
-    if (*pIsCLRThread) {
-        return pThread;
-    }
-    else
-        return (Thread*)threadHandle;
 }
 
 // this should only be called by unmanaged thread (i.e. there should be no mgd

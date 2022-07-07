@@ -14,7 +14,6 @@
 
 #include "../../vm/virtualcallstub.h"
 #include "../../vm/win32threadpool.h"
-#include "../../vm/hillclimbing.h"
 #include "../../vm/codeman.h"
 #include "../../vm/eedbginterfaceimpl.h"
 #include "../../vm/common.h"

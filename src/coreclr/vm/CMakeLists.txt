@@ -82,7 +82,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     genericdict.cpp
     generics.cpp
     hash.cpp
-    hillclimbing.cpp
     ilinstrumentation.cpp
     ilstubcache.cpp
     ilstubresolver.cpp
@@ -180,7 +179,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     gcheaputilities.h
     generics.h
     hash.h
-    hillclimbing.h
     ilinstrumentation.h
     ilstubcache.h
     ilstubresolver.h

@@ -179,9 +179,6 @@ public:
 
     bool TakeActiveRequest();
 
-    void QueueUnmanagedWorkRequest(LPTHREAD_START_ROUTINE  function, PVOID context);
-    PVOID DeQueueUnManagedWorkRequest(bool* lastOne);
-
     void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled);
 
     inline void SetTPIndexUnused()
@@ -239,10 +236,7 @@ private:
 //synchronization to indicate start/end of requests to the scheduler.
 class PerAppDomainTPCountList{
 public:
-    static void InitAppDomainIndexList();
     static void ResetAppDomainIndex(TPIndex index);
-    static bool AreRequestsPendingInAnyAppDomains();
-    static LONG GetAppDomainIndexForThreadpoolDispatch();
     static TPIndex AddNewTPIndex();
 
     inline static IPerAppDomainTPCount* GetPerAppdomainCount(TPIndex index)

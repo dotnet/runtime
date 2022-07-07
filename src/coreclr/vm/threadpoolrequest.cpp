@@ -35,28 +35,6 @@ DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) UnManagedPerAppDomainTPCount PerAppDomainTPC
 //The list of all per-appdomain work-request counts.
 ArrayListStatic PerAppDomainTPCountList::s_appDomainIndexList;
 
-void PerAppDomainTPCountList::InitAppDomainIndexList()
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
-
-//---------------------------------------------------------------------------
-//AddNewTPIndex adds and returns a per-appdomain TP entry whenever a new appdomain
-//is created. Our list count should be equal to the max number of appdomains created
-//in the system.
-//
-//Assumptions:
-//This function needs to be called under the SystemDomain lock.
-//The ArrayListStatic data dtructure allows traversing of the counts without a
-//lock, but addition to the list requires synchronization.
-//
-TPIndex PerAppDomainTPCountList::AddNewTPIndex()
-{
-    STANDARD_VM_CONTRACT;
-
-    return TPIndex();
-}
 
 //---------------------------------------------------------------------------
 //ResetAppDomainIndex: Resets the  AppDomain ID  and the  per-appdomain

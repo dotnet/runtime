@@ -52,8 +52,6 @@ namespace System.Threading
                     ExecutionContext.RunInternal(helper._executionContext, IOCompletionCallback_Context_Delegate, helper);
                 }
 
-                // Quickly check the VM again, to see if a packet has arrived.
-                OverlappedData.CheckVMForIOPacket(out pNativeOverlapped, out errorCode, out numBytes);
             } while (pNativeOverlapped != null);
         }
     }
@@ -120,9 +118,6 @@ namespace System.Threading
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern OverlappedData GetOverlappedFromNative(NativeOverlapped* nativeOverlappedPtr);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void CheckVMForIOPacket(out NativeOverlapped* pNativeOverlapped, out uint errorCode, out uint numBytes);
     }
 
     #endregion class OverlappedData
