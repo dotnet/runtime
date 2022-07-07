@@ -798,8 +798,9 @@ namespace System.Xml.Serialization
                         break;
                     typeDescs[i] = ((ElementAccessor)enumerator.Current).Mapping!.TypeDesc!;
                 }
-                member.TypeDesc = TypeDesc.FindCommonBaseTypeDesc(typeDescs);
-                if (member.TypeDesc == null) member.TypeDesc = Scope.GetTypeDesc(typeof(object));
+                member.TypeDesc =
+                    TypeDesc.FindCommonBaseTypeDesc(typeDescs) ??
+                    Scope.GetTypeDesc(typeof(object));
             }
 
             if (groupRepeats)
@@ -808,10 +809,7 @@ namespace System.Xml.Serialization
             if (membersScope != null)
             {
                 member.Name = membersScope.AddUnique(groupRepeats ? "Items" : "Item", member);
-                if (members != null)
-                {
-                    members.Add(member.Name, member);
-                }
+                members?.Add(member.Name, member);
             }
 
             if (duplicateTypes)

@@ -26,6 +26,7 @@
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
     <Compile Include="CustomAttributeTests.cs" />
+    <Compile Include="DefaultBinderTests.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
     <Compile Include="GetTypeTests.cs" />

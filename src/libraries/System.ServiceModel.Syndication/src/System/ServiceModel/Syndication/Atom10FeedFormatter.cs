@@ -582,10 +582,7 @@ namespace System.ServiceModel.Syndication
                     if (preserveAttributeExtensions)
                     {
                         string value = reader.Value;
-                        if (attrs == null)
-                        {
-                            attrs = new Dictionary<XmlQualifiedName, string>();
-                        }
+                        attrs ??= new Dictionary<XmlQualifiedName, string>();
                         attrs.Add(new XmlQualifiedName(name, ns), value);
                     }
                 }

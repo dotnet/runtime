@@ -154,10 +154,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                         scanSegment = endLiteral + 1;
                     }
 
-                    if (segment == null)
-                    {
-                        segment = new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
-                    }
+                    segment ??= new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
                 }
 
                 if (segment is not ParentPathSegment)

@@ -23,14 +23,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(reader);
 
-            XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
-
-            if (dictionaryReader == null)
-            {
-                dictionaryReader = new XmlWrappedReader(reader, null);
-            }
-
-            return dictionaryReader;
+            return reader as XmlDictionaryReader ?? new XmlWrappedReader(reader, null);
         }
 
         public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
@@ -411,8 +404,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            if (sb == null)
-                                sb = new StringBuilder(result);
+                            sb ??= new StringBuilder(result);
                             if (sb.Length > maxStringContentLength - value.Length)
                                 XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
                             sb.Append(value);
@@ -481,8 +473,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (sb == null)
-                        sb = new StringBuilder(result);
+                    sb ??= new StringBuilder(result);
                     if (sb.Length > maxStringContentLength - value.Length)
                         XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
                     sb.Append(value);

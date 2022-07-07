@@ -49,8 +49,6 @@ namespace System
 
         private bool HasBeenThrown => _traceIPs != null;
 
-        private readonly object frameLock = new object();
-
         public MethodBase? TargetSite
         {
             [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]

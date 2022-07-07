@@ -130,7 +130,7 @@ namespace System
             Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
             if (status != Number.ParsingStatus.OK)
             {
-                Number.ThrowOverflowOrFormatException(status, TypeCode.Byte);
+                Number.ThrowOverflowOrFormatException(status, s, TypeCode.Byte);
             }
 
             if (i > MaxValue) Number.ThrowOverflowException(TypeCode.Byte);
@@ -377,6 +377,9 @@ namespace System
         //
         // IBinaryNumber
         //
+
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static byte IBinaryNumber<byte>.AllBitsSet => MaxValue;
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(byte value) => BitOperations.IsPow2((uint)value);
@@ -1012,14 +1015,14 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static byte IShiftOperators<byte, byte>.operator <<(byte value, int shiftAmount) => (byte)(value << shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static byte IShiftOperators<byte, int, byte>.operator <<(byte value, int shiftAmount) => (byte)(value << shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static byte IShiftOperators<byte, byte>.operator >>(byte value, int shiftAmount) => (byte)(value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static byte IShiftOperators<byte, int, byte>.operator >>(byte value, int shiftAmount) => (byte)(value >> shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static byte IShiftOperators<byte, byte>.operator >>>(byte value, int shiftAmount) => (byte)(value >>> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static byte IShiftOperators<byte, int, byte>.operator >>>(byte value, int shiftAmount) => (byte)(value >>> shiftAmount);
 
         //
         // ISpanParsable

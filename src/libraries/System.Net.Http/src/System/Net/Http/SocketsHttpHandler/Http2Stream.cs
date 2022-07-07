@@ -1467,7 +1467,8 @@ namespace System.Net.Http
 
                 public override int Read(Span<byte> destination)
                 {
-                    Http2Stream http2Stream = _http2Stream ?? throw new ObjectDisposedException(nameof(Http2ReadStream));
+                    Http2Stream? http2Stream = _http2Stream;
+                    ObjectDisposedException.ThrowIf(http2Stream is null, this);
 
                     return http2Stream.ReadData(destination, _responseMessage);
                 }

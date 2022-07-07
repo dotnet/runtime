@@ -158,15 +158,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             Debug.Assert(previousHash.Length == currentHash.Length);
-            for (int i = 0; i < previousHash.Length; i++)
-            {
-                if (previousHash[i] != currentHash[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return previousHash.AsSpan().SequenceEqual(currentHash.AsSpan());
         }
 
         private void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)

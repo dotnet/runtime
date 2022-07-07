@@ -625,10 +625,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                string hostname = _name;
-
-                if (hostname == null)
-                    hostname = Utils.GetComputerFlatName();
+                string hostname = _name ?? Utils.GetComputerFlatName();
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoMachineInit: hostname is " + hostname);
 

@@ -678,13 +678,6 @@ namespace System.Text.Json.Serialization.Tests
                     options.Converters.Add(new JsonStringEnumConverter());
                     options.Converters.Add(new ConverterForInt32());
                 }
-                else if (propertyType == typeof(IList<JsonPolymorphicTypeConfiguration>))
-                {
-                    options.PolymorphicTypeConfigurations.Add(
-                        new JsonPolymorphicTypeConfiguration<ITestClass>()
-                            .WithDerivedType<Point_With_Array>("point_with_array")
-                            .WithDerivedType<Point_With_Dictionary>("point_with_dictionary"));
-                }
                 else if (propertyType == typeof(JavaScriptEncoder))
                 {
                     options.Encoder = JavaScriptEncoder.Default;
@@ -738,17 +731,6 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     var list1 = (IList<JsonConverter>)property.GetValue(options);
                     var list2 = (IList<JsonConverter>)property.GetValue(newOptions);
-
-                    Assert.Equal(list1.Count, list2.Count);
-                    for (int i = 0; i < list1.Count; i++)
-                    {
-                        Assert.Same(list1[i], list2[i]);
-                    }
-                }
-                else if (propertyType == typeof(IList<JsonPolymorphicTypeConfiguration>))
-                {
-                    var list1 = (IList<JsonPolymorphicTypeConfiguration>)property.GetValue(options);
-                    var list2 = (IList<JsonPolymorphicTypeConfiguration>)property.GetValue(newOptions);
 
                     Assert.Equal(list1.Count, list2.Count);
                     for (int i = 0; i < list1.Count; i++)

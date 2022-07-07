@@ -11,7 +11,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal interface ICustomNativeTypeMarshallingStrategy : ICustomTypeMarshallingStrategy { }
+    internal interface ICustomNativeTypeMarshallingStrategy : ICustomTypeMarshallingStrategyBase { }
 
     /// <summary>
     /// Marshalling support for a type that has a custom native type.

@@ -568,9 +568,8 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             errorMessage.AppendASCII("**Error: Probable rude edit.**\n\n"
                                 "EnCModule::JITUpdatedFunction JIT failed with the following exception:\n\n");
             errorMessage.Append(exceptionMessage);
-            StackScratchBuffer buffer;
-            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetANSI(buffer));
-            LOG((LF_ENC, LL_INFO100, errorMessage.GetANSI(buffer)));
+            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetUTF8());
+            LOG((LF_ENC, LL_INFO100, errorMessage.GetUTF8()));
         }
 #endif
     } EX_END_CATCH(SwallowAllExceptions)

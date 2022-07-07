@@ -640,6 +640,10 @@ enum GenTreeFlags : unsigned int
 
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
+    GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
+
+    GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
     GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                               //                   rather than from gtGetStructHandleForHWSIMD.
 };
@@ -1135,8 +1139,8 @@ public:
         if (gtType == TYP_VOID)
         {
             // These are the only operators which can produce either VOID or non-VOID results.
-            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsSimdOrHWintrinsic() ||
-                   IsCnsVec());
+            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsConditionalCompare() || OperIsLong() ||
+                   OperIsSimdOrHWintrinsic() || IsCnsVec());
             return false;
         }
 
@@ -1233,7 +1237,7 @@ public:
         return (gtOper == GT_LCL_FLD || gtOper == GT_LCL_FLD_ADDR || gtOper == GT_STORE_LCL_FLD);
     }
 
-    inline bool OperIsLocalField() const
+    bool OperIsLocalField() const
     {
         return OperIsLocalField(gtOper);
     }
@@ -1398,6 +1402,28 @@ public:
     bool OperIsCompare() const
     {
         return OperIsCompare(OperGet());
+    }
+
+    static bool OperIsConditional(genTreeOps gtOper)
+    {
+        static_assert_no_msg(AreContiguous(GT_SELECT, GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
+        return (GT_SELECT <= gtOper) && (gtOper <= GT_CGT);
+    }
+
+    bool OperIsConditional() const
+    {
+        return OperIsConditional(OperGet());
+    }
+
+    static bool OperIsConditionalCompare(genTreeOps gtOper)
+    {
+        static_assert_no_msg(AreContiguous(GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
+        return (GT_CEQ <= gtOper) && (gtOper <= GT_CGT);
+    }
+
+    bool OperIsConditionalCompare() const
+    {
+        return OperIsConditionalCompare(OperGet());
     }
 
     static bool OperIsShift(genTreeOps gtOper)
@@ -1582,9 +1608,25 @@ public:
         return gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK || OperIsBlk(gtOper);
     }
 
-    static bool OperIsIndirOrArrLength(genTreeOps gtOper)
+    static bool OperIsArrLength(genTreeOps gtOper)
     {
-        return OperIsIndir(gtOper) || (gtOper == GT_ARR_LENGTH);
+        return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH);
+    }
+
+    static bool OperIsMDArr(genTreeOps gtOper)
+    {
+        return (gtOper == GT_MDARR_LENGTH) || (gtOper == GT_MDARR_LOWER_BOUND);
+    }
+
+    // Is this an access of an SZ array length, MD array length, or MD array lower bounds?
+    static bool OperIsArrMetaData(genTreeOps gtOper)
+    {
+        return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH) || (gtOper == GT_MDARR_LOWER_BOUND);
+    }
+
+    static bool OperIsIndirOrArrMetaData(genTreeOps gtOper)
+    {
+        return OperIsIndir(gtOper) || OperIsArrMetaData(gtOper);
     }
 
     bool OperIsIndir() const
@@ -1592,10 +1634,26 @@ public:
         return OperIsIndir(gtOper);
     }
 
-    bool OperIsIndirOrArrLength() const
+    bool OperIsArrLength() const
     {
-        return OperIsIndirOrArrLength(gtOper);
+        return OperIsArrLength(gtOper);
     }
+
+    bool OperIsMDArr() const
+    {
+        return OperIsMDArr(gtOper);
+    }
+
+    bool OperIsIndirOrArrMetaData() const
+    {
+        return OperIsIndirOrArrMetaData(gtOper);
+    }
+
+    // Helper function to return the array reference of an array length node.
+    GenTree* GetArrLengthArrRef();
+
+    // Helper function to return the address of an indir or array meta-data node.
+    GenTree* GetIndirOrArrMetaDataAddr();
 
     bool OperIsImplicitIndir() const;
 
@@ -1770,8 +1828,11 @@ public:
 #endif // DEBUG
 
     inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsFloatNaN() const;
     inline bool IsFloatPositiveZero() const;
+    inline bool IsFloatNegativeZero() const;
     inline bool IsVectorZero() const;
+    inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorConst();
 
@@ -2803,6 +2864,7 @@ class GenTreeUseEdgeIterator final
     void AdvanceStoreDynBlk();
     void AdvanceFieldList();
     void AdvancePhi();
+    void AdvanceConditional();
 
     template <bool ReverseOperands>
     void           AdvanceBinOp();
@@ -3931,6 +3993,26 @@ struct GenTreeColon : public GenTreeOp
     }
 };
 
+// GenTreeConditional -- Conditionally do an operation
+
+struct GenTreeConditional : public GenTreeOp
+{
+    GenTree* gtCond;
+
+    GenTreeConditional(
+        genTreeOps oper, var_types type, GenTree* cond, GenTree* op1, GenTree* op2 DEBUGARG(bool largeNode = false))
+        : GenTreeOp(oper, type, op1, op2 DEBUGARG(largeNode)), gtCond(cond)
+    {
+        assert(cond != nullptr);
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeConditional() : GenTreeOp()
+    {
+    }
+#endif
+};
+
 // gtCall   -- method call      (GT_CALL)
 enum class InlineObservation;
 
@@ -4036,7 +4118,6 @@ struct ReturnTypeDesc
 {
 private:
     var_types m_regType[MAX_RET_REG_COUNT];
-    bool      m_isEnclosingType;
 
 #ifdef DEBUG
     bool m_inited;
@@ -4062,7 +4143,6 @@ public:
         {
             m_regType[i] = TYP_UNKNOWN;
         }
-        m_isEnclosingType = false;
 #ifdef DEBUG
         m_inited = false;
 #endif
@@ -4154,13 +4234,6 @@ public:
         assert(result != TYP_UNKNOWN);
 
         return result;
-    }
-
-    // True if this value is returned in integer register
-    // that is larger than the type itself.
-    bool IsEnclosingType() const
-    {
-        return m_isEnclosingType;
     }
 
     // Get i'th ABI return register
@@ -4437,12 +4510,6 @@ public:
     unsigned GetStackSlotsNumber() const
     {
         return roundUp(GetStackByteSize(), TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-    }
-
-    // Can we replace the struct type of this node with a primitive type for argument passing?
-    bool TryPassAsPrimitive() const
-    {
-        return !IsSplit() && ((NumRegs == 1) || (ByteSize <= TARGET_POINTER_SIZE));
     }
 };
 
@@ -6434,31 +6501,86 @@ private:
                                       target_ssize_t* pOffset);
 };
 
-/* gtArrLen -- array length (GT_ARR_LENGTH)
-   GT_ARR_LENGTH is used for "arr.length" */
-
-struct GenTreeArrLen : public GenTreeUnOp
+// GenTreeArrCommon -- A parent class for GenTreeArrLen, GenTreeMDArr
+// (so, accessing array meta-data for either single-dimensional or multi-dimensional arrays).
+// Mostly just a convenience to use the ArrRef() accessor.
+//
+struct GenTreeArrCommon : public GenTreeUnOp
 {
-    GenTree*& ArrRef()
+    GenTree*& ArrRef() // the array address node
     {
         return gtOp1;
-    } // the array address node
+    }
+
+    GenTreeArrCommon(genTreeOps oper, var_types type, GenTree* arrRef) : GenTreeUnOp(oper, type, arrRef)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeArrCommon() : GenTreeUnOp()
+    {
+    }
+#endif
+};
+
+// GenTreeArrLen (GT_ARR_LENGTH) -- single-dimension (SZ) array length. Used for `array.Length`.
+//
+struct GenTreeArrLen : public GenTreeArrCommon
+{
+    GenTree*& ArrRef() // the array address node
+    {
+        return gtOp1;
+    }
+
 private:
-    int gtArrLenOffset; // constant to add to "gtArrRef" to get the address of the array length.
+    int gtArrLenOffset; // constant to add to "ArrRef()" to get the address of the array length.
 
 public:
-    inline int ArrLenOffset()
+    int ArrLenOffset() const
     {
         return gtArrLenOffset;
     }
 
     GenTreeArrLen(var_types type, GenTree* arrRef, int lenOffset)
-        : GenTreeUnOp(GT_ARR_LENGTH, type, arrRef), gtArrLenOffset(lenOffset)
+        : GenTreeArrCommon(GT_ARR_LENGTH, type, arrRef), gtArrLenOffset(lenOffset)
     {
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeArrLen() : GenTreeUnOp()
+    GenTreeArrLen() : GenTreeArrCommon()
+    {
+    }
+#endif
+};
+
+// GenTreeMDArr (GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND) -- multi-dimension (MD) array length
+// or lower bound for a dimension. Used for `array.GetLength(n)`, `array.GetLowerBound(n)`.
+//
+struct GenTreeMDArr : public GenTreeArrCommon
+{
+private:
+    unsigned gtDim;  // array dimension of this array length
+    unsigned gtRank; // array rank of the array
+
+public:
+    unsigned Dim() const
+    {
+        return gtDim;
+    }
+
+    unsigned Rank() const
+    {
+        return gtRank;
+    }
+
+    GenTreeMDArr(genTreeOps oper, GenTree* arrRef, unsigned dim, unsigned rank)
+        : GenTreeArrCommon(oper, TYP_INT, arrRef), gtDim(dim), gtRank(rank)
+    {
+        assert(OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND));
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeMDArr() : GenTreeArrCommon()
     {
     }
 #endif
@@ -6495,10 +6617,17 @@ struct GenTreeBoundsChk : public GenTreeOp
     }
 #endif
 
-    // If this check is against GT_ARR_LENGTH, returns array reference, else "NULL".
+    // If this check is against GT_ARR_LENGTH or GT_MDARR_LENGTH, returns array reference, else nullptr.
     GenTree* GetArray() const
     {
-        return GetArrayLength()->OperIs(GT_ARR_LENGTH) ? GetArrayLength()->AsArrLen()->ArrRef() : nullptr;
+        if (GetArrayLength()->OperIsArrLength())
+        {
+            return GetArrayLength()->GetArrLengthArrRef();
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     // The index expression.
@@ -6530,13 +6659,12 @@ struct GenTreeArrElem : public GenTree
                                  // It stores the size of array elements WHEN it can fit
                                  // into an "unsigned char".
                                  // This has caused VSW 571394.
-    var_types gtArrElemType;     // The array element type
 
     // Requires that "inds" is a pointer to an array of "rank" nodes for the indices.
-    GenTreeArrElem(
-        var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, var_types elemType, GenTree** inds)
-        : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize), gtArrElemType(elemType)
+    GenTreeArrElem(var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, GenTree** inds)
+        : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize)
     {
+        assert(rank <= ArrLen(gtArrInds));
         gtFlags |= (arr->gtFlags & GTF_ALL_EFFECT);
         for (unsigned char i = 0; i < rank; i++)
         {
@@ -6555,7 +6683,7 @@ struct GenTreeArrElem : public GenTree
 //--------------------------------------------
 //
 // GenTreeArrIndex (gtArrIndex): Expression to bounds-check the index for one dimension of a
-//    multi-dimensional or non-zero-based array., and compute the effective index
+//    multi-dimensional or non-zero-based array, and compute the effective index
 //    (i.e. subtracting the lower bound).
 //
 // Notes:
@@ -6574,7 +6702,7 @@ struct GenTreeArrElem : public GenTree
 //                +--*  ArrLen[i, ]    (either generalize GT_ARR_LENGTH or add a new node)
 //                +--*  <index0>
 //             +--* ArrIndex[i, ]
-//    Which could, for example, be optimized to the following when known to be within bounds:
+//    which could, for example, be optimized to the following when known to be within bounds:
 //                /--*  TempForLowerBoundDim0
 //                +--*  <index0>
 //             +--* - (GT_SUB)
@@ -6591,20 +6719,11 @@ struct GenTreeArrIndex : public GenTreeOp
     {
         return gtOp2;
     }
-    unsigned char gtCurrDim;     // The current dimension
-    unsigned char gtArrRank;     // Rank of the array
-    var_types     gtArrElemType; // The array element type
+    unsigned char gtCurrDim; // The current dimension
+    unsigned char gtArrRank; // Rank of the array
 
-    GenTreeArrIndex(var_types     type,
-                    GenTree*      arrObj,
-                    GenTree*      indexExpr,
-                    unsigned char currDim,
-                    unsigned char arrRank,
-                    var_types     elemType)
-        : GenTreeOp(GT_ARR_INDEX, type, arrObj, indexExpr)
-        , gtCurrDim(currDim)
-        , gtArrRank(arrRank)
-        , gtArrElemType(elemType)
+    GenTreeArrIndex(var_types type, GenTree* arrObj, GenTree* indexExpr, unsigned char currDim, unsigned char arrRank)
+        : GenTreeOp(GT_ARR_INDEX, type, arrObj, indexExpr), gtCurrDim(currDim), gtArrRank(arrRank)
     {
         gtFlags |= GTF_EXCEPT;
     }
@@ -6648,31 +6767,24 @@ protected:
 //
 struct GenTreeArrOffs : public GenTree
 {
-    GenTree* gtOffset;           // The accumulated offset for lower dimensions - must be TYP_I_IMPL, and
-                                 // will either be a CSE temp, the constant 0, or another GenTreeArrOffs node.
-    GenTree* gtIndex;            // The effective index for the current dimension - must be non-negative
-                                 // and can be any expression (though it is likely to be either a GenTreeArrIndex,
-                                 // node, a lclVar, or a constant).
-    GenTree* gtArrObj;           // The array object - may be any expression producing an Array reference,
-                                 // but is likely to be a lclVar.
-    unsigned char gtCurrDim;     // The current dimension
-    unsigned char gtArrRank;     // Rank of the array
-    var_types     gtArrElemType; // The array element type
+    GenTree* gtOffset;       // The accumulated offset for lower dimensions - must be TYP_I_IMPL, and
+                             // will either be a CSE temp, the constant 0, or another GenTreeArrOffs node.
+    GenTree* gtIndex;        // The effective index for the current dimension - must be non-negative
+                             // and can be any expression (though it is likely to be either a GenTreeArrIndex,
+                             // node, a lclVar, or a constant).
+    GenTree* gtArrObj;       // The array object - may be any expression producing an Array reference,
+                             // but is likely to be a lclVar.
+    unsigned char gtCurrDim; // The current dimension
+    unsigned char gtArrRank; // Rank of the array
 
-    GenTreeArrOffs(var_types     type,
-                   GenTree*      offset,
-                   GenTree*      index,
-                   GenTree*      arrObj,
-                   unsigned char currDim,
-                   unsigned char rank,
-                   var_types     elemType)
+    GenTreeArrOffs(
+        var_types type, GenTree* offset, GenTree* index, GenTree* arrObj, unsigned char currDim, unsigned char rank)
         : GenTree(GT_ARR_OFFSET, type)
         , gtOffset(offset)
         , gtIndex(index)
         , gtArrObj(arrObj)
         , gtCurrDim(currDim)
         , gtArrRank(rank)
-        , gtArrElemType(elemType)
     {
         assert(index->gtFlags & GTF_EXCEPT);
         gtFlags |= GTF_EXCEPT;
@@ -8152,7 +8264,7 @@ public:
 
     static GenCondition FromRelop(GenTree* relop)
     {
-        assert(relop->OperIsCompare());
+        assert(relop->OperIsCompare() || relop->OperIsConditionalCompare());
 
         if (varTypeIsFloating(relop->gtGetOp1()))
         {
@@ -8189,17 +8301,37 @@ public:
 
     static GenCondition FromIntegralRelop(GenTree* relop)
     {
-        assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
+        if (relop->OperIsConditionalCompare())
+        {
+            assert(!varTypeIsFloating(relop->AsConditional()->gtOp1) &&
+                   !varTypeIsFloating(relop->AsConditional()->gtOp2));
+        }
+        else
+        {
+            assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
+        }
 
         return FromIntegralRelop(relop->OperGet(), relop->IsUnsigned());
     }
 
     static GenCondition FromIntegralRelop(genTreeOps oper, bool isUnsigned)
     {
-        assert(GenTree::OperIsCompare(oper));
+        assert(GenTree::OperIsCompare(oper) || GenTree::OperIsConditionalCompare(oper));
 
         // GT_TEST_EQ/NE are special, they need to be mapped as GT_EQ/NE
-        unsigned code = oper - ((oper >= GT_TEST_EQ) ? GT_TEST_EQ : GT_EQ);
+        unsigned code;
+        if (oper >= GT_CEQ)
+        {
+            code = oper - GT_CEQ;
+        }
+        else if (oper >= GT_TEST_EQ)
+        {
+            code = oper - GT_TEST_EQ;
+        }
+        else
+        {
+            code = oper - GT_EQ;
+        }
 
         if (isUnsigned || (code <= 1)) // EQ/NE are treated as unsigned
         {
@@ -8327,6 +8459,42 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
+// IsFloatNaN: returns true if this is exactly a const float value of NaN
+//
+// Returns:
+//     True if this represents a const floating-point value of NaN.
+//     Will return false otherwise.
+//
+inline bool GenTree::IsFloatNaN() const
+{
+    if (IsCnsFltOrDbl())
+    {
+        double constValue = AsDblCon()->gtDconVal;
+        return FloatingPointUtils::isNaN(constValue);
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsFloatNegativeZero: returns true if this is exactly a const float value of negative zero (-0.0)
+//
+// Returns:
+//     True if this represents a const floating-point value of exactly negative zero (-0.0).
+//     Will return false if the value is negative zero (+0.0).
+//
+inline bool GenTree::IsFloatNegativeZero() const
+{
+    if (IsCnsFltOrDbl())
+    {
+        double constValue = AsDblCon()->gtDconVal;
+        return FloatingPointUtils::isNegativeZero(constValue);
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
 // IsFloatPositiveZero: returns true if this is exactly a const float value of postive zero (+0.0)
 //
 // Returns:
@@ -8356,6 +8524,52 @@ inline bool GenTree::IsFloatPositiveZero() const
 inline bool GenTree::IsVectorZero() const
 {
     return IsCnsVec() && AsVecCon()->IsZero();
+}
+
+//-------------------------------------------------------------------
+// IsVectorCreate: returns true if this node is the creation of a vector.
+//                 Does not include "Unsafe" method calls.
+//
+// Returns:
+//     True if this node is the creation of a vector
+//
+inline bool GenTree::IsVectorCreate() const
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIs(GT_HWINTRINSIC))
+    {
+        switch (AsHWIntrinsic()->GetHWIntrinsicId())
+        {
+            case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+#elif defined(TARGET_ARMARCH)
+            case NI_Vector64_Create:
+#endif
+                return true;
+
+            default:
+                return false;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+#ifdef FEATURE_SIMD
+    if (OperIs(GT_SIMD))
+    {
+        switch (AsSIMD()->GetSIMDIntrinsicId())
+        {
+            case SIMDIntrinsicInit:
+            case SIMDIntrinsicInitN:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+#endif // FEATURE_SIMD
+
+    return false;
 }
 
 //-------------------------------------------------------------------
@@ -8603,13 +8817,13 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 }
 
 //-------------------------------------------------------------------------
-// gtCommaAssignVal - find value being assigned to a comma wrapped assigment
+// gtCommaAssignVal - find value being assigned to a comma wrapped assignment
 //
 // Returns:
 //    tree representing value being assigned if this tree represents a
 //    comma-wrapped local definition and use.
 //
-//    original tree, of not.
+//    original tree, if not.
 //
 inline GenTree* GenTree::gtCommaAssignVal()
 {
@@ -9117,6 +9331,28 @@ inline bool GenTree::isUsedFromSpillTemp() const
     }
 
     return false;
+}
+
+// Helper function to return the array reference of an array length node.
+inline GenTree* GenTree::GetArrLengthArrRef()
+{
+    assert(OperIsArrLength());
+    return AsArrCommon()->ArrRef();
+}
+
+// Helper function to return the address of an indir or array meta-data node.
+inline GenTree* GenTree::GetIndirOrArrMetaDataAddr()
+{
+    assert(OperIsIndirOrArrMetaData());
+
+    if (OperIsIndir())
+    {
+        return AsIndir()->Addr();
+    }
+    else
+    {
+        return AsArrCommon()->ArrRef();
+    }
 }
 
 /*****************************************************************************/

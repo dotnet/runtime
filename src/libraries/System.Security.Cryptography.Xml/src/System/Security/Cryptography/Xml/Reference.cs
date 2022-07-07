@@ -117,12 +117,7 @@ namespace System.Security.Cryptography.Xml
 
         public TransformChain TransformChain
         {
-            get
-            {
-                if (_transformChain == null)
-                    _transformChain = new TransformChain();
-                return _transformChain;
-            }
+            get => _transformChain ??= new TransformChain();
             set
             {
                 _transformChain = value;

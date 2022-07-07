@@ -327,11 +327,7 @@ namespace System.Xml.Schema
             { //Do not process schema if processInlineSchema is not set
                 return;
             }
-            string? tns = schema.TargetNamespace;
-            if (tns == null)
-            {
-                tns = string.Empty;
-            }
+            string? tns = schema.TargetNamespace ?? string.Empty;
             //Store the previous locations
             Hashtable schemaLocations = _schemaSet.SchemaLocations;
             DictionaryEntry[] oldLocations = new DictionaryEntry[schemaLocations.Count];
@@ -356,11 +352,7 @@ namespace System.Xml.Schema
                 for (int i = 0; i < schema.ImportedSchemas.Count; ++i)
                 {     //Check for its imports
                     XmlSchema impSchema = (XmlSchema)schema.ImportedSchemas[i]!;
-                    tns = impSchema.TargetNamespace;
-                    if (tns == null)
-                    {
-                        tns = string.Empty;
-                    }
+                    tns = impSchema.TargetNamespace ?? string.Empty;
                     if (_validatedNamespaces[tns] != null && _schemaSet.FindSchemaByNSAndUrl(impSchema.BaseUri, tns, oldLocations) == null)
                     {
                         SendValidationEvent(SR.Sch_ComponentAlreadySeenForNS, tns, XmlSeverityType.Error);
@@ -1476,11 +1468,7 @@ namespace System.Xml.Schema
                 Exception? exception = dtype.TryParseValue(parsedValue, _nameTable, _nsResolver, out typedValue);
                 if (exception != null)
                 {
-                    string? stringValue = parsedValue as string;
-                    if (stringValue == null)
-                    {
-                        stringValue = XmlSchemaDatatype.ConcatenatedToString(parsedValue);
-                    }
+                    string stringValue = parsedValue as string ?? XmlSchemaDatatype.ConcatenatedToString(parsedValue);
 
                     SendValidationEvent(SR.Sch_ElementValueDataTypeDetailed, new string[] { QNameString(_context.LocalName!, _context.Namespace!), stringValue, GetTypeName(decl), exception.Message }, exception);
                     return null;
@@ -1913,10 +1901,7 @@ namespace System.Xml.Schema
                         }
                         else
                         {
-                            if (_IDs == null)
-                            {
-                                _IDs = new Hashtable();
-                            }
+                            _IDs ??= new Hashtable();
 
                             _IDs.Add(name, _context.LocalName);
                         }
@@ -1974,10 +1959,7 @@ namespace System.Xml.Schema
 
         Error:
             _attrValid = false;
-            if (stringValue == null)
-            {
-                stringValue = XmlSchemaDatatype.ConcatenatedToString(value);
-            }
+            stringValue ??= XmlSchemaDatatype.ConcatenatedToString(value);
             SendValidationEvent(SR.Sch_AttributeValueDataTypeDetailed, new string[] { attdef.Name.ToString(), stringValue, GetTypeName(decl), exception.Message }, exception);
             return null;
         }

@@ -119,8 +119,7 @@ namespace System.Reflection.Emit
         private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type? owner, Module? m, bool skipVisibility, bool anonHosted, bool typeOwner)
         {
             ArgumentNullException.ThrowIfNull(name);
-            if (returnType == null)
-                returnType = typeof(void);
+            returnType ??= typeof(void);
             if (typeOwner)
                 ArgumentNullException.ThrowIfNull(owner);
             if (!anonHosted)
@@ -136,8 +135,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("Owner can't be an array or an interface.");
             }
 
-            if (m == null)
-                m = AnonHostModuleHolder.AnonHostModule;
+            m ??= AnonHostModuleHolder.AnonHostModule;
 
             this.name = name;
             this.attributes = attributes | MethodAttributes.Static;
@@ -255,12 +253,7 @@ namespace System.Reflection.Emit
             return (object[])Array.CreateInstance(attributeType.IsValueType || attributeType.ContainsGenericParameters ? typeof(object) : attributeType, 0);
         }
 
-        public DynamicILInfo GetDynamicILInfo()
-        {
-            if (il_info == null)
-                il_info = new DynamicILInfo(this);
-            return il_info;
-        }
+        public DynamicILInfo GetDynamicILInfo() => il_info ??= new DynamicILInfo(this);
 
         public ILGenerator GetILGenerator()
         {
@@ -316,8 +309,7 @@ namespace System.Reflection.Emit
         /*
         public override object Invoke (object obj, object[] parameters) {
             CreateDynMethod ();
-            if (method == null)
-                method = new RuntimeMethodInfo (mhandle);
+            method ??= new RuntimeMethodInfo (mhandle);
             return method.Invoke (obj, parameters);
         }
         */

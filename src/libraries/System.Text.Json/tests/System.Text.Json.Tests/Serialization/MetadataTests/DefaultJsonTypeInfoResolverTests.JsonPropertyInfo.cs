@@ -677,6 +677,35 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void CreateJsonPropertyInfo_ReturnsCorrectTypeOnPolymorphicConverter()
+        {
+            JsonSerializerOptions o = new()
+            {
+                Converters = { new PolymorphicConverter() }
+            };
+
+            JsonTypeInfo jti = JsonTypeInfo.CreateJsonTypeInfo(typeof(MyClass), o);
+
+            Assert.IsType<PolymorphicConverter>(jti.Converter);
+            Assert.IsAssignableFrom<JsonTypeInfo<MyClass>>(jti);
+            Assert.Equal(typeof(MyClass), jti.Type);
+
+            JsonPropertyInfo jpi = jti.CreateJsonPropertyInfo(typeof(string), "test");
+
+            // The generic parameter of the property metadata type
+            // should match that of property type and not the converter type.
+            Assert.Equal(typeof(string), jpi.GetType().GetGenericArguments()[0]); 
+            Assert.Equal(typeof(string), jpi.PropertyType);
+        }
+
+        public class PolymorphicConverter : JsonConverter<object>
+        {
+            public override bool CanConvert(Type _) => true;
+            public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) => throw new NotImplementedException();
+        }
+
+        [Fact]
         public static void AddingShouldSerializeToPropertyIsRespected()
         {
             TestClassWithNumber obj = new()

@@ -872,10 +872,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\AnsiStringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\ArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\BStrStringMarshaller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerDirection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerFeatures.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerKind.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\MarshalMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\MarshalUsingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\NativeMarshallingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\PointerArrayMarshaller.cs" />
@@ -1881,7 +1883,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\Win32Exception.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSourceHelper.Windows.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
@@ -2176,7 +2177,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\Win32Exception.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Stopwatch.Unix.cs" />

@@ -104,14 +104,14 @@ namespace System.Xml.XPath
             try
             {
                 string message = args == null ? res : string.Format(res, args);
-                if (message == null)
-                    message = $"UNKNOWN({res})";
-                return message;
+                if (message != null)
+                {
+                    return message;
+                }
             }
-            catch (MissingManifestResourceException)
-            {
-                return $"UNKNOWN({res})";
-            }
+            catch (MissingManifestResourceException) { }
+
+            return $"UNKNOWN({res})";
         }
 
         public override string Message

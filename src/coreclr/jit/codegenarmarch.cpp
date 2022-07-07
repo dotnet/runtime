@@ -367,6 +367,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCompare(treeNode->AsOp());
             break;
 
+#ifdef TARGET_ARM64
+        case GT_SELECT:
+        case GT_CEQ:
+        case GT_CNE:
+        case GT_CLT:
+        case GT_CLE:
+        case GT_CGE:
+        case GT_CGT:
+            genCodeForConditional(treeNode->AsConditional());
+            break;
+#endif
+
         case GT_JTRUE:
             genCodeForJumpTrue(treeNode->AsOp());
             break;
@@ -1193,65 +1205,39 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     else
     {
         var_types targetType = source->TypeGet();
-        assert(source->OperGet() == GT_OBJ);
-        assert(varTypeIsStruct(targetType));
+        assert(source->isContained() && varTypeIsStruct(targetType));
 
-        regNumber baseReg = treeNode->ExtractTempReg();
-        regNumber addrReg = REG_NA;
+        regNumber    baseReg      = treeNode->ExtractTempReg();
+        unsigned     srcLclNum    = BAD_VAR_NUM;
+        unsigned     srcLclOffset = 0;
+        regNumber    addrReg      = REG_NA;
+        var_types    addrType     = TYP_UNDEF;
+        ClassLayout* layout       = nullptr;
 
-        GenTreeLclVarCommon* varNode  = nullptr;
-        GenTree*             addrNode = nullptr;
-
-        addrNode = source->AsOp()->gtOp1;
-
-        // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
-        //
-        if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+        if (source->OperIsLocalRead())
         {
-            // We have a GT_OBJ(GT_LCL_VAR_ADDR)
-            //
-            // We will treat this case the same as above
-            // (i.e if we just had this GT_LCL_VAR directly as the source)
-            // so update 'source' to point this GT_LCL_VAR_ADDR node
-            // and continue to the codegen for the LCL_VAR node below
-            //
-            varNode  = addrNode->AsLclVarCommon();
-            addrNode = nullptr;
-        }
+            srcLclNum         = source->AsLclVarCommon()->GetLclNum();
+            srcLclOffset      = source->AsLclVarCommon()->GetLclOffs();
+            layout            = source->AsLclVarCommon()->GetLayout(compiler);
+            LclVarDsc* varDsc = compiler->lvaGetDesc(srcLclNum);
 
-        // Either varNode or addrNOde must have been setup above,
-        // the xor ensures that only one of the two is setup, not both
-        assert((varNode != nullptr) ^ (addrNode != nullptr));
-
-        // This is the varNum for our load operations,
-        // only used when we have a struct with a LclVar source
-        unsigned srcVarNum = BAD_VAR_NUM;
-
-        if (varNode != nullptr)
-        {
-            assert(varNode->isContained());
-            srcVarNum         = varNode->GetLclNum();
-            LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
-
-            // This struct also must live in the stack frame.
-            // And it can't live in a register.
+            // This struct must live on the stack frame.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
         }
-        else // addrNode is used
+        else // we must have a GT_OBJ
         {
-            // Generate code to load the address that we need into a register
-            addrReg = genConsumeReg(addrNode);
+            layout   = source->AsObj()->GetLayout();
+            addrReg  = genConsumeReg(source->AsObj()->Addr());
+            addrType = source->AsObj()->Addr()->TypeGet();
 
             // If addrReg equal to baseReg, we use the last target register as alternative baseReg.
             // Because the candidate mask for the internal baseReg does not include any of the target register,
             // we can ensure that baseReg, addrReg, and the last target register are not all same.
             assert(baseReg != addrReg);
-
-            // We don't split HFA struct
-            assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
-        ClassLayout* layout = source->AsObj()->GetLayout();
+        // We don't split HFAs.
+        assert(!compiler->IsHfa(layout->GetClassHandle()));
 
         // Put on stack first
         unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
@@ -1284,10 +1270,10 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             unsigned moveSize = genTypeSize(type);
 
             instruction loadIns = ins_Load(type);
-            if (varNode != nullptr)
+            if (srcLclNum != BAD_VAR_NUM)
             {
                 // Load from our local source
-                emit->emitIns_R_S(loadIns, attr, baseReg, srcVarNum, structOffset);
+                emit->emitIns_R_S(loadIns, attr, baseReg, srcLclNum, srcLclOffset + structOffset);
             }
             else
             {
@@ -1315,10 +1301,10 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             regNumber targetReg = treeNode->GetRegNumByIdx(idx);
             var_types type      = treeNode->GetRegType(idx);
 
-            if (varNode != nullptr)
+            if (srcLclNum != BAD_VAR_NUM)
             {
                 // Load from our local source
-                emit->emitIns_R_S(INS_ldr, emitTypeSize(type), targetReg, srcVarNum, structOffset);
+                emit->emitIns_R_S(INS_ldr, emitTypeSize(type), targetReg, srcLclNum, srcLclOffset + structOffset);
             }
             else
             {
@@ -1326,7 +1312,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 if (targetReg == addrReg && idx != treeNode->gtNumRegs - 1)
                 {
                     assert(targetReg != baseReg);
-                    var_types addrType = addrNode->TypeGet();
                     emit->emitIns_Mov(INS_mov, emitActualTypeSize(addrType), baseReg, addrReg, /* canSkip */ false);
                     addrReg = baseReg;
                 }
@@ -1522,10 +1507,9 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     regNumber tmpReg = arrIndex->GetSingleTempReg();
     assert(tgtReg != tmpReg);
 
-    unsigned  dim      = arrIndex->gtCurrDim;
-    unsigned  rank     = arrIndex->gtArrRank;
-    var_types elemType = arrIndex->gtArrElemType;
-    unsigned  offset;
+    unsigned dim  = arrIndex->gtCurrDim;
+    unsigned rank = arrIndex->gtArrRank;
+    unsigned offset;
 
     offset = compiler->eeGetMDArrayLowerBoundOffset(rank, dim);
     emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
@@ -1576,10 +1560,9 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
         regNumber tmpReg = arrOffset->GetSingleTempReg();
 
-        unsigned  dim      = arrOffset->gtCurrDim;
-        unsigned  rank     = arrOffset->gtArrRank;
-        var_types elemType = arrOffset->gtArrElemType;
-        unsigned  offset   = compiler->eeGetMDArrayLengthOffset(rank, dim);
+        unsigned dim    = arrOffset->gtCurrDim;
+        unsigned rank   = arrOffset->gtArrRank;
+        unsigned offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
 
         // Load tmpReg with the dimension size and evaluate
         // tgtReg = offsetReg*tmpReg + indexReg.

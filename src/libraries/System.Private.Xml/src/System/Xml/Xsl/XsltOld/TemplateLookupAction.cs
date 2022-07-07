@@ -41,10 +41,7 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             // Built-int template rules
-            if (action == null)
-            {
-                action = BuiltInTemplate(frame.Node!);
-            }
+            action ??= BuiltInTemplate(frame.Node!);
 
             // Jump
             if (action != null)
@@ -126,10 +123,7 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             // Built-int template rules
-            if (action == null)
-            {
-                action = BuiltInTemplate(frame.Node!);
-            }
+            action ??= BuiltInTemplate(frame.Node!);
 
             // Jump
             if (action != null)

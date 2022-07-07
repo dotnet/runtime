@@ -28,8 +28,8 @@
     <watchOS64_32Version></watchOS64_32Version>
     <macOSVersion></macOSVersion>
 
-    <!-- Version of the Android SDK we target, keep in sync with eng/native/build-commons.sh -->
-    <AndroidApiVersion>21</AndroidApiVersion>
+    <!-- Minimum version of the Android API level we target, keep in sync with eng/native/build-commons.sh -->
+    <AndroidApiLevelMin>21</AndroidApiLevelMin>
   </PropertyGroup>
 
   <!-- Output paths -->
