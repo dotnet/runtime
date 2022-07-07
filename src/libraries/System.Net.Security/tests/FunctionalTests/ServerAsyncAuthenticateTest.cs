@@ -47,8 +47,7 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(ProtocolMismatchData))]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols clientProtocol,
-            SslProtocols serverProtocol,
-            Type expectedException)
+            SslProtocols serverProtocol)
         {
             Exception e = await Record.ExceptionAsync(
                 () =>
@@ -60,7 +59,18 @@ namespace System.Net.Security.Tests
                 });
 
             Assert.NotNull(e);
-            Assert.IsAssignableFrom(expectedException, e);
+
+            if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
+            {
+                Assert.True(
+                    e is AuthenticationException || e is System.IO.IOException,
+                    $"the exception should be either AuthenticationException or IOException and not {e.GetType().FullName}"
+                );
+            }
+            else
+            {
+                Assert.IsType<AuthenticationException>(e);
+            }
         }
 
         [Theory]
@@ -336,7 +346,7 @@ namespace System.Net.Security.Tests
 
                     if (clientProtocol != serverProtocol)
                     {
-                        yield return new object[] { clientProtocol, serverProtocol, typeof(AuthenticationException) };
+                        yield return new object[] { clientProtocol, serverProtocol };
                     }
                 }
             }
