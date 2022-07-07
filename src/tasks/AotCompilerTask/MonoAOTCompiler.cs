@@ -122,6 +122,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? NetTracePath { get; set; }
 
     /// <summary>
+    /// Path to assemblies to reference when invoking dotnet-pgo to process a .nettrace collected from a separate device. Necessary for mobile platforms.
+    /// </summary>
+    public string? ReferenceAssembliesDir { get; set; }
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -285,12 +290,17 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             if (!File.Exists(NetTracePath))
             {
-                Log.LogError($"NetTracePath={nameof(NetTracePath)} doesn't exist");
+                Log.LogError($"{nameof(NetTracePath)}='{NetTracePath}' doesn't exist");
                 return false;
             }
             if (!File.Exists(PgoBinaryPath))
             {
                 Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
+                return false;
+            }
+            if (!Directory.Exists(ReferenceAssembliesDir))
+            {
+                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssembliesDir)}='{ReferenceAssembliesDir}' doesn't exist");
                 return false;
             }
         }
@@ -441,7 +451,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         (int exitCode, string output) = Utils.TryRunProcess(Log,
                                                             PgoBinaryPath!,
-                                                            $"create-mibc --trace {netTraceFile} --output {outputMibcPath}");
+                                                            $"create-mibc --trace {netTraceFile} --reference \"{ReferenceAssembliesDir}*.dll\" --output {outputMibcPath}");
 
         if (exitCode != 0)
         {

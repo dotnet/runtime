@@ -29,6 +29,7 @@
       CacheFilePath="$(IntermediateOutputPath)aot_compiler_cache.json"
       NetTracePath="$(NetTracePath)"
       PgoBinaryPath="$(PgoBinaryPath)"
+      ReferenceAssembliesDir="$(PublishDir)"
       MibcProfilePath="$(MibcProfilePath)">
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
