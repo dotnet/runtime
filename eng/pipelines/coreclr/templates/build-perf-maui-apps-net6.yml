@@ -42,8 +42,8 @@ steps:
   - script: |
       ./dotnet new maui -n MauiTesting
       cd MauiTesting
-      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
-      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props.net6 ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets.net6 ./Directory.Build.targets
       cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
@@ -62,8 +62,8 @@ steps:
       pwd
       git clone https://github.com/microsoft/dotnet-podcasts.git -b maui/perf --single-branch
       cd dotnet-podcasts
-      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
-      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props.net6 ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets.net6 ./Directory.Build.targets
     displayName:  Clone podcast app
     workingDirectory: $(Build.SourcesDirectory)
 
@@ -124,8 +124,8 @@ steps:
   - script: |
       ./dotnet new maui-blazor -n MauiBlazorTesting
       cd MauiBlazorTesting
-      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
-      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props.net6 ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets.net6 ./Directory.Build.targets
       cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
 
       echo -e "using Microsoft.AspNetCore.Components;
