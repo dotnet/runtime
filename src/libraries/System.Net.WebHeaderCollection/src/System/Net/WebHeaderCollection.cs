@@ -260,10 +260,7 @@ namespace System.Net
         public override void Clear()
         {
             InvalidateCachedArrays();
-            if (_innerCollection != null)
-            {
-                _innerCollection.Clear();
-            }
+            _innerCollection?.Clear();
         }
 
         public override string? Get(int index)

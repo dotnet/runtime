@@ -177,10 +177,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_content != null)
-                {
-                    _content.Dispose();
-                }
+                _content?.Dispose();
             }
         }
 

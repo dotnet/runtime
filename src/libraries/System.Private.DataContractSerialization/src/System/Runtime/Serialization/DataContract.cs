@@ -1580,8 +1580,7 @@ namespace System.Runtime.Serialization
                 endIndex = typeName.IndexOf('`', startIndex);
                 if (endIndex < 0)
                 {
-                    if (localName != null)
-                        localName.Append(typeName.AsSpan(startIndex));
+                    localName?.Append(typeName.AsSpan(startIndex));
                     nestedParamCounts.Add(0);
                     break;
                 }
@@ -1601,8 +1600,7 @@ namespace System.Runtime.Serialization
                 else
                     nestedParamCounts.Add(int.Parse(typeName.AsSpan(endIndex + 1, startIndex - endIndex - 1), provider: CultureInfo.InvariantCulture));
             }
-            if (localName != null)
-                localName.Append("Of");
+            localName?.Append("Of");
             return nestedParamCounts;
         }
 

@@ -578,8 +578,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            if (TplEventSource.Log != null)
-                TplEventSource.Log.SetActivityId(activityId);
+            TplEventSource.Log?.SetActivityId(activityId);
 
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.
@@ -680,8 +679,7 @@ namespace System.Diagnostics.Tracing
 
             // We don't call the activityDying callback here because the caller has declared that
             // it is not dying.
-            if (TplEventSource.Log != null)
-                TplEventSource.Log.SetActivityId(activityId);
+            TplEventSource.Log?.SetActivityId(activityId);
         }
 #endregion
 
@@ -2235,10 +2233,7 @@ namespace System.Diagnostics.Tracing
                     data.Size = (uint)(2 * (msgString.Length + 1));
                     data.Reserved = 0;
 #if FEATURE_MANAGED_ETW
-                    if (m_etwProvider != null)
-                    {
-                        m_etwProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
-                    }
+                    m_etwProvider?.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
 #endif // FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
                     if (m_eventPipeProvider != null)

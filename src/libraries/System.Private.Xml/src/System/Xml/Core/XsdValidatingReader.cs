@@ -2765,10 +2765,7 @@ namespace System.Xml
 
         internal ValidatingReaderNodeData CreateDummyTextNode(string attributeValue, int depth)
         {
-            if (_textNode == null)
-            {
-                _textNode = new ValidatingReaderNodeData(XmlNodeType.Text);
-            }
+            _textNode ??= new ValidatingReaderNodeData(XmlNodeType.Text);
 
             _textNode.Depth = depth;
             _textNode.RawValue = attributeValue;

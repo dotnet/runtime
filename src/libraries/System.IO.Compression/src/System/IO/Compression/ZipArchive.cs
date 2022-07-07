@@ -204,8 +204,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                if (extraTempStream != null)
-                    extraTempStream.Dispose();
+                extraTempStream?.Dispose();
 
                 throw;
             }
