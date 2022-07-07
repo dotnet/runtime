@@ -76,12 +76,12 @@ jobs:
       - ${{ 'build_Android_arm64_release_AndroidMono' }}
       - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet7' }}
     - ${{ if eq(parameters.runtimeType, 'AndroidMobileNet6')}}:
-      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMobileNet6' }}
+      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet6' }}
     - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
       - ${{ 'build_iOS_arm64_release_iOSMono' }}
       - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet7' }}
     - ${{ if eq(parameters.runtimeType, 'iOSMobileNet6')}}:
-      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMobileNet6' }}
+      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet6' }}
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'AndroidMobileNet6',  'iOSMobileNet6'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
