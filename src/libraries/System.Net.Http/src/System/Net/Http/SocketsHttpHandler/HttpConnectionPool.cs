@@ -1113,7 +1113,7 @@ namespace System.Net.Http
                 }
                 catch (ObjectDisposedException)
                 {
-                    // There is a low-probability race for the CTS being disposed at the time of the cancellation call, ignore this ODE.
+                    // There is a low-probability race for the CTS being disposed by the time of the cancellation call, ignore this ODE.
                 }
             }
         }
@@ -2442,6 +2442,8 @@ namespace System.Net.Http
 
         private sealed class HttpConnectionWaiter<T> : TaskCompletionSourceWithCancellation<T>
         {
+            // Contains the connection's when it's pending, so we can tear it down if the initiating request is cancelled,
+            // or completes on a different connection.
             public volatile CancellationTokenSource? ConnectionCancellationTokenSource;
 
             public async ValueTask<T> WaitForConnectionAsync(bool async, CancellationToken requestCancellationToken)
