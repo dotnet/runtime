@@ -1820,6 +1820,49 @@ ves_icall_RuntimeTypeHandle_IsInstanceOfType (MonoQCallTypeHandle type_handle, M
 	return !MONO_HANDLE_IS_NULL (inst);
 }
 
+void
+ves_icall_RuntimeMethodHandle_ReboxToNullable (MonoObjectHandle obj, MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	mono_class_init_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *obj_res = mono_object_new_checked (klass, error);
+	goto_if_nok (error, error_ret);
+	gpointer dest = mono_object_unbox_internal (obj_res);
+
+	mono_nullable_init (dest, MONO_HANDLE_RAW (obj), klass);
+
+	HANDLE_ON_STACK_SET (res, obj_res);
+	return;
+error_ret:
+	HANDLE_ON_STACK_SET (res, NULL);
+}
+
+void
+ves_icall_RuntimeMethodHandle_ReboxFromNullable (MonoObjectHandle obj, MonoObjectHandleOnStack res, MonoError *error)
+{
+	if (MONO_HANDLE_IS_NULL (obj)) {
+		HANDLE_ON_STACK_SET (res, NULL);
+		return;
+	}
+
+	MonoVTable *vtable = MONO_HANDLE_GETVAL (obj, vtable);
+	MonoClass *klass = vtable->klass;
+	MonoObject *obj_res;
+
+	if (!mono_class_is_nullable (klass)) {
+		obj_res = MONO_HANDLE_RAW (obj);
+	} else {
+		gpointer vbuf = mono_object_unbox_internal (MONO_HANDLE_RAW (obj));
+		obj_res = mono_nullable_box (vbuf, klass, error);
+	}
+
+	HANDLE_ON_STACK_SET (res, obj_res);
+}
+
 guint32
 ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHandle type_handle)
 {
@@ -6155,6 +6198,29 @@ ves_icall_System_RuntimeType_CreateInstanceInternal (MonoQCallTypeHandle type_ha
 		return NULL_HANDLE;
 
 	return mono_object_new_handle (klass, error);
+}
+
+/* Only used for value types */
+void
+ves_icall_System_RuntimeType_AllocateValueType (MonoQCallTypeHandle type_handle, MonoObjectHandle value_h, MonoObjectHandleOnStack res, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	mono_class_init_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *obj_res = mono_object_new_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *value = MONO_HANDLE_RAW (value_h);
+	if (value)
+		mono_value_copy_internal (mono_object_unbox_internal (obj_res), mono_object_unbox_internal (value), klass);
+
+	HANDLE_ON_STACK_SET (res, obj_res);
+	return;
+error_ret:
+	HANDLE_ON_STACK_SET (res, NULL);
 }
 
 MonoReflectionMethodHandle
