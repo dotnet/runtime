@@ -149,11 +149,11 @@ namespace System.Runtime.Serialization
             }
 
             XmlElement? isValueTypeElement = null;
-            if (classDataContract.BaseContract != null)
+            if (classDataContract.BaseClassContract != null)
             {
-                XmlSchemaComplexContentExtension extension = CreateTypeContent(type, classDataContract.BaseContract.StableName, schema);
+                XmlSchemaComplexContentExtension extension = CreateTypeContent(type, classDataContract.BaseClassContract.StableName, schema);
                 extension.Particle = rootSequence;
-                if (classDataContract.IsReference && !classDataContract.BaseContract.IsReference)
+                if (classDataContract.IsReference && !classDataContract.BaseClassContract.IsReference)
                 {
                     AddReferenceAttributes(extension.Attributes, schema);
                 }
@@ -461,9 +461,9 @@ namespace System.Runtime.Serialization
                 genericInfoElement = ExportGenericInfo(dataContract.UnderlyingType, Globals.GenericTypeLocalName, Globals.SerializationNamespace);
 
             XmlElement? isValueTypeElement = null;
-            if (dataContract.BaseContract != null)
+            if (dataContract.BaseClassContract != null)
             {
-                _ = CreateTypeContent(type, dataContract.BaseContract.StableName, schema);
+                _ = CreateTypeContent(type, dataContract.BaseClassContract.StableName, schema);
             }
             else
             {

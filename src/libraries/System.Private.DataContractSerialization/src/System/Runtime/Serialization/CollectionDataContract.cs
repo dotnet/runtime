@@ -77,6 +77,9 @@ namespace System.Runtime.Serialization
 
     internal sealed class CollectionDataContract : DataContract
     {
+        internal const string ContractTypeString = "CollectionDataContract";
+        public override string? ContractType => ContractTypeString;
+
         private XmlDictionaryString _collectionItemName;
 
         private XmlDictionaryString? _childElementNamespace;
@@ -184,6 +187,20 @@ namespace System.Runtime.Serialization
             set => _helper.ValueName = value;
         }
 
+        public override bool IsKeyValue(out string? keyName, out string? valueName, out string? itemName)
+        {
+            keyName = KeyName;
+            valueName = ValueName;
+            itemName = ItemName;
+            return IsDictionary;
+        }
+
+        public override DataContract BaseContract
+        {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            get => ItemContract;
+        }
+
         internal bool IsDictionary => KeyName != null;
 
         public XmlDictionaryString? ChildElementNamespace
@@ -229,7 +246,7 @@ namespace System.Runtime.Serialization
 
         internal ConstructorInfo? Constructor => _helper.Constructor;
 
-        internal override DataContractDictionary? KnownDataContracts
+        public override DataContractDictionary? KnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;

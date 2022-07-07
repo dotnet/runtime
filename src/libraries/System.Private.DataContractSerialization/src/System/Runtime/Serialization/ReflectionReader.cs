@@ -197,7 +197,7 @@ namespace System.Runtime.Serialization
 
         protected int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
         {
-            int memberCount = (classContract.BaseContract == null) ? 0 : ReflectionGetMembers(classContract.BaseContract, members);
+            int memberCount = (classContract.BaseClassContract == null) ? 0 : ReflectionGetMembers(classContract.BaseClassContract, members);
             int childElementIndex = memberCount;
             for (int i = 0; i < classContract.Members!.Count; i++, memberCount++)
             {
@@ -377,8 +377,8 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnDeserializing(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
-            if (classContract.BaseContract != null)
-                InvokeOnDeserializing(context, classContract.BaseContract, obj);
+            if (classContract.BaseClassContract != null)
+                InvokeOnDeserializing(context, classContract.BaseClassContract, obj);
             if (classContract.OnDeserializing != null)
             {
                 var contextArg = context.GetStreamingContext();
@@ -388,8 +388,8 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
-            if (classContract.BaseContract != null)
-                InvokeOnDeserialized(context, classContract.BaseContract, obj);
+            if (classContract.BaseClassContract != null)
+                InvokeOnDeserialized(context, classContract.BaseClassContract, obj);
             if (classContract.OnDeserialized != null)
             {
                 var contextArg = context.GetStreamingContext();

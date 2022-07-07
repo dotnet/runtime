@@ -131,8 +131,8 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[]? emptyStringArray)
         {
-            int memberCount = (classContract.BaseContract == null) ? 0 :
-                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseContract, derivedMostClassContract, childElementIndex, emptyStringArray);
+            int memberCount = (classContract.BaseClassContract == null) ? 0 :
+                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseClassContract, derivedMostClassContract, childElementIndex, emptyStringArray);
 
             childElementIndex += memberCount;
 
@@ -243,7 +243,7 @@ namespace System.Runtime.Serialization
                             return CheckIfConflictingMembersHaveDifferentTypes(members[j]);
                     }
                 }
-                currentContract = currentContract.BaseContract;
+                currentContract = currentContract.BaseClassContract;
             }
 
             return false;

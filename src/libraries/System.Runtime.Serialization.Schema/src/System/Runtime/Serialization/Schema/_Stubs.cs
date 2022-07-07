@@ -114,18 +114,13 @@ namespace System.Runtime.Serialization.HideStubs
     public class ClassDataContract : DataContract
     {
         // BaseContract
-        // *IsISerializable
-        // *IsReference
-        // *IsValueType
-        // *KnownDataContracts
         // Members
     }
     public class CollectionDataContract : DataContract
     {
-        // IsCollection() static - This could be on base DataContract
+        // IsCollection() static - This could be on base DataContract?
         // IsDictionary
         // IsItemTypeNullable
-        // *IsReference
         // ItemContract
         // ItemName
         // KeyName
@@ -136,7 +131,7 @@ namespace System.Runtime.Serialization.HideStubs
         // BaseContractName
         // GetBaseType  << and ^^ can be combined into one Type GetType()
 
-        // GetStringFromEnumValue()     This is the one non-data item. Should we bring an enum-specific function up to DCBase? or perhaps this and IsUlong can go away if Values just returns int[] or string[] appropriately
+        // GetStringFromEnumValue()     This is the one non-data item. Should we bring an enum-specific function up to DataContract? or perhaps this and IsUlong can go away if Values just returns int[] or string[] appropriately
         // IsULong
         // IsFlags
         // Members
@@ -148,12 +143,6 @@ namespace System.Runtime.Serialization.HideStubs
         // IsAnonymous
         // IsTopLevelElementNullable
         // IsTypeDefinedOnImport
-        // *IsValueType
         // XsdType
-
-        // These three are actually on DC itself. We worked around with a new API in one case. Can we use that for all cases?
-        // *HasRoot
-        // *TopLevelElementName
-        // *TopLevelElementNamespace
     }
 }

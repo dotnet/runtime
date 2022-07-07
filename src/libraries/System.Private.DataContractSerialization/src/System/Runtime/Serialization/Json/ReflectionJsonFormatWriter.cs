@@ -198,8 +198,8 @@ namespace System.Runtime.Serialization.Json
         {
             Debug.Assert(memberNames != null);
 
-            int memberCount = (classContract.BaseContract == null) ? 0 :
-                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseContract, derivedMostClassContract, childElementIndex, memberNames);
+            int memberCount = (classContract.BaseClassContract == null) ? 0 :
+                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseClassContract, derivedMostClassContract, childElementIndex, memberNames);
 
             childElementIndex += memberCount;
 

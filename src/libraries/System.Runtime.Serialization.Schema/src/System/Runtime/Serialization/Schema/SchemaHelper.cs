@@ -3,8 +3,61 @@
 
 namespace System.Runtime.Serialization.Schema
 {
+    internal enum DataContractType
+    {
+        ClassDataContract,
+        CollectionDataContract,
+        EnumDataContract,
+        PrimitiveDataContract,
+        XmlDataContract,
+        Unknown = -1
+    }
+
+    internal static class DataContractExtensions
+    {
+        internal static DataContractType GetContractType(this DataContract dataContract) => dataContract.ContractType switch
+        {
+            "ClassDataContract" => Schema.DataContractType.ClassDataContract,
+            "CollectionDataContract" => Schema.DataContractType.CollectionDataContract,
+            "EnumDataContract" => Schema.DataContractType.EnumDataContract,
+            "PrimitiveDataContract" => Schema.DataContractType.PrimitiveDataContract,
+            "XmlDataContract" => Schema.DataContractType.XmlDataContract,
+            _ => Schema.DataContractType.Unknown
+        };
+
+        internal static bool Is(this DataContract dataContract, DataContractType dcType)
+        {
+            return (dataContract.GetContractType() == dcType);
+        }
+
+        internal static DataContract? As(this DataContract dataContract, DataContractType dcType)
+        {
+            if (dataContract.GetContractType() == dcType)
+                return dataContract;
+            return null;
+        }
+
+        internal static bool IsItemTypeNullable(this DataContract collectionDataContract)
+        {
+            if (collectionDataContract.GetContractType() == DataContractType.CollectionDataContract)
+            {
+                // ItemContract - aka BaseContract - is never null for CollectionDataContract
+                return SchemaHelper.IsTypeNullable(collectionDataContract.BaseContract!.UnderlyingType);
+            }
+
+            return false;
+        }
+    }
+
     internal static class SchemaHelper
     {
+        internal static bool IsTypeNullable(Type type)
+        {
+            return !type.IsValueType ||
+                    (type.IsGenericType &&
+                    type.GetGenericTypeDefinition() == typeof(Nullable<>));
+        }
+
         internal static string GetCollectionNamespace(string elementNs)
         {
             return IsBuiltInNamespace(elementNs) ? Globals.CollectionsNamespace : elementNs;

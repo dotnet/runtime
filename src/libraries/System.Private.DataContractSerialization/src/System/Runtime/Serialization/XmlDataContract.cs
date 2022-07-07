@@ -17,8 +17,11 @@ using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.
 namespace System.Runtime.Serialization
 {
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
-    internal sealed class XmlDataContract : DataContract
+    public sealed class XmlDataContract : DataContract
     {
+        internal const string ContractTypeString = "XmlDataContract";
+        public override string? ContractType => ContractTypeString;
+
         private readonly XmlDataContractCriticalHelper _helper;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -27,23 +30,25 @@ namespace System.Runtime.Serialization
             _helper = (base.Helper as XmlDataContractCriticalHelper)!;
         }
 
-        internal override DataContractDictionary? KnownDataContracts
+        public override DataContractDictionary? KnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
             set => _helper.KnownDataContracts = value;
         }
 
-        internal XmlSchemaType? XsdType
+        public XmlSchemaType? XsdType
         {
             get => _helper.XsdType;
-            set => _helper.XsdType = value;
+            internal set => _helper.XsdType = value;
         }
 
-        internal bool IsAnonymous
+        public bool IsAnonymous
         {
             get => _helper.IsAnonymous;
         }
+
+        public void SetIsValueType(bool isValueType) => IsValueType = isValueType;
 
         public override bool HasRoot
         {
@@ -63,13 +68,13 @@ namespace System.Runtime.Serialization
             internal set => _helper.TopLevelElementNamespace = value;
         }
 
-        internal bool IsTopLevelElementNullable
+        public bool IsTopLevelElementNullable
         {
             get => _helper.IsTopLevelElementNullable;
-            set => _helper.IsTopLevelElementNullable = value;
+            internal set => _helper.IsTopLevelElementNullable = value;
         }
 
-        internal bool IsTypeDefinedOnImport
+        public bool IsTypeDefinedOnImport
         {
             get => _helper.IsTypeDefinedOnImport;
             set => _helper.IsTypeDefinedOnImport = value;

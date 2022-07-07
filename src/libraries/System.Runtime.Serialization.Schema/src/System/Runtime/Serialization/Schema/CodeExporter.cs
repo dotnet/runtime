@@ -51,7 +51,7 @@ namespace System.Runtime.Serialization.Schema
             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in dataContractSet)
             {
                 DataContract dataContract = pair.Value;
-                if (!(dataContract.IsBuiltInDataContract || dataContract is CollectionDataContract))
+                if (!(dataContract.IsBuiltInDataContract || dataContract.Is(DataContractType.ClassDataContract)))
                 {
                     ContractCodeDomInfo contractCodeDomInfo = GetContractCodeDomInfo(dataContract);
                     if (contractCodeDomInfo.IsProcessed && !contractCodeDomInfo.UsesWildcardNamespace)
@@ -219,21 +219,27 @@ namespace System.Runtime.Serialization.Schema
                     ContractCodeDomInfo contractCodeDomInfo = GetContractCodeDomInfo(dataContract);
                     if (!contractCodeDomInfo.IsProcessed)
                     {
-                        if (dataContract is ClassDataContract classDataContract)
+                        switch (dataContract.GetContractType())
                         {
-                            if (classDataContract.IsISerializable)
-                                ExportISerializableDataContract(classDataContract, contractCodeDomInfo);
-                            else
-                                ExportClassDataContractHierarchy(classDataContract.StableName, classDataContract, contractCodeDomInfo, new Dictionary<XmlQualifiedName, object?>());
-                        }
-                        else if (dataContract is CollectionDataContract)
-                            ExportCollectionDataContract((CollectionDataContract)dataContract, contractCodeDomInfo);
-                        else if (dataContract is EnumDataContract)
-                            ExportEnumDataContract((EnumDataContract)dataContract, contractCodeDomInfo);
-                        else if (dataContract is XmlDataContract)
-                            ExportXmlDataContract((XmlDataContract)dataContract, contractCodeDomInfo);
-                        else
-                            throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, GetClrTypeFullName(dataContract.GetType()), GetClrTypeFullName(dataContract.UnderlyingType))));
+                            case DataContractType.ClassDataContract:
+                                if (dataContract.IsISerializable)
+                                    ExportISerializableDataContract(dataContract, contractCodeDomInfo);
+                                else
+                                    ExportClassDataContractHierarchy(dataContract.StableName, dataContract, contractCodeDomInfo, new Dictionary<XmlQualifiedName, object?>());
+                                break;
+                            case DataContractType.CollectionDataContract:
+                                ExportCollectionDataContract(dataContract, contractCodeDomInfo);
+                                break;
+                            case DataContractType.EnumDataContract:
+                                ExportEnumDataContract(dataContract, contractCodeDomInfo);
+                                break;
+                            default:
+                                if (dataContract is XmlDataContract xmlDataContract)
+                                    ExportXmlDataContract(xmlDataContract, contractCodeDomInfo);
+                                else
+                                    throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, GetClrTypeFullName(dataContract.GetType()), GetClrTypeFullName(dataContract.UnderlyingType))));
+                                break;
+                        };
                         contractCodeDomInfo.IsProcessed = true;
                     }
                 }
@@ -253,13 +259,15 @@ namespace System.Runtime.Serialization.Schema
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private void ExportClassDataContractHierarchy(XmlQualifiedName typeName, ClassDataContract classContract, ContractCodeDomInfo contractCodeDomInfo, Dictionary<XmlQualifiedName, object?> contractNamesInHierarchy)
+        private void ExportClassDataContractHierarchy(XmlQualifiedName typeName, DataContract classContract, ContractCodeDomInfo contractCodeDomInfo, Dictionary<XmlQualifiedName, object?> contractNamesInHierarchy)
         {
+            Debug.Assert(classContract.Is(DataContractType.ClassDataContract));
+
             if (contractNamesInHierarchy.ContainsKey(classContract.StableName))
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.TypeCannotBeImported, typeName.Name, typeName.Namespace, SR.Format(SR.CircularTypeReference, classContract.StableName.Name, classContract.StableName.Namespace))));
             contractNamesInHierarchy.Add(classContract.StableName, null);
 
-            ClassDataContract? baseContract = classContract.BaseContract;
+            DataContract? baseContract = classContract.BaseContract;
             if (baseContract != null)
             {
                 ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(baseContract);
@@ -333,10 +341,10 @@ namespace System.Runtime.Serialization.Schema
             get { return DataContract.GetStableName(typeof(List<>)); }
         }
 
-        private CollectionDataContract GenericListContract
+        private DataContract GenericListContract
         {
             [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-            get { return (_dataContractSet.GetDataContract(typeof(List<>)) as CollectionDataContract)!; }
+            get { return _dataContractSet.GetDataContract(typeof(List<>)); }
         }
 
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Part of a logical set of properties, some of which are not static. May not remain static with future implementation updates.")]
@@ -346,10 +354,10 @@ namespace System.Runtime.Serialization.Schema
             get { return DataContract.GetStableName(typeof(Dictionary<,>)); }
         }
 
-        private CollectionDataContract GenericDictionaryContract
+        private DataContract GenericDictionaryContract
         {
             [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-            get { return (_dataContractSet.GetDataContract(typeof(Dictionary<,>)) as CollectionDataContract)!; }
+            get { return _dataContractSet.GetDataContract(typeof(Dictionary<,>)); }
         }
 
         private ContractCodeDomInfo GetContractCodeDomInfo(DataContract dataContract)
@@ -484,7 +492,7 @@ namespace System.Runtime.Serialization.Schema
 
             // System.Diagnostics.DebuggerStepThroughAttribute not allowed on enums
             // ensure that the attribute is only generated on types that are not enums
-            if (dataContract is not EnumDataContract)
+            if (!dataContract.Is(DataContractType.EnumDataContract))
             {
                 typeDecl.CustomAttributes.Add(debuggerStepThroughAttribute);
             }
@@ -502,11 +510,10 @@ namespace System.Runtime.Serialization.Schema
             if (_dataContractSet.TryGetReferencedType(dataContract.StableName, dataContract, out Type? type)
                 && !type.IsGenericTypeDefinition && !type.ContainsGenericParameters)
             {
-                if (dataContract is XmlDataContract)
+                if (dataContract is XmlDataContract xmlContract)
                 {
                     if (typeof(IXmlSerializable).IsAssignableFrom(type))
                     {
-                        XmlDataContract xmlContract = (XmlDataContract)dataContract;
                         if (xmlContract.IsTypeDefinedOnImport)
                         {
                             if (!xmlContract.Equals(_dataContractSet.GetDataContract(type)))
@@ -514,7 +521,7 @@ namespace System.Runtime.Serialization.Schema
                         }
                         else
                         {
-                            xmlContract.IsValueType = type.IsValueType;
+                            xmlContract.SetIsValueType(type.IsValueType);
                             xmlContract.IsTypeDefinedOnImport = true;
                         }
                         return GetCodeTypeReference(type);
@@ -553,26 +560,29 @@ namespace System.Runtime.Serialization.Schema
                 return typeReference;
             }
 
-            return GetReferencedCollectionType(dataContract as CollectionDataContract);
+            return GetReferencedCollectionType(dataContract.As(DataContractType.CollectionDataContract));
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private CodeTypeReference? GetReferencedCollectionType(CollectionDataContract? collectionContract)
+        private CodeTypeReference? GetReferencedCollectionType(DataContract? collectionContract)
         {
             if (collectionContract == null)
                 return null;
+
+            Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
 
             if (HasDefaultCollectionNames(collectionContract))
             {
                 CodeTypeReference? typeReference;
                 if (!TryGetReferencedDictionaryType(collectionContract, out typeReference))
                 {
-                    DataContract itemContract = collectionContract.ItemContract;
-                    if (collectionContract.IsDictionary)
+                    // ItemContract - aka BaseContract - is never null for CollectionDataContract
+                    DataContract itemContract = collectionContract.BaseContract!;
+                    if (collectionContract.IsKeyValue(out _, out _, out _))
                     {
-                        GenerateKeyValueType(itemContract as ClassDataContract);
+                        GenerateKeyValueType(itemContract.As(DataContractType.ClassDataContract));
                     }
-                    bool isItemTypeNullable = collectionContract.IsItemTypeNullable;
+                    bool isItemTypeNullable = collectionContract.IsItemTypeNullable();
                     if (!TryGetReferencedListType(itemContract, isItemTypeNullable, out typeReference))
                     {
                         CodeTypeReference? elementTypeReference = GetElementTypeReference(itemContract, isItemTypeNullable);
@@ -586,32 +596,38 @@ namespace System.Runtime.Serialization.Schema
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private static bool HasDefaultCollectionNames(CollectionDataContract collectionContract)
+        private static bool HasDefaultCollectionNames(DataContract collectionContract)
         {
-            DataContract itemContract = collectionContract.ItemContract;
-            if (collectionContract.ItemName != itemContract.StableName.Name)
+            Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
+
+            // ItemContract - aka BaseContract - is never null for CollectionDataContract
+            DataContract itemContract = collectionContract.BaseContract!;
+            bool isDictionary = collectionContract.IsKeyValue(out string? keyName, out string? valueName, out string? itemName);
+            if (itemName != itemContract.StableName.Name)
                 return false;
 
-            if (collectionContract.IsDictionary &&
-                (collectionContract.KeyName != Globals.KeyLocalName || collectionContract.ValueName != Globals.ValueLocalName))
+            if (isDictionary && (keyName != Globals.KeyLocalName || valueName != Globals.ValueLocalName))
                 return false;
 
-            XmlQualifiedName expectedType = itemContract.GetArrayTypeName(collectionContract.IsItemTypeNullable);
+            XmlQualifiedName expectedType = itemContract.GetArrayTypeName(collectionContract.IsItemTypeNullable());
             return (collectionContract.StableName.Name == expectedType.Name && collectionContract.StableName.Namespace == expectedType.Namespace);
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private bool TryGetReferencedDictionaryType(CollectionDataContract collectionContract, [NotNullWhen(true)] out CodeTypeReference? typeReference)
+        private bool TryGetReferencedDictionaryType(DataContract collectionContract, [NotNullWhen(true)] out CodeTypeReference? typeReference)
         {
+            Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
+
             // Check if it is a dictionary and use referenced dictionary type if present
-            if (collectionContract.IsDictionary
+            if (collectionContract.IsKeyValue(out _, out _, out _)
                 && SupportsGenericTypeReference)
             {
                 Type? type;
                 if (!_dataContractSet.TryGetReferencedType(GenericDictionaryName, GenericDictionaryContract, out type))
                     type = typeof(Dictionary<,>);
 
-                ClassDataContract? itemContract = collectionContract.ItemContract as ClassDataContract;
+                // ItemContract - aka BaseContract - is never null for CollectionDataContract
+                DataContract? itemContract = collectionContract.BaseContract!.As(DataContractType.ClassDataContract);
 
                 // A dictionary should have a Key/Value item contract that has at least two members: key and value.
                 Debug.Assert(itemContract != null);
@@ -647,7 +663,7 @@ namespace System.Runtime.Serialization.Schema
             return false;
         }
 
-        [RequiresUnreferencedCode("TODO smolloy - better string here")]
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         private CodeTypeReference? GetSurrogatedTypeReference(DataContract dataContract)
         {
             Type? type = _dataContractSet.GetReferencedTypeOnImport(dataContract);
@@ -658,26 +674,6 @@ namespace System.Runtime.Serialization.Schema
                 return typeReference;
             }
             return null;
-
-            // TODO smolloy - the stuff above replaces the stuff below completely. The stuff below
-            // is left here as a reference for when DCSet gets fleshed out with this logic.
-
-            //ISerializationExtendedSurrogateProvider? dataContractSurrogate = _dataContractSet.SerializationExtendedSurrogateProvider;
-            //if (dataContractSurrogate != null)
-            //{
-            //    Type? type = DataContractSurrogateCaller.GetReferencedTypeOnImport(
-            //            dataContractSurrogate,
-            //            dataContract.StableName.Name,
-            //            dataContract.StableName.Namespace,
-            //            _dataContractSet.GetSurrogateData(dataContract));
-            //    if (type != null)
-            //    {
-            //        CodeTypeReference typeReference = GetCodeTypeReference(type);
-            //        typeReference.UserData.Add(s_codeUserDataActualTypeKey, type);
-            //        return typeReference;
-            //    }
-            //}
-            //return null;
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
@@ -797,8 +793,10 @@ namespace System.Runtime.Serialization.Schema
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private void ExportClassDataContract(ClassDataContract classDataContract, ContractCodeDomInfo contractCodeDomInfo)
+        private void ExportClassDataContract(DataContract classDataContract, ContractCodeDomInfo contractCodeDomInfo)
         {
+            Debug.Assert(classDataContract.Is(DataContractType.ClassDataContract));
+
             GenerateType(classDataContract, contractCodeDomInfo);
             if (contractCodeDomInfo.ReferencedTypeExists)
                 return;
@@ -940,71 +938,78 @@ namespace System.Runtime.Serialization.Schema
             {
                 return _dataContractSet.KnownTypesForObject;
             }
-            else if (dataContract is ClassDataContract)
+            else if (dataContract.Is(DataContractType.ClassDataContract))
             {
                 ContractCodeDomInfo contractCodeDomInfo = GetContractCodeDomInfo(dataContract);
                 if (!contractCodeDomInfo.IsProcessed)
                     GenerateType(dataContract, contractCodeDomInfo);
                 if (contractCodeDomInfo.ReferencedTypeExists)
-                    return GetKnownTypeContracts((ClassDataContract)dataContract, new Dictionary<DataContract, object?>());
+                    return GetKnownTypeContracts(dataContract, new Dictionary<DataContract, object?>());
             }
             return null;
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private DataContractDictionary? GetKnownTypeContracts(ClassDataContract dataContract, Dictionary<DataContract, object?> handledContracts)
+        private DataContractDictionary? GetKnownTypeContracts(DataContract classDataContract, Dictionary<DataContract, object?> handledContracts)
         {
-            if (handledContracts.ContainsKey(dataContract))
-                return dataContract.KnownDataContracts;
+            Debug.Assert(classDataContract.Is(DataContractType.ClassDataContract));
 
-            handledContracts.Add(dataContract, null);
-            if (dataContract.Members != null)
+            // TODO smolloy - This is still not public
+            if (handledContracts.ContainsKey(classDataContract))
+                return classDataContract.KnownDataContracts;
+
+            handledContracts.Add(classDataContract, null);
+            if (classDataContract.Members != null)
             {
                 bool objectMemberHandled = false;
-                foreach (DataMember dataMember in dataContract.Members)
+                foreach (DataMember dataMember in classDataContract.Members)
                 {
                     DataContract memberContract = dataMember.MemberTypeContract;
                     if (!objectMemberHandled && _dataContractSet.KnownTypesForObject != null && IsObjectContract(memberContract))
                     {
-                        AddKnownTypeContracts(dataContract, _dataContractSet.KnownTypesForObject);
+                        AddKnownTypeContracts(classDataContract, _dataContractSet.KnownTypesForObject);
                         objectMemberHandled = true;
                     }
-                    else if (memberContract is ClassDataContract)
+                    else if (memberContract.Is(DataContractType.ClassDataContract))
                     {
                         ContractCodeDomInfo memberCodeDomInfo = GetContractCodeDomInfo(memberContract);
                         if (!memberCodeDomInfo.IsProcessed)
                             GenerateType(memberContract, memberCodeDomInfo);
                         if (memberCodeDomInfo.ReferencedTypeExists)
                         {
-                            AddKnownTypeContracts(dataContract, GetKnownTypeContracts((ClassDataContract)memberContract, handledContracts));
+                            AddKnownTypeContracts(classDataContract, GetKnownTypeContracts(memberContract, handledContracts));
                         }
                     }
                 }
             }
 
-            return dataContract.KnownDataContracts;
+            return classDataContract.KnownDataContracts;
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private static void AddKnownTypeContracts(ClassDataContract dataContract, DataContractDictionary? knownContracts)
+        private static void AddKnownTypeContracts(DataContract classDataContract, DataContractDictionary? knownContracts)
         {
             if (knownContracts == null || knownContracts.Count == 0)
                 return;
 
-            if (dataContract.KnownDataContracts == null)
-                dataContract.KnownDataContracts = new DataContractDictionary();
+            Debug.Assert(classDataContract.Is(DataContractType.ClassDataContract));
+
+            if (classDataContract.KnownDataContracts == null)
+                classDataContract.KnownDataContracts = new DataContractDictionary();
 
             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in knownContracts)
             {
-                if (dataContract.StableName != pair.Key && !dataContract.KnownDataContracts.ContainsKey(pair.Key) && !pair.Value.IsBuiltInDataContract)
-                    dataContract.KnownDataContracts.Add(pair.Key, pair.Value);
+                if (classDataContract.StableName != pair.Key && !classDataContract.KnownDataContracts.ContainsKey(pair.Key) && !pair.Value.IsBuiltInDataContract)
+                    classDataContract.KnownDataContracts.Add(pair.Key, pair.Value);
             }
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private void AddKnownTypes(ClassDataContract dataContract, ContractCodeDomInfo contractCodeDomInfo)
+        private void AddKnownTypes(DataContract classDataContract, ContractCodeDomInfo contractCodeDomInfo)
         {
-            DataContractDictionary? knownContractDictionary = GetKnownTypeContracts(dataContract, new Dictionary<DataContract, object?>());
+            Debug.Assert(classDataContract.Is(DataContractType.ClassDataContract));
+
+            DataContractDictionary? knownContractDictionary = GetKnownTypeContracts(classDataContract, new Dictionary<DataContract, object?>());
             if (knownContractDictionary == null || knownContractDictionary.Count == 0)
                 return;
 
@@ -1075,8 +1080,10 @@ namespace System.Runtime.Serialization.Schema
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private void ExportEnumDataContract(EnumDataContract enumDataContract, ContractCodeDomInfo contractCodeDomInfo)
+        private void ExportEnumDataContract(DataContract enumDataContract, ContractCodeDomInfo contractCodeDomInfo)
         {
+            Debug.Assert(enumDataContract.Is(DataContractType.EnumDataContract));
+
             GenerateType(enumDataContract, contractCodeDomInfo);
             if (contractCodeDomInfo.ReferencedTypeExists)
                 return;
@@ -1085,9 +1092,11 @@ namespace System.Runtime.Serialization.Schema
             Debug.Assert(contractCodeDomInfo.TypeDeclaration != null);
 
             CodeTypeDeclaration type = contractCodeDomInfo.TypeDeclaration;
+            // BaseContract is never null for EnumDataContract
+            Type baseType = enumDataContract.BaseContract!.UnderlyingType;
             type.IsEnum = true;
-            type.BaseTypes.Add(EnumDataContract.GetBaseType(enumDataContract.BaseContractName));
-            if (enumDataContract.IsFlags)
+            type.BaseTypes.Add(baseType);
+            if (baseType.IsDefined(typeof(FlagsAttribute), false))
             {
                 type.CustomAttributes.Add(new CodeAttributeDeclaration(GetClrTypeFullName(typeof(FlagsAttribute))));
                 AddImportStatement(typeof(FlagsAttribute).Namespace, contractCodeDomInfo.CodeNamespace);
@@ -1105,11 +1114,11 @@ namespace System.Runtime.Serialization.Schema
                 for (int i = 0; i < enumDataContract.Members.Count; i++)
                 {
                     string stringValue = enumDataContract.Members[i].Name;
-                    long longValue = enumDataContract.Values![i];   // Members[] and Values[] go hand in hand.
+                    long longValue = enumDataContract.Members[i].Order;   // Members[] and Values[] go hand in hand.
 
                     CodeMemberField enumMember = new CodeMemberField();
-                    if (enumDataContract.IsULong)
-                        enumMember.InitExpression = new CodeSnippetExpression(enumDataContract.GetStringFromEnumValue(longValue));
+                    if (baseType == typeof(ulong))
+                        enumMember.InitExpression = new CodeSnippetExpression(XmlConvert.ToString((ulong)longValue));
                     else
                         enumMember.InitExpression = new CodePrimitiveExpression(longValue);
                     enumMember.Name = GetMemberName(stringValue, contractCodeDomInfo);
@@ -1123,16 +1132,18 @@ namespace System.Runtime.Serialization.Schema
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private void ExportISerializableDataContract(ClassDataContract dataContract, ContractCodeDomInfo contractCodeDomInfo)
+        private void ExportISerializableDataContract(DataContract classDataContract, ContractCodeDomInfo contractCodeDomInfo)
         {
-            GenerateType(dataContract, contractCodeDomInfo);
+            Debug.Assert(classDataContract.Is(DataContractType.ClassDataContract));
+
+            GenerateType(classDataContract, contractCodeDomInfo);
             if (contractCodeDomInfo.ReferencedTypeExists)
                 return;
 
-            if (SchemaHelper.GetDefaultStableNamespace(contractCodeDomInfo.ClrNamespace) != dataContract.StableName.Namespace)
-                throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidClrNamespaceGeneratedForISerializable, dataContract.StableName.Name, dataContract.StableName.Namespace, SchemaHelper.GetDataContractNamespaceFromUri(dataContract.StableName.Namespace), contractCodeDomInfo.ClrNamespace)));
+            if (SchemaHelper.GetDefaultStableNamespace(contractCodeDomInfo.ClrNamespace) != classDataContract.StableName.Namespace)
+                throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidClrNamespaceGeneratedForISerializable, classDataContract.StableName.Name, classDataContract.StableName.Namespace, SchemaHelper.GetDataContractNamespaceFromUri(classDataContract.StableName.Namespace), contractCodeDomInfo.ClrNamespace)));
 
-            string dataContractName = GetNameForAttribute(dataContract.StableName.Name);
+            string dataContractName = GetNameForAttribute(classDataContract.StableName.Name);
             int nestedTypeIndex = dataContractName.LastIndexOf('.');
             string expectedName = (nestedTypeIndex <= 0 || nestedTypeIndex == dataContractName.Length - 1) ? dataContractName : dataContractName.Substring(nestedTypeIndex + 1);
 
@@ -1140,21 +1151,21 @@ namespace System.Runtime.Serialization.Schema
             Debug.Assert(contractCodeDomInfo.TypeDeclaration != null);
 
             if (contractCodeDomInfo.TypeDeclaration.Name != expectedName)
-                throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidClrNameGeneratedForISerializable, dataContract.StableName.Name, dataContract.StableName.Namespace, contractCodeDomInfo.TypeDeclaration.Name)));
+                throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidClrNameGeneratedForISerializable, classDataContract.StableName.Name, classDataContract.StableName.Namespace, contractCodeDomInfo.TypeDeclaration.Name)));
 
             CodeTypeDeclaration type = contractCodeDomInfo.TypeDeclaration;
             if (SupportsPartialTypes)
                 type.IsPartial = true;
-            if (dataContract.IsValueType && SupportsDeclareValueTypes)
+            if (classDataContract.IsValueType && SupportsDeclareValueTypes)
                 type.IsStruct = true;
             else
                 type.IsClass = true;
 
             AddSerializableAttribute(true /*generateSerializable*/, type, contractCodeDomInfo);
 
-            AddKnownTypes(dataContract, contractCodeDomInfo);
+            AddKnownTypes(classDataContract, contractCodeDomInfo);
 
-            if (dataContract.BaseContract == null)
+            if (classDataContract.BaseContract == null)
             {
                 if (!type.IsStruct)
                     type.BaseTypes.Add(typeof(object));
@@ -1167,22 +1178,24 @@ namespace System.Runtime.Serialization.Schema
             }
             else
             {
-                ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(dataContract.BaseContract);
-                GenerateType(dataContract.BaseContract, baseContractCodeDomInfo);
+                ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(classDataContract.BaseContract);
+                GenerateType(classDataContract.BaseContract, baseContractCodeDomInfo);
                 type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference);
                 if (baseContractCodeDomInfo.ReferencedTypeExists)
                 {
                     Type? actualType = (Type?)baseContractCodeDomInfo.TypeReference?.UserData[s_codeUserDataActualTypeKey];
                     Debug.Assert(actualType != null);   // If we're in this if condition, then we should be able to get a Type
-                    ThrowIfReferencedBaseTypeSealed(actualType, dataContract);
+                    ThrowIfReferencedBaseTypeSealed(actualType, classDataContract);
                 }
                 type.Members.Add(ISerializableDerivedConstructor);
             }
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private void GenerateKeyValueType(ClassDataContract? keyValueContract)
+        private void GenerateKeyValueType(DataContract? keyValueContract)
         {
+            Debug.Assert(keyValueContract == null || keyValueContract.Is(DataContractType.ClassDataContract));
+
             // Add code for KeyValue item type in the case where its usage is limited to dictionary
             // and dictionary is not found in referenced types
             if (keyValueContract != null && _dataContractSet.GetDataContract(keyValueContract.StableName) == null)
@@ -1201,8 +1214,10 @@ namespace System.Runtime.Serialization.Schema
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private void ExportCollectionDataContract(CollectionDataContract collectionContract, ContractCodeDomInfo contractCodeDomInfo)
+        private void ExportCollectionDataContract(DataContract collectionContract, ContractCodeDomInfo contractCodeDomInfo)
         {
+            Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
+
             GenerateType(collectionContract, contractCodeDomInfo);
             if (contractCodeDomInfo.ReferencedTypeExists)
                 return;
@@ -1215,16 +1230,18 @@ namespace System.Runtime.Serialization.Schema
                     SR.Format(SR.CannotUseGenericTypeAsBase, dataContractName,
                     collectionContract.StableName.Namespace)));
 
-            DataContract itemContract = collectionContract.ItemContract;
-            bool isItemTypeNullable = collectionContract.IsItemTypeNullable;
+            // ItemContract - aka BaseContract - is never null for CollectionDataContract
+            DataContract itemContract = collectionContract.BaseContract!;
+            bool isItemTypeNullable = collectionContract.IsItemTypeNullable();
+            bool isDictionary = collectionContract.IsKeyValue(out string? keyName, out string? valueName, out string? itemName);
 
             CodeTypeReference? baseTypeReference;
             bool foundDictionaryBase = TryGetReferencedDictionaryType(collectionContract, out baseTypeReference);
             if (!foundDictionaryBase)
             {
-                if (collectionContract.IsDictionary)
+                if (isDictionary)
                 {
-                    GenerateKeyValueType(collectionContract.ItemContract as ClassDataContract);
+                    GenerateKeyValueType(itemContract.As(DataContractType.ClassDataContract));
                 }
                 if (!TryGetReferencedListType(itemContract, isItemTypeNullable, out baseTypeReference))
                 {
@@ -1254,14 +1271,14 @@ namespace System.Runtime.Serialization.Schema
             collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(Globals.NamespaceProperty, new CodePrimitiveExpression(collectionContract.StableName.Namespace)));
             if (collectionContract.IsReference != Globals.DefaultIsReference)
                 collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(Globals.IsReferenceProperty, new CodePrimitiveExpression(collectionContract.IsReference)));
-            collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(Globals.ItemNameProperty, new CodePrimitiveExpression(GetNameForAttribute(collectionContract.ItemName))));
+            collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(Globals.ItemNameProperty, new CodePrimitiveExpression(GetNameForAttribute(itemName!))));    // ItemName is never null for Collection contracts.
             if (foundDictionaryBase)
             {
                 // These are not null if we are working with a dictionary. See CollectionDataContract.IsDictionary
-                Debug.Assert(collectionContract.KeyName != null);
-                Debug.Assert(collectionContract.ValueName != null);
-                collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(Globals.KeyNameProperty, new CodePrimitiveExpression(GetNameForAttribute(collectionContract.KeyName))));
-                collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(Globals.ValueNameProperty, new CodePrimitiveExpression(GetNameForAttribute(collectionContract.ValueName))));
+                Debug.Assert(keyName != null);
+                Debug.Assert(valueName != null);
+                collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(Globals.KeyNameProperty, new CodePrimitiveExpression(GetNameForAttribute(keyName))));
+                collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(Globals.ValueNameProperty, new CodePrimitiveExpression(GetNameForAttribute(valueName))));
             }
             generatedType.CustomAttributes.Add(collectionContractAttribute);
             AddImportStatement(typeof(CollectionDataContractAttribute).Namespace, contractCodeDomInfo.CodeNamespace);
@@ -1617,22 +1634,22 @@ namespace System.Runtime.Serialization.Schema
             fragments.Add(nsFragment, null);
         }
 
-        [RequiresUnreferencedCode("TODO smolloy - Placeholder")]
-        internal static bool IsObjectContract(DataContract dataContract)
+        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        internal static bool IsObjectContract(DataContract? dataContract)
         {
             Dictionary<Type, object> previousCollectionTypes = new Dictionary<Type, object>();
-            while (dataContract is CollectionDataContract)
+            while (dataContract != null && dataContract.Is(DataContractType.CollectionDataContract))
             {
                 if (dataContract.OriginalUnderlyingType == null)
                 {
-                    dataContract = ((CollectionDataContract)dataContract).ItemContract;
+                    dataContract = dataContract.BaseContract;
                     continue;
                 }
 
                 if (!previousCollectionTypes.ContainsKey(dataContract.OriginalUnderlyingType))
                 {
                     previousCollectionTypes.Add(dataContract.OriginalUnderlyingType, dataContract.OriginalUnderlyingType);
-                    dataContract = ((CollectionDataContract)dataContract).ItemContract;
+                    dataContract = dataContract.BaseContract;
                 }
                 else
                 {
@@ -1640,7 +1657,7 @@ namespace System.Runtime.Serialization.Schema
                 }
             }
 
-            return dataContract is PrimitiveDataContract && ((PrimitiveDataContract)dataContract).UnderlyingType == typeof(object);
+            return dataContract != null && dataContract.Is(DataContractType.PrimitiveDataContract) && dataContract.UnderlyingType == typeof(object);
         }
 
         private static bool IsValidStart(char c)

@@ -80,9 +80,9 @@ namespace System.Runtime.Serialization
 
         private static IEnumerable<DataMember> GetDataMembers(ClassDataContract contract)
         {
-            if (contract.BaseContract != null)
+            if (contract.BaseClassContract != null)
             {
-                foreach (DataMember baseClassMember in GetDataMembers(contract.BaseContract))
+                foreach (DataMember baseClassMember in GetDataMembers(contract.BaseClassContract))
                 {
                     yield return baseClassMember;
                 }

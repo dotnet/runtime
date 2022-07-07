@@ -378,12 +378,12 @@ namespace System.Runtime.Serialization
 
                 ClassDataContract? classContract = contract as ClassDataContract;
                 if (classContract != null)
-                    classContract = classContract.BaseContract;
+                    classContract = classContract.BaseClassContract;
                 while (classContract != null)
                 {
                     if (reader.IsStartElement(classContract.TopLevelElementName!, classContract.TopLevelElementNamespace!))
                         return true;
-                    classContract = classContract.BaseContract;
+                    classContract = classContract.BaseClassContract;
                 }
                 if (classContract == null)
                 {

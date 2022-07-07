@@ -17,6 +17,9 @@ namespace System.Runtime.Serialization
 {
     internal sealed class ClassDataContract : DataContract
     {
+        internal const string ContractTypeString = "ClassDataContract";
+        public override string? ContractType => ContractTypeString;
+
         public XmlDictionaryString[]? ContractNamespaces;
 
         public XmlDictionaryString[]? MemberNames;
@@ -48,16 +51,22 @@ namespace System.Runtime.Serialization
             MemberNamespaces = _helper.MemberNamespaces;
         }
 
-        internal ClassDataContract? BaseContract
+        public override DataContract? BaseContract
         {
-            get => _helper.BaseContract;
-            set => _helper.BaseContract = value;
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            get => BaseClassContract;
         }
 
-        internal List<DataMember>? Members
+        internal ClassDataContract? BaseClassContract
+        {
+            get => _helper.BaseClassContract;
+            set => _helper.BaseClassContract = value;
+        }
+
+        public override List<DataMember>? Members
         {
             get => _helper.Members;
-            set => _helper.Members = value;
+            internal set => _helper.Members = value;
         }
 
         public XmlDictionaryString?[]? ChildElementNamespaces
@@ -95,7 +104,7 @@ namespace System.Runtime.Serialization
 
         internal MethodInfo? ExtensionDataSetMethod => _helper.ExtensionDataSetMethod;
 
-        internal override DataContractDictionary? KnownDataContracts
+        public override DataContractDictionary? KnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
@@ -327,8 +336,8 @@ namespace System.Runtime.Serialization
                 return null;
 
             XmlDictionaryString?[]? baseChildElementNamespaces = null;
-            if (BaseContract != null)
-                baseChildElementNamespaces = BaseContract.ChildElementNamespaces;
+            if (BaseClassContract != null)
+                baseChildElementNamespaces = BaseClassContract.ChildElementNamespaces;
             int baseChildElementNamespaceCount = (baseChildElementNamespaces != null) ? baseChildElementNamespaces.Length : 0;
             XmlDictionaryString?[] childElementNamespaces = new XmlDictionaryString?[Members.Count + baseChildElementNamespaceCount];
             if (baseChildElementNamespaceCount > 0)
@@ -384,7 +393,7 @@ namespace System.Runtime.Serialization
                 }
                 return true;
             }
-            if (BaseContract != null && BaseContract.RequiresMemberAccessForRead(securityException))
+            if (BaseClassContract != null && BaseClassContract.RequiresMemberAccessForRead(securityException))
                 return true;
 
             if (ConstructorRequiresMemberAccess(GetISerializableConstructor()))
@@ -498,7 +507,7 @@ namespace System.Runtime.Serialization
                 return true;
             }
 
-            if (BaseContract != null && BaseContract.RequiresMemberAccessForWrite(securityException))
+            if (BaseClassContract != null && BaseClassContract.RequiresMemberAccessForWrite(securityException))
                 return true;
 
             if (MethodRequiresMemberAccess(OnSerializing))
@@ -630,14 +639,14 @@ namespace System.Runtime.Serialization
                     DataContract baseContract = DataContract.GetDataContract(baseType);
                     if (baseContract is CollectionDataContract collectionDC)
                     {
-                        BaseContract = collectionDC.SharedTypeContract as ClassDataContract;
+                        BaseClassContract = collectionDC.SharedTypeContract as ClassDataContract;
                     }
                     else
                     {
-                        BaseContract = baseContract as ClassDataContract;
+                        BaseClassContract = baseContract as ClassDataContract;
                     }
 
-                    if (BaseContract != null && BaseContract.IsNonAttributedType && !_isNonAttributedType)
+                    if (BaseClassContract != null && BaseClassContract.IsNonAttributedType && !_isNonAttributedType)
                     {
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError
                             (new InvalidDataContractException(SR.Format(SR.AttributedTypesCannotInheritFromNonAttributedSerializableTypes,
@@ -646,7 +655,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    BaseContract = null;
+                    BaseClassContract = null;
                 }
 
                 _hasExtensionData = (Globals.TypeOfIExtensibleDataObject.IsAssignableFrom(type));
@@ -669,7 +678,7 @@ namespace System.Runtime.Serialization
 
                     int baseMemberCount = 0;
                     int baseContractCount = 0;
-                    if (BaseContract == null)
+                    if (BaseClassContract == null)
                     {
                         MemberNames = new XmlDictionaryString[Members.Count];
                         MemberNamespaces = new XmlDictionaryString[Members.Count];
@@ -677,18 +686,18 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        if (BaseContract.IsReadOnlyContract)
+                        if (BaseClassContract.IsReadOnlyContract)
                         {
-                            _serializationExceptionMessage = BaseContract.SerialiazationExceptionMessage;
+                            _serializationExceptionMessage = BaseClassContract.SerialiazationExceptionMessage;
                         }
-                        baseMemberCount = BaseContract.MemberNames!.Length;
+                        baseMemberCount = BaseClassContract.MemberNames!.Length;
                         MemberNames = new XmlDictionaryString[Members.Count + baseMemberCount];
-                        Array.Copy(BaseContract.MemberNames, MemberNames, baseMemberCount);
+                        Array.Copy(BaseClassContract.MemberNames, MemberNames, baseMemberCount);
                         MemberNamespaces = new XmlDictionaryString[Members.Count + baseMemberCount];
-                        Array.Copy(BaseContract.MemberNamespaces!, MemberNamespaces, baseMemberCount);
-                        baseContractCount = BaseContract.ContractNamespaces!.Length;
+                        Array.Copy(BaseClassContract.MemberNamespaces!, MemberNamespaces, baseMemberCount);
+                        baseContractCount = BaseClassContract.ContractNamespaces!.Length;
                         ContractNamespaces = new XmlDictionaryString[1 + baseContractCount];
-                        Array.Copy(BaseContract.ContractNamespaces, ContractNamespaces, baseContractCount);
+                        Array.Copy(BaseClassContract.ContractNamespaces, ContractNamespaces, baseContractCount);
                     }
                     ContractNamespaces[baseContractCount] = Namespace;
                     for (int i = 0; i < Members.Count; i++)
@@ -728,11 +737,11 @@ namespace System.Runtime.Serialization
                 bool isReference = false;
                 bool hasDataContractAttribute = TryGetDCAttribute(type, out DataContractAttribute? dataContractAttribute);
 
-                if (BaseContract != null)
+                if (BaseClassContract != null)
                 {
                     if (hasDataContractAttribute && dataContractAttribute!.IsReferenceSetExplicitly)
                     {
-                        bool baseIsReference = BaseContract.IsReference;
+                        bool baseIsReference = BaseClassContract.IsReference;
                         if ((baseIsReference && !dataContractAttribute.IsReference) ||
                             (!baseIsReference && dataContractAttribute.IsReference))
                         {
@@ -740,8 +749,8 @@ namespace System.Runtime.Serialization
                                     SR.Format(SR.InconsistentIsReference,
                                         DataContract.GetClrTypeFullName(type),
                                         dataContractAttribute.IsReference,
-                                        DataContract.GetClrTypeFullName(BaseContract.UnderlyingType),
-                                        BaseContract.IsReference),
+                                        DataContract.GetClrTypeFullName(BaseClassContract.UnderlyingType),
+                                        BaseClassContract.IsReference),
                                     type);
                         }
                         else
@@ -751,7 +760,7 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        isReference = BaseContract.IsReference;
+                        isReference = BaseClassContract.IsReference;
                     }
                 }
                 else if (hasDataContractAttribute)
@@ -950,7 +959,7 @@ namespace System.Runtime.Serialization
 
             private void SetIfMembersHaveConflict(List<DataMember> members)
             {
-                if (BaseContract == null)
+                if (BaseClassContract == null)
                     return;
 
                 int baseTypeIndex = 0;
@@ -959,7 +968,7 @@ namespace System.Runtime.Serialization
                 {
                     membersInHierarchy.Add(new Member(member, StableName!.Namespace, baseTypeIndex));
                 }
-                ClassDataContract? currContract = BaseContract;
+                ClassDataContract? currContract = BaseClassContract;
                 while (currContract != null)
                 {
                     baseTypeIndex++;
@@ -968,7 +977,7 @@ namespace System.Runtime.Serialization
                     {
                         membersInHierarchy.Add(new Member(member, currContract.StableName!.Namespace, baseTypeIndex));
                     }
-                    currContract = currContract.BaseContract;
+                    currContract = currContract.BaseClassContract;
                 }
 
                 IComparer<Member> comparer = DataMemberConflictComparer.Singleton;
@@ -1116,7 +1125,7 @@ namespace System.Runtime.Serialization
                 return false;
             }
 
-            internal ClassDataContract? BaseContract
+            internal ClassDataContract? BaseClassContract
             {
                 get => _baseContract;
                 set
@@ -1359,8 +1368,8 @@ namespace System.Runtime.Serialization
                 ClassDataContract boundClassContract = new ClassDataContract(boundType);
                 boundContracts.Add(this, boundClassContract);
                 boundClassContract.StableName = CreateQualifiedName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(stableName.Name), new GenericNameProvider(DataContract.GetClrTypeFullName(UnderlyingType), genericParams)), stableName.Namespace);
-                if (BaseContract != null)
-                    boundClassContract.BaseContract = (ClassDataContract)BaseContract.BindGenericParameters(paramContracts, boundContracts);
+                if (BaseClassContract != null)
+                    boundClassContract.BaseClassContract = (ClassDataContract)BaseClassContract.BindGenericParameters(paramContracts, boundContracts);
                 boundClassContract.IsISerializable = IsISerializable;
                 boundClassContract.IsValueType = IsValueType;
                 boundClassContract.IsReference = IsReference;
@@ -1447,12 +1456,12 @@ namespace System.Runtime.Serialization
                         }
                     }
 
-                    if (BaseContract == null)
-                        return (dataContract.BaseContract == null);
-                    else if (dataContract.BaseContract == null)
+                    if (BaseClassContract == null)
+                        return (dataContract.BaseClassContract == null);
+                    else if (dataContract.BaseClassContract == null)
                         return false;
                     else
-                        return BaseContract.Equals(dataContract.BaseContract, checkedContracts);
+                        return BaseClassContract.Equals(dataContract.BaseClassContract, checkedContracts);
                 }
             }
             return false;
@@ -1482,7 +1491,7 @@ namespace System.Runtime.Serialization
                 if (x == null || y == null)
                     return -1;
 
-                int orderCompare = x.Order - y.Order;
+                int orderCompare = (int)(x.Order - y.Order);
                 if (orderCompare != 0)
                     return orderCompare;
 

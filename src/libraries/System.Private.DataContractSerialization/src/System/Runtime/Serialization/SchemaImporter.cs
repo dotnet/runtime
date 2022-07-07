@@ -520,11 +520,11 @@ namespace System.Runtime.Serialization
             _dataContractSet.Remove(typeName);
             if (oldContract != null)
             {
-                ClassDataContract? ancestorDataContract = oldContract.BaseContract;
+                ClassDataContract? ancestorDataContract = oldContract.BaseClassContract;
                 while (ancestorDataContract != null)
                 {
                     ancestorDataContract.KnownDataContracts?.Remove(typeName);
-                    ancestorDataContract = ancestorDataContract.BaseContract;
+                    ancestorDataContract = ancestorDataContract.BaseClassContract;
                 }
                 if (_dataContractSet.KnownTypesForObject != null)
                     _dataContractSet.KnownTypesForObject.Remove(typeName);
@@ -652,15 +652,15 @@ namespace System.Runtime.Serialization
             if (baseTypeName != null)
             {
                 ImportBaseContract(baseTypeName, dataContract);
-                Debug.Assert(dataContract.BaseContract != null);    // ImportBaseContract will always set this... or throw.
-                if (dataContract.BaseContract.IsISerializable)
+                Debug.Assert(dataContract.BaseClassContract != null);    // ImportBaseContract will always set this... or throw.
+                if (dataContract.BaseClassContract.IsISerializable)
                 {
                     if (IsISerializableDerived(typeName, rootSequence))
                         dataContract.IsISerializable = true;
                     else
                         ThrowTypeCannotBeImportedException(dataContract.StableName.Name, dataContract.StableName.Namespace, SR.Format(SR.DerivedTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
                 }
-                if (dataContract.BaseContract.IsReference)
+                if (dataContract.BaseClassContract.IsReference)
                 {
                     dataContract.IsReference = true;
                 }
@@ -707,6 +707,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
+                // TODO smolloy - I think this might be dead code. It doesn't appear like xsdType can be null in this method.
                 //Value type can be used by both nillable and non-nillable elements but reference type cannot be used by non nillable elements
                 xmlDataContract.IsValueType = true;
                 xmlDataContract.IsTypeDefinedOnImport = false;
@@ -828,8 +829,8 @@ namespace System.Runtime.Serialization
             else
             {
                 ImportBaseContract(baseTypeName, dataContract);
-                Debug.Assert(dataContract.BaseContract != null);    // ImportBaseContract will always set this... or throw.
-                if (!dataContract.BaseContract.IsISerializable)
+                Debug.Assert(dataContract.BaseClassContract != null);    // ImportBaseContract will always set this... or throw.
+                if (!dataContract.BaseClassContract.IsISerializable)
                     ThrowISerializableTypeCannotBeImportedException(dataContract.StableName.Name, dataContract.StableName.Namespace, SR.Format(SR.BaseTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
                 if (!IsISerializableDerived(typeName, rootSequence))
                     ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableDerivedContainsOneOrMoreItems));
@@ -910,10 +911,10 @@ namespace System.Runtime.Serialization
                     ancestorDataContract.KnownDataContracts = knownDataContracts;
                 }
                 knownDataContracts.Add(dataContract.StableName, dataContract);
-                ancestorDataContract = ancestorDataContract.BaseContract;
+                ancestorDataContract = ancestorDataContract.BaseClassContract;
             }
 
-            dataContract.BaseContract = baseContract;
+            dataContract.BaseClassContract = baseContract;
         }
 
         private void ImportTopLevelElement(XmlQualifiedName typeName)
@@ -1205,11 +1206,10 @@ namespace System.Runtime.Serialization
                     ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.EnumEnumerationFacetsMustHaveValue));
 
                 string? valueInnerText = GetInnerText(typeName, ImportAnnotation(enumFacet.Annotation, SchemaExporter.EnumerationValueAnnotationName));
-                if (valueInnerText == null)
-                    dataContract.Values.Add(SchemaExporter.GetDefaultEnumValue(isFlags, dataContract.Members.Count));
-                else
-                    dataContract.Values.Add(dataContract.GetEnumValueFromString(valueInnerText));
-                DataMember dataMember = new DataMember(Globals.SchemaMemberInfoPlaceholder) { Name = enumFacet.Value };
+                long enumValue = (valueInnerText == null) ? SchemaExporter.GetDefaultEnumValue(isFlags, dataContract.Members.Count)
+                                                          : dataContract.GetEnumValueFromString(valueInnerText);
+                dataContract.Values.Add(enumValue);
+                DataMember dataMember = new DataMember(Globals.SchemaMemberInfoPlaceholder) { Name = enumFacet.Value, Order = enumValue };
                 dataContract.Members.Add(dataMember);
             }
             return dataContract;

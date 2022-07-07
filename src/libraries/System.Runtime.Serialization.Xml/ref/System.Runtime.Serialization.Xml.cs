@@ -8,8 +8,10 @@ namespace System.Runtime.Serialization
 {
     public abstract partial class DataContract
     {
+        public DataContract? BaseContract { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContract BindGenericParameters(DataContract[] paramContracts, System.Collections.Generic.Dictionary<DataContract, DataContract> boundContracts) { throw null; }
+        public string? ContractType { get { throw null; } }
         internal DataContract(DataContractCriticalHelper helper) { }
         internal const System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes DataContractPreserveMemberTypes =
             System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods |
@@ -33,10 +35,13 @@ namespace System.Runtime.Serialization
         public bool HasRoot { get { throw null; } }
         public bool IsBuiltInDataContract { get { throw null; } }
         public bool IsISerializable { get { throw null; } }
+        public bool IsKeyValue(out string? keyName, out string? valueName, out string? itemName) { throw null; }
         public bool IsReference { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public static bool IsTypeSerializable(Type type) { throw null; }
         public bool IsValueType { get { throw null; } }
+        public virtual System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>? KnownDataContracts { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } set { throw null; } }
+        public System.Collections.Generic.List<DataMember>? Members { get { throw null; } }
         public Type OriginalUnderlyingType { get { throw null; } }
         public System.Xml.XmlQualifiedName StableName { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(DataContract.DataContractPreserveMemberTypes)]
@@ -147,7 +152,7 @@ namespace System.Runtime.Serialization
         public bool IsRequired { get { throw null; } }
         public DataContract MemberTypeContract { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } }
         public string Name { get { throw null; } }
-        public int Order { get { throw null; } }
+        public long Order { get { throw null; } }
     }
     public partial class ExportOptions
     {
@@ -170,6 +175,16 @@ namespace System.Runtime.Serialization
     {
         System.Runtime.Serialization.ExtensionDataObject? ExtensionData { get; set; }
     }
+    public sealed partial class XmlDataContract : DataContract
+    {
+        public bool IsAnonymous { get { throw null; } }
+        public bool IsTopLevelElementNullable { get { throw null; } }
+        public bool IsTypeDefinedOnImport { get { throw null; } set { throw null; } }
+        public void SetIsValueType(bool isValueType) { throw null; }
+        internal XmlDataContract(Type type) : base(new XmlDataContractCriticalHelper()) { }
+        public System.Xml.Schema.XmlSchemaType? XsdType { get { throw null; } }
+    }
+    internal sealed partial class XmlDataContractCriticalHelper : DataContractCriticalHelper { }
     public abstract partial class XmlObjectSerializer
     {
         protected XmlObjectSerializer() { }

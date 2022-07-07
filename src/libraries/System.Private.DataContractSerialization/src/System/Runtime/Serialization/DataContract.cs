@@ -42,6 +42,8 @@ namespace System.Runtime.Serialization
             _ns = helper.Namespace;
         }
 
+        public virtual string? ContractType => null;
+
         internal MethodInfo? ParseMethod => _helper.ParseMethod;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -199,6 +201,12 @@ namespace System.Runtime.Serialization
             internal set => _helper.StableName = value;
         }
 
+        public virtual DataContract? BaseContract
+        {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            get => null;
+        }
+
         public virtual GenericInfo? GenericInfo
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -206,7 +214,7 @@ namespace System.Runtime.Serialization
             internal set => _helper.GenericInfo = value;
         }
 
-        internal virtual DataContractDictionary? KnownDataContracts
+        public virtual DataContractDictionary? KnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
@@ -244,6 +252,18 @@ namespace System.Runtime.Serialization
         internal virtual bool CanContainReferences => true;
 
         internal virtual bool IsPrimitive => false;
+
+        public virtual bool IsKeyValue(out string? keyName, out string? valueName, out string? itemName)
+        {
+            keyName = valueName = itemName = null;
+            return false;
+        }
+
+        public virtual List<DataMember>? Members
+        {
+            get => null;
+            internal set { }
+        }
 
         internal virtual void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString? ns)
         {

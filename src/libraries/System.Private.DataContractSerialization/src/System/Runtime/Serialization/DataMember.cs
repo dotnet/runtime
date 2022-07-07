@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization
             _helper = new CriticalHelper(memberInfo);
         }
 
-        internal DataMember(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, int order)
+        internal DataMember(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, long order)
         {
             _helper = new CriticalHelper(memberTypeContract, name, isNullable, isRequired, emitDefaultValue, order);
         }
@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization
             internal set => _helper.Name = value;
         }
 
-        public int Order
+        public long Order
         {
             get => _helper.Order;
             internal set => _helper.Order = value;
@@ -96,7 +96,7 @@ namespace System.Runtime.Serialization
         {
             private DataContract? _memberTypeContract;
             private string _name = null!; // Name is always initialized right after construction
-            private int _order;
+            private long _order;
             private bool _isRequired;
             private bool _emitDefaultValue;
             private bool _isNullable;
@@ -113,7 +113,7 @@ namespace System.Runtime.Serialization
                 _memberPrimitiveContract = PrimitiveDataContract.NullContract;
             }
 
-            internal CriticalHelper(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, int order)
+            internal CriticalHelper(DataContract memberTypeContract, string name, bool isNullable, bool isRequired, bool emitDefaultValue, long order)
             {
                 _memberTypeContract = memberTypeContract;
                 _name = name;
@@ -132,7 +132,7 @@ namespace System.Runtime.Serialization
                 set => _name = value;
             }
 
-            internal int Order
+            internal long Order
             {
                 get => _order;
                 set => _order = value;

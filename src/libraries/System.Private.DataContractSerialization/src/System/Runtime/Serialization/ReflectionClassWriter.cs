@@ -124,8 +124,8 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnSerializing(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
-            if (classContract.BaseContract != null)
-                InvokeOnSerializing(obj, context, classContract.BaseContract);
+            if (classContract.BaseClassContract != null)
+                InvokeOnSerializing(obj, context, classContract.BaseClassContract);
             if (classContract.OnSerializing != null)
             {
                 var contextArg = context.GetStreamingContext();
@@ -135,8 +135,8 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnSerialized(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
-            if (classContract.BaseContract != null)
-                InvokeOnSerialized(obj, context, classContract.BaseContract);
+            if (classContract.BaseClassContract != null)
+                InvokeOnSerialized(obj, context, classContract.BaseClassContract);
             if (classContract.OnSerialized != null)
             {
                 var contextArg = context.GetStreamingContext();

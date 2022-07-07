@@ -13,6 +13,9 @@ namespace System.Runtime.Serialization
 {
     internal abstract class PrimitiveDataContract : DataContract
     {
+        internal const string ContractTypeString = "PrimitiveDataContract";
+        public override string? ContractType => ContractTypeString;
+
         internal static readonly PrimitiveDataContract NullContract = new NullPrimitiveDataContract();
 
         private readonly PrimitiveDataContractCriticalHelper _helper;

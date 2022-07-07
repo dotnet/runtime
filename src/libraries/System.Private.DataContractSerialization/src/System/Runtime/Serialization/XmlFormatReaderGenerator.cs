@@ -281,8 +281,8 @@ namespace System.Runtime.Serialization
                 Debug.Assert(_objectLocal != null);
                 Debug.Assert(_objectType != null);
 
-                if (classContract.BaseContract != null)
-                    InvokeOnDeserializing(classContract.BaseContract);
+                if (classContract.BaseClassContract != null)
+                    InvokeOnDeserializing(classContract.BaseClassContract);
                 if (classContract.OnDeserializing != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
@@ -298,8 +298,8 @@ namespace System.Runtime.Serialization
                 Debug.Assert(_objectLocal != null);
                 Debug.Assert(_objectType != null);
 
-                if (classContract.BaseContract != null)
-                    InvokeOnDeserialized(classContract.BaseContract);
+                if (classContract.BaseClassContract != null)
+                    InvokeOnDeserialized(classContract.BaseClassContract);
                 if (classContract.OnDeserialized != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
@@ -349,7 +349,7 @@ namespace System.Runtime.Serialization
                         MethodInfo? extensionDataSetMethod = currentContract.ExtensionDataSetMethod;
                         if (extensionDataSetMethod != null)
                             _ilg.Call(_objectLocal, extensionDataSetMethod, extensionDataLocal);
-                        currentContract = currentContract.BaseContract;
+                        currentContract = currentContract.BaseClassContract;
                     }
                 }
                 else
@@ -403,7 +403,7 @@ namespace System.Runtime.Serialization
                 Debug.Assert(_objectLocal != null);
                 Debug.Assert(_objectType != null);
 
-                int memberCount = (classContract.BaseContract == null) ? 0 : ReadMembers(classContract.BaseContract, requiredMembers,
+                int memberCount = (classContract.BaseClassContract == null) ? 0 : ReadMembers(classContract.BaseClassContract, requiredMembers,
                     memberLabels, memberIndexLocal, requiredIndexLocal);
 
                 for (int i = 0; i < classContract.Members!.Count; i++, memberCount++)
@@ -461,7 +461,7 @@ namespace System.Runtime.Serialization
 
             private int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
             {
-                int memberCount = (contract.BaseContract == null) ? 0 : GetRequiredMembers(contract.BaseContract, requiredMembers);
+                int memberCount = (contract.BaseClassContract == null) ? 0 : GetRequiredMembers(contract.BaseClassContract, requiredMembers);
                 List<DataMember> members = contract.Members!;
                 for (int i = 0; i < members.Count; i++, memberCount++)
                 {

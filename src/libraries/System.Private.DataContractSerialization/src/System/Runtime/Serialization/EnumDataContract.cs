@@ -14,6 +14,9 @@ namespace System.Runtime.Serialization
 {
     internal sealed class EnumDataContract : DataContract
     {
+        internal const string ContractTypeString = "EnumDataContract";
+        public override string? ContractType => ContractTypeString;
+
         private readonly EnumDataContractCriticalHelper _helper;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -27,16 +30,24 @@ namespace System.Runtime.Serialization
             return EnumDataContractCriticalHelper.GetBaseType(baseContractName);
         }
 
+        public override DataContract BaseContract
+        {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            get => _helper.BaseContract;
+        }
+
         public XmlQualifiedName BaseContractName
         {
             get => _helper.BaseContractName;
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             set => _helper.BaseContractName = value;
         }
 
-        public List<DataMember> Members
+        [NotNull]
+        public override List<DataMember>? Members
         {
             get => _helper.Members;
-            set => _helper.Members = value;
+            internal set => _helper.Members = value!;
         }
 
         public List<long>? Values
@@ -62,7 +73,7 @@ namespace System.Runtime.Serialization
             private static readonly Dictionary<Type, XmlQualifiedName> s_typeToName = new Dictionary<Type, XmlQualifiedName>();
             private static readonly Dictionary<XmlQualifiedName, Type> s_nameToType = new Dictionary<XmlQualifiedName, Type>();
 
-            private XmlQualifiedName _baseContractName;
+            private DataContract _baseContract;
             private List<DataMember> _members;
             private List<long>? _values;
             private bool _isULong;
@@ -72,14 +83,14 @@ namespace System.Runtime.Serialization
 
             static EnumDataContractCriticalHelper()
             {
-                Add(typeof(sbyte), "byte");
-                Add(typeof(byte), "unsignedByte");
-                Add(typeof(short), "short");
-                Add(typeof(ushort), "unsignedShort");
-                Add(typeof(int), "int");
-                Add(typeof(uint), "unsignedInt");
-                Add(typeof(long), "long");
-                Add(typeof(ulong), "unsignedLong");
+                Add(typeof(sbyte), DictionaryGlobals.SignedByteLocalName.Value);        // "byte"
+                Add(typeof(byte), DictionaryGlobals.UnsignedByteLocalName.Value);       // "unsignedByte"
+                Add(typeof(short), DictionaryGlobals.ShortLocalName.Value);             // "short"
+                Add(typeof(ushort), DictionaryGlobals.UnsignedShortLocalName.Value);    // "unsignedShort"
+                Add(typeof(int), DictionaryGlobals.IntLocalName.Value);                 // "int"
+                Add(typeof(uint), DictionaryGlobals.UnsignedIntLocalName.Value);        // "unsignedInt"
+                Add(typeof(long), DictionaryGlobals.LongLocalName.Value);               // "long"
+                Add(typeof(ulong), DictionaryGlobals.UnsignedLongLocalName.Value);      // "unsignedLong"
             }
 
             internal static void Add(Type type, string localName)
@@ -110,7 +121,10 @@ namespace System.Runtime.Serialization
             {
                 StableName = DataContract.GetStableName(type, out _hasDataContract);
                 Type baseType = Enum.GetUnderlyingType(type);
-                _baseContractName = GetBaseContractName(baseType);
+                XmlQualifiedName baseTypeName = GetBaseContractName(baseType);
+                _baseContract = DataContract.GetBuiltInDataContract(baseTypeName.Name, baseTypeName.Namespace)!;
+                // TODO smolloy - Setting StableName might be redundant. But I don't want to miss an edge case.
+                _baseContract.StableName = baseTypeName;
                 ImportBaseType(baseType);
                 IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
                 ImportDataMembers();
@@ -135,18 +149,23 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            internal DataContract BaseContract => _baseContract;
+
             internal XmlQualifiedName BaseContractName
             {
-                get => _baseContractName;
+                get => _baseContract.StableName;
 
+                [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 set
                 {
-                    _baseContractName = value;
-                    Type? baseType = GetBaseType(_baseContractName);
+                    Type? baseType = GetBaseType(value);
                     if (baseType == null)
                         ThrowInvalidDataContractException(
                                 SR.Format(SR.InvalidEnumBaseType, value.Name, value.Namespace, StableName.Name, StableName.Namespace));
                     ImportBaseType(baseType);
+                    _baseContract = DataContract.GetBuiltInDataContract(value.Name, value.Namespace)!;
+                    // TODO smolloy - Setting StableName might be redundant. But I don't want to miss an edge case.
+                    _baseContract.StableName = value;
                 }
             }
 
@@ -216,6 +235,7 @@ namespace System.Runtime.Serialization
                             }
                             else
                                 memberContract.Name = field.Name;
+                            memberContract.Order = _isULong ? (long)Convert.ToUInt64(field.GetValue(null)) : Convert.ToInt64(field.GetValue(null));
                             ClassDataContract.CheckAndAddMember(tempMembers, memberContract, memberValuesTable);
                             enumMemberValid = true;
                         }
@@ -229,6 +249,7 @@ namespace System.Runtime.Serialization
                         if (!field.IsNotSerialized)
                         {
                             DataMember memberContract = new DataMember(field) { Name = field.Name };
+                            memberContract.Order = _isULong ? (long)Convert.ToUInt64(field.GetValue(null)) : Convert.ToInt64(field.GetValue(null));
                             ClassDataContract.CheckAndAddMember(tempMembers, memberContract, memberValuesTable);
                             enumMemberValid = true;
                         }

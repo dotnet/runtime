@@ -167,8 +167,8 @@ namespace System.Runtime.Serialization.Json
 
             private void InvokeOnSerializing(ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
-                    InvokeOnSerializing(classContract.BaseContract);
+                if (classContract.BaseClassContract != null)
+                    InvokeOnSerializing(classContract.BaseClassContract);
                 if (classContract.OnSerializing != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
@@ -180,8 +180,8 @@ namespace System.Runtime.Serialization.Json
 
             private void InvokeOnSerialized(ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
-                    InvokeOnSerialized(classContract.BaseContract);
+                if (classContract.BaseClassContract != null)
+                    InvokeOnSerialized(classContract.BaseClassContract);
                 if (classContract.OnSerialized != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
@@ -223,8 +223,8 @@ namespace System.Runtime.Serialization.Json
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private int WriteMembers(ClassDataContract classContract, LocalBuilder? extensionDataLocal, ClassDataContract derivedMostClassContract)
             {
-                int memberCount = (classContract.BaseContract == null) ? 0 :
-                    WriteMembers(classContract.BaseContract, extensionDataLocal, derivedMostClassContract);
+                int memberCount = (classContract.BaseClassContract == null) ? 0 :
+                    WriteMembers(classContract.BaseClassContract, extensionDataLocal, derivedMostClassContract);
 
                 int classMemberCount = classContract.Members!.Count;
                 _ilg.Call(thisObj: _contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, classMemberCount);

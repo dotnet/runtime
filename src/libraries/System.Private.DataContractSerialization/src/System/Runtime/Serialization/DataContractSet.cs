@@ -133,9 +133,9 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddClassDataContract(ClassDataContract classDataContract)
         {
-            if (classDataContract.BaseContract != null)
+            if (classDataContract.BaseClassContract != null)
             {
-                Add(classDataContract.BaseContract.StableName, classDataContract.BaseContract);
+                Add(classDataContract.BaseClassContract.StableName, classDataContract.BaseClassContract);
             }
             if (!classDataContract.IsISerializable)
             {

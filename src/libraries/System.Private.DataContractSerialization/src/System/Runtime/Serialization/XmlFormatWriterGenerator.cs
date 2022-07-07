@@ -199,8 +199,8 @@ namespace System.Runtime.Serialization
 
             private void InvokeOnSerializing(ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
-                    InvokeOnSerializing(classContract.BaseContract);
+                if (classContract.BaseClassContract != null)
+                    InvokeOnSerializing(classContract.BaseClassContract);
                 if (classContract.OnSerializing != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
@@ -212,8 +212,8 @@ namespace System.Runtime.Serialization
 
             private void InvokeOnSerialized(ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
-                    InvokeOnSerialized(classContract.BaseContract);
+                if (classContract.BaseClassContract != null)
+                    InvokeOnSerialized(classContract.BaseClassContract);
                 if (classContract.OnSerialized != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
@@ -279,8 +279,8 @@ namespace System.Runtime.Serialization
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private int WriteMembers(ClassDataContract classContract, LocalBuilder? extensionDataLocal, ClassDataContract derivedMostClassContract)
             {
-                int memberCount = (classContract.BaseContract == null) ? 0 :
-                    WriteMembers(classContract.BaseContract, extensionDataLocal, derivedMostClassContract);
+                int memberCount = (classContract.BaseClassContract == null) ? 0 :
+                    WriteMembers(classContract.BaseClassContract, extensionDataLocal, derivedMostClassContract);
 
                 LocalBuilder namespaceLocal = _ilg.DeclareLocal(typeof(XmlDictionaryString), "ns");
                 if (_contractNamespacesLocal == null)
@@ -794,7 +794,7 @@ namespace System.Runtime.Serialization
                                 return CheckIfConflictingMembersHaveDifferentTypes(members[j]);
                         }
                     }
-                    currentContract = currentContract.BaseContract;
+                    currentContract = currentContract.BaseClassContract;
                 }
 
                 return false;

@@ -222,8 +222,8 @@ namespace System.Runtime.Serialization.Json
 
             private void InvokeOnDeserializing(ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
-                    InvokeOnDeserializing(classContract.BaseContract);
+                if (classContract.BaseClassContract != null)
+                    InvokeOnDeserializing(classContract.BaseClassContract);
                 if (classContract.OnDeserializing != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
@@ -236,8 +236,8 @@ namespace System.Runtime.Serialization.Json
 
             private void InvokeOnDeserialized(ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
-                    InvokeOnDeserialized(classContract.BaseContract);
+                if (classContract.BaseClassContract != null)
+                    InvokeOnDeserialized(classContract.BaseClassContract);
                 if (classContract.OnDeserialized != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
@@ -285,7 +285,7 @@ namespace System.Runtime.Serialization.Json
                         MethodInfo? extensionDataSetMethod = currentContract.ExtensionDataSetMethod;
                         if (extensionDataSetMethod != null)
                             _ilg.Call(_objectLocal, extensionDataSetMethod, extensionDataLocal);
-                        currentContract = currentContract.BaseContract;
+                        currentContract = currentContract.BaseClassContract;
                     }
                 }
                 else
@@ -346,8 +346,8 @@ namespace System.Runtime.Serialization.Json
             private int ReadMembers(ClassDataContract classContract, BitFlagsGenerator expectedElements,
                 Label[] memberLabels, Label throwDuplicateMemberLabel, LocalBuilder memberIndexLocal)
             {
-                int memberCount = (classContract.BaseContract == null) ? 0 :
-                    ReadMembers(classContract.BaseContract, expectedElements, memberLabels, throwDuplicateMemberLabel, memberIndexLocal);
+                int memberCount = (classContract.BaseClassContract == null) ? 0 :
+                    ReadMembers(classContract.BaseClassContract, expectedElements, memberLabels, throwDuplicateMemberLabel, memberIndexLocal);
 
                 for (int i = 0; i < classContract.Members!.Count; i++, memberCount++)
                 {
@@ -409,8 +409,8 @@ namespace System.Runtime.Serialization.Json
 
             private int SetRequiredElements(ClassDataContract contract, byte[] requiredElements)
             {
-                int memberCount = (contract.BaseContract == null) ? 0 :
-                    SetRequiredElements(contract.BaseContract, requiredElements);
+                int memberCount = (contract.BaseClassContract == null) ? 0 :
+                    SetRequiredElements(contract.BaseClassContract, requiredElements);
                 List<DataMember> members = contract.Members!;
                 for (int i = 0; i < members.Count; i++, memberCount++)
                 {
