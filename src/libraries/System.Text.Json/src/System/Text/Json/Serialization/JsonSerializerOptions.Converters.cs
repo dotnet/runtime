@@ -70,10 +70,7 @@ namespace System.Text.Json
                 converter = GetTypeInfoNoCaching(typeToConvert)?.Converter;
             }
 
-            return converter is null
-                // we can get here if resolver returned null but converter was added for the type
-                ? GetConverterFromListOrBuiltInConverter(typeToConvert)
-                : converter;
+            return converter ?? GetConverterFromListOrBuiltInConverter(typeToConvert);
         }
 
         internal JsonConverter? GetConverterFromList(Type typeToConvert)
