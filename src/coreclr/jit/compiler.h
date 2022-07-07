@@ -6961,7 +6961,7 @@ public:
         OPK_NULLCHECK
     };
 
-    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTreeIndir*> LocalNumberToNullCheckTreeMap;
 
     GenTree* getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
     GenTree* optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
@@ -6971,11 +6971,11 @@ public:
     bool        optDoEarlyPropForFunc();
     PhaseStatus optEarlyProp();
     bool optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
-    GenTree* optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
-    bool optIsNullCheckFoldingLegal(GenTree*    tree,
-                                    GenTree*    nullCheckTree,
-                                    GenTree**   nullCheckParent,
-                                    Statement** nullCheckStmt);
+    GenTreeIndir* optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
+    bool optIsNullCheckFoldingLegal(GenTree*      tree,
+                                    GenTreeIndir* nullCheckTree,
+                                    GenTree**     nullCheckParent,
+                                    Statement**   nullCheckStmt);
     bool optCanMoveNullCheckPastTree(GenTree* tree,
                                      unsigned nullCheckLclNum,
                                      bool     isInsideTry,

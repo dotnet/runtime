@@ -6248,6 +6248,8 @@ GenTree* GenTree::gtGetParent(GenTree*** pUse)
 
 bool GenTree::gtIsUnusedValue()
 {
+    assert(IsValue());
+
     GenTree* par = gtGetParent(nullptr);
     if (par == nullptr)
     {
@@ -6256,7 +6258,7 @@ bool GenTree::gtIsUnusedValue()
 
     if (par->OperIs(GT_COMMA))
     {
-        if (par->gtGetOp1() == this)
+        if ((par->gtGetOp1() == this) || par->TypeIs(TYP_VOID))
         {
             return true;
         }

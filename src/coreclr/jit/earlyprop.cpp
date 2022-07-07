@@ -434,10 +434,10 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     //}
     //#endif
 
-    GenTree*   nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
-    GenTree*   nullCheckParent = nullptr;
-    Statement* nullCheckStmt   = nullptr;
-    bool       folded          = false;
+    GenTreeIndir* nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
+    GenTree*      nullCheckParent = nullptr;
+    Statement*    nullCheckStmt   = nullptr;
+    bool          folded          = false;
     if ((nullCheckTree != nullptr) && optIsNullCheckFoldingLegal(tree, nullCheckTree, &nullCheckParent, &nullCheckStmt))
     {
 #ifdef DEBUG
@@ -476,12 +476,13 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         folded = true;
     }
 
-    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_VAR) &&
-        ((tree->gtFlags & GTF_IND_NONFAULTING) == 0))
+    bool isRemovableIndir = tree->OperIsIndir() && !tree->OperIsStore();
+
+    if (isRemovableIndir && tree->AsIndir()->Addr()->OperIs(GT_LCL_VAR) && ((tree->gtFlags & GTF_IND_NONFAULTING) == 0))
     {
         if (tree->gtIsUnusedValue())
         {
-            nullCheckMap->Set(tree->AsIndir()->Addr()->AsLclVarCommon()->GetLclNum(), tree,
+            nullCheckMap->Set(tree->AsIndir()->Addr()->AsLclVarCommon()->GetLclNum(), tree->AsIndir(),
                               LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
         }
     }
@@ -515,7 +516,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //
 //     2.  const1 + const2 if sufficiently small.
 
-GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
+GenTreeIndir* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
     assert(tree->OperIsIndirOrArrMetaData());
 
@@ -543,14 +544,14 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     }
 
     const unsigned lclNum          = lclVarNode->GetLclNum();
-    GenTree*       nullCheckTree   = nullptr;
+    GenTreeIndir*  nullCheckTree   = nullptr;
     unsigned       nullCheckLclNum = BAD_VAR_NUM;
 
     // Check if we saw a nullcheck on this local in this basic block
     // This corresponds to the unused indir(x) tree in the header comment.
     if (nullCheckMap->Lookup(lclNum, &nullCheckTree))
     {
-        GenTree* nullCheckAddr = nullCheckTree->AsIndir()->Addr();
+        GenTree* nullCheckAddr = nullCheckTree->Addr();
         if ((nullCheckAddr->OperGet() != GT_LCL_VAR) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
         {
             nullCheckTree = nullptr;
@@ -583,14 +584,14 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         const bool commaOnly              = true;
         GenTree*   commaOp1EffectiveValue = defRHS->gtGetOp1()->gtEffectiveVal(commaOnly);
 
-        if (!commaOp1EffectiveValue->OperIsIndir())
+        if (!commaOp1EffectiveValue->OperIsIndir() || commaOp1EffectiveValue->OperIsStore())
         {
             return nullptr;
         }
 
         GenTree* nullCheckAddress = commaOp1EffectiveValue->AsIndir()->Addr();
 
-        if ((nullCheckAddress->OperGet() != GT_LCL_VAR) || (defRHS->gtGetOp2()->OperGet() != GT_ADD))
+        if (!nullCheckAddress->OperIs(GT_LCL_VAR) || (defRHS->gtGetOp2()->OperGet() != GT_ADD))
         {
             return nullptr;
         }
@@ -605,7 +606,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
             (additionOp2->IsCnsIntOrI()))
         {
             offsetValue += additionOp2->AsIntConCommon()->IconValue();
-            nullCheckTree = commaOp1EffectiveValue;
+            nullCheckTree = commaOp1EffectiveValue->AsIndir();
         }
     }
 
@@ -630,14 +631,14 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 //    nullCheckParent     - The parent of nullCheckTree (out-parameter).
 //    nullCheckStatement  - The statement nullCheckTree (out-parameter).
 
-bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
-                                          GenTree*    nullCheckTree,
-                                          GenTree**   nullCheckParent,
-                                          Statement** nullCheckStmt)
+bool Compiler::optIsNullCheckFoldingLegal(GenTree*      tree,
+                                          GenTreeIndir* nullCheckTree,
+                                          GenTree**     nullCheckParent,
+                                          Statement**   nullCheckStmt)
 {
     // Check all nodes between the indirs to see if any nodes have unsafe side
     // effects.
-    unsigned       nullCheckLclNum    = nullCheckTree->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+    unsigned       nullCheckLclNum    = nullCheckTree->Addr()->AsLclVarCommon()->GetLclNum();
     bool           isInsideTry        = compCurBB->hasTryIndex();
     bool           canRemoveNullCheck = true;
     const unsigned maxNodesWalked     = 50;
