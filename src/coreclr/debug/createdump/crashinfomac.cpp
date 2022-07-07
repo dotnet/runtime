@@ -15,7 +15,7 @@ CrashInfo::Initialize()
     if (result != KERN_SUCCESS)
     {
         // Regardless of the reason (invalid process id or invalid signing/entitlements) it always returns KERN_FAILURE (5)
-        printf_error("Invalid process id: task_for_pid(%d) FAILED %s (%x)\n" m_pid, mach_error_string(result), result);
+        printf_error("Invalid process id: task_for_pid(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
         printf_error("This failure may be because createdump or the application is not properly signed and entitled.\n");
         return false;
     }
