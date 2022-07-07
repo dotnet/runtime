@@ -117,8 +117,16 @@ namespace Microsoft.Interop
             Debug.Assert(!isLinearCollectionMarshalling || getMarshallingInfoForElement is not null);
 
             Dictionary<MarshalMode, CustomTypeMarshallerData> modes = new();
+
             foreach (AttributeData attr in attrs)
             {
+                if (attr.AttributeConstructor is null)
+                {
+                    // If the attribute constructor couldn't be bound by the compiler, then we shouldn't try to extract the constructor arguments.
+                    // Roslyn doesn't provide them if it can't bind the constructor.
+                    // We don't report a diagnostic here since Roslyn will report a diagnostic anyway.
+                    continue;
+                }
                 Debug.Assert(attr.ConstructorArguments.Length == 3);
 
                 // Verify the defined marshaller is for the managed type.
@@ -167,7 +175,7 @@ namespace Microsoft.Interop
                     marshallerType = currentType;
                 }
 
-                // TODO: We can probably get rid of MarshallingDirection and just use Scenario instead
+                // TODO: We can probably get rid of MarshallingDirection and just use MarshalMode instead
                 MarshallingDirection direction = marshalMode switch
                 {
                     MarshalMode.Default
@@ -175,19 +183,17 @@ namespace Microsoft.Interop
 
                     MarshalMode.ManagedToUnmanagedIn
                     or MarshalMode.UnmanagedToManagedOut
+                    or MarshalMode.ElementIn
                         => MarshallingDirection.ManagedToUnmanaged,
 
                     MarshalMode.ManagedToUnmanagedOut
                     or MarshalMode.UnmanagedToManagedIn
+                    or MarshalMode.ElementOut
                         => MarshallingDirection.UnmanagedToManaged,
 
                     MarshalMode.ManagedToUnmanagedRef
                     or MarshalMode.UnmanagedToManagedRef
-                        => MarshallingDirection.Bidirectional,
-
-                    MarshalMode.ElementIn
                     or MarshalMode.ElementRef
-                    or MarshalMode.ElementOut
                         => MarshallingDirection.Bidirectional,
 
                     _ => throw new UnreachableException()
