@@ -1032,6 +1032,8 @@ Section "II.1.7.5 Backward branch constraints" is deleted. These constraints wer
 
 API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://docs.microsoft.com/en-us/dotnet/api/.
 
+The incorrect description of `System.Array.Initialize` API in section "II.13.2 Initializing value types" is replaced with "The Base Class Library provides the method System.Array.Initialize (see Partition IV) to initialize every element of an array of unboxed value types by calling its parameterless instance constructor."
+
 ## Debug Interchange Format
 
-The Debug Interchange Format escribed in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).
+The Debug Interchange Format described in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).
