@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace System.Text.Json.Reflection
 {
@@ -21,30 +19,21 @@ namespace System.Text.Json.Reflection
                 return type.Name;
             }
 
-            string compilableName;
+            StringBuilder sb = new();
 
-            if (!type.IsGenericType)
+            sb.Append("global::");
+
+            string @namespace = type.Namespace;
+            if (!string.IsNullOrEmpty(@namespace) && @namespace != JsonConstants.GlobalNamespaceValue)
             {
-                compilableName = type.FullName;
-            }
-            else
-            {
-                StringBuilder sb = new();
-
-                if (!string.IsNullOrEmpty(type.Namespace))
-                {
-                    sb.Append(type.Namespace);
-                    sb.Append('.');
-                }
-
-                int argumentIndex = 0;
-                AppendTypeChain(sb, type, type.GetGenericArguments(), ref argumentIndex);
-
-                compilableName = sb.ToString();
+                sb.Append(@namespace);
+                sb.Append('.');
             }
 
-            compilableName = compilableName.Replace("+", ".");
-            return "global::" + compilableName;
+            int argumentIndex = 0;
+            AppendTypeChain(sb, type, type.GetGenericArguments(), ref argumentIndex);
+
+            return sb.ToString();
 
             static void AppendTypeChain(StringBuilder sb, Type type, Type[] genericArguments, ref int argumentIndex)
             {

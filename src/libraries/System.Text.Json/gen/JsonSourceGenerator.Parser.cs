@@ -479,7 +479,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static string GetClassDeclarationName(INamedTypeSymbol typeSymbol)
             {
-                if (!typeSymbol.IsGenericType || typeSymbol.TypeArguments.Length == 0)
+                if (typeSymbol.TypeArguments.Length == 0)
                 {
                     return typeSymbol.Name;
                 }
@@ -496,10 +496,7 @@ namespace System.Text.Json.SourceGeneration
                     {
                         sb.Append(", ");
                     }
-                    else
-                    {
-                        first = false;
-                    }
+                    first = false;
                     sb.Append(typeArg.Name);
                 }
 

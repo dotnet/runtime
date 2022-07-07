@@ -253,13 +253,18 @@ namespace System.Text.Json.Reflection
 
         public override Type[] GetGenericArguments()
         {
+            if (!IsGenericType)
+            {
+                return EmptyTypes;
+            }
+
             var args = new List<Type>();
             AddTypeArguments(args, _namedTypeSymbol, _metadataLoadContext);
             return args.ToArray();
 
             static void AddTypeArguments(List<Type> args, INamedTypeSymbol typeSymbol, MetadataLoadContextInternal metadataLoadContext)
             {
-                if(typeSymbol.ContainingType != null)
+                if (typeSymbol.ContainingType != null)
                 {
                     AddTypeArguments(args, typeSymbol.ContainingType, metadataLoadContext);
                 }
