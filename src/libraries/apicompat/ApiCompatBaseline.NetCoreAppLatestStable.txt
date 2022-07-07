@@ -13,6 +13,7 @@ CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.DSA.Create(System.Security.Cryptography.DSAParameters)' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.DSASignatureDeformatter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.DSASignatureFormatter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HKDF' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA1' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA256' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA384' in the contract but not the implementation.
@@ -72,6 +73,7 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.ECDiffieHellman' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.ECDsa' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.ECParameters' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HKDF' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA1' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA256' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA384' in the contract but not the implementation.
@@ -162,6 +164,7 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.ECDiffieHellman' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.ECDsa' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.ECParameters' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HKDF' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA1' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA256' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.HMACSHA384' in the contract but not the implementation.
@@ -189,4 +192,4 @@ Compat issues with assembly System.Security.Cryptography.X509Certificates:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 Compat issues with assembly System.Text.Json:
 CannotMakeTypeAbstract : Type 'System.Text.Json.Serialization.Metadata.JsonTypeInfo' is abstract in the implementation but is not abstract in the contract.
-Total Issues: 177
+Total Issues: 180
