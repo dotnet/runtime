@@ -201,9 +201,9 @@ namespace System.Net.Quic.Tests
 
         internal async Task PingPong(QuicConnection client, QuicConnection server)
         {
-            using QuicStream clientStream = await client.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+            await using QuicStream clientStream = await client.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
             ValueTask t = clientStream.WriteAsync(s_ping);
-            using QuicStream serverStream = await server.AcceptInboundStreamAsync();
+            await using QuicStream serverStream = await server.AcceptInboundStreamAsync();
 
             byte[] buffer = new byte[s_ping.Length];
             int remains = s_ping.Length;
@@ -294,8 +294,7 @@ namespace System.Net.Quic.Tests
 
                     await clientFunction(stream);
 
-                    stream.Shutdown();
-                    await stream.ShutdownCompleted();
+                    stream.CompleteWrites();
                 },
                 serverFunction: async connection =>
                 {
@@ -304,8 +303,7 @@ namespace System.Net.Quic.Tests
 
                     await serverFunction(stream);
 
-                    stream.Shutdown();
-                    await stream.ShutdownCompleted();
+                    stream.CompleteWrites();
                 },
                 iterations,
                 millisecondsTimeout
