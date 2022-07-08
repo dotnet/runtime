@@ -2170,11 +2170,11 @@ namespace System.Runtime.InteropServices.Marshalling
     [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
         System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
-        typeof(System.Runtime.InteropServices.Marshalling.BstrStringMarshaller))]
+        typeof(System.Runtime.InteropServices.Marshalling.BStrStringMarshaller))]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
         System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
-        typeof(System.Runtime.InteropServices.Marshalling.BstrStringMarshaller.ManagedToUnmanagedIn))]
-    public static unsafe class BstrStringMarshaller
+        typeof(System.Runtime.InteropServices.Marshalling.BStrStringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class BStrStringMarshaller
     {
         public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
         public static string? ConvertToManaged(ushort* unmanaged) { throw null; }

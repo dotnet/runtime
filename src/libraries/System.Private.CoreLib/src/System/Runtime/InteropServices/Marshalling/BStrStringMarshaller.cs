@@ -11,9 +11,9 @@ namespace System.Runtime.InteropServices.Marshalling
     /// Marshaller for BSTR strings
     /// </summary>
     [CLSCompliant(false)]
-    [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(BstrStringMarshaller))]
+    [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(BStrStringMarshaller))]
     [CustomMarshaller(typeof(string), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanagedIn))]
-    public static unsafe class BstrStringMarshaller
+    public static unsafe class BStrStringMarshaller
     {
         /// <summary>
         /// Convert a string to an unmanaged version.
@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free()
             {
                 if (_allocated)
-                    BstrStringMarshaller.Free(_ptrToFirstChar);
+                    BStrStringMarshaller.Free(_ptrToFirstChar);
             }
         }
     }
