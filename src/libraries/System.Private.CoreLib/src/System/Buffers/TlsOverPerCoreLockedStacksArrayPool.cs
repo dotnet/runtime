@@ -144,11 +144,13 @@ namespace System.Buffers
             {
                 haveBucket = true;
 
+#if !DEBUG
                 // Clear the array if the user requested it.
                 if (clearArray)
                 {
                     Array.Clear(array);
                 }
+#endif
 
                 // Check to see if the buffer is the correct size for this bucket.
                 if (array.Length != Utilities.GetMaxSizeForBucket(bucketIndex))
