@@ -11,7 +11,7 @@ namespace System.Net.Quic;
 public abstract class QuicConnectionOptions
 {
     /// <summary>
-    /// Prevent sub-classing.
+    /// Prevent sub-classing by code outside of this assembly.
     /// </summary>
     internal QuicConnectionOptions()
     { }

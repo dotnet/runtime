@@ -14,6 +14,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal static unsafe IPEndPoint ToIPEndPoint(this ref QuicAddr quicAddress)
         {
             // MsQuic always uses storage size as if IPv6 was used
+            // QuicAddr is native memory, it cannot be moved by GC, thus no need for fixed expression here.
             Span<byte> addressBytes = new Span<byte>((byte*)Unsafe.AsPointer(ref quicAddress), Internals.SocketAddress.IPv6AddressSize);
             return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(addressBytes), addressBytes).GetIPEndPoint();
         }

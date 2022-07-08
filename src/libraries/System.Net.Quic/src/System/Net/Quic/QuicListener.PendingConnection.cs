@@ -19,7 +19,7 @@ public sealed partial class QuicListener
 
         public PendingConnection()
         {
-            _finishHandshakeTask = new TaskCompletionSource<QuicConnection?>();
+            _finishHandshakeTask = new TaskCompletionSource<QuicConnection?>(TaskCreationOptions.RunContinuationsAsynchronously);
             _cancellationTokenSource = new CancellationTokenSource();
         }
 

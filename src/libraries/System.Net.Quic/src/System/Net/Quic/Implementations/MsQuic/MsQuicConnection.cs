@@ -564,7 +564,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal unsafe ValueTask FinishHandshakeAsync(QuicServerConnectionOptions options, string? targetHost, CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
             if (_state.ConnectTcs.TryInitialize(out var valueTask, this, cancellationToken))
             {

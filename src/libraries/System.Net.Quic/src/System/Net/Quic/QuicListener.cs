@@ -140,7 +140,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
     public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
     {
-        ThrowIfDisposed();
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         try
         {
@@ -234,14 +234,6 @@ public sealed partial class QuicListener : IAsyncDisposable
                 NetEventSource.Error(instance, $"Exception while processing event {listenerEvent->Type}: {ex}");
             }
             return QUIC_STATUS_INTERNAL_ERROR;
-        }
-    }
-
-    private void ThrowIfDisposed()
-    {
-        if (Volatile.Read(ref _disposed) != 0)
-        {
-            throw new ObjectDisposedException(nameof(QuicListener));
         }
     }
 

@@ -882,7 +882,7 @@ namespace System.Net.Http
                 QuicConnection quicConnection;
                 try
                 {
-                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
