@@ -2340,7 +2340,7 @@ namespace System
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
             int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
 
-            if (!insertLineBreaks && bytes.Length >= 64)
+            if (!insertLineBreaks && bytes.Length >= 64 && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported))
             {
                 // For large inputs it's faster to allocate a temp buffer and call UTF8 version
                 // which is then extended to UTF8 via Latin1.GetString (base64 is always ASCI)
