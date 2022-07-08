@@ -20,17 +20,17 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task Loopback_Kerberos_Authentication()
         {
-            using var kerberosExecutor = new KerberosExecutor();
+            using var kerberosExecutor = new KerberosExecutor("LINUX.CONTOSO.COM");
 
-            kerberosExecutor.AddService("HTTP");
+            kerberosExecutor.AddService("HTTP/linux.contoso.com");
 
-            await kerberosExecutor.Invoke((user, password, realm) =>
+            await kerberosExecutor.Invoke(() =>
             {
                 // Do a loopback authentication
                 NegotiateAuthenticationClientOptions clientOptions = new()
                 {
-                    Credential = new NetworkCredential(user, password, realm),
-                    TargetName = $"HTTP/{realm}"
+                    Credential = new NetworkCredential("user", KerberosExecutor.FakePassword, "LINUX.CONTOSO.COM"),
+                    TargetName = $"HTTP/linux.contoso.com"
                 };
                 NegotiateAuthenticationServerOptions serverOptions = new() { };
                 NegotiateAuthentication clientNegotiateAuthentication = new(clientOptions);

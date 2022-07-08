@@ -26,11 +26,14 @@ public class KerberosExecutor : IDisposable
     private List<string> _services;
 
     public static bool IsSupported { get; } = OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
-    public KerberosExecutor(string realm = "linux.contoso.com")
+
+    public static string FakePassword { get; } = "P@ssw0rd!";
+
+    public KerberosExecutor(string realm)
     {
         _options = new ListenerOptions
         {
-            DefaultRealm = realm.ToUpper(),
+            DefaultRealm = realm,
             RealmLocator = realm => new FakeRealmService(realm)
         };
 
@@ -52,16 +55,16 @@ public class KerberosExecutor : IDisposable
         _services.Add(name);
     }
 
-    public async Task Invoke(Action<string, string, string> method)
+    public async Task Invoke(Action method)
     {
         await PrepareInvoke();
-        _invokeHandle = RemoteExecutor.Invoke(method, "user", "P@ssw0rd!", _options.DefaultRealm);
+        _invokeHandle = RemoteExecutor.Invoke(method);
     }
 
-    public async Task Invoke(Func<string, string, string, Task> method)
+    public async Task Invoke(Func<Task> method)
     {
         await PrepareInvoke();
-        _invokeHandle = RemoteExecutor.Invoke(method, "user", "P@ssw0rd!", _options.DefaultRealm);
+        _invokeHandle = RemoteExecutor.Invoke(method);
     }
 
     private async Task PrepareInvoke()
@@ -93,7 +96,7 @@ public class KerberosExecutor : IDisposable
                     principal: new PrincipalName(
                        PrincipalNameType.NT_PRINCIPAL,
                        _options.DefaultRealm,
-                       new [] { $"{service}/{_realm}" }),
+                       new [] { service }),
                     saltType: SaltType.ActiveDirectoryUser
                );
 
