@@ -174,16 +174,7 @@ namespace Microsoft.Interop.JavaScript
             };
 
             typeInfos.Add(retTypeInfo);
-
-            InteropGenerationOptions options = new(true);
-            IMarshallingGeneratorFactory generatorFactory = new UnsupportedMarshallingFactory();
-
-            generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
-            var amOptions = new AttributedMarshallingModelOptions(true, MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut);
-            generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelGeneratorFactory(generatorFactory, amOptions), amOptions);
-            var jsGeneratorFactory = new JSGeneratorFactory(generatorFactory);
-
-
+            var jsGeneratorFactory = new JSGeneratorFactory();
             return (typeInfos.ToImmutable(), jsGeneratorFactory);
         }
 
