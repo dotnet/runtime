@@ -87,6 +87,10 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
             _parent.DangerousAddRef(ref release);
             if (!release)
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Error(this, $"{this} {_parent} ref count not incremented");
+                }
                 _parent = null;
             }
             else
