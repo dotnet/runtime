@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 namespace System.Buffers.Text
 {
 #if SYSTEM_PRIVATE_CORELIB
-    public
-#else
     internal
+#else
+    public
 #endif
         static partial class Base64
     {

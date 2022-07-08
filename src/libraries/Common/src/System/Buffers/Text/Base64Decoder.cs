@@ -14,9 +14,9 @@ namespace System.Buffers.Text
     // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
 
 #if SYSTEM_PRIVATE_CORELIB
-    public
-#else
     internal
+#else
+    public
 #endif
         static partial class Base64
     {

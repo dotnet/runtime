@@ -17,9 +17,9 @@ namespace System.Buffers.Text
     /// Convert between binary data and UTF-8 encoded text that is represented in base 64.
     /// </summary>
 #if SYSTEM_PRIVATE_CORELIB
-    public
-#else
     internal
+#else
+    public
 #endif
         static partial class Base64
     {
