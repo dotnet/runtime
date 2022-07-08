@@ -103,7 +103,7 @@ namespace DependecyGraphViewer.Tests
         }
 
         [Fact]
-        public void multiLink()
+        public void MultiLink()
         {
             string fileContents = """
                 <?xml version="1.0" encoding="utf-8"?>

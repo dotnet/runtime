@@ -60,7 +60,7 @@ namespace DependencyLogViewer
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.Location = new System.Drawing.Point(0, 30);
-            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -85,7 +85,7 @@ namespace DependencyLogViewer
             this.dependentsListBox.HorizontalScrollbar = true;
             this.dependentsListBox.ItemHeight = 30;
             this.dependentsListBox.Location = new System.Drawing.Point(0, 0);
-            this.dependentsListBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.dependentsListBox.Margin = new System.Windows.Forms.Padding(4);
             this.dependentsListBox.Name = "dependentsListBox";
             this.dependentsListBox.Size = new System.Drawing.Size(1126, 361);
             this.dependentsListBox.TabIndex = 0;
@@ -95,7 +95,7 @@ namespace DependencyLogViewer
             // 
             this.exploreDependent.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.exploreDependent.Location = new System.Drawing.Point(0, 361);
-            this.exploreDependent.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.exploreDependent.Margin = new System.Windows.Forms.Padding(4);
             this.exploreDependent.Name = "exploreDependent";
             this.exploreDependent.Size = new System.Drawing.Size(1126, 58);
             this.exploreDependent.TabIndex = 1;
@@ -110,7 +110,7 @@ namespace DependencyLogViewer
             this.dependeesListBox.HorizontalScrollbar = true;
             this.dependeesListBox.ItemHeight = 30;
             this.dependeesListBox.Location = new System.Drawing.Point(0, 0);
-            this.dependeesListBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.dependeesListBox.Margin = new System.Windows.Forms.Padding(4);
             this.dependeesListBox.Name = "dependeesListBox";
             this.dependeesListBox.Size = new System.Drawing.Size(1126, 329);
             this.dependeesListBox.TabIndex = 0;
@@ -120,7 +120,7 @@ namespace DependencyLogViewer
             // 
             this.exploreDependee.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.exploreDependee.Location = new System.Drawing.Point(0, 329);
-            this.exploreDependee.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.exploreDependee.Margin = new System.Windows.Forms.Padding(4);
             this.exploreDependee.Name = "exploreDependee";
             this.exploreDependee.Size = new System.Drawing.Size(1126, 52);
             this.exploreDependee.TabIndex = 1;
@@ -135,7 +135,7 @@ namespace DependencyLogViewer
             this.ClientSize = new System.Drawing.Size(1126, 836);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.nodeTitle);
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.MinimumSize = new System.Drawing.Size(1090, 170);
             this.Name = "NodeForm";
             this.Text = "NodeForm";

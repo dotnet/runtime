@@ -464,6 +464,7 @@ namespace DependencyLogViewer
             stopped = true;
         }
     }
+
     static class Program
     {
         /// <summary>
