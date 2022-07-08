@@ -19,7 +19,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     bool result = false;
 
     // Initialize PAGE_SIZE
-#if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64))
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
     g_pageSize = sysconf(_SC_PAGESIZE);
 #endif
     TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
