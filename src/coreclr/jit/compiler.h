@@ -1772,7 +1772,7 @@ struct IPmappingDsc
     bool             ipmdIsLabel;   // Can this code be a branch label?
 };
 
-struct PreciseIPMapping
+struct RichIPMapping
 {
     emitLocation nativeLoc;
     DebugInfo    debugInfo;
@@ -4196,12 +4196,14 @@ private:
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
-                                CORINFO_CALL_INFO*     callInfo);
+                                CORINFO_CALL_INFO*     callInfo,
+                                IL_OFFSET              ilOffset);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
-                                      CORINFO_CALL_INFO*     callInfo);
+                                      CORINFO_CALL_INFO*     callInfo,
+                                      IL_OFFSET              ilOffset);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
                                       var_types                callerRetType,
@@ -4871,6 +4873,9 @@ public:
 
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
+
+    // Does value-numbering for a bitcast tree.
+    void fgValueNumberBitCast(GenTree* tree);
 
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
@@ -7806,11 +7811,8 @@ public:
 
     // Record the instr offset mapping to the generated code
 
-    jitstd::list<IPmappingDsc> genIPmappings;
-
-#ifdef DEBUG
-    jitstd::list<PreciseIPMapping> genPreciseIPmappings;
-#endif
+    jitstd::list<IPmappingDsc>  genIPmappings;
+    jitstd::list<RichIPMapping> genRichIPmappings;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points

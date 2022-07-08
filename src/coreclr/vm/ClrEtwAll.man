@@ -3070,7 +3070,7 @@
                             </ExecutionCheckpoint>
                         </UserData>
                     </template>
-
+                    
                     <template tid="ProfilerMessage">
                       <data name="ClrInstanceID" inType="win:UInt16"/>
                       <data name="Message" inType="win:UnicodeString" />
@@ -3099,7 +3099,7 @@
                 <events>
                     <!-- CLR GC events, value reserved from 0 to 39 and 200 to 239 -->
                     <!-- Note the opcode's for GC events do include 0 to 9 for backward compatibility, even though
-          they don't mean what those predefined opcodes are supposed to mean -->
+                         they don't mean what those predefined opcodes are supposed to mean -->
                     <event value="1" version="0" level="win:Informational"  template="GCStart"
                            keywords="GCKeyword" opcode="win:Start"
                            task="GarbageCollection"
@@ -4165,9 +4165,9 @@
                     <event value="300" version="0" level="win:Informational"  template="ExecutionCheckpoint"
                            keywords ="PerfTrackKeyword" opcode="ExecutionCheckpoint" task="ExecutionCheckpoint" symbol="ExecutionCheckpoint"
                            message="$(string.RuntimePublisher.ExecutionCheckpointEventMessage)"/>
+
                 </events>
             </provider>
-
 
             <!--CLR Rundown Publisher-->
             <provider name="Microsoft-Windows-DotNETRuntimeRundown"
@@ -5265,12 +5265,14 @@
                              message="$(string.PrivatePublisher.GCHandlePrivateKeywordMessage)" symbol="CLR_PRIVATEGCHANDLE_KEYWORD"/>
                     <keyword name="MulticoreJitPrivateKeyword" mask="0x20000"
                              message="$(string.PrivatePublisher.MulticoreJitPrivateKeywordMessage)" symbol="CLR_PRIVATEMULTICOREJIT_KEYWORD"/>
+                    <keyword name="JittedMethodRichDebugInfoKeyword" mask="0x40000"
+                             message="$(string.PrivatePublisher.JittedMethodRichDebugInfoKeyword)" symbol="CLR_JITTED_METHOD_RICH_DEBUG_INFO_KEYWORD"/>
+                    <keyword name="PerfTrackPrivateKeyword" mask="0x20000000"
+                             message="$(string.PrivatePublisher.PerfTrackKeywordMessage)" symbol="CLR_PERFTRACK_PRIVATE_KEYWORD"/>
                     <keyword name="StackKeyword" mask="0x40000000"
                              message="$(string.PrivatePublisher.StackKeywordMessage)" symbol="CLR_PRIVATESTACK_KEYWORD"/>
                     <keyword name="StartupKeyword" mask="0x80000000"
                              message="$(string.PrivatePublisher.StartupKeywordMessage)"  symbol="CLR_PRIVATESTARTUP_KEYWORD"/>
-                    <keyword name="PerfTrackPrivateKeyword" mask="0x20000000"
-                      message="$(string.PrivatePublisher.PerfTrackKeywordMessage)" symbol="CLR_PERFTRACK_PRIVATE_KEYWORD"/>
 
                 <!-- NOTE: This is not used anymore. They are kept around for backcompat with traces that might have already contained these -->
                     <keyword name="DynamicTypeUsageKeyword" mask="0x00000020"
@@ -5468,6 +5470,14 @@
                         <opcodes>
                             <opcode name="ModuleRangeLoadPrivate" message="$(string.PrivatePublisher.ModuleRangeLoadOpcodeMessage)" symbol="CLR_PERFTRACK_PRIVATE_MODULE_RANGE_LOAD_OPCODE" value="10"> </opcode>
                         </opcodes>
+                    </task>
+
+                    <task name="CLRMethodPrivate" symbol="CLR_METHOD_PRIVATE_TASK"
+                          value="21" eventGUID="{CBC6EEBC-2ED8-4130-9505-885EAE51BE7E}"
+                          message="$(string.PrivatePublisher.CLRMethodPrivateTaskMessage)">
+                          <opcodes>
+                            <opcode name="JittedMethodRichDebugInfo" message="$(string.PrivatePublisher.JittedMethodRichDebugInfoOpcodeMessage)" symbol="CLR_METHOD_PRIVATE_JITTED_METHOD_RICH_DEBUG_INFO_OPCODE" value="10" />
+                          </opcodes>
                     </task>
 
                     <!-- NOTE: These are not used anymore. They are kept around for backcompat with traces that might have already contained these -->
@@ -5986,6 +5996,26 @@
                                 <AssemblyName> %4 </AssemblyName>
                             </NgenBindEvent>
                         </UserData>
+                    </template>
+
+                    <template tid="JittedMethodRichDebugInfo">
+                      <data name="ClrInstanceID" inType="win:UInt16"/>
+                      <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ILVersionID" inType="win:UInt64" />
+                      <data name="ChunkIndex" inType="win:UInt32" />
+                      <data name="DataSize" inType="win:UInt32" />
+                      <data name="Data" inType="win:Binary" length="DataSize" />
+                      <UserData>
+                        <Settings xmlns="myNs">
+                          <ClrInstanceID> %1 </ClrInstanceID>
+                          <MethodID> %2 </MethodID>
+                          <ReJITID> %3 </ReJITID>
+                          <ILVersionID> %4 </ILVersionID>
+                          <ChunkIndex> %5 </ChunkIndex>
+                          <DataSize> %6 </DataSize>
+                        </Settings>
+                      </UserData>
                     </template>
 
                     <template tid="ModuleTransparencyCalculation">
@@ -7174,6 +7204,11 @@
                            keywords="PrivateFusionKeyword" opcode="NgenBind"
                            task="CLRNgenBinder"
                            symbol="NgenBindEvent" message="$(string.PrivatePublisher.NgenBinderMessage)"/>
+                    
+                    <event value="189" version="0" level="win:Informational" template="JittedMethodRichDebugInfo"
+                           keywords="JittedMethodRichDebugInfoKeyword"
+                           task="CLRMethodPrivate" opcode="JittedMethodRichDebugInfo"
+                           symbol="JittedMethodRichDebugInfo" message="$(string.PrivatePublisher.JittedMethodRichDebugInfoEventMessage)"/>
 
                     <!-- CLR FailFast events -->
                     <event value="191" version="0" level="win:Critical"  template="FailFast"
@@ -8598,6 +8633,7 @@
                 <string id="PrivatePublisher.FieldTransparencyComputationEndEventMessage" value="Field=%1;%nModule=%2;%nAppDomainID=%3;%nIsCritical=%4;%nIsTreatAsSafe=%5;%nClrInstanceID=%6" />
                 <string id="PrivatePublisher.TokenTransparencyComputationStartEventMessage" value="Token=%1;%nModule=%2;%nAppDomainID=%3;%nClrInstanceID=%4" />
                 <string id="PrivatePublisher.TokenTransparencyComputationEndEventMessage" value="Token=%1;%nModule=%2;%nAppDomainID=%3;%nIsCritical=%4;%nIsTreatAsSafe=%5;%nClrInstanceID=%6" />
+                <string id="PrivatePublisher.JittedMethodRichDebugInfoEventMessage" value="ClrInstanceID=%1;%nMethodID=%2;%nReJITID=%3;%nILVersionID=%4;%nChunkIndex=%5;%nDataSize=%6" />
 
                 <string id="PrivatePublisher.AllocRequestEventMessage" value="LoaderHeapPtr=%1;%nMemoryAddress=%2;%nRequestSize=%3;%nClrInstanceID=%4" />
                 <string id="PrivatePublisher.ModuleRangeLoadEventMessage" value="ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5;%nIBCType=%6;%nSectionType=%7" />
@@ -8678,6 +8714,7 @@
 
                 <string id="PrivatePublisher.LoaderHeapAllocationPrivateTaskMessage" value="LoaderHeap" />
                 <string id="PrivatePublisher.PerfTrackTaskMessage" value="ClrPerfTrack" />
+                <string id="PrivatePublisher.CLRMethodPrivateTaskMessage" value="CLRMethodPrivate" />
                 <string id="PrivatePublisher.MulticoreJitTaskMessage" value="ClrMulticoreJit" />
                 <string id="PrivatePublisher.DynamicTypeUsageTaskMessage" value="ClrDynamicTypeUsage" />
 
@@ -9023,6 +9060,7 @@
                 <string id="PrivatePublisher.PrivateFusionKeywordMessage" value="Fusion" />
                 <string id="PrivatePublisher.LoaderHeapPrivateKeywordMessage" value="LoaderHeap" />
                 <string id="PrivatePublisher.PerfTrackKeywordMessage" value="PerfTrack" />
+                <string id="PrivatePublisher.JittedMethodRichDebugInfoKeyword" value="JittedMethodRichDebugInfo" />
                 <string id="PrivatePublisher.DynamicTypeUsageMessage" value="DynamicTypeUsage" />
                 <string id="PrivatePublisher.MulticoreJitPrivateKeywordMessage" value="MulticoreJit" />
                 <string id="PrivatePublisher.InteropPrivateKeywordMessage" value="Interop" />
@@ -9143,7 +9181,7 @@
                 <string id="RuntimePublisher.InstrumentationDataOpcodeMessage" value="InstrumentationData" />
 
                 <string id="RuntimePublisher.ExecutionCheckpointOpcodeMessage" value="ExecutionCheckpoint" />
-
+                
                 <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
 
                 <string id="RundownPublisher.GCSettingsOpcodeMessage" value="GCSettingsRundown" />
@@ -9307,6 +9345,8 @@
 
                 <string id="PrivatePublisher.LoaderHeapPrivateAllocRequestMessage" value="LoaderHeapAllocRequest" />
                 <string id="PrivatePublisher.ModuleRangeLoadOpcodeMessage" value="ModuleRangeLoad" />
+
+                <string id="PrivatePublisher.JittedMethodRichDebugInfoOpcodeMessage" value="JittedMethodRichDebugInfo" />
 
                 <string id="MonoProfilerPublisher.MonoProfilerTaskMessage" value="MonoProfiler" />
 

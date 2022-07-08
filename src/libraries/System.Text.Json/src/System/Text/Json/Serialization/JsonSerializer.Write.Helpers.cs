@@ -57,11 +57,7 @@ namespace System.Text.Json
         {
             Debug.Assert(writer != null);
 
-            Debug.Assert(!jsonTypeInfo.HasSerialize ||
-                jsonTypeInfo is not JsonTypeInfo<TValue> ||
-                jsonTypeInfo.Options.SerializerContext == null ||
-                !jsonTypeInfo.Options.SerializerContext.CanUseSerializationLogic,
-                "Incorrect method called. WriteUsingGeneratedSerializer() should have been called instead.");
+            // TODO unify method with WriteUsingGeneratedSerializer
 
             WriteStack state = default;
             jsonTypeInfo.EnsureConfigured();
