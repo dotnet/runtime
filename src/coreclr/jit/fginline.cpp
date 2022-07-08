@@ -1606,7 +1606,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             {
                 /* The argument is either not used or a const or lcl var */
 
-                noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar);
+                noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar ||
+                             argInfo.argIsInvariantComplex);
 
                 /* Make sure we didnt change argNode's along the way, or else
                    subsequent uses of the arg would have worked with the bashed value */

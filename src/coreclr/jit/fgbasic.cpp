@@ -833,7 +833,7 @@ public:
         const unsigned argNum = value - SLOT_ARGUMENT;
         if (argNum < info->argCnt)
         {
-            return info->inlArgInfo[argNum].argIsInvariant;
+            return info->inlArgInfo[argNum].argIsInvariant || info->inlArgInfo[argNum].argIsInvariantComplex;
         }
         return false;
     }

@@ -20206,6 +20206,17 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
             return;
         }
     }
+    else
+    {
+        if (curArgVal->IsCall() &&
+            (curArgVal->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)) &&
+            (gtGetHelperArgClassHandle(curArgVal->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode()) !=
+             NO_CLASS_HANDLE))
+        {
+            inlCurArgInfo->argIsInvariantComplex = true;
+            inlCurArgInfo->argHasSideEff         = false;
+        }
+    }
 
     bool isExact              = false;
     bool isNonNull            = false;
@@ -20243,6 +20254,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         if (inlCurArgInfo->argIsInvariant)
         {
             printf(" is a constant");
+        }
+        if (inlCurArgInfo->argIsInvariantComplex)
+        {
+            printf(" is an invariant complex expr");
         }
         if (inlCurArgInfo->argHasGlobRef)
         {
@@ -20759,7 +20774,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
     GenTree* argNode = argInfo.arg->GetNode();
     assert(!argNode->OperIs(GT_RET_EXPR));
 
-    if (argInfo.argIsInvariant && !argCanBeModified)
+    if ((argInfo.argIsInvariant || argInfo.argIsInvariantComplex) && !argCanBeModified)
     {
         // Directly substitute constants or addresses of locals
         //
@@ -20913,16 +20928,6 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
             argInfo.argHasTmp = true;
             argInfo.argTmpNum = tmpNum;
 
-            bool substitute = false;
-
-            if (argNode->IsCall() &&
-                (argNode->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE)) &&
-                (gtGetHelperArgClassHandle(argNode->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode()) !=
-                 NO_CLASS_HANDLE))
-            {
-                substitute = true;
-            }
-
             // If we require strict exception order, then arguments must
             // be evaluated in sequence before the body of the inlined method.
             // So we need to evaluate them to a temp.
@@ -20932,8 +20937,8 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
             // TODO-1stClassStructs: We currently do not reuse an existing lclVar
             // if it is a struct, because it requires some additional handling.
 
-            if (substitute || (!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
-                               !argInfo.argHasCallerLocalRef))
+            if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
+                 !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp) DEBUGARG(lclNum));

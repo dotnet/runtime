@@ -638,6 +638,7 @@ struct InlArgInfo
     unsigned argTmpNum;                   // the argument tmp number
     unsigned argIsUsed : 1;               // is this arg used at all?
     unsigned argIsInvariant : 1;          // the argument is a constant or a local variable address
+    unsigned argIsInvariantComplex : 1;   // the argument is a complex invariant expression e.g. "typeof(int)"
     unsigned argIsLclVar : 1;             // the argument is a local variable
     unsigned argIsThis : 1;               // the argument is the 'this' pointer
     unsigned argHasSideEff : 1;           // the argument has side effects
