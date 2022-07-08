@@ -58,9 +58,9 @@ namespace System.Runtime.Versioning.Tests
         [InlineData("Windows8.0")]
         [InlineData("Android4.1")]
         [InlineData("")]
-        public void TestObsoletedOSPlatformAttribute(string platformName)
+        public void TestObsoletedInOSPlatformAttribute(string platformName)
         {
-            var tpa = new ObsoletedOSPlatformAttribute(platformName);
+            var tpa = new ObsoletedInOSPlatformAttribute(platformName);
 
             Assert.Equal(platformName, tpa.PlatformName);
         }
@@ -69,9 +69,9 @@ namespace System.Runtime.Versioning.Tests
         [InlineData("Windows8.0", "Message in a bottle")]
         [InlineData("Android4.1", "Message on a pigeon")]
         [InlineData("", null)]
-        public void TestObsoletedOSPlatformAttributeWithMessage(string platformName, string? message)
+        public void TestObsoletedInOSPlatformAttributeWithMessage(string platformName, string? message)
         {
-            var tpa = new ObsoletedOSPlatformAttribute(platformName, message);
+            var tpa = new ObsoletedInOSPlatformAttribute(platformName, message);
 
             Assert.Equal(platformName, tpa.PlatformName);
             Assert.Equal(message, tpa.Message);
