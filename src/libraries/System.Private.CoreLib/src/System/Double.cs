@@ -290,27 +290,27 @@ namespace System
             return IsNaN(temp) && IsNaN(m_value);
         }
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator ==(double left, double right) => left == right;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator !=(double left, double right) => left != right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator <(double left, double right) => left < right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator >(double left, double right) => left > right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator <=(double left, double right) => left <= right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         [NonVersionable]
         public static bool operator >=(double left, double right) => left >= right;
 
@@ -780,11 +780,21 @@ namespace System
         }
 
         //
-        // IFloatingPointIeee754
+        // IFloatingPointConstants
         //
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.E" />
-        static double IFloatingPointIeee754<double>.E => Math.E;
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
+        static double IFloatingPointConstants<double>.E => Math.E;
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        static double IFloatingPointConstants<double>.Pi => Pi;
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        static double IFloatingPointConstants<double>.Tau => Tau;
+
+        //
+        // IFloatingPointIeee754
+        //
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Epsilon" />
         static double IFloatingPointIeee754<double>.Epsilon => Epsilon;
@@ -798,14 +808,17 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
         static double IFloatingPointIeee754<double>.NegativeZero => NegativeZero;
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Pi" />
-        static double IFloatingPointIeee754<double>.Pi => Pi;
-
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PositiveInfinity" />
         static double IFloatingPointIeee754<double>.PositiveInfinity => PositiveInfinity;
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
-        static double IFloatingPointIeee754<double>.Tau => Tau;
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static double Atan2(double y, double x) => Math.Atan2(y, x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static double Atan2Pi(double y, double x)
+        {
+            return Atan2(y, x) / Pi;
+        }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static double BitDecrement(double x) => Math.BitDecrement(x);
@@ -1574,8 +1587,8 @@ namespace System
             return result;
         }
 
-        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
-        public static double Root(double x, int n)
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static double RootN(double x, int n)
         {
             double result;
 
@@ -1749,15 +1762,6 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static double Atan(double x) => Math.Atan(x);
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
-        public static double Atan2(double y, double x) => Math.Atan2(y, x);
-
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
-        public static double Atan2Pi(double y, double x)
-        {
-            return Atan2(y, x) / Pi;
-        }
-
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         public static double AtanPi(double x)
         {
@@ -1793,11 +1797,13 @@ namespace System
 
                         if (fractional <= 0.25)
                         {
-                            result = sign;
-
                             if (fractional != 0.00)
                             {
-                                result *= CosForIntervalPiBy4(fractional * Pi, 0.0);
+                                result = sign * CosForIntervalPiBy4(fractional * Pi, 0.0);
+                            }
+                            else
+                            {
+                                result = sign;
                             }
                         }
                         else if (fractional <= 0.50)
@@ -1826,8 +1832,8 @@ namespace System
                     }
                     else if (ax >= 7.450580596923828E-09)   // |x| >= 2^-27
                     {
-                        result = x * Pi;
-                        result = 1.0 - (result * result * 0.5);
+                        double value = x * Pi;
+                        result = 1.0 - (value * value * 0.5);
                     }
                     else
                     {
@@ -1859,6 +1865,124 @@ namespace System
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (double Sin, double Cos) SinCos(double x) => Math.SinCos(x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (double SinPi, double CosPi) SinCosPi(double x)
+        {
+            // This code is based on `cospi` and `sinpi` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            double sinPi;
+            double cosPi;
+
+            if (IsFinite(x))
+            {
+                double ax = Abs(x);
+
+                if (ax < 4_503_599_627_370_496.0)           // |x| < 2^52
+                {
+                    if (ax > 0.25)
+                    {
+                        long integral = (long)ax;
+
+                        double fractional = ax - integral;
+                        double sign = long.IsOddInteger(integral) ? -1.0 : +1.0;
+
+                        double sinSign = ((x > 0.0) ? +1.0 : -1.0) * sign;
+                        double cosSign = sign;
+
+                        if (fractional <= 0.25)
+                        {
+                            if (fractional != 0.00)
+                            {
+                                double value = fractional * Pi;
+
+                                sinPi = sinSign * SinForIntervalPiBy4(value, 0.0);
+                                cosPi = cosSign * CosForIntervalPiBy4(value, 0.0);
+                            }
+                            else
+                            {
+                                sinPi = x * 0.0;
+                                cosPi = cosSign;
+                            }
+                        }
+                        else if (fractional <= 0.50)
+                        {
+                            if (fractional != 0.50)
+                            {
+                                double value = (0.5 - fractional) * Pi;
+
+                                sinPi = sinSign * CosForIntervalPiBy4(value, 0.0);
+                                cosPi = cosSign * SinForIntervalPiBy4(value, 0.0);
+                            }
+                            else
+                            {
+                                sinPi = sinSign;
+                                cosPi = 0.0;
+                            }
+                        }
+                        else if (fractional <= 0.75)
+                        {
+                            double value = (fractional - 0.5) * Pi;
+
+                            sinPi = +sinSign * CosForIntervalPiBy4(value, 0.0);
+                            cosPi = -cosSign * SinForIntervalPiBy4(value, 0.0);
+                        }
+                        else
+                        {
+                            double value = (1.0 - fractional) * Pi;
+
+                            sinPi = +sinSign * SinForIntervalPiBy4(value, 0.0);
+                            cosPi = -cosSign * CosForIntervalPiBy4(value, 0.0);
+                        }
+                    }
+                    else if (ax >= 1.220703125E-4)          // |x| >= 2^-13
+                    {
+                        double value = x * Pi;
+
+                        sinPi = SinForIntervalPiBy4(value, 0.0);
+                        cosPi = CosForIntervalPiBy4(value, 0.0);
+                    }
+                    else if (ax >= 7.450580596923828E-09)   // |x| >= 2^-27
+                    {
+                        double value = x * Pi;
+                        double valueSq = value * value;
+
+                        sinPi = value - (valueSq * value * (1.0 / 6.0));
+                        cosPi = 1.0 - (valueSq * 0.5);
+                    }
+                    else
+                    {
+                        sinPi = x * Pi;
+                        cosPi = 1.0;
+                    }
+                }
+                else if (ax < 9_007_199_254_740_992.0)      // |x| < 2^53
+                {
+                    // x is an integer
+                    sinPi = x * 0.0;
+
+                    long bits = BitConverter.DoubleToInt64Bits(ax);
+                    cosPi = long.IsOddInteger(bits) ? -1.0 : +1.0;
+                }
+                else
+                {
+                    // x is an even integer
+                    sinPi = x * 0.0;
+                    cosPi = 1.0;
+                }
+            }
+            else
+            {
+                sinPi = NaN;
+                cosPi = NaN;
+            }
+
+            return (sinPi, cosPi);
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
         public static double SinPi(double x)
@@ -1897,11 +2021,13 @@ namespace System
                         }
                         else if (fractional <= 0.50)
                         {
-                            result = sign;
-
                             if (fractional != 0.50)
                             {
-                                result *= CosForIntervalPiBy4((0.5 - fractional) * Pi, 0.0);
+                                result = sign * CosForIntervalPiBy4((0.5 - fractional) * Pi, 0.0);
+                            }
+                            else
+                            {
+                                result = sign;
                             }
                         }
                         else if (fractional <= 0.75)
@@ -1919,8 +2045,8 @@ namespace System
                     }
                     else if (ax >= 7.450580596923828E-09)   // |x| >= 2^-27
                     {
-                        result = x * Pi;
-                        result -= result * (result * (result * (1.0 / 6.0)));
+                        double value = x * Pi;
+                        result = value - (value * value * value * (1.0 / 6.0));
                     }
                     else
                     {
@@ -1969,28 +2095,24 @@ namespace System
 
                         if (fractional <= 0.25)
                         {
-                            result = sign;
-
                             if (fractional != 0.00)
                             {
-                                result *= TanForIntervalPiBy4(fractional * Pi, 0.0, isReciprocal: false);
+                                result = sign * TanForIntervalPiBy4(fractional * Pi, 0.0, isReciprocal: false);
                             }
                             else
                             {
-                                result *= long.IsOddInteger(integral) ? -0.0 : +0.0;
+                                result = sign * (long.IsOddInteger(integral) ? -0.0 : +0.0);
                             }
                         }
                         else if (fractional <= 0.50)
                         {
-                            result = sign;
-
                             if (fractional != 0.50)
                             {
-                                result *= -TanForIntervalPiBy4((0.5 - fractional) * Pi, 0.0, isReciprocal: true);
+                                result = -sign * TanForIntervalPiBy4((0.5 - fractional) * Pi, 0.0, isReciprocal: true);
                             }
                             else
                             {
-                                result *= long.IsOddInteger(integral) ? NegativeInfinity : PositiveInfinity;
+                                result = +sign * (long.IsOddInteger(integral) ? NegativeInfinity : PositiveInfinity);
                             }
                         }
                         else if (fractional <= 0.75)
@@ -2008,8 +2130,8 @@ namespace System
                     }
                     else if (ax >= 7.450580596923828E-09)   // |x| >= 2^-27
                     {
-                        result = x * Pi;
-                        result += (result * (result * (result * (1.0 / 3.0))));
+                        double value = x * Pi;
+                        result = value + (value * value * value * (1.0 / 3.0));
                     }
                     else
                     {
