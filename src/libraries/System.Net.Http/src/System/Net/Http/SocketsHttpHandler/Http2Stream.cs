@@ -1444,7 +1444,7 @@ namespace System.Net.Http
 
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
 
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
+                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => ValueTask.FromException(new NotSupportedException(SR.net_http_content_readonly_stream));
             }
 
             private sealed class Http2WriteStream : Http2ReadWriteStream
@@ -1463,11 +1463,11 @@ namespace System.Net.Http
 
                 public override int Read(Span<byte> buffer) => throw new NotSupportedException();
 
-                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => throw new NotSupportedException();
+                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => ValueTask.FromException<int>(new NotSupportedException());
 
                 public override void CopyTo(Stream destination, int bufferSize) => throw new NotSupportedException();
 
-                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => throw new NotSupportedException();
+                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Task.FromException(new NotSupportedException());
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {

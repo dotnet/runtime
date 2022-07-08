@@ -44,10 +44,7 @@ namespace System.Net.WebSockets
         {
             get => _versionPolicy;
             [UnsupportedOSPlatform("browser")]
-            set
-            {
-                _versionPolicy = value;
-            }
+            set => _versionPolicy = value;
         }
 
         internal ClientWebSocketOptions() { } // prevent external instantiation

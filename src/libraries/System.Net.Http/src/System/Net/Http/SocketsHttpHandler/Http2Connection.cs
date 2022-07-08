@@ -847,6 +847,10 @@ namespace System.Net.Http
                         ChangeMaxConcurrentStreams(int.MaxValue);
                     }
 
+                    if (_initialSettingsReceived is null)
+                    {
+                        Interlocked.CompareExchange(_initialSettingsReceived, s_settingsReceivedSingleton, null);
+                    }
                     InitialSettingsReceived.TrySetResult(true);
                 }
 
@@ -1910,7 +1914,21 @@ namespace System.Net.Http
             EnableConnect = 0x8
         }
 
-        internal TaskCompletionSourceWithCancellation<bool> InitialSettingsReceived { get; private set; } = new TaskCompletionSourceWithCancellation<bool>();
+        private static readonly TaskCompletionSourceWithCancellation<bool> s_settingsReceivedSingleton = CreateSuccessfullyCompleted();
+
+        internal TaskCompletionSourceWithCancellation<bool> InitialSettingsReceived =>
+            _initialSettingsReceived ??
+            Interlocked.CompareExchange(ref _initialSettingsReceived, new(), null) ??
+            _initialSettingsReceived;
+
+        private TaskCompletionSourceWithCancellation<bool>? _initialSettingsReceived;
+        
+        private static TaskCompletionSourceWithCancellation<bool> CreateSuccessfullyCompleted()
+        {
+            var tcs = new TaskCompletionSourceWithCancellation<bool>();
+            tcs.TrySetResult(true);
+            return tcs;
+        }
         internal bool IsConnectEnabled { get; private set; }
 
         // Note that this is safe to be called concurrently by multiple threads.

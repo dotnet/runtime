@@ -60,20 +60,19 @@ namespace System.Net.WebSockets
                         if (!tryDowngrade && options.HttpVersion == HttpVersion.Version20
                             || (options.HttpVersion == HttpVersion.Version11 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
                         {
-                            request = new HttpRequestMessage(HttpMethod.Connect, uri);
-                            request.Version = HttpVersion.Version20;
+                            request = new HttpRequestMessage(HttpMethod.Connect, uri) { Version = HttpVersion.Version20 };
                             tryDowngrade = true;
                         }
                         else if (tryDowngrade || options.HttpVersion == HttpVersion.Version11)
                         {
-                            request = new HttpRequestMessage(HttpMethod.Get, uri);
-                            request.Version = HttpVersion.Version11;
+                            request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = HttpVersion.Version11 };
                             tryDowngrade = false;
                         }
                         else
                         {
                             throw new WebSocketException(WebSocketError.UnsupportedProtocol);
                         }
+
                         if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
                         {
                             foreach (string key in options.RequestHeaders)
@@ -104,6 +103,7 @@ namespace System.Net.WebSockets
                             response = await invoker.SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
                             externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
                         }
+
                         ValidateResponse(response, secValue, options);
                         break;
                     }
@@ -208,6 +208,7 @@ namespace System.Net.WebSockets
         private static SocketsHttpHandler SetupHandler(ClientWebSocketOptions options, out bool disposeHandler)
         {
             SocketsHttpHandler? handler;
+
             // Create the handler for this request and populate it with all of the options.
             // Try to use a shared handler rather than creating a new one just for this request, if
             // the options are compatible.
@@ -244,14 +245,9 @@ namespace System.Net.WebSockets
                 handler.UseCookies = options.Cookies != null;
                 handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
 
-                if (options.UseDefaultCredentials)
-                {
-                    handler.Credentials = CredentialCache.DefaultCredentials;
-                }
-                else
-                {
-                    handler.Credentials = options.Credentials;
-                }
+                handler.Credentials = options.UseDefaultCredentials ?
+                    CredentialCache.DefaultCredentials :
+                    options.Credentials;
 
                 if (options.Proxy == null)
                 {
@@ -269,6 +265,7 @@ namespace System.Net.WebSockets
                     handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
                 }
             }
+
             return handler;
         }
 
