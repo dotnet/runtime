@@ -902,15 +902,9 @@ inline GenTree* Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, Ge
  *  that may need to be fixed up).
  */
 
-inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields)
+inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields)
 {
-    assert((flags & (GTF_ICON_HDL_MASK | GTF_ICON_FIELD_OFF)) != 0);
-
-    // Interpret "fields == NULL" as "not a field."
-    if (fields == nullptr)
-    {
-        fields = FieldSeqStore::NotAField();
-    }
+    assert((flags & GTF_ICON_HDL_MASK) != 0);
 
     GenTreeIntCon* node;
 #if defined(LATE_DISASM)
@@ -1429,7 +1423,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     switch (oper)
     {
         case GT_CNS_INT:
-            AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsIntCon()->gtFieldSeq = nullptr;
             INDEBUG(AsIntCon()->gtTargetHandle = 0);
             break;
 #if defined(TARGET_ARM)
@@ -1611,7 +1605,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
-            AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsIntCon()->gtFieldSeq = nullptr;
             break;
 
 #if !defined(TARGET_64BIT)

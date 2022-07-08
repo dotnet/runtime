@@ -988,8 +988,9 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
 
 #if FEATURE_MULTIREG_ARGS
-        // For RyuJIT backend we will expand a Multireg arg into a GT_FIELD_LIST
-        // with multiple indirections, so here we consider spilling it into a tmp LclVar.
+        // In "fgMorphMultiRegStructArg" we will expand the arg into a GT_FIELD_LIST with multiple indirections, so
+        // here we consider spilling it into a local. We also need to spill it in case we have a node that we do not
+        // currently handle in multi-reg morphing.
         //
         if (varTypeIsStruct(argx) && !arg.m_needTmp)
         {
@@ -1018,51 +1019,31 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
-#ifndef TARGET_ARM
-            // TODO-Arm: This optimization is not implemented for ARM32
-            // so we skip this for ARM32 until it is ported to use RyuJIT backend
+            // We are only able to expand certain "OBJ"s into field lists, so here we spill all the
+            // "mis-sized" ones. We could in theory support them directly with some arithmetic and
+            // shifts, but these cases are rare enough that it is probably not worth the complexity.
+            // No need to do this for stack args as they are directly supported by codegen. Likewise
+            // for "local" "OBJ"s - we can safely load "too much" for them.
             //
             if (argx->OperIs(GT_OBJ) && (arg.AbiInfo.GetRegNum() != REG_STK))
             {
-                GenTreeObj* argObj     = argx->AsObj();
-                unsigned    structSize = argObj->GetLayout()->GetSize();
-                switch (structSize)
-                {
-                    case 3:
-                    case 5:
-                    case 6:
-                    case 7:
-                        // If we have a stack based LclVar we can perform a wider read of 4 or 8 bytes
-                        //
-                        if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
-                        {
-                            // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
-                            // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
-                            //
-                            SetNeedsTemp(&arg);
-                        }
-                        break;
-                    case 11:
-                    case 13:
-                    case 14:
-                    case 15:
-                        // Spill any GT_OBJ multireg structs that are difficult to extract
-                        //
-                        // When we have a GT_OBJ of a struct with the above sizes we would need
-                        // to use 3 or 4 load instructions to load the exact size of this struct.
-                        // Instead we spill the GT_OBJ into a new GT_LCL_VAR temp and this sequence
-                        // will use a GT_CPBLK to copy the exact size into the GT_LCL_VAR temp.
-                        // Then we can just load all 16 bytes of the GT_LCL_VAR temp when passing
-                        // the argument.
-                        //
-                        SetNeedsTemp(&arg);
-                        break;
+                GenTreeObj* argObj       = argx->AsObj();
+                unsigned    structSize   = argObj->Size();
+                unsigned    lastLoadSize = structSize % TARGET_POINTER_SIZE;
 
-                    default:
-                        break;
+                // TODO-ADDR: delete the "IsLocalAddrExpr" check once local morph transforms all such OBJs into
+                // local nodes.
+                if ((lastLoadSize != 0) && !isPow2(lastLoadSize) && (argObj->Addr()->IsLocalAddrExpr() == nullptr))
+                {
+#ifdef TARGET_ARM
+                    // On ARM we don't expand split args larger than 16 bytes into field lists.
+                    if (!arg.AbiInfo.IsSplit() || (structSize <= 16))
+#endif // TARGET_ARM
+                    {
+                        SetNeedsTemp(&arg);
+                    }
                 }
             }
-#endif // !TARGET_ARM
         }
 #endif // FEATURE_MULTIREG_ARGS
     }
@@ -3157,18 +3138,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         canTransform =
                             (!arg.AbiInfo.IsHfaArg() || (passingSize == genTypeSize(arg.AbiInfo.GetHfaType())));
                     }
-
-#if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
-                    // For ARM64 or AMD64/UX we can pass non-power-of-2 structs in a register, but we can
-                    // only transform in that case if the arg is a local.
-                    // TODO-CQ: This transformation should be applicable in general, not just for the ARM64
-                    // or UNIX_AMD64_ABI cases where they will be passed in registers.
                     else
                     {
+                        // We can pass non-power-of-2 structs in a register, but we can only transform in that
+                        // case if the arg is a local.
                         canTransform = argIsLocal;
                         passingSize  = genTypeSize(structBaseType);
                     }
-#endif //  TARGET_ARM64 || UNIX_AMD64_ABI || TARGET_LOONGARCH64
                 }
 
                 if (!canTransform)
@@ -3206,39 +3182,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         }
                     }
 #endif // UNIX_AMD64_ABI
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
                     if ((passingSize != structSize) && !argIsLocal)
                     {
                         makeOutArgCopy = true;
                     }
-#endif
-
-#ifdef TARGET_ARM
-                    // TODO-1stClassStructs: Unify these conditions across targets.
-                    if (((lclVar != nullptr) &&
-                         (lvaGetPromotionType(lclVar->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT)) ||
-                        ((argObj->OperIs(GT_OBJ)) && (passingSize != structSize)))
-                    {
-                        makeOutArgCopy = true;
-                    }
-
-                    // If the arg may go into registers (both fully or split)
-                    // then we cannot handle passing it from an arbitrary
-                    // source if it would require passing a 3 byte chunk.
-                    // Placing 3 bytes into a register requires multiple loads/shifts/or.
-                    // In theory we could more easily support it for split args
-                    // as those load registers fully always, but currently we
-                    // do not.
-                    if ((arg.AbiInfo.NumRegs > 0) && ((passingSize % REGSIZE_BYTES) == 3))
-                    {
-                        makeOutArgCopy = true;
-                    }
-
-                    if (structSize < TARGET_POINTER_SIZE)
-                    {
-                        makeOutArgCopy = true;
-                    }
-#endif // TARGET_ARM
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
                 }
                 else
                 {
@@ -3655,8 +3604,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         }
         if ((lcl != nullptr) && (lvaGetPromotionType(lcl->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
         {
-            if (argNode->OperIs(GT_LCL_VAR) ||
-                ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout()))
+            // TODO-Arm-CQ: support decomposing "large" promoted structs into field lists.
+            if (!arg->AbiInfo.IsSplit() &&
+                (argNode->OperIs(GT_LCL_VAR) ||
+                 ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout())))
             {
                 argNode = fgMorphLclArgToFieldlist(lcl);
             }
@@ -4623,13 +4574,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         addr->gtFlags |= GTF_ARR_ADDR_NONNULL;
     }
 
-    // Transfer the zero-offset annotation from INDEX_ADDR to ARR_ADDR...
-    FieldSeqNode* zeroOffsetFldSeq;
-    if (GetZeroOffsetFieldMap()->Lookup(indexAddr, &zeroOffsetFldSeq))
-    {
-        fgAddFieldSeqForZeroOffset(addr, zeroOffsetFldSeq);
-    }
-
     GenTree* tree = addr;
 
     // Prepend the bounds check and the assignment trees that were created (if any).
@@ -4981,7 +4925,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     unsigned             fldOffset     = tree->AsField()->gtFldOffset;
     GenTree*             objRef        = tree->AsField()->GetFldObj();
     bool                 fldMayOverlap = tree->AsField()->gtFldMayOverlap;
-    FieldSeqNode*        fieldSeq      = FieldSeqStore::NotAField();
+    FieldSeq*            fieldSeq      = nullptr;
 
     // Reset the flag because we may reuse the node.
     tree->AsField()->gtFldMayOverlap = false;
@@ -5231,17 +5175,17 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
 #endif
 
-        if (!fldMayOverlap)
+        // We only need to attach the field offset information for class fields.
+        if ((objRefType == TYP_REF) && !fldMayOverlap)
         {
-            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, fldOffset, FieldSeqNode::FieldKind::Instance);
+            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeq::FieldKind::Instance);
         }
 
+        // Add the member offset to the object's address.
         if (fldOffset != 0)
         {
-            // Generate the "addr" node.
-            // Add the member offset to the object's address.
             addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr,
-                                 gtNewIconHandleNode(fldOffset, GTF_ICON_FIELD_OFF, fieldSeq));
+                                 gtNewIconNode(fldOffset, fieldSeq));
         }
 
         // Now let's set the "tree" as a GT_IND tree.
@@ -5254,10 +5198,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             //
             // Create "comma2" node and link it to "tree".
             //
-            GenTree* comma2;
-            comma2 = gtNewOperNode(GT_COMMA,
-                                   addr->TypeGet(), // The type of "comma2" node is the same as the type of "addr" node.
-                                   comma, addr);
+            GenTree* comma2     = gtNewOperNode(GT_COMMA, addr->TypeGet(), comma, addr);
             tree->AsOp()->gtOp1 = comma2;
         }
 
@@ -5350,17 +5291,10 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             /* indirect to have tlsRef point at the base of the DLLs Thread Local Storage */
             tlsRef = gtNewOperNode(GT_IND, TYP_I_IMPL, tlsRef);
 
+            // Add the TLS static field offset to the address.
             assert(!fldMayOverlap);
-            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, fldOffset, FieldSeqNode::FieldKind::SimpleStatic);
-
-            if (fldOffset != 0)
-            {
-                GenTree* fldOffsetNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, fldOffset, fieldSeq);
-
-                /* Add the TLS static field offset to the address */
-
-                tlsRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, fldOffsetNode);
-            }
+            fieldSeq = GetFieldSeqStore()->Create(symHnd, fldOffset, FieldSeq::FieldKind::SimpleStatic);
+            tlsRef   = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, gtNewIconNode(fldOffset, fieldSeq));
 
             // Final indirect to get to actual value of TLS static field
 
@@ -5390,8 +5324,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             if (!isBoxedStatic)
             {
                 // Only simple statics get importred as GT_FIELDs.
-                fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, reinterpret_cast<size_t>(fldAddr),
-                                                               FieldSeqNode::FieldKind::SimpleStatic);
+                fieldSeq = GetFieldSeqStore()->Create(symHnd, reinterpret_cast<size_t>(fldAddr),
+                                                      FieldSeq::FieldKind::SimpleStatic);
             }
 
             // TODO-CQ: enable this optimization for 32 bit targets.
@@ -5450,40 +5384,14 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             return fgMorphSmpOp(tree);
         }
     }
-    noway_assert(tree->gtOper == GT_IND);
 
-    if (fldOffset == 0)
-    {
-        GenTree* addr = tree->AsOp()->gtOp1;
-
-        // 'addr' may be a GT_COMMA. Skip over any comma nodes
-        addr = addr->gtEffectiveVal();
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nBefore calling fgAddFieldSeqForZeroOffset:\n");
-            gtDispTree(tree);
-        }
-#endif
-
-        // We expect 'addr' to be an address at this point.
-        assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
-
-        // Since we don't make a constant zero to attach the field sequence to, associate it with the "addr" node.
-        fgAddFieldSeqForZeroOffset(addr, fieldSeq);
-    }
+    noway_assert(tree->OperIs(GT_IND));
 
     // Pass down the current mac; if non null we are computing an address
     GenTree* result = fgMorphSmpOp(tree, mac);
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nFinal value of Compiler::fgMorphField after calling fgMorphSmpOp:\n");
-        gtDispTree(result);
-    }
-#endif
+    JITDUMP("\nFinal value of Compiler::fgMorphField after calling fgMorphSmpOp:\n");
+    DISPTREE(result);
 
     return result;
 }
@@ -5522,7 +5430,6 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
         // If we failed to inline, we have a bit of work to do to cleanup
         if (inlineResult->IsFailure())
         {
-
             if (createdContext != nullptr)
             {
                 // We created a context before we got to the failure, so mark
@@ -11056,9 +10963,8 @@ DONE_MORPHING_CHILDREN:
      * Perform the required oper-specific postorder morphing
      */
 
-    GenTree*      temp;
-    GenTree*      lclVarTree;
-    FieldSeqNode* fieldSeq = nullptr;
+    GenTree* temp;
+    GenTree* lclVarTree;
 
     switch (oper)
     {
@@ -11203,7 +11109,7 @@ DONE_MORPHING_CHILDREN:
                     // except when `op2` is a const byref.
 
                     op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue());
-                    op2->AsIntConRef().gtFieldSeq = FieldSeqStore::NotAField();
+                    op2->AsIntConRef().gtFieldSeq = nullptr;
                     oper                          = GT_ADD;
                     tree->ChangeOper(oper);
                     goto CM_ADD_OP;
@@ -11470,8 +11376,9 @@ DONE_MORPHING_CHILDREN:
                                 LclVarDsc* fieldVarDsc = lvaGetDesc(lclNumFld);
 
                                 // Also make sure that the tree type matches the fieldVarType and that it's lvFldOffset
-                                // is zero
-                                if (fieldVarDsc->TypeGet() == typ && (fieldVarDsc->lvFldOffset == 0))
+                                // is same as that of tree's offset.
+                                if (fieldVarDsc->TypeGet() == typ &&
+                                    (fieldVarDsc->lvFldOffset == temp->AsLclVarCommon()->GetLclOffs()))
                                 {
                                     // We can just use the existing promoted field LclNum
                                     temp->AsLclVarCommon()->SetLclNum(lclNumFld);
@@ -11689,17 +11596,9 @@ DONE_MORPHING_CHILDREN:
                 }
 
                 // Perform the transform ADDR(IND(...)) == (...).
-                GenTree* addr = op1->AsOp()->gtOp1;
+                GenTree* addr = op1->AsIndir()->Addr();
 
-                // If tree has a zero field sequence annotation, update the annotation
-                // on addr node.
-                FieldSeqNode* zeroFieldSeq = nullptr;
-                if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroFieldSeq))
-                {
-                    fgAddFieldSeqForZeroOffset(addr, zeroFieldSeq);
-                }
-
-                noway_assert(varTypeIsGC(addr->gtType) || addr->gtType == TYP_I_IMPL);
+                noway_assert(varTypeIsI(addr));
 
                 DEBUG_DESTROY_NODE(op1);
                 DEBUG_DESTROY_NODE(tree);
@@ -11736,10 +11635,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 GenTree* commaNode = commas.Top();
 
-                // The top-level addr might be annotated with a zeroOffset field.
-                FieldSeqNode* zeroFieldSeq = nullptr;
-                bool          isZeroOffset = GetZeroOffsetFieldMap()->Lookup(tree, &zeroFieldSeq);
-                tree                       = op1;
+                tree = op1;
                 commaNode->AsOp()->gtOp2->gtFlags |= GTF_DONT_CSE;
 
                 // If the node we're about to put under a GT_ADDR is an indirection, it
@@ -11758,13 +11654,7 @@ DONE_MORPHING_CHILDREN:
                     commaOp2->gtFlags |= (commaOp2->AsOp()->gtOp1->gtFlags & GTF_EXCEPT);
                 }
 
-                op1 = gtNewOperNode(GT_ADDR, TYP_BYREF, commaOp2);
-
-                if (isZeroOffset)
-                {
-                    // Transfer the annotation to the new GT_ADDR node.
-                    fgAddFieldSeqForZeroOffset(op1, zeroFieldSeq);
-                }
+                op1                      = gtNewOperNode(GT_ADDR, TYP_BYREF, commaOp2);
                 commaNode->AsOp()->gtOp2 = op1;
                 // Originally, I gave all the comma nodes type "byref".  But the ADDR(IND(x)) == x transform
                 // might give op1 a type different from byref (like, say, native int).  So now go back and give
@@ -12761,15 +12651,17 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
     // Fold (x + 0) - given it won't change the tree type.
     if (op2->IsIntegralConst(0) && (genActualType(add) == genActualType(op1)))
     {
-        if (op2->IsCnsIntOrI() && varTypeIsI(op1))
+        // Keep the offset nodes with annotations for value numbering purposes.
+        if (!op2->IsCnsIntOrI() || (op2->AsIntCon()->gtFieldSeq == nullptr))
         {
-            fgAddFieldSeqForZeroOffset(op1, op2->AsIntCon()->gtFieldSeq);
+            DEBUG_DESTROY_NODE(op2);
+            DEBUG_DESTROY_NODE(add);
+
+            return op1;
         }
 
-        DEBUG_DESTROY_NODE(op2);
-        DEBUG_DESTROY_NODE(add);
-
-        return op1;
+        // Communicate to CSE that this addition is a no-op.
+        add->SetDoNotCSE();
     }
 
     if (opts.OptimizationEnabled())
@@ -13783,10 +13675,12 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 
     GenTreeOp* const div = tree;
 
-    assert(!div->IsReverseOp());
-
-    GenTree* dividend = div->gtGetOp1();
-    GenTree* divisor  = div->gtGetOp2();
+    GenTree* opA = div->gtGetOp1();
+    GenTree* opB = div->gtGetOp2();
+    if (div->IsReverseOp())
+    {
+        std::swap(opA, opB);
+    }
 
     TempInfo tempInfos[2];
     int      tempInfoCount = 0;
@@ -13796,43 +13690,47 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     // dividend are arbitrary nodes. For instance, if we spill the divisor and
     // the dividend is a local, we need to spill the dividend too unless the
     // divisor could not cause it to be reassigned.
+    // There is even more complexity due to needing to handle GTF_REVERSE_OPS.
+    //
     // This could be slightly better via GTF_CALL and GTF_ASG checks on the
     // divisor but the diffs of this were minor and the extra complexity seemed
     // not worth it.
-    bool spillDividend;
-    bool spillDivisor;
-    if (divisor->IsInvariant() || divisor->OperIsLocal())
+    bool spillA;
+    bool spillB;
+    if (opB->IsInvariant() || opB->OperIsLocal())
     {
-        spillDivisor  = false;
-        spillDividend = !dividend->IsInvariant() && !dividend->OperIsLocal();
+        spillB = false;
+        spillA = !opA->IsInvariant() && !opA->OperIsLocal();
     }
     else
     {
-        spillDivisor  = true;
-        spillDividend = !dividend->IsInvariant();
+        spillB = true;
+        spillA = !opA->IsInvariant();
     }
 
-    if (spillDividend)
+    if (spillA)
     {
-        tempInfos[tempInfoCount] = fgMakeTemp(dividend);
-        dividend                 = tempInfos[tempInfoCount].load;
+        tempInfos[tempInfoCount] = fgMakeTemp(opA);
+        opA                      = tempInfos[tempInfoCount].load;
         tempInfoCount++;
     }
 
-    if (spillDivisor)
+    if (spillB)
     {
-        tempInfos[tempInfoCount] = fgMakeTemp(divisor);
-        divisor                  = tempInfos[tempInfoCount].load;
+        tempInfos[tempInfoCount] = fgMakeTemp(opB);
+        opB                      = tempInfos[tempInfoCount].load;
         tempInfoCount++;
     }
 
-    var_types type = div->gtType;
+    GenTree* dividend = div->IsReverseOp() ? opB : opA;
+    GenTree* divisor  = div->IsReverseOp() ? opA : opB;
 
     div->gtOp1 = gtClone(dividend);
     div->gtOp2 = gtClone(divisor);
 
-    GenTree* const mul = gtNewOperNode(GT_MUL, type, div, divisor);
-    GenTree* const sub = gtNewOperNode(GT_SUB, type, dividend, mul);
+    var_types      type = div->gtType;
+    GenTree* const mul  = gtNewOperNode(GT_MUL, type, div, divisor);
+    GenTree* const sub  = gtNewOperNode(GT_SUB, type, dividend, mul);
 
     GenTree* result = sub;
     // We loop backwards as it is easier to create new commas
@@ -16997,109 +16895,6 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
     }
 
 #endif // FEATURE_IMPLICIT_BYREFS
-}
-
-//------------------------------------------------------------------------
-// fgAddFieldSeqForZeroOffset:
-//    Associate a fieldSeq (with a zero offset) with the GenTree node 'addr'
-//
-// Arguments:
-//    addr - A GenTree node
-//    fieldSeqZero - a fieldSeq (with a zero offset)
-//
-// Notes:
-//    Some GenTree nodes have internal fields that record the field sequence.
-//    If we have one of these nodes: GT_CNS_INT, GT_LCL_FLD
-//    we can append the field sequence using the gtFieldSeq
-//    If we have a GT_ADD of a GT_CNS_INT we can use the
-//    fieldSeq from child node.
-//    Otherwise we record 'fieldSeqZero' in the GenTree node using
-//    a Map:  GetFieldSeqStore()
-//    When doing so we take care to preserve any existing zero field sequence
-//
-void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZero)
-{
-    // We expect 'addr' to be an address at this point.
-    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
-
-    // Tunnel through any commas.
-    const bool commaOnly = true;
-    addr                 = addr->gtEffectiveVal(commaOnly);
-
-    // We still expect 'addr' to be an address at this point.
-    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
-
-    FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;
-    GenTree*      fieldSeqNode     = addr;
-    bool          fieldSeqRecorded = false;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nfgAddFieldSeqForZeroOffset for");
-        gtDispAnyFieldSeq(fieldSeqZero);
-
-        printf("\naddr (Before)\n");
-        gtDispNode(addr, nullptr, nullptr, false);
-        gtDispCommonEndLine(addr);
-    }
-#endif // DEBUG
-
-    switch (addr->OperGet())
-    {
-        case GT_CNS_INT:
-            fieldSeqUpdate               = GetFieldSeqStore()->Append(addr->AsIntCon()->gtFieldSeq, fieldSeqZero);
-            addr->AsIntCon()->gtFieldSeq = fieldSeqUpdate;
-            fieldSeqRecorded             = true;
-            break;
-
-        case GT_ADD:
-            if (addr->AsOp()->gtOp1->OperGet() == GT_CNS_INT)
-            {
-                fieldSeqNode = addr->AsOp()->gtOp1;
-
-                fieldSeqUpdate = GetFieldSeqStore()->Append(addr->AsOp()->gtOp1->AsIntCon()->gtFieldSeq, fieldSeqZero);
-                addr->AsOp()->gtOp1->AsIntCon()->gtFieldSeq = fieldSeqUpdate;
-                fieldSeqRecorded                            = true;
-            }
-            else if (addr->AsOp()->gtOp2->OperGet() == GT_CNS_INT)
-            {
-                fieldSeqNode = addr->AsOp()->gtOp2;
-
-                fieldSeqUpdate = GetFieldSeqStore()->Append(addr->AsOp()->gtOp2->AsIntCon()->gtFieldSeq, fieldSeqZero);
-                addr->AsOp()->gtOp2->AsIntCon()->gtFieldSeq = fieldSeqUpdate;
-                fieldSeqRecorded                            = true;
-            }
-            break;
-
-        default:
-            break;
-    }
-
-    if (fieldSeqRecorded == false)
-    {
-        // Record in the general zero-offset map.
-
-        // The "addr" node might already be annotated with a zero-offset field sequence.
-        FieldSeqNode* existingFieldSeq = nullptr;
-        if (GetZeroOffsetFieldMap()->Lookup(addr, &existingFieldSeq))
-        {
-            // Append the zero field sequences
-            fieldSeqUpdate = GetFieldSeqStore()->Append(existingFieldSeq, fieldSeqZero);
-        }
-        // Overwrite the field sequence annotation for op1
-        GetZeroOffsetFieldMap()->Set(addr, fieldSeqUpdate, NodeToFieldSeqMap::Overwrite);
-        fieldSeqRecorded = true;
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("     (After)\n");
-        gtDispNode(fieldSeqNode, nullptr, nullptr, false);
-        gtDispCommonEndLine(fieldSeqNode);
-    }
-#endif // DEBUG
 }
 
 #ifdef FEATURE_SIMD

@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization
                     break;
             }
 
-            return converter!;
+            return converter;
         }
 
         internal sealed override object ReadCoreAsObject(

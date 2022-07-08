@@ -38,13 +38,5 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
             Interop.Kernel32.CreateHardLink(hardLinkFilePath, targetFilePath);
         }
-
-        // Mode is not used on Windows.
-#pragma warning disable CA1822 //  Member 'SetModeOnFile' does not access instance data and can be marked as static
-        private void SetModeOnFile(SafeFileHandle handle)
-#pragma warning restore CA1822
-        {
-            // TODO: Verify that executables get their 'executable' permission applied on Windows when extracted, if applicable. https://github.com/dotnet/runtime/issues/68230
-        }
     }
 }

@@ -1309,6 +1309,63 @@ namespace System
             return new decimal(in value, value._flags & ~SignMask);
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            decimal result;
+
+            if (typeof(TOther) == typeof(decimal))
+            {
+                result = (decimal)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         public static bool IsCanonical(decimal value)
         {
@@ -1434,7 +1491,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result)
+        static bool INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out decimal result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
