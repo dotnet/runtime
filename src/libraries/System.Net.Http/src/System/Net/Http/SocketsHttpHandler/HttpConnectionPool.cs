@@ -485,19 +485,22 @@ namespace System.Net.Http
 
             _http11RequestQueue.PruneCompletedRequestsFromHeadOfQueue(this);
 
+            // Determine if we can and should add a new connection to the pool.
+            bool willInject = _availableHttp11Connections.Count == 0 &&             // No available connections
+                _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&        // More requests queued than pending connections
+                _associatedHttp11ConnectionCount < _maxHttp11Connections &&         // Under the connection limit
+                _http11RequestQueue.RequestsWithoutAConnectionAttempt > 0;          // There are requests we haven't issued a connection attempt for
+
             if (NetEventSource.Log.IsEnabled())
             {
                 Trace($"Available HTTP/1.1 connections: {_availableHttp11Connections.Count}, Requests in the queue: {_http11RequestQueue.Count}, " +
                     $"Requests without a connection attempt: {_http11RequestQueue.RequestsWithoutAConnectionAttempt}, " +
                     $"Pending HTTP/1.1 connections: {_pendingHttp11ConnectionCount}, Total associated HTTP/1.1 connections: {_associatedHttp11ConnectionCount}, " +
-                    $"Max HTTP/1.1 connection limit: {_maxHttp11Connections}.");
+                    $"Max HTTP/1.1 connection limit: {_maxHttp11Connections}, " +
+                    $"will inject connection: {willInject}.");
             }
 
-            // Determine if we can and should add a new connection to the pool.
-            if (_availableHttp11Connections.Count == 0 &&                           // No available connections
-                _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&        // More requests queued than pending connections
-                _associatedHttp11ConnectionCount < _maxHttp11Connections &&         // Under the connection limit
-                _http11RequestQueue.RequestsWithoutAConnectionAttempt > 0)          // There are requests we haven't issued a connection attempt for
+            if (willInject)
             {
                 _associatedHttp11ConnectionCount++;
                 _pendingHttp11ConnectionCount++;
@@ -711,11 +714,24 @@ namespace System.Net.Http
             _http2RequestQueue.PruneCompletedRequestsFromHeadOfQueue(this);
 
             // Determine if we can and should add a new connection to the pool.
-            if ((_availableHttp2Connections?.Count ?? 0) == 0 &&                            // No available connections
+            int availableHttp2ConnectionCount = _availableHttp2Connections?.Count ?? 0;
+            bool willInject = availableHttp2ConnectionCount == 0 &&                         // No available connections
                 !_pendingHttp2Connection &&                                                 // Only allow one pending HTTP2 connection at a time
                 _http2RequestQueue.Count > 0 &&                                             // There are requests left on the queue
                 (_associatedHttp2ConnectionCount == 0 || EnableMultipleHttp2Connections) && // We allow multiple connections, or don't have a connection currently
-                _http2RequestQueue.RequestsWithoutAConnectionAttempt > 0)                   // There are requests we haven't issued a connection attempt for
+                _http2RequestQueue.RequestsWithoutAConnectionAttempt > 0;                   // There are requests we haven't issued a connection attempt for
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                Trace($"Available HTTP/2.0 connections: {availableHttp2ConnectionCount}, " +
+                    $"Pending HTTP/2.0 connection: {_pendingHttp2Connection}" +
+                    $"Requests in the queue: {_http2RequestQueue.Count}, " +
+                    $"Requests without a connection attempt: {_http2RequestQueue.RequestsWithoutAConnectionAttempt}, " +
+                    $"Total associated HTTP/2.0 connections: {_associatedHttp2ConnectionCount}, " +
+                    $"Will inject connection: {willInject}.");
+            }
+
+            if (willInject)
             {
                 _associatedHttp2ConnectionCount++;
                 _pendingHttp2Connection = true;
