@@ -480,6 +480,13 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         orArray->SetMethodTable(pArrayMT);
     }
 
+#if DEBUG
+    if (flags & GC_ALLOC_ZEROING_OPTIONAL)
+    {
+        memset(orArray->GetDataPtr(), 0xFF, cElements);
+    }
+#endif
+
     // Initialize Object
     orArray->m_NumComponents = cElements;
 
