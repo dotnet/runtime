@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -61,7 +62,7 @@ public class KeyMapperTests
         return new ConsoleKeyInfo(ch, consoleKey, isShift, isAlt, isCtrl);
     }
 
-    private static IEnumerable<(char, ConsoleKey)> AsciiKeys
+    private static IEnumerable<(char ch, ConsoleKey key)> AsciiKeys
     {
         get
         {
@@ -96,18 +97,7 @@ public class KeyMapperTests
     }
 
     public static IEnumerable<object[]> AsciiCharactersArguments
-    {
-        get
-        {
-            foreach (TerminalData terminalData in Terminals)
-            {
-                foreach ((char ch, ConsoleKey key) in AsciiKeys)
-                {
-                    yield return new object[] { terminalData, ch, key };
-                }
-            }
-        }
-    }
+        => Terminals.SelectMany(terminal => AsciiKeys.Select(tuple => new object[] { terminal, tuple.ch, tuple.key }));
 
     [Theory]
     [MemberData(nameof(AsciiCharactersArguments))]
@@ -118,6 +108,41 @@ public class KeyMapperTests
         Assert.Equal(input, consoleKeyInfo.KeyChar);
         Assert.Equal(expectedKey, consoleKeyInfo.Key);
         Assert.Equal(char.IsAsciiLetterUpper(input) ? ConsoleModifiers.Shift : 0, consoleKeyInfo.Modifiers);
+    }
+
+    private static IEnumerable<(string chars, ConsoleKey key)> ThreeCharactersKeys
+    {
+        get
+        {
+            // "^[["
+            yield return ("\u001B[H", ConsoleKey.Home);
+            yield return ("\u001B[F", ConsoleKey.End);
+            yield return ("\u001B[A", ConsoleKey.UpArrow);
+            yield return ("\u001B[B", ConsoleKey.DownArrow);
+            yield return ("\u001B[C", ConsoleKey.RightArrow);
+            yield return ("\u001B[D", ConsoleKey.LeftArrow);
+            // "^[O"
+            yield return ("\u001BOP", ConsoleKey.F1);
+            yield return ("\u001BOQ", ConsoleKey.F2);
+            yield return ("\u001BOR", ConsoleKey.F3);
+            yield return ("\u001BOS", ConsoleKey.F4);
+        }
+    }
+
+    public static IEnumerable<object[]> ThreeCharactersKeysArguments
+        => Terminals
+            .Where(t => t is not PuTTYData_putty) // different mappings (handled by KeysAreProperlyMapped test) 
+            .SelectMany(terminal => ThreeCharactersKeys.Select(tuple => new object[] { terminal, tuple.chars, tuple.key }));
+
+    [Theory]
+    [MemberData(nameof(ThreeCharactersKeysArguments))]
+    public void ThreeCharactersKey(TerminalData terminalData, string input, ConsoleKey expectedKey)
+    {
+        ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase);
+
+        Assert.Equal(expectedKey, consoleKeyInfo.Key);
+        Assert.Equal(default, consoleKeyInfo.KeyChar);
+        Assert.Equal(default, consoleKeyInfo.Modifiers);
     }
 }
 

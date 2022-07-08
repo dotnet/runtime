@@ -58,13 +58,15 @@ internal static class KeyMapper
     internal static void MapNew(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
         out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
-        if (endIndex - startIndex == 1)
+        int length = endIndex - startIndex;
+
+        if (length >= 3 && TryDecodeTerminalInputSequence(buffer, terminalFormatStrings, out key, out isShift, out isCtrl, out isAlt, ref startIndex, endIndex))
         {
-            DecodeFromSingleChar(buffer[startIndex], out key, out ch, out isShift, out isCtrl);
-            startIndex++;
-            isAlt = false;
+            // these special keys never produce any char (Home, Arrow, F1 etc)
+            ch = default;
+            return;
         }
-        else if (endIndex - startIndex == 2 && buffer[startIndex] == Escape)
+        else if (length == 2 && buffer[startIndex] == Escape)
         {
             DecodeFromSingleChar(buffer[++startIndex], out key, out ch, out isShift, out isCtrl);
             startIndex++;
@@ -72,10 +74,74 @@ internal static class KeyMapper
         }
         else
         {
-            key = default;
-            ch = default;
-            isShift = isAlt = isCtrl = false;
+            DecodeFromSingleChar(buffer[startIndex], out key, out ch, out isShift, out isCtrl);
+            startIndex++;
+            isAlt = false;
         }
+    }
+
+    private static bool TryDecodeTerminalInputSequence(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings,
+        out ConsoleKey key, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
+    {
+        ReadOnlySpan<char> input = buffer.AsSpan(startIndex, endIndex - startIndex);
+        isShift = isAlt = isCtrl = false;
+        key = default;
+
+        // xterm and VT sequences start with "^[[", some xterm start with "^[O" ("^[" stands for Escape (27))
+        if (input.Length < 3 || input[0] != Escape || (input[1] != '[' && input[1] != 'O'))
+        {
+            key = default;
+            return false;
+        }
+
+        if (input[1] == 'O' || char.IsAsciiLetterUpper(input[2])) // xterm "^[[O" or xterm "^[["
+        {
+            if (!TryMapUsingDatabase(buffer.AsMemory(startIndex, 3), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
+            {
+                key = Map(input[2]);
+                Debug.Assert(key != default, $"Missing '{input.Slice(0, 3)}' mapping");
+            }
+            startIndex += 3;
+            return true;
+        }
+
+        if (char.IsAsciiDigit(input[2]))
+        {
+
+        }
+
+        return false;
+
+        static bool TryMapUsingDatabase(ReadOnlyMemory<char> inputSequence, ConsolePal.TerminalFormatStrings terminalFormatStrings,
+            ref ConsoleKey key, ref bool isShift, ref bool isAlt, ref bool isCtrl)
+        {
+            // Check if the string prefix matches.
+            if (terminalFormatStrings.KeyFormatToConsoleKey.TryGetValue(inputSequence, out ConsoleKeyInfo consoleKeyInfo))
+            {
+                key = consoleKeyInfo.Key;
+                isShift = (consoleKeyInfo.Modifiers & ConsoleModifiers.Shift) != 0;
+                isAlt = (consoleKeyInfo.Modifiers & ConsoleModifiers.Alt) != 0;
+                isCtrl = (consoleKeyInfo.Modifiers & ConsoleModifiers.Control) != 0;
+                return true;
+            }
+            return false;
+        }
+
+        static ConsoleKey Map(char single)
+            => single switch
+            {
+                'A' => ConsoleKey.UpArrow,
+                'B' => ConsoleKey.DownArrow,
+                'C' => ConsoleKey.RightArrow,
+                'D' => ConsoleKey.LeftArrow,
+                'F' => ConsoleKey.End,
+                'H' => ConsoleKey.Home,
+                'P' => ConsoleKey.F1,
+                'Q' => ConsoleKey.F2,
+                'R' => ConsoleKey.F3,
+                'S' => ConsoleKey.F4,
+                _ => default
+            };
     }
 
     private static void DecodeFromSingleChar(char single, out ConsoleKey key, out char ch, out bool isShift, out bool isCtrl)
