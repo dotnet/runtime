@@ -1404,14 +1404,10 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
-        fgAddFieldSeqForZeroOffset(destAddr,
-                                   GetFieldSeqStore()->CreateSingleton(GetRefanyDataField(),
-                                                                       OFFSETOF__CORINFO_TypedReference__dataPtr));
 
         GenTree*       ptrSlot         = gtNewOperNode(GT_IND, TYP_I_IMPL, destAddr);
         GenTreeIntCon* typeFieldOffset = gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
-        typeFieldOffset->gtFieldSeq =
-            GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField(), OFFSETOF__CORINFO_TypedReference__type);
+
         GenTree* typeSlot =
             gtNewOperNode(GT_IND, TYP_I_IMPL, gtNewOperNode(GT_ADD, destAddr->gtType, destAddrClone, typeFieldOffset));
 
@@ -8963,8 +8959,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     // read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
     // be mutable, but the only current producer of such images, the C++/CLI compiler, does
     // not appear to support mapping different fields to the same address. So we will say
-    // that "mutable overlapping RVA statics" are UB as well. If this ever changes, code in
-    // value numbering will need to be updated to respect "NotAField FldSeq".
+    // that "mutable overlapping RVA statics" are UB as well.
 
     // For statics that are not "boxed", the initial address tree will contain the field sequence.
     // For those that are, we will attach it later, when adding the indirection for the box, since
@@ -8972,25 +8967,25 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
     bool isSharedStatic = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER) ||
                           (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_READYTORUN_HELPER);
-    FieldSeqNode::FieldKind fieldKind =
-        isSharedStatic ? FieldSeqNode::FieldKind::SharedStatic : FieldSeqNode::FieldKind::SimpleStatic;
+    FieldSeq::FieldKind fieldKind =
+        isSharedStatic ? FieldSeq::FieldKind::SharedStatic : FieldSeq::FieldKind::SimpleStatic;
 
-    FieldSeqNode* innerFldSeq = nullptr;
-    FieldSeqNode* outerFldSeq = nullptr;
+    FieldSeq* innerFldSeq;
+    FieldSeq* outerFldSeq;
     if (isBoxedStatic)
     {
-        innerFldSeq = FieldSeqStore::NotAField();
-        outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField, TARGET_POINTER_SIZE, fieldKind);
+        innerFldSeq = nullptr;
+        outerFldSeq = GetFieldSeqStore()->Create(pResolvedToken->hField, TARGET_POINTER_SIZE, fieldKind);
     }
     else
     {
         bool hasConstAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
                             (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
 
-        size_t offset;
+        ssize_t offset;
         if (hasConstAddr)
         {
-            offset = reinterpret_cast<size_t>(info.compCompHnd->getFieldAddress(pResolvedToken->hField));
+            offset = reinterpret_cast<ssize_t>(info.compCompHnd->getFieldAddress(pResolvedToken->hField));
             assert(offset != 0);
         }
         else
@@ -8998,8 +8993,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             offset = pFieldInfo->offset;
         }
 
-        innerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField, offset, fieldKind);
-        outerFldSeq = FieldSeqStore::NotAField();
+        innerFldSeq = GetFieldSeqStore()->Create(pResolvedToken->hField, offset, fieldKind);
+        outerFldSeq = nullptr;
     }
 
     GenTree* op1;
