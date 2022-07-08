@@ -7,7 +7,6 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Channels;
@@ -25,7 +24,6 @@ namespace System.Net.Quic;
 /// Unlike the connection and stream, <see cref="QuicListener" /> lifetime is not linked to any of the accepted connections.
 /// It can be safely disposed while keeping the accepted connection alive. The <see cref="DisposeAsync"/> will only stop listening for any other inbound connections.
 /// </remarks>
-[RequiresPreviewFeatures]
 public sealed partial class QuicListener : IAsyncDisposable
 {
     /// <summary>
