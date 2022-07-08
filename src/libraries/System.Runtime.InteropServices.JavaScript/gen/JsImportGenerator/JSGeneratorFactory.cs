@@ -12,10 +12,8 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class JSGeneratorFactory : IMarshallingGeneratorFactory
     {
-        private readonly IMarshallingGeneratorFactory _innerFactory;
-        public JSGeneratorFactory(IMarshallingGeneratorFactory inner)
+        public JSGeneratorFactory(IMarshallingGeneratorFactory _)
         {
-            _innerFactory = inner;
         }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
@@ -26,7 +24,7 @@ namespace Microsoft.Interop.JavaScript
                 // out of scope for Net7.0
                 throw new MarshallingNotSupportedException(info, context)
                 {
-                    NotSupportedDetails = "TODO Resources.InOutRefNotSupported"
+                    NotSupportedDetails = SR.InOutRefNotSupported
                 };
             }
             JSMarshallingInfo jsMarshalingInfo = info.MarshallingAttributeInfo as JSMarshallingInfo;
@@ -55,7 +53,7 @@ namespace Microsoft.Interop.JavaScript
 
                 // discard no void
                 case { } when jsMarshalingInfo.JSType == JSTypeFlags.Discard:
-                    throw fail("TODO discard only on void");
+                    throw fail(SR.DiscardOnlyVoid);
 
                 // primitive
                 case { ManagedType: JSSimpleTypeInfo simple }:
@@ -132,7 +130,7 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.DateTime when jsType == JSTypeFlags.Missing:
                 case KnownManagedType.DateTimeOffset when jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Object when jsType == JSTypeFlags.Missing:
-                    throw failWithReason("TODO Please use JSMarshalAsAttribute to specify marshaling of " + info.ManagedType.FullTypeName + ".");
+                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // nullable
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Boolean: return new NullableJSGenerator(MarshalerType.Boolean);
@@ -162,9 +160,10 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int64 && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.DateTime && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.DateTimeOffset && jsType == JSTypeFlags.Missing:
-                    throw failWithReason("TODO Please use JSMarshalAsAttribute to specify marshaling of " + info.ManagedType.FullTypeName + ".");
+                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
-                case KnownManagedType.Nullable: throw failWithReason("TODO Unsupported nullable underlying type" + jsType);
+                case KnownManagedType.Nullable:
+                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // task
                 case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes.Length == 0 && jsTypeArguments[0] == JSTypeFlags.Void: return new TaskJSGenerator(MarshalerType.Void);
@@ -204,9 +203,10 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.DateTime && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.DateTimeOffset && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Object && jsType == JSTypeFlags.Missing:
-                    throw failWithReason("TODO Please use JSMarshalAsAttribute to specify marshaling of " + info.ManagedType.FullTypeName + ".");
+                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1: throw failWithReason("TODO Unsupported task underlying type " + jsTypeArguments[0]);
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1:
+                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // array
                 case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Byte && jsTypeArguments[0] == JSTypeFlags.Number: return new ArrayJSGenerator(MarshalerType.Byte);
@@ -222,41 +222,43 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing: return new ArrayJSGenerator(MarshalerType.Double);
                 case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing: return new ArrayJSGenerator(MarshalerType.Int32);
                 case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.JSObject && jsType == JSTypeFlags.Missing: return new ArrayJSGenerator(MarshalerType.JSObject);
-                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1: throw failWithReason("TODO Unsupported element type" + jsTypeArguments[0]);
+                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1:
+                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // array forced
                 case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Object && jsType == JSTypeFlags.Missing:
-                    throw failWithReason("TODO Please use JSMarshalAsAttribute to specify marshaling of " + info.ManagedType.FullTypeName + ".");
+                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // span view
-                case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && jsTypeArguments.Length != 0: throw failWithReason("TODO should not specify underlying type " + jsTypeArguments[0]);
+                case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && jsTypeArguments.Length != 0:
+                    throw failWithReason(null);
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Byte: return new SpanJSGenerator(MarshalerType.Byte);
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Int32: return new SpanJSGenerator(MarshalerType.Int32);
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Double: return new SpanJSGenerator(MarshalerType.Double);
 
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView:
-                    throw failWithReason("TODO Unsupported Span underlying type " + argumentTypes[0]);
+                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // span forced
                 case KnownManagedType.Span when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Span when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Span when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing:
-                    throw failWithReason("TODO Please use JSMarshalAsAttribute to specify marshaling of " + info.ManagedType.FullTypeName + ".");
+                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // segment view
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && jsTypeArguments.Length != 0:
-                    throw failWithReason("TODO should not specify underlying type " + jsTypeArguments[0]);
+                    throw failWithReason(null);
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Byte: return new ArraySegmentJSGenerator(MarshalerType.Byte);
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Int32: return new ArraySegmentJSGenerator(MarshalerType.Int32);
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Double: return new ArraySegmentJSGenerator(MarshalerType.Double);
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView:
-                    throw failWithReason("TODO Unsupported Span underlying type " + argumentTypes[0]);
+                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
-                // span forced
+                // segment forced
                 case KnownManagedType.ArraySegment when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.ArraySegment when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.ArraySegment when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing:
-                    throw failWithReason("TODO Please use JSMarshalAsAttribute to specify marshaling of " + info.ManagedType.FullTypeName + ".");
+                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // function + action
                 case KnownManagedType.Function when jsType == JSTypeFlags.Function && jsTypeArguments.Length == argumentTypes.Length:
@@ -274,16 +276,15 @@ namespace Microsoft.Interop.JavaScript
                             || argumentTypes[i] == KnownManagedType.Unknown
                             )
                         {
-                            throw failWithReason("TODO Type parameter at type parameter idx:" + i + " m:" + argumentTypes[i] + " js:" + jsTypeArguments[i]);
+                            throw failWithReason(string.Format(SR.FuncArgumentNotSupported, argumentTypes[i]));
                         }
                         var gen = Create(info, isToJs ^ (!isReturn), argumentTypes[i], Array.Empty<KnownManagedType>(), jsTypeArguments[i], Array.Empty<JSTypeFlags>(), failWithReason);
-                        // FIXME: here type nesting doesn't work
                         argsMarshalers.Add(gen.Type);
                     }
                     return new FuncJSGenerator(marshaledType == KnownManagedType.Action, argsMarshalers.ToArray());
                 case KnownManagedType.Action when jsType == JSTypeFlags.Function:
                 case KnownManagedType.Function when jsType == JSTypeFlags.Function:
-                    throw failWithReason("TODO JSType arguments count");
+                    throw failWithReason(SR.FuncWrongArgumentCount);
 
                 // function + action forced
                 case KnownManagedType.Function when jsType == JSTypeFlags.Missing:
@@ -299,13 +300,13 @@ namespace Microsoft.Interop.JavaScript
                             || argumentTypes[i] == KnownManagedType.Unknown
                             )
                         {
-                            throw failWithReason("TODO Type parameter at type parameter idx:" + i + " m:" + argumentTypes[i] + " js:" + jsTypeArguments[i]);
+                            throw failWithReason(string.Format(SR.FuncArgumentNotSupported, argumentTypes[i]));
                         }
                     }
-                    throw failWithReason("TODO Please use JSMarshalAsAttribute to specify marshaling of " + info.ManagedType.FullTypeName + ".");
+                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 default:
-                    throw failWithReason("TODO Type not supported " + info.ManagedType.FullTypeName + ".");
+                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
             }
         }
     }

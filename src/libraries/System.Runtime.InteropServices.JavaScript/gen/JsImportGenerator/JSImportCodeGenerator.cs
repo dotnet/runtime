@@ -54,7 +54,7 @@ namespace Microsoft.Interop.JavaScript
                 {
                     marshallingNotSupportedCallback(spanArg.TypeInfo, new MarshallingNotSupportedException(spanArg.TypeInfo, _context)
                     {
-                        NotSupportedDetails = "TODO don't mix span and task"
+                        NotSupportedDetails = SR.SpanAndTaskNotSupported
                     });
                 }
             }

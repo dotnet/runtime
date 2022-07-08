@@ -181,4 +181,31 @@
   <data name="InvalidAttributedMethodContainingTypeMissingModifiersMessage" xml:space="preserve">
     <value>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. JavaScript interop source generation will ignore method '{0}'.</value>
   </data>
+  <data name="DiscardOnlyVoid" xml:space="preserve">
+    <value>'JSType.Discard' could be only used with void return argument.</value>
+  </data>
+  <data name="FuncArgumentNotSupported" xml:space="preserve">
+    <value>Type {0} is not supported as argument of marshaled function.</value>
+    <comment>{0} is a type of the argument</comment>
+  </data>
+  <data name="FuncTooManyArgs" xml:space="preserve">
+    <value>Only functions with up to 3 arguments are currently supported by source-generated JavaScript interop.</value>
+  </data>
+  <data name="FuncWrongArgumentCount" xml:space="preserve">
+    <value>`JSType.Function` should have same number of generic arguments as the marshaled managed type.</value>
+  </data>
+  <data name="InOutRefNotSupported" xml:space="preserve">
+    <value>Parameters with 'in', 'out' and 'ref' modifiers are not supported by source-generated JavaScript interop.</value>
+  </data>
+  <data name="SpanAndTaskNotSupported" xml:space="preserve">
+    <value>Marshaling 'Span' on method which returns `Task` is not supported.</value>
+  </data>
+  <data name="TypeNotSupportedName" xml:space="preserve">
+    <value>Type {0} is not supported by source-generated JavaScript interop.</value>
+    <comment>{0} is a type of the argument</comment>
+  </data>
+  <data name="UseJSMarshalAsAttribute" xml:space="preserve">
+    <value>Please annotate the argument with 'JSMarshalAsAttribute' to specify marshaling of {0}.</value>
+    <comment>{0} is a type of the argument</comment>
+  </data>
 </root>

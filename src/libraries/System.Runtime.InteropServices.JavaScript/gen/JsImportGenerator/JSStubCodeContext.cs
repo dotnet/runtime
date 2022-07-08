@@ -17,7 +17,7 @@ namespace Microsoft.Interop.JavaScript
             return _inner.GetIdentifiers(info);
         }
 
-        public override (TargetFramework framework, Version version) GetTargetFramework() => throw new NotImplementedException();
+        public override (TargetFramework framework, Version version) GetTargetFramework() => _inner.GetTargetFramework();
     }
 
     internal sealed record JSImportCodeContext : JSStubCodeContext
