@@ -50,10 +50,12 @@ internal static partial class Interop
 
                     if (resultLength < 0)
                     {
+                        // error
                         return null;
                     }
                     else if (resultLength < bufferSize)
                     {
+                        // success
                         fixed(byte* bufferPtr = &bufferReference)
                         {
                             return Encoding.UTF8.GetString(bufferPtr, resultLength);
