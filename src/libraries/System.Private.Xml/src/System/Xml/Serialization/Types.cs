@@ -384,10 +384,8 @@ namespace System.Xml.Serialization
                     throw new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, FullName));
                 }
             }
-            if (_baseTypeDesc != null)
-                _baseTypeDesc.CheckSupported();
-            if (_arrayElementTypeDesc != null)
-                _arrayElementTypeDesc.CheckSupported();
+            _baseTypeDesc?.CheckSupported();
+            _arrayElementTypeDesc?.CheckSupported();
         }
 
         internal void CheckNeedConstructor()
@@ -910,10 +908,7 @@ namespace System.Xml.Serialization
             {
                 kind = TypeKind.Void;
                 flags |= TypeFlags.Unsupported;
-                if (exception == null)
-                {
-                    exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
-                }
+                exception ??= new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
             }
 
             // check to see if the type has public default constructor for classes

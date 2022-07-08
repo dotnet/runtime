@@ -65,8 +65,7 @@ namespace System.Security.Cryptography
             catch
             {
                 // Make sure that we don't leak the handle the CngKey duplicated
-                if (key != null)
-                    key.Dispose();
+                key?.Dispose();
 
                 throw;
             }

@@ -449,8 +449,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (tokenHandle != null)
-                    tokenHandle.Dispose();
+                tokenHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -521,8 +520,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (policyHandle != null)
-                    policyHandle.Dispose();
+                policyHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Interop.Advapi32.LsaFreeMemory(pBuffer);

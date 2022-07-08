@@ -427,10 +427,7 @@ namespace System.Xml
                             continue;
                         }
 
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(str.Length + 5);
-                        }
+                        sb ??= new StringBuilder(str.Length + 5);
 
                         sb.Append(str, start, i - start);
                     }
@@ -480,10 +477,7 @@ namespace System.Xml
                         continue;
                     }
 
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(len + 5);
-                    }
+                    sb ??= new StringBuilder(len + 5);
 
                     sb.Append(data, start, i - start);
                 }
@@ -497,10 +491,7 @@ namespace System.Xml
                             continue;
                         }
 
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(len + 5);
-                        }
+                        sb ??= new StringBuilder(len + 5);
 
                         sb.Append(data, start, i - start);
                         i++;
@@ -512,10 +503,7 @@ namespace System.Xml
                             continue;
                         }
 
-                        if (sb == null)
-                        {
-                            sb = new StringBuilder(len + 5);
-                        }
+                        sb ??= new StringBuilder(len + 5);
 
                         sb.Append(data, start, i - start);
                     }
@@ -556,10 +544,7 @@ namespace System.Xml
                 }
                 if (i > 0 && text[i - 1] == invChar1)
                 {
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(text.Length + 5);
-                    }
+                    sb ??= new StringBuilder(text.Length + 5);
 
                     sb.Append(text, start, i - start);
                     sb.Append(' ');
