@@ -5,6 +5,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { setup_proxy_console } from "../debug";
+
+class FailedOrStoppedLoopError extends Error {}
+class ArgumentsError extends Error {}
+class WorkerFailedError extends Error {}
+
 var ChannelWorker = {
     _impl: class {
         // LOCK states
@@ -24,6 +30,8 @@ var ChannelWorker = {
         get STATE_REQ_P() { return 3; } // Request has multiple parts
         get STATE_RESP_P() { return 4; } // Response has multiple parts
         get STATE_AWAIT() { return 5; } // Awaiting the next part
+        get STATE_REQ_FAILED() { return 6; } // The Request failed
+        get STATE_RESET() { return 7; } // Reset to a known state
         // END ChannelOwner contract - shared constants.
 
         constructor(comm_buf, msg_buf, msg_char_len) {
@@ -32,61 +40,102 @@ var ChannelWorker = {
             this.msg_char_len = msg_char_len;
         }
 
-        async await_request(async_call) {
+        async run_message_loop(async_op) {
             for (;;) {
-                // Wait for signal to perform operation
-                Atomics.wait(this.comm, this.STATE_IDX, this.STATE_IDLE);
-
-                // Read in request
-                var req = this._read_request();
-                if (req === this.STATE_SHUTDOWN)
-                    break;
-
-                var resp = null;
                 try {
-                    // Perform async action based on request
-                    resp = await async_call(req);
-                }
-                catch (err) {
-                    console.log("Request error: " + err);
-                    resp = JSON.stringify(err);
+                    // Wait for signal to perform operation
+                    let state;
+                    do {
+                        this._wait(this.STATE_IDLE);
+                        state = Atomics.load(this.comm, this.STATE_IDX);
+                    } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
+
+                    this._throw_if_reset_or_shutdown();
+
+                    // Read in request
+                    var req = this._read_request();
+                    var resp = {};
+                    try {
+                        // Perform async action based on request
+                        resp.result = await async_op(req);
+                    }
+                    catch (err) {
+                        resp.error_type = typeof err;
+                        resp.error = _stringify_err(err);
+                        console.error(`Request error: ${resp.error}. req was: ${req}`);
+                    }
+
+                    // Send response
+                    this._send_response(JSON.stringify(resp));
+                } catch (err) {
+                    if (err instanceof FailedOrStoppedLoopError) {
+                        const state = Atomics.load(this.comm, this.STATE_IDX);
+                        if (state === this.STATE_SHUTDOWN)
+                            break;
+                        if (state === this.STATE_RESET)
+                            console.debug(`caller failed, reseting worker`);
+                    } else {
+                        console.error(`Worker failed to handle the request: ${_stringify_err(err)}`);
+                        this._change_state_locked(this.STATE_REQ_FAILED);
+                        Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
+
+                        console.debug(`set state to failed, now waiting to get RESET`);
+                        Atomics.wait(this.comm, this.STATE_IDX, this.STATE_REQ_FAILED);
+                        const state = Atomics.load(this.comm, this.STATE_IDX);
+                        if (state !== this.STATE_RESET) {
+                            throw new WorkerFailedError(`expected to RESET, but got ${state}`);
+                        }
+                    }
+
+                    Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+                    Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
+                    this._change_state_locked(this.STATE_IDLE);
                 }
 
-                // Send response
-                this._send_response(resp);
+                const state = Atomics.load(this.comm, this.STATE_IDX);
+                const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
+
+                if (state !== this.STATE_IDLE && state !== this.STATE_REQ && state !== this.STATE_REQ_P)
+                    console.error(`-- state is not idle at the top of the loop: ${state}, and lock_state: ${lock_state}`);
+                if (lock_state !== this.LOCK_UNLOCKED && state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_IDLE)
+                    console.error(`-- lock is not unlocked at the top of the loop: ${lock_state}, and state: ${state}`);
             }
+
+            Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+            this._change_state_locked(this.STATE_SHUTDOWN);
+            console.debug("******* run_message_loop ending");
         }
 
         _read_request() {
             var request = "";
             for (;;) {
                 this._acquire_lock();
+                try {
+                    this._throw_if_reset_or_shutdown();
 
-                // Get the current state and message size
-                var state = Atomics.load(this.comm, this.STATE_IDX);
-                var size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
+                    // Get the current state and message size
+                    var state = Atomics.load(this.comm, this.STATE_IDX);
+                    var size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
-                // Append the latest part of the message.
-                request += this._read_from_msg(0, size_to_read);
+                    // Append the latest part of the message.
+                    request += this._read_from_msg(0, size_to_read);
 
-                // The request is complete.
-                if (state === this.STATE_REQ) {
+                    // The request is complete.
+                    if (state === this.STATE_REQ) {
+                        break;
+                    }
+
+                    // Shutdown the worker.
+                    this._throw_if_reset_or_shutdown();
+
+                    // Reset the size and transition to await state.
+                    Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+                    this._change_state_locked(this.STATE_AWAIT);
+                } finally {
                     this._release_lock();
-                    break;
                 }
 
-                // Shutdown the worker.
-                if (state === this.STATE_SHUTDOWN) {
-                    this._release_lock();
-                    return this.STATE_SHUTDOWN;
-                }
-
-                // Reset the size and transition to await state.
-                Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-                Atomics.store(this.comm, this.STATE_IDX, this.STATE_AWAIT);
-                this._release_lock();
-
-                Atomics.wait(this.comm, this.STATE_IDX, this.STATE_AWAIT);
+                this._wait(this.STATE_AWAIT);
             }
 
             return request;
@@ -98,7 +147,7 @@ var ChannelWorker = {
 
         _send_response(msg) {
             if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_REQ)
-                throw "WORKER: Invalid sync communication channel state.";
+                throw new WorkerFailedError(`WORKER: Invalid sync communication channel state.`);
 
             var state; // State machine variable
             const msg_len = msg.length;
@@ -107,24 +156,26 @@ var ChannelWorker = {
             for (;;) {
                 this._acquire_lock();
 
-                // Write the message and return how much was written.
-                var wrote = this._write_to_msg(msg, msg_written, msg_len);
-                msg_written += wrote;
+                try {
+                    // Write the message and return how much was written.
+                    var wrote = this._write_to_msg(msg, msg_written, msg_len);
+                    msg_written += wrote;
 
-                // Indicate how much was written to the this.msg buffer.
-                Atomics.store(this.comm, this.MSG_SIZE_IDX, wrote);
+                    // Indicate how much was written to the this.msg buffer.
+                    Atomics.store(this.comm, this.MSG_SIZE_IDX, wrote);
 
-                // Indicate if this was the whole message or part of it.
-                state = msg_written === msg_len ? this.STATE_RESP : this.STATE_RESP_P;
+                    // Indicate if this was the whole message or part of it.
+                    state = msg_written === msg_len ? this.STATE_RESP : this.STATE_RESP_P;
 
-                // Update the state
-                Atomics.store(this.comm, this.STATE_IDX, state);
-
-                this._release_lock();
+                    // Update the state
+                    this._change_state_locked(state);
+                } finally {
+                    this._release_lock();
+                }
 
                 // Wait for the transition to know the main thread has
                 // received the response by moving onto a new state.
-                Atomics.wait(this.comm, this.STATE_IDX, state);
+                this._wait(state);
 
                 // Done sending response.
                 if (state === this.STATE_RESP)
@@ -143,17 +194,36 @@ var ChannelWorker = {
             return ii - start;
         }
 
+        _change_state_locked(newState) {
+            Atomics.store(this.comm, this.STATE_IDX, newState);
+        }
+
         _acquire_lock() {
-            while (Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED) !== this.LOCK_UNLOCKED) {
-                // empty
+            for (;;) {
+                const lockState = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
+                this._throw_if_reset_or_shutdown();
+
+                if (lockState === this.LOCK_UNLOCKED)
+                    return;
             }
         }
 
         _release_lock() {
             const result = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_OWNED, this.LOCK_UNLOCKED);
             if (result !== this.LOCK_OWNED) {
-                throw "CRYPTO: ChannelWorker tried to release a lock that wasn't acquired: " + result;
+                throw new WorkerFailedError("CRYPTO: ChannelWorker tried to release a lock that wasn't acquired: " + result);
             }
+        }
+
+        _wait(expected_state) {
+            Atomics.wait(this.comm, this.STATE_IDX, expected_state);
+            this._throw_if_reset_or_shutdown();
+        }
+
+        _throw_if_reset_or_shutdown() {
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            if (state === this.STATE_RESET || state === this.STATE_SHUTDOWN)
+                throw new FailedOrStoppedLoopError();
         }
     },
 
@@ -193,7 +263,7 @@ function get_hash_name(type) {
         case 2: return "SHA-384";
         case 3: return "SHA-512";
         default:
-            throw "CRYPTO: Unknown digest: " + type;
+            throw new ArgumentsError("CRYPTO: Unknown digest: " + type);
     }
 }
 
@@ -245,7 +315,7 @@ async function decrypt(algorithm, cryptoKey, data) {
     );
 
     const encryptedPaddingBlock = new Uint8Array(encryptedPaddingBlockResult);
-    for (var i = 0; i < encryptedPaddingBlock.length; i++) {
+    for (let i = 0; i < encryptedPaddingBlock.length; i++) {
         data.push(encryptedPaddingBlock[i]);
     }
 
@@ -267,27 +337,30 @@ function importKey(key, algorithmName, keyUsage) {
 }
 
 // Operation to perform.
-async function async_call(msg) {
+async function handle_req_async(msg) {
     const req = JSON.parse(msg);
 
     if (req.func === "digest") {
-        const digestArr = await call_digest(req.type, new Uint8Array(req.data));
-        return JSON.stringify(digestArr);
+        return await call_digest(req.type, new Uint8Array(req.data));
     } 
     else if (req.func === "sign") {
-        const signResult = await sign(req.type, new Uint8Array(req.key), new Uint8Array(req.data));
-        return JSON.stringify(signResult);
+        return await sign(req.type, new Uint8Array(req.key), new Uint8Array(req.data));
     }
     else if (req.func === "encrypt_decrypt") {
-        const signResult = await encrypt_decrypt(req.isEncrypting, req.key, req.iv, req.data);
-        return JSON.stringify(signResult);
+        return await encrypt_decrypt(req.isEncrypting, req.key, req.iv, req.data);
     }
     else {
-        throw "CRYPTO: Unknown request: " + req.func;
+        throw new ArgumentsError("CRYPTO: Unknown request: " + req.func);
     }
 }
 
+function _stringify_err(err) {
+    return (err instanceof Error && err.stack !== undefined) ? err.stack : err;
+}
+
 var s_channel;
+
+setup_proxy_console("crypto-worker", console, self.location.origin);
 
 // Initialize WebWorker
 onmessage = function (p) {
@@ -296,5 +369,5 @@ onmessage = function (p) {
         data = p.data;
     }
     s_channel = ChannelWorker.create(data.comm_buf, data.msg_buf, data.msg_char_len);
-    s_channel.await_request(async_call);
+    s_channel.run_message_loop(handle_req_async);
 };

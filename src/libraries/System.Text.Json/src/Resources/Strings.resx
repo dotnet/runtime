@@ -400,10 +400,10 @@
     <value>The converter '{0}' is not compatible with the type '{1}'.</value>
   </data>
   <data name="ResolverTypeNotCompatible" xml:space="preserve">
-    <value>TypeInfoResolver expected to return JsonTypeInfo of type '{0}' but returned JsonTypeInfo of type '{1}'.</value>
+    <value>The IJsonTypeInfoResolver returned an incompatible JsonTypeInfo instance of type '{0}', expected type '{1}'.</value>
   </data>
   <data name="ResolverTypeInfoOptionsNotCompatible" xml:space="preserve">
-    <value>TypeInfoResolver expected to return JsonTypeInfo options bound to the JsonSerializerOptions provided in the argument.</value>
+    <value>The IJsonTypeInfoResolver returned a JsonTypeInfo instance whose JsonSerializerOptions setting does not match the provided argument.</value>
   </data>
   <data name="SerializationConverterWrite" xml:space="preserve">
     <value>The converter '{0}' wrote too much or not enough.</value>

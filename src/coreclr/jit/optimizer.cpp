@@ -4661,22 +4661,41 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
     return true;
 }
 
-// static
-Compiler::fgWalkResult Compiler::optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data)
+Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* tree)
 {
-    OptInvertCountTreeInfoType* o = (OptInvertCountTreeInfoType*)data->pCallbackData;
-
-    if (Compiler::IsSharedStaticHelper(*pTree))
+    class CountTreeInfoVisitor : public GenTreeVisitor<CountTreeInfoVisitor>
     {
-        o->sharedStaticHelperCount += 1;
-    }
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
 
-    if ((*pTree)->OperIsArrLength())
-    {
-        o->arrayLengthCount += 1;
-    }
+        Compiler::OptInvertCountTreeInfoType Result = {};
 
-    return WALK_CONTINUE;
+        CountTreeInfoVisitor(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if (Compiler::IsSharedStaticHelper(*use))
+            {
+                Result.sharedStaticHelperCount++;
+            }
+
+            if ((*use)->OperIsArrLength())
+            {
+                Result.arrayLengthCount++;
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    CountTreeInfoVisitor walker(this);
+    walker.WalkTree(&tree, nullptr);
+    return walker.Result;
 }
 
 //-----------------------------------------------------------------------------
@@ -4908,8 +4927,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         {
             GenTree* tree = stmt->GetRootNode();
 
-            OptInvertCountTreeInfoType optInvertInfo = {};
-            fgWalkTreePre(&tree, Compiler::optInvertCountTreeInfo, &optInvertInfo);
+            OptInvertCountTreeInfoType optInvertInfo = optInvertCountTreeInfo(tree);
             optInvertTotalInfo.sharedStaticHelperCount += optInvertInfo.sharedStaticHelperCount;
             optInvertTotalInfo.arrayLengthCount += optInvertInfo.arrayLengthCount;
 
@@ -5960,97 +5978,114 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 }
 
 //------------------------------------------------------------------------
-// optIsVarAssgCB: callback to record local modification info
+// optIsVarAssignedWithDesc: do a walk to record local modification data for a statement
 //
 // Arguments:
-//     pTree - pointer to tree to scan
-//     data - ambient walk data
+//     stmt - the statement to walk
+//     dsc - [in, out] data for the walk
 //
-// Returns:
-//     standard walk result
-//
-Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* data)
+bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
 {
-    GenTree* const      tree = *pTree;
-    isVarAssgDsc* const desc = (isVarAssgDsc*)data->pCallbackData;
-    assert(desc && desc->ivaSelf == desc);
-
-    // Can this tree define a local?
-    //
-    if (!tree->OperIsSsaDef())
+    class IsVarAssignedVisitor : public GenTreeVisitor<IsVarAssignedVisitor>
     {
-        return WALK_CONTINUE;
-    }
+        isVarAssgDsc* m_dsc;
 
-    // Check for calls and determine what's written.
-    //
-    GenTree* dest = nullptr;
-    if (tree->OperIs(GT_CALL))
-    {
-        desc->ivaMaskCall = optCallInterf(tree->AsCall());
-
-        dest = data->compiler->gtCallGetDefinedRetBufLclAddr(tree->AsCall());
-        if (dest == nullptr)
+    public:
+        enum
         {
+            DoPreOrder        = true,
+            UseExecutionOrder = true,
+        };
+
+        IsVarAssignedVisitor(Compiler* comp, isVarAssgDsc* dsc) : GenTreeVisitor(comp), m_dsc(dsc)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const tree = *use;
+
+            // Can this tree define a local?
+            //
+            if (!tree->OperIsSsaDef())
+            {
+                return WALK_CONTINUE;
+            }
+
+            // Check for calls and determine what's written.
+            //
+            GenTree* dest = nullptr;
+            if (tree->OperIs(GT_CALL))
+            {
+                m_dsc->ivaMaskCall = optCallInterf(tree->AsCall());
+
+                dest = m_compiler->gtCallGetDefinedRetBufLclAddr(tree->AsCall());
+                if (dest == nullptr)
+                {
+                    return WALK_CONTINUE;
+                }
+
+                dest = dest->AsOp()->gtOp1;
+            }
+            else
+            {
+                dest = tree->AsOp()->gtOp1;
+            }
+
+            genTreeOps const destOper = dest->OperGet();
+
+            // Determine if the tree modifies a particular local
+            //
+            GenTreeLclVarCommon* lcl = nullptr;
+            if (tree->DefinesLocal(m_compiler, &lcl))
+            {
+                const unsigned lclNum = lcl->GetLclNum();
+
+                if (lclNum < lclMAX_ALLSET_TRACKED)
+                {
+                    AllVarSetOps::AddElemD(m_compiler, m_dsc->ivaMaskVal, lclNum);
+                }
+                else
+                {
+                    m_dsc->ivaMaskIncomplete = true;
+                }
+
+                // Bail out if we were checking for one particular local
+                // and we now see it's modified (ignoring perhaps
+                // the one tree where we expect modifications).
+                //
+                if ((lclNum == m_dsc->ivaVar) && (tree != m_dsc->ivaSkip))
+                {
+                    return WALK_ABORT;
+                }
+            }
+
+            if (destOper == GT_LCL_FLD)
+            {
+                // We can't track every field of every var. Moreover, indirections
+                // may access different parts of the var as different (but
+                // overlapping) fields. So just treat them as indirect accesses
+                //
+                // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
+                // noway_assert(lvaTable[lclNum].lvAddrTaken);
+                //
+                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+            }
+            else if (destOper == GT_IND)
+            {
+                // Set the proper indirection bits
+                //
+                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+            }
+
             return WALK_CONTINUE;
         }
+    };
 
-        dest = dest->AsOp()->gtOp1;
-    }
-    else
-    {
-        dest = tree->AsOp()->gtOp1;
-    }
-
-    genTreeOps const destOper = dest->OperGet();
-
-    // Determine if the tree modifies a particular local
-    //
-    GenTreeLclVarCommon* lcl = nullptr;
-    if (tree->DefinesLocal(data->compiler, &lcl))
-    {
-        const unsigned lclNum = lcl->GetLclNum();
-
-        if (lclNum < lclMAX_ALLSET_TRACKED)
-        {
-            AllVarSetOps::AddElemD(data->compiler, desc->ivaMaskVal, lclNum);
-        }
-        else
-        {
-            desc->ivaMaskIncomplete = true;
-        }
-
-        // Bail out if we were checking for one particular local
-        // and we now see it's modified (ignoring perhaps
-        // the one tree where we expect modifications).
-        //
-        if ((lclNum == desc->ivaVar) && (tree != desc->ivaSkip))
-        {
-            return WALK_ABORT;
-        }
-    }
-
-    if (destOper == GT_LCL_FLD)
-    {
-        // We can't track every field of every var. Moreover, indirections
-        // may access different parts of the var as different (but
-        // overlapping) fields. So just treat them as indirect accesses
-        //
-        // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
-        // noway_assert(lvaTable[lclNum].lvAddrTaken);
-        //
-        varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-        desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
-    }
-    else if (destOper == GT_IND)
-    {
-        // Set the proper indirection bits
-        //
-        varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-        desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
-    }
-
-    return WALK_CONTINUE;
+    IsVarAssignedVisitor walker(this, dsc);
+    return walker.WalkTree(stmt->GetRootNodePointer(), nullptr) != WALK_CONTINUE;
 }
 
 //------------------------------------------------------------------------
@@ -6072,13 +6107,9 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
 //
 bool Compiler::optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip, unsigned var)
 {
-    bool         result;
     isVarAssgDsc desc;
 
-    desc.ivaSkip = skip;
-#ifdef DEBUG
-    desc.ivaSelf = &desc;
-#endif
+    desc.ivaSkip     = skip;
     desc.ivaVar      = var;
     desc.ivaMaskCall = CALLINT_NONE;
     AllVarSetOps::AssignNoCopy(this, desc.ivaMaskVal, AllVarSetOps::MakeEmpty(this));
@@ -6089,10 +6120,9 @@ bool Compiler::optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip,
 
         for (Statement* const stmt : beg->Statements())
         {
-            if (fgWalkTreePre(stmt->GetRootNodePointer(), optIsVarAssgCB, &desc) != WALK_CONTINUE)
+            if (optIsVarAssignedWithDesc(stmt, &desc))
             {
-                result = true;
-                goto DONE;
+                return true;
             }
         }
 
@@ -6104,11 +6134,7 @@ bool Compiler::optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip,
         beg = beg->bbNext;
     }
 
-    result = false;
-
-DONE:
-
-    return result;
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -6204,9 +6230,6 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
         //
         desc.ivaVar  = (unsigned)-1;
         desc.ivaSkip = nullptr;
-#ifdef DEBUG
-        desc.ivaSelf = &desc;
-#endif
         AllVarSetOps::AssignNoCopy(this, desc.ivaMaskVal, AllVarSetOps::MakeEmpty(this));
         desc.ivaMaskInd        = VR_NONE;
         desc.ivaMaskCall       = CALLINT_NONE;
@@ -6218,7 +6241,7 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
         {
             for (Statement* const stmt : block->NonPhiStatements())
             {
-                fgWalkTreePre(stmt->GetRootNodePointer(), optIsVarAssgCB, &desc);
+                optIsVarAssignedWithDesc(stmt, &desc);
 
                 if (desc.ivaMaskIncomplete)
                 {
@@ -8457,7 +8480,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         GenTreeArrAddr* arrAddr  = nullptr;
                         GenTree*        baseAddr = nullptr;
-                        FieldSeqNode*   fldSeq   = nullptr;
+                        FieldSeq*       fldSeq   = nullptr;
                         ssize_t         offset   = 0;
 
                         if (arg->IsArrayAddr(&arrAddr))
@@ -8472,7 +8495,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                         else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                         {
-                            assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
+                            assert(fldSeq != nullptr);
 
                             FieldKindForVN fieldKind =
                                 (baseAddr != nullptr) ? FieldKindForVN::WithBaseAddr : FieldKindForVN::SimpleStatic;

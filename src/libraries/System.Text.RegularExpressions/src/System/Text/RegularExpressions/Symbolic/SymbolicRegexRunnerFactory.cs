@@ -37,8 +37,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            rootNode = rootNode.AddFixedLengthMarkers();
-            BDD[] minterms = rootNode.ComputeMinterms();
+            rootNode = rootNode.AddFixedLengthMarkers(bddBuilder);
+            BDD[] minterms = rootNode.ComputeMinterms(bddBuilder);
 
             _matcher = minterms.Length > 64 ?
                 SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorSolver(minterms, charSetSolver), matchTimeout) :

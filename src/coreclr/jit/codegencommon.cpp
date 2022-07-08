@@ -2085,7 +2085,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genIPmappingGen();
 
-    INDEBUG(genDumpPreciseDebugInfo());
+    genReportRichDebugInfo();
 
     /* Finalize the Local Var info in terms of generated code */
 
@@ -7416,12 +7416,7 @@ void CodeGen::genIPmappingGen()
         return;
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In genIPmappingGen()\n");
-    }
-#endif
+    JITDUMP("*************** In genIPmappingGen()\n");
 
     if (compiler->genIPmappings.size() <= 0)
     {
@@ -7560,11 +7555,20 @@ void CodeGen::genIPmappingGen()
 }
 
 #ifdef DEBUG
-void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first)
+//------------------------------------------------------------------------
+// genReportRichDebugInfoInlineTreeToFile:
+//   Recursively process a context in the inline tree and write information about it to a file.
+//
+// Parameters:
+//   file - the file
+//   context - the context
+//   first - whether this is the first of the siblings being written out
+//
+void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first)
 {
     if (context->GetSibling() != nullptr)
     {
-        genDumpPreciseDebugInfoInlineTree(file, context->GetSibling(), first);
+        genReportRichDebugInfoInlineTreeToFile(file, context->GetSibling(), first);
     }
 
     if (context->IsSuccess())
@@ -7577,7 +7581,10 @@ void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* conte
         *first = false;
 
         fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
-        fprintf(file, "\"MethodID\":%lld,", (INT64)context->GetCallee());
+        fprintf(file, "\"MethodID\":%lld,", (int64_t)context->GetCallee());
+        fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
+        fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().EncodeSourceTypes());
+        fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
         const char* className;
         const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
         fprintf(file, "\"MethodName\":\"%s\",", methodName);
@@ -7585,23 +7592,31 @@ void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* conte
         if (context->GetChild() != nullptr)
         {
             bool childFirst = true;
-            genDumpPreciseDebugInfoInlineTree(file, context->GetChild(), &childFirst);
+            genReportRichDebugInfoInlineTreeToFile(file, context->GetChild(), &childFirst);
         }
         fprintf(file, "]}");
     }
 }
 
-void CodeGen::genDumpPreciseDebugInfo()
+//------------------------------------------------------------------------
+// genReportRichDebugInfoToFile:
+//   Write rich debug info in JSON format to file specified by environment variable.
+//
+void CodeGen::genReportRichDebugInfoToFile()
 {
-    if (JitConfig.JitDumpPreciseDebugInfoFile() == nullptr)
+    if (JitConfig.WriteRichDebugInfoFile() == nullptr)
+    {
         return;
+    }
 
     static CritSecObject s_critSect;
     CritSecHolder        holder(s_critSect);
 
-    FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
+    FILE* file = _wfopen(JitConfig.WriteRichDebugInfoFile(), W("a"));
     if (file == nullptr)
+    {
         return;
+    }
 
     // MethodID in ETW events are the method handles.
     fprintf(file, "{\"MethodID\":%lld,", (INT64)compiler->info.compMethodHnd);
@@ -7609,10 +7624,10 @@ void CodeGen::genDumpPreciseDebugInfo()
     fprintf(file, "\"InlineTree\":");
 
     bool first = true;
-    genDumpPreciseDebugInfoInlineTree(file, compiler->compInlineContext, &first);
+    genReportRichDebugInfoInlineTreeToFile(file, compiler->compInlineContext, &first);
     fprintf(file, ",\"Mappings\":[");
     first = true;
-    for (PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
+    for (RichIPMapping& mapping : compiler->genRichIPmappings)
     {
         if (!first)
         {
@@ -7631,14 +7646,106 @@ void CodeGen::genDumpPreciseDebugInfo()
     fclose(file);
 }
 
-void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
+#endif
+
+//------------------------------------------------------------------------
+// genRecordRichDebugInfoInlineTree:
+//   Recursively process a context in the inline tree and record information
+//   about it.
+//
+// Parameters:
+//   context - the inline context
+//   nodes   - the array to record into
+//
+void CodeGen::genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* nodes)
 {
-    PreciseIPMapping mapping;
+    if (context->IsSuccess())
+    {
+        // We expect 1 + NumInlines unique ordinals
+        assert(context->GetOrdinal() <= compiler->m_inlineStrategy->GetInlineCount());
+
+        ICorDebugInfo::InlineTreeNode* node = &nodes[context->GetOrdinal()];
+        node->Method                        = context->GetCallee();
+        node->ILOffset                      = context->GetActualCallOffset();
+        node->Child                         = context->GetChild() == nullptr ? 0 : context->GetChild()->GetOrdinal();
+        node->Sibling = context->GetSibling() == nullptr ? 0 : context->GetSibling()->GetOrdinal();
+    }
+
+    if (context->GetSibling() != nullptr)
+    {
+        genRecordRichDebugInfoInlineTree(context->GetSibling(), nodes);
+    }
+
+    if (context->GetChild() != nullptr)
+    {
+        genRecordRichDebugInfoInlineTree(context->GetChild(), nodes);
+    }
+}
+
+//------------------------------------------------------------------------
+// genReportRichDebugInfo:
+//   If enabled, report rich debugging information to file and/or EE.
+//
+void CodeGen::genReportRichDebugInfo()
+{
+    INDEBUG(genReportRichDebugInfoToFile());
+
+    if (JitConfig.RichDebugInfo() == 0)
+    {
+        return;
+    }
+
+    unsigned numContexts     = 1 + compiler->m_inlineStrategy->GetInlineCount();
+    unsigned numRichMappings = static_cast<unsigned>(compiler->genRichIPmappings.size());
+
+    ICorDebugInfo::InlineTreeNode* inlineTree = static_cast<ICorDebugInfo::InlineTreeNode*>(
+        compiler->info.compCompHnd->allocateArray(numContexts * sizeof(ICorDebugInfo::InlineTreeNode)));
+    ICorDebugInfo::RichOffsetMapping* mappings = static_cast<ICorDebugInfo::RichOffsetMapping*>(
+        compiler->info.compCompHnd->allocateArray(numRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping)));
+
+    memset(inlineTree, 0, numContexts * sizeof(ICorDebugInfo::InlineTreeNode));
+    memset(mappings, 0, numRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping));
+
+    genRecordRichDebugInfoInlineTree(compiler->compInlineContext, inlineTree);
+
+#ifdef DEBUG
+    for (unsigned i = 0; i < numContexts; i++)
+    {
+        assert(inlineTree[i].Method != NO_METHOD_HANDLE);
+    }
+#endif
+
+    size_t mappingIndex = 0;
+    for (const RichIPMapping& richMapping : compiler->genRichIPmappings)
+    {
+        ICorDebugInfo::RichOffsetMapping* mapping = &mappings[mappingIndex];
+        assert(richMapping.debugInfo.IsValid());
+        mapping->NativeOffset = richMapping.nativeLoc.CodeOffset(GetEmitter());
+        mapping->Inlinee      = richMapping.debugInfo.GetInlineContext()->GetOrdinal();
+        mapping->ILOffset     = richMapping.debugInfo.GetLocation().GetOffset();
+        mapping->Source       = richMapping.debugInfo.GetLocation().EncodeSourceTypes();
+
+        mappingIndex++;
+    }
+
+    compiler->info.compCompHnd->reportRichMappings(inlineTree, numContexts, mappings, numRichMappings);
+}
+
+//------------------------------------------------------------------------
+// genAddRichIPMappingHere:
+//   Create a rich IP mapping at the current emit location using the specified
+//   debug information.
+//
+// Parameters:
+//   di - the debug information
+//
+void CodeGen::genAddRichIPMappingHere(const DebugInfo& di)
+{
+    RichIPMapping mapping;
     mapping.nativeLoc.CaptureLocation(GetEmitter());
     mapping.debugInfo = di;
-    compiler->genPreciseIPmappings.push_back(mapping);
+    compiler->genRichIPmappings.push_back(mapping);
 }
-#endif
 
 /*============================================================================
  *

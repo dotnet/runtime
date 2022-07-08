@@ -703,6 +703,10 @@ public:
 
     static float infinite_float();
 
+    static bool isAllBitsSet(float val);
+
+    static bool isAllBitsSet(double val);
+
     static bool isNegative(float val);
 
     static bool isNegative(double val);
@@ -712,6 +716,8 @@ public:
     static bool isNaN(double val);
 
     static bool isNegativeZero(double val);
+
+    static bool isPositiveZero(double val);
 
     static double maximum(double val1, double val2);
 
