@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
+using NEW_CONNECTION_DATA = Microsoft.Quic.QUIC_LISTENER_EVENT._Anonymous_e__Union._NEW_CONNECTION_e__Struct;
+using STOP_COMPLETE_DATA = Microsoft.Quic.QUIC_LISTENER_EVENT._Anonymous_e__Union._STOP_COMPLETE_e__Struct;
+
 namespace System.Net.Quic;
 
 /// <summary>
@@ -184,31 +187,38 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
     }
 
+    private unsafe int HandleEventNewConnection(ref NEW_CONNECTION_DATA data)
+    {
+        // Check if there's capacity to have another connection waiting to be accepted.
+        PendingConnection pendingConnection = new PendingConnection();
+        if (!_acceptQueue.Writer.TryWrite(pendingConnection))
+        {
+            return QUIC_STATUS_CONNECTION_REFUSED;
+        }
+
+        QuicConnection connection = new QuicConnection(new MsQuicConnection(data.Connection, data.Info));
+        SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
+
+        // Kicks off the rest of the handshake in the background.
+        pendingConnection.StartHandshake(connection, clientHello, _connectionOptionsCallback);
+
+        return QUIC_STATUS_SUCCESS;
+
+    }
+    private unsafe int HandleEventStopComplete(ref STOP_COMPLETE_DATA data)
+    {
+        _shutdownTcs.TrySetResult();
+        return QUIC_STATUS_SUCCESS;
+    }
+
     private unsafe int HandleListenerEvent(ref QUIC_LISTENER_EVENT listenerEvent)
     {
-        if (listenerEvent.Type == QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION)
+        switch (listenerEvent.Type)
         {
-            ref var data = ref listenerEvent.NEW_CONNECTION;
-
-            // Check if there's capacity to have another connection waiting to be accepted.
-            PendingConnection pendingConnection = new PendingConnection();
-            if (!_acceptQueue.Writer.TryWrite(pendingConnection))
-            {
-                return QUIC_STATUS_CONNECTION_REFUSED;
-            }
-
-            QuicConnection connection = new QuicConnection(new MsQuicConnection(data.Connection, data.Info));
-            SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
-
-            // Kicks off the rest of the handshake in the background.
-            pendingConnection.StartHandshake(connection, clientHello, _connectionOptionsCallback);
-
-            return QUIC_STATUS_SUCCESS;
-        }
-        if (listenerEvent.Type == QUIC_LISTENER_EVENT_TYPE.STOP_COMPLETE)
-        {
-            _shutdownTcs.TrySetResult();
-            return QUIC_STATUS_SUCCESS;
+            case QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION:
+                return HandleEventNewConnection(ref listenerEvent.NEW_CONNECTION);
+            case QUIC_LISTENER_EVENT_TYPE.STOP_COMPLETE:
+                return HandleEventStopComplete(ref listenerEvent.STOP_COMPLETE);
         }
 
         if (NetEventSource.Log.IsEnabled())
