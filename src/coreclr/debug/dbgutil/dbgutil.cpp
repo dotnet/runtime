@@ -115,7 +115,7 @@ namespace
         }
 
         *directoryRVA = sectionRVA;
-        return S_OK;
+        return hr;
     }
 }
 

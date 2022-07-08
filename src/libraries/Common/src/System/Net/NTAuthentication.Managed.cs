@@ -428,7 +428,7 @@ namespace System.Net
                 throw new Win32Exception(NTE_FAIL);
             }
 
-            Span<byte> span = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref field, 1));
+            Span<byte> span = MemoryMarshal.AsBytes(new Span<MessageField>(ref field));
             BinaryPrimitives.WriteInt16LittleEndian(span, (short)length);
             BinaryPrimitives.WriteInt16LittleEndian(span.Slice(2), (short)length);
             BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), offset);

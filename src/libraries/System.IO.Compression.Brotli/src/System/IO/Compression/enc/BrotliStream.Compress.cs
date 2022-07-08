@@ -46,7 +46,7 @@ namespace System.IO.Compression
         /// <para>The encoder ran into invalid data.</para></exception>
         public override void WriteByte(byte value)
         {
-            WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            WriteCore(new ReadOnlySpan<byte>(in value));
         }
 
         /// <summary>Writes a sequence of bytes to the current Brotli stream from a read-only byte span and advances the current position within this Brotli stream by the number of bytes written.</summary>

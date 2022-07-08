@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(_createObject == null);
                 Debug.Assert(_typedCreateObject == null);
-                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKindNone();
+                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
             }
 
             Func<object>? untypedCreateObject;
@@ -83,10 +83,23 @@ namespace System.Text.Json.Serialization.Metadata
             }
             private protected set
             {
-                Debug.Assert(!_isConfigured, "We should not mutate configured JsonTypeInfo");
+                Debug.Assert(!IsConfigured, "We should not mutate configured JsonTypeInfo");
                 _serialize = value;
                 HasSerialize = value != null;
             }
+        }
+
+        private protected override JsonPropertyInfo CreatePropertyInfoForTypeInfo()
+        {
+            return new JsonPropertyInfo<T>(
+                declaringType: typeof(T),
+                declaringTypeInfo: null,
+                Options)
+            {
+                DefaultConverterForType = Converter,
+                JsonTypeInfo = this,
+                IsForTypeInfo = true,
+            };
         }
 
         private protected void MapInterfaceTypesToCallbacks()

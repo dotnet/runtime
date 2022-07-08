@@ -2067,9 +2067,6 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 
     _ASSERTE(pMT->IsValueType());
 
-    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-        return MarkGCField(gcPtrs, TYPE_GC_BYREF);
-
     unsigned result = 0;
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
@@ -3959,70 +3956,11 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
     TypeHandle th(clsHnd);
     _ASSERTE (!th.IsGenericVariable());
 
-    MethodTable    *pMT = th.GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
-
-    // Is it a non primitive struct such as
-    // RuntimeTypeHandle, RuntimeMethodHandle, RuntimeArgHandle?
-    if (pMT->IsValueType() &&
-        !pMT->IsTruePrimitive()  &&
-        !pMT->IsEnum())
+    CorElementType elementType = th.GetVerifierCorElementType();
+    if (CorIsPrimitiveType(elementType))
     {
-        // default value CORINFO_TYPE_UNDEF is what we want
+        result = asCorInfoType(elementType);
     }
-    else
-    {
-        switch (th.GetInternalCorElementType())
-        {
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_BOOLEAN:
-            result = asCorInfoType(ELEMENT_TYPE_I1);
-            break;
-
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_CHAR:
-            result = asCorInfoType(ELEMENT_TYPE_I2);
-            break;
-
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-            result = asCorInfoType(ELEMENT_TYPE_I4);
-            break;
-
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-            result = asCorInfoType(ELEMENT_TYPE_I8);
-            break;
-
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:
-            result = asCorInfoType(ELEMENT_TYPE_I);
-            break;
-
-        case ELEMENT_TYPE_R4:
-            result = asCorInfoType(ELEMENT_TYPE_R4);
-            break;
-
-        case ELEMENT_TYPE_R8:
-            result = asCorInfoType(ELEMENT_TYPE_R8);
-            break;
-
-        case ELEMENT_TYPE_VOID:
-            result = asCorInfoType(ELEMENT_TYPE_VOID);
-            break;
-
-        case ELEMENT_TYPE_PTR:
-        case ELEMENT_TYPE_FNPTR:
-            result = asCorInfoType(ELEMENT_TYPE_PTR);
-            break;
-
-        default:
-            break;
-        }
-    }
-
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -9214,17 +9152,6 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
     TypeHandle clsHnd = TypeHandle();
     FieldDesc* field = (FieldDesc*) fieldHnd;
     CorElementType type   = field->GetFieldType();
-
-    if (type == ELEMENT_TYPE_I)
-    {
-        PTR_MethodTable enclosingMethodTable = field->GetApproxEnclosingMethodTable();
-        if (enclosingMethodTable->IsByRefLike() && enclosingMethodTable->HasSameTypeDefAs(g_pByReferenceClass))
-        {
-            _ASSERTE(field->GetOffset() == 0);
-            return CORINFO_TYPE_BYREF;
-        }
-    }
-
     if (!CorTypeInfo::IsPrimitiveType(type))
     {
         PCCOR_SIGNATURE sig;
@@ -9339,17 +9266,28 @@ void *CEEInfo::allocateArray(size_t cBytes)
     return result;
 }
 
+void CEEInfo::freeArrayInternal(void* array)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    delete [] ((BYTE*) array);
+}
+
 void CEEInfo::freeArray(void *array)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION();
 
-    delete [] ((BYTE*) array);
+    freeArrayInternal(array);
 
     EE_TO_JIT_TRANSITION();
 }
@@ -11003,6 +10941,36 @@ void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInf
     EE_TO_JIT_TRANSITION();
 }
 
+void CEEJitInfo::reportRichMappings(
+        ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+        uint32_t                          numInlineTreeNodes,
+        ICorDebugInfo::RichOffsetMapping* mappings,
+        uint32_t                          numMappings)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    if (m_jitManager->IsStoringRichDebugInfo())
+    {
+        m_inlineTreeNodes = inlineTreeNodes;
+        m_numInlineTreeNodes = numInlineTreeNodes;
+        m_richOffsetMappings = mappings;
+        m_numRichOffsetMappings = numMappings;
+    }
+    else
+    {
+        freeArrayInternal(inlineTreeNodes);
+        freeArrayInternal(mappings);
+    }
+
+    EE_TO_JIT_TRANSITION();
+}
+
 void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     CONTRACTL {
@@ -11068,18 +11036,27 @@ void CEEJitInfo::CompressDebugInfo()
         return;
     }
 
-    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL))
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0))
         return;
 
     JIT_TO_EE_TRANSITION();
 
     EX_TRY
     {
+        BOOL writeFlagByte = FALSE;
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        writeFlagByte = TRUE;
+#endif
+        if (m_jitManager->IsStoringRichDebugInfo())
+            writeFlagByte = TRUE;
+
         PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
             m_pOffsetMapping, m_iOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
             patchpointInfo,
-            NULL,
+            m_inlineTreeNodes, m_numInlineTreeNodes,
+            m_richOffsetMappings, m_numRichOffsetMappings,
+            writeFlagByte,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
         m_CodeHeaderRW->SetDebugInfo(pDebugInfo);
@@ -13952,7 +13929,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             DWORD dwBlobSize = CorSigUncompressData(pBlob);
             const uint8_t *const pBlobStart = pBlob;
-            pBlob += dwBlobSize;    
+            pBlob += dwBlobSize;
             StackSArray<TypeHandle> types;
             DWORD cTypes = CorSigUncompressData(pBlob);
             bool fail = false;
@@ -13979,7 +13956,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
             MethodDesc *pMDCompare = NULL;
-            
+
             if (!fail)
             {
                 if (kind == ENCODE_CHECK_IL_BODY)
@@ -14009,7 +13986,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                 fail = fail || (pMethodMetadata->cByteData != dwBlobSize);
             }
-            
+
             if (!fail)
             {
                 fail = 0 != memcmp(pBlobStart, pMethodMetadata->pByteData, dwBlobSize);
@@ -14353,6 +14330,16 @@ void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
 }
 
 void CEEInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo *vars)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::reportRichMappings(
+        ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+        uint32_t                          numInlineTreeNodes,
+        ICorDebugInfo::RichOffsetMapping* mappings,
+        uint32_t                          numMappings)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

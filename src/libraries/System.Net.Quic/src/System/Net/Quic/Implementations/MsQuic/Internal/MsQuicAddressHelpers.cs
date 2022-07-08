@@ -22,7 +22,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             // TODO: is the layout same for SocketAddress.Buffer and QuicAddr on all platforms?
             QuicAddr result = default;
-            Span<byte> rawAddress = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref result, 1));
+            Span<byte> rawAddress = MemoryMarshal.AsBytes(new Span<QuicAddr>(ref result));
 
             Internals.SocketAddress address = IPEndPointExtensions.Serialize(iPEndPoint);
             Debug.Assert(address.Size <= rawAddress.Length);

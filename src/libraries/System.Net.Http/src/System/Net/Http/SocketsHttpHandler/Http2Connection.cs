@@ -229,11 +229,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_shutdown)
                 {
@@ -279,11 +276,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_shutdown)
                 {
@@ -337,11 +331,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 Debug.Assert(_availableStreamsWaiter is null, "As used currently, shouldn't already have a waiter");
 
@@ -472,7 +463,15 @@ namespace System.Net.Http
                     frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
                     if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
                     {
-                        ThrowProtocolError();
+                        if (frameHeader.Type == FrameType.GoAway)
+                        {
+                            var (_, errorCode) = ReadGoAwayFrame(frameHeader);
+                            ThrowProtocolError(errorCode);
+                        }
+                        else
+                        {
+                            ThrowProtocolError();
+                        }
                     }
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
@@ -999,23 +998,7 @@ namespace System.Net.Http
 
         private void ProcessGoAwayFrame(FrameHeader frameHeader)
         {
-            Debug.Assert(frameHeader.Type == FrameType.GoAway);
-
-            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
-            {
-                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
-            }
-
-            if (frameHeader.StreamId != 0)
-            {
-                ThrowProtocolError();
-            }
-
-            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
-            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
-            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
-
-            _incomingBuffer.Discard(frameHeader.PayloadLength);
+            var (lastStreamId, errorCode) = ReadGoAwayFrame(frameHeader);
 
             Debug.Assert(lastStreamId >= 0);
             Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode);
@@ -1045,6 +1028,29 @@ namespace System.Net.Http
             {
                 s.OnReset(resetException, canRetry: true);
             }
+        }
+
+        private (int lastStreamId, Http2ProtocolErrorCode errorCode) ReadGoAwayFrame(FrameHeader frameHeader)
+        {
+            Debug.Assert(frameHeader.Type == FrameType.GoAway);
+
+            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
+            {
+                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
+            }
+
+            if (frameHeader.StreamId != 0)
+            {
+                ThrowProtocolError();
+            }
+
+            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
+            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
+            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
+
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
+
+            return (lastStreamId, errorCode);
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>

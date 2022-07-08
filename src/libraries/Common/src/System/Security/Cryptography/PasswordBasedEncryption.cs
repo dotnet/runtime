@@ -169,7 +169,7 @@ namespace System.Security.Cryptography
                 using (IncrementalHash hasher = IncrementalHash.CreateHash(digestAlgorithmName))
                 {
                     Span<byte> buf = stackalloc byte[128];
-                    ReadOnlySpan<byte> effectivePasswordBytes = stackalloc byte[0];
+                    scoped ReadOnlySpan<byte> effectivePasswordBytes = default;
                     byte[]? rented = null;
                     System.Text.Encoding? encoding = null;
 
@@ -464,7 +464,7 @@ namespace System.Security.Cryptography
             Span<byte> destination)
         {
             Span<byte> buf = stackalloc byte[128];
-            ReadOnlySpan<byte> effectivePasswordBytes = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> effectivePasswordBytes = default;
             byte[]? rented = null;
             System.Text.Encoding? encoding = null;
 

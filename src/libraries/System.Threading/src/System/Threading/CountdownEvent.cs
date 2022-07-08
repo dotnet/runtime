@@ -121,7 +121,7 @@ namespace System.Threading
         {
             get
             {
-                ThrowIfDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 return _event.WaitHandle;
             }
         }
@@ -175,7 +175,7 @@ namespace System.Threading
         /// disposed.</exception>
         public bool Signal()
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             Debug.Assert(_event != null);
 
             if (_currentCount <= 0)
@@ -221,7 +221,7 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(signalCount));
             }
 
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             Debug.Assert(_event != null);
 
             int observedCount;
@@ -328,7 +328,7 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(signalCount));
             }
 
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             // Loop around until we successfully increment the count.
             int observedCount;
@@ -386,7 +386,7 @@ namespace System.Threading
         /// <exception cref="System.ObjectDisposedException">The current instance has already been disposed.</exception>
         public void Reset(int count)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (count < 0)
             {
@@ -545,7 +545,7 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
             }
 
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             cancellationToken.ThrowIfCancellationRequested();
 
             // Check whether the event is already set.  This is checked instead of this.IsSet, as this.Signal
@@ -563,21 +563,6 @@ namespace System.Threading
             }
 
             return returnValue;
-        }
-
-        // --------------------------------------
-        // Private methods
-
-
-        /// <summary>
-        /// Throws an exception if the latch has been disposed.
-        /// </summary>
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(CountdownEvent));
-            }
         }
     }
 }

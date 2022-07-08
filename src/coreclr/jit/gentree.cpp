@@ -316,7 +316,8 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeQmark)        <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeIntrinsic)    <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeIndexAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeMDArr)        <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeBoundsChk)    <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeArrElem)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeArrIndex)     <= TREE_NODE_SZ_LARGE); // *** large node
@@ -333,22 +334,22 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
 #ifndef FEATURE_PUT_STRUCT_ARG_STK
-    static_assert_no_msg(sizeof(GenTreePutArgStk)    <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_SMALL);
 #else  // FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
-    static_assert_no_msg(sizeof(GenTreePutArgStk)    <= TREE_NODE_SZ_LARGE);
+    static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
 #if FEATURE_ARG_SPLIT
-    static_assert_no_msg(sizeof(GenTreePutArgSplit)  <= TREE_NODE_SZ_LARGE);
+    static_assert_no_msg(sizeof(GenTreePutArgSplit)     <= TREE_NODE_SZ_LARGE);
 #endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_SIMD
-    static_assert_no_msg(sizeof(GenTreeSIMD)         <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeSIMD)            <= TREE_NODE_SZ_SMALL);
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-    static_assert_no_msg(sizeof(GenTreeHWIntrinsic)  <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
 #endif // FEATURE_HW_INTRINSICS
     // clang-format on
 }
@@ -1966,13 +1967,8 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
                 default:
                     break;
             }
-#ifdef DEBUG
-            if ((arrayLength != nullptr) && (block != nullptr))
-            {
-                optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
-                                    block);
-            }
-#endif
+
+            assert((arrayLength == nullptr) || ((optMethodFlags & OMF_HAS_NEWARRAY) != 0));
         }
     }
 
@@ -2466,6 +2462,14 @@ AGAIN:
                         return false;
                     }
                     break;
+                case GT_MDARR_LENGTH:
+                case GT_MDARR_LOWER_BOUND:
+                    if ((op1->AsMDArr()->Dim() != op2->AsMDArr()->Dim()) ||
+                        (op1->AsMDArr()->Rank() != op2->AsMDArr()->Rank()))
+                    {
+                        return false;
+                    }
+                    break;
                 case GT_CAST:
                     if (op1->AsCast()->gtCastType != op2->AsCast()->gtCastType)
                     {
@@ -2943,6 +2947,11 @@ AGAIN:
             {
                 case GT_ARR_LENGTH:
                     hash += tree->AsArrLen()->ArrLenOffset();
+                    break;
+                case GT_MDARR_LENGTH:
+                case GT_MDARR_LOWER_BOUND:
+                    hash += tree->AsMDArr()->Dim();
+                    hash += tree->AsMDArr()->Rank();
                     break;
                 case GT_CAST:
                     hash ^= tree->AsCast()->gtCastType;
@@ -4558,9 +4567,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 level = 0;
 #if defined(TARGET_XARCH)
-                if (tree->IsFloatPositiveZero())
+                if (tree->IsFloatPositiveZero() || tree->IsFloatAllBitsSet())
                 {
-                    // We generate `xorp* tgtReg, tgtReg` which is 3-5 bytes
+                    // We generate `xorp* tgtReg, tgtReg` for PositiveZero and
+                    // `pcmpeqd tgtReg, tgtReg` for AllBitsSet which is 3-5 bytes
                     // but which can be elided by the instruction decoder.
 
                     costEx = 1;
@@ -4934,9 +4944,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_ARR_LENGTH:
+                case GT_MDARR_LENGTH:
+                case GT_MDARR_LOWER_BOUND:
                     level++;
 
-                    /* Array Len should be the same as an indirections, which have a costEx of IND_COST_EX */
+                    // Array meta-data access should be the same as an indirection, which has a costEx of IND_COST_EX.
                     costEx = IND_COST_EX - 1;
                     costSz = 2;
                     break;
@@ -5942,6 +5954,8 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_COPY:
         case GT_RELOAD:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:
@@ -6306,8 +6320,8 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
 }
 
 //------------------------------------------------------------------------------
-// OperIsImplicitIndir : Check whether the operation contains an implicit
-//                       indirection.
+// OperIsImplicitIndir : Check whether the operation contains an implicit indirection.
+//
 // Arguments:
 //    this      -  a GenTree node
 //
@@ -6317,7 +6331,6 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
 // Note that for the [HW]INTRINSIC nodes we have to examine the
 // details of the node to determine its result.
 //
-
 bool GenTree::OperIsImplicitIndir() const
 {
     switch (gtOper)
@@ -6337,6 +6350,9 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_ARR_INDEX:
         case GT_ARR_ELEM:
         case GT_ARR_OFFSET:
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             return true;
         case GT_INTRINSIC:
             return AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType;
@@ -6437,7 +6453,9 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
 
         case GT_ARR_LENGTH:
-            if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsArrLen()->ArrRef()))
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
+            if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsArrCommon()->ArrRef()))
             {
                 return ExceptionSetFlags::NullReferenceException;
             }
@@ -8426,14 +8444,24 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_ARR_LENGTH:
-                copy = gtNewArrLen(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsArrLen()->ArrLenOffset(), nullptr);
+                copy =
+                    gtNewArrLen(tree->TypeGet(), tree->AsArrLen()->ArrRef(), tree->AsArrLen()->ArrLenOffset(), nullptr);
+                break;
+
+            case GT_MDARR_LENGTH:
+                copy =
+                    gtNewMDArrLen(tree->AsMDArr()->ArrRef(), tree->AsMDArr()->Dim(), tree->AsMDArr()->Rank(), nullptr);
+                break;
+
+            case GT_MDARR_LOWER_BOUND:
+                copy = gtNewMDArrLowerBound(tree->AsMDArr()->ArrRef(), tree->AsMDArr()->Dim(), tree->AsMDArr()->Rank(),
+                                            nullptr);
                 break;
 
             case GT_ARR_INDEX:
                 copy = new (this, GT_ARR_INDEX)
                     GenTreeArrIndex(tree->TypeGet(), tree->AsArrIndex()->ArrObj(), tree->AsArrIndex()->IndexExpr(),
-                                    tree->AsArrIndex()->gtCurrDim, tree->AsArrIndex()->gtArrRank,
-                                    tree->AsArrIndex()->gtArrElemType);
+                                    tree->AsArrIndex()->gtCurrDim, tree->AsArrIndex()->gtArrRank);
                 break;
 
             case GT_QMARK:
@@ -8612,19 +8640,18 @@ GenTree* Compiler::gtCloneExpr(
             }
             copy = new (this, GT_ARR_ELEM)
                 GenTreeArrElem(arrElem->TypeGet(), gtCloneExpr(arrElem->gtArrObj, addFlags, deepVarNum, deepVarVal),
-                               arrElem->gtArrRank, arrElem->gtArrElemSize, arrElem->gtArrElemType, &inds[0]);
+                               arrElem->gtArrRank, arrElem->gtArrElemSize, &inds[0]);
         }
         break;
 
         case GT_ARR_OFFSET:
         {
-            copy = new (this, GT_ARR_OFFSET)
-                GenTreeArrOffs(tree->TypeGet(),
-                               gtCloneExpr(tree->AsArrOffs()->gtOffset, addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsArrOffs()->gtIndex, addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsArrOffs()->gtArrObj, addFlags, deepVarNum, deepVarVal),
-                               tree->AsArrOffs()->gtCurrDim, tree->AsArrOffs()->gtArrRank,
-                               tree->AsArrOffs()->gtArrElemType);
+            GenTreeArrOffs* arrOffs = tree->AsArrOffs();
+            copy                    = new (this, GT_ARR_OFFSET)
+                GenTreeArrOffs(tree->TypeGet(), gtCloneExpr(arrOffs->gtOffset, addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(arrOffs->gtIndex, addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(arrOffs->gtArrObj, addFlags, deepVarNum, deepVarVal), arrOffs->gtCurrDim,
+                               arrOffs->gtArrRank);
         }
         break;
 
@@ -8951,7 +8978,64 @@ void Compiler::gtUpdateTreeAncestorsSideEffects(GenTree* tree)
 //
 void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
 {
-    fgWalkTree(stmt->GetRootNodePointer(), fgUpdateSideEffectsPre, fgUpdateSideEffectsPost);
+    struct UpdateSideEffectsWalker : GenTreeVisitor<UpdateSideEffectsWalker>
+    {
+        enum
+        {
+            DoPreOrder  = true,
+            DoPostOrder = true,
+        };
+
+        UpdateSideEffectsWalker(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+            tree->gtFlags &= ~(GTF_ASG | GTF_CALL | GTF_EXCEPT);
+            return WALK_CONTINUE;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+
+            // Update the node's side effects first.
+            if (tree->OperMayThrow(m_compiler))
+            {
+                tree->gtFlags |= GTF_EXCEPT;
+            }
+
+            if (tree->OperRequiresAsgFlag())
+            {
+                tree->gtFlags |= GTF_ASG;
+            }
+
+            if (tree->OperRequiresCallFlag(m_compiler))
+            {
+                tree->gtFlags |= GTF_CALL;
+            }
+
+            // If this node is an indir or array meta-data load, and it doesn't have the GTF_EXCEPT bit set, we
+            // set the GTF_IND_NONFAULTING bit. This needs to be done after all children, and this node, have
+            // been processed.
+            if (tree->OperIsIndirOrArrMetaData() && ((tree->gtFlags & GTF_EXCEPT) == 0))
+            {
+                tree->gtFlags |= GTF_IND_NONFAULTING;
+            }
+
+            // Then update the parent's side effects based on this node.
+            if (user != nullptr)
+            {
+                user->gtFlags |= (tree->gtFlags & GTF_ALL_EFFECT);
+            }
+            return WALK_CONTINUE;
+        }
+    };
+
+    UpdateSideEffectsWalker walker(this);
+    walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -8974,7 +9058,7 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
     else
     {
         tree->gtFlags &= ~GTF_EXCEPT;
-        if (tree->OperIsIndirOrArrLength())
+        if (tree->OperIsIndirOrArrMetaData())
         {
             tree->SetIndirExceptionFlags(this);
         }
@@ -9000,38 +9084,6 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtUpdateNodeOperSideEffectsPost: Update the side effects based on the node operation,
-// in the post-order visit of a tree walk. It is expected that the pre-order visit cleared
-// the bits, so the post-order visit only sets them. This is important for binary nodes
-// where one child already may have set the GTF_EXCEPT bit. Note that `SetIndirExceptionFlags`
-// looks at its child, which is why we need to do this in a bottom-up walk.
-//
-// Arguments:
-//    tree            - Tree to update the side effects on
-//
-// Notes:
-//    This method currently only updates GTF_ASG, GTF_CALL, and GTF_EXCEPT flags.
-//    The other side effect flags may remain unnecessarily (conservatively) set.
-//
-void Compiler::gtUpdateNodeOperSideEffectsPost(GenTree* tree)
-{
-    if (tree->OperMayThrow(this))
-    {
-        tree->gtFlags |= GTF_EXCEPT;
-    }
-
-    if (tree->OperRequiresAsgFlag())
-    {
-        tree->gtFlags |= GTF_ASG;
-    }
-
-    if (tree->OperRequiresCallFlag(this))
-    {
-        tree->gtFlags |= GTF_CALL;
-    }
-}
-
-//------------------------------------------------------------------------
 // gtUpdateNodeSideEffects: Update the side effects based on the node operation and
 //                          children's side efects.
 //
@@ -9049,58 +9101,6 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
         tree->gtFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
         return GenTree::VisitResult::Continue;
     });
-}
-
-//------------------------------------------------------------------------
-// fgUpdateSideEffectsPre: Update the side effects based on the tree operation.
-// The pre-visit walk clears GTF_ASG, GTF_CALL, and GTF_EXCEPT; the post-visit walk sets
-// the bits as necessary.
-//
-// Arguments:
-//    pTree            - Pointer to the tree to update the side effects
-//    fgWalkPre        - Walk data
-//
-Compiler::fgWalkResult Compiler::fgUpdateSideEffectsPre(GenTree** pTree, fgWalkData* fgWalkPre)
-{
-    GenTree* tree = *pTree;
-    tree->gtFlags &= ~(GTF_ASG | GTF_CALL | GTF_EXCEPT);
-
-    return WALK_CONTINUE;
-}
-
-//------------------------------------------------------------------------
-// fgUpdateSideEffectsPost: Update the side effects of the node and parent based on the tree's flags.
-//
-// Arguments:
-//    pTree            - Pointer to the tree
-//    fgWalkPost       - Walk data
-//
-// Notes:
-//    The routine is used for updating the stale side effect flags for ancestor
-//    nodes starting from treeParent up to the top-level stmt expr.
-//
-Compiler::fgWalkResult Compiler::fgUpdateSideEffectsPost(GenTree** pTree, fgWalkData* fgWalkPost)
-{
-    GenTree* tree = *pTree;
-
-    // Update the node's side effects first.
-    fgWalkPost->compiler->gtUpdateNodeOperSideEffectsPost(tree);
-
-    // If this node is an indir or array length, and it doesn't have the GTF_EXCEPT bit set, we
-    // set the GTF_IND_NONFAULTING bit. This needs to be done after all children, and this node, have
-    // been processed.
-    if (tree->OperIsIndirOrArrLength() && ((tree->gtFlags & GTF_EXCEPT) == 0))
-    {
-        tree->gtFlags |= GTF_IND_NONFAULTING;
-    }
-
-    // Then update the parent's side effects based on this node.
-    GenTree* parent = fgWalkPost->parent;
-    if (parent != nullptr)
-    {
-        parent->gtFlags |= (tree->gtFlags & GTF_ALL_EFFECT);
-    }
-    return WALK_CONTINUE;
 }
 
 bool GenTree::gtSetFlags() const
@@ -9154,6 +9154,8 @@ bool GenTree::gtRequestSetFlags()
     {
         case GT_IND:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             // These will turn into simple load from memory instructions
             // and we can't force the setting of the flags on load from memory
             break;
@@ -9241,6 +9243,8 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_COPY:
         case GT_RELOAD:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:
@@ -9776,7 +9780,7 @@ bool GenTree::Precedes(GenTree* other)
 //
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrLength());
+    assert(OperIsIndirOrArrMetaData());
 
     if (OperMayThrow(comp))
     {
@@ -9784,16 +9788,7 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
         return;
     }
 
-    GenTree* addr = nullptr;
-    if (OperIsIndir())
-    {
-        addr = AsIndir()->Addr();
-    }
-    else
-    {
-        assert(gtOper == GT_ARR_LENGTH);
-        addr = AsArrLen()->ArrRef();
-    }
+    GenTree* addr = GetIndirOrArrMetaDataAddr();
 
     gtFlags |= GTF_IND_NONFAULTING;
     gtFlags &= ~GTF_EXCEPT;
@@ -10638,6 +10633,11 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         printf(" unknown");
                         break;
                 }
+            }
+
+            if (tree->OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
+            {
+                printf(" (%u)", tree->AsMDArr()->Dim());
             }
         }
 
@@ -16005,38 +16005,45 @@ Compiler::fgWalkResult Compiler::gtClearColonCond(GenTree** pTree, fgWalkData* d
     return WALK_CONTINUE;
 }
 
-/*****************************************************************************
- *
- *  Callback used by the tree walker to implement fgFindLink()
- */
-static Compiler::fgWalkResult gtFindLinkCB(GenTree** pTree, Compiler::fgWalkData* cbData)
-{
-    Compiler::FindLinkData* data = (Compiler::FindLinkData*)cbData->pCallbackData;
-    if (*pTree == data->nodeToFind)
-    {
-        data->result = pTree;
-        data->parent = cbData->parent;
-        return Compiler::WALK_ABORT;
-    }
-
-    return Compiler::WALK_CONTINUE;
-}
-
 Compiler::FindLinkData Compiler::gtFindLink(Statement* stmt, GenTree* node)
 {
-    FindLinkData data = {node, nullptr, nullptr};
-
-    fgWalkResult result = fgWalkTreePre(stmt->GetRootNodePointer(), gtFindLinkCB, &data);
-
-    if (result == WALK_ABORT)
+    class FindLinkWalker : public GenTreeVisitor<FindLinkWalker>
     {
-        assert(data.nodeToFind == *data.result);
-        return data;
-    }
-    else
-    {
-        return {node, nullptr, nullptr};
-    }
+        GenTree*  m_node;
+        GenTree** m_edge   = nullptr;
+        GenTree*  m_parent = nullptr;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        FindLinkWalker(Compiler* comp, GenTree* node) : GenTreeVisitor(comp), m_node(node)
+        {
+        }
+
+        FindLinkData GetResult()
+        {
+            return FindLinkData{m_node, m_edge, m_parent};
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if (*use == m_node)
+            {
+                m_edge   = use;
+                m_parent = user;
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    FindLinkWalker walker(this, node);
+    walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    return walker.GetResult();
 }
 
 /*****************************************************************************

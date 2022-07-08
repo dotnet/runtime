@@ -975,14 +975,20 @@ namespace DebuggerTests
                 "Evaluate");
         }
 
-        [Fact] 
-        public async Task InspectPropertiesOfObjectFromLibraryWithPdbDeleted()
+        [Theory]
+        [InlineData(
+            "DebugWithDeletedPdb",
+            1146)]
+        [InlineData(
+            "DebugWithoutDebugSymbols",
+            1158)]
+        public async Task InspectPropertiesOfObjectFromExternalLibrary(string className, int line)
         {
-            var expression = $"{{ invoke_static_method('[debugger-test] DebugWithoutSymbols:Run'); }}";
+            var expression = $"{{ invoke_static_method('[debugger-test] {className}:Run'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1146, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", line, 8,
                 "Run",
                 wait_for_event_fn: async (pause_location) =>
                 {
@@ -991,7 +997,8 @@ namespace DebuggerTests
                     {
                         propA = TNumber(10),
                         propB = TNumber(20),
-                        propC = TNumber(30)
+                        propC = TNumber(30),
+                        d = TNumber(40)
                     }, "exc");
                 }
             );

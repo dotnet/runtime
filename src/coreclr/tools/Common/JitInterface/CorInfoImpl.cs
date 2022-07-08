@@ -2330,11 +2330,6 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT)
-            {
-                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
-            }
-
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
@@ -2952,15 +2947,6 @@ namespace Internal.JitInterface
                 type = asCorInfoType(fieldType);
             }
 
-            Debug.Assert(!fieldDesc.OwningType.IsByReferenceOfT ||
-                fieldDesc.OwningType.GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
-            if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
-            {
-                Debug.Assert(structType == null || *structType == null);
-                Debug.Assert(fieldDesc.Offset.AsInt == 0);
-                type = CorInfoType.CORINFO_TYPE_BYREF;
-            }
-
             return type;
         }
 
@@ -3019,6 +3005,12 @@ namespace Internal.JitInterface
 
             // Just tell the JIT to extend everything.
             extendOthers = true;
+        }
+
+        private void reportRichMappings(InlineTreeNode* inlineTree, uint numInlineTree, RichOffsetMapping* mappings, uint numMappings)
+        {
+            Marshal.FreeHGlobal((IntPtr)inlineTree);
+            Marshal.FreeHGlobal((IntPtr)mappings);
         }
 
         private void* allocateArray(UIntPtr cBytes)

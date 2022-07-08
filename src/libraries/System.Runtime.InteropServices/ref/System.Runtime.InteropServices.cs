@@ -862,6 +862,9 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Cos(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cosh(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat CosPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -2169,6 +2172,19 @@ namespace System.Runtime.InteropServices.Marshalling
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }
+
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true)]
+    public sealed partial class CustomMarshallerAttribute : System.Attribute
+    {
+        public CustomMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.MarshalMode marshalMode, System.Type marshallerType) { }
+        public System.Type ManagedType { get { throw null; } }
+        public System.Runtime.InteropServices.Marshalling.MarshalMode MarshalMode { get { throw null; } }
+        public System.Type MarshallerType { get { throw null; } }
+        public struct GenericPlaceholder
+        {
+        }
+    }
+
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
     {
@@ -2203,6 +2219,19 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         Value,
         LinearCollection
+    }
+    public enum MarshalMode
+    {
+        Default = 0,
+        ManagedToUnmanagedIn = 1,
+        ManagedToUnmanagedRef = 2,
+        ManagedToUnmanagedOut = 3,
+        UnmanagedToManagedIn = 4,
+        UnmanagedToManagedRef = 5,
+        UnmanagedToManagedOut = 6,
+        ElementIn = 7,
+        ElementRef = 8,
+        ElementOut = 9
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute

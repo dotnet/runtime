@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -21,7 +22,7 @@ namespace System.Security.Cryptography
         private const int SignatureStackBufSize = 72;
         private const int BitsPerByte = 8;
 
-        private Lazy<SafeDsaHandle> _key = null!;
+        private Lazy<SafeDsaHandle>? _key;
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -154,7 +155,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 FreeKey();
-                _key = null!;
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -345,6 +346,7 @@ namespace System.Security.Cryptography
             return Interop.Crypto.DsaVerify(key, hash, signature);
         }
 
+        [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
             if (_key == null)
@@ -363,6 +365,7 @@ namespace System.Security.Cryptography
             return key;
         }
 
+        [MemberNotNull(nameof(_key))]
         private void SetKey(SafeDsaHandle newKey)
         {
             // Do not call ThrowIfDisposed here, as it breaks the SafeEvpPKey ctor
