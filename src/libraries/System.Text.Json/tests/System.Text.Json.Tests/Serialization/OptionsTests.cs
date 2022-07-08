@@ -918,5 +918,92 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void GetTypeInfo_MutableOptionsInstance(Type type)
+        {
+            var options = new JsonSerializerOptions();
+            JsonTypeInfo typeInfo = options.GetTypeInfo(type);
+            Assert.Equal(type, typeInfo.Type);
+
+            JsonTypeInfo typeInfo2 = options.GetTypeInfo(type);
+            Assert.Equal(type, typeInfo2.Type);
+
+            Assert.NotSame(typeInfo, typeInfo2);
+
+            options.WriteIndented = true; // can mutate without issue
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void GetTypeInfo_ImmutableOptionsInstance(Type type)
+        {
+            var options = new JsonSerializerOptions();
+            JsonSerializer.Serialize(42, options);
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(type);
+            Assert.Equal(type, typeInfo.Type);
+
+            JsonTypeInfo typeInfo2 = options.GetTypeInfo(type);
+            Assert.Same(typeInfo, typeInfo2);
+        }
+
+        [Fact]
+        public static void GetTypeInfo_NullInput_ThrowsArgumentNullException()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentNullException>(() => options.GetTypeInfo(null));
+        }
+
+        [Theory]
+        [InlineData(typeof(void))]
+        [InlineData(typeof(Dictionary<,>))]
+        [InlineData(typeof(List<>))]
+        [InlineData(typeof(Nullable<>))]
+        [InlineData(typeof(int*))]
+        [InlineData(typeof(Span<int>))]
+        public static void GetTypeInfo_InvalidInput_ThrowsArgumentException(Type type)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentException>(() => options.GetTypeInfo(type));
+        }
+
+        [Fact]
+        public static void GetTypeInfo_ResolverWithoutMetadata_ThrowsNotSupportedException()
+        {
+            var options = new JsonSerializerOptions();
+            options.AddContext<JsonContext>();
+
+            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(BasicCompany)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTypeInfo_ResultsAreGeneric_Values))]
+        public static void GetTypeInfo_ResultsAreGeneric<T>(T value, string expectedJson)
+        {
+            var options = new JsonSerializerOptions();
+            JsonTypeInfo<T> jsonTypeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+            string json = JsonSerializer.Serialize(value, jsonTypeInfo);
+            Assert.Equal(expectedJson, json);
+            JsonSerializer.Deserialize(json, jsonTypeInfo);
+        }
+
+        public static IEnumerable<object[]> GetTypeInfo_ResultsAreGeneric_Values()
+        {
+            yield return WrapArgs(42, "42");
+            yield return WrapArgs("string", "\"string\"");
+            yield return WrapArgs(new { Value = 42, String = "str" }, """{"Value":42,"String":"str"}""");
+            yield return WrapArgs(new List<int> { 1, 2, 3, 4, 5 }, """[1,2,3,4,5]""");
+            yield return WrapArgs(new Dictionary<string, int> { ["key"] = 42 }, """{"key":42}""");
+
+            static object[] WrapArgs<T>(T value, string json) => new object[] { value, json };
+        }
     }
 }
