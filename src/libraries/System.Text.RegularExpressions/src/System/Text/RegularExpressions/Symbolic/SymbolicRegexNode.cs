@@ -70,6 +70,9 @@ namespace System.Text.RegularExpressions.Symbolic
             _set = set;
             _info = info;
             _nullabilityCache = info.StartsWithSomeAnchor && info.CanBeNullable ? new byte[CharKind.ContextLimit] : null;
+#if DEBUG
+            _debugBuilder = builder;
+#endif
         }
 
         /// <summary> Create a new node or retrieve one from the builder _nodeCache</summary>
@@ -80,9 +83,6 @@ namespace System.Text.RegularExpressions.Symbolic
             if (!builder._nodeCache.TryGetValue(key, out SymbolicRegexNode<TSet>? node))
             {
                 node = new SymbolicRegexNode<TSet>(builder, kind, left, right, lower, upper, setOrStartSet, info);
-#if DEBUG
-                node._debugBuilder = builder;
-#endif
                 builder._nodeCache[key] = node;
             }
             return node;
