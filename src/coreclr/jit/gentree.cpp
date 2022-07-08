@@ -2667,20 +2667,19 @@ AGAIN:
 }
 
 //------------------------------------------------------------------------
-// gtHasRef: Find out whether the given tree contains a local/field.
+// gtHasRef: Find out whether the given tree contains a local.
 //
 // Arguments:
 //    tree    - tree to find the local in
-//    lclNum  - the local's number, *or* the handle for the field
+//    lclNum  - the local's number
 //
 // Return Value:
-//    Whether "tree" has any LCL_VAR/LCL_FLD nodes that refer to the
-//    local, LHS or RHS, or FIELD nodes with the specified handle.
+//    Whether "tree" has any LCL_VAR/LCL_FLD nodes that refer to the local.
 //
 // Notes:
 //    Does not pay attention to local address nodes.
 //
-/* static */ bool Compiler::gtHasRef(GenTree* tree, ssize_t lclNum)
+/* static */ bool Compiler::gtHasRef(GenTree* tree, unsigned lclNum)
 {
     if (tree == nullptr)
     {
@@ -2689,7 +2688,7 @@ AGAIN:
 
     if (tree->OperIsLeaf())
     {
-        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && (tree->AsLclVarCommon()->GetLclNum() == (unsigned)lclNum))
+        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
             return true;
         }
@@ -2703,13 +2702,6 @@ AGAIN:
 
     if (tree->OperIsUnary())
     {
-        // Code in importation (see CEE_STFLD in impImportBlockCode), when
-        // spilling, can pass us "lclNum" that is actually a field handle...
-        if (tree->OperIs(GT_FIELD) && (lclNum == (ssize_t)tree->AsField()->gtFldHnd))
-        {
-            return true;
-        }
-
         return gtHasRef(tree->AsUnOp()->gtGetOp1(), lclNum);
     }
 
