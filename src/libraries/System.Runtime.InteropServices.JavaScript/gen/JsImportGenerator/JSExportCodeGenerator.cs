@@ -8,7 +8,6 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using System.Linq.Expressions;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop.JavaScript
@@ -125,36 +124,10 @@ namespace Microsoft.Interop.JavaScript
         public BlockSyntax GenerateJSExportRegistration()
         {
             var registrationStatements = new List<StatementSyntax>();
-            // if (!RuntimeInformation.IsOSPlatform("browser")) return;
             registrationStatements.Add(IfStatement(
-                BinaryExpression(
-                    SyntaxKind.NotEqualsExpression,
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        MemberAccessExpression(
-                            SyntaxKind.SimpleMemberAccessExpression,
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    IdentifierName("System"),
-                                    IdentifierName("Runtime")),
-                                IdentifierName("InteropServices")),
-                            IdentifierName("RuntimeInformation")),
-                        IdentifierName("OSArchitecture")),
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        MemberAccessExpression(
-                            SyntaxKind.SimpleMemberAccessExpression,
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    IdentifierName("System"),
-                                    IdentifierName("Runtime")),
-                                IdentifierName("InteropServices")),
-                            IdentifierName("Architecture")),
-                        IdentifierName("Wasm"))),
+                BinaryExpression(SyntaxKind.NotEqualsExpression,
+                    IdentifierName(Constants.OSArchitectureGlobal),
+                    IdentifierName(Constants.ArchitectureWasmGlobal)),
                 ReturnStatement()));
 
             var signatureArgs = new List<ArgumentSyntax>();
@@ -189,14 +162,12 @@ namespace Microsoft.Interop.JavaScript
                     .WithVariables(SingletonSeparatedList(VariableDeclarator(marshaller.TypeInfo.InstanceIdentifier)))));
             }
 
-            // ref JSMarshalerArgument __arg_exception = ref __arguments_buffer[0];
             statementsToUpdate.Add(LocalDeclarationStatement(VariableDeclaration(RefType(IdentifierName(Constants.JSMarshalerArgumentGlobal)))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(Constants.ArgumentException))
                 .WithInitializer(EqualsValueClause(RefExpression(ElementAccessExpression(IdentifierName(Constants.ArgumentsBuffer))
                 .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
                     Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))))))))));
 
-            // ref JSMarshalerArgument __arg_return = ref __arguments_buffer[1];
             statementsToUpdate.Add(LocalDeclarationStatement(VariableDeclaration(RefType(IdentifierName(Constants.JSMarshalerArgumentGlobal)))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(Constants.ArgumentReturn))
                 .WithInitializer(EqualsValueClause(RefExpression(ElementAccessExpression(IdentifierName(Constants.ArgumentsBuffer))
@@ -209,13 +180,11 @@ namespace Microsoft.Interop.JavaScript
             var statements = new List<StatementSyntax>();
             var arguments = new List<ArgumentSyntax>();
 
-
             // Generate code for each parameter for the current stage
             foreach (BoundGenerator marshaller in _marshallers.NativeParameterMarshallers)
             {
                 // convert arguments for invocation
                 statements.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, _context));
-
                 arguments.Add(Argument(IdentifierName(marshaller.TypeInfo.InstanceIdentifier)));
             }
 
@@ -231,14 +200,11 @@ namespace Microsoft.Interop.JavaScript
 
                 (string _, string nativeIdentifier) = _context.GetIdentifiers(_marshallers.ManagedReturnMarshaller.TypeInfo);
 
-                // __retVal = System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.export_echo1_Int32();
                 ExpressionStatementSyntax statement = ExpressionStatement(AssignmentExpression(
                      SyntaxKind.SimpleAssignmentExpression,
                      IdentifierName(nativeIdentifier), invocation));
 
                 statements.Add(statement);
-
-                // __arg_return.ToJS(ref __retVal);
                 statements.AddRange(_marshallers.ManagedReturnMarshaller.Generator.Generate(_marshallers.ManagedReturnMarshaller.TypeInfo, _context with { CurrentStage = StubCodeContext.Stage.Marshal }));
             }
 

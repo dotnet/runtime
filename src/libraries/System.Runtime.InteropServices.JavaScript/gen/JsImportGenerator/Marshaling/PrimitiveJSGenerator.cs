@@ -9,7 +9,6 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop.JavaScript
 {
-
     internal class PrimitiveJSGenerator : BaseJSGenerator
     {
         public PrimitiveJSGenerator(MarshalerType marshalerType, IMarshallingGenerator inner)

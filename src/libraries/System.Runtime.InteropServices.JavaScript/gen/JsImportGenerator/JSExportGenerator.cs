@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -143,16 +140,12 @@ namespace Microsoft.Interop.JavaScript
             var WrapperName = "__Wrapper_" + userDeclaredMethod.Identifier + "_" + stub.TypesHash;
             var RegistrationName = "__Register_" + userDeclaredMethod.Identifier + "_" + stub.TypesHash;
 
-            // internal static void __Wrapper_export_echo1_Int32_575325794(global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument* buffer)
             MemberDeclarationSyntax wrappperMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(WrapperName))
                 .WithModifiers(TokenList(new[] { Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.UnsafeKeyword) }))
                 .WithParameterList(ParameterList(SingletonSeparatedList(
                     Parameter(Identifier("__arguments_buffer")).WithType(PointerType(ParseTypeName(Constants.JSMarshalerArgumentGlobal))))))
                 .WithBody(wrapperStatements);
 
-            //[global::System.Runtime.CompilerServices.ModuleInitializerAttribute]
-            //[global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute("__Wrapper_export_echo1_Int32_575325794", typeof(System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper))]
-            //internal static void __Register_export_echo1_Int32_575325794()
             MemberDeclarationSyntax registerMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(RegistrationName))
                 .WithAttributeLists(List(new AttributeListSyntax[]{
                     AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.ModuleInitializerAttributeGlobal)))),
@@ -276,34 +269,22 @@ namespace Microsoft.Interop.JavaScript
         {
             var diagnostics = new GeneratorDiagnostics();
 
-            try
+            // Generate stub code
+            var stubGenerator = new JSExportCodeGenerator(
+            incrementalContext.Environment,
+            incrementalContext.SignatureContext.ElementTypeInformation,
+            incrementalContext.JSExportData,
+            incrementalContext.SignatureContext,
+            (elementInfo, ex) =>
             {
-                // Generate stub code
-                var stubGenerator = new JSExportCodeGenerator(
-                incrementalContext.Environment,
-                incrementalContext.SignatureContext.ElementTypeInformation,
-                incrementalContext.JSExportData,
-                incrementalContext.SignatureContext,
-                (elementInfo, ex) =>
-                {
-                    diagnostics.ReportMarshallingNotSupported(incrementalContext.DiagnosticLocation, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
-                },
-                incrementalContext.GeneratorFactoryKey.GeneratorFactory);
+                diagnostics.ReportMarshallingNotSupported(incrementalContext.DiagnosticLocation, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
+            },
+            incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
-                BlockSyntax wrapper = stubGenerator.GenerateJSExportBody();
-                BlockSyntax registration = stubGenerator.GenerateJSExportRegistration();
+            BlockSyntax wrapper = stubGenerator.GenerateJSExportBody();
+            BlockSyntax registration = stubGenerator.GenerateJSExportRegistration();
 
-                return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, wrapper, registration), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
-
-            }
-            catch (Exception ex)
-            {
-                var x = NamespaceDeclaration(IdentifierName("__failure__")).WithCloseBraceToken(Token(TriviaList(
-                        Comment("/*"),
-                        Comment(ex.ToString()),
-                        Comment("*/")), SyntaxKind.CloseBraceToken, TriviaList()));
-                return (x, incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
-            }
+            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, wrapper, registration), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)
@@ -328,7 +309,6 @@ namespace Microsoft.Interop.JavaScript
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
                 || methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
             {
-                //TODO inverted description for JSExport
                 return Diagnostic.Create(GeneratorDiagnostics.InvalidExportAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
             }
 

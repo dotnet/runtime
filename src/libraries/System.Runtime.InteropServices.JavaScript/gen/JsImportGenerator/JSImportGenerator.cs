@@ -151,9 +151,9 @@ namespace Microsoft.Interop.JavaScript
 
             FieldDeclarationSyntax sigField = FieldDeclaration(VariableDeclaration(IdentifierName(Constants.JSFunctionSignatureGlobal))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(stub.BindingName)))))
-                // TODO, do we need to lock it for multi-threaded ?
-                .AddModifiers(Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.VolatileKeyword))
-                ;
+                .AddModifiers(Token(SyntaxKind.StaticKeyword))
+                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
+                    Attribute(IdentifierName(Constants.ThreadStaticGlobal))))));
 
             MemberDeclarationSyntax toPrint = WrapMethodInContainingScopes(stub, stubMethod, sigField);
             return toPrint;
@@ -201,15 +201,11 @@ namespace Microsoft.Interop.JavaScript
 
             if (attrData.ConstructorArguments.Length == 1)
             {
-                return new JSImportData(attrData.ConstructorArguments[0].Value!.ToString(), null)
-                {
-                };
+                return new JSImportData(attrData.ConstructorArguments[0].Value!.ToString(), null);
             }
             if (attrData.ConstructorArguments.Length == 2)
             {
-                return new JSImportData(attrData.ConstructorArguments[0].Value!.ToString(), attrData.ConstructorArguments[1].Value!.ToString())
-                {
-                };
+                return new JSImportData(attrData.ConstructorArguments[0].Value!.ToString(), attrData.ConstructorArguments[1].Value!.ToString());
             }
             return null;
         }
@@ -279,33 +275,21 @@ namespace Microsoft.Interop.JavaScript
         {
             var diagnostics = new GeneratorDiagnostics();
 
-            try
+            // Generate stub code
+            var stubGenerator = new JSImportCodeGenerator(
+            incrementalContext.Environment,
+            incrementalContext.SignatureContext.ElementTypeInformation,
+            incrementalContext.JSImportData,
+            incrementalContext.SignatureContext,
+            (elementInfo, ex) =>
             {
-                // Generate stub code
-                var stubGenerator = new JSImportCodeGenerator(
-                incrementalContext.Environment,
-                incrementalContext.SignatureContext.ElementTypeInformation,
-                incrementalContext.JSImportData,
-                incrementalContext.SignatureContext,
-                (elementInfo, ex) =>
-                {
-                    diagnostics.ReportMarshallingNotSupported(incrementalContext.DiagnosticLocation, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
-                },
-                incrementalContext.GeneratorFactoryKey.GeneratorFactory);
+                diagnostics.ReportMarshallingNotSupported(incrementalContext.DiagnosticLocation, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
+            },
+            incrementalContext.GeneratorFactoryKey.GeneratorFactory);
 
-                BlockSyntax code = stubGenerator.GenerateJSImportBody();
+            BlockSyntax code = stubGenerator.GenerateJSImportBody();
 
-                return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, code), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
-
-            }
-            catch (Exception ex)
-            {
-                var x = NamespaceDeclaration(IdentifierName("__failure__")).WithCloseBraceToken(Token(TriviaList(
-                        Comment("/*"),
-                        Comment(ex.ToString()),
-                        Comment("*/")), SyntaxKind.CloseBraceToken, TriviaList()));
-                return (x, incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
-            }
+            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, code), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)

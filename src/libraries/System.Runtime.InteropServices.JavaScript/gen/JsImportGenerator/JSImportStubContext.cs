@@ -85,7 +85,7 @@ namespace Microsoft.Interop.JavaScript
                 stubTypeFullName = currType.Name + (string.IsNullOrEmpty(stubTypeFullName) ? "" : ".") + stubTypeFullName;
                 currType = currType.ContainingType;
             }
-            stubTypeFullName = stubTypeNamespace ==null ? stubTypeFullName : (stubTypeNamespace + "." + stubTypeFullName);
+            stubTypeFullName = stubTypeNamespace == null ? stubTypeFullName : (stubTypeNamespace + "." + stubTypeFullName);
 
             (ImmutableArray<TypePositionInfo> typeInfos, IMarshallingGeneratorFactory generatorFactory) = GenerateTypeInformation(method, diagnostics, env);
 
@@ -141,8 +141,6 @@ namespace Microsoft.Interop.JavaScript
 
         private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratorDiagnostics diagnostics, StubEnvironment env)
         {
-            //var defaultInfo = new DefaultMarshallingInfo(CharEncoding.Utf16, null);
-            //var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
             var jsMarshallingAttributeParser = new JSMarshallingAttributeInfoParser(env.Compilation, diagnostics, method);
 
             // Determine parameter and return types
@@ -150,7 +148,7 @@ namespace Microsoft.Interop.JavaScript
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 IParameterSymbol param = method.Parameters[i];
-                MarshallingInfo marshallingInfo = NoMarshallingInfo.Instance; //marshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
+                MarshallingInfo marshallingInfo = NoMarshallingInfo.Instance;
                 MarshallingInfo jsMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes(), marshallingInfo);
 
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
@@ -163,7 +161,7 @@ namespace Microsoft.Interop.JavaScript
                 typeInfos.Add(typeInfo);
             }
 
-            MarshallingInfo retMarshallingInfo = NoMarshallingInfo.Instance; //marshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes());
+            MarshallingInfo retMarshallingInfo = NoMarshallingInfo.Instance;
             MarshallingInfo retJSMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes(), retMarshallingInfo);
 
             var retTypeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), retMarshallingInfo);
@@ -188,15 +186,6 @@ namespace Microsoft.Interop.JavaScript
 
             return (typeInfos.ToImmutable(), jsGeneratorFactory);
         }
-
-        // We don't need the warnings around not setting the various
-        // non-nullable fields/properties on this type in the constructor
-        // since we always use a property initializer.
-#pragma warning disable 8618
-        private JSSignatureContext()
-        {
-        }
-#pragma warning restore
 
         public ImmutableArray<TypePositionInfo> ElementTypeInformation { get; init; }
 
@@ -256,6 +245,5 @@ namespace Microsoft.Interop.JavaScript
         {
             throw new UnreachableException();
         }
-
     }
 }

@@ -31,7 +31,6 @@ namespace Microsoft.Interop.JavaScript
             }
             JSMarshallingInfo jsMarshalingInfo = info.MarshallingAttributeInfo as JSMarshallingInfo;
 
-            /// TODO info.MarshallingAttributeInfo detect JSMarshalAsAttribute
             Exception fail(string failReason)
             {
                 return new MarshallingNotSupportedException(info, context)
@@ -45,7 +44,6 @@ namespace Microsoft.Interop.JavaScript
             {
                 // invalid
                 case { ManagedType: JSInvalidTypeInfo }:
-                    // throw new NotImplementedException(info.ManagedType.GetType().FullName + ": " + info.ManagedType.FullTypeName + " - " + info.ManagedIndex + " " + info.InstanceIdentifier);
                     throw new MarshallingNotSupportedException(info, context);
 
                 // void
@@ -90,8 +88,7 @@ namespace Microsoft.Interop.JavaScript
                     return Create(info, isToJs, function.KnownType, function.ArgsTypeInfo.Select(a => a.KnownType).ToArray(), jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 default:
-                    //throw new MarshallingNotSupportedException(info, context);
-                    throw new NotImplementedException(info.ManagedType.GetType().FullName + ": " + info.ManagedType.FullTypeName + " - " + info.ManagedIndex + " " + info.InstanceIdentifier);
+                    throw new MarshallingNotSupportedException(info, context);
             }
         }
 
@@ -136,8 +133,6 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.DateTimeOffset when jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Object when jsType == JSTypeFlags.Missing:
                     throw failWithReason("TODO Please use JSMarshalAsAttribute to specify marshaling of " + info.ManagedType.FullTypeName + ".");
-
-
 
                 // nullable
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Boolean: return new NullableJSGenerator(MarshalerType.Boolean);

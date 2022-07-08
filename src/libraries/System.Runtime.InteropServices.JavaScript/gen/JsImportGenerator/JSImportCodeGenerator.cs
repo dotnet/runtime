@@ -8,12 +8,10 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using System.Linq.Expressions;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop.JavaScript
 {
-
     internal abstract class JSCodeGenerator
     {
         public const string ReturnIdentifier = "__retVal";
@@ -49,7 +47,7 @@ namespace Microsoft.Interop.JavaScript
             }
 
             // validate task + span mix
-            if(_marshallers.ManagedReturnMarshaller.TypeInfo.ManagedType is JSTaskTypeInfo)
+            if (_marshallers.ManagedReturnMarshaller.TypeInfo.ManagedType is JSTaskTypeInfo)
             {
                 BoundGenerator spanArg = _marshallers.AllMarshallers.FirstOrDefault(m => m.TypeInfo.ManagedType is JSSpanTypeInfo);
                 if (spanArg != default)
@@ -76,14 +74,6 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        /// <summary>
-        /// Generate the method body of the p/invoke stub.
-        /// </summary>
-        /// <param name="dllImportName">Name of the target DllImport function to invoke</param>
-        /// <returns>Method body of the p/invoke stub</returns>
-        /// <remarks>
-        /// The generated code assumes it will be in an unsafe context.
-        /// </remarks>
         public BlockSyntax GenerateJSImportBody()
         {
             StatementSyntax invoke = InvokeSyntax();
@@ -107,16 +97,7 @@ namespace Microsoft.Interop.JavaScript
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Marshal);
 
-            // TODO fixed nesting statements.Pin. NestFixedStatements
-            /*BlockSyntax fixedBlock = Block(statements.PinnedMarshal);
-            foreach(var statement in statements.InvokeStatements)
-            {
-                fixedBlock = fixedBlock.AddStatements(statement);
-            }
-            tryStatements.Add(statements.Pin.NestFixedStatements(fixedBlock));
-            */
             tryStatements.AddRange(statements.InvokeStatements);
-            // <invokeSucceeded> = true;
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
                 tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
@@ -155,21 +136,14 @@ namespace Microsoft.Interop.JavaScript
 
         private void BindSyntax(List<StatementSyntax> statementsToUpdate)
         {
-            // if (__signature_echo_int_3708578225 == null)
-            // __signature_echo_int_3708578225 = global::System.Runtime.InteropServices.JavaScript.JavaScriptMarshal.BindJSFunction
             var bindingParameters =
                 (new ArgumentSyntax[] {
-                    // name
                     Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_context.AttributeData.FunctionName))),
                     Argument(
                         _context.AttributeData.ModuleName == null
                         ? LiteralExpression(SyntaxKind.NullLiteralExpression)
                         : LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_context.AttributeData.ModuleName))),
-                    // types
                     CreateSignaturesSyntax(),
-                    // marshallers
-                    //CreateMarshallersSyntax(),
-                    // return type
                 });
 
             statementsToUpdate.Add(IfStatement(BinaryExpression(SyntaxKind.EqualsExpression, IdentifierName(_signatureContext.BindingName), LiteralExpression(SyntaxKind.NullLiteralExpression)),
@@ -193,7 +167,6 @@ namespace Microsoft.Interop.JavaScript
 
         private void SetupSyntax(List<StatementSyntax> statementsToUpdate)
         {
-            // Span<JSMarshalerArgument> __arguments_buffer = stackalloc JSMarshalerArgument[3];
             statementsToUpdate.Add(LocalDeclarationStatement(
                 VariableDeclaration(GenericName(Identifier(Constants.SpanGlobal)).WithTypeArgumentList(
                     TypeArgumentList(SingletonSeparatedList<TypeSyntax>(IdentifierName(Constants.JSMarshalerArgumentGlobal)))))
@@ -202,26 +175,22 @@ namespace Microsoft.Interop.JavaScript
                 .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
                     LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(2 + _marshallers.NativeParameterMarshallers.Length)))))))))))));
 
-            // ref JSMarshalerArgument __arg_exception = ref __arguments_buffer[0];
             statementsToUpdate.Add(LocalDeclarationStatement(VariableDeclaration(RefType(IdentifierName(Constants.JSMarshalerArgumentGlobal)))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(Constants.ArgumentException))
                 .WithInitializer(EqualsValueClause(RefExpression(ElementAccessExpression(IdentifierName(Constants.ArgumentsBuffer))
                 .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
                     Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))))))))));
 
-            // __arg_exception.Initialize()
             statementsToUpdate.Add(ExpressionStatement(
                 InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                 IdentifierName(Constants.ArgumentException), IdentifierName("Initialize")))));
 
-            // ref JSMarshalerArgument __arg_return = ref __arguments_buffer[1];
             statementsToUpdate.Add(LocalDeclarationStatement(VariableDeclaration(RefType(IdentifierName(Constants.JSMarshalerArgumentGlobal)))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(Constants.ArgumentReturn))
                 .WithInitializer(EqualsValueClause(RefExpression(ElementAccessExpression(IdentifierName(Constants.ArgumentsBuffer))
                 .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
                     Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))))))))));
 
-            // __arg_return.Initialize()
             statementsToUpdate.Add(ExpressionStatement(
                 InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                 IdentifierName(Constants.ArgumentReturn), IdentifierName("Initialize")))));
@@ -229,7 +198,6 @@ namespace Microsoft.Interop.JavaScript
 
         private StatementSyntax InvokeSyntax()
         {
-            // JavaScriptMarshal.InvokeJS(__signature_echo_int_3708578225, __arguments_buffer);
             return ExpressionStatement(InvocationExpression(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, IdentifierName(Constants.JSFunctionSignatureGlobal), IdentifierName("InvokeJS")))
                 .WithArgumentList(ArgumentList(SeparatedList(new[]{

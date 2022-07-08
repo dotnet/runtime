@@ -3,13 +3,10 @@
 
 using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace Microsoft.Interop.JavaScript
 {
-
     internal abstract record JSTypeInfo(string FullTypeName, string DiagnosticFormattedName, KnownManagedType KnownType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
     {
         public static ManagedTypeInfo CreateJSTypeInfoForTypeSymbol(ITypeSymbol type)
@@ -154,7 +151,6 @@ namespace Microsoft.Interop.JavaScript
                     }
                     return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
                 default:
-                    //throw new NotImplementedException(diagonsticFormattedName + "  xxx: " + fullTypeName);
                     return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
             }
         }

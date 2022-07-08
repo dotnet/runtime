@@ -133,7 +133,6 @@ namespace Microsoft.Interop.JavaScript
                         .WithType(sourceType)})))
                             .WithBlock(Block(SingletonList<StatementSyntax>(ExpressionStatement(
                                 InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                // TODO do we have root for string ? Constants.ToJSReturnMethod
                                 IdentifierName("__delegate_arg_arg" + (i + 1)), GetToJSMethod(marshalerType)))
                                 .WithArgumentList(ArgumentList(SeparatedList(new[]{
                             Argument(IdentifierName("__delegate_arg"+(i+1))),
@@ -153,7 +152,6 @@ namespace Microsoft.Interop.JavaScript
                                 IdentifierName("__delegate_arg_arg" + (i + 1)), GetToManagedMethod(marshalerType)))
                                 .WithArgumentList(ArgumentList(SeparatedList(new[]{
                             Argument(IdentifierName("__delegate_arg"+(i+1))).WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)),
-                                    // TODO do we have root for string ?
                                 }))))))));
     }
 }

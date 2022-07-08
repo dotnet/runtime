@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop.JavaScript
 {
-    //TODO handle options
     internal sealed record JSGeneratorOptions(bool EnableJSImport, bool EnableJSExport)
     {
         public JSGeneratorOptions(AnalyzerConfigOptions options)

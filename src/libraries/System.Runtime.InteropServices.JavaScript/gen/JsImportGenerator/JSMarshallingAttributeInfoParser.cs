@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
 using Microsoft.CodeAnalysis;
@@ -12,9 +11,6 @@ namespace Microsoft.Interop.JavaScript
 {
     public sealed class JSMarshallingAttributeInfoParser
     {
-        private readonly Compilation _compilation;
-        private readonly IGeneratorDiagnostics _diagnostics;
-        private readonly ISymbol _contextSymbol;
         private readonly ITypeSymbol _jsMarshalAsAttribute;
         private readonly ITypeSymbol _marshalUsingAttribute;
 
@@ -23,9 +19,6 @@ namespace Microsoft.Interop.JavaScript
             IGeneratorDiagnostics diagnostics,
             ISymbol contextSymbol)
         {
-            _compilation = compilation;
-            _diagnostics = diagnostics;
-            _contextSymbol = contextSymbol;
             _jsMarshalAsAttribute = compilation.GetTypeByMetadataName(Constants.JSMarshalAsAttribute)!.ConstructUnboundGenericType();
             _marshalUsingAttribute = compilation.GetTypeByMetadataName(Constants.MarshalUsingAttribute)!;
         }
@@ -52,7 +45,7 @@ namespace Microsoft.Interop.JavaScript
 
                         Enum.TryParse(name, out jsType);
 
-                        foreach(var ta in jsTypeArgs.TypeArguments.Cast<INamedTypeSymbol>().Select(x => x.ToDisplayString()))
+                        foreach (var ta in jsTypeArgs.TypeArguments.Cast<INamedTypeSymbol>().Select(x => x.ToDisplayString()))
                         {
                             string argName = ta.Substring(ta.IndexOf("JSType") + "JSType.".Length);
                             JSTypeFlags jsTypeArg = JSTypeFlags.None;
@@ -77,7 +70,6 @@ namespace Microsoft.Interop.JavaScript
                     };
                 }
             }
-
 
             if (jsType == JSTypeFlags.None)
             {

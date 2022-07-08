@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -11,7 +9,6 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop.JavaScript
 {
-
     internal sealed class TaskJSGenerator : BaseJSGenerator
     {
         private MarshalerType _resultMarshalerType;
@@ -98,13 +95,6 @@ namespace Microsoft.Interop.JavaScript
 
         private StatementSyntax ToManagedMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
         {
-            /*
-            __arg1_gen_native__js_arg.ToManaged(out value, static (ref JSMarshalerArgument __task_result_arg) =>
-            {
-                __task_result_arg.ToManaged(out string? __task_result);
-                return __task_result;
-            });
-            */
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToManagedMethod(Type)))
                 .WithArgumentList(ArgumentList(SeparatedList(new[]{
@@ -123,18 +113,11 @@ namespace Microsoft.Interop.JavaScript
                         IdentifierName("__task_result_arg"), GetToManagedMethod(_resultMarshalerType)))
                         .WithArgumentList(ArgumentList(SeparatedList(new[]{
                             Argument(IdentifierName("__task_result")).WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)),
-                            // TODO do we have root for string ?
                         }))))))))}))));
         }
 
         private StatementSyntax ToJSMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
         {
-            /*
-            __arg_return.ToJS(ref __retVal, static (ref global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __task_result_arg, ref object __task_result) =>
-            {
-                __task_result_arg.ToJS(ref __task_result);
-            });
-             */
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToJSMethod(Type)))
                 .WithArgumentList(ArgumentList(SeparatedList(new[]{
@@ -149,7 +132,6 @@ namespace Microsoft.Interop.JavaScript
                         .WithType(sourceType)})))
                     .WithBlock(Block(SingletonList<StatementSyntax>(ExpressionStatement(
                         InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        // TODO do we have root for string ? Constants.ToJSReturnMethod
                         IdentifierName("__task_result_arg"), GetToJSMethod(_resultMarshalerType)))
                         .WithArgumentList(ArgumentList(SeparatedList(new[]{
                             Argument(IdentifierName("__task_result")),

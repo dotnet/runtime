@@ -19,6 +19,7 @@ namespace Microsoft.Interop.JavaScript
         public const string JSMarshalerArgumentGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument";
         public const string ModuleInitializerAttributeGlobal = "global::System.Runtime.CompilerServices.ModuleInitializerAttribute";
         public const string DynamicDependencyAttributeGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute";
+        public const string ThreadStaticGlobal = "global::System.ThreadStaticAttribute";
         public const string UnsafeGlobal = "global::System.Runtime.CompilerServices.Unsafe";
         public const string IntPtrGlobal = "global::System.IntPtr";
         public const string TypeGlobal = "global::System.Type";
@@ -31,6 +32,8 @@ namespace Microsoft.Interop.JavaScript
         public const string ActionGlobal = "global::System.Action";
         public const string UnsafeSkipInitGlobal = "global::System.Runtime.CompilerServices.Unsafe.SkipInit";
         public const string ExceptionGlobal = "global::System.Exception";
+        public const string OSArchitectureGlobal = "global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture";
+        public const string ArchitectureWasmGlobal = "global::System.Runtime.InteropServices.Architecture.Wasm";
         public const string ArgumentsBuffer = "__arguments_buffer";
         public const string ArgumentException = "__arg_exception";
         public const string ArgumentReturn = "__arg_return";
