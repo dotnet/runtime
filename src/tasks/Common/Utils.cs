@@ -28,9 +28,8 @@ internal static class Utils
                                         string command,
                                         IDictionary<string, string> envVars,
                                         string workingDir,
-                                        bool silent=false,
-                                        bool logStdErrAsMessage=false,
-                                        MessageImportance debugMessageImportance=MessageImportance.Low,
+                                        bool logErrorsAndWarningsFromOutput=false,
+                                        MessageImportance messageImportance=MessageImportance.Low,
                                         string? label=null)
     {
         string scriptFileName = CreateTemporaryBatchFile(command);
@@ -39,18 +38,17 @@ internal static class Utils
                                                     : ("/bin/sh", $"\"{scriptFileName}\"");
 
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
-        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running {command} via script {scriptFileName}:", msgPrefix);
-        logger.LogMessage(debugMessageImportance, File.ReadAllText(scriptFileName), msgPrefix);
+        logger.LogMessage(messageImportance, $"{msgPrefix}Running {command} via script {scriptFileName}:", msgPrefix);
+        logger.LogMessage(messageImportance, File.ReadAllText(scriptFileName), msgPrefix);
 
         return TryRunProcess(logger,
                              shell,
                              args,
                              envVars,
                              workingDir,
-                             silent: silent,
-                             logStdErrAsMessage: logStdErrAsMessage,
+                             logErrorsAndWarningsFromOutput: logErrorsAndWarningsFromOutput,
                              label: label,
-                             debugMessageImportance: debugMessageImportance);
+                             messageImportance: messageImportance);
 
         static string CreateTemporaryBatchFile(string command)
         {
@@ -82,8 +80,7 @@ internal static class Utils
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
         bool ignoreErrors = false,
-        bool silent = true,
-        MessageImportance debugMessageImportance=MessageImportance.High)
+        MessageImportance messageImportance=MessageImportance.High)
     {
         (int exitCode, string output) = TryRunProcess(
                                             logger,
@@ -91,8 +88,7 @@ internal static class Utils
                                             args,
                                             envVars,
                                             workingDir,
-                                            silent: silent,
-                                            debugMessageImportance: debugMessageImportance);
+                                            messageImportance: messageImportance);
 
         if (exitCode != 0 && !ignoreErrors)
             throw new Exception("Error: Process returned non-zero exit code: " + output);
@@ -106,13 +102,12 @@ internal static class Utils
         string args = "",
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
-        bool silent = true,
-        bool logStdErrAsMessage = false,
-        MessageImportance debugMessageImportance=MessageImportance.High,
+        bool logErrorsAndWarningsFromOutput = false,
+        MessageImportance messageImportance = MessageImportance.High,
         string? label=null)
     {
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
-        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running: {path} {args}");
+        logger.LogMessage(messageImportance, $"{msgPrefix}Running: {path} {args}");
         var outputBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
         {
@@ -127,7 +122,7 @@ internal static class Utils
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
 
-        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Using working directory: {workingDir ?? Environment.CurrentDirectory}", msgPrefix);
+        logger.LogMessage(messageImportance, $"{msgPrefix}Using working directory: {workingDir ?? Environment.CurrentDirectory}", msgPrefix);
 
         if (envVars != null)
         {
@@ -145,42 +140,36 @@ internal static class Utils
         if (process == null)
             throw new ArgumentException($"{msgPrefix}Process.Start({path} {args}) returned null process");
 
-        process.ErrorDataReceived += (sender, e) =>
-        {
-            lock (s_SyncObj)
-            {
-                if (string.IsNullOrEmpty(e.Data))
-                    return;
+        process.ErrorDataReceived += LogOutput;
+        process.OutputDataReceived += LogOutput;
 
-                string msg = $"{msgPrefix}{e.Data}";
-                if (!silent)
-                {
-                    if (logStdErrAsMessage)
-                        logger.LogMessage(debugMessageImportance, e.Data, msgPrefix);
-                    else
-                        logger.LogWarning(msg);
-                }
-                outputBuilder.AppendLine(e.Data);
-            }
-        };
-        process.OutputDataReceived += (sender, e) =>
-        {
-            lock (s_SyncObj)
-            {
-                if (string.IsNullOrEmpty(e.Data))
-                    return;
-
-                if (!silent)
-                    logger.LogMessage(debugMessageImportance, e.Data, msgPrefix);
-                outputBuilder.AppendLine(e.Data);
-            }
-        };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
 
-        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Exit code: {process.ExitCode}");
+        process.ErrorDataReceived -= LogOutput;
+        process.OutputDataReceived -= LogOutput;
+
+        logger.LogMessage(messageImportance, $"{msgPrefix}Exit code: {process.ExitCode}");
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
+
+        void LogOutput(object sender, DataReceivedEventArgs args)
+        {
+            string? line = args.Data;
+            lock (s_SyncObj)
+            {
+                if (string.IsNullOrEmpty(line))
+                    return;
+
+                string message = $"{msgPrefix}{line}";
+                if (logErrorsAndWarningsFromOutput)
+                    logger.LogMessageFromText(message, messageImportance);
+                else
+                    logger.LogMessage(messageImportance, message);
+
+                outputBuilder.AppendLine(line);
+            }
+        }
     }
 
     internal static string CreateTemporaryBatchFile(string command)

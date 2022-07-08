@@ -88,8 +88,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     Path.Combine(SdkDir, "dotnet"),
                                                     $"workload install --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {WorkloadId.ItemSpec}",
                                                     workingDir: Path.GetTempPath(),
-                                                    silent: false,
-                                                    debugMessageImportance: MessageImportance.High);
+                                                    messageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
                 Log.LogError($"workload install failed: {output}");

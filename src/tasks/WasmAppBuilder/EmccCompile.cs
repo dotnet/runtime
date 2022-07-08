@@ -201,8 +201,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                                                             command,
                                                             envVarsDict,
                                                             workingDir: Environment.CurrentDirectory,
-                                                            logStdErrAsMessage: true,
-                                                            debugMessageImportance: messageImportance,
+                                                            messageImportance: messageImportance,
                                                             label: Path.GetFileName(srcFile));
 
                     var endTime = DateTime.Now;

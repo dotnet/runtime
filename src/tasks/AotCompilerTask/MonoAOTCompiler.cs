@@ -926,8 +926,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                                                                 $"--response=\"{args.ResponseFilePath}\"",
                                                                 args.EnvironmentVariables,
                                                                 args.WorkingDir,
-                                                                silent: true,
-                                                                debugMessageImportance: MessageImportance.Low,
+                                                                messageImportance: MessageImportance.Low,
                                                                 label: Path.GetFileName(assembly));
 
             var importance = exitCode == 0 ? MessageImportance.Low : MessageImportance.High;

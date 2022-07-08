@@ -504,7 +504,7 @@ public class ApkBuilder
         {
             Utils.RunProcess(logger, "keytool", "-genkey -v -keystore debug.keystore -storepass android -alias " +
                 "androiddebugkey -keypass android -keyalg RSA -keysize 2048 -noprompt " +
-                "-dname \"CN=Android Debug,O=Android,C=US\"", workingDir: OutputDir, silent: true);
+                "-dname \"CN=Android Debug,O=Android,C=US\"", workingDir: OutputDir, messageImportance: MessageImportance.Low);
         }
         else if (Path.GetFullPath(signingKey) != Path.GetFullPath(defaultKey))
         {
