@@ -42,20 +42,31 @@ namespace System.Net
     public partial class ServicePointManager
     {
         internal ServicePointManager() { }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public const int DefaultNonPersistentConnectionLimit = 4;
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public const int DefaultPersistentConnectionLimit = 2;
         public static bool CheckCertificateRevocationList { get { throw null; } set { } }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static int DefaultConnectionLimit { get { throw null; } set { } }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static int DnsRefreshTimeout { get { throw null; } set { } }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static bool EnableDnsRoundRobin { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.Security.EncryptionPolicy EncryptionPolicy { get { throw null; } }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static bool Expect100Continue { get { throw null; } set { } }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static int MaxServicePointIdleTime { get { throw null; } set { } }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static int MaxServicePoints { get { throw null; } set { } }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static bool ReusePort { get { throw null; } set { } }
         public static System.Net.SecurityProtocolType SecurityProtocol { get { throw null; } set { } }
         public static System.Net.Security.RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get { throw null; } set { } }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static bool UseNagleAlgorithm { get { throw null; } set { } }
         [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.ServicePoint FindServicePoint(string uriString, System.Net.IWebProxy? proxy) { throw null; }
@@ -63,6 +74,7 @@ namespace System.Net
         public static System.Net.ServicePoint FindServicePoint(System.Uri address) { throw null; }
         [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.ServicePoint FindServicePoint(System.Uri address, System.Net.IWebProxy? proxy) { throw null; }
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval) { }
     }
 }

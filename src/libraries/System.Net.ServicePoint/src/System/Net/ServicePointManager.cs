@@ -11,7 +11,10 @@ namespace System.Net
 {
     public class ServicePointManager
     {
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public const int DefaultNonPersistentConnectionLimit = 4;
+
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public const int DefaultPersistentConnectionLimit = 2;
 
         private static readonly ConcurrentDictionary<string, WeakReference<ServicePoint>> s_servicePointTable = new ConcurrentDictionary<string, WeakReference<ServicePoint>>();
@@ -46,6 +49,7 @@ namespace System.Net
             }
         }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static int MaxServicePoints
         {
             get { return s_maxServicePoints; }
@@ -59,6 +63,7 @@ namespace System.Net
             }
         }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static int DefaultConnectionLimit
         {
             get { return s_connectionLimit; }
@@ -72,6 +77,7 @@ namespace System.Net
             }
         }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static int MaxServicePointIdleTime
         {
             get { return s_maxServicePointIdleTime; }
@@ -85,12 +91,16 @@ namespace System.Net
             }
         }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static bool UseNagleAlgorithm { get; set; } = true;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static bool Expect100Continue { get; set; } = true;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static bool EnableDnsRoundRobin { get; set; }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static int DnsRefreshTimeout
         {
             get { return s_dnsRefreshTimeout; }
@@ -99,11 +109,13 @@ namespace System.Net
 
         public static RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static bool ReusePort { get; set; }
 
         public static bool CheckCertificateRevocationList { get; set; }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static EncryptionPolicy EncryptionPolicy { get; } = EncryptionPolicy.RequireEncryption;
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -215,6 +227,7 @@ namespace System.Net
             return isProxy ? queryString + "://proxy" : queryString;
         }
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval)
         {
             if (enabled)
