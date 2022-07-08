@@ -36,10 +36,10 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexNodeKind _kind;
         internal readonly int _lower;
         internal readonly int _upper;
+        internal readonly TSet _set;
         internal readonly SymbolicRegexNode<TSet>? _left;
         internal readonly SymbolicRegexNode<TSet>? _right;
         internal readonly SymbolicRegexInfo _info;
-        internal readonly TSet _set;
 
         /// <summary>
         /// Caches nullability of this node for any given context (0 &lt;= context &lt; ContextLimit)
@@ -60,25 +60,26 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="upper">upper boubd of a loop</param>
         /// <param name="set">singelton set</param>
         /// <param name="info">misc flags including laziness</param>
-        private SymbolicRegexNode(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right, int lower, int upper, TSet? set, SymbolicRegexInfo info)
+        private SymbolicRegexNode(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right, int lower, int upper, TSet set, SymbolicRegexInfo info)
         {
             _kind = kind;
             _left = left;
             _right = right;
             _lower = lower;
             _upper = upper;
+            _set = set;
             _info = info;
             _nullabilityCache = info.StartsWithSomeAnchor && info.CanBeNullable ? new byte[CharKind.ContextLimit] : null;
-            _set = set ?? ComputeStartSet(builder);
         }
 
         /// <summary> Create a new node or retrieve one from the builder _nodeCache</summary>
         private static SymbolicRegexNode<TSet> Create(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right, int lower, int upper, TSet? set, SymbolicRegexInfo info)
         {
-            var key = (kind, left, right, lower, upper, set, info);
+            TSet setOrStartSet = kind == SymbolicRegexNodeKind.Singleton ? set! : ComputeStartSet(builder, kind, left, right);
+            var key = (kind, left, right, lower, upper, setOrStartSet, info);
             if (!builder._nodeCache.TryGetValue(key, out SymbolicRegexNode<TSet>? node))
             {
-                node = new SymbolicRegexNode<TSet>(builder, kind, left, right, lower, upper, set, info);
+                node = new SymbolicRegexNode<TSet>(builder, kind, left, right, lower, upper, setOrStartSet, info);
 #if DEBUG
                 node._debugBuilder = builder;
 #endif
@@ -1936,13 +1937,13 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Computes the set that includes all elements that can start a match.</summary>
-        private TSet ComputeStartSet(SymbolicRegexBuilder<TSet> builder)
+        private static TSet ComputeStartSet(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right)
         {
             // For singletons the start set is the set the singleton is constructed with,
             // so calling this function would not make sense.
-            Debug.Assert(_kind != SymbolicRegexNodeKind.Singleton);
+            Debug.Assert(kind != SymbolicRegexNodeKind.Singleton);
 
-            switch (_kind)
+            switch (kind)
             {
                 // Anchors and () do not contribute to the startset
                 case SymbolicRegexNodeKind.Epsilon:
@@ -1960,24 +1961,24 @@ namespace System.Text.RegularExpressions.Symbolic
                     return builder._solver.Empty;
 
                 case SymbolicRegexNodeKind.Loop:
-                    Debug.Assert(_left is not null);
-                    return _left._set;
+                    Debug.Assert(left is not null);
+                    return left._set;
 
                 case SymbolicRegexNodeKind.Concat:
-                    Debug.Assert(_left is not null && _right is not null);
-                    return _left.CanBeNullable ? builder._solver.Or(_left._set, _right._set) : _left._set;
+                    Debug.Assert(left is not null && right is not null);
+                    return left.CanBeNullable ? builder._solver.Or(left._set, right._set) : left._set;
 
                 case SymbolicRegexNodeKind.Alternate:
-                    Debug.Assert(_left is not null && _right is not null);
-                    return builder._solver.Or(_left._set, _right._set);
+                    Debug.Assert(left is not null && right is not null);
+                    return builder._solver.Or(left._set, right._set);
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
                 case SymbolicRegexNodeKind.Effect:
-                    Debug.Assert(_left is not null);
-                    return _left._set;
+                    Debug.Assert(left is not null);
+                    return left._set;
 
                 default:
-                    Debug.Fail($"{nameof(ComputeStartSet)}:{_kind}");
+                    Debug.Fail($"{nameof(ComputeStartSet)}:{kind}");
                     return builder._solver.Full;
             }
         }
@@ -1997,13 +1998,12 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             //first prune the anchors in the node
             TSet wlbSet = builder._wordLetterForBoundariesSet;
-            TSet startSet = _set;
 
             //true if the startset of the node overlaps with some wordletter or the node can be nullable
-            bool contWithWL = CanBeNullable || !builder._solver.IsEmpty(builder._solver.And(wlbSet, startSet));
+            bool contWithWL = CanBeNullable || !builder._solver.IsEmpty(builder._solver.And(wlbSet, _set));
 
             //true if the startset of the node overlaps with some nonwordletter or the node can be nullable
-            bool contWithNWL = CanBeNullable || !builder._solver.IsEmpty(builder._solver.And(builder._solver.Not(wlbSet), startSet));
+            bool contWithNWL = CanBeNullable || !builder._solver.IsEmpty(builder._solver.And(builder._solver.Not(wlbSet), _set));
 
             return PruneAnchorsImpl(builder, prevKind, contWithWL, contWithNWL);
         }
