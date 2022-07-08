@@ -838,10 +838,7 @@ namespace System.Transactions
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(TransactionScope));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (_complete)
             {

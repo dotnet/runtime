@@ -138,7 +138,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation, bool supportAsync)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
+            JsonTypeInfo jsonTypeInfo = options.GetJsonTypeInfoForRootType(type);
             return Initialize(jsonTypeInfo, supportContinuation, supportAsync);
         }
 

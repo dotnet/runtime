@@ -76,14 +76,18 @@ public:
         IN OUT NibbleWriter * pBuffer
     );
 
-    // Stores the result into SBuffer (used by NGen), or in LoaderHeap (used by JIT)
+    // Stores the result in LoaderHeap
     static PTR_BYTE CompressBoundariesAndVars(
         IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
         IN ULONG            iOffsetMapping,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,
         IN PatchpointInfo * patchpointInfo,
-        IN OUT SBuffer    * pDebugInfoBuffer,
+        IN ICorDebugInfo::InlineTreeNode * pInlineTree,
+        IN ULONG            iInlineTree,
+        IN ICorDebugInfo::RichOffsetMapping * pRichOffsetMappings,
+        IN ULONG            iRichOffsetMappings,
+        IN BOOL             writeFlagByte,
         IN LoaderHeap     * pLoaderHeap
     );
 
@@ -105,6 +109,15 @@ public:
     );
 #endif
 
+    static void RestoreRichDebugInfo(
+        IN FP_IDS_NEW                          fpNew,
+        IN void*                               pNewData,
+        IN PTR_BYTE                            pDebugInfo,
+        OUT ICorDebugInfo::InlineTreeNode**    ppInlineTree,
+        OUT ULONG32*                           pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32*                           pNumRichMappings);
+
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte);
 #endif
@@ -125,6 +138,14 @@ public:
         OUT ICorDebugInfo::OffsetMapping ** ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo ** ppVars);
+
+    static BOOL GetRichDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::InlineTreeNode**    ppInlineTree,
+        OUT ULONG32*                           pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32*                           pNumRichMappings);
 
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);

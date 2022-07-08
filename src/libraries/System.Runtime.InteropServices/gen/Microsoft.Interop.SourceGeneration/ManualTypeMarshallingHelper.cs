@@ -117,8 +117,16 @@ namespace Microsoft.Interop
             Debug.Assert(!isLinearCollectionMarshalling || getMarshallingInfoForElement is not null);
 
             Dictionary<MarshalMode, CustomTypeMarshallerData> modes = new();
+
             foreach (AttributeData attr in attrs)
             {
+                if (attr.AttributeConstructor is null)
+                {
+                    // If the attribute constructor couldn't be bound by the compiler, then we shouldn't try to extract the constructor arguments.
+                    // Roslyn doesn't provide them if it can't bind the constructor.
+                    // We don't report a diagnostic here since Roslyn will report a diagnostic anyway.
+                    continue;
+                }
                 Debug.Assert(attr.ConstructorArguments.Length == 3);
 
                 // Verify the defined marshaller is for the managed type.
@@ -167,7 +175,7 @@ namespace Microsoft.Interop
                     marshallerType = currentType;
                 }
 
-                // TODO: We can probably get rid of MarshallingDirection and just use Scenario instead
+                // TODO: We can probably get rid of MarshallingDirection and just use MarshalMode instead
                 MarshallingDirection direction = marshalMode switch
                 {
                     MarshalMode.Default
@@ -175,19 +183,17 @@ namespace Microsoft.Interop
 
                     MarshalMode.ManagedToUnmanagedIn
                     or MarshalMode.UnmanagedToManagedOut
+                    or MarshalMode.ElementIn
                         => MarshallingDirection.ManagedToUnmanaged,
 
                     MarshalMode.ManagedToUnmanagedOut
                     or MarshalMode.UnmanagedToManagedIn
+                    or MarshalMode.ElementOut
                         => MarshallingDirection.UnmanagedToManaged,
 
                     MarshalMode.ManagedToUnmanagedRef
                     or MarshalMode.UnmanagedToManagedRef
-                        => MarshallingDirection.Bidirectional,
-
-                    MarshalMode.ElementIn
                     or MarshalMode.ElementRef
-                    or MarshalMode.ElementOut
                         => MarshallingDirection.Bidirectional,
 
                     _ => throw new UnreachableException()
@@ -344,7 +350,7 @@ namespace Microsoft.Interop
             }
             if (marshallerType.IsValueType)
             {
-                return GetStatefulMarshallerDataForType(marshallerType, direction, managedType, compilation);
+                return GetStatefulMarshallerDataForType(marshallerType, direction, managedType, isLinearCollectionMarshaller, compilation, getMarshallingInfo);
             }
             return null;
         }
@@ -436,11 +442,18 @@ namespace Microsoft.Interop
                 collectionElementMarshallingInfo);
         }
 
-        private static CustomTypeMarshallerData? GetStatefulMarshallerDataForType(ITypeSymbol marshallerType, MarshallingDirection direction, ITypeSymbol managedType, Compilation compilation)
+        private static CustomTypeMarshallerData? GetStatefulMarshallerDataForType(
+            ITypeSymbol marshallerType,
+            MarshallingDirection direction,
+            ITypeSymbol managedType,
+            bool isLinearCollectionMarshaller,
+            Compilation compilation,
+            Func<ITypeSymbol, MarshallingInfo>? getMarshallingInfo)
         {
-            (MarshallerShape shape, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, compilation);
+            (MarshallerShape shape, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, isLinearCollectionMarshaller, compilation);
 
             ITypeSymbol? nativeType = null;
+            ITypeSymbol? collectionElementType = null;
             if (direction.HasFlag(MarshallingDirection.ManagedToUnmanaged))
             {
                 if (!shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
@@ -449,6 +462,12 @@ namespace Microsoft.Interop
                 if (methods.ToUnmanaged is not null)
                 {
                     nativeType = methods.ToUnmanaged.ReturnType;
+                }
+
+                if (isLinearCollectionMarshaller)
+                {
+                    // Element type is the type parameter of the ReadOnlySpan returned by GetManagedValuesSource
+                    collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesSource.ReturnType).TypeArguments[0];
                 }
             }
 
@@ -460,6 +479,12 @@ namespace Microsoft.Interop
                 if (methods.FromUnmanaged is not null)
                 {
                     nativeType = methods.FromUnmanaged.Parameters[0].Type;
+                }
+
+                if (isLinearCollectionMarshaller)
+                {
+                    // Element type is the type parameter of the Span returned by GetManagedValuesDestination
+                    collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
                 }
             }
 
@@ -476,6 +501,14 @@ namespace Microsoft.Interop
                 bufferElementType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(((INamedTypeSymbol)methods.FromManagedWithBuffer.Parameters[1].Type).TypeArguments[0]);
             }
 
+            ManagedTypeInfo? collectionElementTypeInfo = null;
+            MarshallingInfo? collectionElementMarshallingInfo = null;
+            if (collectionElementType is not null)
+            {
+                collectionElementTypeInfo = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(collectionElementType);
+                collectionElementMarshallingInfo = getMarshallingInfo(collectionElementType);
+            }
+
             return new CustomTypeMarshallerData(
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(marshallerType),
                 ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
@@ -483,8 +516,8 @@ namespace Microsoft.Interop
                 shape,
                 nativeType.IsStrictlyBlittable(),
                 bufferElementType,
-                CollectionElementType: null,
-                CollectionElementMarshallingInfo: null);
+                CollectionElementType: collectionElementTypeInfo,
+                CollectionElementMarshallingInfo: collectionElementMarshallingInfo);
         }
     }
 }

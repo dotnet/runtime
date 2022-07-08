@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -17,7 +18,7 @@ namespace System.Security.Cryptography
         {
             private const int BitsPerByte = 8;
 
-            private Lazy<SafeRsaHandle> _key;
+            private Lazy<SafeRsaHandle>? _key;
 
             public RSAAndroid()
                 : this(2048)
@@ -121,7 +122,7 @@ namespace System.Security.Cryptography
                 // To prevent the OOB write, decrypt into a temporary buffer.
                 if (destination.Length < keySizeBytes)
                 {
-                    Span<byte> tmp = stackalloc byte[0];
+                    scoped Span<byte> tmp;
                     byte[]? rent = null;
 
                     // RSA up through 4096 stackalloc
@@ -468,7 +469,7 @@ namespace System.Security.Cryptography
                 if (disposing)
                 {
                     FreeKey();
-                    _key = null!;
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -520,6 +521,7 @@ namespace System.Security.Cryptography
                 return true;
             }
 
+            [MemberNotNull(nameof(_key))]
             private void ThrowIfDisposed()
             {
                 if (_key == null)
@@ -782,7 +784,11 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
-            internal SafeRsaHandle DuplicateKeyHandle() => _key.Value.DuplicateHandle();
+            internal SafeRsaHandle DuplicateKeyHandle()
+            {
+                ThrowIfDisposed();
+                return _key.Value.DuplicateHandle();
+            }
 
             private static Exception PaddingModeNotSupported() =>
                 new CryptographicException(SR.Cryptography_InvalidPaddingMode);

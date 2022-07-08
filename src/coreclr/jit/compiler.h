@@ -1772,7 +1772,7 @@ struct IPmappingDsc
     bool             ipmdIsLabel;   // Can this code be a branch label?
 };
 
-struct PreciseIPMapping
+struct RichIPMapping
 {
     emitLocation nativeLoc;
     DebugInfo    debugInfo;
@@ -2701,8 +2701,6 @@ public:
     void gtUpdateNodeSideEffects(GenTree* tree);
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
-
-    void gtUpdateNodeOperSideEffectsPost(GenTree* tree);
 
     // Returns "true" iff the complexity (not formally defined, but first interpretation
     // is #of nodes in subtree) of "tree" is greater than "limit".
@@ -4196,12 +4194,14 @@ private:
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
-                                CORINFO_CALL_INFO*     callInfo);
+                                CORINFO_CALL_INFO*     callInfo,
+                                IL_OFFSET              ilOffset);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
-                                      CORINFO_CALL_INFO*     callInfo);
+                                      CORINFO_CALL_INFO*     callInfo,
+                                      IL_OFFSET              ilOffset);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
                                       var_types                callerRetType,
@@ -4871,6 +4871,9 @@ public:
 
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
+
+    // Does value-numbering for a bitcast tree.
+    void fgValueNumberBitCast(GenTree* tree);
 
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
@@ -5925,9 +5928,6 @@ private:
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
 
-    static fgWalkPreFn  fgUpdateSideEffectsPre;
-    static fgWalkPostFn fgUpdateSideEffectsPost;
-
     // The given local variable, required to be a struct variable, is being assigned via
     // a "lclField", to make it masquerade as an integral type in the ABI.  Make sure that
     // the variable is not enregistered, and is therefore not promoted independently.
@@ -6463,7 +6463,7 @@ protected:
         int arrayLengthCount;
     };
 
-    static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
+    OptInvertCountTreeInfoType optInvertCountTreeInfo(GenTree* tree);
 
     bool optInvertWhileLoop(BasicBlock* block);
 
@@ -6481,9 +6481,19 @@ private:
                            bool       dupCond,
                            unsigned*  iterCount);
 
-    static fgWalkPreFn optIsVarAssgCB;
-
 protected:
+    struct isVarAssgDsc
+    {
+        GenTree*     ivaSkip;
+        ALLVARSET_TP ivaMaskVal;        // Set of variables assigned to.  This is a set of all vars, not tracked vars.
+        unsigned     ivaVar;            // Variable we are interested in, or -1
+        varRefKinds  ivaMaskInd;        // What kind of indirect assignments are there?
+        callInterf   ivaMaskCall;       // What kind of calls are there?
+        bool         ivaMaskIncomplete; // Variables not representable in ivaMaskVal were assigned to.
+    };
+
+    bool optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc);
+
     bool optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip, unsigned var);
 
     bool optIsVarAssgLoop(unsigned lnum, unsigned var);
@@ -6729,19 +6739,6 @@ protected:
 #endif
 
     void optOptimizeCSEs();
-
-    struct isVarAssgDsc
-    {
-        GenTree*     ivaSkip;
-        ALLVARSET_TP ivaMaskVal; // Set of variables assigned to.  This is a set of all vars, not tracked vars.
-#ifdef DEBUG
-        void* ivaSelf;
-#endif
-        unsigned    ivaVar;            // Variable we are interested in, or -1
-        varRefKinds ivaMaskInd;        // What kind of indirect assignments are there?
-        callInterf  ivaMaskCall;       // What kind of calls are there?
-        bool        ivaMaskIncomplete; // Variables not representable in ivaMaskVal were assigned to.
-    };
 
     static callInterf optCallInterf(GenTreeCall* call);
 
@@ -7806,11 +7803,8 @@ public:
 
     // Record the instr offset mapping to the generated code
 
-    jitstd::list<IPmappingDsc> genIPmappings;
-
-#ifdef DEBUG
-    jitstd::list<PreciseIPMapping> genPreciseIPmappings;
-#endif
+    jitstd::list<IPmappingDsc>  genIPmappings;
+    jitstd::list<RichIPMapping> genRichIPmappings;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points
