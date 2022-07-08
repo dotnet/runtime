@@ -21,49 +21,62 @@ internal static partial class Interop
         /// Returns the number of bytes placed into the buffer on success; bufferSize if the buffer is too small; and -1 on error.
         /// </returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadLink", SetLastError = true)]
-        private static partial int ReadLink(ref byte path, byte[] buffer, int bufferSize);
+        private static partial int ReadLink(ref byte path, ref byte buffer, int bufferSize);
 
         /// <summary>
         /// Takes a path to a symbolic link and returns the link target path.
         /// </summary>
         /// <param name="path">The path to the symlink.</param>
         /// <returns>Returns the link to the target path on success; and null otherwise.</returns>
-        internal static string? ReadLink(ReadOnlySpan<char> path)
+        internal static unsafe string? ReadLink(ReadOnlySpan<char> path)
         {
-            int outputBufferSize = 1024;
+            const int stackBufferSize = 256;
+            int bufferSize = stackBufferSize;
 
             // Use an initial buffer size that prevents disposing and renting
             // a second time when calling ConvertAndTerminateString.
-            using var converter = new ValueUtf8Converter(stackalloc byte[1024]);
-
+            using var converter = new ValueUtf8Converter(stackalloc byte[stackBufferSize]);
+            Span<byte> stackBuffer = stackalloc byte[stackBufferSize];
+            byte[]? arrayBuffer = null;
+            ref byte pathReference = ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path));
+            ref byte bufferReference = ref MemoryMarshal.GetReference(stackBuffer);
+            int error = 0;
             while (true)
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(outputBufferSize);
                 try
                 {
-                    int resultLength = Interop.Sys.ReadLink(
-                        ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path)),
-                        buffer,
-                        buffer.Length);
+                    int resultLength = ReadLink(ref pathReference, ref bufferReference, bufferSize);
+                    error = Marshal.GetLastPInvokeError();
 
                     if (resultLength < 0)
                     {
-                        // error
                         return null;
                     }
-                    else if (resultLength < buffer.Length)
+                    else if (resultLength < bufferSize)
                     {
-                        // success
-                        return Encoding.UTF8.GetString(buffer, 0, resultLength);
+                        fixed(byte* bufferPtr = &bufferReference)
+                        {
+                            return Encoding.UTF8.GetString(bufferPtr, resultLength);
+                        }
                     }
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    if (arrayBuffer != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(arrayBuffer);
+                    }
+
+                    if (error > 0)
+                    {
+                        Marshal.SetLastPInvokeError(error);
+                    }
                 }
 
                 // Output buffer was too small, loop around again and try with a larger buffer.
-                outputBufferSize = buffer.Length * 2;
+                arrayBuffer = ArrayPool<byte>.Shared.Rent(bufferSize * 2);
+                bufferSize = arrayBuffer.Length;
+                bufferReference = ref arrayBuffer[0];
             }
         }
     }
