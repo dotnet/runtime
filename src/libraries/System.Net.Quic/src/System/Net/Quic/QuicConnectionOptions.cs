@@ -46,6 +46,15 @@ public abstract class QuicConnectionOptions
 public sealed class QuicClientConnectionOptions : QuicConnectionOptions
 {
     /// <summary>
+    /// Initializes a new instance of the <see cref="QuicClientConnectionOptions"/> class.
+    /// </summary>
+    public QuicClientConnectionOptions()
+    {
+        MaxInboundBidirectionalStreams = 0;
+        MaxInboundUnidirectionalStreams = 0;
+    }
+
+    /// <summary>
     /// Client authentication options to use when establishing a new connection.
     /// </summary>
     public required SslClientAuthenticationOptions ClientAuthenticationOptions { get; set; }
@@ -59,15 +68,6 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
     /// The optional local endpoint that will be bound to.
     /// </summary>
     public IPEndPoint? LocalEndPoint { get; set; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="QuicClientConnectionOptions"/> class.
-    /// </summary>
-    public QuicClientConnectionOptions()
-    {
-        MaxInboundBidirectionalStreams = 0;
-        MaxInboundUnidirectionalStreams = 0;
-    }
 }
 
 /// <summary>
@@ -76,11 +76,6 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
 public sealed class QuicServerConnectionOptions : QuicConnectionOptions
 {
     /// <summary>
-    /// Server authentication options to use when accepting a new connection.
-    /// </summary>
-    public required SslServerAuthenticationOptions ServerAuthenticationOptions { get; set; }
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="QuicClientConnectionOptions"/> class.
     /// </summary>
     public QuicServerConnectionOptions()
@@ -88,4 +83,9 @@ public sealed class QuicServerConnectionOptions : QuicConnectionOptions
         MaxInboundBidirectionalStreams = 100;
         MaxInboundUnidirectionalStreams = 10;
     }
+
+    /// <summary>
+    /// Server authentication options to use when accepting a new connection.
+    /// </summary>
+    public required SslServerAuthenticationOptions ServerAuthenticationOptions { get; set; }
 }

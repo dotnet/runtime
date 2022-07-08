@@ -77,7 +77,7 @@ public partial class QuicConnection
                     }
                     if (chainPtr->Length > 0)
                     {
-                        var additionalCertificates = new X509Certificate2Collection();
+                        X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
                         additionalCertificates.Import(chainPtr->Span);
                         chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                     }

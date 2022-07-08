@@ -33,7 +33,7 @@ internal static class MsQuicConfiguration
         X509Certificate? certificate = null;
         if (authenticationOptions.LocalCertificateSelectionCallback != null)
         {
-            var selectedCertificate = authenticationOptions.LocalCertificateSelectionCallback(
+            X509Certificate selectedCertificate = authenticationOptions.LocalCertificateSelectionCallback(
                 options,
                 authenticationOptions.TargetHost ?? string.Empty,
                 authenticationOptions.ClientCertificates ?? new X509CertificateCollection(),
@@ -103,17 +103,17 @@ internal static class MsQuicConfiguration
         }
 #pragma warning restore SYSLIB0040
 
-        if (options.MaxInboundBidirectionalStreams > ushort.MaxValue)
+        if (options.MaxInboundUnidirectionalStreams < 0 || options.MaxInboundBidirectionalStreams > ushort.MaxValue)
         {
-            throw new ArgumentException($"{nameof(QuicConnectionOptions.MaxInboundBidirectionalStreams)} overflow.", nameof(options));
+            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.MaxInboundBidirectionalStreams)} should be within [0, {ushort.Max}) range.", nameof(options));
         }
-        if (options.MaxInboundUnidirectionalStreams > ushort.MaxValue)
+        if (options.MaxInboundUnidirectionalStreams < 0 || options.MaxInboundUnidirectionalStreams > ushort.MaxValue)
         {
-            throw new ArgumentException($"{nameof(QuicConnectionOptions.MaxInboundUnidirectionalStreams)} overflow.", nameof(options));
+            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.MaxInboundUnidirectionalStreams)} should be within [0, {ushort.Max}) range.", nameof(options));
         }
         if (options.IdleTimeout < TimeSpan.Zero && options.IdleTimeout != Timeout.InfiniteTimeSpan)
         {
-            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.IdleTimeout)}", nameof(options));
+            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.IdleTimeout)} should either be {Timeout.InfiniteTimeSpan} for infinite, or >= 0", nameof(options));
         }
 
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
@@ -129,7 +129,7 @@ internal static class MsQuicConfiguration
 
         QUIC_HANDLE* handle;
 
-        using var msquicBuffers = new MsQuicBuffers();
+        using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
         msquicBuffers.Initialize(alpnProtocols, alpnProtocol => alpnProtocol.Protocol);
         ThrowIfFailure(MsQuicApi.Api.ApiTable->ConfigurationOpen(
             MsQuicApi.Api.Registration.QuicHandle,

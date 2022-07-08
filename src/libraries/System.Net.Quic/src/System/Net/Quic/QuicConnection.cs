@@ -171,7 +171,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
     private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
     {
-        ThrowIfDisposed();
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
@@ -257,7 +257,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
     internal ValueTask FinishHandshakeAsync(QuicServerConnectionOptions options, string? targetHost, CancellationToken cancellationToken = default)
     {
-        ThrowIfDisposed();
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
@@ -287,7 +287,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     public async ValueTask<QuicStream> OpenOutboundStreamAsync(QuicStreamType type, CancellationToken cancellationToken = default)
     {
-        ThrowIfDisposed();
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         QuicStream stream = new QuicStream(new Implementations.MsQuic.MsQuicStream(_state, _handle, type));
         try
@@ -307,7 +307,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     public async ValueTask<QuicStream> AcceptInboundStreamAsync(CancellationToken cancellationToken = default)
     {
-        ThrowIfDisposed();
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (!_canAccept)
         {
@@ -327,7 +327,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
     public unsafe ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
     {
-        ThrowIfDisposed();
+        ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
@@ -466,14 +466,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Error(instance, $"{instance} Exception while processing event {connectionEvent->Type}: {ex}");
             }
             return QUIC_STATUS_INTERNAL_ERROR;
-        }
-    }
-
-    private void ThrowIfDisposed()
-    {
-        if (Volatile.Read(ref _disposed) != 0)
-        {
-            throw new ObjectDisposedException(nameof(QuicConnection));
         }
     }
 
