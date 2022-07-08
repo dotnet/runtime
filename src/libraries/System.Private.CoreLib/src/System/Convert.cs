@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Buffers.Text;
+using System.Text;
 
 namespace System
 {
@@ -2336,7 +2338,16 @@ namespace System
             }
 
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
-            string result = string.FastAllocateString(ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks));
+            int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
+
+            if (!insertLineBreaks && bytes.Length >= 64)
+            {
+                Span<byte> utf8Result = outputLength <= 256 ? stackalloc byte[256] : new byte[outputLength];
+                Base64.EncodeToUtf8(bytes, utf8Result, out int _, out int _);
+                return Encoding.Latin1.GetString(utf8Result);
+            }
+
+            string result = string.FastAllocateString(outputLength);
 
             unsafe
             {

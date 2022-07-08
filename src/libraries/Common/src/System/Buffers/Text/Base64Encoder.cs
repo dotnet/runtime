@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -17,6 +18,22 @@ namespace System.Buffers.Text
     /// </summary>
     public static partial class Base64
     {
+        // This can be replaced once https://github.com/dotnet/runtime/issues/63331 is implemented.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
+        {
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(left, right);
+            }
+            else
+            {
+                return AdvSimd.Arm64.VectorTableLookup(left, Vector128.BitwiseAnd(right, mask8F));
+            }
+        }
+
         /// <summary>
         /// Encode the span of binary data into UTF-8 encoded text represented as base64.
         /// </summary>
