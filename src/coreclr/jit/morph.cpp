@@ -3188,14 +3188,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         makeOutArgCopy = true;
                     }
 #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-
-#ifdef TARGET_ARM
-                    if ((lclVar != nullptr) &&
-                        (lvaGetPromotionType(lclVar->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
-                    {
-                        makeOutArgCopy = true;
-                    }
-#endif // TARGET_ARM
                 }
                 else
                 {
