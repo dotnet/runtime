@@ -22,9 +22,11 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal static (string? SinglePrefix, MultiStringMatcher? MultiPrefixMatcher) CreatePrefixMatcher(RegexNode node)
         {
-            if ((node.Options & RegexOptions.RightToLeft) != 0)
+            if ((node.Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
             {
                 // MultiStringMatcher is not supported in RightToLeft.
+                // And there's not much point in using it in the non-backtracking
+                // engine since the DFA it uses already does a similar job.
                 return (FindPrefix(node), null);
             }
 
