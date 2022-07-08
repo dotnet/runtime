@@ -145,16 +145,19 @@ namespace System.Buffers
                 haveBucket = true;
 
                 // Clear the array if the user requested it.
-#if DEBUG
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                if (clearArray)
                 {
-                    // Only clear arrays with GC handles in Debug mode to keep other types of array
-                    // "uninitialized" for debug purposes
-                    Array.Clear(array);
-                }
+#if DEBUG
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    {
+                        // Only clear arrays with GC handles in Debug mode to keep other types of array
+                        // "uninitialized" for debug purposes
+                        Array.Clear(array);
+                    }
 #else
-                Array.Clear(array);
+                    Array.Clear(array);
 #endif
+                }
 
                 // Check to see if the buffer is the correct size for this bucket.
                 if (array.Length != Utilities.GetMaxSizeForBucket(bucketIndex))
