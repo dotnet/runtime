@@ -18,7 +18,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 using ExceptionUtil = System.Runtime.Serialization.Schema.DiagnosticUtility.ExceptionUtility;
 
 namespace System.Runtime.Serialization.Schema
@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization.Schema
             _clrNamespaces = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
             // Update namespace tables for DataContract(s) that are already processed
-            foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in dataContractSet)
+            foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in dataContractSet.Contracts)
             {
                 DataContract dataContract = pair.Value;
                 if (!(dataContract.IsBuiltInDataContract || dataContract.Is(DataContractType.ClassDataContract)))
@@ -210,7 +210,7 @@ namespace System.Runtime.Serialization.Schema
         {
             try
             {
-                foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in _dataContractSet)
+                foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in _dataContractSet.Contracts)
                 {
                     DataContract dataContract = pair.Value;
                     if (dataContract.IsBuiltInDataContract)
@@ -521,7 +521,7 @@ namespace System.Runtime.Serialization.Schema
                         }
                         else
                         {
-                            xmlContract.SetIsValueType(type.IsValueType);
+                            xmlContract.IsValueType = type.IsValueType;
                             xmlContract.IsTypeDefinedOnImport = true;
                         }
                         return GetCodeTypeReference(type);
@@ -994,7 +994,7 @@ namespace System.Runtime.Serialization.Schema
             Debug.Assert(classDataContract.Is(DataContractType.ClassDataContract));
 
             if (classDataContract.KnownDataContracts == null)
-                classDataContract.KnownDataContracts = new DataContractDictionary();
+                classDataContract.KnownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
 
             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in knownContracts)
             {

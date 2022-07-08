@@ -40,7 +40,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        public override DataContract BindGenericParameters(DataContract[] paramContracts, IDictionary<DataContract, DataContract> boundContracts)
         {
             return paramContracts[ParameterPosition];
         }

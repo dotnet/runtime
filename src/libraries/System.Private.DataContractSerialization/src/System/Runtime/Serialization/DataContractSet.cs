@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Xml.Schema;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -54,10 +54,10 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal DataContractDictionary Contracts =>
-            _contracts ??= new DataContractDictionary();
+        public DataContractDictionary Contracts =>
+            _contracts ??= new Dictionary<XmlQualifiedName, DataContract>();
 
-        public Dictionary<DataContract, object> ProcessedContracts =>
+        public IDictionary<DataContract, object> ProcessedContracts =>
             _processedContracts ??= new Dictionary<DataContract, object>();
 
         private Hashtable SurrogateDataTable => _surrogateDataTable ??= new Hashtable();
@@ -515,7 +515,7 @@ namespace System.Runtime.Serialization
             ProcessedContracts.Add(dataContract, dataContract);
         }
 
-        public IEnumerator<KeyValuePair<XmlQualifiedName, DataContract>> GetEnumerator()
+        internal IEnumerator<KeyValuePair<XmlQualifiedName, DataContract>> GetEnumerator()
         {
             return Contracts.GetEnumerator();
         }

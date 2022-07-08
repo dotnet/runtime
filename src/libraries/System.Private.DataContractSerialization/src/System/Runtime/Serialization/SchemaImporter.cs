@@ -12,8 +12,8 @@ using System.Linq;
 using System.Xml;
 using System.Xml.Schema;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
-using SchemaObjectDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using SchemaObjectDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
 
 namespace System.Runtime.Serialization
 {
@@ -236,7 +236,7 @@ namespace System.Runtime.Serialization
 
         internal SchemaObjectDictionary CreateSchemaObjects()
         {
-            SchemaObjectDictionary schemaObjects = new SchemaObjectDictionary();
+            SchemaObjectDictionary schemaObjects = new Dictionary<XmlQualifiedName, SchemaObjectInfo>();
             ICollection schemaList = _schemaSet.Schemas();
             List<XmlSchemaType> knownTypesForObject = new List<XmlSchemaType>();
             schemaObjects.Add(SchemaExporter.AnytypeQualifiedName, new SchemaObjectInfo(null, null, null, knownTypesForObject));
@@ -907,7 +907,7 @@ namespace System.Runtime.Serialization
                 DataContractDictionary? knownDataContracts = ancestorDataContract.KnownDataContracts;
                 if (knownDataContracts == null)
                 {
-                    knownDataContracts = new DataContractDictionary();
+                    knownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
                     ancestorDataContract.KnownDataContracts = knownDataContracts;
                 }
                 knownDataContracts.Add(dataContract.StableName, dataContract);

@@ -24,7 +24,7 @@ namespace System.Runtime.Serialization.Schema
         public System.Collections.Generic.ICollection<Type> ReferencedCollectionTypes { get { throw null; } }
         public System.Collections.Generic.ICollection<Type> ReferencedTypes { get { throw null; } }
     }
-    public sealed class XsdDataContractExporter
+    public sealed partial class XsdDataContractExporter
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public bool CanExport(System.Collections.Generic.ICollection<System.Reflection.Assembly> assemblies) { throw null; }

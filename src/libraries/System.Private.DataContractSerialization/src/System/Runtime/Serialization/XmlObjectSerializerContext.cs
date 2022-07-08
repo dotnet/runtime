@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Security;
 using System.Xml;
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -177,7 +177,7 @@ namespace System.Runtime.Serialization
         internal static DataContractDictionary? GetDataContractsForKnownTypes(IList<Type> knownTypeList)
         {
             if (knownTypeList == null) return null;
-            DataContractDictionary dataContracts = new DataContractDictionary();
+            DataContractDictionary dataContracts = new Dictionary<XmlQualifiedName, DataContract>();
             Dictionary<Type, Type> typesChecked = new Dictionary<Type, Type>();
             for (int i = 0; i < knownTypeList.Count; i++)
             {

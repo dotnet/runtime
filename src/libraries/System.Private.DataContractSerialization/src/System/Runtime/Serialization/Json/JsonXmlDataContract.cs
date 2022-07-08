@@ -7,6 +7,8 @@ using System.IO;
 using System.Text;
 using System.Xml;
 
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization.Json
 {
     internal sealed class JsonXmlDataContract : JsonDataContract
@@ -62,12 +64,12 @@ namespace System.Runtime.Serialization.Json
             if (context != null)
             {
                 List<XmlQualifiedName> stableNames = new List<XmlQualifiedName>();
-                Dictionary<XmlQualifiedName, DataContract>[] entries = context.scopedKnownTypes.dataContractDictionaries;
+                DataContractDictionary[] entries = context.scopedKnownTypes.dataContractDictionaries;
                 if (entries != null)
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
-                        Dictionary<XmlQualifiedName, DataContract> entry = entries[i];
+                        DataContractDictionary entry = entries[i];
                         if (entry != null)
                         {
                             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in entry)

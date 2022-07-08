@@ -14,7 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -274,7 +274,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        public virtual DataContract BindGenericParameters(DataContract[] paramContracts, IDictionary<DataContract, DataContract> boundContracts)
         {
             return this;
         }
@@ -2026,7 +2026,7 @@ namespace System.Runtime.Serialization
                         collectionDataContract.ItemType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue)
                     {
                         DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GetGenericArguments()));
-                        knownDataContracts ??= new DataContractDictionary();
+                        knownDataContracts ??= new Dictionary<XmlQualifiedName, DataContract>();
 
                         knownDataContracts.TryAdd(itemDataContract.StableName, itemDataContract);
                     }
@@ -2050,7 +2050,7 @@ namespace System.Runtime.Serialization
             DataContract dataContract = DataContract.GetDataContract(type);
             if (nameToDataContractTable == null)
             {
-                nameToDataContractTable = new DataContractDictionary();
+                nameToDataContractTable = new Dictionary<XmlQualifiedName, DataContract>();
             }
             else if (nameToDataContractTable.TryGetValue(dataContract.StableName, out DataContract? alreadyExistingContract))
             {

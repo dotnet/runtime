@@ -11,13 +11,13 @@ using System.Security;
 using System.Threading;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
     internal sealed class ClassDataContract : DataContract
     {
-        internal const string ContractTypeString = "ClassDataContract";
+        internal const string ContractTypeString = nameof(ClassDataContract);
         public override string? ContractType => ContractTypeString;
 
         public XmlDictionaryString[]? ContractNamespaces;
@@ -121,7 +121,7 @@ namespace System.Runtime.Serialization
 
         internal bool HasExtensionData => _helper.HasExtensionData;
 
-        internal string? SerialiazationExceptionMessage => _helper.SerializationExceptionMessage;
+        internal string? SerializationExceptionMessage => _helper.SerializationExceptionMessage;
         internal string? DeserializationExceptionMessage => _helper.DeserializationExceptionMessage;
 
         internal bool IsReadOnlyContract => DeserializationExceptionMessage != null;
@@ -599,10 +599,6 @@ namespace System.Runtime.Serialization
             private bool _hasDataContract;
             private bool _hasExtensionData;
 
-            private XmlDictionaryString?[]? _childElementNamespaces;
-            private XmlFormatClassReaderDelegate? _xmlFormatReaderDelegate;
-            private XmlFormatClassWriterDelegate? _xmlFormatWriterDelegate;
-
             public XmlDictionaryString[]? ContractNamespaces;
             public XmlDictionaryString[]? MemberNames;
             public XmlDictionaryString[]? MemberNamespaces;
@@ -688,7 +684,7 @@ namespace System.Runtime.Serialization
                     {
                         if (BaseClassContract.IsReadOnlyContract)
                         {
-                            _serializationExceptionMessage = BaseClassContract.SerialiazationExceptionMessage;
+                            _serializationExceptionMessage = BaseClassContract.SerializationExceptionMessage;
                         }
                         baseMemberCount = BaseClassContract.MemberNames!.Length;
                         MemberNames = new XmlDictionaryString[Members.Count + baseMemberCount];
@@ -1193,14 +1189,6 @@ namespace System.Runtime.Serialization
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {
-                    // NOTE TODO smolloy - Oddly, this shortcut was not here in NetFx.  I'm not sure this was added strictly as a perf-optimization though.
-                    // See https://github.com/dotnet/runtime/commit/5d2dba7ffcc4ad6a11a570f5bd8d1964000099ea
-                    // This shouldn't change between invocations though, right? So seems like a good thing to leave in.
-                    if (_knownDataContracts != null)
-                    {
-                        return _knownDataContracts;
-                    }
-
                     if (!_isKnownTypeAttributeChecked && UnderlyingType != null)
                     {
                         lock (this)
@@ -1264,23 +1252,11 @@ namespace System.Runtime.Serialization
                 return ctor;
             }
 
-            internal XmlFormatClassWriterDelegate? XmlFormatWriterDelegate
-            {
-                get => _xmlFormatWriterDelegate;
-                set => _xmlFormatWriterDelegate = value;
-            }
+            internal XmlFormatClassWriterDelegate? XmlFormatWriterDelegate { get; set; }
 
-            internal XmlFormatClassReaderDelegate? XmlFormatReaderDelegate
-            {
-                get => _xmlFormatReaderDelegate;
-                set => _xmlFormatReaderDelegate = value;
-            }
+            internal XmlFormatClassReaderDelegate? XmlFormatReaderDelegate { get; set; }
 
-            public XmlDictionaryString?[]? ChildElementNamespaces
-            {
-                get => _childElementNamespaces;
-                set => _childElementNamespaces = value;
-            }
+            public XmlDictionaryString?[]? ChildElementNamespaces { get; set; }
 
             private static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 
@@ -1317,7 +1293,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        public override DataContract BindGenericParameters(DataContract[] paramContracts, IDictionary<DataContract, DataContract> boundContracts)
         {
             Type type = UnderlyingType;
             if (!type.IsGenericType || !type.ContainsGenericParameters)

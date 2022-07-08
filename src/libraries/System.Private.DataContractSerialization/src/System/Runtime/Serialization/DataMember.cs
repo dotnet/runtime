@@ -283,7 +283,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal DataMember BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        internal DataMember BindGenericParameters(DataContract[] paramContracts, IDictionary<DataContract, DataContract> boundContracts)
         {
             DataContract memberTypeContract = MemberTypeContract.BindGenericParameters(paramContracts, boundContracts);
             DataMember boundDataMember = new DataMember(memberTypeContract,

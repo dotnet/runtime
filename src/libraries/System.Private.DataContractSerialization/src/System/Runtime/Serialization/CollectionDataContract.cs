@@ -12,7 +12,7 @@ using System.Security;
 using System.Threading;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -77,7 +77,7 @@ namespace System.Runtime.Serialization
 
     internal sealed class CollectionDataContract : DataContract
     {
-        internal const string ContractTypeString = "CollectionDataContract";
+        internal const string ContractTypeString = nameof(CollectionDataContract);
         public override string? ContractType => ContractTypeString;
 
         private XmlDictionaryString _collectionItemName;
@@ -1339,7 +1339,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        public override DataContract BindGenericParameters(DataContract[] paramContracts, IDictionary<DataContract, DataContract> boundContracts)
         {
             DataContract boundContract;
             if (boundContracts.TryGetValue(this, out boundContract!))

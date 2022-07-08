@@ -7,7 +7,7 @@ using System.Xml.Schema;
 using System.Collections;
 using System.Collections.Generic;
 
-using SchemaObjectDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
+using SchemaObjectDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
 
 namespace System.Runtime.Serialization
 {

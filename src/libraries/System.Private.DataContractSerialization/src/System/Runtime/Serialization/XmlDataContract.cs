@@ -12,14 +12,14 @@ using System.Threading;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
     public sealed class XmlDataContract : DataContract
     {
-        internal const string ContractTypeString = "XmlDataContract";
+        internal const string ContractTypeString = nameof(XmlDataContract);
         public override string? ContractType => ContractTypeString;
 
         private readonly XmlDataContractCriticalHelper _helper;
@@ -48,7 +48,11 @@ namespace System.Runtime.Serialization
             get => _helper.IsAnonymous;
         }
 
-        public void SetIsValueType(bool isValueType) => IsValueType = isValueType;
+        public new bool IsValueType
+        {
+            get => _helper.IsValueType;
+            set => _helper.IsValueType = value;
+        }
 
         public override bool HasRoot
         {

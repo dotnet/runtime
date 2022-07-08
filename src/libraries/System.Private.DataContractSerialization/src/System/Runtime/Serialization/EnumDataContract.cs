@@ -14,7 +14,7 @@ namespace System.Runtime.Serialization
 {
     internal sealed class EnumDataContract : DataContract
     {
-        internal const string ContractTypeString = "EnumDataContract";
+        internal const string ContractTypeString = nameof(EnumDataContract);
         public override string? ContractType => ContractTypeString;
 
         private readonly EnumDataContractCriticalHelper _helper;
