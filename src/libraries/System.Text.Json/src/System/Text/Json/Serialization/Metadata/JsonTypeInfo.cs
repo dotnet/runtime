@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>
         /// Types implementing <see cref="IJsonOnSerializing"/> will map to this callback.
         /// </remarks>
-        internal Action<object>? OnSerializing
+        public Action<object>? OnSerializing
         {
             get => _onSerializing;
             set
@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>
         /// Types implementing <see cref="IJsonOnSerialized"/> will map to this callback.
         /// </remarks>
-        internal Action<object>? OnSerialized
+        public Action<object>? OnSerialized
         {
             get => _onSerialized;
             set
@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>
         /// Types implementing <see cref="IJsonOnSerializing"/> will map to this callback.
         /// </remarks>
-        internal Action<object>? OnDeserializing
+        public Action<object>? OnDeserializing
         {
             get => _onDeserializing;
             set
@@ -119,7 +119,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>
         /// Types implementing <see cref="IJsonOnDeserialized"/> will map to this callback.
         /// </remarks>
-        internal Action<object>? OnDeserialized
+        public Action<object>? OnDeserialized
         {
             get => _onDeserialized;
             set
@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
                         // also see comment on JsonPropertyInfo.JsonTypeInfo
-                        _elementTypeInfo = Options.GetJsonTypeInfoCached(ElementType);
+                        _elementTypeInfo = Options.GetTypeInfoCached(ElementType);
                     }
                 }
                 else
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                         // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
                         // also see comment on JsonPropertyInfo.JsonTypeInfo
-                        _keyTypeInfo = Options.GetJsonTypeInfoCached(KeyType);
+                        _keyTypeInfo = Options.GetTypeInfoCached(KeyType);
                     }
                 }
                 else
@@ -735,7 +735,7 @@ namespace System.Text.Json.Serialization.Metadata
                         ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, property.Name);
                     }
 
-                    isOrderSpecified = property.Order != 0;
+                    isOrderSpecified |= property.Order != 0;
                 }
 
                 if (isOrderSpecified)
@@ -934,7 +934,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (jsonTypeInfo.ExtensionDataProperty is not null)
                 {
-                    Add(jsonTypeInfo.ExtensionDataProperty);
+                    _list.Add(jsonTypeInfo.ExtensionDataProperty);
                 }
 
                 _jsonTypeInfo = jsonTypeInfo;
