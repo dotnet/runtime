@@ -40,6 +40,9 @@
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" />
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
   </ItemGroup>
 </Project>
