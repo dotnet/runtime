@@ -61,9 +61,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
-        public override XmlElement CreateElement(string prefix, string localName, string namespaceURI)
-#pragma warning restore CS8765
+        public override XmlElement CreateElement(string? prefix, string localName, string? namespaceURI)
         {
             return new CanonicalXmlElement(prefix, localName, namespaceURI, this, _defaultNodeSetInclusionState);
         }
