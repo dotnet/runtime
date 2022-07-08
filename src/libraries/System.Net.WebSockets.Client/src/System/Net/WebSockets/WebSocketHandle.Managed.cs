@@ -107,13 +107,11 @@ namespace System.Net.WebSockets
                         ValidateResponse(response, secValue, options);
                         break;
                     }
-                    catch (HttpRequestException ex)
+                    catch (HttpRequestException ex) when
+                        (ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") &&
+                         tryDowngrade &&
+                         (options.HttpVersion == HttpVersion.Version11 || options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrLower))
                     {
-                        if (!ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") || !tryDowngrade
-                            || (options.HttpVersion != HttpVersion.Version11 && options.HttpVersionPolicy != HttpVersionPolicy.RequestVersionOrLower))
-                        {
-                            throw ex;
-                        }
                     }
 
                 }

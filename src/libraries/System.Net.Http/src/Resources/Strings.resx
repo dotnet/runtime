@@ -168,6 +168,9 @@
   <data name="net_http_content_readonly_stream" xml:space="preserve">
     <value>The stream does not support writing.</value>
   </data>
+  <data name="net_http_content_writeonly_stream" xml:space="preserve">
+    <value>The stream does not support reading.</value>
+  </data>
   <data name="net_http_content_invalid_charset" xml:space="preserve">
     <value>The character set provided in ContentType is invalid. Cannot read content as string using an invalid character set.</value>
   </data>

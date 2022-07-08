@@ -18,6 +18,8 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection : HttpConnectionBase
     {
+        private static ReadOnlySpan<byte> ProtocolLiteralHeaderBytes => new byte[] { 0x0, 0x9, 0x3a, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c };
+
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
 
@@ -849,7 +851,7 @@ namespace System.Net.Http
 
                     if (_initialSettingsReceived is null)
                     {
-                        Interlocked.CompareExchange(_initialSettingsReceived, s_settingsReceivedSingleton, null);
+                        Interlocked.CompareExchange(ref _initialSettingsReceived, s_settingsReceivedSingleton, null);
                     }
                     InitialSettingsReceived.TrySetResult(true);
                 }
@@ -1465,7 +1467,8 @@ namespace System.Net.Http
             {
                 if (request.Headers.Protocol != null)
                 {
-                    WriteBytes(HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(":protocol"), ref headerBuffer);
+                    HttpHeaders.CheckContainsNewLine(request.Headers.Protocol);
+                    WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
                     Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
                     WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
                 }
@@ -1922,7 +1925,7 @@ namespace System.Net.Http
             _initialSettingsReceived;
 
         private TaskCompletionSourceWithCancellation<bool>? _initialSettingsReceived;
-        
+
         private static TaskCompletionSourceWithCancellation<bool> CreateSuccessfullyCompleted()
         {
             var tcs = new TaskCompletionSourceWithCancellation<bool>();

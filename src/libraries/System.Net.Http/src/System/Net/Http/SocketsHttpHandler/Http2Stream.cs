@@ -537,7 +537,6 @@ namespace System.Net.Http
 
                 if (index <= LastHPackRequestPseudoHeaderId)
                 {
-                    // add protocol and others pseudoheaders
                     if (NetEventSource.Log.IsEnabled()) Trace($"Invalid request pseudo-header ID {index}.");
                     throw new HttpRequestException(SR.net_http_invalid_response);
                 }
@@ -1461,13 +1460,13 @@ namespace System.Net.Http
 
                 public override bool CanRead => false;
 
-                public override int Read(Span<byte> buffer) => throw new NotSupportedException();
+                public override int Read(Span<byte> buffer) => throw new NotSupportedException(SR.net_http_content_writeonly_stream);
 
-                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => ValueTask.FromException<int>(new NotSupportedException());
+                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => ValueTask.FromException<int>(new NotSupportedException(SR.net_http_content_writeonly_stream));
 
-                public override void CopyTo(Stream destination, int bufferSize) => throw new NotSupportedException();
+                public override void CopyTo(Stream destination, int bufferSize) => throw new NotSupportedException(SR.net_http_content_writeonly_stream);
 
-                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Task.FromException(new NotSupportedException());
+                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Task.FromException(new NotSupportedException(SR.net_http_content_writeonly_stream));
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
