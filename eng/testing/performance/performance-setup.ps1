@@ -3,7 +3,7 @@ Param(
     [string] $CoreRootDirectory,
     [string] $BaselineCoreRootDirectory,
     [string] $Architecture="x64",
-    [string] $Framework="net6.0",
+    [string] $Framework="net5.0",
     [string] $CompilationMode="Tiered",
     [string] $Repository=$env:BUILD_REPOSITORY_NAME,
     [string] $Branch=$env:BUILD_SOURCEBRANCH,
@@ -14,7 +14,7 @@ Param(
     [string] $Kind="micro",
     [switch] $LLVM,
     [switch] $MonoInterpreter,
-    [switch] $MonoAOT,
+    [switch] $MonoAOT, 
     [switch] $Internal,
     [switch] $Compare,
     [string] $MonoDotnet="",
@@ -122,7 +122,7 @@ elseif($FullPGO)
 
 if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
-
+    
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
