@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Security.Cryptography.Xml
 {
     public sealed partial class CipherData
@@ -61,6 +63,7 @@ namespace System.Security.Cryptography.Xml
     {
         public EncryptedKey() { }
         public string? CarriedKeyName { get { throw null; } set { } }
+        [AllowNull]
         public string? Recipient { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.ReferenceList ReferenceList { get { throw null; } }
         public void AddReference(System.Security.Cryptography.Xml.DataReference dataReference) { }
