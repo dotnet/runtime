@@ -118,6 +118,13 @@
       <MonoIncludeFiles Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
+    <!-- Host files-->
+    <ItemGroup>
+      <RuntimeFiles Include="$(DotNetHostBinDir)\*.so" />
+      <RuntimeFiles Include="$(DotNetHostBinDir)\*.so.dbg" />
+      <RuntimeFiles Include="$(DotNetHostBinDir)\*.dll" />
+    </ItemGroup>
+
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
   </Target>
 
