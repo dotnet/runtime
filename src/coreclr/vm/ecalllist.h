@@ -400,6 +400,9 @@ FCFuncStart(gThreadPoolFuncs)
     FCFuncElement("GetPendingUnmanagedWorkItemCount", ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
 FCFuncEnd()
 
+FCFuncStart(gRegisteredWaitHandleFuncs)
+FCFuncEnd()
+
 FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("WaitOneCore", WaitHandleNative::CorWaitOneNative)
     FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::CorWaitMultipleNative)
