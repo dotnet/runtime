@@ -122,6 +122,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? NetTracePath { get; set; }
 
     /// <summary>
+    /// Directory containing all assemblies referenced in a .nettrace collected from a separate device needed by dotnet-pgo. Necessary for mobile platforms.
+    /// </summary>
+    public ITaskItem[] ReferenceAssemblyPathsForPGO { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -285,13 +290,24 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             if (!File.Exists(NetTracePath))
             {
-                Log.LogError($"NetTracePath={nameof(NetTracePath)} doesn't exist");
+                Log.LogError($"{nameof(NetTracePath)}='{NetTracePath}' doesn't exist");
                 return false;
             }
             if (!File.Exists(PgoBinaryPath))
             {
                 Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
                 return false;
+            }
+            if (ReferenceAssemblyPathsForPGO.Length == 0)
+            {
+                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssemblyPathsForPGO)} is empty");
+                return false;
+            }
+            foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
+            {
+                string? fullPath = refAsmItem.GetMetadata("FullPath");
+                if (!File.Exists(fullPath))
+                    throw new LogAsErrorException($"ReferenceAssembly '{fullPath}' doesn't exist");
             }
         }
 
@@ -439,9 +455,18 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
+        StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
+        pgoArgsStr.Append($"create-mibc");
+        pgoArgsStr.Append($" --trace {netTraceFile} ");
+        foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
+        {
+            string? fullPath = refAsmItem.GetMetadata("FullPath");
+            pgoArgsStr.Append($" --reference \"{fullPath}\" ");
+        }
+        pgoArgsStr.Append($" --output {outputMibcPath} ");
         (int exitCode, string output) = Utils.TryRunProcess(Log,
                                                             PgoBinaryPath!,
-                                                            $"create-mibc --trace {netTraceFile} --output {outputMibcPath}");
+                                                            pgoArgsStr.ToString());
 
         if (exitCode != 0)
         {
