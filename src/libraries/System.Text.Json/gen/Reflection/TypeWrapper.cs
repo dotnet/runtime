@@ -156,10 +156,7 @@ namespace System.Text.Json.Reflection
                                 {
                                     sb.Append(',');
                                 }
-                                else
-                                {
-                                    first = false;
-                                }
+                                first = false;
                                 sb.Append('[');
                                 sb.Append(genericArg.AssemblyQualifiedName);
                                 sb.Append(']');
