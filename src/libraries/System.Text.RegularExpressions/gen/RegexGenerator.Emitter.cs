@@ -419,6 +419,7 @@ namespace System.Text.RegularExpressions.Generator
                     "                currentState = nextState;",
                     "                break;",
                     "            }",
+                    "",
                     "            if (currentState == 0)",
                     "            {",
                     "                break;",
@@ -854,6 +855,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
+            // Emits a trie-based search for one of multiple possible prefixes that can start a match.
             void EmitMultiStringSearch()
             {
                 int matchCount = regexTree.FindOptimizations.PrefixMatcher.GetMatchCount();
@@ -4543,9 +4545,9 @@ namespace System.Text.RegularExpressions.Generator
                     return (negate, RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out mask)) switch
                     {
                         (false, false) => $"(((ch = {chExpr}) == {Literal(setChars[0])}) | (ch == {Literal(setChars[1])}) | (ch == {Literal(setChars[2])}))",
-                        (true, false) => $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}) & (ch != {Literal(setChars[2])}))",
-                        (false, true) => $"((((ch = {chExpr}) | 0x{mask:X}) == {Literal((char)(setChars[1] | mask))}) | (ch == {Literal(setChars[2])}))",
-                        (true, true) => $"((((ch = {chExpr}) | 0x{mask:X}) != {Literal((char)(setChars[1] | mask))}) & (ch != {Literal(setChars[2])}))",
+                        (true,  false) => $"(((ch = {chExpr}) != {Literal(setChars[0])}) & (ch != {Literal(setChars[1])}) & (ch != {Literal(setChars[2])}))",
+                        (false, true)  => $"((((ch = {chExpr}) | 0x{mask:X}) == {Literal((char)(setChars[1] | mask))}) | (ch == {Literal(setChars[2])}))",
+                        (true,  true)  => $"((((ch = {chExpr}) | 0x{mask:X}) != {Literal((char)(setChars[1] | mask))}) & (ch != {Literal(setChars[2])}))",
                     };
             }
 

@@ -27,16 +27,13 @@ namespace System.Text.RegularExpressions
         private static TrieNodeWithLinks[] BuildTrieLinks(List<TrieNode> trie)
         {
             TrieNodeWithLinks[] result = new TrieNodeWithLinks[trie.Count];
+
             Queue<int> vertexQueue = new Queue<int>();
             vertexQueue.Enqueue(TrieNode.Root);
-#if REGEXGENERATOR
+
             while (vertexQueue.Count > 0)
             {
                 int currentVertex = vertexQueue.Dequeue();
-#else
-            while (vertexQueue.TryDequeue(out int currentVertex))
-            {
-#endif
                 TrieNode node = trie[currentVertex];
                 int suffixLink;
                 int matchLength;
@@ -45,42 +42,41 @@ namespace System.Text.RegularExpressions
                 {
                     suffixLink = TrieNode.Root;
                     matchLength = -1;
-                    goto End;
                 }
-
-                // one character substrings
-                if (node.Parent == TrieNode.Root)
+                else if (node.Parent == TrieNode.Root)
                 {
                     suffixLink = TrieNode.Root;
                     matchLength = node.IsMatch ? node.Depth : result[suffixLink].MatchLength;
-                    goto End;
                 }
-
-                // To calculate the suffix link for the current vertex, we need the suffix
-                // link for the parent and the character that moved us to the current vertex.
-                int curBetterVertex = result[node.Parent].SuffixLink;
-                char chVertex = node.AccessingCharacter;
-                while (true)
+                else
                 {
-                    // If there is an edge with the needed char, update the suffix link
-                    // and leave the cycle
-                    if (trie[curBetterVertex].Children.TryGetValue(chVertex, out suffixLink))
+                    // To calculate the suffix link for the current vertex, we need the suffix
+                    // link for the parent and the character that moved us to the current vertex.
+                    int curBetterVertex = result[node.Parent].SuffixLink;
+                    char chVertex = node.AccessingCharacter;
+                    while (true)
                     {
-                        break;
+                        // If there is an edge with the needed char, update the suffix link
+                        // and leave the cycle
+                        if (trie[curBetterVertex].Children.TryGetValue(chVertex, out suffixLink))
+                        {
+                            break;
+                        }
+
+                        // Jump by suffix links until we reach the root or find a better prefix for the current substring.
+                        if (curBetterVertex == TrieNode.Root)
+                        {
+                            suffixLink = TrieNode.Root;
+                            break;
+                        }
+
+                        // Go up by suffixlink
+                        curBetterVertex = result[curBetterVertex].SuffixLink;
                     }
-                    // Jump by suffix links until we reach the root or find a better prefix for the current substring.
-                    if (curBetterVertex == TrieNode.Root)
-                    {
-                        suffixLink = TrieNode.Root;
-                        break;
-                    }
-                    // Go up by suffixlink
-                    curBetterVertex = result[curBetterVertex].SuffixLink;
+
+                    matchLength = node.IsMatch ? node.Depth : result[suffixLink].MatchLength;
                 }
 
-                matchLength = node.IsMatch ? node.Depth : result[suffixLink].MatchLength;
-
-            End:
                 result[currentVertex] = new TrieNodeWithLinks()
                 {
 #if DEBUG || REGEXGENERATOR
@@ -128,6 +124,7 @@ namespace System.Text.RegularExpressions
                         currentState = nextState;
                         break;
                     }
+
                     if (currentState == TrieNode.Root)
                     {
                         break;

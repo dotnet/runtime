@@ -110,11 +110,7 @@ namespace System.Text.RegularExpressions
                     return new NodeCollection(newNode);
                 default:
                     canContinue = false;
-#if REGEXGENERATOR
                     HashSet<int> visited = new HashSet<int>();
-#else
-                    HashSet<int> visited = new HashSet<int>(count);
-#endif
                     List<int> result = new List<int>(count);
                     for (int i = 0; i < count; i++)
                     {
@@ -134,6 +130,7 @@ namespace System.Text.RegularExpressions
                             _nodes[newNode].IsMatch = true;
                         }
                     }
+
                     return new NodeCollection(result);
             }
         }
@@ -287,6 +284,7 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < setLength; i++)
             {
                 NodeCollection result = Add(nodes, set[i], isFinal, out bool canContinueInner);
+
                 // See comments in handling RegexNodeKind.Alternate below, for an explanation on how it works.
                 if (canContinueInner)
                 {
@@ -378,7 +376,7 @@ namespace System.Text.RegularExpressions
                 goto End;
             }
 
-            while (regexNode.Kind is RegexNodeKind.Capture or RegexNodeKind.Group or RegexNodeKind.Atomic)
+            while (regexNode.Kind is RegexNodeKind.Capture or RegexNodeKind.Atomic)
             {
                 regexNode = regexNode.Child(0);
             }
