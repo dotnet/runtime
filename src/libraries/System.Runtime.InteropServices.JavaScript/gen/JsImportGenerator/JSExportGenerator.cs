@@ -207,9 +207,7 @@ namespace Microsoft.Interop.JavaScript
                 return null;
             }
 
-            return new JSExportData()
-            {
-            };
+            return new JSExportData();
         }
 
         private static IncrementalStubGenerationContext CalculateStubInformation(
