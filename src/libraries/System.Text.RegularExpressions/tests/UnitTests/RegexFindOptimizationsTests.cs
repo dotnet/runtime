@@ -143,9 +143,8 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [InlineData(@"monday|tuesday|wednesday|thursday|friday|saturday|sunday", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 7, 49)]
-        [InlineData(@"a(b|c+|d)?(e|f+|g)h", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 10, 20)]
-        [InlineData(@"a{20}|b|c|d|e", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 5, 17)]
+        [InlineData(@"january|february|march|april|may|june|july|august|september|october|november|december", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 12, 69)]
+        [InlineData(@"a{20}|b|c|d|e|f", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 6, 18)]
         public void LeadingMultiString(string pattern, RegexOptions options, int expectedMode, int expectedMatchCount, int expectedTrieNodeCount)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, options);

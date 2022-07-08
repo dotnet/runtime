@@ -66,7 +66,7 @@ namespace System.Text.RegularExpressions
             }
 
             // We try to find fixed prefixes in the regex.
-            (string? prefix, MultiStringMatcher? prefixMatcher) = RegexPrefixAnalyzer.CreatePrefixMatcher(root);
+            (string? prefix, List<TrieNode>? prefixTrie) = RegexPrefixAnalyzer.CreatePrefixMatcher(root);
 
             // If there's only one, just use IndexOf and inherit all of its optimizations.
             if (prefix is { Length: > 1 })
@@ -78,13 +78,7 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            if (prefixMatcher is not null)
-            {
-                Debug.Assert(!_rightToLeft);
-                PrefixMatcher = prefixMatcher;
-                FindMode = FindNextStartingPositionMode.LeadingMultiString_LeftToRight;
-                return;
-            }
+            // We try for modes that have vectorized implementations, and if none was found we will make use of the trie.
 
             // At this point there are no fast-searchable anchors or case-sensitive prefixes. We can now analyze the
             // pattern for sets and then use any found sets to determine what kind of search to perform.
@@ -188,6 +182,12 @@ namespace System.Text.RegularExpressions
                         FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0) ? FindNextStartingPositionMode.LeadingSet_LeftToRight
                             : FindNextStartingPositionMode.FixedDistanceSets_LeftToRight;
                         _asciiLookups = new uint[fixedDistanceSets.Count][];
+                        if (FindMode == FindNextStartingPositionMode.FixedDistanceSets_LeftToRight || fixedDistanceSets[0].Chars is null)
+                        {
+                            // FixedDistanceSets and LeadingSet with null Chars are not vectorized.
+                            // Use them only if LeadingMultiString is not available.
+                            goto PreferLeadingMultiStringIfAvailable;
+                        }
                     }
                     return;
                 }
@@ -199,6 +199,18 @@ namespace System.Text.RegularExpressions
                 FindMode = FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight;
                 LiteralAfterLoop = literalAfterLoop;
                 _asciiLookups = new uint[1][];
+                return;
+            }
+
+        PreferLeadingMultiStringIfAvailable:
+            if (prefixTrie is not null)
+            {
+                Debug.Assert(!_rightToLeft);
+                PrefixMatcher = new MultiStringMatcher(prefixTrie);
+                FindMode = FindNextStartingPositionMode.LeadingMultiString_LeftToRight;
+                // They might have been set previously.
+                FixedDistanceSets = null;
+                _asciiLookups = null;
                 return;
             }
         }
@@ -231,6 +243,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets the leading prefix.  May be an empty string.</summary>
         public string LeadingPrefix { get; } = string.Empty;
 
+        /// <summary>Gets the <see cref="MultiStringMatcher"/> object to be used if
+        /// <see cref="FindMode"/> is <see cref="FindNextStartingPositionMode.LeadingMultiString_LeftToRight"/>.</summary>
         public MultiStringMatcher? PrefixMatcher { get; }
 
         /// <summary>When in fixed distance literal mode, gets the literal and how far it is from the start of the pattern.</summary>
@@ -756,9 +770,6 @@ namespace System.Text.RegularExpressions
         /// <summary>A multi-character substring at the beginning of the right-to-left pattern.</summary>
         LeadingString_RightToLeft,
 
-        /// <summary>A string in a finite set of strings at the beginning of the pattern.</summary>
-        LeadingMultiString_LeftToRight,
-
         /// <summary>A set starting the pattern.</summary>
         LeadingSet_LeftToRight,
         /// <summary>A set starting the right-to-left pattern.</summary>
@@ -771,6 +782,9 @@ namespace System.Text.RegularExpressions
         FixedDistanceChar_LeftToRight,
         /// <summary>A multi-character case-sensitive string at a fixed distance from the start of the pattern.</summary>
         FixedDistanceString_LeftToRight,
+
+        /// <summary>A string in a finite set of strings at the beginning of the pattern.</summary>
+        LeadingMultiString_LeftToRight,
 
         /// <summary>One or more sets at a fixed distance from the start of the pattern.</summary>
         FixedDistanceSets_LeftToRight,

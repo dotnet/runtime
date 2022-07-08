@@ -15,12 +15,11 @@ namespace System.Text.RegularExpressions
         private const int MinMultiPrefixes = 5;
 
         /// <summary>
-        /// Tries to create a <see cref="MultiStringMatcher"/> from the leading fixed part
-        /// of a <see cref="RegexNode"/>. In case it consists of only one non-empty string,
-        /// that string will be returned and the <see cref="MultiStringMatcher"/>
-        /// will be <see langword="null"/>.
+        /// Tries to create a trie from the leading fixed part of a <see cref="RegexNode"/>.
+        /// If using the trie is estimated not to be profitable, a leading substring will be
+        /// attempted to be found, and the trie will be <see langword="null"/>.
         /// </summary>
-        internal static (string? SinglePrefix, MultiStringMatcher? MultiPrefixMatcher) CreatePrefixMatcher(RegexNode node)
+        internal static (string? SinglePrefix, List<TrieNode>? PrefixTrie) CreatePrefixMatcher(RegexNode node)
         {
             if ((node.Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
             {
@@ -38,7 +37,7 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    return (null, new MultiStringMatcher(trie));
+                    return (null, trie);
                 }
             }
             return (null, null);
