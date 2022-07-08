@@ -50,6 +50,7 @@ namespace System.Net.Quic
         public QuicException(string? message, System.Exception? innerException) { }
         public QuicException(string? message, System.Exception? innerException, int result) { }
     }
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
     public sealed partial class QuicListener : System.IAsyncDisposable
     {
         internal QuicListener() { }
