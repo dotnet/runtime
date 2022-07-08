@@ -13,7 +13,12 @@ namespace System.Buffers.Text
     // AVX2 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/avx2
     // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
 
-    public static partial class Base64
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        static partial class Base64
     {
         /// <summary>
         /// Decode the span of UTF-8 encoded text represented as base64 into binary data.

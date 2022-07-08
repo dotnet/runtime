@@ -16,7 +16,12 @@ namespace System.Buffers.Text
     /// <summary>
     /// Convert between binary data and UTF-8 encoded text that is represented in base 64.
     /// </summary>
-    public static partial class Base64
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        static partial class Base64
     {
         // This can be replaced once https://github.com/dotnet/runtime/issues/63331 is implemented.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
