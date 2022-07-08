@@ -172,7 +172,7 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptedXml EncryptedXml
         {
-            get => _exml ??= new EncryptedXml(_containingDocument); // default processing rules
+            get => _exml ??= new EncryptedXml(_containingDocument!); // default processing rules
             set => _exml = value;
         }
 
