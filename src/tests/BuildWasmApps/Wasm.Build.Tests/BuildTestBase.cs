@@ -158,7 +158,9 @@ namespace Wasm.Build.Tests
             {
                 RunHost.V8     => ("wasm test", "--js-file=test-main.js --engine=V8 -v trace", true),
                 RunHost.NodeJS => ("wasm test", "--js-file=test-main.js --engine=NodeJS -v trace", true),
-                _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop", false)
+                _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop" +
+                                    $" --browser-path={BrowserRunner.ChromePath.Value}" +
+                                    (BuildEnvironment.IsRunningInContainer ? " --browser-arg=--no-sandbox" : string.Empty), false)
             };
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
