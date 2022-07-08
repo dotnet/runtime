@@ -124,7 +124,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// Directory containing all assemblies referenced in a .nettrace collected from a separate device needed by dotnet-pgo. Necessary for mobile platforms.
     /// </summary>
-    public ITaskItem[] ReferenceAssembliesForPGO { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] ReferenceAssemblyPathsForPGO { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
@@ -298,12 +298,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
                 return false;
             }
-            if (ReferenceAssembliesForPGO.Length == 0)
+            if (ReferenceAssemblyPathsForPGO.Length == 0)
             {
-                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssembliesForPGO)} is empty");
+                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssemblyPathsForPGO)} is empty");
                 return false;
             }
-            foreach (var refAsmItem in ReferenceAssembliesForPGO)
+            foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
             {
                 string? fullPath = refAsmItem.GetMetadata("FullPath");
                 if (!File.Exists(fullPath))
@@ -456,14 +456,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
-        pgoArgsStr.Append($"create-mibc ");
-        pgoArgsStr.Append($"--trace {netTraceFile} ");
-        foreach (var refAsmItem in ReferenceAssembliesForPGO)
+        pgoArgsStr.Append($"create-mibc");
+        pgoArgsStr.Append($" --trace {netTraceFile} ");
+        foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
         {
             string? fullPath = refAsmItem.GetMetadata("FullPath");
-            pgoArgsStr.Append($"--reference \"{fullPath}\" ");
+            pgoArgsStr.Append($" --reference \"{fullPath}\" ");
         }
-        pgoArgsStr.Append($"--output {outputMibcPath} ");
+        pgoArgsStr.Append($" --output {outputMibcPath} ");
         (int exitCode, string output) = Utils.TryRunProcess(Log,
                                                             PgoBinaryPath!,
                                                             pgoArgsStr.ToString());
