@@ -1741,10 +1741,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ObjectDisposedException">If the collection has been disposed.</exception>
         private void CheckDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(BlockingCollection<T>), SR.BlockingCollection_Disposed);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
     }
 

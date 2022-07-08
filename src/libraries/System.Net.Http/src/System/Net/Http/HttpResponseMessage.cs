@@ -230,10 +230,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

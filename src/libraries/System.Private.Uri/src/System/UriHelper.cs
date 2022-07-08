@@ -119,7 +119,7 @@ namespace System
 
             // Get the table of characters that do not need to be escaped.
             Debug.Assert(unreserved.Length == 0x80);
-            ReadOnlySpan<bool> noEscape = stackalloc bool[0];
+            scoped ReadOnlySpan<bool> noEscape;
             if ((forceEscape1 | forceEscape2) == 0)
             {
                 noEscape = unreserved;
@@ -156,7 +156,7 @@ namespace System
             bool checkExistingEscaped, char forceEscape1 = '\0', char forceEscape2 = '\0')
         {
             // Get the table of characters that do not need to be escaped.
-            ReadOnlySpan<bool> noEscape = stackalloc bool[0];
+            scoped ReadOnlySpan<bool> noEscape;
             if ((forceEscape1 | forceEscape2) == 0)
             {
                 noEscape = UnreservedReservedTable;

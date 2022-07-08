@@ -69,17 +69,10 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
-            }
-        }
-
         private void CheckDisposedOrStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
@@ -88,7 +81,8 @@ namespace System.Net.Http
 
         private void SetOperationStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             if (_innerHandler == null)
             {
                 throw new InvalidOperationException(SR.net_http_handler_not_assigned);

@@ -51,7 +51,7 @@ namespace System.Net.Quic
         public override int ReadByte()
         {
             byte b = 0;
-            return Read(MemoryMarshal.CreateSpan(ref b, 1)) != 0 ? b : -1;
+            return Read(new Span<byte>(ref b)) != 0 ? b : -1;
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -68,7 +68,7 @@ namespace System.Net.Quic
 
         public override void WriteByte(byte value)
         {
-            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            Write(new ReadOnlySpan<byte>(in value));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

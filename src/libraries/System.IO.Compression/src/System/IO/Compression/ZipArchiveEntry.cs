@@ -1233,7 +1233,7 @@ namespace System.IO.Compression
             }
 
             public override void WriteByte(byte value) =>
-                Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                Write(new ReadOnlySpan<byte>(in value));
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {

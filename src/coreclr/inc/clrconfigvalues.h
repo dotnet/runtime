@@ -233,6 +233,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MiniMdBufferCapacity, W("MiniMdBufferCapacity"
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 CONFIG_DWORD_INFO(INTERNAL_DbgNativeCodeBpBindsAcrossVersions, W("DbgNativeCodeBpBindsAcrossVersions"), 0, "If non-zero causes native breakpoints at offset 0 to bind in all tiered compilation versions of the given method")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RichDebugInfo, W("RichDebugInfo"), 0, "If non-zero store some additional debug information for each jitted method")
 
 ///
 /// Diagnostics (internal general-purpose)

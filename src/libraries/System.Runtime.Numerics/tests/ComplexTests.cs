@@ -1302,12 +1302,11 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidX86))]   // disabled on Android x86, see https://github.com/dotnet/runtime/issues/37093
         [MemberData(nameof(Boundaries_2_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
         [MemberData(nameof(Invalid_2_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public static void Reciprocal(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);

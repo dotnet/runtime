@@ -490,19 +490,24 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
         case GT_CNS_DBL:
         {
-            emitter* emit       = GetEmitter();
-            emitAttr size       = emitTypeSize(targetType);
-            double   constValue = tree->AsDblCon()->gtDconVal;
+            emitter* emit = GetEmitter();
+            emitAttr size = emitTypeSize(targetType);
 
-            // Make sure we use "xorps reg, reg" only for +ve zero constant (0.0) and not for -ve zero (-0.0)
-            if (*(__int64*)&constValue == 0)
+            if (tree->IsFloatPositiveZero())
             {
-                // A faster/smaller way to generate 0
+                // A faster/smaller way to generate Zero
                 emit->emitIns_R_R(INS_xorps, size, targetReg, targetReg);
+            }
+            else if (tree->IsFloatAllBitsSet())
+            {
+                // A faster/smaller way to generate AllBitsSet
+                emit->emitIns_R_R(INS_pcmpeqd, size, targetReg, targetReg);
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
+                double               cns = tree->AsDblCon()->gtDconVal;
+                CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns, size);
+
                 emit->emitIns_R_C(ins_Load(targetType), size, targetReg, hnd, 0);
             }
         }
