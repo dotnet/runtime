@@ -1089,6 +1089,20 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.NotNull, item3Info.ElementType!.ReadState);
             Assert.Equal(NullabilityState.NotNull, item3Info.ElementType.WriteState);
         }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArguments()
+        {
+            Type type = typeof(TypeWithPropertiesNestingItsGenericTypeArgument<int>);
+
+            Assert.NotNull(nullabilityContext.Create(type.GetProperty("Shallow1")!));
+            Assert.NotNull(nullabilityContext.Create(type.GetProperty("Deep1")!));
+            Assert.NotNull(nullabilityContext.Create(type.GetProperty("Deep2")!));
+            Assert.NotNull(nullabilityContext.Create(type.GetProperty("Deep3")!));
+            Assert.NotNull(nullabilityContext.Create(type.GetProperty("Deep4")!));
+            Assert.NotNull(nullabilityContext.Create(type.GetProperty("Deep5")!));
+        }
     }
 
 #pragma warning disable CS0649, CS0067, CS0414
@@ -1347,5 +1361,15 @@ namespace System.Reflection.Tests
             : base(item1, item2, item3)
         {
         }
+    }
+
+    public class TypeWithPropertiesNestingItsGenericTypeArgument<T>
+    {
+        public Tuple<T>? Shallow1 { get; set; }
+        public Tuple<Tuple<T>>? Deep1 { get; set; }
+        public Tuple<Tuple<T>, int>? Deep2 { get; set; }
+        public Tuple<int, Tuple<T>>? Deep3 { get; set; }
+        public Tuple<int, int, Tuple<T>>? Deep4 { get; set; }
+        public Tuple<int, int, Tuple<T, T>>? Deep5 { get; set; }
     }
 }
