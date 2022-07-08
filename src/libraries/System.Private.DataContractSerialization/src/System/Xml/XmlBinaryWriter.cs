@@ -706,7 +706,7 @@ namespace System.Xml
             else
             {
                 char castChar = (char)ch;
-                WriteText(MemoryMarshal.CreateReadOnlySpan(ref castChar, 1));
+                WriteText(new ReadOnlySpan<char>(in castChar));
             }
         }
 
