@@ -3862,7 +3862,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
             {
                 GenTree* op1 = impPopStack().val;
-                if (op1->OperIsConst() || op1->IsTypeof())
+                if (op1->OperIsConst() || gtIsTypeof(op1))
                 {
                     // op1 is a known constant, replace with 'true'.
                     retNode = gtNewIconNode(1);
@@ -4136,7 +4136,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // e.g., `typeof(int).IsValueType` => `true`
                 // e.g., `typeof(Span<int>).IsByRefLike` => `true`
                 CORINFO_CLASS_HANDLE hClass = nullptr;
-                if (impStackTop().val->IsTypeof(&hClass))
+                if (gtIsTypeof(impStackTop().val, &hClass))
                 {
                     switch (ni)
                     {
@@ -4176,7 +4176,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Type_GetTypeCode:
             {
                 CORINFO_CLASS_HANDLE hClass = nullptr;
-                if (impStackTop().val->IsTypeof(&hClass))
+                if (gtIsTypeof(impStackTop().val, &hClass))
                 {
                     int typeCode = -1;
                     switch (info.compCompHnd->getTypeForPrimitiveValueClass(hClass))

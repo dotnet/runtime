@@ -17951,6 +17951,38 @@ bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// gtIsTypeof: Checks if the tree is a typeof()
+//
+// Arguments:
+//    tree   - the tree that is checked
+//    handle - (optional, default nullptr) - if non-null is set to the type
+//
+// Return Value:
+//    Is the tree typeof()
+//
+bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
+{
+    if (tree->IsCall())
+    {
+        GenTreeCall* call = tree->AsCall();
+        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+        {
+            assert(call->gtArgs.CountArgs() == 1);
+            CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
+            if (hClass != NO_CLASS_HANDLE)
+            {
+                if (handle != nullptr)
+                {
+                    *handle = hClass;
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
 // gtCallGetDefinedRetBufLclAddr:
 //   Get the tree corresponding to the address of the retbuf that this call defines.
 //
@@ -18248,38 +18280,6 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
         return true;
     }
 
-    return false;
-}
-
-//------------------------------------------------------------------------
-// IsTypeof: Checks if the tree is a typeof()
-//
-// Arguments:
-//    tree   - the tree that is checked
-//    handle - (optional, default nullptr) - if non-null is set to the type
-//
-// Return Value:
-//    Is the tree typeof()
-//
-bool GenTree::IsTypeof(CORINFO_CLASS_HANDLE* handle)
-{
-    if (tree->IsCall())
-    {
-        GenTreeCall* call = tree->AsCall();
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
-        {
-            assert(call->gtArgs.CountArgs() == 1);
-            CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
-            if (hClass != NO_CLASS_HANDLE)
-            {
-                if (handle != nullptr)
-                {
-                    *handle = hClass;
-                }
-                return true;
-            }
-        }
-    }
     return false;
 }
 

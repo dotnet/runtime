@@ -11779,7 +11779,7 @@ DONE_MORPHING_CHILDREN:
                 assert(!optValnumCSE_phase);
 
                 JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to ");
-                if (op1->OperIsConst() || op1->IsTypeof())
+                if (op1->OperIsConst() || gtIsTypeof(op1))
                 {
                     // We're lucky to catch a constant here while importer was not
                     JITDUMP("true\n");

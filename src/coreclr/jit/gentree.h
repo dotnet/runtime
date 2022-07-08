@@ -2213,8 +2213,6 @@ public:
     }
     inline bool IsHelperCall();
 
-    bool IsTypeof(CORINFO_CLASS_HANDLE* handle = nullptr) const;
-
     bool gtOverflow() const;
     bool gtOverflowEx() const;
     bool gtSetFlags() const;
