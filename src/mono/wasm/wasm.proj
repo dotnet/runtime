@@ -380,4 +380,9 @@
     <Touch Files="$(NativeBinDir).rollup-stamp" AlwaysCreate="true" />
   </Target>
 
+  <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
+
+  <Target Name="InstallWasmPrereqs">
+    <CallTarget Targets="DownloadAndInstallChrome;DownloadAndInstallChromeDriver" />
+  </Target>
 </Project>

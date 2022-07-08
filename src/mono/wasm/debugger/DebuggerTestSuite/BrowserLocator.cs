@@ -32,6 +32,7 @@ internal static class BrowserLocator
                 Environment.GetEnvironmentVariable(envVarName) is string _browserPath_env_var &&
                 !string.IsNullOrEmpty(_browserPath_env_var))
             {
+                Console.WriteLine ($"-- checking {_browserPath_env_var}");
                 if (File.Exists(_browserPath_env_var))
                     return _browserPath_env_var;
 
@@ -44,6 +45,7 @@ internal static class BrowserLocator
 
     private static IEnumerable<string> GetChromePathsToProbe(string artifactsBinDir)
     {
+        Console.WriteLine ($"GetChromePathsToProbe: art: {artifactsBinDir}");
         List<string> paths = new();
         if (!string.IsNullOrEmpty(artifactsBinDir))
         {

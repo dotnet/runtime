@@ -14,6 +14,7 @@
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForTests>
+    <InstallChromeDriverForTests Condition="'$(InstallChromeDriverForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeDriverForTests>
 
     <!-- don't run any wasm build steps -->
     <IsWasmProject>false</IsWasmProject>
@@ -69,6 +70,9 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export PATH=$(ChromeDriverDir):%24PATH" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PATH=$(ChromeDriverDir)%59%PATH%" />
     </ItemGroup>
 
     <ItemGroup>

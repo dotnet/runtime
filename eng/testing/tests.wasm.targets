@@ -43,6 +43,8 @@
     <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
   </ItemGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
+
   <!--
     This is running during compile time and therefore $(Scenario) is empty, unless the specific project sets it.
     Any settings in the project file could be replaced on Helix.
@@ -53,6 +55,10 @@
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="export MAIN_JS=--js-file=$(_WasmMainJSFileName)" />
+
+    <SetScriptCommands Condition="'$(IsRunningInContainer)' == 'true' and '$(ContinuousIntegrationBuild)' != 'true'
+                                  and '$(ChromeDriverBinaryPath)' != ''"
+                       Include="export PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath))):$PATH" />
   </ItemGroup>
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="set &quot;SCENARIO=$(Scenario)&quot;" />
@@ -81,7 +87,12 @@
     <_XHarnessArgs                                                 >$(_XHarnessArgs) -s dotnet.js.symbols</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbol-patterns wasm-symbol-patterns.txt</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
+
+    <_XHarnessArgs Condition="'$(IsRunningInContainer)' == 'true' and '$(ContinuousIntegrationBuild)' != 'true'"
+                                                                   >$(_XHarnessArgs) --browser-arg=no-sandbox --browser-path=$(ChromeBinaryPath)</_XHarnessArgs>
+
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
+
 
     <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
     <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
