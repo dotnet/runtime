@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Compression.Tests
@@ -56,6 +57,16 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixCreateSetsPermissionsInExternalAttributesUMaskZero()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                umask(0);
+                new ZipFile_Unix().UnixCreateSetsPermissionsInExternalAttributes();
+            }).Dispose();
+        }
+
         [Fact]
         public void UnixExtractSetsFilePermissionsFromExternalAttributes()
         {
@@ -88,6 +99,16 @@ namespace System.IO.Compression.Tests
                     EnsureFilePermissions(filename, permission);
                 }
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixExtractSetsFilePermissionsFromExternalAttributesUMaskZero()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                umask(0);
+                new ZipFile_Unix().UnixExtractSetsFilePermissionsFromExternalAttributes();
+            }).Dispose();
         }
 
         private static string[] CreateFiles(string folderPath, string[] testPermissions)
@@ -221,5 +242,8 @@ namespace System.IO.Compression.Tests
 
         [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int mkfifo(string path, int mode);
+
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int umask(int umask);
     }
 }
