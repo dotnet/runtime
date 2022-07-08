@@ -975,6 +975,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static float Abs(float value) => MathF.Abs(value);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            float result;
+
+            if (typeof(TOther) == typeof(float))
+            {
+                result = (float)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            float result;
+
+            if (typeof(TOther) == typeof(float))
+            {
+                result = (float)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            float result;
+
+            if (typeof(TOther) == typeof(float))
+            {
+                result = (float)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<float>.IsCanonical(float value) => true;
 

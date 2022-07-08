@@ -1828,6 +1828,7 @@ public:
 #endif // DEBUG
 
     inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsFloatAllBitsSet() const;
     inline bool IsFloatNaN() const;
     inline bool IsFloatPositiveZero() const;
     inline bool IsFloatNegativeZero() const;
@@ -8459,6 +8460,33 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
+// IsFloatAllBitsSet: returns true if this is exactly a const float value representing AllBitsSet.
+//
+// Returns:
+//     True if this represents a const floating-point value representing AllBitsSet.
+//     Will return false otherwise.
+//
+inline bool GenTree::IsFloatAllBitsSet() const
+{
+    if (IsCnsFltOrDbl())
+    {
+        double constValue = AsDblCon()->gtDconVal;
+
+        if (TypeIs(TYP_FLOAT))
+        {
+            return FloatingPointUtils::isAllBitsSet(static_cast<float>(constValue));
+        }
+        else
+        {
+            assert(TypeIs(TYP_DOUBLE));
+            return FloatingPointUtils::isAllBitsSet(constValue);
+        }
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
 // IsFloatNaN: returns true if this is exactly a const float value of NaN
 //
 // Returns:
@@ -8509,7 +8537,7 @@ inline bool GenTree::IsFloatPositiveZero() const
         // but it is easier to parse out
         // rather than using !IsCnsNonZeroFltOrDbl.
         double constValue = AsDblCon()->gtDconVal;
-        return *(__int64*)&constValue == 0;
+        return FloatingPointUtils::isPositiveZero(constValue);
     }
 
     return false;

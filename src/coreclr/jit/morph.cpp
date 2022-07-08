@@ -988,8 +988,9 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
 
 #if FEATURE_MULTIREG_ARGS
-        // For RyuJIT backend we will expand a Multireg arg into a GT_FIELD_LIST
-        // with multiple indirections, so here we consider spilling it into a tmp LclVar.
+        // In "fgMorphMultiRegStructArg" we will expand the arg into a GT_FIELD_LIST with multiple indirections, so
+        // here we consider spilling it into a local. We also need to spill it in case we have a node that we do not
+        // currently handle in multi-reg morphing.
         //
         if (varTypeIsStruct(argx) && !arg.m_needTmp)
         {
@@ -1018,51 +1019,31 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
-#ifndef TARGET_ARM
-            // TODO-Arm: This optimization is not implemented for ARM32
-            // so we skip this for ARM32 until it is ported to use RyuJIT backend
+            // We are only able to expand certain "OBJ"s into field lists, so here we spill all the
+            // "mis-sized" ones. We could in theory support them directly with some arithmetic and
+            // shifts, but these cases are rare enough that it is probably not worth the complexity.
+            // No need to do this for stack args as they are directly supported by codegen. Likewise
+            // for "local" "OBJ"s - we can safely load "too much" for them.
             //
             if (argx->OperIs(GT_OBJ) && (arg.AbiInfo.GetRegNum() != REG_STK))
             {
-                GenTreeObj* argObj     = argx->AsObj();
-                unsigned    structSize = argObj->GetLayout()->GetSize();
-                switch (structSize)
-                {
-                    case 3:
-                    case 5:
-                    case 6:
-                    case 7:
-                        // If we have a stack based LclVar we can perform a wider read of 4 or 8 bytes
-                        //
-                        if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
-                        {
-                            // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
-                            // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
-                            //
-                            SetNeedsTemp(&arg);
-                        }
-                        break;
-                    case 11:
-                    case 13:
-                    case 14:
-                    case 15:
-                        // Spill any GT_OBJ multireg structs that are difficult to extract
-                        //
-                        // When we have a GT_OBJ of a struct with the above sizes we would need
-                        // to use 3 or 4 load instructions to load the exact size of this struct.
-                        // Instead we spill the GT_OBJ into a new GT_LCL_VAR temp and this sequence
-                        // will use a GT_CPBLK to copy the exact size into the GT_LCL_VAR temp.
-                        // Then we can just load all 16 bytes of the GT_LCL_VAR temp when passing
-                        // the argument.
-                        //
-                        SetNeedsTemp(&arg);
-                        break;
+                GenTreeObj* argObj       = argx->AsObj();
+                unsigned    structSize   = argObj->Size();
+                unsigned    lastLoadSize = structSize % TARGET_POINTER_SIZE;
 
-                    default:
-                        break;
+                // TODO-ADDR: delete the "IsLocalAddrExpr" check once local morph transforms all such OBJs into
+                // local nodes.
+                if ((lastLoadSize != 0) && !isPow2(lastLoadSize) && (argObj->Addr()->IsLocalAddrExpr() == nullptr))
+                {
+#ifdef TARGET_ARM
+                    // On ARM we don't expand split args larger than 16 bytes into field lists.
+                    if (!arg.AbiInfo.IsSplit() || (structSize <= 16))
+#endif // TARGET_ARM
+                    {
+                        SetNeedsTemp(&arg);
+                    }
                 }
             }
-#endif // !TARGET_ARM
         }
 #endif // FEATURE_MULTIREG_ARGS
     }
@@ -3157,18 +3138,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         canTransform =
                             (!arg.AbiInfo.IsHfaArg() || (passingSize == genTypeSize(arg.AbiInfo.GetHfaType())));
                     }
-
-#if defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
-                    // For ARM64 or AMD64/UX we can pass non-power-of-2 structs in a register, but we can
-                    // only transform in that case if the arg is a local.
-                    // TODO-CQ: This transformation should be applicable in general, not just for the ARM64
-                    // or UNIX_AMD64_ABI cases where they will be passed in registers.
                     else
                     {
+                        // We can pass non-power-of-2 structs in a register, but we can only transform in that
+                        // case if the arg is a local.
                         canTransform = argIsLocal;
                         passingSize  = genTypeSize(structBaseType);
                     }
-#endif //  TARGET_ARM64 || UNIX_AMD64_ABI || TARGET_LOONGARCH64
                 }
 
                 if (!canTransform)
@@ -3206,35 +3182,16 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         }
                     }
 #endif // UNIX_AMD64_ABI
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
                     if ((passingSize != structSize) && !argIsLocal)
                     {
                         makeOutArgCopy = true;
                     }
-#endif
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
 #ifdef TARGET_ARM
-                    // TODO-1stClassStructs: Unify these conditions across targets.
-                    if (((lclVar != nullptr) &&
-                         (lvaGetPromotionType(lclVar->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT)) ||
-                        ((argObj->OperIs(GT_OBJ)) && (passingSize != structSize)))
-                    {
-                        makeOutArgCopy = true;
-                    }
-
-                    // If the arg may go into registers (both fully or split)
-                    // then we cannot handle passing it from an arbitrary
-                    // source if it would require passing a 3 byte chunk.
-                    // Placing 3 bytes into a register requires multiple loads/shifts/or.
-                    // In theory we could more easily support it for split args
-                    // as those load registers fully always, but currently we
-                    // do not.
-                    if ((arg.AbiInfo.NumRegs > 0) && ((passingSize % REGSIZE_BYTES) == 3))
-                    {
-                        makeOutArgCopy = true;
-                    }
-
-                    if (structSize < TARGET_POINTER_SIZE)
+                    if ((lclVar != nullptr) &&
+                        (lvaGetPromotionType(lclVar->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
                     {
                         makeOutArgCopy = true;
                     }
@@ -3655,8 +3612,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         }
         if ((lcl != nullptr) && (lvaGetPromotionType(lcl->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
         {
-            if (argNode->OperIs(GT_LCL_VAR) ||
-                ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout()))
+            // TODO-Arm-CQ: support decomposing "large" promoted structs into field lists.
+            if (!arg->AbiInfo.IsSplit() &&
+                (argNode->OperIs(GT_LCL_VAR) ||
+                 ClassLayout::AreCompatible(argNode->AsObj()->GetLayout(), lvaGetDesc(lcl)->GetLayout())))
             {
                 argNode = fgMorphLclArgToFieldlist(lcl);
             }
