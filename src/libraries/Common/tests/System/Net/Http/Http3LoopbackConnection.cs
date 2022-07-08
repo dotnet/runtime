@@ -56,17 +56,18 @@ namespace System.Net.Test.Common
 
         public long MaxHeaderListSize { get; private set; } = -1;
 
+        // TODO: DisposeAsync?
         public override void Dispose()
         {
             // Close any remaining request streams (but NOT control streams, as these should not be closed while the connection is open)
             foreach (Http3LoopbackStream stream in _openStreams.Values)
             {
-                stream.Dispose();
+                stream.DisposeAsync().AsTask().GetAwaiter().GetResult();
             }
 
             foreach (QuicStream stream in _delayedStreams)
             {
-                stream.Dispose();
+                stream.DisposeAsync().AsTask().GetAwaiter().GetResult();
             }
 
             // We don't dispose the connection currently, because this causes races when the server connection is closed before
@@ -104,7 +105,7 @@ namespace System.Net.Test.Common
             Debug.Assert(stream.CanRead && stream.CanWrite, "Stream must be a request stream.");
 
             // TODO: QUIC streams can have IDs larger than int.MaxValue; update all our tests to use long rather than int.
-            return checked((int)stream.StreamId + 1);
+            return checked((int)stream.Id + 1);
         }
 
         public Http3LoopbackStream GetOpenRequest(int requestId = 0)
@@ -172,9 +173,9 @@ namespace System.Net.Test.Common
 
             Assert.True(quicStream.CanWrite, "Expected writeable stream.");
 
-            _openStreams.Add(checked((int)quicStream.StreamId), stream);
+            _openStreams.Add(checked((int)quicStream.Id), stream);
             _currentStream = stream;
-            _currentStreamId = quicStream.StreamId;
+            _currentStreamId = quicStream.Id;
 
             return stream;
         }
@@ -293,9 +294,9 @@ namespace System.Net.Test.Common
                     break;
                 }
 
-                using (stream)
+                await using (stream)
                 {
-                    await stream.AbortAndWaitForShutdownAsync(H3_REQUEST_REJECTED);
+                    stream.Abort(H3_REQUEST_REJECTED);
                 }
             }
 
