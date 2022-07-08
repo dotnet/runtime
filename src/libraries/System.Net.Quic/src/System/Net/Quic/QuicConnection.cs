@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
@@ -18,7 +19,7 @@ namespace System.Net.Quic;
 
 /// <summary>
 /// Represents a QUIC connection, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-connections">RFC 9000: Connections</see> for more details.
-/// <see cref="QuicConnection" /> itself doesn't send or receive data but rather allows opening and/or accepting of multiple <see cref="QuicStream" />.
+/// <see cref="QuicConnection" /> itself doesn't send or receive data but rather allows opening and/or accepting multiple <see cref="QuicStream" />.
 /// </summary>
 /// <remarks>
 /// <see cref="QuicConnection" /> can either be accepted from <see cref="QuicListener.AcceptConnectionAsync(CancellationToken)" /> (inbound connection),
@@ -30,6 +31,7 @@ namespace System.Net.Quic;
 /// After all the streams have been finished, connection should be properly closed with an application code: <see cref="CloseAsync(long, CancellationToken)" />.
 /// If not, the connection will not send the peer information about being closed and the peer's connection will have to wait on its idle timeout.
 /// </remarks>
+[RequiresPreviewFeatures]
 public sealed partial class QuicConnection : IAsyncDisposable
 {
     /// <summary>
@@ -114,15 +116,53 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private State _state = new State();
 
+    /// <summary>
+    /// Set when CONNECTED is received or inside the constructor for an inbound connection from NEW_CONNECTION data.
+    /// </summary>
     private IPEndPoint _remoteEndPoint = null!;
+    /// <summary>
+    /// Set when CONNECTED is received or inside the constructor for an inbound connection from NEW_CONNECTION data.
+    /// </summary>
     private IPEndPoint _localEndPoint = null!;
+    /// <summary>
+    /// Keeps track whether <see cref="RemoteCertificate"/> has been accessed so that we know whether to dispose the certificate or not.
+    /// </summary>
+    private bool _remoteCertificateExposed;
+    /// <summary>
+    /// Set when PEER_CERTIFICATE_RECEIVED is received (before CONNECTED).
+    /// For an outbound/client connection will always have the peer's (server) certificate; for an inbound/server one, only if the connection requested and the peer (client) provided one.
+    /// </summary>
     private X509Certificate2? _remoteCertificate;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
 
+    /// <summary>
+    /// The remote endpoint used for this connection.
+    /// </summary>
     public IPEndPoint RemoteEndPoint => _remoteEndPoint;
+    /// <summary>
+    /// The local endpoint used for this connection.
+    /// </summary>
     public IPEndPoint LocalEndPoint => _localEndPoint;
 
-    public X509Certificate? RemoteCertificate => _remoteCertificate;
+    /// <summary>
+    /// The certificate provided by the peer.
+    /// For an outbound/client connection will always have the peer's (server) certificate; for an inbound/server one, only if the connection requested and the peer (client) provided one.
+    /// </summary>
+    public X509Certificate? RemoteCertificate
+    {
+        get
+        {
+            _remoteCertificateExposed = true;
+            return _remoteCertificate;
+        }
+    }
+
+    /// <summary>
+    /// Final, negotiated application protocol.
+    /// </summary>
     public SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedApplicationProtocol;
 
     public override string ToString() => _handle.ToString();
@@ -283,8 +323,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
 
     /// <summary>
-    /// Create an outbound uni/bidirectional stream.
+    /// Create an outbound uni/bidirectional <see cref="QuicStream" />.
+    /// In case the connection doesn't have any available stream capacity, i.e.: the peer limits the concurrent stream count,
+    /// the operation will pend until the stream can be opened (other stream gets closed or peer increases the limit).
     /// </summary>
+    /// <param name="type">The type of the stream, i.e. unidirectional or bidirectional.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+    /// <returns>An asynchronous task that completes with the opened <see cref="QuicStream" />.</returns>
     public async ValueTask<QuicStream> OpenOutboundStreamAsync(QuicStreamType type, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
@@ -303,8 +348,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
 
     /// <summary>
-    /// Accept an incoming stream.
+    /// Accepts an inbound <see cref="QuicStream" />.
     /// </summary>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+    /// <returns>An asynchronous task that completes with the accepted <see cref="QuicStream" />.</returns>
     public async ValueTask<QuicStream> AcceptInboundStreamAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
@@ -325,6 +372,20 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Closes the connection with the application provided code, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#immediate-close">RFC 9000: Connection Termination</see> for more details.
+    /// </summary>
+    /// <remarks>
+    /// Connection close is not graceful in regards to its streams, i.e.: calling <see cref="CloseAsync(long, CancellationToken)"/> will immediately abort all streams associated with this connection.
+    /// Please make sure, that all streams have been closed and all their data consumed before calling this method;
+    /// otherwise, all the data that were received but not consumed yet, will be lost.
+    ///
+    /// If <see cref="CloseAsync(long, CancellationToken)"/> is not called before <see cref="DisposeAsync">disposing</see> the connection, the connection will be closed silently.
+    /// Meaning that the peer will not be informed about it and will eventually get its connection closed by idle timeout.
+    /// </remarks>
+    /// <param name="errorCode">Application provided code with the reason for closure.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
+    /// <returns>An asynchronous task that completes when the connection is closed.</returns>
     public unsafe ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
@@ -469,6 +530,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// If not closed explicitly by <see cref="CloseAsync(long, CancellationToken)" />, closes the connection silently (leading to idle timeout on the peer side).
+    /// And releases all resources associated with the connection.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -492,8 +558,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _handle.Dispose();
 
         _configuration?.Dispose();
-        // TODO: Should we dispose the certificate?
-        //_remoteCertificate?.Dispose();
+
+        // Dispose remote certificate only if it hasn't been accessed via getter, in which case the accessing code becomes the owner of the certificate lifetime.
+        if (!_remoteCertificateExposed)
+        {
+            _remoteCertificate?.Dispose();
+        }
 
         // Flush the queue and dispose all remaining streams.
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));

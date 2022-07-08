@@ -13,6 +13,7 @@ namespace System.Net.Quic
         public System.Net.IPEndPoint? LocalEndPoint { get { throw null; } set { } }
         public required System.Net.EndPoint RemoteEndPoint { get { throw null; } set { } }
     }
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
     public sealed partial class QuicConnection : System.IAsyncDisposable
     {
         internal QuicConnection() { }
