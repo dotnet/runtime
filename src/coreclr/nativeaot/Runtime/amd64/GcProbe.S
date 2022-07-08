@@ -6,7 +6,7 @@
 #include <unixasmmacros.inc>
 
 //
-// See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX and accepts the register
+// See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX/RDX and accepts the register
 // bitmask in RCX
 //
 // On entry:
@@ -73,7 +73,7 @@
 //  R11: thread pointer
 //
 // Register state on exit:
-//  RCX: trashed
+//  R9: trashed
 //
 .macro ClearHijackState
         xor         r9, r9

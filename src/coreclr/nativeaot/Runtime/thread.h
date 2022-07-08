@@ -146,6 +146,7 @@ private:
     void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void * pvHijackTargets[]);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void* pvHijackTargets[]);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[]);
+    bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     bool Redirect();
