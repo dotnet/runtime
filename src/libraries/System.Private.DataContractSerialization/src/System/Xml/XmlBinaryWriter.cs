@@ -6,15 +6,12 @@
 // This can help identify element/attribute name/ns that could be written as XmlDictionaryStrings to get better compactness and performance.
 // #define LOG_NON_DICTIONARY_WRITES
 
+using System.Buffers.Binary;
 using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Runtime.Serialization;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Buffers.Binary;
+using System.Runtime.Serialization;
+using System.Text;
 
 namespace System.Xml
 {
@@ -120,10 +117,10 @@ namespace System.Xml
         private void WriteRaw<T>(T value)
             where T : unmanaged
         {
-            // GetBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
+            // GetBuffer performs bounds checks and ensures returned buffer has size of at least (Unsafe.SizeOf<T>())
             byte[] buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset);
 
-            DiagnosticUtility.DebugAssert(offset >= 0 && offset + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
+            DiagnosticUtility.DebugAssert(offset >= 0 && offset + Unsafe.SizeOf<T>() <= buffer.Length, "WriteRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
             Unsafe.WriteUnaligned<T>(ref bytePtr, value);
             Advance(Unsafe.SizeOf<T>());
@@ -589,7 +586,7 @@ namespace System.Xml
             }
         }
 
-        public override unsafe void WriteText(char[] chars, int offset, int count)
+        public override void WriteText(char[] chars, int offset, int count)
            => WriteText(chars.AsSpan(offset, count));
 
         private unsafe void WriteText(ReadOnlySpan<char> chars)
@@ -704,14 +701,12 @@ namespace System.Xml
             if (ch > char.MaxValue)
             {
                 SurrogateChar sch = new SurrogateChar(ch);
-                chars[0] = sch.HighChar;
-                chars[1] = sch.LowChar;
-                WriteText(stackalloc char[] { sch.HighChar, sch.Lowchar });
+                WriteText(stackalloc char[] { sch.HighChar, sch.LowChar });
             }
             else
             {
                 char castChar = (char)ch;
-                WriteText(new ReadOnlySpan<char>(in castChar));
+                WriteText(MemoryMarshal.CreateReadOnlySpan(ref castChar, 1));
             }
         }
 
@@ -1153,7 +1148,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<bool, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
             }
         }
@@ -1163,7 +1158,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<bool, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
             }
         }
@@ -1173,7 +1168,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<short, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
             }
         }
@@ -1183,7 +1178,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<short, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
             }
         }
@@ -1193,7 +1188,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<int, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
             }
         }
@@ -1203,7 +1198,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<int, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
             }
         }
@@ -1213,7 +1208,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<long, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
             }
         }
@@ -1223,7 +1218,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<long, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
             }
         }
@@ -1233,7 +1228,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<float, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
             }
         }
@@ -1243,7 +1238,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<float, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
             }
         }
@@ -1253,7 +1248,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<double, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
             }
         }
@@ -1263,7 +1258,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<double, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
             }
         }
@@ -1273,7 +1268,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<decimal, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
             }
         }
@@ -1283,7 +1278,7 @@ namespace System.Xml
             CheckArray(array, offset, count);
             if (count > 0)
             {
-                var bytes = MemoryMarshal.Cast<decimal, byte>(array.AsSpan(offset, count));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
                 WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
             }
         }
@@ -1291,22 +1286,22 @@ namespace System.Xml
         // DateTime
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, DateTime[] array, int offset, int count)
         {
-            var span = array.AsSpan(offset, count);
+            CheckArray(array, offset, count);
             if (count > 0)
             {
                 WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteDateTimeArray(span);
+                _writer.WriteDateTimeArray(array.AsSpan(offset, count));
                 // WriteEndArray();
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, DateTime[] array, int offset, int count)
         {
-            var span = array.AsSpan(offset, count);
+            CheckArray(array, offset, count);
             if (count > 0)
             {
                 WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteDateTimeArray(span);
+                _writer.WriteDateTimeArray(array.AsSpan(offset, count));
                 // WriteEndArray();
             }
         }
@@ -1314,22 +1309,22 @@ namespace System.Xml
         // Guid
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, Guid[] array, int offset, int count)
         {
-            var span = array.AsSpan(offset, count);
+            CheckArray(array, offset, count);
             if (count > 0)
             {
                 WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteGuidArray(span);
+                _writer.WriteGuidArray(array.AsSpan(offset, count));
                 // WriteEndArray();
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, Guid[] array, int offset, int count)
         {
-            var span = array.AsSpan(offset, count);
+            CheckArray(array, offset, count);
             if (count > 0)
             {
                 WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteGuidArray(span);
+                _writer.WriteGuidArray(array.AsSpan(offset, count));
                 // WriteEndArray();
             }
         }
@@ -1337,22 +1332,22 @@ namespace System.Xml
         // TimeSpan
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, TimeSpan[] array, int offset, int count)
         {
-            var span = array.AsSpan(offset, count);
+            CheckArray(array, offset, count);
             if (count > 0)
             {
                 WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteTimeSpanArray(span);
+                _writer.WriteTimeSpanArray(array.AsSpan(offset, count));
                 // WriteEndArray();
             }
         }
 
         public override void WriteArray(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri, TimeSpan[] array, int offset, int count)
         {
-            var span = array.AsSpan(offset, count);
+            CheckArray(array, offset, count);
             if (count > 0)
             {
                 WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteTimeSpanArray(span);
+                _writer.WriteTimeSpanArray(array.AsSpan(offset, count));
                 // WriteEndArray();
             }
         }
