@@ -3,10 +3,10 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using System.Threading.Tasks;
 
 #nullable enable
 
@@ -34,13 +34,15 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: false,
+                            DotnetWasmFromRuntimePack: true,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: false,
                             TargetFramework: "net7.0"
                         ));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -50,16 +52,19 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
+            bool expectRelinking = config == "Release";
             BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: false,
+                            DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
         }
 
         [Theory]
@@ -80,10 +85,12 @@ namespace Wasm.Build.Tests
                         DotnetWasmFromRuntimePack: true,
                         CreateProject: false,
                         HasV8Script: false,
-                        MainJS: "main.cjs",
+                        MainJS: "main.mjs",
                         Publish: false,
                         TargetFramework: "net7.0"
                         ));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config}", workingDir: _projectDir);
             Assert.Equal(0, exitCode);
@@ -103,10 +110,12 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -135,10 +144,12 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: true,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: false,
                             TargetFramework: "net7.0"
                             ));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
             Assert.Equal(0, exitCode);
@@ -148,7 +159,6 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/70675", TestPlatforms.Windows)]
         [InlineData("Debug", false)]
         [InlineData("Debug", true)]
         [InlineData("Release", false)]
@@ -179,10 +189,12 @@ namespace Wasm.Build.Tests
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
                             HasV8Script: false,
-                            MainJS: "main.cjs",
+                            MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: "net7.0",
                             UseCache: false));
+
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
 
             // FIXME: pass envvars via the environment, once that is supported
             string runArgs = $"run --no-build -c {config}";
@@ -201,7 +213,6 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
-#if false // FIXME: playwright on CI
         [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         public async Task BlazorRunTest()
         {
@@ -256,6 +267,5 @@ namespace Wasm.Build.Tests
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
         }
-#endif
     }
 }

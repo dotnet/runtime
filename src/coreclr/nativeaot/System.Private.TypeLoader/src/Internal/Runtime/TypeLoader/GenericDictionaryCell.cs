@@ -239,6 +239,43 @@ namespace Internal.Runtime.TypeLoader
         }
 #endif
 
+        /// <summary>
+        /// Used for non-generic static constrained Methods
+        /// </summary>
+        private class NonGenericStaticConstrainedMethodCell : GenericDictionaryCell
+        {
+            internal TypeDesc ConstraintType;
+            internal TypeDesc ConstrainedMethodType;
+            internal int ConstrainedMethodSlot;
+
+            internal override void Prepare(TypeBuilder builder)
+            {
+                if (ConstraintType.IsCanonicalSubtype(CanonicalFormKind.Any) || ConstrainedMethodType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    Environment.FailFast("Unable to compute call information for a canonical type/method.");
+
+                builder.RegisterForPreparation(ConstraintType);
+                builder.RegisterForPreparation(ConstrainedMethodType);
+            }
+
+            internal override IntPtr Create(TypeBuilder builder)
+            {
+                IntPtr result = RuntimeAugments.ResolveStaticDispatchOnType(
+                    builder.GetRuntimeTypeHandle(ConstraintType),
+                    builder.GetRuntimeTypeHandle(ConstrainedMethodType),
+                    ConstrainedMethodSlot,
+                    out RuntimeTypeHandle genericContext);
+
+                Debug.Assert(result != IntPtr.Zero);
+
+                if (!genericContext.IsNull())
+                {
+                    result = FunctionPointerOps.GetGenericMethodFunctionPointer(result, genericContext.ToIntPtr());
+                }
+
+                return result;
+            }
+        }
+
         private class StaticDataCell : GenericDictionaryCell
         {
             internal StaticDataKind DataKind;
@@ -273,6 +310,24 @@ namespace Internal.Runtime.TypeLoader
             {
                 auxResult = IntPtr.Zero;
                 return *(IntPtr*)Create(builder);
+            }
+        }
+
+        private class ThreadStaticIndexCell : GenericDictionaryCell
+        {
+            internal TypeDesc Type;
+
+            internal override void Prepare(TypeBuilder builder)
+            {
+                if (Type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    Environment.FailFast("Unable to compute static field locations for a canonical type.");
+
+                builder.RegisterForPreparation(Type);
+            }
+
+            internal override unsafe IntPtr Create(TypeBuilder builder)
+            {
+                return TypeLoaderEnvironment.Instance.TryGetThreadStaticFieldData(builder.GetRuntimeTypeHandle(Type));
             }
         }
 
@@ -1749,6 +1804,21 @@ namespace Internal.Runtime.TypeLoader
                     }
                     break;
 #endif
+                case FixupSignatureKind.NonGenericStaticConstrainedMethod:
+                    {
+                        var constraintType = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        var constrainedMethodType = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        var constrainedMethodSlot = parser.GetUnsigned();
+                        TypeLoaderLogger.WriteLine("NonGenericStaticConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethodType.ToString() + ", slot #" + constrainedMethodSlot.LowLevelToString());
+
+                        cell = new NonGenericStaticConstrainedMethodCell()
+                        {
+                            ConstraintType = constraintType,
+                            ConstrainedMethodType = constrainedMethodType,
+                            ConstrainedMethodSlot = (int)constrainedMethodSlot
+                        };
+                    }
+                    break;
 
                 case FixupSignatureKind.IsInst:
                 case FixupSignatureKind.CastClass:
@@ -1791,8 +1861,17 @@ namespace Internal.Runtime.TypeLoader
                     break;
 #endif
 
-                case FixupSignatureKind.NotYetSupported:
                 case FixupSignatureKind.ThreadStaticIndex:
+                    {
+                        var type = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        TypeLoaderLogger.WriteLine("ThreadStaticIndex on: " + type.ToString());
+
+                        cell = new ThreadStaticIndexCell { Type = type };
+                    }
+                    break;
+
+                case FixupSignatureKind.NotYetSupported:
+                case FixupSignatureKind.GenericStaticConstrainedMethod:
                     TypeLoaderLogger.WriteLine("Valid dictionary entry, but not yet supported by the TypeLoader!");
                     throw new TypeBuilder.MissingTemplateException();
 

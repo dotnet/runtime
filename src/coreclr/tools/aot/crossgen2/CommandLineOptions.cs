@@ -22,6 +22,7 @@ namespace ILCompiler
         public IReadOnlyList<string> UnrootedInputFilePaths;
         public IReadOnlyList<string> ReferenceFilePaths;
         public IReadOnlyList<string> MibcFilePaths;
+        public IReadOnlyList<string> CrossModuleInlining;
         public string InstructionSet;
         public string OutputFilePath;
 
@@ -30,6 +31,8 @@ namespace ILCompiler
         public bool OptimizeDisabled;
         public bool OptimizeSpace;
         public bool OptimizeTime;
+        public bool AsyncMethodOptimization;
+        public string NonLocalGenericsModule;
         public bool InputBubble;
         public bool CompileBubbleGenerics;
         public bool Verbose;
@@ -85,10 +88,14 @@ namespace ILCompiler
             ReferenceFilePaths = Array.Empty<string>();
             MibcFilePaths = Array.Empty<string>();
             CodegenOptions = Array.Empty<string>();
+            NonLocalGenericsModule = "";
 
             PerfMapFormatVersion = DefaultPerfMapFormatVersion;
             Parallelism = Environment.ProcessorCount;
             SingleMethodGenericArg = null;
+
+            // These behaviors default to enabled
+            AsyncMethodOptimization = true;
 
             bool forceHelp = false;
             if (args.Length == 0)
@@ -163,6 +170,10 @@ namespace ILCompiler
                 syntax.DefineOption("perfmap", ref PerfMap, SR.PerfMapFileOption);
                 syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
                 syntax.DefineOption("perfmap-format-version", ref PerfMapFormatVersion, SR.PerfMapFormatVersionOption);
+
+                syntax.DefineOptionList("opt-cross-module", ref this.CrossModuleInlining, SR.CrossModuleInlining);
+                syntax.DefineOption("opt-async-methods", ref AsyncMethodOptimization, SR.AsyncModuleOptimization);
+                syntax.DefineOption("non-local-generics-module", ref NonLocalGenericsModule, SR.NonLocalGenericsModule);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);

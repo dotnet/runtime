@@ -51,7 +51,7 @@ namespace System
         {
             if (condition)
             {
-                throw new ObjectDisposedException(instance?.GetType().FullName);
+                ThrowHelper.ThrowObjectDisposedException(instance);
             }
         }
 
@@ -60,7 +60,7 @@ namespace System
         {
             if (condition)
             {
-                throw new ObjectDisposedException(type?.FullName);
+                ThrowHelper.ThrowObjectDisposedException(type);
             }
         }
 

@@ -21,6 +21,9 @@
     <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
     <RootNamespace>Microsoft.Diagnostics.Tools.Pgo</RootNamespace>
     <RollForward>Major</RollForward>
+    <!-- TODO Remove the language version limitation when the reference assemblies
+        are updated with the new scoped keyword. -->
+    <LangVersion>10</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

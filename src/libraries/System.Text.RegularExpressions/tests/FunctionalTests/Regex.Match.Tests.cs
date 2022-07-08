@@ -1728,6 +1728,9 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
+#if NET7_0_OR_GREATER
+            Assert.Equal(expectedSuccessStartAt, r.IsMatch(input.AsSpan(), startat));
+#endif
 
             // Normal matching, but any match before startat is ignored.
             Match match = r.Match(input, startat);
@@ -1995,6 +1998,12 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/71808")]
+                return;
+            }
+
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
@@ -2048,6 +2057,12 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
         public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition)
         {
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/71808")]
+                return;
+            }
+
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 

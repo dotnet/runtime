@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using static System.IO.Compression.ZipArchiveEntryConstants;
+
 namespace System.IO.Compression
 {
     // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
@@ -115,7 +117,11 @@ namespace System.IO.Compression
 
             _compressedSize = 0; // we don't know these yet
             _uncompressedSize = 0;
-            _externalFileAttr = 0;
+            UnixFileMode defaultEntryPermissions = entryName.EndsWith(Path.DirectorySeparatorChar) || entryName.EndsWith(Path.AltDirectorySeparatorChar)
+                                        ? DefaultDirectoryEntryPermissions
+                                        : DefaultFileEntryPermissions;
+            _externalFileAttr = (uint)(defaultEntryPermissions) << 16;
+
             _offsetOfLocalHeader = 0;
             _storedOffsetOfCompressedData = null;
             _crc32 = 0;
@@ -1231,7 +1237,7 @@ namespace System.IO.Compression
             }
 
             public override void WriteByte(byte value) =>
-                Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                Write(new ReadOnlySpan<byte>(in value));
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {

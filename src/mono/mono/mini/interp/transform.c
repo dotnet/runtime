@@ -266,7 +266,7 @@ interp_prev_ins (InterpInst *ins)
 
 #define CHECK_STACK(td, n) \
 	do { \
-		int stack_size = GPTRDIFF_TO_INT ((td)->sp - (td)->stack); \
+		guint stack_size = GPTRDIFF_TO_UINT ((td)->sp - (td)->stack); \
 		if (stack_size < (n)) \
 			g_warning ("%s.%s: not enough values (%d < %d) on stack at %04x", \
 				m_class_get_name ((td)->method->klass), (td)->method->name, \
@@ -418,8 +418,8 @@ create_interp_stack_local (TransformData *td, int type, MonoClass *k, int type_s
 static void
 ensure_stack (TransformData *td, int additional)
 {
-	int current_height = GPTRDIFF_TO_INT (td->sp - td->stack);
-	int new_height = current_height + additional;
+	guint current_height = GPTRDIFF_TO_UINT (td->sp - td->stack);
+	guint new_height = current_height + additional;
 	if (new_height > td->stack_capacity)
 		realloc_stack (td);
 	if (new_height > td->max_stack_height)
@@ -526,7 +526,7 @@ mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *repl
 		else if (td->offset_to_bb [il_offset])
 			break;
 	}
-	for (int il_offset = bb->il_offset + 1; il_offset < td->header->code_size; il_offset++) {
+	for (guint32 il_offset = bb->il_offset + 1; il_offset < td->header->code_size; il_offset++) {
 		if (td->offset_to_bb [il_offset] == bb)
 			td->offset_to_bb [il_offset] = replace_bb;
 		else if (td->offset_to_bb [il_offset])
@@ -1862,9 +1862,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			!strcmp (klass_name, "SpanHelpers") &&
 			!strcmp (tm, "ClearWithReferences")) {
 		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
-	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
-		g_assert (!strcmp (tm, "get_Value"));
-		*op = MINT_LDIND_I;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
 		if (!strcmp (tm, "Block")) {
 			InterpInst *ldloca2 = td->last_ins;
@@ -2405,7 +2402,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		else if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
 	} else if (in_corlib &&
-			!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
+			(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
+			!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29)) &&
 			!strcmp (tm, "get_IsSupported")) {
 		*op = MINT_LDC_I4_0;
 	} else if (in_corlib &&
@@ -3423,14 +3421,13 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 	guint8 *end = (guint8*)td->il_code + td->code_size;
 	guint8 *ip = start;
 	unsigned char *target;
-	int i;
 	ptrdiff_t cli_addr;
 	const MonoOpcode *opcode;
 
 	td->offset_to_bb = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, (unsigned int)(sizeof (InterpBasicBlock*) * (end - start + 1)));
 	get_bb (td, start, make_list);
 
-	for (i = 0; i < header->num_clauses; i++) {
+	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = header->clauses + i;
 		get_bb (td, start + c->try_offset, make_list);
 		get_bb (td, start + c->handler_offset, make_list);
@@ -3440,7 +3437,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 
 	while (ip < end) {
 		cli_addr = ip - start;
-		i = mono_opcode_value ((const guint8 **)&ip, end);
+		int i = mono_opcode_value ((const guint8 **)&ip, end);
 		opcode = &mono_opcodes [i];
 		switch (opcode->argument) {
 		case MonoInlineNone:
@@ -3512,7 +3509,6 @@ static void
 interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformData *td, GArray *line_numbers)
 {
 	MonoDebugMethodJitInfo *dinfo;
-	int i;
 
 	if (!mono_debug_enabled ())
 		return;
@@ -3533,16 +3529,16 @@ interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformDa
 	dinfo->num_line_numbers = line_numbers->len;
 	dinfo->line_numbers = g_new0 (MonoDebugLineNumberEntry, dinfo->num_line_numbers);
 
-	for (i = 0; i < dinfo->num_params; i++) {
+	for (guint32 i = 0; i < dinfo->num_params; i++) {
 		MonoDebugVarInfo *var = &dinfo->params [i];
 		var->type = rtm->param_types [i];
 	}
-	for (i = 0; i < dinfo->num_locals; i++) {
+	for (guint32 i = 0; i < dinfo->num_locals; i++) {
 		MonoDebugVarInfo *var = &dinfo->locals [i];
 		var->type = mono_metadata_type_dup (NULL, header->locals [i]);
 	}
 
-	for (i = 0; i < dinfo->num_line_numbers; i++)
+	for (guint32 i = 0; i < dinfo->num_line_numbers; i++)
 		dinfo->line_numbers [i] = g_array_index (line_numbers, MonoDebugLineNumberEntry, i);
 	mono_debug_add_method (rtm->method, dinfo, NULL);
 
@@ -3639,7 +3635,7 @@ static void
 save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 {
 	GByteArray *array;
-	int i, seq_info_size;
+	int seq_info_size;
 	MonoSeqPointInfo *info;
 	GSList **next = NULL;
 	GList *bblist;
@@ -3652,7 +3648,7 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 	 * following it, this is needed to implement 'step over' in the debugger agent.
 	 * Similar to the code in mono_save_seq_point_info ().
 	 */
-	for (i = 0; i < td->seq_points->len; ++i) {
+	for (guint i = 0; i < td->seq_points->len; ++i) {
 		SeqPoint *sp = (SeqPoint*)g_ptr_array_index (td->seq_points, i);
 
 		/* Store the seq point index here temporarily */
@@ -3686,7 +3682,7 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 	array = g_byte_array_new ();
 	SeqPoint zero_seq_point = {0};
 	SeqPoint* last_seq_point = &zero_seq_point;
-	for (i = 0; i < td->seq_points->len; ++i) {
+	for (guint i = 0; i < td->seq_points->len; ++i) {
 		SeqPoint *sp = (SeqPoint*)g_ptr_array_index (td->seq_points, i);
 
 		sp->next_offset = 0;
@@ -3697,7 +3693,7 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 	if (td->verbose_level) {
 		g_print ("\nSEQ POINT MAP FOR %s: \n", td->method->name);
 
-		for (i = 0; i < td->seq_points->len; ++i) {
+		for (guint i = 0; i < td->seq_points->len; ++i) {
 			SeqPoint *sp = (SeqPoint*)g_ptr_array_index (td->seq_points, i);
 			GSList *l;
 
@@ -3724,9 +3720,7 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 static void
 interp_emit_memory_barrier (TransformData *td, int kind)
 {
-#if defined(TARGET_WASM)
-	// mono_memory_barrier is dummy on wasm
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	if (kind == MONO_MEMORY_BARRIER_SEQ)
 		interp_add_ins (td, MINT_MONO_MEMORY_BARRIER);
 #else
@@ -3751,7 +3745,7 @@ interp_emit_memory_barrier (TransformData *td, int kind)
 static void
 interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *sig, MonoMethodHeader *header, MonoError *error)
 {
-	int i, offset, size, align;
+	int offset, size, align;
 	int num_args = sig->hasthis + sig->param_count;
 	int num_il_locals = header->num_locals;
 	int num_locals = num_args + num_il_locals;
@@ -3769,7 +3763,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	 * is stored in a stackval sized slot and valuetypes have special semantics since we
 	 * receive a pointer to the valuetype data rather than the data itself.
 	 */
-	for (i = 0; i < num_args; i++) {
+	for (int i = 0; i < num_args; i++) {
 		MonoType *type;
 		if (sig->hasthis && i == 0)
 			type = m_class_is_valuetype (td->method->klass) ? m_class_get_this_arg (td->method->klass) : m_class_get_byval_arg (td->method->klass);
@@ -3793,7 +3787,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	}
 
 	td->il_locals_offset = offset;
-	for (i = 0; i < num_il_locals; ++i) {
+	for (int i = 0; i < num_il_locals; ++i) {
 		int index = num_args + i;
 		size = mono_type_size (header->locals [i], &align);
 		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
@@ -3824,7 +3818,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 
 	imethod->clause_data_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
 	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
-	for (i = 0; i < header->num_clauses; i++) {
+	for (guint i = 0; i < header->num_clauses; i++) {
 		int var = create_interp_local (td, mono_get_object_type ());
 		td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 		alloc_global_var_offset (td, var);
@@ -4075,12 +4069,11 @@ static void
 initialize_clause_bblocks (TransformData *td)
 {
 	MonoMethodHeader *header = td->header;
-	int i;
 
-	for (i = 0; i < header->code_size; i++)
+	for (guint32 i = 0; i < header->code_size; i++)
 		td->clause_indexes [i] = -1;
 
-	for (i = 0; i < header->num_clauses; i++) {
+	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = header->clauses + i;
 		InterpBasicBlock *bb;
 
@@ -4192,7 +4185,7 @@ is_ip_protected (MonoMethodHeader *header, int offset)
 {
 	for (unsigned int i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *clause = &header->clauses [i];
-		if (clause->try_offset <= offset && offset < (clause->try_offset + clause->try_len))
+		if (clause->try_offset <= GINT_TO_UINT32(offset) && GINT_TO_UINT32(offset) < (clause->try_offset + clause->try_len))
 			return TRUE;
 	}
 	return FALSE;
@@ -4273,7 +4266,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			sym_seq_points = TRUE;
 
 			for (int i = 0; i < n_il_offsets; ++i) {
-				if (sps [i].il_offset < header->code_size)
+				if (GINT_TO_UINT32(sps [i].il_offset) < header->code_size)
 					mono_bitset_set_fast (seq_point_locs, sps [i].il_offset);
 			}
 			g_free (sps);
@@ -5554,18 +5547,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 				td->last_ins->info.call_args = call_args;
 			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
-					!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
-					!strcmp (m->name, ".ctor")) {
-				/* public ByReference(ref T value) */
-				MONO_PROFILER_RAISE (inline_method, (td->rtm->method, m));
-				g_assert (csignature->hasthis && csignature->param_count == 1);
-				td->sp--;
-				/* We already have the vt on top of the stack. Just do a dummy mov that should be optimized out */
-				interp_add_ins (td, MINT_MOV_P);
-				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-				push_type_vt (td, klass, mono_class_value_size (klass, NULL));
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 					(!strcmp (m_class_get_name (m->klass), "Span`1") ||
 					!strcmp (m_class_get_name (m->klass), "ReadOnlySpan`1")) &&
 					csignature->param_count == 2 &&
@@ -5836,7 +5817,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			mono_class_init_internal (klass);
 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
-			mt = mint_type (m_class_get_byval_arg (field_klass));
+			mt = mint_type (ftype);
 			int field_size = mono_class_value_size (field_klass, NULL);
 			int obj_size = mono_class_value_size (klass, NULL);
 			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
@@ -6732,8 +6713,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				MonoExceptionClause *clause = &header->clauses [i];
 				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 					continue;
-				if (MONO_OFFSET_IN_CLAUSE (clause, (td->ip - header->code)) &&
-						(!MONO_OFFSET_IN_CLAUSE (clause, (target_offset + in_offset)))) {
+				if (MONO_OFFSET_IN_CLAUSE (clause, GPTRDIFF_TO_UINT32(td->ip - header->code)) &&
+						(!MONO_OFFSET_IN_CLAUSE (clause, GINT_TO_UINT32(target_offset + in_offset)))) {
 					handle_branch (td, MINT_CALL_HANDLER, clause->handler_offset - in_offset);
 					td->last_ins->data [2] = i;
 
@@ -7564,7 +7545,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 	// We know what IL offset this instruction was created for. We can now map the IL offset
 	// to the IR offset. We use this array to resolve the relocations, which reference the IL.
 	if (ins->il_offset != -1 && !td->in_offsets [ins->il_offset]) {
-		g_assert (ins->il_offset >= 0 && ins->il_offset < td->header->code_size);
+		g_assert (ins->il_offset >= 0 && GINT_TO_UINT32(ins->il_offset) < td->header->code_size);
 		td->in_offsets [ins->il_offset] = GPTRDIFF_TO_INT (start_ip - td->new_code + 1);
 
 		MonoDebugLineNumberEntry lne;
@@ -9437,7 +9418,7 @@ get_native_offset (TransformData *td, int il_offset)
 {
 	// We can't access offset_to_bb for header->code_size IL offset. Also, offset_to_bb
 	// is not set for dead bblocks at method end.
-	if (il_offset < td->header->code_size && td->offset_to_bb [il_offset]) {
+	if (GINT_TO_UINT32(il_offset) < td->header->code_size && td->offset_to_bb [il_offset]) {
 		InterpBasicBlock *bb = td->offset_to_bb [il_offset];
 		g_assert (!bb->dead);
 		return bb->native_offset;
@@ -9449,7 +9430,6 @@ get_native_offset (TransformData *td, int il_offset)
 static void
 generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoGenericContext *generic_context, MonoError *error)
 {
-	int i;
 	TransformData transform_data;
 	TransformData *td;
 	gboolean retry_compilation = FALSE;
@@ -9563,19 +9543,19 @@ retry:
 	}
 
 	/* Check if we use excessive stack space */
-	if (td->max_stack_height > header->max_stack * 3 && header->max_stack > 16)
+	if (td->max_stack_height > header->max_stack * 3u && header->max_stack > 16)
 		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);
 
-	int code_len_u8, code_len_u16;
-	code_len_u8 = GPTRDIFF_TO_INT ((guint8 *) td->new_code_end - (guint8 *) td->new_code);
-	code_len_u16 = GPTRDIFF_TO_INT (td->new_code_end - td->new_code);
+	guint32 code_len_u8, code_len_u16;
+	code_len_u8 = GPTRDIFF_TO_UINT32 ((guint8 *) td->new_code_end - (guint8 *) td->new_code);
+	code_len_u16 = GPTRDIFF_TO_UINT32 (td->new_code_end - td->new_code);
 
 	rtm->clauses = (MonoExceptionClause*)mono_mem_manager_alloc0 (td->mem_manager, header->num_clauses * sizeof (MonoExceptionClause));
 	memcpy (rtm->clauses, header->clauses, header->num_clauses * sizeof(MonoExceptionClause));
 	rtm->code = (gushort*)td->new_code;
 	rtm->init_locals = header->init_locals;
 	rtm->num_clauses = header->num_clauses;
-	for (i = 0; i < header->num_clauses; i++) {
+	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = rtm->clauses + i;
 		int end_off = c->try_offset + c->try_len;
 		c->try_offset = get_native_offset (td, c->try_offset);
@@ -9607,7 +9587,7 @@ retry:
 	jinfo->is_interp = 1;
 	rtm->jinfo = jinfo;
 	mono_jit_info_init (jinfo, method, (guint8*)rtm->code, code_len_u8, (MonoJitInfoFlags)0, header->num_clauses, 0);
-	for (i = 0; i < jinfo->num_clauses; ++i) {
+	for (guint32 i = 0; i < jinfo->num_clauses; ++i) {
 		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 		MonoExceptionClause *c = rtm->clauses + i;
 

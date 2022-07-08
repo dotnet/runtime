@@ -53,7 +53,7 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 //                                      SSA
 // =================================================================================
 
-void Compiler::fgSsaBuild()
+PhaseStatus Compiler::fgSsaBuild()
 {
     // If this is not the first invocation, reset data structures for SSA.
     if (fgSsaPassesCompleted > 0)
@@ -68,13 +68,7 @@ void Compiler::fgSsaBuild()
     JitTestCheckSSA();
 #endif // DEBUG
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        JITDUMP("\nAfter fgSsaBuild:\n");
-        fgDispBasicBlocks(/*dumpTrees*/ true);
-    }
-#endif // DEBUG
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 void Compiler::fgResetForSsa()

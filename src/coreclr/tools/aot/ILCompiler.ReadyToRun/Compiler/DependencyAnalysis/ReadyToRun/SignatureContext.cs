@@ -20,12 +20,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// needs to encode an entity external to the context module, it muse use
         /// an ELEMENT_TYPE_MODULE_ZAPSIG module override.
         /// </summary>
-        public readonly EcmaModule GlobalContext;
+        public readonly IEcmaModule GlobalContext;
 
         /// <summary>
         /// Local context changes during recursive descent while encoding the signature.
         /// </summary>
-        public readonly EcmaModule LocalContext;
+        public readonly IEcmaModule LocalContext;
 
         /// <summary>
         /// Resolver used to back-translate types and fields to tokens.
@@ -34,26 +34,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public SignatureContext OuterContext => new SignatureContext(GlobalContext, Resolver);
 
-        public SignatureContext(EcmaModule context, ModuleTokenResolver resolver)
+        public SignatureContext(IEcmaModule context, ModuleTokenResolver resolver)
         {
             GlobalContext = context;
             LocalContext = context;
             Resolver = resolver;
         }
 
-        private SignatureContext(EcmaModule globalContext, EcmaModule localContext, ModuleTokenResolver resolver)
+        private SignatureContext(IEcmaModule globalContext, IEcmaModule localContext, ModuleTokenResolver resolver)
         {
             GlobalContext = globalContext;
             LocalContext = localContext;
             Resolver = resolver;
         }
 
-        public SignatureContext InnerContext(EcmaModule innerContext)
+        public SignatureContext InnerContext(IEcmaModule innerContext)
         {
             return new SignatureContext(GlobalContext, innerContext, Resolver);
         }
 
-        public EcmaModule GetTargetModule(TypeDesc type)
+        public IEcmaModule GetTargetModule(TypeDesc type)
         {
             if (type.IsPrimitive || type.IsString || type.IsObject || type.IsWellKnownType(WellKnownType.TypedReference))
             {
@@ -66,19 +66,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return LocalContext;
         }
 
-        public EcmaModule GetTargetModule(FieldDesc field)
+        public IEcmaModule GetTargetModule(FieldDesc field)
         {
             return GetModuleTokenForField(field).Module;
         }
 
-        public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
+        public IEcmaModule GetTargetModule(MethodDesc method)
         {
-            return Resolver.GetModuleTokenForType(type, throwIfNotFound);
+            return GetModuleTokenForMethod(method).Module;
         }
 
-        public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
+        public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
-            return Resolver.GetModuleTokenForMethod(method, throwIfNotFound);
+            return Resolver.GetModuleTokenForType(type, allowDynamicallyCreatedReference:true, throwIfNotFound: throwIfNotFound);
+        }
+
+        public ModuleToken GetModuleTokenForMethod(MethodDesc method)
+        {
+            return Resolver.GetModuleTokenForMethod(method, throwIfNotFound: false, allowDynamicallyCreatedReference: false);
         }
 
         public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)

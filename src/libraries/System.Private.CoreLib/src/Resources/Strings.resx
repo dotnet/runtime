@@ -1098,6 +1098,9 @@
   <data name="Argument_InvalidPreallocateMode" xml:space="preserve">
     <value>Preallocation size can be requested only for new files.</value>
   </data>
+  <data name="Argument_InvalidUnixCreateMode" xml:space="preserve">
+    <value>UnixCreateMode can be requested only for modes that can create new files.</value>
+  </data>
   <data name="Argument_InvalidArgumentForComparison" xml:space="preserve">
     <value>Type of argument is not compatible with the generic comparer.</value>
   </data>
@@ -2266,6 +2269,9 @@
   <data name="Format_InvalidString" xml:space="preserve">
     <value>Input string was not in a correct format.</value>
   </data>
+  <data name="Format_InvalidStringWithValue" xml:space="preserve">
+    <value>The input string '{0}' was not in a correct format.</value>
+  </data>
   <data name="Format_MissingIncompleteDate" xml:space="preserve">
     <value>There must be at least a partial date with a year present in the input string '{0}'.</value>
   </data>
@@ -3091,6 +3097,9 @@
   <data name="PlatformNotSupported_StrongNameSigning" xml:space="preserve">
     <value>Strong-name signing is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_UnixFileMode" xml:space="preserve">
+    <value>Unix file modes are not supported on this platform.</value>
+  </data>
   <data name="PlatformNotSupported_OverlappedIO" xml:space="preserve">
     <value>This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.</value>
   </data>
@@ -3759,6 +3768,9 @@
   </data>
   <data name="Arg_InvalidFileAttrs" xml:space="preserve">
     <value>Invalid File or Directory attributes value.</value>
+  </data>
+  <data name="Arg_InvalidUnixFileMode" xml:space="preserve">
+    <value>Invalid UnixFileMode value.</value>
   </data>
   <data name="Arg_Path2IsRooted" xml:space="preserve">
     <value>Second path fragment must not be a drive or UNC name.</value>

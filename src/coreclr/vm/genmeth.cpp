@@ -475,8 +475,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 #ifdef _DEBUG
                 SString name;
                 TypeString::AppendMethodDebug(name, pNewMD);
-                StackScratchBuffer buff;
-                const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                const char* pDebugNameUTF8 = name.GetUTF8();
                 const char* verb = "Created";
                 if (pWrappedMD)
                     LOG((LF_CLASSLOADER, LL_INFO1000,
@@ -946,7 +945,22 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     RETURN(NULL);
                 }
 
-                // Enter the critical section *after* we've found or created the non-unboxing instantiating stub (else we'd have a race)
+                // Recursively get the non-unboxing instantiating stub.  Thus we chain an unboxing
+                // stub with an instantiating stub.
+                MethodDesc* pNonUnboxingStub=
+                    MethodDesc::FindOrCreateAssociatedMethodDesc(pDefMD,
+                                                                 pExactMT,
+                                                                 FALSE /* not Unboxing */,
+                                                                 methodInst,
+                                                                 FALSE);
+
+                _ASSERTE(pNonUnboxingStub->GetClassification() == mcInstantiated);
+                _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
+                _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
+
+                // Enter the critical section *after* we've found or created the non-unboxing instantiating stub (else we'd have a race,
+                // and its possible that the non-unboxing instantiating stub may be in a different loader module than pLoaderModule
+                // which would cause a Crst lock level violation
                 CrstHolder ch(&pLoaderModule->m_InstMethodHashTableCrst);
 
                 // Check whether another thread beat us to it!
@@ -958,19 +972,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
                 if (pResultMD == NULL)
                 {
-                    // Recursively get the non-unboxing instantiating stub.  Thus we chain an unboxing
-                    // stub with an instantiating stub.
-                    MethodDesc* pNonUnboxingStub=
-                        MethodDesc::FindOrCreateAssociatedMethodDesc(pDefMD,
-                                                                     pExactMT,
-                                                                     FALSE /* not Unboxing */,
-                                                                     methodInst,
-                                                                     FALSE);
-
-                    _ASSERTE(pNonUnboxingStub->GetClassification() == mcInstantiated);
-                    _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
-                    _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
-
                     AllocMemTracker amt;
 
                     _ASSERTE(pDefMD->GetClassification() == mcInstantiated);

@@ -78,11 +78,7 @@ namespace System.Xml.XPath
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                     {
-                        schemaType = schemaInfo.MemberType;
-                        if (schemaType == null)
-                        {
-                            schemaType = schemaInfo.SchemaType;
-                        }
+                        schemaType = schemaInfo.MemberType ?? schemaInfo.SchemaType;
                         if (schemaType != null)
                         {
                             datatype = schemaType.Datatype;
@@ -136,10 +132,7 @@ namespace System.Xml.XPath
                     }
                 }
             }
-            if (value == null)
-            {
-                value = XmlUntypedConverter.Untyped.ToString(typedValue, this);
-            }
+            value ??= XmlUntypedConverter.Untyped.ToString(typedValue, this);
             SetValue(value);
         }
 
@@ -154,11 +147,7 @@ namespace System.Xml.XPath
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                     {
-                        schemaType = schemaInfo.MemberType;
-                        if (schemaType == null)
-                        {
-                            schemaType = schemaInfo.SchemaType;
-                        }
+                        schemaType = schemaInfo.MemberType ?? schemaInfo.SchemaType;
                         if (schemaType != null)
                         {
                             datatype = schemaType.Datatype;
@@ -196,11 +185,7 @@ namespace System.Xml.XPath
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                     {
-                        schemaType = schemaInfo.MemberType;
-                        if (schemaType == null)
-                        {
-                            schemaType = schemaInfo.SchemaType;
-                        }
+                        schemaType = schemaInfo.MemberType ?? schemaInfo.SchemaType;
                         if (schemaType != null)
                         {
                             return schemaType.ValueConverter.ToBoolean(Value);
@@ -234,11 +219,7 @@ namespace System.Xml.XPath
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                     {
-                        schemaType = schemaInfo.MemberType;
-                        if (schemaType == null)
-                        {
-                            schemaType = schemaInfo.SchemaType;
-                        }
+                        schemaType = schemaInfo.MemberType ?? schemaInfo.SchemaType;
                         if (schemaType != null)
                         {
                             return schemaType.ValueConverter.ToDateTime(Value);
@@ -272,11 +253,7 @@ namespace System.Xml.XPath
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                     {
-                        schemaType = schemaInfo.MemberType;
-                        if (schemaType == null)
-                        {
-                            schemaType = schemaInfo.SchemaType;
-                        }
+                        schemaType = schemaInfo.MemberType ?? schemaInfo.SchemaType;
                         if (schemaType != null)
                         {
                             return schemaType.ValueConverter.ToDouble(Value);
@@ -310,11 +287,7 @@ namespace System.Xml.XPath
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                     {
-                        schemaType = schemaInfo.MemberType;
-                        if (schemaType == null)
-                        {
-                            schemaType = schemaInfo.SchemaType;
-                        }
+                        schemaType = schemaInfo.MemberType ?? schemaInfo.SchemaType;
                         if (schemaType != null)
                         {
                             return schemaType.ValueConverter.ToInt32(Value);
@@ -348,11 +321,7 @@ namespace System.Xml.XPath
                 {
                     if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                     {
-                        schemaType = schemaInfo.MemberType;
-                        if (schemaType == null)
-                        {
-                            schemaType = schemaInfo.SchemaType;
-                        }
+                        schemaType = schemaInfo.MemberType ?? schemaInfo.SchemaType;
                         if (schemaType != null)
                         {
                             return schemaType.ValueConverter.ToInt64(Value);
@@ -388,11 +357,7 @@ namespace System.Xml.XPath
             {
                 if (schemaInfo.Validity == XmlSchemaValidity.Valid)
                 {
-                    schemaType = schemaInfo.MemberType;
-                    if (schemaType == null)
-                    {
-                        schemaType = schemaInfo.SchemaType;
-                    }
+                    schemaType = schemaInfo.MemberType ?? schemaInfo.SchemaType;
                     if (schemaType != null)
                     {
                         return schemaType.ValueConverter.ChangeType(Value, returnType, nsResolver);
@@ -1223,10 +1188,7 @@ namespace System.Xml.XPath
             Query query = Query.Clone(cexpr.QueryTree);
             query.Reset();
 
-            if (context == null)
-            {
-                context = new XPathSingletonIterator(this.Clone(), /*moved:*/true);
-            }
+            context ??= new XPathSingletonIterator(this.Clone(), moved: true);
 
             object result = query.Evaluate(context);
 

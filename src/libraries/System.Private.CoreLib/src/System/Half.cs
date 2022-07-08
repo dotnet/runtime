@@ -1009,6 +1009,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static Half IBinaryNumber<Half>.AllBitsSet => BitConverter.UInt16BitsToHalf(0xFFFF);
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(Half value)
         {
@@ -1430,6 +1433,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
+            {
+                result = (Half)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<Half>.IsCanonical(Half value) => true;
 
@@ -1828,8 +1888,14 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
         public static Half Acos(Half x) => (Half)MathF.Acos((float)x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Half AcosPi(Half x) => (Half)float.AcosPi((float)x);
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
         public static Half Asin(Half x) => (Half)MathF.Asin((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Half AsinPi(Half x) => (Half)float.AsinPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static Half Atan(Half x) => (Half)MathF.Atan((float)x);
@@ -1837,8 +1903,17 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
         public static Half Atan2(Half y, Half x) => (Half)MathF.Atan2((float)y, (float)x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Half Atan2Pi(Half y, Half x) => (Half)float.Atan2Pi((float)y, (float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Half AtanPi(Half x) => (Half)float.AtanPi((float)x);
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
         public static Half Cos(Half x) => (Half)MathF.Cos((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Half CosPi(Half x) => (Half)float.CosPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
@@ -1850,29 +1925,14 @@ namespace System
             return ((Half)sin, (Half)cos);
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Half SinPi(Half x) => (Half)float.SinPi((float)x);
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
         public static Half Tan(Half x) => (Half)MathF.Tan((float)x);
 
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
-        // public static Half AcosPi(Half x) => (Half)MathF.AcosPi((float)x);
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
-        // public static Half AsinPi(Half x) => (Half)MathF.AsinPi((float)x);
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
-        // public static Half AtanPi(Half x) => (Half)MathF.AtanPi((float)x);
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf)" />
-        // public static Half Atan2Pi(Half y, Half x) => (Half)MathF.Atan2Pi((float)y, (float)x);
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
-        // public static Half CosPi(Half x) => (Half)MathF.CosPi((float)x);
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
-        // public static Half SinPi(Half x) => (Half)MathF.SinPi((float)x, (float)y);
-
-        // /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
-        // public static Half TanPi(Half x) => (Half)MathF.TanPi((float)x, (float)y);
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Half TanPi(Half x) => (Half)float.TanPi((float)x);
 
         //
         // IUnaryNegationOperators

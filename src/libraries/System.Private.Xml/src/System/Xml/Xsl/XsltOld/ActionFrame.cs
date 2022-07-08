@@ -109,27 +109,19 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void SetParameter(XmlQualifiedName name, object value)
         {
-            if (_withParams == null)
-            {
-                _withParams = new Hashtable();
-            }
+            _withParams ??= new Hashtable();
             Debug.Assert(!_withParams.Contains(name), "We should check duplicate params at compile time");
             _withParams[name] = value;
         }
 
         internal void ResetParams()
         {
-            if (_withParams != null)
-                _withParams.Clear();
+            _withParams?.Clear();
         }
 
         internal object? GetParameter(XmlQualifiedName name)
         {
-            if (_withParams != null)
-            {
-                return _withParams[name];
-            }
-            return null;
+            return _withParams?[name];
         }
 
         internal void InitNodeSet(XPathNodeIterator nodeSet)

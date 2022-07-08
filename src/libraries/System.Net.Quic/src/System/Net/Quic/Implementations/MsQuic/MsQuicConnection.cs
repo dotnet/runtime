@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -441,7 +442,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal async ValueTask<MsQuicStream> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
             MsQuicStream stream;
 
@@ -459,7 +460,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private async ValueTask<MsQuicStream> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             if (!Connected)
             {
                 throw new InvalidOperationException(SR.net_quic_not_connected);
@@ -499,7 +500,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal unsafe ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
             if (_configuration is null)
             {
@@ -536,15 +537,32 @@ namespace System.Net.Quic.Implementations.MsQuic
                 // We don't have way how to set separate SNI and name for connection at this moment.
                 // If the name is actually IP address we can use it to make at least some cases work for people
                 // who want to bypass DNS but connect to specific virtual host.
-                if (!string.IsNullOrEmpty(_state.TargetHost) && !dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && IPAddress.TryParse(dnsHost, out IPAddress? address))
+                if (!dnsHost.Equals(_state.TargetHost, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(_state.TargetHost))
                 {
-                    // This is form of IPAddress and _state.TargetHost is set to different string
-                    Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                    MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, new IPEndPoint(address, port));
                     targetHost = _state.TargetHost!;
+                    if (IPAddress.TryParse(dnsHost, out IPAddress? address))
+                    {
+                        // This is form of IPAddress and _state.TargetHost is set to different string
+                        Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+                        MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, new IPEndPoint(address, port));
+                    }
+                    else
+                    {
+                        IPAddress[] addresses = Dns.GetHostAddressesAsync(dnsHost, cancellationToken).GetAwaiter().GetResult();
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (addresses.Length == 0)
+                        {
+                            throw new SocketException((int)SocketError.HostNotFound);
+                        }
+                        Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+                        // We can do something better than just using first IP but that is what
+                        // MsQuic does today anyway.
+                        MsQuicParameterHelpers.SetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, new IPEndPoint(addresses[0], port));
+                    }
                 }
                 else
                 {
+                    // We defer everything to MsQuic.
                     targetHost = dnsHost;
                 }
             }
@@ -765,14 +783,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE, errorCode);
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed == 1)
-            {
-                throw new ObjectDisposedException(nameof(MsQuicStream));
-            }
         }
     }
 }

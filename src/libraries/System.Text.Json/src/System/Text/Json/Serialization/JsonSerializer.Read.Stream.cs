@@ -366,13 +366,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
-            options ??= JsonSerializerOptions.Default;
-            if (!options.IsInitializedForReflectionSerializer)
-            {
-                options.InitializeForReflectionSerializer();
-            }
-
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(typeof(TValue));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
             return CreateAsyncEnumerableDeserializer(utf8Json, CreateQueueTypeInfo<TValue>(jsonTypeInfo), cancellationToken);
         }
 
@@ -440,7 +434,7 @@ namespace System.Text.Json
                         ref bufferState,
                         ref jsonReaderState,
                         ref readStack,
-                        queueTypeInfo.PropertyInfoForTypeInfo.ConverterBase,
+                        queueTypeInfo.Converter,
                         options);
 
                     if (readStack.Current.ReturnValue is Queue<TValue> queue)
@@ -469,7 +463,7 @@ namespace System.Text.Json
             ReadStack readStack = default;
             jsonTypeInfo.EnsureConfigured();
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
-            JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
+            JsonConverter converter = readStack.Current.JsonPropertyInfo!.EffectiveConverter;
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
             try
@@ -500,7 +494,7 @@ namespace System.Text.Json
             ReadStack readStack = default;
             jsonTypeInfo.EnsureConfigured();
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
-            JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
+            JsonConverter converter = readStack.Current.JsonPropertyInfo!.EffectiveConverter;
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
             try

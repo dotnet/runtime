@@ -12,6 +12,8 @@ let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
 let _debugger_buffer: VoidPtr;
+let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugProxy
+let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
 
 const regexes:any[] = [];
 
@@ -162,10 +164,12 @@ export function mono_wasm_debugger_attached(): void {
     cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
+    //keep these assignments, these values are used by BrowserDebugProxy
+    _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
+    _entrypoint_method_token = entrypoint_method_token;
+    //keep this console.assert, otherwise optimization will remove the assigments
+    console.assert(true, `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
     // eslint-disable-next-line no-debugger
     debugger;
 }
@@ -466,6 +470,75 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
             console.log(message);
             break;
     }
+}
+
+export function setup_proxy_console(id: string, originalConsole: Console, origin: string): void {
+    function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
+        return function (...args: any[]) {
+            try {
+                let payload = args[0];
+                if (payload === undefined) payload = "undefined";
+                else if (payload === null) payload = "null";
+                else if (typeof payload === "function") payload = payload.toString();
+                else if (typeof payload !== "string") {
+                    try {
+                        payload = JSON.stringify(payload);
+                    } catch (e) {
+                        payload = payload.toString();
+                    }
+                }
+
+                if (typeof payload === "string")
+                    payload = `[${id}] ${payload}`;
+
+                if (asJson) {
+                    func(JSON.stringify({
+                        method: prefix,
+                        payload: payload,
+                        arguments: args
+                    }));
+                } else {
+                    func([prefix + payload, ...args.slice(1)]);
+                }
+            } catch (err) {
+                originalConsole.error(`proxyConsole failed: ${err}`);
+            }
+        };
+    }
+
+    const originalConsoleObj : any = originalConsole;
+    const methods = ["debug", "trace", "warn", "info", "error"];
+    for (const m of methods) {
+        if (typeof (originalConsoleObj[m]) !== "function") {
+            originalConsoleObj[m] = proxyConsoleMethod(`console.${m}: `, originalConsole.log, false);
+        }
+    }
+
+    const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
+
+    const consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket.onopen = function () {
+        originalConsole.log(`browser: [${id}] Console websocket connected.`);
+    };
+    consoleWebSocket.onerror = function (event) {
+        originalConsole.error(`[${id}] websocket error: ${event}`, event);
+    };
+    consoleWebSocket.onclose = function (event) {
+        originalConsole.error(`[${id}] websocket closed: ${event}`, event);
+    };
+
+    const send = (msg: string) => {
+        if (consoleWebSocket.readyState === WebSocket.OPEN) {
+            consoleWebSocket.send(msg);
+        }
+        else {
+            originalConsole.log(msg);
+        }
+    };
+
+    // redirect output early, so that when emscripten starts it's already redirected
+    for (const m of ["log", ...methods])
+        originalConsoleObj[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
 type CallDetails = {

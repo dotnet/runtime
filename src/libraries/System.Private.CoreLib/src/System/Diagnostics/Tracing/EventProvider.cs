@@ -381,8 +381,7 @@ namespace System.Diagnostics.Tracing
             List<SessionInfo>? liveSessionList = null;
 
             GetSessionInfo(
-                (int etwSessionId, long matchAllKeywords, ref List<SessionInfo>? sessionList) =>
-                    GetSessionInfoCallback(etwSessionId, matchAllKeywords, ref sessionList),
+                GetSessionInfoCallback,
                 ref liveSessionList);
 
             List<KeyValuePair<SessionInfo, bool>> changedSessionList = new List<KeyValuePair<SessionInfo, bool>>();
