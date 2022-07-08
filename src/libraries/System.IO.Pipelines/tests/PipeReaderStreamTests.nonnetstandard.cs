@@ -421,16 +421,8 @@ namespace System.IO.Pipelines.Tests
 
         public class BuggyAndNotCompletedPipeReader : BuggyPipeReader
         {
-            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
-            {
-                // Returns a ReadResult with no buffer and with IsCompleted and IsCancelled false
-                Task<ReadResult> task = new Task<ReadResult>(() =>
-                {
-                    throw new InvalidOperationException("error occured during reading");
-                });
-                task.Start();
-                return new ValueTask<ReadResult>(task);
-            }
+            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) =>
+                new ValueTask<ReadResult>(Task.FromException<ReadResult>(new InvalidOperationException("error occured during reading")));
         }
     }
 }
