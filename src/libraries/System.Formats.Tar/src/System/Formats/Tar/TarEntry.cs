@@ -541,22 +541,14 @@ namespace System.Formats.Tar
         {
             Debug.Assert(!Path.Exists(destinationFileName));
 
-            FileStreamOptions fileStreamOptions = new()
-            {
-                Access = FileAccess.Write,
-                Mode = FileMode.CreateNew,
-                Share = FileShare.None,
-                PreallocationSize = Length,
-            };
             // Rely on FileStream's ctor for further checking destinationFileName parameter
-            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
+            using (FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: false)))
             {
                 if (DataStream != null)
                 {
                     // Important: The DataStream will be written from its current position
                     DataStream.CopyTo(fs);
                 }
-                SetModeOnFile(fs.SafeFileHandle);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
@@ -570,16 +562,8 @@ namespace System.Formats.Tar
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            FileStreamOptions fileStreamOptions = new()
-            {
-                Access = FileAccess.Write,
-                Mode = FileMode.CreateNew,
-                Share = FileShare.None,
-                PreallocationSize = Length,
-                Options = FileOptions.Asynchronous
-            };
             // Rely on FileStream's ctor for further checking destinationFileName parameter
-            FileStream fs = new FileStream(destinationFileName, fileStreamOptions);
+            FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: true));
             await using (fs)
             {
                 if (DataStream != null)
@@ -587,10 +571,35 @@ namespace System.Formats.Tar
                     // Important: The DataStream will be written from its current position
                     await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
                 }
-                SetModeOnFile(fs.SafeFileHandle);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
+        }
+
+        private FileStreamOptions CreateFileStreamOptions(bool isAsync)
+        {
+            FileStreamOptions fileStreamOptions = new()
+            {
+                Access = FileAccess.Write,
+                Mode = FileMode.CreateNew,
+                Share = FileShare.None,
+                PreallocationSize = Length,
+                Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
+            };
+
+            if (!OperatingSystem.IsWindows())
+            {
+                 const UnixFileMode OwnershipPermissions =
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                    UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                    UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+
+                // Restore permissions.
+                // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
+                fileStreamOptions.UnixCreateMode = Mode & OwnershipPermissions;
+            }
+
+            return fileStreamOptions;
         }
     }
 }
