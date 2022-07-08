@@ -203,7 +203,7 @@ export interface EventPipeSessionOptions {
 /// Options to configure the diagnostic server
 export type DiagnosticServerOptions = {
     connect_url: string, // websocket URL to connect to.
-    suspend: boolean, // if true, the server will suspend the app when it starts until a diagnostic tool tells the runtime to resume.
+    suspend: string | boolean, // if true, the server will suspend the app when it starts until a diagnostic tool tells the runtime to resume.
 }
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;

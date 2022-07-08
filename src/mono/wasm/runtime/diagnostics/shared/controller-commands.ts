@@ -24,18 +24,3 @@ export function makeDiagnosticServerControlCommand<T extends DiagnosticServerCon
         cmd: cmd,
     };
 }
-
-export type DiagnosticServerControlReply =
-    | DiagnosticServerControlReplyStartupResume
-    ;
-
-export interface DiagnosticServerControlReplyStartupResume extends DiagnosticMessage {
-    cmd: "startup_resume",
-}
-
-export function makeDiagnosticServerControlReplyStartupResume(): DiagnosticServerControlReplyStartupResume {
-    return {
-        type: "diagnostic_server",
-        cmd: "startup_resume",
-    };
-}

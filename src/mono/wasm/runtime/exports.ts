@@ -60,6 +60,9 @@ import {
 import {
     mono_wasm_diagnostic_server_on_server_thread_created,
 } from "./diagnostics/server_pthread";
+import {
+    mono_wasm_diagnostic_server_stream_signal_work_available
+} from "./diagnostics/server_pthread/stream-queue";
 import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import cwraps from "./cwraps";
@@ -371,6 +374,7 @@ const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     // diagnostics_server.c
     mono_wasm_diagnostic_server_on_server_thread_created,
     mono_wasm_diagnostic_server_on_runtime_server_init,
+    mono_wasm_diagnostic_server_stream_signal_work_available,
 };
 
 // the methods would be visible to EMCC linker

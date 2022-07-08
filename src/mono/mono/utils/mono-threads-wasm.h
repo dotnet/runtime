@@ -48,6 +48,23 @@ mono_threads_wasm_async_run_in_main_thread_vii (void (*func)(gpointer, gpointer)
 void
 mono_threads_wasm_on_thread_attached (void);
 
+static inline
+int32_t
+mono_wasm_atomic_wait_i32 (volatile int32_t *addr, int32_t expected, int32_t timeout_ns)
+{
+	// Don't call this on the main thread!
+	// See https://github.com/WebAssembly/threads/issues/174
+	// memory.atomic.wait32
+	//
+	// timeout_ns == -1 means infinite wait
+	//
+	// return values:
+	// 0 == "ok", thread blocked and was woken up
+	// 1 == "not-equal", value at addr was not equal to expected
+	// 2 == "timed-out", timeout expired before thread was woken up
+	return __builtin_wasm_memory_atomic_wait32((int32_t*)addr, expected, timeout_ns);
+}
+
 #endif /* HOST_WASM*/
 
 #endif /* __MONO_THREADS_WASM_H__ */

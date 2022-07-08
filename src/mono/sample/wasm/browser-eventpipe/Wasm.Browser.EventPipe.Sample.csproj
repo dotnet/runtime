@@ -22,7 +22,7 @@
 }' />
     <WasmExtraConfig Condition="true" Include="diagnostic_options" Value='
 {
-  "server": { "suspend": "true", "connect_url": "ws://localhost:8080/" },
+  "server": { "suspend": true, "connect_url": "ws://localhost:8080/" },
   "sessions": [ { "collectRundownEvents": "true", "providers": "WasmHello::5:EventCounterIntervalSec=1" } ]
 }' />
   </ItemGroup>

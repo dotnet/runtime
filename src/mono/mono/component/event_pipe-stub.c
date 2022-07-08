@@ -521,12 +521,12 @@ mono_component_event_pipe_init (void)
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
+			     IpcStream *ipc_stream,
 			     uint32_t circular_buffer_size_in_mb,
 			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
 			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
 			     /* bool */ gboolean rundown_requested,
-			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
 			     MonoWasmEventPipeSessionID *out_session_id)

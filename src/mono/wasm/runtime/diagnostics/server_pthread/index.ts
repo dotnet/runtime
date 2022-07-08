@@ -5,12 +5,13 @@
 
 import { assertNever } from "../../types";
 import { pthread_self } from "../../pthreads/worker";
+import * as memory from "../../memory";
 import { Module } from "../../imports";
+import cwraps from "../../cwraps";
 import { EventPipeSessionIDImpl, isDiagnosticMessage } from "../shared/types";
 import { CharPtr, VoidPtr } from "../../types/emscripten";
 import {
     DiagnosticServerControlCommand,
-    makeDiagnosticServerControlReplyStartupResume
 } from "../shared/controller-commands";
 
 import { mockScript } from "./mock-remote";
@@ -28,6 +29,7 @@ import {
     isEventPipeCommandStopTracing,
     isProcessCommandResumeRuntime,
     EventPipeCommandCollectTracing2,
+    EventPipeCollectTracingCommandProvider,
 } from "./protocol-client-commands";
 import parseMockCommand from "./mock-command-parser";
 
@@ -44,6 +46,8 @@ export interface DiagnosticServer {
 
 class DiagnosticServerImpl implements DiagnosticServer {
     readonly websocketUrl: string;
+    runtimeResumed = false;
+
     constructor(websocketUrl: string) {
         this.websocketUrl = websocketUrl;
         pthread_self.addEventListenerFromBrowser(this.onMessageFromMainThread.bind(this));
@@ -65,12 +69,13 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     attachToRuntime(): void {
-        // TODO: mono_wasm_diagnostic_server_thread_attach ();
+        cwraps.mono_wasm_diagnostic_server_thread_attach_to_runtime();
         this.attachToRuntimeController.resolve();
     }
 
     async serverLoop(this: DiagnosticServerImpl): Promise<void> {
         await this.startRequestedController.promise;
+        await this.attachToRuntimeController.promise; // can't start tracing until we've attached to the runtime
         while (!this.stopRequested) {
             const p1: Promise<"first" | "second"> = this.advertiseAndWaitForClient().then(() => "first");
             const p2: Promise<"first" | "second"> = this.stopRequestedController.promise.then(() => "second");
@@ -89,21 +94,26 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
 
     async advertiseAndWaitForClient(): Promise<void> {
-        const ws = mockScript.open();
-        const p = addOneShotMessageEventListener(ws);
-        ws.send("ADVR_V1");
-        const message = await p;
-        console.debug("received advertising response: ", message);
-        const cmd = this.parseCommand(message);
-        if (cmd === null) {
-            console.error("unexpected message from client", message);
-            return;
-        } else if (isEventPipeCommand(cmd)) {
-            await this.dispatchEventPipeCommand(ws, cmd);
-        } else if (isProcessCommand(cmd)) {
-            await this.dispatchProcessCommand(ws, cmd); // resume
-        } else {
-            console.warn("Client sent unknown command", cmd);
+        try {
+            const ws = mockScript.open();
+            const p = addOneShotMessageEventListener(ws);
+            ws.send("ADVR_V1");
+            const message = await p;
+            console.debug("received advertising response: ", message);
+            const cmd = this.parseCommand(message);
+            if (cmd === null) {
+                console.error("unexpected message from client", message);
+                return;
+            } else if (isEventPipeCommand(cmd)) {
+                await this.dispatchEventPipeCommand(ws, cmd);
+            } else if (isProcessCommand(cmd)) {
+                await this.dispatchProcessCommand(ws, cmd); // resume
+            } else {
+                console.warn("Client sent unknown command", cmd);
+            }
+        } finally {
+            // if there were errors, resume the runtime anyway
+            this.resumeRuntime();
         }
     }
 
@@ -145,9 +155,6 @@ class DiagnosticServerImpl implements DiagnosticServer {
     // dispatch EventPipe commands received from the diagnostic client
     async dispatchEventPipeCommand(ws: WebSocket | MockRemoteSocket, cmd: EventPipeClientCommandBase): Promise<void> {
         if (isEventPipeCommandCollectTracing2(cmd)) {
-            // FIXME: if the runtime is waiting for us to resume them, we deadlock here
-            //  the runtime is waiting for us to send a resume command, and we're waiting for eventpipe to send us a resume command, which it won't do until the eventpipe session is enabled.
-            await this.attachToRuntimeController.promise; // can't start tracing until we've attached to the runtime
             const session = await createEventPipeStreamingSession(ws, cmd);
             this.postClientReply(ws, "OK", session.sessionID);
         } else if (isEventPipeCommandStopTracing(cmd)) {
@@ -169,9 +176,17 @@ class DiagnosticServerImpl implements DiagnosticServer {
     // dispatch Process commands received from the diagnostic client
     async dispatchProcessCommand(ws: WebSocket | MockRemoteSocket, cmd: ProcessClientCommandBase): Promise<void> {
         if (isProcessCommandResumeRuntime(cmd)) {
-            pthread_self.postMessageToBrowser(makeDiagnosticServerControlReplyStartupResume());
+            this.resumeRuntime();
         } else {
             console.warn("unknown Process command", cmd);
+        }
+    }
+
+    resumeRuntime(): void {
+        if (!this.runtimeResumed) {
+            console.debug("resuming runtime startup");
+            cwraps.mono_wasm_diagnostic_server_post_resume_runtime();
+            this.runtimeResumed = true;
         }
     }
 }
@@ -184,31 +199,57 @@ class EventPipeStreamingSession {
 
 async function createEventPipeStreamingSession(ws: WebSocket | MockRemoteSocket, cmd: EventPipeCommandCollectTracing2): Promise<EventPipeStreamingSession> {
     // First, create the native IPC stream and get its queue.
-    const ipcStreamAddr = mono_wasm_diagnostic_server_create_stream(); // FIXME: this should be a wrapped in a JS object so we can free it when we're done.
+    const ipcStreamAddr = cwraps.mono_wasm_diagnostic_server_create_stream(); // FIXME: this should be a wrapped in a JS object so we can free it when we're done.
     const queueAddr = mono_wasm_diagnostic_server_get_stream_queue(ipcStreamAddr);
     // then take over the websocket connection
     const conn = takeOverSocket(ws);
     // and set up queue notifications
     const queue = allocateQueue(queueAddr, conn.write.bind(conn));
     // create the event pipe session
-    const sessionID = mono_wasm_event_pipe_stream_session_enable(ipcStreamAddr, cmd);
+    const sessionID = createEventPipeStreamingSessionNative(ipcStreamAddr, cmd);
+    if (sessionID === null)
+        throw new Error("failed to create event pipe session");
     return new EventPipeStreamingSession(sessionID, ws, queue, conn);
 }
 
-function mono_wasm_diagnostic_server_create_stream(): VoidPtr {
-    // this shoudl be in C and it should jsut allocate one of our IPC streams
-    throw new Error("TODO");
+function createEventPipeStreamingSessionNative(ipcStreamAddr: VoidPtr, options: EventPipeCommandCollectTracing2): EventPipeSessionIDImpl | null {
+
+    const sizeOfInt32 = 4;
+
+    const success = memory.withStackAlloc(sizeOfInt32, createStreamingSessionWithPtrCB, options, ipcStreamAddr);
+
+    if (success === false)
+        return null;
+    const sessionID = success;
+
+    return sessionID;
 }
 
+function createStreamingSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeCommandCollectTracing2, ipcStreamAddr: VoidPtr): false | number {
+    const providers = providersStringFromObject(options.providers);
+    memory.setI32(sessionIdOutPtr, 0);
+    if (!cwraps.mono_wasm_event_pipe_enable(null, ipcStreamAddr, options.circularBufferMB, providers, options.requestRundown, sessionIdOutPtr)) {
+        return false;
+    } else {
+        return memory.getI32(sessionIdOutPtr);
+    }
+}
+
+function providersStringFromObject(providers: EventPipeCollectTracingCommandProvider[]) {
+    const providersString = providers.map(providerToString).join(",");
+    return providersString;
+
+    function providerToString(provider: EventPipeCollectTracingCommandProvider): string {
+        const keyword_str = provider.keywords === 0 ? "" : provider.keywords.toString();
+        const args_str = provider.filter_data === "" ? "" : ":" + provider.filter_data;
+        return provider.provider_name + ":" + keyword_str + ":" + provider.logLevel + args_str;
+    }
+}
+
+const IPC_STREAM_QUEUE_OFFSET = 4; /* keep in sync with mono_wasm_diagnostic_server_create_stream() in C */
 function mono_wasm_diagnostic_server_get_stream_queue(streamAddr: VoidPtr): VoidPtr {
-    // TODO: this can probably be in JS if we put the queue at a known address in the stream. (probably offset 0);
-    return streamAddr;
-}
-
-function mono_wasm_event_pipe_stream_session_enable(ipcStreamAddr: VoidPtr, cmd: EventPipeCommandCollectTracing2): EventPipeSessionIDImpl {
-    // this should be implemented in C.  and it should call ep_enable.
-    console.debug("mono_wasm_event_pipe_stream_session_enable", ipcStreamAddr, cmd);
-    throw new Error("TODO");
+    // TODO: this can probably be in JS if we put the queue at a known address in the stream. (probably offset 4);
+    return <any>streamAddr + IPC_STREAM_QUEUE_OFFSET;
 }
 
 /// Called by the runtime  to initialize the diagnostic server workers

@@ -115,7 +115,7 @@ function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSess
     // TODO: if options.message_port, create a streaming session instead of a file session
 
     memory.setI32(sessionIdOutPtr, 0);
-    if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, providers, rundown, sessionIdOutPtr)) {
+    if (!cwraps.mono_wasm_event_pipe_enable(tracePath, 0 as unknown as VoidPtr, defaultBufferSizeInMB, providers, rundown, sessionIdOutPtr)) {
         return false;
     } else {
         return memory.getI32(sessionIdOutPtr);
@@ -209,7 +209,7 @@ export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Pr
             throw new Error("server.connect_url must be a string");
         }
         const url = options.server.connect_url;
-        const suspend = options.server?.suspend ?? false;
+        const suspend = boolsyOption(options.server.suspend);
         const controller = await startDiagnosticServer(url);
         if (controller) {
             if (suspend) {
@@ -224,15 +224,24 @@ export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Pr
     startup_session_configs.push(...sessions);
 }
 
-export function mono_wasm_diagnostic_server_on_runtime_server_init(): void {
+function boolsyOption(x: string | boolean): boolean {
+    if (x === true || x === false)
+        return x;
+    if (typeof x === "string") {
+        if (x === "true")
+            return true;
+        if (x === "false")
+            return false;
+    }
+    throw new Error(`invalid option: "${x}", should be true, false, or "true" or "false"`);
+}
+
+export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: VoidPtr): void {
+    /* called on the main thread when the runtime is sufficiently initialized */
     const controller = getController();
     controller.postServerAttachToRuntime();
-    if (suspendOnStartup) {
-        /* FIXME: this is a hack. we should just use a condition variable in native. */
-        for (let i = 0; i < 10000; ++i) {
-            (<any>Module)["_emscripten_main_thread_process_queued_calls"]();
-        }
-    }
+    // FIXME: is this really the best place to do this?
+    memory.setI32(out_options, suspendOnStartup ? 1 : 0);
 }
 
 export default diagnostics;

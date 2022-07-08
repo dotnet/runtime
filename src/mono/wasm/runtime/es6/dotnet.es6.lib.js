@@ -134,6 +134,7 @@ const linked_functions = [
     // diagnostics_server.c
     "mono_wasm_diagnostic_server_on_server_thread_created",
     "mono_wasm_diagnostic_server_on_runtime_server_init",
+    "mono_wasm_diagnostic_server_stream_signal_work_available",
     #endif
 ];
 

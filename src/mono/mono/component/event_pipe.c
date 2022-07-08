@@ -363,6 +363,7 @@ wasm_to_ep_session_id (MonoWasmEventPipeSessionID session_id)
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
+			     IpcStream *ipc_stream,
 			     uint32_t circular_buffer_size_in_mb,
 			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
@@ -375,7 +376,10 @@ mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 {
 	MONO_ENTER_GC_UNSAFE;
 	EventPipeSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4;
-	EventPipeSessionType session_type = EP_SESSION_TYPE_FILE;
+	EventPipeSessionType session_type = output_path != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_IPCSTREAM;
+
+	g_assert ((output_path == NULL && ipc_stream != NULL) ||
+		  (output_path != NULL && ipc_stream == NULL));
 
 	EventPipeSessionID session;
 	session = ep_enable_2 (output_path,
@@ -384,7 +388,7 @@ mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			       session_type,
 			       format,
 			       !!rundown_requested,
-			       /* stream */NULL,
+			       ipc_stream,
 			       /* callback*/ NULL,
 			       /* callback_data*/ NULL);
   

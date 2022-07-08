@@ -68,10 +68,13 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_get_type_aqn", "string", ["number"]],
 
     // MONO.diagnostics
-    ["mono_wasm_event_pipe_enable", "bool", ["string", "number", "string", "bool", "number"]],
+    ["mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
     ["mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
     ["mono_wasm_event_pipe_session_disable", "bool", ["number"]],
     ["mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
+    ["mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
+    ["mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
+    ["mono_wasm_diagnostic_server_create_stream", "number", []],
 
     //DOTNET
     ["mono_wasm_string_from_js", "number", ["string"]],
@@ -170,10 +173,13 @@ export interface t_Cwraps {
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
     // MONO.diagnostics
-    mono_wasm_event_pipe_enable(outputPath: string, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
+    mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
     mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
     mono_wasm_event_pipe_session_disable(sessionId: number): boolean;
     mono_wasm_diagnostic_server_create_thread(websocketURL: string, threadIdOutPtr: VoidPtr): boolean;
+    mono_wasm_diagnostic_server_thread_attach_to_runtime(): void;
+    mono_wasm_diagnostic_server_post_resume_runtime(): void;
+    mono_wasm_diagnostic_server_create_stream(): VoidPtr;
 
     //DOTNET
     /**

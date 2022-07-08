@@ -219,7 +219,7 @@ interface EventPipeSessionOptions {
 }
 declare type DiagnosticServerOptions = {
     connect_url: string;
-    suspend: boolean;
+    suspend: string | boolean;
 };
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;

@@ -96,7 +96,7 @@ export function closeQueue(nativeQueueAddr: VoidPtr): void {
 }
 
 // called from native code on the diagnostic thread by queueing a call from the streaming thread.
-export function mono_wasm_event_pipe_stream_signal_work_available(nativeQueueAddr: VoidPtr): void {
+export function mono_wasm_diagnostic_server_stream_signal_work_available(nativeQueueAddr: VoidPtr): void {
     const queue = streamQueueMap.get(nativeQueueAddr);
     if (queue) {
         queue.wakeup();
