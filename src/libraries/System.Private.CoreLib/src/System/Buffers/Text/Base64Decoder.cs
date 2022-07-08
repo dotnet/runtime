@@ -13,12 +13,7 @@ namespace System.Buffers.Text
     // AVX2 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/avx2
     // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
 
-#if SYSTEM_PRIVATE_CORELIB
-    internal
-#else
-    public
-#endif
-        static partial class Base64
+    public static partial class Base64
     {
         /// <summary>
         /// Decode the span of UTF-8 encoded text represented as base64 into binary data.
@@ -480,6 +475,22 @@ namespace System.Buffers.Text
 
             srcBytes = src;
             destBytes = dest;
+        }
+
+        // This can be replaced once https://github.com/dotnet/runtime/issues/63331 is implemented.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
+        {
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(left, right);
+            }
+            else
+            {
+                return AdvSimd.Arm64.VectorTableLookup(left, Vector128.BitwiseAnd(right, mask8F));
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

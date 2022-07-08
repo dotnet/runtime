@@ -6,12 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
 {
-#if SYSTEM_PRIVATE_CORELIB
-    internal
-#else
-    public
-#endif
-        static partial class Base64
+    public static partial class Base64
     {
         [Conditional("DEBUG")]
         private static unsafe void AssertRead<TVector>(byte* src, byte* srcStart, int srcLength)

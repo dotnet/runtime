@@ -114,6 +114,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\MemoryManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\OperationStatus.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\StandardFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Encoder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" />
@@ -243,8 +246,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Context.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.Base64.cs" />
-    <Compile Include="$(CommonPath)System\Buffers\Text\Base64.cs" />
-    <Compile Include="$(CommonPath)System\Buffers\Text\Base64Encoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CurrentSystemTimeZone.cs" />

@@ -25,9 +25,6 @@
     <Compile Include="System\Buffers\SequenceReader.cs" />
     <Compile Include="System\Buffers\SequenceReader.Search.cs" />
     <Compile Include="System\Buffers\SequenceReaderExtensions.Binary.cs" />
-    <Compile Include="$(CommonPath)System\Buffers\Text\Base64.cs" />
-    <Compile Include="$(CommonPath)System\Buffers\Text\Base64Decoder.cs" />
-    <Compile Include="$(CommonPath)System\Buffers\Text\Base64Encoder.cs" />
     <Compile Include="System\Runtime\InteropServices\SequenceMarshal.cs" />
     <Compile Include="System\Text\EncodingExtensions.cs" />
   </ItemGroup>

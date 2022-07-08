@@ -2348,10 +2348,16 @@ namespace System
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 static string ToBase64StringLargeInputs(ReadOnlySpan<byte> data, int outputLen)
                 {
-                    Span<byte> utf8buffer = outputLen <= 256 ? stackalloc byte[256] : new byte[outputLen];
+                    byte[]? rentedBytes = null;
+                    Span<byte> utf8buffer = outputLen <= 256 ? stackalloc byte[256] : (rentedBytes = ArrayPool<byte>.Shared.Rent(outputLen));
                     OperationStatus status = Base64.EncodeToUtf8(data, utf8buffer, out int _, out int _);
                     Debug.Assert(status == OperationStatus.Done);
-                    return Encoding.Latin1.GetString(utf8buffer);
+                    string result = Encoding.Latin1.GetString(utf8buffer);
+                    if (rentedBytes != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(rentedBytes);
+                    }
+                    return result;
                 }
                 return ToBase64StringLargeInputs(bytes, outputLength);
             }
