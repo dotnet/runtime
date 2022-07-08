@@ -24,7 +24,6 @@ namespace System.Text.RegularExpressions
         private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
         private static readonly FieldInfo s_cultureField = typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
         private static readonly FieldInfo s_caseBehaviorField = typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        private static readonly FieldInfo s_prefixMatcherField = typeof(CompiledRegexRunner).GetField("_prefixMatcher", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
         private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
         private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
@@ -38,7 +37,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
         private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
-        private static readonly MethodInfo s_multiStringMatcherFindMethod = typeof(MultiStringMatcher).GetMethod(nameof(MultiStringMatcher.Find))!;
 
         private static readonly MethodInfo s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod = typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
@@ -302,6 +300,9 @@ namespace System.Text.RegularExpressions
         /// <summary>Declares a local bool.</summary>
         private LocalBuilder DeclareBool() => _ilg!.DeclareLocal(typeof(bool));
 
+        /// <summary>Declares a local char.</summary>
+        private LocalBuilder DeclareChar() => _ilg!.DeclareLocal(typeof(char));
+
         /// <summary>Declares a local int.</summary>
         private LocalBuilder DeclareInt32() => _ilg!.DeclareLocal(typeof(int));
 
@@ -454,7 +455,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case FindNextStartingPositionMode.LeadingMultiString_LeftToRight:
-                    EmitMultiStringMatcherFind();
+                    EmitMultiStringSearch();
                     break;
 
                 default:
@@ -762,32 +763,96 @@ namespace System.Text.RegularExpressions
                 Ret();
             }
 
-            void EmitMultiStringMatcherFind()
+            void EmitMultiStringSearch()
             {
                 RegexFindOptimizations opts = _regexTree.FindOptimizations;
                 Debug.Assert(opts.FindMode is FindNextStartingPositionMode.LeadingMultiString_LeftToRight && opts.PrefixMatcher is not null);
+                ReadOnlySpan<TrieNodeWithLinks> trie = opts.PrefixMatcher.Trie;
 
-                using RentedLocalBuilder i = RentInt32Local();
+                Label foundMatch = DefineLabel();
 
-                // int i = _prefixMatcher.Find(inputSpan.Slice(pos));
-                Ldthisfld(s_prefixMatcherField);
-                Ldloca(inputSpan);
-                Ldloc(pos);
-                Call(s_spanSliceIntMethod);
-                Callvirt(s_multiStringMatcherFindMethod);
-                Stloc(i);
+                // char c;
+                LocalBuilder c = DeclareChar();
 
-                // if (i < 0) goto ReturnFalse;
-                Ldloc(i);
-                Ldc(0);
-                BltFar(returnFalse);
+                // For each state we place two labels, one that includes reading the next character and one that doesn't.
+                // We jump to the first if we move downwards to a child node, and to the second if we move upwards via
+                // the suffix link (unless we are at the root node, where its suffix link is itself and would cause an
+                // infinite loop with no new characters being read).
+                (Label NextCharacter, Label Fallback)[] stateLabels = new (Label NextCharacter, Label Fallback)[trie.Length];
+                for (int i = 0; i < trie.Length; i++)
+                {
+                    stateLabels[i] = (DefineLabel(), DefineLabel());
+                }
 
-                // base.runtextpos = pos + i;
+                for (int i = 0; i < trie.Length; i++)
+                {
+                    ref readonly TrieNodeWithLinks node = ref trie[i];
+
+                    // State<i>:
+                    MarkLabel(stateLabels[i].NextCharacter);
+
+                    if (node.MatchLength != -1)
+                    {
+                        // We are in a match node.
+
+                        // pos -= <node.MatchLength>;
+                        // goto FoundMatch;
+                        Ldloc(pos);
+                        Ldc(node.MatchLength);
+                        Sub();
+                        Stloc(pos);
+                        BrFar(foundMatch);
+                    }
+                    else
+                    {
+                        // if (pos >= inputSpan.Length) goto ReturnFalse;
+                        Ldloc(pos);
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
+                        BgeFar(returnFalse);
+
+                        // c = inputSpan[pos++];
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Dup();
+                        Ldc(1);
+                        Add();
+                        Stloc(pos);
+                        Call(s_spanGetItemMethod);
+                        LdindU2();
+                        Stloc(c);
+
+                        // State<i>_Fallback:
+                        MarkLabel(stateLabels[i].Fallback);
+
+                        foreach (KeyValuePair<char, int> child in node.Children)
+                        {
+                            // if (c == <child.Key>) goto State_<child.Value>;
+                            Ldloc(c);
+                            Ldc(child.Key);
+                            BeqFar(stateLabels[child.Value].NextCharacter);
+                        }
+
+                        if (i == TrieNode.Root)
+                        {
+                            // goto State<i>;
+                            BrFar(stateLabels[node.SuffixLink].NextCharacter);
+                        }
+                        else
+                        {
+                            // goto State<i>_Fallback;
+                            BrFar(stateLabels[node.SuffixLink].Fallback);
+                        }
+                    }
+                }
+
+                // FoundMatch:
+                MarkLabel(foundMatch);
+
+                // base.runtextpos = pos;
                 // return true;
                 Ldthis();
                 Ldloc(pos);
-                Ldloc(i);
-                Add();
                 Stfld(s_runtextposField);
                 Ldc(1);
                 Ret();

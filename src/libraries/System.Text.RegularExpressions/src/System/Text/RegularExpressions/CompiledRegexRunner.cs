@@ -10,11 +10,6 @@ namespace System.Text.RegularExpressions
         private readonly ScanDelegate _scanMethod;
         /// <summary>This field will only be set if the pattern contains backreferences and has RegexOptions.IgnoreCase</summary>
         private readonly CultureInfo? _culture;
-        /// <summary>
-        /// This field will only be set if the regex's <see cref="RegexFindOptimizations.FindMode"/>
-        /// is <see cref="FindNextStartingPositionMode.LeadingMultiString_LeftToRight"/>.
-        /// </summary>
-        private readonly MultiStringMatcher? _prefixMatcher;
 
 #pragma warning disable CA1823 // Avoid unused private fields. Justification: Used via reflection to cache the Case behavior if needed.
 #pragma warning disable CS0169
@@ -24,11 +19,10 @@ namespace System.Text.RegularExpressions
 
         internal delegate void ScanDelegate(RegexRunner runner, ReadOnlySpan<char> text);
 
-        public CompiledRegexRunner(ScanDelegate scan, CultureInfo? culture, MultiStringMatcher? prefixMatcher)
+        public CompiledRegexRunner(ScanDelegate scan, CultureInfo? culture)
         {
             _scanMethod = scan;
             _culture = culture;
-            _prefixMatcher = prefixMatcher;
         }
 
         protected internal override void Scan(ReadOnlySpan<char> text)
