@@ -18,6 +18,7 @@
 #include "typestring.h"
 #include "daccess.h"
 #include "binder.h"
+#include "win32threadpool.h"
 #include "runtimeinfo.h"
 
 #ifdef FEATURE_COMWRAPPERS

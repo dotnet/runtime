@@ -10,6 +10,7 @@
 #include "common.h"
 #include "excep.h"
 #include "log.h"
+#include "win32threadpool.h"
 #include "threadsuspend.h"
 #include "tieredcompilation.h"
 

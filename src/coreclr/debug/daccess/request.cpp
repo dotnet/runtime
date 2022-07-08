@@ -10,6 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
+#include "win32threadpool.h"
 
 #include "typestring.h"
 #include <gccover.h>

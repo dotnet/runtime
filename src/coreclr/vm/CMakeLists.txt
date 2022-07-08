@@ -129,6 +129,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     vars.cpp
     versionresilienthashcode.cpp
     virtualcallstub.cpp
+    win32threadpool.cpp
     zapsig.cpp
 )
 
@@ -236,6 +237,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     vars.hpp
     versionresilienthashcode.h
     virtualcallstub.h
+    win32threadpool.h
     zapsig.h
 )
 

@@ -17,6 +17,7 @@
 #include "comdelegate.h"
 #include "comthreadpool.h"
 #include "threadpoolrequest.h"
+#include "win32threadpool.h"
 #include "class.h"
 #include "object.h"
 #include "field.h"

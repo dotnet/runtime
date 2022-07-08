@@ -9,6 +9,7 @@
 #include "comcache.h"
 #include "runtimecallablewrapper.h"
 #include <mtx.h>
+#include "win32threadpool.h"
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"

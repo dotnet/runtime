@@ -28,6 +28,7 @@
 #include "dllimportcallback.h"
 #include "eventtrace.h"
 
+#include "win32threadpool.h"
 #include "eventtrace.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"

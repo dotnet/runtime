@@ -20,6 +20,7 @@
 #include "eeprofinterfaces.h"
 #include "eeconfig.h"
 #include "corhost.h"
+#include "win32threadpool.h"
 #include "jitinterface.h"
 #include "eventtrace.h"
 #include "comutilnative.h"
@@ -33,6 +34,7 @@
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
+#include "win32threadpool.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"

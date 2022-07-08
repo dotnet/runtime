@@ -11,6 +11,7 @@
 #include <eventpipe/ep-session-provider.h>
 #include "fstream.h"
 #include "typestring.h"
+#include "win32threadpool.h"
 #include "clrversion.h"
 
 #undef EP_INFINITE_WAIT
