@@ -149,10 +149,7 @@ namespace System.Xml.Serialization
                     XmlSerializerNamespaces nss = new XmlSerializerNamespaces();
                     nss.AddInternal("xsi", XmlSchema.InstanceNamespace);
                     nss.AddInternal("xsd", XmlSchema.Namespace);
-                    if (s_defaultNamespaces == null)
-                    {
-                        s_defaultNamespaces = nss;
-                    }
+                    s_defaultNamespaces ??= nss;
                 }
                 return s_defaultNamespaces;
             }
@@ -260,10 +257,8 @@ namespace System.Xml.Serialization
                     s_cache.Add(defaultNamespace, type, _tempAssembly);
                 }
             }
-            if (_mapping == null)
-            {
-                _mapping = XmlReflectionImporter.GetTopLevelMapping(type, defaultNamespace);
-            }
+
+            _mapping ??= XmlReflectionImporter.GetTopLevelMapping(type, defaultNamespace);
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]

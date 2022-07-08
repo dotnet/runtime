@@ -76,14 +76,14 @@ namespace System.Formats.Tar.Tests
                 PaxTarEntry paxEntry = firstEntry as PaxTarEntry;
                 Assert.Contains("atime", paxEntry.ExtendedAttributes);
                 Assert.Contains("ctime", paxEntry.ExtendedAttributes);
-                CompareDateTimeOffsets(firstEntry.ModificationTime, GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "atime"));
-                CompareDateTimeOffsets(firstEntry.ModificationTime, GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "ctime"));
+                Assert.Equal(firstEntry.ModificationTime, GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "atime"));
+                Assert.Equal(firstEntry.ModificationTime, GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "ctime"));
             }
             else if (format is TarEntryFormat.Gnu)
             {
                 GnuTarEntry gnuEntry = firstEntry as GnuTarEntry;
-                CompareDateTimeOffsets(firstEntry.ModificationTime, gnuEntry.AccessTime);
-                CompareDateTimeOffsets(firstEntry.ModificationTime, gnuEntry.ChangeTime);
+                Assert.Equal(firstEntry.ModificationTime, gnuEntry.AccessTime);
+                Assert.Equal(firstEntry.ModificationTime, gnuEntry.ChangeTime);
             }
 
             return firstEntry;
@@ -123,18 +123,18 @@ namespace System.Formats.Tar.Tests
             if (formatToConvert is TarEntryFormat.Pax)
             {
                 PaxTarEntry paxEntry = convertedEntry as PaxTarEntry;
-                DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "atime");
-                DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "atime");
+                DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
                 if (originalEntry.Format is TarEntryFormat.Pax or TarEntryFormat.Gnu)
                 {
                     GetExpectedTimestampsFromOriginalPaxOrGnu(originalEntry, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime);
-                    CompareDateTimeOffsets(expectedATime, actualAccessTime);
-                    CompareDateTimeOffsets(expectedCTime, actualChangeTime);
+                    Assert.Equal(expectedATime, actualAccessTime);
+                    Assert.Equal(expectedCTime, actualChangeTime);
                 }
                 else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
                 {
-                    CompareDateTimeOffsets(initialNow, actualAccessTime);
-                    CompareDateTimeOffsets(initialNow, actualChangeTime);
+                    AssertExtensions.GreaterThanOrEqualTo(actualAccessTime, initialNow);
+                    AssertExtensions.GreaterThanOrEqualTo(actualChangeTime, initialNow);
                 }
             }
 
@@ -144,13 +144,13 @@ namespace System.Formats.Tar.Tests
                 if (originalEntry.Format is TarEntryFormat.Pax or TarEntryFormat.Gnu)
                 {
                     GetExpectedTimestampsFromOriginalPaxOrGnu(originalEntry, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime);
-                    CompareDateTimeOffsets(expectedATime, gnuEntry.AccessTime);
-                    CompareDateTimeOffsets(expectedCTime, gnuEntry.ChangeTime);
+                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.AccessTime, expectedATime);
+                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.ChangeTime, expectedCTime);
                 }
                 else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
                 {
-                    CompareDateTimeOffsets(initialNow, gnuEntry.AccessTime);
-                    CompareDateTimeOffsets(initialNow, gnuEntry.ChangeTime);
+                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.AccessTime, initialNow);
+                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.ChangeTime, initialNow);
                 }
             }
 
@@ -186,38 +186,5 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Gnu => new GnuTarEntry(other),
                 _ => throw new FormatException($"Unexpected format: {targetFormat}")
             };
-
-        protected TarEntryType GetTarEntryTypeForTarEntryFormat(TarEntryType entryType, TarEntryFormat format)
-        {
-            if (format is TarEntryFormat.V7)
-            {
-                if (entryType is TarEntryType.RegularFile)
-                {
-                    return TarEntryType.V7RegularFile;
-                }
-            }
-            else
-            {
-                if (entryType is TarEntryType.V7RegularFile)
-                {
-                    return TarEntryType.RegularFile;
-                }
-            }
-            return entryType;
-        }
-
-        protected void CheckConversionType(TarEntry entry, TarEntryFormat expectedFormat)
-        {
-            Type expectedType = expectedFormat switch
-            {
-                TarEntryFormat.V7 => typeof(V7TarEntry),
-                TarEntryFormat.Ustar => typeof(UstarTarEntry),
-                TarEntryFormat.Pax => typeof(PaxTarEntry),
-                TarEntryFormat.Gnu => typeof(GnuTarEntry),
-                _ => throw new FormatException($"Unexpected format {expectedFormat}")
-            };
-
-            Assert.Equal(expectedType, entry.GetType());
-        }
     }
 }

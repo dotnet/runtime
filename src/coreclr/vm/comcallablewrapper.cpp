@@ -734,7 +734,7 @@ void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString &ssMe
         EX_TRY
         {
             ssMessage.AppendPrintf(", RefCount=%u\n", dwRefCountToLog);
-            OutputDebugStringUtf8(ssMessage.GetUTF8NoConvert());
+            OutputDebugStringUtf8(ssMessage.GetUTF8());
         }
         EX_CATCH
         { }

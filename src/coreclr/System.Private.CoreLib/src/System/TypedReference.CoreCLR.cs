@@ -12,7 +12,7 @@ namespace System
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public ref partial struct TypedReference
     {
-        private readonly ByReference<byte> _value;
+        private readonly ref byte _value;
         private readonly IntPtr _type;
 
         public static unsafe object? ToObject(TypedReference value)
@@ -38,11 +38,11 @@ namespace System
 
             if (pMethodTable->IsValueType)
             {
-                result = RuntimeHelpers.Box(pMethodTable, ref value._value.Value);
+                result = RuntimeHelpers.Box(pMethodTable, ref value._value);
             }
             else
             {
-                result = Unsafe.As<byte, object>(ref value._value.Value);
+                result = Unsafe.As<byte, object>(ref value._value);
             }
 
             return result;

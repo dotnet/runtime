@@ -507,11 +507,11 @@ typedef struct
 #define DEFAULT_NONSTACK_CLASSNAME_SIZE (MAX_CLASSNAME_LENGTH/4)
 
 #define DefineFullyQualifiedNameForClass() \
-    ScratchBuffer<DEFAULT_NONSTACK_CLASSNAME_SIZE> _scratchbuffer_; \
+    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> _ssclsname8_; \
     InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassOnStack() \
-    ScratchBuffer<MAX_CLASSNAME_LENGTH> _scratchbuffer_; \
+    InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname8_; \
     InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassW() \
@@ -521,13 +521,13 @@ typedef struct
     InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname_w_;
 
 #define GetFullyQualifiedNameForClassNestedAware(pClass) \
-    pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_).GetUTF8(_scratchbuffer_)
+    (pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_), _ssclsname8_.SetAndConvertToUTF8(_ssclsname_), _ssclsname8_.GetUTF8())
 
 #define GetFullyQualifiedNameForClassNestedAwareW(pClass) \
     pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_w_).GetUnicode()
 
 #define GetFullyQualifiedNameForClass(pClass) \
-    pClass->_GetFullyQualifiedNameForClass(_ssclsname_).GetUTF8(_scratchbuffer_)
+    (pClass->_GetFullyQualifiedNameForClass(_ssclsname_), _ssclsname8_.SetAndConvertToUTF8(_ssclsname_), _ssclsname8_.GetUTF8())
 
 #define GetFullyQualifiedNameForClassW(pClass) \
     pClass->_GetFullyQualifiedNameForClass(_ssclsname_w_).GetUnicode()

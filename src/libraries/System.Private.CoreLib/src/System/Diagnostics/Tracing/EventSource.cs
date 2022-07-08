@@ -1706,13 +1706,10 @@ namespace System.Diagnostics.Tracing
         private static Guid GenerateGuidFromName(string name)
         {
 #if ES_BUILD_STANDALONE
-            if (namespaceBytes == null)
-            {
-                namespaceBytes = new byte[] {
-                    0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
-                    0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
-                };
-            }
+            namespaceBytes ??= new byte[] {
+                0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
+                0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
+            };
 #else
             ReadOnlySpan<byte> namespaceBytes = new byte[] // rely on C# compiler optimization to remove byte[] allocation
             {
@@ -4073,15 +4070,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public event EventHandler<EventWrittenEventArgs>? EventWritten;
 
-        static EventListener()
-        {
-#if FEATURE_PERFTRACING
-            // This allows NativeRuntimeEventSource to get initialized so that EventListeners can subscribe to the runtime events emitted from
-            // native side.
-            GC.KeepAlive(NativeRuntimeEventSource.Log);
-#endif
-        }
-
         /// <summary>
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
         /// them on).
@@ -4490,7 +4478,18 @@ namespace System.Diagnostics.Tracing
             get
             {
                 if (s_EventSources == null)
+                {
                     Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference<EventSource>>(2), null);
+#if FEATURE_PERFTRACING
+                    // It is possible that another thread could observe the s_EventSources list at this point and it
+                    // won't have the NativeRuntimeEventSource in it. In the past we guaranteed that the NativeRuntimeEventSource
+                    // was always visible in the list by initializing it in the EventListener static constructor, however doing it
+                    // that way triggered deadlocks between the static constructor and an OS ETW lock. There is no known issue here
+                    // having a small window of time where NativeRuntimeEventSource is not in the list as long
+                    // as we still guarantee it gets initialized eventually.
+                    GC.KeepAlive(NativeRuntimeEventSource.Log);
+#endif
+                }
                 return s_EventSources;
             }
         }

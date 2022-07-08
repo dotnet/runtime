@@ -957,8 +957,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (_captureStream == null)
-                        _captureStream = new MemoryStream();
+                    _captureStream ??= new MemoryStream();
 
                     if (trailByteCount > 0)
                         _captureStream.Write(trailBytes!, 0, trailByteCount);
@@ -1006,8 +1005,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            if (_writer == null)
-                _writer = new XmlBinaryNodeWriter();
+            _writer ??= new XmlBinaryNodeWriter();
             _writer.SetOutput(stream, dictionary, session, ownsStream);
             SetOutput(_writer);
         }
@@ -1031,10 +1029,7 @@ namespace System.Xml
                 {
                     if (reader.CanReadValueChunk)
                     {
-                        if (_chars == null)
-                        {
-                            _chars = new char[256];
-                        }
+                        _chars ??= new char[256];
                         int count;
                         while ((count = reader.ReadValueChunk(_chars, 0, _chars.Length)) > 0)
                         {
@@ -1056,10 +1051,7 @@ namespace System.Xml
                 if (reader.CanReadBinaryContent)
                 {
                     // Its best to read in buffers that are a multiple of 3 so we don't break base64 boundaries when converting text
-                    if (_bytes == null)
-                    {
-                        _bytes = new byte[384];
-                    }
+                    _bytes ??= new byte[384];
                     int count;
                     while ((count = reader.ReadValueAsBase64(_bytes, 0, _bytes.Length)) > 0)
                     {

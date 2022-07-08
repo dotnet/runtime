@@ -91,8 +91,7 @@ namespace System.Reflection.Metadata
                         break;
 
                     case MethodSemanticsAttributes.Other:
-                        if (other == null)
-                            other = ImmutableArray.CreateBuilder<MethodDefinitionHandle>();
+                        other ??= ImmutableArray.CreateBuilder<MethodDefinitionHandle>();
 
                         other.Add(_reader.MethodSemanticsTable.GetMethod(rowId));
                         break;

@@ -9,32 +9,11 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests specific to PAX format.
-    public class TarWriter_WriteEntry_Pax_Tests : TarTestsBase
+    public class TarWriter_WriteEntry_Pax_Tests : TarWriter_WriteEntry_Base
     {
         [Fact]
-        public void Write_V7RegularFile_To_PaxArchive()
-        {
-            using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Pax, leaveOpen: true))
-            {
-                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
-
-                // Should be written in the format of the entry
-                writer.WriteEntry(entry);
-            }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
-            {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(TarEntryFormat.V7, entry.Format);
-                Assert.True(entry is V7TarEntry);
-                Assert.Equal(TarEntryType.V7RegularFile, entry.EntryType);
-
-                Assert.Null(reader.GetNextEntry());
-            }
-        }
+        public void WriteEntry_Null_Throws() =>
+            WriteEntry_Null_Throws_Internal(TarEntryFormat.Pax);
 
         [Fact]
         public void WriteRegularFile()
@@ -393,6 +372,117 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(0, gea.GlobalExtendedAttributes.Count);
 
                 Assert.Null(reader.GetNextEntry());
+            }
+        }
+
+        [Fact]
+        // Y2K38 will happen one second after "2038/19/01 03:14:07 +00:00". This timestamp represents the seconds since the Unix epoch with a
+        // value of int.MaxValue: 2,147,483,647.
+        // The fixed size fields for mtime, atime and ctime can fit 12 ASCII characters, but the last character is reserved for an ASCII space.
+        // All our entry types should survive the Epochalypse because we internally use long to represent the seconds since Unix epoch, not int.
+        // So if the max allowed value is 77,777,777,777 in octal, then the max allowed seconds since the Unix epoch are 8,589,934,591, which
+        // is way past int MaxValue, but still within the long limits. That number represents the date "2242/16/03 12:56:32 +00:00".
+        public void WriteTimestampsBeyondEpochalypseInPax()
+        {
+            DateTimeOffset epochalypse = new DateTimeOffset(2038, 1, 19, 3, 14, 8, TimeSpan.Zero);
+            string strEpochalypse = GetTimestampStringFromDateTimeOffset(epochalypse);
+
+            Dictionary<string, string> ea = new Dictionary<string, string>()
+            {
+                { PaxEaATime, strEpochalypse },
+                { PaxEaCTime, strEpochalypse }
+            };
+
+            PaxTarEntry entry = new PaxTarEntry(TarEntryType.Directory, "dir", ea);
+
+            entry.ModificationTime = epochalypse;
+            Assert.Equal(epochalypse, entry.ModificationTime);
+
+            Assert.Contains(PaxEaATime, entry.ExtendedAttributes);
+            DateTimeOffset atime = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, PaxEaATime);
+            Assert.Equal(epochalypse, atime);
+
+            Assert.Contains(PaxEaCTime, entry.ExtendedAttributes);
+            DateTimeOffset ctime = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, PaxEaCTime);
+            Assert.Equal(epochalypse, ctime);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+            {
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+
+                Assert.Equal(epochalypse, readEntry.ModificationTime);
+
+                Assert.Contains(PaxEaATime, readEntry.ExtendedAttributes);
+                DateTimeOffset actualATime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaATime);
+                Assert.Equal(epochalypse, actualATime);
+
+                Assert.Contains(PaxEaCTime, readEntry.ExtendedAttributes);
+                DateTimeOffset actualCTime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaCTime);
+                Assert.Equal(epochalypse, actualCTime);
+            }
+        }
+
+        [Fact]
+        // The fixed size fields for mtime, atime and ctime can fit 12 ASCII characters, but the last character is reserved for an ASCII space.
+        // We internally use long to represent the seconds since Unix epoch, not int.
+        // If the max allowed value is 77,777,777,777 in octal, then the max allowed seconds since the Unix epoch are 8,589,934,591,
+        // which represents the date "2242/03/16 12:56:32 +00:00".
+        // Pax should survive after this date because it stores the timestamps in the extended attributes dictionary
+        // without size restrictions.
+        public void WriteTimestampsBeyondOctalLimitInPax()
+        {
+            DateTimeOffset overLimitTimestamp = new DateTimeOffset(2242, 3, 16, 12, 56, 33, TimeSpan.Zero); // One second past the octal limit
+
+            string strOverLimitTimestamp = GetTimestampStringFromDateTimeOffset(overLimitTimestamp);
+
+            Dictionary<string, string> ea = new Dictionary<string, string>()
+            {
+                { PaxEaATime, strOverLimitTimestamp },
+                { PaxEaCTime, strOverLimitTimestamp }
+            };
+
+            PaxTarEntry entry = new PaxTarEntry(TarEntryType.Directory, "dir", ea);
+
+            entry.ModificationTime = overLimitTimestamp;
+            Assert.Equal(overLimitTimestamp, entry.ModificationTime);
+
+            Assert.Contains(PaxEaATime, entry.ExtendedAttributes);
+            DateTimeOffset atime = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, PaxEaATime);
+            Assert.Equal(overLimitTimestamp, atime);
+
+            Assert.Contains(PaxEaCTime, entry.ExtendedAttributes);
+            DateTimeOffset ctime = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, PaxEaCTime);
+            Assert.Equal(overLimitTimestamp, ctime);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+            {
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+
+                Assert.Equal(overLimitTimestamp, readEntry.ModificationTime);
+
+                Assert.Contains(PaxEaATime, readEntry.ExtendedAttributes);
+                DateTimeOffset actualATime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaATime);
+                Assert.Equal(overLimitTimestamp, actualATime);
+
+                Assert.Contains(PaxEaCTime, readEntry.ExtendedAttributes);
+                DateTimeOffset actualCTime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaCTime);
+                Assert.Equal(overLimitTimestamp, actualCTime);
             }
         }
     }

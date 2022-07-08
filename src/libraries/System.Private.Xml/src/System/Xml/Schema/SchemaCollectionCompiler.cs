@@ -513,10 +513,7 @@ namespace System.Xml.Schema
             else
             {
                 group.IsProcessing = true;
-                if (group.CanonicalParticle == null)
-                {
-                    group.CanonicalParticle = CannonicalizeParticle(group.Particle, true, true);
-                }
+                group.CanonicalParticle ??= CannonicalizeParticle(group.Particle, true, true);
                 Debug.Assert(group.CanonicalParticle != null);
                 group.IsProcessing = false;
             }

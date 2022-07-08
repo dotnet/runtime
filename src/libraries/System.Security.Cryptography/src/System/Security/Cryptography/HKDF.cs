@@ -132,14 +132,14 @@ namespace System.Security.Cryptography
             if (prk.Length < hashLength)
                 throw new ArgumentException(SR.Format(SR.Cryptography_Prk_TooSmall, hashLength), nameof(prk));
 
-            Span<byte> counterSpan = stackalloc byte[1];
-            ref byte counter = ref counterSpan[0];
+            byte counter = 0;
+            var counterSpan = new Span<byte>(ref counter);
             Span<byte> t = Span<byte>.Empty;
             Span<byte> remainingOutput = output;
 
             const int MaxStackInfoBuffer = 64;
             Span<byte> tempInfoBuffer = stackalloc byte[MaxStackInfoBuffer];
-            ReadOnlySpan<byte> infoBuffer = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> infoBuffer;
             byte[]? rentedTempInfoBuffer = null;
 
             if (output.Overlaps(info))

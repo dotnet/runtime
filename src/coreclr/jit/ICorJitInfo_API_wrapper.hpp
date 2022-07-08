@@ -967,6 +967,17 @@ void WrapICorJitInfo::setVars(
     API_LEAVE(setVars);
 }
 
+void WrapICorJitInfo::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
+{
+    API_ENTER(reportRichMappings);
+    wrapHnd->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+    API_LEAVE(reportRichMappings);
+}
+
 void* WrapICorJitInfo::allocateArray(
           size_t cBytes)
 {

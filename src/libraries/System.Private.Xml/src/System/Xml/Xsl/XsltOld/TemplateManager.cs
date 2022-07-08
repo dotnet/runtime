@@ -62,10 +62,7 @@ namespace System.Xml.Xsl.XsltOld
                 _mode.Equals(template.Mode)
             );
 
-            if (this.templates == null)
-            {
-                this.templates = new ArrayList();
-            }
+            this.templates ??= new ArrayList();
 
             this.templates.Add(template);
         }

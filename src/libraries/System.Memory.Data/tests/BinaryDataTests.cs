@@ -400,6 +400,22 @@ namespace System.Tests
         }
 
         [Fact]
+        public void ToObjectHandlesBOM()
+        {
+            TestModel payload = new TestModel { A = "string", B = 42, C = true };
+            using var buffer = new MemoryStream();
+            using var writer = new StreamWriter(buffer, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            writer.Write(JsonSerializer.Serialize(payload));
+            writer.Flush();
+
+            BinaryData data = new BinaryData(buffer.ToArray());
+            var model = data.ToObjectFromJson<TestModel>();
+            Assert.Equal(payload.A, model.A);
+            Assert.Equal(payload.B, model.B);
+            Assert.Equal(payload.C, model.C);
+        }
+
+        [Fact]
         public void ToObjectThrowsExceptionOnIncompatibleType()
         {
             TestModel payload = new TestModel { A = "value", B = 5, C = true };

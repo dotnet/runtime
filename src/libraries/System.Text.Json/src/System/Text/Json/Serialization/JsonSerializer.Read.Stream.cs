@@ -366,13 +366,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
-            options ??= JsonSerializerOptions.Default;
-            if (!options.IsInitializedForReflectionSerializer)
-            {
-                options.InitializeForReflectionSerializer();
-            }
-
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(typeof(TValue));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
             return CreateAsyncEnumerableDeserializer(utf8Json, CreateQueueTypeInfo<TValue>(jsonTypeInfo), cancellationToken);
         }
 

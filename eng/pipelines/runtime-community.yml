@@ -19,7 +19,7 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# s390x
+# s390x & PPC64 little endian
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -30,6 +30,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_s390x
+    - Linux_ppc64le
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
