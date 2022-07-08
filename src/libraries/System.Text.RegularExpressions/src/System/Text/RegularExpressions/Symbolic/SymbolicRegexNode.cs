@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly byte[]? _nullabilityCache;
 
 #if DEBUG
-        internal SymbolicRegexBuilder<TSet>? _debugBuilder;
+        private readonly SymbolicRegexBuilder<TSet> _debugBuilder;
 #endif
 
         /// <summary>AST node of a symbolic regex</summary>
