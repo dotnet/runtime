@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
 
         public SHANativeHashProvider(string hashAlgorithmId)
         {
-            Debug.Assert(HashProviderDispenser.CanUseSubtleCryptoImpl);
+            Debug.Assert(Interop.BrowserCrypto.CanUseSubtleCrypto);
             (_impl, _hashSizeInBytes) = HashAlgorithmToPal(hashAlgorithmId);
         }
 
@@ -40,40 +40,34 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= _hashSizeInBytes);
 
-            byte[] srcArray = Array.Empty<byte>();
-            int srcLength = 0;
-            if (_buffer != null)
-            {
-                srcArray = _buffer.GetBuffer();
-                srcLength = (int)_buffer.Length;
-            }
+            ReadOnlySpan<byte> source = _buffer != null ?
+                new ReadOnlySpan<byte>(_buffer.GetBuffer(), 0, (int)_buffer.Length) :
+                default;
 
-            unsafe
-            {
-                fixed (byte* src = srcArray)
-                fixed (byte* dest = destination)
-                {
-                    int res = Interop.BrowserCrypto.SimpleDigestHash(_impl, src, srcLength, dest, destination.Length);
-                    Debug.Assert(res != 0);
-                }
-            }
+            SimpleDigestHash(_impl, source, destination);
 
             return _hashSizeInBytes;
         }
 
-        public static unsafe int HashOneShot(string hashAlgorithmId, ReadOnlySpan<byte> data, Span<byte> destination)
+        public static int HashOneShot(string hashAlgorithmId, ReadOnlySpan<byte> data, Span<byte> destination)
         {
             (SimpleDigest impl, int hashSizeInBytes) = HashAlgorithmToPal(hashAlgorithmId);
             Debug.Assert(destination.Length >= hashSizeInBytes);
 
+            SimpleDigestHash(impl, data, destination);
+
+            return hashSizeInBytes;
+        }
+
+        private static unsafe void SimpleDigestHash(SimpleDigest hashName, ReadOnlySpan<byte> data, Span<byte> destination)
+        {
             fixed (byte* src = data)
             fixed (byte* dest = destination)
             {
-                int res = Interop.BrowserCrypto.SimpleDigestHash(impl, src, data.Length, dest, destination.Length);
-                Debug.Assert(res != 0);
+                int res = Interop.BrowserCrypto.SimpleDigestHash(hashName, src, data.Length, dest, destination.Length);
+                if (res != 0)
+                    throw new CryptographicException(SR.Format(SR.Unknown_SubtleCrypto_Error, res));
             }
-
-            return hashSizeInBytes;
         }
 
         public override int HashSizeInBytes => _hashSizeInBytes;

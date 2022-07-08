@@ -8,7 +8,6 @@ class Program
 {
     static int Main(string[] args)
     {
-/* Re-enable once the fix to https://github.com/dotnet/msbuild/issues/6734 propagates to this repo.
         Assembly assembly = typeof(Class).GetTypeInfo().Assembly;
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(assembly) != null);
         Assert(((ICustomAttributeProvider)assembly).GetCustomAttributes(typeof(SingleAttribute<int>), true) != null);
@@ -20,7 +19,6 @@ class Program
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<bool>), true));
         Assert(CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
         Assert(CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
-*/
 
         // Uncomment when https://github.com/dotnet/runtime/issues/66168 is resolved
         // Module module = programTypeInfo.Module;

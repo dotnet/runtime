@@ -259,18 +259,18 @@ public:
     }
 };
 
-// GT_FIELD nodes will be lowered into more "code-gen-able" representations, like
-// GT_IND's of addresses, or GT_LCL_FLD nodes.  We'd like to preserve the more abstract
-// information, and will therefore annotate such lowered nodes with FieldSeq's.  A FieldSeq
-// represents a (possibly) empty sequence of fields.  The fields are in the order
-// in which they are dereferenced.  The first field may be an object field or a struct field;
-// all subsequent fields must be struct fields.
-class FieldSeqNode
+// GT_FIELD nodes will be lowered into more "code-gen-able" representations, like GT_IND's of addresses.
+// For value numbering, we would like to preserve the aliasing information for class and static fields,
+// and so will annotate such lowered addresses with "field sequences", representing the "base" static or
+// class field and any additional struct fields. We only need to preserve the handle for the first field,
+// so any struct fields will be represented implicitly (via offsets). See also "IsFieldAddr".
+//
+class FieldSeq
 {
 public:
     enum class FieldKind : uintptr_t
     {
-        Instance     = 0, // An instance field, object or struct.
+        Instance     = 0, // An instance field.
         SimpleStatic = 1, // Simple static field - the handle represents a unique location.
         SharedStatic = 2, // Static field on a shared generic type: "Class<__Canon>.StaticField".
     };
@@ -280,12 +280,11 @@ private:
 
     static_assert_no_msg(sizeof(CORINFO_FIELD_HANDLE) == sizeof(uintptr_t));
 
-    uintptr_t     m_fieldHandleAndKind;
-    FieldSeqNode* m_next;
-    size_t        m_offset;
+    uintptr_t m_fieldHandleAndKind;
+    ssize_t   m_offset;
 
 public:
-    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, size_t offset, FieldKind fieldKind);
+    FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind);
 
     FieldKind GetKind() const
     {
@@ -294,18 +293,7 @@ public:
 
     CORINFO_FIELD_HANDLE GetFieldHandle() const
     {
-        assert(GetFieldHandleValue() != NO_FIELD_HANDLE);
-        return GetFieldHandleValue();
-    }
-
-    CORINFO_FIELD_HANDLE GetFieldHandleValue() const
-    {
         return CORINFO_FIELD_HANDLE(m_fieldHandleAndKind & ~FIELD_KIND_MASK);
-    }
-
-    FieldSeqNode* GetNext() const
-    {
-        return m_next;
     }
 
     //------------------------------------------------------------------------
@@ -315,7 +303,7 @@ public:
     // For boxed statics, it will be TARGET_POINTER_SIZE (the method table pointer size).
     // For other fields, it will be equal to the value "getFieldOffset" would return.
     //
-    size_t GetOffset() const
+    ssize_t GetOffset() const
     {
         return m_offset;
     }
@@ -329,63 +317,24 @@ public:
     {
         return GetKind() == FieldKind::SharedStatic;
     }
-
-    FieldSeqNode* GetTail()
-    {
-        FieldSeqNode* tail = this;
-        while (tail->m_next != nullptr)
-        {
-            tail = tail->m_next;
-        }
-        return tail;
-    }
-
-    // Make sure this provides methods that allow it to be used as a KeyFuncs type in JitHashTable.
-    // Note that there is a one-to-one relationship between the field handle and the field kind, so
-    // we do not need to mask away the latter for comparison purposes. Likewise, we do not need to
-    // include the offset.
-    static int GetHashCode(FieldSeqNode fsn)
-    {
-        return static_cast<int>(fsn.m_fieldHandleAndKind) ^ static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_next));
-    }
-
-    static bool Equals(const FieldSeqNode& fsn1, const FieldSeqNode& fsn2)
-    {
-        return fsn1.m_fieldHandleAndKind == fsn2.m_fieldHandleAndKind && fsn1.m_next == fsn2.m_next;
-    }
 };
 
 // This class canonicalizes field sequences.
+//
 class FieldSeqStore
 {
-    typedef JitHashTable<FieldSeqNode, /*KeyFuncs*/ FieldSeqNode, FieldSeqNode*> FieldSeqNodeCanonMap;
-
-    CompAllocator         m_alloc;
-    FieldSeqNodeCanonMap* m_canonMap;
-
-    static FieldSeqNode s_notAField; // No value, just exists to provide an address.
+    // Maps field handles to field sequence instances.
+    //
+    JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, FieldSeq> m_map;
 
 public:
-    FieldSeqStore(CompAllocator alloc);
-
-    // Returns the (canonical in the store) singleton field sequence for the given handle.
-    FieldSeqNode* CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
-                                  size_t                  offset,
-                                  FieldSeqNode::FieldKind fieldKind = FieldSeqNode::FieldKind::Instance);
-
-    // This is a special distinguished FieldSeqNode indicating that a constant does *not*
-    // represent a valid field sequence.  This is "infectious", in the sense that appending it
-    // (on either side) to any field sequence yields the "NotAField()" sequence.
-    static FieldSeqNode* NotAField()
+    FieldSeqStore(CompAllocator alloc) : m_map(alloc)
     {
-        return &s_notAField;
     }
 
-    // Returns the (canonical in the store) field sequence representing the concatenation of
-    // the sequences represented by "a" and "b".  Assumes that "a" and "b" are canonical; that is,
-    // they are the results of CreateSingleton, NotAField, or Append calls.  If either of the arguments
-    // are the "NotAField" value, so is the result.
-    FieldSeqNode* Append(FieldSeqNode* a, FieldSeqNode* b);
+    FieldSeq* Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldSeq::FieldKind fieldKind);
+
+    FieldSeq* Append(FieldSeq* a, FieldSeq* b);
 };
 
 class GenTreeUseEdgeIterator;
@@ -615,10 +564,9 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_CIDMID_HDL         = 0x0E000000, // GT_CNS_INT -- constant is a class ID or a module ID
     GTF_ICON_BBC_PTR            = 0x0F000000, // GT_CNS_INT -- constant is a basic block count pointer
     GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
-    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeqNode* (used only as VNHandle)
+    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
-    GTF_ICON_FIELD_OFF          = 0x00400000, // GT_CNS_INT -- constant is a field offset
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
     GTF_ICON_INITCLASS          = 0x00100000, // GT_CNS_INT -- Constant is used to access a static that requires preceding
                                               //               class/static init helper.  In some cases, the constant is
@@ -1828,6 +1776,7 @@ public:
 #endif // DEBUG
 
     inline bool IsIntegralConst(ssize_t constVal) const;
+    inline bool IsFloatAllBitsSet() const;
     inline bool IsFloatNaN() const;
     inline bool IsFloatPositiveZero() const;
     inline bool IsFloatNegativeZero() const;
@@ -2042,7 +1991,7 @@ public:
     // Determine whether this tree is a basic block profile count update.
     bool IsBlockProfileUpdate();
 
-    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset);
+    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
@@ -3181,7 +3130,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that
     // sequence of fields.
-    FieldSeqNode* gtFieldSeq;
+    FieldSeq* gtFieldSeq;
 
 #ifdef DEBUG
     // If the value represents target address (for a field or call), holds the handle of the field (or call).
@@ -3192,17 +3141,16 @@ struct GenTreeIntCon : public GenTreeIntConCommon
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
         , gtIconVal(value)
         , gtCompileTimeHandle(0)
-        , gtFieldSeq(FieldSeqStore::NotAField())
+        , gtFieldSeq(nullptr)
     {
     }
 
-    GenTreeIntCon(var_types type, ssize_t value, FieldSeqNode* fields DEBUGARG(bool largeNode = false))
+    GenTreeIntCon(var_types type, ssize_t value, FieldSeq* fields DEBUGARG(bool largeNode = false))
         : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
         , gtIconVal(value)
         , gtCompileTimeHandle(0)
         , gtFieldSeq(fields)
     {
-        assert(fields != nullptr);
     }
 
     void FixupInitBlkValue(var_types asgType);
@@ -8461,6 +8409,33 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
+// IsFloatAllBitsSet: returns true if this is exactly a const float value representing AllBitsSet.
+//
+// Returns:
+//     True if this represents a const floating-point value representing AllBitsSet.
+//     Will return false otherwise.
+//
+inline bool GenTree::IsFloatAllBitsSet() const
+{
+    if (IsCnsFltOrDbl())
+    {
+        double constValue = AsDblCon()->gtDconVal;
+
+        if (TypeIs(TYP_FLOAT))
+        {
+            return FloatingPointUtils::isAllBitsSet(static_cast<float>(constValue));
+        }
+        else
+        {
+            assert(TypeIs(TYP_DOUBLE));
+            return FloatingPointUtils::isAllBitsSet(constValue);
+        }
+    }
+
+    return false;
+}
+
+//-------------------------------------------------------------------
 // IsFloatNaN: returns true if this is exactly a const float value of NaN
 //
 // Returns:
@@ -8511,7 +8486,7 @@ inline bool GenTree::IsFloatPositiveZero() const
         // but it is easier to parse out
         // rather than using !IsCnsNonZeroFltOrDbl.
         double constValue = AsDblCon()->gtDconVal;
-        return *(__int64*)&constValue == 0;
+        return FloatingPointUtils::isPositiveZero(constValue);
     }
 
     return false;
