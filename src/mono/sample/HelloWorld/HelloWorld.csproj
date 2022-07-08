@@ -16,6 +16,7 @@
 
     <ItemGroup>
       <AotInputAssemblies Include="$(PublishDir)\*.dll" />
+      <ReferenceAssembliesForPGO Include="$(PublishDir)\*.dll" />
     </ItemGroup>
 
     <MonoAOTCompiler
@@ -29,7 +30,7 @@
       CacheFilePath="$(IntermediateOutputPath)aot_compiler_cache.json"
       NetTracePath="$(NetTracePath)"
       PgoBinaryPath="$(PgoBinaryPath)"
-      ReferenceAssembliesDir="$(PublishDir)"
+      ReferenceAssembliesForPGO="@(ReferenceAssembliesForPGO)"
       MibcProfilePath="$(MibcProfilePath)">
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
