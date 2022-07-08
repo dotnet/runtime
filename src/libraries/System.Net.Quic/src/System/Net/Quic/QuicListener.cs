@@ -156,7 +156,6 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// Note that <see cref="QuicListener" /> doesn't have a mechanism to report inbound connections that fail the handshake process.
     /// Such connections are only logged by the listener and never surfaced on the outside.
     /// </remarks>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A task that will contain a fully connected <see cref="QuicConnection" /> which successfully finished the handshake and is ready to be used.</returns>
     public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
     {
