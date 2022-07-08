@@ -103,7 +103,7 @@ namespace Microsoft.Interop
             return _innerMarshallingGenerator.Create(info, context);
         }
 
-        private static ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context)
+        private ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context)
         {
             return count switch
             {
@@ -135,10 +135,16 @@ namespace Microsoft.Interop
 
                 for (int i = 0; i < numIndirectionLevels; i++)
                 {
-                    if (marshallingInfo is NativeLinearCollectionMarshallingInfo_V1 collectionInfo)
+                    if (marshallingInfo is NativeLinearCollectionMarshallingInfo collectionInfo)
                     {
-                        type = collectionInfo.ElementType;
-                        marshallingInfo = collectionInfo.ElementMarshallingInfo;
+                        CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(collectionInfo.Marshallers, info);
+                        type = marshallerData.CollectionElementType;
+                        marshallingInfo = marshallerData.CollectionElementMarshallingInfo;
+                    }
+                    else if (marshallingInfo is NativeLinearCollectionMarshallingInfo_V1 collectionInfoV1)
+                    {
+                        type = collectionInfoV1.ElementType;
+                        marshallingInfo = collectionInfoV1.ElementMarshallingInfo;
                     }
                     else
                     {
@@ -207,26 +213,25 @@ namespace Microsoft.Interop
             return false;
         }
 
+        private CustomTypeMarshallerData GetMarshallerDataForTypePositionInfo(CustomTypeMarshallers marshallers, TypePositionInfo info)
+        {
+            if (info.IsManagedReturnPosition)
+                return marshallers.GetModeOrDefault(Options.OutMode);
+
+            return info.RefKind switch
+            {
+                RefKind.None or RefKind.In => marshallers.GetModeOrDefault(Options.InMode),
+                RefKind.Ref => marshallers.GetModeOrDefault(Options.RefMode),
+                RefKind.Out => marshallers.GetModeOrDefault(Options.OutMode),
+                _ => throw new UnreachableException()
+            };
+        }
+
         private IMarshallingGenerator CreateCustomNativeTypeMarshaller(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
             ValidateCustomNativeTypeMarshallingSupported(info, context, marshalInfo);
 
-            CustomTypeMarshallerData marshallerData;
-            if (info.IsManagedReturnPosition)
-            {
-                marshallerData = marshalInfo.Marshallers.GetModeOrDefault(Options.OutMode);
-            }
-            else
-            {
-                marshallerData = info.RefKind switch
-                {
-                    RefKind.None or RefKind.In => marshalInfo.Marshallers.GetModeOrDefault(Options.InMode),
-                    RefKind.Ref => marshalInfo.Marshallers.GetModeOrDefault(Options.RefMode),
-                    RefKind.Out => marshalInfo.Marshallers.GetModeOrDefault(Options.OutMode),
-                    _ => throw new MarshallingNotSupportedException(info, context)
-                };
-            }
-
+            CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(marshalInfo.Marshallers, info);
             if (!ValidateRuntimeMarshallingOptions(marshallerData))
             {
                 throw new MarshallingNotSupportedException(info, context)
