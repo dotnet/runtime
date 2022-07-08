@@ -1937,6 +1937,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Computes the set that includes all elements that can start a match.</summary>
         public TSet GetStartSet(SymbolicRegexBuilder<TSet> builder)
         {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(GetStartSet, builder);
+            }
+
+            // First handle cases where the start set is known without recursion
             switch (_kind)
             {
                 // Anchors and () do not contribute to the startset
@@ -1957,33 +1963,42 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.Singleton:
                     Debug.Assert(_set is not null);
                     return _set;
-
-                case SymbolicRegexNodeKind.Loop:
-                    Debug.Assert(_left is not null);
-                    return _left.GetStartSet(builder);
-
-                case SymbolicRegexNodeKind.Concat:
-                    {
-                        Debug.Assert(_left is not null && _right is not null);
-                        TSet startSet = _left.CanBeNullable ? builder._solver.Or(_left.GetStartSet(builder), _right.GetStartSet(builder)) : _left.GetStartSet(builder);
-                        return startSet;
-                    }
-
-                case SymbolicRegexNodeKind.Alternate:
-                    {
-                        Debug.Assert(_left is not null && _right is not null);
-                        return builder._solver.Or(_left.GetStartSet(builder), _right.GetStartSet(builder));
-                    }
-
-                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
-                case SymbolicRegexNodeKind.Effect:
-                    Debug.Assert(_left is not null);
-                    return _left.GetStartSet(builder);
-
-                default:
-                    Debug.Fail($"{nameof(GetStartSet)}:{_kind}");
-                    return builder._solver.Full;
             }
+
+            // If recursion is needed use the cache in the builder to avoid repeated work
+            if (!builder._startSetCache.TryGetValue(this, out TSet? startSet))
+            {
+                switch (_kind)
+                {
+                    case SymbolicRegexNodeKind.Loop:
+                        Debug.Assert(_left is not null);
+                        startSet = _left.GetStartSet(builder);
+                        break;
+
+                    case SymbolicRegexNodeKind.Concat:
+                        Debug.Assert(_left is not null && _right is not null);
+                        startSet = _left.CanBeNullable ? builder._solver.Or(_left.GetStartSet(builder), _right.GetStartSet(builder)) : _left.GetStartSet(builder);
+                        break;
+
+                    case SymbolicRegexNodeKind.Alternate:
+                        Debug.Assert(_left is not null && _right is not null);
+                        startSet = builder._solver.Or(_left.GetStartSet(builder), _right.GetStartSet(builder));
+                        break;
+
+                    case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    case SymbolicRegexNodeKind.Effect:
+                        Debug.Assert(_left is not null);
+                        startSet = _left.GetStartSet(builder);
+                        break;
+
+                    default:
+                        Debug.Fail($"{nameof(GetStartSet)}:{_kind}");
+                        startSet = builder._solver.Full;
+                        break;
+                }
+                builder._startSetCache[this] = startSet;
+            }
+            return startSet;
         }
 
         /// <summary>

@@ -99,6 +99,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal readonly Dictionary<(SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>), bool> _subsumptionCache = new();
 
+        /// <summary>
+        /// Cache for <see cref="SymbolicRegexNode{TSet}.GetStartSet(SymbolicRegexBuilder{TSet})"/> keyed by nodes.
+        /// The values are the sets of characters that can start a match from that node.
+        /// </summary>
+        internal readonly Dictionary<SymbolicRegexNode<TSet>, TSet> _startSetCache = new();
+
         /// <summary>Create a new symbolic regex builder.</summary>
         internal SymbolicRegexBuilder(ISolver<TSet> solver, CharSetSolver charSetSolver)
         {
