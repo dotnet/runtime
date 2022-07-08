@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)System\Net\Security\Kerberos\System.Net.Security.Kerberos.Shared.projitems" />
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="SslStreamExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
@@ -28,6 +29,8 @@
     <Compile Include="SslStreamNetworkStreamTest.cs" />
     <Compile Include="SslStreamMutualAuthenticationTest.cs" />
     <Compile Include="TransportContextTest.cs" />
+    <!-- NegotiateAuthentication Tests -->
+    <Compile Include="NegotiateAuthenticationKerberosTest.cs" />
     <!-- NegotiateStream Tests -->
     <Compile Include="NegotiateStreamConformanceTests.cs" />
     <Compile Include="NegotiateStreamInvalidOperationTest.cs" />
