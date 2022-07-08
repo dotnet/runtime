@@ -212,21 +212,12 @@ public sealed partial class QuicListener : IAsyncDisposable
     }
 
     private unsafe int HandleListenerEvent(ref QUIC_LISTENER_EVENT listenerEvent)
-    {
-        switch (listenerEvent.Type)
+        => listenerEvent.Type switch
         {
-            case QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION:
-                return HandleEventNewConnection(ref listenerEvent.NEW_CONNECTION);
-            case QUIC_LISTENER_EVENT_TYPE.STOP_COMPLETE:
-                return HandleEventStopComplete(ref listenerEvent.STOP_COMPLETE);
-        }
-
-        if (NetEventSource.Log.IsEnabled())
-        {
-            NetEventSource.Error(this, $"Unknown listener event type '{listenerEvent.Type}'");
-        }
-        return QUIC_STATUS_SUCCESS;
-    }
+            QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION => HandleEventNewConnection(ref listenerEvent.NEW_CONNECTION),
+            QUIC_LISTENER_EVENT_TYPE.STOP_COMPLETE => HandleEventStopComplete(ref listenerEvent.STOP_COMPLETE),
+            _ => QUIC_STATUS_SUCCESS
+        };
 
 #pragma warning disable CS3016
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
