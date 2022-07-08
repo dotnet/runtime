@@ -3912,12 +3912,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
             {
                 GenTree* op1 = impPopStack().val;
-                if (op1->OperIsConst())
+                if (op1->OperIsConst() || op1->IsTypeof())
                 {
                     // op1 is a known constant, replace with 'true'.
                     retNode = gtNewIconNode(1);
                     JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
-                    // We can also consider FTN_ADDR and typeof(T) here
+                    // We can also consider FTN_ADDR here
                 }
                 else
                 {
@@ -4185,121 +4185,101 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // to `true` or `false`
                 // e.g., `typeof(int).IsValueType` => `true`
                 // e.g., `typeof(Span<int>).IsByRefLike` => `true`
-                if (impStackTop().val->IsCall())
+                CORINFO_CLASS_HANDLE hClass = nullptr;
+                if (impStackTop().val->IsTypeof(&hClass))
                 {
-                    GenTreeCall* call = impStackTop().val->AsCall();
-                    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+                    switch (ni)
                     {
-                        assert(call->gtArgs.CountArgs() == 1);
-                        CORINFO_CLASS_HANDLE hClass =
-                            gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
-                        if (hClass != NO_CLASS_HANDLE)
+                        case NI_System_Type_get_IsEnum:
                         {
-                            switch (ni)
-                            {
-                                case NI_System_Type_get_IsEnum:
-                                {
-                                    CorInfoType infoType = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
-                                    retNode =
-                                        gtNewIconNode((eeIsValueClass(hClass) &&
-                                                       // getTypeForPrimitiveNumericClass seems to not normalize enums
-                                                       info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) ==
-                                                           CORINFO_TYPE_UNDEF &&
-                                                       // we need to check for void here
-                                                       infoType != CORINFO_TYPE_UNDEF && infoType != CORINFO_TYPE_VOID)
-                                                          ? 1
-                                                          : 0);
-                                    break;
-                                }
-                                case NI_System_Type_get_IsValueType:
-                                    retNode = gtNewIconNode(
-                                        (eeIsValueClass(hClass) &&
-                                         // pointers are not value types (e.g. typeof(int*).IsValueType is false)
-                                         info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
-                                            ? 1
-                                            : 0);
-                                    break;
-                                case NI_System_Type_get_IsByRefLike:
-                                    retNode = gtNewIconNode(
-                                        (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
-                                    break;
-                                default:
-                                    NO_WAY("Intrinsic not supported in this path.");
-                            }
-                            impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
+                            CorInfoType infoType = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
+                            retNode              = gtNewIconNode(
+                                (eeIsValueClass(hClass) &&
+                                 // getTypeForPrimitiveNumericClass seems to not normalize enums
+                                 info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) == CORINFO_TYPE_UNDEF &&
+                                 // we need to check for void here
+                                 infoType != CORINFO_TYPE_UNDEF && infoType != CORINFO_TYPE_VOID)
+                                                 ? 1
+                                                 : 0);
+                            break;
                         }
+                        case NI_System_Type_get_IsValueType:
+                            retNode =
+                                gtNewIconNode((eeIsValueClass(hClass) &&
+                                               // pointers are not value types (e.g. typeof(int*).IsValueType is false)
+                                               info.compCompHnd->asCorInfoType(hClass) != CORINFO_TYPE_PTR)
+                                                  ? 1
+                                                  : 0);
+                            break;
+                        case NI_System_Type_get_IsByRefLike:
+                            retNode = gtNewIconNode(
+                                (info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_BYREF_LIKE) ? 1 : 0);
+                            break;
+                        default:
+                            NO_WAY("Intrinsic not supported in this path.");
                     }
+                    impPopStack(); // drop CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE call
                 }
                 break;
             }
 
             case NI_System_Type_GetTypeCode:
             {
-                if (impStackTop().val->IsCall())
+                CORINFO_CLASS_HANDLE hClass = nullptr;
+                if (impStackTop().val->IsTypeof(&hClass))
                 {
-                    GenTreeCall* call = impStackTop().val->AsCall();
-                    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+                    int typeCode = -1;
+                    switch (info.compCompHnd->getTypeForPrimitiveValueClass(hClass))
                     {
-                        assert(call->gtArgs.CountArgs() == 1);
-                        CORINFO_CLASS_HANDLE hClass =
-                            gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
-                        if (hClass != NO_CLASS_HANDLE)
-                        {
-                            int typeCode = -1;
-                            switch (info.compCompHnd->getTypeForPrimitiveValueClass(hClass))
+                        case CORINFO_TYPE_BOOL:
+                            typeCode = 3;
+                            break;
+                        case CORINFO_TYPE_CHAR:
+                            typeCode = 4;
+                            break;
+                        case CORINFO_TYPE_BYTE:
+                            typeCode = 5;
+                            break;
+                        case CORINFO_TYPE_UBYTE:
+                            typeCode = 6;
+                            break;
+                        case CORINFO_TYPE_SHORT:
+                            typeCode = 7;
+                            break;
+                        case CORINFO_TYPE_USHORT:
+                            typeCode = 8;
+                            break;
+                        case CORINFO_TYPE_INT:
+                            typeCode = 9;
+                            break;
+                        case CORINFO_TYPE_UINT:
+                            typeCode = 10;
+                            break;
+                        case CORINFO_TYPE_LONG:
+                            typeCode = 11;
+                            break;
+                        case CORINFO_TYPE_ULONG:
+                            typeCode = 12;
+                            break;
+                        case CORINFO_TYPE_FLOAT:
+                            typeCode = 13;
+                            break;
+                        case CORINFO_TYPE_DOUBLE:
+                            typeCode = 14;
+                            break;
+                        default:
+                            if (hClass == impGetStringClass())
                             {
-                                case CORINFO_TYPE_BOOL:
-                                    typeCode = 3;
-                                    break;
-                                case CORINFO_TYPE_CHAR:
-                                    typeCode = 4;
-                                    break;
-                                case CORINFO_TYPE_BYTE:
-                                    typeCode = 5;
-                                    break;
-                                case CORINFO_TYPE_UBYTE:
-                                    typeCode = 6;
-                                    break;
-                                case CORINFO_TYPE_SHORT:
-                                    typeCode = 7;
-                                    break;
-                                case CORINFO_TYPE_USHORT:
-                                    typeCode = 8;
-                                    break;
-                                case CORINFO_TYPE_INT:
-                                    typeCode = 9;
-                                    break;
-                                case CORINFO_TYPE_UINT:
-                                    typeCode = 10;
-                                    break;
-                                case CORINFO_TYPE_LONG:
-                                    typeCode = 11;
-                                    break;
-                                case CORINFO_TYPE_ULONG:
-                                    typeCode = 12;
-                                    break;
-                                case CORINFO_TYPE_FLOAT:
-                                    typeCode = 13;
-                                    break;
-                                case CORINFO_TYPE_DOUBLE:
-                                    typeCode = 14;
-                                    break;
-                                default:
-                                    if (hClass == impGetStringClass())
-                                    {
-                                        typeCode = 18;
-                                    }
-                                    break;
+                                typeCode = 18;
                             }
-                            if (typeCode != -1)
-                            {
-                                retNode = gtNewIconNode(typeCode);
-                                impPopStack();
-                            }
-                        }
+                            break;
+                    }
+                    if (typeCode != -1)
+                    {
+                        retNode = gtNewIconNode(typeCode);
+                        impPopStack();
                     }
                 }
-                break;
             }
 
             case NI_System_Threading_Thread_get_ManagedThreadId:

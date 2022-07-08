@@ -23,6 +23,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeType InternalGetUnderlyingTypeImpl(RuntimeType enumType);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static RuntimeType InternalGetUnderlyingType(RuntimeType enumType)
         {
             Type type = Type.GetTypeCode(enumType) switch

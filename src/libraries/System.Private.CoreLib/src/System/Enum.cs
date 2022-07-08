@@ -304,8 +304,13 @@ namespace System
             // Get all of the names
             GetEnumInfo(enumType, true).Names;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type GetUnderlyingType(Type enumType)
         {
+            // call the actual implementation directly so that intrinsics can be used
+            if (RuntimeHelpers.IsKnownConstant(enumType) && enumType is RuntimeType runtimeType && enumType.IsEnum)
+                InternalGetUnderlyingType(runtimeType);
+
             ArgumentNullException.ThrowIfNull(enumType);
             return enumType.GetEnumUnderlyingType();
         }
