@@ -430,12 +430,6 @@ namespace DebuggerTests
             instanceWithStaticFields.Run();
             instanceWithStaticFields.RunAsync();
         }
-
-        public static void EvaluateAsyncMethods()
-        {
-            var staticClass = new EvaluateStaticFieldsInInstanceClass();
-            staticClass.run();
-        }
     }
 
     public static class EvaluateStaticFieldsInStaticClass

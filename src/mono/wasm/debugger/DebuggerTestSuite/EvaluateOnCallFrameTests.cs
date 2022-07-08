@@ -40,12 +40,6 @@ namespace DebuggerTests
             }
         }
 
-        public static IEnumerable<object[]> EvaluateStaticClassFromStaticMethodTestData(string type_name)
-        {
-            yield return new object[] { type_name, "EvaluateAsyncMethods", "EvaluateAsyncMethods", true };
-            yield return new object[] { type_name, "EvaluateMethods", "EvaluateMethods", false };
-        }
-
         [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsStructWithProperties")]
         [MemberData(nameof(InstanceMethodForTypeMembersTestData), parameters: "DebuggerTests.EvaluateTestsClassWithProperties")]
@@ -731,65 +725,6 @@ namespace DebuggerTests
                     );
                 });
 
-        [Fact]
-        public async Task EvaluateStaticFieldsInStaticClass() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               var frame = pause_location["callFrames"][0];
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticField", TNumber(10)));
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty", TString("StaticProperty1")));
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
-           });
-
-        [Theory]
-        [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
-        // [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "EvaluateMethodTestsClass")]
-        public async Task EvaluateStaticClassFromStaticMethod(string type, string method, string bp_function_name, bool is_async)
-        => await CheckInspectLocalsAtBreakpointSite(
-            type, method, 1, bp_function_name,
-            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] {type}:{method}'); }})",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               var frame = pause_location["callFrames"][0];
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("EvaluateStaticFieldsInStaticClass.StaticField", TNumber(10)),
-                   ("EvaluateStaticFieldsInStaticClass.StaticProperty", TString("StaticProperty1")),
-                   ("EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")),
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticField", TNumber(10)),
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty", TString("StaticProperty1")),
-                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
-           });
-
-        [Fact]
-        public async Task EvaluateStaticFieldsInInstanceClass() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass", "EvaluateAsyncMethods", 3, "EvaluateAsyncMethods",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               var frame = pause_location["callFrames"][0];
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticFieldsInInstanceClass.StaticField", TNumber(70)),
-                   ("DebuggerTests.EvaluateStaticFieldsInInstanceClass.StaticProperty", TString("StaticProperty7")),
-                   ("DebuggerTests.EvaluateStaticFieldsInInstanceClass.StaticPropertyWithError", TString("System.Exception: not implemented 7")),
-                   ("EvaluateStaticFieldsInInstanceClass.StaticField", TNumber(70)),
-                   ("EvaluateStaticFieldsInInstanceClass.StaticProperty", TString("StaticProperty7")),
-                   ("EvaluateStaticFieldsInInstanceClass.StaticPropertyWithError", TString("System.Exception: not implemented 7")));
-           });
-
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticClassesNested() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass", "EvaluateMethods", 3, "EvaluateMethods",
@@ -901,28 +836,6 @@ namespace DebuggerTests
                     ("StaticPropertyWithError", GetNonExistingVarMessage("StaticPropertyWithError"))
                 );
                 string GetNonExistingVarMessage(string name) => $"The name {name} does not exist in the current context";
-            });
-
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task EvaluateStaticClassesFromDifferentNamespaceInDifferentFrames() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", 1, "Run",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                var id_top = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var frame = pause_location["callFrames"][0];
-
-                await EvaluateOnCallFrameAndCheck(id_top,
-                    ("EvaluateStaticFieldsInStaticClass.StaticField", TNumber(20)),
-                    ("EvaluateStaticFieldsInStaticClass.StaticProperty", TString("StaticProperty2")),
-                    ("EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 2")));
-
-                var id_second = pause_location["callFrames"][1]["callFrameId"].Value<string>();
-
-                await EvaluateOnCallFrameAndCheck(id_second,
-                    ("EvaluateStaticFieldsInStaticClass.StaticField", TNumber(10)),
-                    ("EvaluateStaticFieldsInStaticClass.StaticProperty", TString("StaticProperty")),
-                    ("EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
