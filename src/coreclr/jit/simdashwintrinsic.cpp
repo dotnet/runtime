@@ -205,8 +205,15 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else if (numArgs != 0)
     {
-        argClass        = info.compCompHnd->getArgClass(sig, sig->args);
-        simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(argClass, &simdSize);
+        if (retType == TYP_VOID)
+        {
+            simdBaseJitType = strip(info.compCompHnd->getArgType(sig, sig->args, &argClass));
+        }
+        else
+        {
+            argClass        = info.compCompHnd->getArgClass(sig, sig->args);
+            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(argClass, &simdSize);
+        }
     }
 
     if (sig->hasThis())
@@ -918,16 +925,24 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+                                             (newobjThis == nullptr ? 2 : 1)DEBUGARG(
+                                                 "Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
 
-            argType = isInstanceMethod ? simdType
-                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
+            bool implicitConstructor = isInstanceMethod && (newobjThis == nullptr) && retType == TYP_VOID;
+
+            argType = implicitConstructor
+                          ? TYP_REF
+                          : isInstanceMethod
+                                ? simdType
+                                : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+
+            op1 = getArgForHWIntrinsic(argType, (newobjThis != nullptr) ? clsHnd : argClass, isInstanceMethod,
+                                       newobjThis);
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 
