@@ -156,7 +156,11 @@ namespace System.Text.Json.Reflection
                                 {
                                     sb.Append(',');
                                 }
-                                first = false;
+                                else
+                                {
+                                    first = false;
+                                }
+
                                 sb.Append('[');
                                 sb.Append(genericArg.AssemblyQualifiedName);
                                 sb.Append(']');
@@ -231,6 +235,7 @@ namespace System.Text.Json.Reflection
                 {
                     return true;
                 }
+
                 for (INamedTypeSymbol currentSymbol = _namedTypeSymbol; currentSymbol != null; currentSymbol = currentSymbol.ContainingType)
                 {
                     if (currentSymbol.TypeArguments.Any(arg => arg.TypeKind == TypeKind.TypeParameter))
@@ -238,6 +243,7 @@ namespace System.Text.Json.Reflection
                         return true;
                     }
                 }
+
                 return false;
             }
         }

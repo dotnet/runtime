@@ -62,6 +62,7 @@ namespace System.Text.Json.Reflection
                         {
                             sb.Append(", ");
                         }
+
                         sb.Append(GetCompilableName(genericArguments[i]));
                     }
 

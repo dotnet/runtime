@@ -496,7 +496,11 @@ namespace System.Text.Json.SourceGeneration
                     {
                         sb.Append(", ");
                     }
-                    first = false;
+                    else
+                    {
+                        first = false;
+                    }
+
                     sb.Append(typeArg.Name);
                 }
 
