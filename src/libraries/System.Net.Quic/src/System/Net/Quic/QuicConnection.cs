@@ -15,6 +15,15 @@ using Microsoft.Quic;
 using static System.Net.Quic.MsQuicHelpers;
 using static Microsoft.Quic.MsQuic;
 
+using CONNECTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._CONNECTED_e__Struct;
+using SHUTDOWN_INITIATED_BY_TRANSPORT_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_TRANSPORT_e__Struct;
+using SHUTDOWN_INITIATED_BY_PEER_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_PEER_e__Struct;
+using SHUTDOWN_COMPLETE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_COMPLETE_e__Struct;
+using LOCAL_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._LOCAL_ADDRESS_CHANGED_e__Struct;
+using PEER_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_ADDRESS_CHANGED_e__Struct;
+using PEER_STREAM_STARTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_STREAM_STARTED_e__Struct;
+using PEER_CERTIFICATE_RECEIVED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_CERTIFICATE_RECEIVED_e__Struct;
+
 namespace System.Net.Quic;
 
 /// <summary>
@@ -402,98 +411,99 @@ public sealed partial class QuicConnection : IAsyncDisposable
         return valueTask;
     }
 
-    private unsafe int HandleConnectionEvent(ref QUIC_CONNECTION_EVENT connectionEvent)
+    private unsafe int HandleEventConnected(ref CONNECTED_DATA data)
     {
-        if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.CONNECTED)
-        {
-            ref var data = ref connectionEvent.CONNECTED;
+        _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
 
-            _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
+        QuicAddr remoteAddress = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
+        _remoteEndPoint = remoteAddress.ToIPEndPoint();
 
-            QuicAddr remoteAddress = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
-            _remoteEndPoint = remoteAddress.ToIPEndPoint();
+        QuicAddr localAddress = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
+        _localEndPoint = localAddress.ToIPEndPoint();
 
-            QuicAddr localAddress = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
-            _localEndPoint = localAddress.ToIPEndPoint();
+        _connectedTcs.TrySetResult();
 
-            _connectedTcs.TrySetResult();
-
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(this, $"{this} Connection connected {LocalEndPoint} -> {RemoteEndPoint}");
-            }
-            return QUIC_STATUS_SUCCESS;
-        }
-        if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_TRANSPORT)
+        if (NetEventSource.Log.IsEnabled())
         {
-            ref var data = ref connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT;
-            _connectedTcs.TrySetException(new MsQuicException(data.Status));
-            // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
-            // it wasn't our side who shutdown the connection.
-            // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
-            // See: https://github.com/dotnet/runtime/issues/60133
-            _abortErrorCode = 0;
-            _state.AbortErrorCode = _abortErrorCode;
-            _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicConnectionAbortedException($"Connection shutdown by transport {MsQuicException.GetErrorCodeForStatus(data.Status)}", _abortErrorCode)));
-            return QUIC_STATUS_SUCCESS;
+            NetEventSource.Info(this, $"{this} Connection connected {LocalEndPoint} -> {RemoteEndPoint}");
         }
-        if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_PEER)
-        {
-            ref var data = ref connectionEvent.SHUTDOWN_INITIATED_BY_PEER;
-            _abortErrorCode = (long)data.ErrorCode;
-            _state.AbortErrorCode = _abortErrorCode;
-            _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicConnectionAbortedException($"Connection shutdown by peer", _abortErrorCode)));
-            return QUIC_STATUS_SUCCESS;
-        }
-        if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_COMPLETE)
-        {
-            _shutdownTcs.TrySetResult();
-            _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
-            return QUIC_STATUS_SUCCESS;
-        }
-        if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.LOCAL_ADDRESS_CHANGED)
-        {
-            ref var data = ref connectionEvent.LOCAL_ADDRESS_CHANGED;
-            _localEndPoint = data.Address->ToIPEndPoint();
-            return QUIC_STATUS_SUCCESS;
-        }
-        if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.PEER_ADDRESS_CHANGED)
-        {
-            ref var data = ref connectionEvent.PEER_ADDRESS_CHANGED;
-            _remoteEndPoint = data.Address->ToIPEndPoint();
-            return QUIC_STATUS_SUCCESS;
-        }
-        if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED)
-        {
-            ref var data = ref connectionEvent.PEER_STREAM_STARTED;
-            QuicStream stream = new QuicStream(new Implementations.MsQuic.MsQuicStream(_state, _handle, data.Stream, data.Flags));
-            if (!_acceptQueue.Writer.TryWrite(stream))
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Error(this, $"{this} Unable to enqueue incoming stream {stream}");
-                }
-                stream.Dispose();
-                return QUIC_STATUS_SUCCESS;
-            }
-            return QUIC_STATUS_SUCCESS;
-        }
-        if (connectionEvent.Type == QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED)
-        {
-            ref var data = ref connectionEvent.PEER_CERTIFICATE_RECEIVED;
-            try
-            {
-                return _sslConnectionOptions.ValidateCertificate((QUIC_BUFFER*)data.Certificate, (QUIC_BUFFER*)data.Chain, out _remoteCertificate);
-            }
-            catch (Exception ex)
-            {
-                _connectedTcs.TrySetException(ex);
-                return QUIC_STATUS_HANDSHAKE_FAILURE;
-            }
-        }
-
         return QUIC_STATUS_SUCCESS;
     }
+    private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
+    {
+        _connectedTcs.TrySetException(new MsQuicException(data.Status));
+        // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
+        // it wasn't our side who shutdown the connection.
+        // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
+        // See: https://github.com/dotnet/runtime/issues/60133
+        _abortErrorCode = 0;
+        _state.AbortErrorCode = _abortErrorCode;
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicConnectionAbortedException($"Connection shutdown by transport {MsQuicException.GetErrorCodeForStatus(data.Status)}", _abortErrorCode)));
+        return QUIC_STATUS_SUCCESS;
+    }
+    private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
+    {
+        _abortErrorCode = (long)data.ErrorCode;
+        _state.AbortErrorCode = _abortErrorCode;
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicConnectionAbortedException($"Connection shutdown by peer", _abortErrorCode)));
+        return QUIC_STATUS_SUCCESS;
+    }
+    private unsafe int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE_DATA data)
+    {
+        _shutdownTcs.TrySetResult();
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+        return QUIC_STATUS_SUCCESS;
+    }
+    private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
+    {
+        _localEndPoint = data.Address->ToIPEndPoint();
+        return QUIC_STATUS_SUCCESS;
+    }
+    private unsafe int HandleEventPeerAddressChanged(ref PEER_ADDRESS_CHANGED_DATA data)
+    {
+        _remoteEndPoint = data.Address->ToIPEndPoint();
+        return QUIC_STATUS_SUCCESS;
+    }
+    private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
+    {
+        QuicStream stream = new QuicStream(new Implementations.MsQuic.MsQuicStream(_state, _handle, data.Stream, data.Flags));
+        if (!_acceptQueue.Writer.TryWrite(stream))
+        {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Error(this, $"{this} Unable to enqueue incoming stream {stream}");
+            }
+            stream.Dispose();
+            return QUIC_STATUS_SUCCESS;
+        }
+        return QUIC_STATUS_SUCCESS;
+    }
+    private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
+    {
+        try
+        {
+            return _sslConnectionOptions.ValidateCertificate((QUIC_BUFFER*)data.Certificate, (QUIC_BUFFER*)data.Chain, out _remoteCertificate);
+        }
+        catch (Exception ex)
+        {
+            _connectedTcs.TrySetException(ex);
+            return QUIC_STATUS_HANDSHAKE_FAILURE;
+        }
+    }
+
+    private unsafe int HandleConnectionEvent(ref QUIC_CONNECTION_EVENT connectionEvent)
+        => connectionEvent.Type switch
+        {
+            QUIC_CONNECTION_EVENT_TYPE.CONNECTED => HandleEventConnected(ref connectionEvent.CONNECTED),
+            QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_TRANSPORT => HandleEventShutdownInitiatedByTransport(ref connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT),
+            QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_PEER => HandleEventShutdownInitiatedByPeer(ref connectionEvent.SHUTDOWN_INITIATED_BY_PEER),
+            QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_COMPLETE => HandleEventShutdownComplete(ref connectionEvent.SHUTDOWN_COMPLETE),
+            QUIC_CONNECTION_EVENT_TYPE.LOCAL_ADDRESS_CHANGED => HandleEventLocalAddressChanged(ref connectionEvent.LOCAL_ADDRESS_CHANGED),
+            QUIC_CONNECTION_EVENT_TYPE.PEER_ADDRESS_CHANGED => HandleEventPeerAddressChanged(ref connectionEvent.PEER_ADDRESS_CHANGED),
+            QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED => HandleEventPeerStreamStarted(ref connectionEvent.PEER_STREAM_STARTED),
+            QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED => HandleEventPeerCertificateReceived(ref connectionEvent.PEER_CERTIFICATE_RECEIVED),
+            _ => QUIC_STATUS_SUCCESS
+        };
 
 #pragma warning disable CS3016
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
