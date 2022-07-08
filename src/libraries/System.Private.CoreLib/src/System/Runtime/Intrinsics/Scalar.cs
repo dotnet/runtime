@@ -8,8 +8,7 @@ namespace System.Runtime.Intrinsics
     internal static class Scalar<T>
         where T : struct
     {
-        // FIXME: getter wired to Vector256.IsHardwareAccelerated, should be in separate linker substitution XML
-        public static bool IsSupported { get => Vector256.IsHardwareAccelerated; }
+        public static bool IsSupported { get => true; }
         public static T AllBitsSet
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
