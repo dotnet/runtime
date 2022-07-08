@@ -40,17 +40,17 @@ internal static partial class Interop
             byte[]? arrayBuffer = null;
             ref byte pathReference = ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path));
             ref byte bufferReference = ref MemoryMarshal.GetReference(stackBuffer);
-            int error = 0;
             while (true)
             {
+                int error = 0;
                 try
                 {
                     int resultLength = ReadLink(ref pathReference, ref bufferReference, bufferSize);
-                    error = Marshal.GetLastPInvokeError();
 
                     if (resultLength < 0)
                     {
                         // error
+                        error = Marshal.GetLastPInvokeError();
                         return null;
                     }
                     else if (resultLength < bufferSize)
