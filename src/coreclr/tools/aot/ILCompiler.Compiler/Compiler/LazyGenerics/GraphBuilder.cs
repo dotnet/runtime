@@ -101,6 +101,56 @@ namespace ILCompiler
                     ProcessTypeReference(parameterType, typeContext, methodContext);
                 }
 
+                // If this is a generic virtual method, add an edge from each of the generic parameters
+                // of the implementation to the generic parameters of the declaration - any call to the
+                // declaration will be modeled as if the declaration was calling into the implementation.
+                if (method.IsVirtual && method.HasInstantiation)
+                {
+                    Instantiation declInstantiation = default;
+                    Instantiation implInstantiation = default;
+                    var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method).GetTypicalMethodDefinition();
+                    if (decl != method)
+                    {
+                        declInstantiation = decl.Instantiation;
+                        implInstantiation = method.Instantiation;
+                    }
+                    else
+                    {
+                        TypeDesc methodOwningType = method.OwningType;
+
+                        // This is the slot definition. Does it implement an interface?
+                        foreach (DefType interfaceType in methodOwningType.RuntimeInterfaces)
+                        {
+                            foreach (MethodDesc interfaceMethod in interfaceType.GetVirtualMethods())
+                            {
+                                // Trivially reject looking at interface methods that for sure can't be implemented by
+                                // the method we're looking at.
+                                if (interfaceMethod.Instantiation.Length != method.Instantiation.Length
+                                    || interfaceMethod.Signature.Length != method.Signature.Length)
+                                    continue;
+
+                                MethodDesc impl = methodOwningType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod)?.GetMethodDefinition();
+                                if (impl == method)
+                                {
+                                    declInstantiation = interfaceMethod.Instantiation;
+                                    implInstantiation = method.Instantiation;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!declInstantiation.IsNull)
+                    {
+                        for (int i = 0; i < declInstantiation.Length; i++)
+                        {
+                            RecordBinding(
+                                (EcmaGenericParameter)implInstantiation[i],
+                                (EcmaGenericParameter)declInstantiation[i],
+                                isProperEmbedding: false);
+                        }
+                    }
+                }
+
                 if (method.IsAbstract)
                 {
                     return;
@@ -110,26 +160,6 @@ namespace ILCompiler
                 if (methodIL == null)
                 {
                     return;
-                }
-
-                // If this is a generic virtual method, add an edge from each of the generic parameters
-                // of the implementation to the generic parameters of the declaration - any call to the
-                // declaration will be modeled as if the declaration was calling into the implementation.
-                if (method.IsVirtual && method.HasInstantiation)
-                {
-                    var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method).GetTypicalMethodDefinition();
-                    if (decl != method)
-                    {
-                        Instantiation declInstantiation = decl.Instantiation;
-                        Instantiation implInstantiation = method.Instantiation;
-                        for (int i = 0; i < declInstantiation.Length; i++)
-                        {
-                            RecordBinding(
-                                (EcmaGenericParameter)implInstantiation[i],
-                                (EcmaGenericParameter)declInstantiation[i],
-                                isProperEmbedding: false);
-                        }
-                    }
                 }
 
                 // Walk the method body looking at referenced things that have some genericness.
