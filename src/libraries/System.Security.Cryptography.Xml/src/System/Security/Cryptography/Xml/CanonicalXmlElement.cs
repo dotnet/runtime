@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Xml
             {
                 foreach (XmlAttribute attr in attrList)
                 {
-                    if ((((CanonicalXmlAttribute)attr)).IsInNodeSet || Utils.IsNamespaceNode(attr) || Utils.IsXmlNamespaceNode(attr))
+                    if (((CanonicalXmlAttribute)attr).IsInNodeSet || Utils.IsNamespaceNode(attr) || Utils.IsXmlNamespaceNode(attr))
                     {
                         if (Utils.IsNamespaceNode(attr))
                         {

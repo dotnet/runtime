@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlComment CreateComment(string? data)
         {
-            return new CanonicalXmlComment(data!, this, _defaultNodeSetInclusionState, _includeComments);
+            return new CanonicalXmlComment(data, this, _defaultNodeSetInclusionState, _includeComments);
         }
 
         public override XmlEntityReference CreateEntityReference(string name)
