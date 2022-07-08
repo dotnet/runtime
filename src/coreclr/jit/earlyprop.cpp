@@ -15,23 +15,6 @@
 #include "jitpch.h"
 #include "ssabuilder.h"
 
-bool Compiler::optDoEarlyPropForFunc()
-{
-    // TODO-MDArray: bool propMDArrayLen = (optMethodFlags & OMF_HAS_MDNEWARRAY) && (optMethodFlags &
-    // OMF_HAS_MDARRAYREF);
-    bool propArrayLen  = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
-    bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
-    return propArrayLen || propNullCheck;
-}
-
-bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
-{
-    // TODO-MDArray: bool bbHasMDArrayRef = (block->bbFlags & BBF_HAS_MD_IDX_LEN) != 0;
-    bool bbHasArrayRef  = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
-    bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
-    return bbHasArrayRef || bbHasNullCheck;
-}
-
 #ifdef DEBUG
 //-----------------------------------------------------------------------------
 // optCheckFlagsAreSet: Check that the method flag and the basic block flag are set.
@@ -94,26 +77,11 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
 //
 PhaseStatus Compiler::optEarlyProp()
 {
-    // if (!optDoEarlyPropForFunc())
-    //{
-    //    // We perhaps should verify the OMF are set properly
-    //    //
-    //    JITDUMP("no arrays or null checks in the method\n");
-    //    return PhaseStatus::MODIFIED_NOTHING;
-    //}
-
     assert(fgSsaPassesCompleted == 1);
     unsigned numChanges = 0;
 
     for (BasicBlock* const block : Blocks())
     {
-        //#ifndef DEBUG
-        //        if (!optDoEarlyPropForBlock(block))
-        //        {
-        //            continue;
-        //        }
-        //#endif
-
         compCurBB = block;
 
         CompAllocator                 allocator(getAllocator(CMK_EarlyProp));
@@ -199,16 +167,6 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     {
         return folded ? tree : nullptr;
     }
-#ifdef DEBUG
-    else
-    {
-        if (propKind == optPropKind::OPK_ARRAYLEN)
-        {
-            optCheckFlagsAreSet(OMF_HAS_ARRAYREF, "OMF_HAS_ARRAYREF", BBF_HAS_IDX_LEN, "BBF_HAS_IDX_LEN", tree,
-                                compCurBB);
-        }
-    }
-#endif
 
     unsigned lclNum    = objectRefPtr->AsLclVarCommon()->GetLclNum();
     unsigned ssaNum    = objectRefPtr->AsLclVarCommon()->GetSsaNum();
@@ -421,19 +379,6 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 //
 bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    //#ifdef DEBUG
-    // if (tree->OperGet() == GT_NULLCHECK)
-    //{
-    //    optCheckFlagsAreSet(OMF_HAS_NULLCHECK, "OMF_HAS_NULLCHECK", BBF_HAS_NULLCHECK, "BBF_HAS_NULLCHECK", tree,
-    //                        compCurBB);
-    //}
-    //#else
-    // if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
-    //{
-    //    return false;
-    //}
-    //#endif
-
     GenTreeIndir* nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
     GenTree*      nullCheckParent = nullptr;
     Statement*    nullCheckStmt   = nullptr;
@@ -441,9 +386,6 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     if ((nullCheckTree != nullptr) && optIsNullCheckFoldingLegal(tree, nullCheckTree, &nullCheckParent, &nullCheckStmt))
     {
 #ifdef DEBUG
-        // Make sure the transformation happens in debug, check, and release build.
-        // assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) &&
-        //       (compCurBB->bbFlags & BBF_HAS_NULLCHECK) != 0);
         if (verbose)
         {
             printf("optEarlyProp Marking a null check for removal\n");
@@ -515,7 +457,6 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //       (indir is any node for which OperIsIndirOrArrMetaData() is true.)
 //
 //     2.  const1 + const2 if sufficiently small.
-
 GenTreeIndir* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
     assert(tree->OperIsIndirOrArrMetaData());
