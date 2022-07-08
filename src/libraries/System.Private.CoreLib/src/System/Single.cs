@@ -795,10 +795,7 @@ namespace System
         public static float Atan2(float y, float x) => MathF.Atan2(y, x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
-        public static float Atan2Pi(float y, float x)
-        {
-            return Atan2(y, x) / Pi;
-        }
+        public static float Atan2Pi(float y, float x) => Atan2(y, x) / Pi;
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static float BitDecrement(float x) => MathF.BitDecrement(x);
