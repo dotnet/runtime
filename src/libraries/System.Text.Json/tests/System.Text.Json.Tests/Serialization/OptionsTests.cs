@@ -9,6 +9,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Tests;
 using System.Text.Unicode;
+using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -956,10 +957,83 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void GetTypeInfo_MutableOptions_CanModifyMetadata()
+        {
+            var options = new JsonSerializerOptions();
+            JsonTypeInfo<TestClassForEncoding> jti = (JsonTypeInfo<TestClassForEncoding>)options.GetTypeInfo(typeof(TestClassForEncoding));
+
+            Assert.Equal(1, jti.Properties.Count);
+            jti.Properties.Clear();
+
+            var value = new TestClassForEncoding { MyString = "SomeValue" };
+            string json = JsonSerializer.Serialize(value, jti);
+            Assert.Equal("{}", json);
+
+            // Using JsonTypeInfo will lock JsonSerializerOptions
+            Assert.Throws<InvalidOperationException>(() => options.IncludeFields = false);
+
+            // Getting JsonTypeInfo now should return a fresh immutable instance
+            JsonTypeInfo<TestClassForEncoding> jti2 = (JsonTypeInfo<TestClassForEncoding>)options.GetTypeInfo(typeof(TestClassForEncoding));
+            Assert.NotSame(jti, jti2);
+            Assert.Equal(1, jti2.Properties.Count);
+            Assert.Throws<InvalidOperationException>(() => jti2.Properties.Clear());
+
+            // Subsequent requests return the same cached value
+            Assert.Same(jti2, options.GetTypeInfo(typeof(TestClassForEncoding)));
+
+            // Default contract should produce expected JSON
+            json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{"MyString":"SomeValue"}""", json);
+
+            // Default contract should not impact contract of original JsonTypeInfo
+            json = JsonSerializer.Serialize(value, jti);
+            Assert.Equal("{}", json);
+        }
+
+        [Fact]
         public static void GetTypeInfo_NullInput_ThrowsArgumentNullException()
         {
             var options = new JsonSerializerOptions();
             Assert.Throws<ArgumentNullException>(() => options.GetTypeInfo(null));
+        }
+
+        [Fact]
+        public static void GetTypeInfo_RecursiveResolver_StackOverflows()
+        {
+            var resolver = new RecursiveResolver();
+            var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
+
+            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(TestClassForEncoding)));
+            Assert.True(resolver.IsThresholdReached);
+        }
+
+        private class RecursiveResolver : IJsonTypeInfoResolver
+        {
+            private const int MaxDepth = 10;
+
+            [ThreadStatic]
+            private int _isResolverEntered = 0;
+
+            public bool IsThresholdReached { get; private set; }
+
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                if (_isResolverEntered == MaxDepth)
+                {
+                    IsThresholdReached = true;
+                    return null;
+                }
+
+                _isResolverEntered++;
+                try
+                {
+                    return options.GetTypeInfo(type);
+                }
+                finally
+                {
+                    _isResolverEntered--;
+                }
+            }
         }
 
         [Theory]

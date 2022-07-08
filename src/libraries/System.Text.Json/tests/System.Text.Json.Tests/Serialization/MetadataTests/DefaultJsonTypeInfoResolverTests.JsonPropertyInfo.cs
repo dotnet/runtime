@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Nodes;
+using System.Text.Json.Nodes.Tests;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Tests;
 using Xunit;
@@ -1317,6 +1318,77 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ClassWithoutExtensionDataAttribute_CanHaveExtensionDataEnabled()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithTwoExtensionDataLikeProperties))
+                            {
+                                JsonPropertyInfo propertyInfo = jti.Properties.First(prop => prop.Name == "ExtensionData2");
+                                propertyInfo.IsExtensionData = true;
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithTwoExtensionDataLikeProperties
+            {
+                ExtensionData1 = new Dictionary<string, object> { ["extension1"] = 1 },
+                ExtensionData2 = new Dictionary<string, object> { ["extension2"] = 2 },
+            };
+
+            string json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual("""{"ExtensionData1":{"extension1":1},"extension2":2}""", json);
+
+            value = JsonSerializer.Deserialize<ClassWithTwoExtensionDataLikeProperties>("""{"unrecognizedData":3}""", options);
+            Assert.Null(value.ExtensionData1);
+            Assert.NotNull(value.ExtensionData2);
+            Assert.True(value.ExtensionData2.ContainsKey("unrecognizedData"));
+        }
+
+        [Fact]
+        public static void ClassWithoutExtensionDataAttribute_SettingDuplicateExtensionDataProperties_ThrowsInvalidOperationException()
+        {
+            bool resolverRanToCompletion = false;
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithTwoExtensionDataLikeProperties))
+                            {
+                                Assert.Equal(2, jti.Properties.Count);
+                                jti.Properties[0].IsExtensionData = true;
+                                jti.Properties[1].IsExtensionData = true;
+                                resolverRanToCompletion = true;
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithTwoExtensionDataLikeProperties();
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, options));
+            Assert.True(resolverRanToCompletion);
+        }
+
+        public class ClassWithTwoExtensionDataLikeProperties
+        {
+            public Dictionary<string, object> ExtensionData1 { get; set; }
+            public Dictionary<string, object> ExtensionData2 { get; set; }
+        }
+
+        [Fact]
         public static void DefaultJsonTypeInfoResolver_JsonPropertyInfo_ReturnsMemberInfoAsAttributeProvider()
         {
             var resolver = new DefaultJsonTypeInfoResolver();
@@ -1349,8 +1421,12 @@ namespace System.Text.Json.Serialization.Tests
                             if (jti.Type == typeof(ClassWithFieldsAndProperties))
                             {
                                 Assert.Equal(2, jti.Properties.Count);
+
                                 jti.Properties[0].AttributeProvider = jti.Properties[1].AttributeProvider;
+                                Assert.Same(jti.Properties[0].AttributeProvider, jti.Properties[1].AttributeProvider);
+
                                 jti.Properties[1].AttributeProvider = null;
+                                Assert.Null(jti.Properties[1].AttributeProvider);
                             }
                         }
                     }
