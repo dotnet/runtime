@@ -1,132 +1,154 @@
-//------------------------------------------------------------------------------
-// <copyright file="SwitchElementsCollection.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 using System.Configuration;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Xml;
 
-namespace System.Diagnostics {
+namespace System.Diagnostics
+{
     [ConfigurationCollection(typeof(SwitchElement))]
-    internal class SwitchElementsCollection : ConfigurationElementCollection {
+    internal sealed class SwitchElementsCollection : ConfigurationElementCollection
+    {
 
-        new public SwitchElement this[string name] {
-            get {
-                return (SwitchElement) BaseGet(name);
+        public new SwitchElement this[string name]
+        {
+            get
+            {
+                return (SwitchElement)BaseGet(name);
             }
         }
-        
-        public override ConfigurationElementCollectionType CollectionType {
-            get {
+
+        public override ConfigurationElementCollectionType CollectionType
+        {
+            get
+            {
                 return ConfigurationElementCollectionType.AddRemoveClearMap;
             }
         }
-    
-        protected override ConfigurationElement CreateNewElement() {
+
+        protected override ConfigurationElement CreateNewElement()
+        {
             return new SwitchElement();
         }
-    
-        protected override Object GetElementKey(ConfigurationElement element) {
-            return ((SwitchElement) element).Name;
+
+        protected override object GetElementKey(ConfigurationElement element)
+        {
+            return ((SwitchElement)element).Name;
         }
     }
-    
-    internal class SwitchElement : ConfigurationElement {
-        private static readonly ConfigurationPropertyCollection _properties;
+
+    internal sealed class SwitchElement : ConfigurationElement
+    {
+        private static readonly ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
         private static readonly ConfigurationProperty _propName = new ConfigurationProperty("name", typeof(string), "", ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
         private static readonly ConfigurationProperty _propValue = new ConfigurationProperty("value", typeof(string), null, ConfigurationPropertyOptions.IsRequired);
 
-        private Hashtable _attributes;
+        private StringDictionary _attributes;
 
-        static SwitchElement(){
-            _properties = new ConfigurationPropertyCollection();
+        static SwitchElement()
+        {
             _properties.Add(_propName);
             _properties.Add(_propValue);
         }
 
-        public Hashtable Attributes {
-            get {
+        public StringDictionary Attributes
+        {
+            get
+            {
                 if (_attributes == null)
-                    _attributes = new Hashtable(StringComparer.OrdinalIgnoreCase);
+                    _attributes = new StringDictionary();
                 return _attributes;
             }
         }
 
         [ConfigurationProperty("name", DefaultValue = "", IsRequired = true, IsKey = true)]
-        public string Name {
-            get { 
-                return (string) this[_propName]; 
+        public string Name
+        {
+            get
+            {
+                return (string)this[_propName];
             }
         }
-        
-        protected override ConfigurationPropertyCollection Properties {
-            get {
+
+        protected internal override ConfigurationPropertyCollection Properties
+        {
+            get
+            {
                 return _properties;
             }
         }
 
         [ConfigurationProperty("value", IsRequired = true)]
-        public string Value {
-            get { 
-                return (string) this[_propValue]; 
+        public string Value
+        {
+            get
+            {
+                return (string)this[_propValue];
             }
         }
 
-        // Our optional attributes implementation is little convoluted as there is 
-        // no such firsclass mechanism from the config system. We basically cache 
-        // any "unrecognized" attribute here and serialize it out later. 
-        protected override bool OnDeserializeUnrecognizedAttribute(String name, String value) {
+        // Our optional attributes implementation is little convoluted as there is
+        // no such firsclass mechanism from the config system. We basically cache
+        // any "unrecognized" attribute here and serialize it out later.
+        protected override bool OnDeserializeUnrecognizedAttribute(string name, string value)
+        {
             Attributes.Add(name, value);
-            return true;         
+            return true;
         }
 
-        // We need to serialize optional attributes here, a better place would have   
+        // We need to serialize optional attributes here, a better place would have
         // been inside SerializeElement but the base class implementation from
         // ConfigurationElement doesn't take into account for derived class doing
-        // extended serialization, it basically writes out child element that 
+        // extended serialization, it basically writes out child element that
         // forces the element closing syntax, so any attribute serialization needs
         // to happen before normal element serialization from ConfigurationElement.
-        // This means we would write out custom attributes ahead of normal ones. 
-        // The other alternative would be to re-implement the entire routine here 
-        // which is an overkill and a maintenance issue. 
-        protected override void PreSerialize(XmlWriter writer) {
-            if (_attributes != null) {
-                IDictionaryEnumerator e = _attributes.GetEnumerator();
-                while (e.MoveNext()) {
+        // This means we would write out custom attributes ahead of normal ones.
+        // The other alternative would be to re-implement the entire routine here
+        // which is an overkill and a maintenance issue.
+        protected override void PreSerialize(XmlWriter writer)
+        {
+            if (_attributes != null)
+            {
+                IDictionaryEnumerator e = (IDictionaryEnumerator)_attributes.GetEnumerator();
+                while (e.MoveNext())
+                {
                     string xmlValue = (string)e.Value;
                     string xmlName = (string)e.Key;
 
-                    if ((xmlValue != null) && (writer != null)) {
+                    if ((xmlValue != null) && (writer != null))
+                    {
                         writer.WriteAttributeString(xmlName, xmlValue);
                     }
                 }
             }
         }
 
-        // Account for optional attributes from custom listeners. 
-        protected override bool SerializeElement(XmlWriter writer, bool serializeCollectionKey) {
+        // Account for optional attributes from custom listeners.
+        protected internal override bool SerializeElement(XmlWriter writer, bool serializeCollectionKey)
+        {
             bool DataToWrite = base.SerializeElement(writer, serializeCollectionKey);
             DataToWrite = DataToWrite || ((_attributes != null) && (_attributes.Count > 0));
             return DataToWrite;
         }
 
-        protected override void Unmerge(ConfigurationElement sourceElement,
-                                                ConfigurationElement parentElement,
-                                                ConfigurationSaveMode saveMode) {
+        protected internal override void Unmerge(ConfigurationElement sourceElement,
+                                                 ConfigurationElement parentElement,
+                                                 ConfigurationSaveMode saveMode)
+        {
             base.Unmerge(sourceElement, parentElement, saveMode);
-            
+
             // Unmerge the optional attributes cache as well
-            SwitchElement le = sourceElement as SwitchElement; 
-            if ((le != null) && (le._attributes != null)) 
-                this._attributes = le._attributes;  
+            SwitchElement le = sourceElement as SwitchElement;
+            if ((le != null) && (le._attributes != null))
+                this._attributes = le._attributes;
         }
 
-        internal void ResetProperties() 
+        internal void ResetProperties()
         {
-            // blow away any UnrecognizedAttributes that we have deserialized earlier 
-            if (_attributes != null) {
+            // blow away any UnrecognizedAttributes that we have deserialized earlier
+            if (_attributes != null)
+            {
                 _attributes.Clear();
                 _properties.Clear();
                 _properties.Add(_propName);
@@ -135,4 +157,3 @@ namespace System.Diagnostics {
         }
     }
 }
-

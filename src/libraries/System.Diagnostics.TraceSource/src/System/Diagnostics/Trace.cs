@@ -159,6 +159,27 @@ namespace System.Diagnostics
             TraceInternal.Fail(message, detailMessage);
         }
 
+        public static event Action? ConfigureTrace;
+
+        internal static void OnConfigureTrace()
+        {
+             Trace.ConfigureTrace?.Invoke();
+        }
+
+        public static event Action<TraceSource>? ConfigureTraceSource;
+
+        internal static void OnConfigureTraceSource(TraceSource traceSource)
+        {
+            Trace.ConfigureTraceSource?.Invoke(traceSource);
+        }
+
+        public static event Action<Switch>? ConfigureSwitch;
+
+        internal static void OnConfigureSwitch(Switch @switch)
+        {
+            Trace.ConfigureSwitch?.Invoke(@switch);
+        }
+
         public static void Refresh()
         {
             Switch.RefreshAll();

@@ -78,6 +78,8 @@ namespace System.Diagnostics
 
                     NoConfigInit();
 
+                    Trace.OnConfigureTraceSource(this);
+
                     _initCalled = true;
                 }
             }
@@ -472,7 +474,15 @@ namespace System.Diagnostics
 
                 return _attributes ??= new StringDictionary();
             }
+
+            set
+            {
+                TraceUtils.VerifyAttributes(value, GetSupportedAttributes(), this);
+                _attributes = value;
+            }
         }
+
+        public SourceLevels DefaultLevel => _switchLevel;
 
         public string Name
         {

@@ -1578,6 +1578,15 @@ namespace System.Configuration.Provider
         public ProviderException(string message, System.Exception innerException) { }
     }
 }
+#if NET7_0_OR_GREATER
+namespace System.Diagnostics
+{
+    public static partial class TraceConfiguration
+    {
+        public static void Register() { }
+    }
+}
+#endif
 namespace System.Drawing.Configuration
 {
     public sealed partial class SystemDrawingSection : System.Configuration.ConfigurationSection

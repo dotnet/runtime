@@ -46,6 +46,7 @@ namespace System.Diagnostics
         private static volatile bool s_autoFlush;
         private static volatile bool s_useGlobalLock;
         private static volatile bool s_settingsInitialized;
+        private static volatile bool s_settingsInitializing;
 
 
         // this is internal so TraceSource can use it.  We want to lock on the same object because both TraceInternal and
@@ -288,11 +289,23 @@ namespace System.Diagnostics
                 // though it may not be strictly necessary at present
                 lock (critSec)
                 {
+                    // prevent re-entrance
+                    if (s_settingsInitializing)
+                    {
+                        return;
+                    }
+
+                    s_settingsInitializing = true;
+
                     if (!s_settingsInitialized)
                     {
                         s_autoFlush = DiagnosticsConfiguration.AutoFlush;
                         s_useGlobalLock = DiagnosticsConfiguration.UseGlobalLock;
+
+                        Trace.OnConfigureTrace();
+
                         s_settingsInitialized = true;
+                        s_settingsInitializing = false;
                     }
                 }
             }

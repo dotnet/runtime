@@ -70,14 +70,16 @@ namespace System.Diagnostics
     {
         protected Switch(string displayName, string? description) { }
         protected Switch(string displayName, string? description, string defaultSwitchValue) { }
-        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
+        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } set { } }
+        public string DefaultValue { get { throw null; } }
         public string Description { get { throw null; } }
         public string DisplayName { get { throw null; } }
         protected int SwitchSetting { get { throw null; } set { } }
-        protected string Value { get { throw null; } set { } }
+        public string Value { get { throw null; } set { } }
         protected virtual string[]? GetSupportedAttributes() { throw null; }
         protected virtual void OnSwitchSettingChanged() { }
         protected virtual void OnValueChanged() { }
+        public void Refresh() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property)]
     public sealed partial class SwitchAttribute : System.Attribute
@@ -120,6 +122,9 @@ namespace System.Diagnostics
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void Indent() { }
+        public static event Action? ConfigureTrace { add { } remove { } }
+        public static event Action<TraceSource>? ConfigureTraceSource { add { } remove { } }
+        public static event Action<Switch>? ConfigureSwitch { add { } remove { } }
         public static void Refresh() { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void TraceError(string? message) { }
@@ -208,7 +213,7 @@ namespace System.Diagnostics
     {
         protected TraceListener() { }
         protected TraceListener(string? name) { }
-        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
+        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } set { } }
         public System.Diagnostics.TraceFilter? Filter { get { throw null; } set { } }
         public int IndentLevel { get { throw null; } set { } }
         public int IndentSize { get { throw null; } set { } }
@@ -285,7 +290,8 @@ namespace System.Diagnostics
     {
         public TraceSource(string name) { }
         public TraceSource(string name, System.Diagnostics.SourceLevels defaultLevel) { }
-        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
+        public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } set { } }
+        public SourceLevels DefaultLevel { get { throw null; } }
         public System.Diagnostics.TraceListenerCollection Listeners { get { throw null; } }
         public string Name { get { throw null; } }
         public System.Diagnostics.SourceSwitch Switch { get { throw null; } set { } }

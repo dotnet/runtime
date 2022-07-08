@@ -24,6 +24,7 @@
     <Compile Include="System\Diagnostics\TraceOptions.cs" />
     <Compile Include="System\Diagnostics\TraceSource.cs" />
     <Compile Include="System\Diagnostics\TraceSwitch.cs" />
+    <Compile Include="System\Diagnostics\TraceUtils.cs" />
     <Compile Include="System\Diagnostics\SwitchAttribute.cs" />
     <Compile Include="System\Diagnostics\SwitchLevelAttribute.cs" />
   </ItemGroup>

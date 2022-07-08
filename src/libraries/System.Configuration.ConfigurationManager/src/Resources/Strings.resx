@@ -664,4 +664,38 @@
   <data name="DuplicateFileName" xml:space="preserve">
     <value>The file name '{0}' was already in the collection.</value>
   </data>
+  <!-- System.Diagnostics -->
+  <data name="Could_not_create_listener" xml:space="preserve">
+    <value>Couldn't create listener '{0}'.</value>
+  </data>
+  <data name="Could_not_create_type_instance" xml:space="preserve">
+    <value>Could not create {0}.</value>
+  </data>
+  <data name="Could_not_find_type" xml:space="preserve">
+    <value>Couldn't find type for class {0}.</value>
+  </data>
+  <data name="Could_not_get_constructor" xml:space="preserve">
+    <value>Couldn't find constructor for class {0}.</value>
+  </data>
+  <data name="EmptyTypeName_NotAllowed" xml:space="preserve">
+    <value>switchType needs to be a valid class name. It can't be empty.</value>
+  </data>
+  <data name="Incorrect_base_type" xml:space="preserve">
+    <value>The specified type, '{0}' is not derived from the appropriate base type, '{1}'.</value>
+  </data>
+  <data name="Only_specify_one" xml:space="preserve">
+    <value>'switchValue' and 'switchName' cannot both be specified on source '{0}'.</value>
+  </data>
+  <data name="Reference_listener_cant_have_properties" xml:space="preserve">
+    <value>A listener with no type name specified references the sharedListeners section and cannot have any attributes other than 'Name'.  Listener: '{0}'.</value>
+  </data>
+  <data name="Reference_to_nonexistent_listener" xml:space="preserve">
+    <value>Listener '{0}' does not exist in the sharedListeners section.</value>
+  </data>
+  <data name="TL_InitializeData_NotSpecified" xml:space="preserve">
+    <value>initializeData needs to be valid for this TraceListener.</value>
+  </data>
+  <data name="Could_not_find_method_on_class" xml:space="preserve">
+    <value>Couldn't find method {0} on class {1}.</value>
+  </data>
 </root>

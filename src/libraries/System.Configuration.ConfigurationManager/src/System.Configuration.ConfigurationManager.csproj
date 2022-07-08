@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
@@ -251,23 +251,37 @@ System.Configuration.ConfigurationManager</PackageDescription>
     <Compile Include="System\Configuration\XmlUtil.cs" />
     <Compile Include="System\Configuration\XmlUtilWriter.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSection.cs" />
-    <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs"
-             Link="Common\System\Security\IdentityHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs" Link="Common\System\Security\IdentityHelper.cs" />
     <Compile Include="System\Configuration\SettingsProperty.cs" />
     <Compile Include="System\Configuration\SettingsPropertyValue.cs" />
     <Compile Include="System\Configuration\SettingsSerializeAs.cs" />
     <Compile Include="System\Configuration\NoSettingsVersionUpgradeAttribute.cs" />
     <Compile Include="System\UriIdnScope.cs" />
-    <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs"
-             Link="Common\System\IO\TempFileCollection.cs" />
+    <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs" Link="Common\System\IO\TempFileCollection.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
-             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
+    <Compile Include="System\Diagnostics\FilterElement.cs" />
+    <Compile Include="System\Diagnostics\ListenerElementsCollection.cs" />
+    <Compile Include="System\Diagnostics\SourceElementsCollection.cs" />
+    <Compile Include="System\Diagnostics\SwitchElementsCollection.cs" />
+    <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
+    <Compile Include="System\Diagnostics\TraceConfiguration.cs" />
+    <Compile Include="System\Diagnostics\TraceSection.cs" />
+    <Compile Include="System\Diagnostics\TypedElement.cs" />
+    <Compile Include="System\Diagnostics\traceutils.cs" />
   </ItemGroup>
 
   <!-- Since this package is compatible with .NETStandard, it must also ensure its .NETFramework and .NETCoreApp behavior is compatible with its .NETStandard behavior.-->
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\src\System.Diagnostics.EventLog.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">

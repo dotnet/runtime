@@ -1,32 +1,37 @@
-//------------------------------------------------------------------------------
-// <copyright file="FilterElement.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-using System.Configuration;
-using System;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System.Diagnostics {
-    internal class FilterElement : TypedElement {
-        public FilterElement() : base(typeof(TraceFilter)) {}
+using System.Runtime.CompilerServices;
 
-        public TraceFilter GetRuntimeObject() {
-            TraceFilter newFilter = (TraceFilter) BaseGetRuntimeObject();
-            newFilter.initializeData = InitData;
+namespace System.Diagnostics
+{
+    internal sealed class FilterElement : TypedElement
+    {
+        private static ConditionalWeakTable<TraceFilter, string> s_initData = new();
+
+        public FilterElement() : base(typeof(TraceFilter)) { }
+
+        public TraceFilter GetRuntimeObject()
+        {
+            TraceFilter newFilter = (TraceFilter)BaseGetRuntimeObject();
+            s_initData.AddOrUpdate(newFilter, InitData);
             return newFilter;
         }
 
-        internal TraceFilter RefreshRuntimeObject(TraceFilter filter) {
-            if (Type.GetType(TypeName) != filter.GetType() || InitData != filter.initializeData) {
+        internal TraceFilter RefreshRuntimeObject(TraceFilter filter)
+        {
+            if (Type.GetType(TypeName) != filter.GetType() || InitDataChanged(filter))
+            {
                 // type or initdata changed
                 _runtimeObject = null;
                 return GetRuntimeObject();
             }
-            else {
+            else
+            {
                 return filter;
             }
         }
+
+        private bool InitDataChanged(TraceFilter filter) => !s_initData.TryGetValue(filter, out string previousInitData) || InitData != previousInitData;
     }
 }
-
-
