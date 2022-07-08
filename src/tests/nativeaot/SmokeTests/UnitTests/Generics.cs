@@ -44,6 +44,7 @@ class Generics
         TestSimpleGenericRecursion.Run();
         TestGenericRecursionFromNpgsql.Run();
         TestRecursionInGenericVirtualMethods.Run();
+        TestRecursionInGenericInterfaceMethods.Run();
         TestRecursionThroughGenericLookups.Run();
         TestGvmLookupDependency.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
@@ -3149,6 +3150,47 @@ class Generics
             // There is a generic recursion in the above hierarchy. This just tests that we can compile.
             // Inspired by https://github.com/dotnet/machinelearning/blob/cc5e6395e0d15e4d3db702b9cb1129e12838b840/src/Microsoft.ML.Transforms/UngroupTransform.cs#L610-L629
             s_derived.Get<object>();
+        }
+    }
+
+    class TestRecursionInGenericInterfaceMethods
+    {
+        interface IFoo
+        {
+            void Recurse<T>(int val);
+        }
+
+        class Foo : IFoo
+        {
+            void IFoo.Recurse<T>(int val)
+            {
+                if (val > 0)
+                    ((IFoo)this).Recurse<S<T>>(val - 1);
+            }
+        }
+
+        struct S<T>
+        {
+            public T Field;
+        }
+
+        public static void Run()
+        {
+            IFoo f = new Foo();
+
+            f.Recurse<int>(2);
+
+            bool thrown = false;
+            try
+            {
+                f.Recurse<int>(100);
+            }
+            catch (TypeLoadException)
+            {
+                thrown = true;
+            }
+            if (!thrown)
+                throw new Exception();
         }
     }
 
