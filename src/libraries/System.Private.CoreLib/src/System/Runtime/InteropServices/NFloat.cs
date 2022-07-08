@@ -871,6 +871,18 @@ namespace System.Runtime.InteropServices
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static NFloat IBinaryNumber<NFloat>.AllBitsSet
+        {
+#if TARGET_64BIT
+            [NonVersionable]
+            get => (NFloat)BitConverter.UInt64BitsToDouble(0xFFFF_FFFF_FFFF_FFFF);
+#else
+            [NonVersionable]
+            get => BitConverter.UInt32BitsToSingle(0xFFFF_FFFF);
+#endif
+        }
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(NFloat value) => NativeType.IsPow2(value._value);
 
@@ -1245,6 +1257,63 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static NFloat Abs(NFloat value) => new NFloat(NativeType.Abs(value._value));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NFloat CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            NFloat result;
+
+            if (typeof(TOther) == typeof(NFloat))
+            {
+                result = (NFloat)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NFloat CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            NFloat result;
+
+            if (typeof(TOther) == typeof(NFloat))
+            {
+                result = (NFloat)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NFloat CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            NFloat result;
+
+            if (typeof(TOther) == typeof(NFloat))
+            {
+                result = (NFloat)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<NFloat>.IsCanonical(NFloat value) => true;

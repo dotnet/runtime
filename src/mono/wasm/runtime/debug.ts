@@ -472,6 +472,75 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     }
 }
 
+export function setup_proxy_console(id: string, originalConsole: Console, origin: string): void {
+    function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
+        return function (...args: any[]) {
+            try {
+                let payload = args[0];
+                if (payload === undefined) payload = "undefined";
+                else if (payload === null) payload = "null";
+                else if (typeof payload === "function") payload = payload.toString();
+                else if (typeof payload !== "string") {
+                    try {
+                        payload = JSON.stringify(payload);
+                    } catch (e) {
+                        payload = payload.toString();
+                    }
+                }
+
+                if (typeof payload === "string")
+                    payload = `[${id}] ${payload}`;
+
+                if (asJson) {
+                    func(JSON.stringify({
+                        method: prefix,
+                        payload: payload,
+                        arguments: args
+                    }));
+                } else {
+                    func([prefix + payload, ...args.slice(1)]);
+                }
+            } catch (err) {
+                originalConsole.error(`proxyConsole failed: ${err}`);
+            }
+        };
+    }
+
+    const originalConsoleObj : any = originalConsole;
+    const methods = ["debug", "trace", "warn", "info", "error"];
+    for (const m of methods) {
+        if (typeof (originalConsoleObj[m]) !== "function") {
+            originalConsoleObj[m] = proxyConsoleMethod(`console.${m}: `, originalConsole.log, false);
+        }
+    }
+
+    const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
+
+    const consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket.onopen = function () {
+        originalConsole.log(`browser: [${id}] Console websocket connected.`);
+    };
+    consoleWebSocket.onerror = function (event) {
+        originalConsole.error(`[${id}] websocket error: ${event}`, event);
+    };
+    consoleWebSocket.onclose = function (event) {
+        originalConsole.error(`[${id}] websocket closed: ${event}`, event);
+    };
+
+    const send = (msg: string) => {
+        if (consoleWebSocket.readyState === WebSocket.OPEN) {
+            consoleWebSocket.send(msg);
+        }
+        else {
+            originalConsole.log(msg);
+        }
+    };
+
+    // redirect output early, so that when emscripten starts it's already redirected
+    for (const m of ["log", ...methods])
+        originalConsoleObj[m] = proxyConsoleMethod(`console.${m}`, send, true);
+}
+
 type CallDetails = {
     value: string
 }

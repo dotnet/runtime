@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public static int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination, int paddingSizeInBytes, PaddingMode paddingMode)
+            public static int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination, int paddingSizeInBytes, PaddingMode paddingMode)
         {
             int count = block.Length;
             int paddingRemainder = count % paddingSizeInBytes;

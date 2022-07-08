@@ -1,14 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Tests;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -216,6 +213,22 @@ namespace System.Text.Json.Serialization.Tests
             var deserialized = JsonSerializer.Deserialize<SomeClass>(json, o);
             Assert.Equal(testObj.ObjProp.ToString(), ((JsonElement)deserialized.ObjProp).GetString());
             Assert.Equal(testObj.IntProp, deserialized.IntProp);
+        }
+
+        [Theory]
+        [InlineData(typeof(List<int>), JsonTypeInfoKind.Enumerable)]
+        [InlineData(typeof(Dictionary<string, int>), JsonTypeInfoKind.Dictionary)]
+        [InlineData(typeof(object), JsonTypeInfoKind.None)]
+        [InlineData(typeof(string), JsonTypeInfoKind.None)]
+        public static void AddingPropertyToNonObjectJsonTypeInfoKindThrows(Type type, JsonTypeInfoKind expectedKind)
+        {
+            JsonSerializerOptions options = new();
+            DefaultJsonTypeInfoResolver resolver = new();
+            JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
+            Assert.Equal(expectedKind, typeInfo.Kind);
+
+            JsonPropertyInfo property = typeInfo.CreateJsonPropertyInfo(typeof(int), "test");
+            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Add(property));
         }
 
         [Fact]
@@ -888,6 +901,342 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Assert.Fail("this ctor should not be used");
             }
+        }
+
+        [Fact]
+        public static void PropertyOrderIsRespected()
+        {
+            JsonSerializerOptions options = new()
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        ti =>
+                        {
+                            if (ti.Type == typeof(ClassWithExplicitOrderOfProperties))
+                            {
+                                Assert.Equal(5, ti.Properties.Count);
+
+                                Assert.Equal("A", ti.Properties[0].Name);
+                                Assert.Equal("B", ti.Properties[1].Name);
+                                Assert.Equal("C", ti.Properties[2].Name);
+                                Assert.Equal("D", ti.Properties[3].Name);
+                                Assert.Equal("E", ti.Properties[4].Name);
+
+                                Assert.Equal(-2, ti.Properties[0].Order);
+                                Assert.Equal(-1, ti.Properties[1].Order);
+                                Assert.Equal(0, ti.Properties[2].Order);
+                                Assert.Equal(1, ti.Properties[3].Order);
+                                Assert.Equal(2, ti.Properties[4].Order);
+
+                                // swapping A,B order values
+                                (ti.Properties[0].Order, ti.Properties[1].Order) = (ti.Properties[1].Order, ti.Properties[0].Order);
+
+                                // swapping E,C order values
+                                (ti.Properties[2].Order, ti.Properties[4].Order) = (ti.Properties[4].Order, ti.Properties[2].Order);
+
+                                // swapping B,D properties (has no effect on contract)
+                                (ti.Properties[1], ti.Properties[3]) = (ti.Properties[3], ti.Properties[1]);
+                            }
+                        }
+                    }
+                }
+            };
+
+            ClassWithExplicitOrderOfProperties obj = new()
+            {
+                A = "a",
+                B = "b",
+                C = "c",
+                D = "d",
+                E = "e",
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"B":"b","A":"a","E":"e","D":"d","C":"c"}""", json);
+        }
+
+        private class ClassWithExplicitOrderOfProperties
+        {
+            public string C { get; set; }
+
+            [JsonPropertyOrder(1)]
+            public string D { get; set; }
+
+            [JsonPropertyOrder(2)]
+            public string E { get; set; }
+
+            [JsonPropertyOrder(-1)]
+            public string B { get; set; }
+
+            [JsonPropertyOrder(-2)]
+            public string A { get; set; }
+        }
+
+        [Fact]
+        public static void RecursiveTypeWithResolverResolvingOnlyThatType()
+        {
+            TestResolver resolver = new(ResolveTypeInfo);
+
+            JsonSerializerOptions options = new();
+            options.TypeInfoResolver = resolver;
+
+            string json = JsonSerializer.Serialize(new RecursiveType() { Next = new RecursiveType() }, options);
+            Assert.Equal("""{"Next":{"Next":null}}""", json);
+
+            RecursiveType deserialized = JsonSerializer.Deserialize<RecursiveType>(json, options);
+            Assert.NotNull(deserialized);
+            Assert.Equal(2, deserialized.Value);
+            Assert.NotNull(deserialized.Next);
+            Assert.Equal(1, deserialized.Next.Value);
+            Assert.Null(deserialized.Next.Next);
+
+            static JsonTypeInfo? ResolveTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                int value = 1;
+                if (type == typeof(RecursiveType))
+                {
+                    JsonTypeInfo<RecursiveType> ti = JsonTypeInfo.CreateJsonTypeInfo<RecursiveType>(options);
+                    ti.CreateObject = () => new RecursiveType();
+                    JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(RecursiveType), "Next");
+                    prop.Get = (obj) => ((RecursiveType)obj).Next;
+                    prop.Set = (obj, val) =>
+                    {
+                        RecursiveType recursiveObj = (RecursiveType)obj;
+                        recursiveObj.Next = (RecursiveType)val;
+                        recursiveObj.Value = value++;
+                    };
+                    ti.Properties.Add(prop);
+                    return ti;
+                }
+
+                return null;
+            }
+        }
+
+        [Fact]
+        public static void RecursiveTypeWithResolverResolvingOnlyThatTypeThrowsWhenPropertyOfDifferentType()
+        {
+            TestResolver resolver = new(ResolveTypeInfo);
+
+            JsonSerializerOptions options = new();
+            options.TypeInfoResolver = resolver;
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new RecursiveType() { Next = new RecursiveType() }, options));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<RecursiveType>("""{"Next":{"Next":null}}""", options));
+
+            static JsonTypeInfo? ResolveTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                if (type == typeof(RecursiveType))
+                {
+                    JsonTypeInfo<RecursiveType> ti = JsonTypeInfo.CreateJsonTypeInfo<RecursiveType>(options);
+                    ti.CreateObject = () => new RecursiveType();
+                    {
+                        JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(RecursiveType), "Next");
+                        prop.Get = (obj) => ((RecursiveType)obj).Next;
+                        prop.Set = (obj, val) => ((RecursiveType)obj).Next = (RecursiveType)val;
+                        ti.Properties.Add(prop);
+                    }
+                    {
+                        JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(int), "Value");
+                        prop.Get = (obj) => ((RecursiveType)obj).Value;
+                        prop.Set = (obj, val) => ((RecursiveType)obj).Value = (int)val;
+                        ti.Properties.Add(prop);
+                    }
+
+                    return ti;
+                }
+
+                return null;
+            }
+        }
+
+        [Fact]
+        public static void RecursiveTypeWithResolverResolvingOnlyUsedTypes()
+        {
+            TestResolver resolver = new(ResolveTypeInfo);
+
+            JsonSerializerOptions options = new();
+            options.TypeInfoResolver = resolver;
+
+            RecursiveType obj = new RecursiveType()
+            {
+                Value = 13,
+                Next = new RecursiveType() { Value = 7 },
+            };
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"Next":{"Next":null,"Value":7},"Value":13}""", json);
+
+            RecursiveType deserialized = JsonSerializer.Deserialize<RecursiveType>(json, options);
+            Assert.NotNull(deserialized);
+            Assert.Equal(13, deserialized.Value);
+            Assert.NotNull(deserialized.Next);
+            Assert.Equal(7, deserialized.Next.Value);
+            Assert.Null(deserialized.Next.Next);
+
+            static JsonTypeInfo? ResolveTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                if (type == typeof(RecursiveType))
+                {
+                    JsonTypeInfo<RecursiveType> ti = JsonTypeInfo.CreateJsonTypeInfo<RecursiveType>(options);
+                    ti.CreateObject = () => new RecursiveType();
+                    {
+                        JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(RecursiveType), "Next");
+                        prop.Get = (obj) => ((RecursiveType)obj).Next;
+                        prop.Set = (obj, val) => ((RecursiveType)obj).Next = (RecursiveType)val;
+                        ti.Properties.Add(prop);
+                    }
+                    {
+                        JsonPropertyInfo prop = ti.CreateJsonPropertyInfo(typeof(int), "Value");
+                        prop.Get = (obj) => ((RecursiveType)obj).Value;
+                        prop.Set = (obj, val) => ((RecursiveType)obj).Value = (int)val;
+                        ti.Properties.Add(prop);
+                    }
+                    return ti;
+                }
+
+                if (type == typeof(int))
+                {
+                    return JsonTypeInfo.CreateJsonTypeInfo<int>(options);
+                }
+
+                return null;
+            }
+        }
+
+        private class RecursiveType
+        {
+            public int Value { get; set; }
+            public RecursiveType? Next { get; set; }
+        }
+
+        [Fact]
+        public static void CreateJsonTypeInfo_ClassWithConverterAttribute_ShouldNotResolveConverterAttribute()
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(ClassWithConverterAttribute), JsonSerializerOptions.Default);
+            Assert.Equal(typeof(ClassWithConverterAttribute), jsonTypeInfo.Type);
+            Assert.IsNotType<ClassWithConverterAttribute.CustomConverter>(jsonTypeInfo.Converter);
+        }
+
+        [Fact]
+        public static void DefaultJsonTypeInfoResolver_ClassWithConverterAttribute_ShouldResolveConverterAttribute()
+        {
+            var options = JsonSerializerOptions.Default;
+            JsonTypeInfo jsonTypeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(ClassWithConverterAttribute), options);
+            Assert.Equal(typeof(ClassWithConverterAttribute), jsonTypeInfo.Type);
+            Assert.IsType<ClassWithConverterAttribute.CustomConverter>(jsonTypeInfo.Converter);
+        }
+
+        [JsonConverter(typeof(CustomConverter))]
+        public class ClassWithConverterAttribute
+        {
+            public class CustomConverter : JsonConverter<ClassWithConverterAttribute>
+            {
+                public override ClassWithConverterAttribute? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+                public override void Write(Utf8JsonWriter writer, ClassWithConverterAttribute value, JsonSerializerOptions options) => throw new NotImplementedException();
+            }
+        }
+
+        [Fact]
+        public static void ClassWithCallBacks_JsonTypeInfoCallbackDelegatesArePopulated()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var jti = resolver.GetTypeInfo(typeof(ClassWithCallBacks), new());
+
+            Assert.NotNull(jti.OnSerializing);
+            Assert.NotNull(jti.OnSerialized);
+            Assert.NotNull(jti.OnDeserializing);
+            Assert.NotNull(jti.OnDeserialized);
+
+            var value = new ClassWithCallBacks();
+            jti.OnSerializing(value);
+            Assert.Equal(1, value.IsOnSerializingInvocations);
+
+            jti.OnSerialized(value);
+            Assert.Equal(1, value.IsOnSerializedInvocations);
+
+            jti.OnDeserializing(value);
+            Assert.Equal(1, value.IsOnDeserializingInvocations);
+
+            jti.OnDeserialized(value);
+            Assert.Equal(1, value.IsOnDeserializedInvocations);
+        }
+
+        [Fact]
+        public static void ClassWithCallBacks_CanCustomizeCallbacks()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithCallBacks))
+                            {
+                                jti.OnSerializing = null;
+                                jti.OnSerialized = (obj => ((ClassWithCallBacks)obj).IsOnSerializedInvocations += 10);
+
+                                jti.OnDeserializing = null;
+                                jti.OnDeserialized = (obj => ((ClassWithCallBacks)obj).IsOnDeserializedInvocations += 7);
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithCallBacks();
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("{}", json);
+
+            Assert.Equal(0, value.IsOnSerializingInvocations);
+            Assert.Equal(10, value.IsOnSerializedInvocations);
+
+            value = JsonSerializer.Deserialize<ClassWithCallBacks>(json, options);
+            Assert.Equal(0, value.IsOnDeserializingInvocations);
+            Assert.Equal(7, value.IsOnDeserializedInvocations);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(Dictionary<string, int>))]
+        public static void SettingCallbacksOnUnsupportedTypes_ThrowsInvalidOperationException(Type type)
+        {
+            var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
+
+            Assert.NotEqual(JsonTypeInfoKind.Object, jti.Kind);
+            Assert.Throws<InvalidOperationException>(() => jti.OnSerializing = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnSerializing = (obj => { }));
+            Assert.Throws<InvalidOperationException>(() => jti.OnSerialized = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnSerialized = (obj => { }));
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = (obj => { }));
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserialized = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserialized = (obj => { }));
+        }
+
+        public class ClassWithCallBacks :
+            IJsonOnSerializing, IJsonOnSerialized,
+            IJsonOnDeserializing, IJsonOnDeserialized
+        {
+            [JsonIgnore]
+            public int IsOnSerializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnSerializedInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializedInvocations { get; set; }
+
+            public void OnSerializing() => IsOnSerializingInvocations++;
+            public void OnSerialized() => IsOnSerializedInvocations++;
+            public void OnDeserializing() => IsOnDeserializingInvocations++;
+            public void OnDeserialized() => IsOnDeserializedInvocations++;
         }
     }
 }

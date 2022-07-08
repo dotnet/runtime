@@ -209,10 +209,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (!_si.IsAssemblyNameSetExplicit)
             {
-                if (typeInformation == null)
-                {
-                    typeInformation = BinaryFormatter.GetTypeInformation(_si.ObjectType);
-                }
+                typeInformation ??= BinaryFormatter.GetTypeInformation(_si.ObjectType);
                 assemblyString = typeInformation.AssemblyString;
                 hasTypeForwardedFrom = typeInformation.HasTypeForwardedFrom;
             }

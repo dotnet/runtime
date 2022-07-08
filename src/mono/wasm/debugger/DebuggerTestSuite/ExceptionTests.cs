@@ -7,12 +7,16 @@ using Newtonsoft.Json.Linq;
 using System.Threading;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
     public class ExceptionTests : DebuggerTests
     {
+        public ExceptionTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestAll()
         {
@@ -107,7 +111,7 @@ namespace DebuggerTests
                         // return if we hit a managed exception, or an uncaught one
                         if (pause_location["data"]?["objectId"]?.Value<string>()?.StartsWith("dotnet:object:", StringComparison.Ordinal) == true)
                         {
-                            Console.WriteLine($"Hit an unexpected managed exception, with function name: {actual_fn_name}. {pause_location}");
+                            _testOutput.WriteLine($"Hit an unexpected managed exception, with function name: {actual_fn_name}. {pause_location}");
                             throw new XunitException($"Hit an unexpected managed exception, with function name: {actual_fn_name}");
                         }
 
@@ -176,7 +180,7 @@ namespace DebuggerTests
             }
             catch (ArgumentException ae)
             {
-                Console.WriteLine($"{ae}");
+                _testOutput.WriteLine($"{ae}");
                 var eo = JObject.Parse(ae.Message);
 
                 AssertEqual(line, eo["exceptionDetails"]?["lineNumber"]?.Value<int>(), "lineNumber");
@@ -296,7 +300,7 @@ namespace DebuggerTests
                     break;
                 }
             }
-            Console.WriteLine ($"* Resumed {count} times");
+            _testOutput.WriteLine ($"* Resumed {count} times");
 
             var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
                 $"'{entry_method_name}'" +

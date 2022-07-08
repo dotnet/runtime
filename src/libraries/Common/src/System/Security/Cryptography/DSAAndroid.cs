@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -22,7 +23,7 @@ namespace System.Security.Cryptography
             private const int SignatureStackBufSize = 72;
             private const int BitsPerByte = 8;
 
-            private Lazy<SafeDsaHandle> _key = null!;
+            private Lazy<SafeDsaHandle>? _key;
 
             public DSAAndroid()
                 : this(2048)
@@ -150,7 +151,7 @@ namespace System.Security.Cryptography
                 if (disposing)
                 {
                     FreeKey();
-                    _key = null!;
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -160,16 +161,11 @@ namespace System.Security.Cryptography
             {
                 if (_key != null && _key.IsValueCreated)
                 {
-                    SafeDsaHandle handle = _key.Value;
-
-                    if (handle != null)
-                    {
-                        handle.Dispose();
-                    }
+                    _key.Value?.Dispose();
                 }
             }
 
-            private static void CheckInvalidKey(SafeDsaHandle key)
+            private static void CheckInvalidKey([NotNull] SafeDsaHandle key)
             {
                 if (key == null || key.IsInvalid)
                 {
@@ -357,6 +353,7 @@ namespace System.Security.Cryptography
                 return Interop.AndroidCrypto.DsaVerify(key, hash, signature);
             }
 
+            [MemberNotNull(nameof(_key))]
             private void ThrowIfDisposed()
             {
                 if (_key == null)
@@ -375,6 +372,7 @@ namespace System.Security.Cryptography
                 return key;
             }
 
+            [MemberNotNull(nameof(_key))]
             private void SetKey(SafeDsaHandle newKey)
             {
                 // Do not call ThrowIfDisposed here, as it breaks the SafeEvpPKey ctor
@@ -386,7 +384,7 @@ namespace System.Security.Cryptography
                 _key = new Lazy<SafeDsaHandle>(newKey);
             }
 
-            internal SafeDsaHandle DuplicateKeyHandle() => _key.Value.DuplicateHandle();
+            internal SafeDsaHandle DuplicateKeyHandle() => GetKey().DuplicateHandle();
 
             private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 1024, maxSize: 3072, skipSize: 1024) };
         }

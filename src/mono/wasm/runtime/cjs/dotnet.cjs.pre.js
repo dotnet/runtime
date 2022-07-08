@@ -1,4 +1,4 @@
-const MONO = {}, BINDING = {}, INTERNAL = {};
+const MONO = {}, BINDING = {}, INTERNAL = {}, IMPORTS = {}, EXPORTS = {};
 if (ENVIRONMENT_IS_GLOBAL) {
     if (globalThis.Module.ready) {
         throw new Error("MONO_WASM: Module.ready couldn't be redefined.")
@@ -13,7 +13,7 @@ else if (typeof createDotnetRuntime === "object") {
 }
 else if (typeof createDotnetRuntime === "function") {
     Module = { ready: Module.ready };
-    const extension = createDotnetRuntime({ MONO, BINDING, INTERNAL, Module })
+    const extension = createDotnetRuntime({ MONO, BINDING, INTERNAL, IMPORTS, EXPORTS, Module })
     if (extension.ready) {
         throw new Error("MONO_WASM: Module.ready couldn't be redefined.")
     }

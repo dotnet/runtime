@@ -412,28 +412,19 @@ namespace System.Runtime.Serialization
             private XmlFormatCollectionWriterDelegate? _xmlFormatWriterDelegate;
             private bool _isConstructorCheckRequired;
 
-            internal static Type[] KnownInterfaces
-            {
-                get
+            internal static Type[] KnownInterfaces =>
+                // Listed in priority order
+                s_knownInterfaces ??= new Type[]
                 {
-                    if (s_knownInterfaces == null)
-                    {
-                        // Listed in priority order
-                        s_knownInterfaces = new Type[]
-                    {
-                        Globals.TypeOfIDictionaryGeneric,
-                        Globals.TypeOfIDictionary,
-                        Globals.TypeOfIListGeneric,
-                        Globals.TypeOfICollectionGeneric,
-                        Globals.TypeOfIList,
-                        Globals.TypeOfIEnumerableGeneric,
-                        Globals.TypeOfICollection,
-                        Globals.TypeOfIEnumerable
-                    };
-                    }
-                    return s_knownInterfaces;
-                }
-            }
+                    Globals.TypeOfIDictionaryGeneric,
+                    Globals.TypeOfIDictionary,
+                    Globals.TypeOfIListGeneric,
+                    Globals.TypeOfICollectionGeneric,
+                    Globals.TypeOfIList,
+                    Globals.TypeOfIEnumerableGeneric,
+                    Globals.TypeOfICollection,
+                    Globals.TypeOfIEnumerable
+                };
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private void Init(CollectionKind kind, Type? itemType, CollectionDataContractAttribute? collectionContractAttribute)

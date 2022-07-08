@@ -201,10 +201,7 @@ namespace System.Data.ProviderBase
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
             }
 
             return resultTable;

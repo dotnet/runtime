@@ -2821,10 +2821,7 @@ namespace System.Xml
 
         private void SendValidationEvent(XmlSeverityType severity, XmlSchemaException exception)
         {
-            if (_validationEventHandling != null)
-            {
-                _validationEventHandling.SendEvent(exception, severity);
-            }
+            _validationEventHandling?.SendEvent(exception, severity);
         }
 
         //
@@ -7174,10 +7171,7 @@ namespace System.Xml
                                 int tmp2 = pos - _ps.charPos;
                                 if (tmp2 > 0)
                                 {
-                                    if (sb != null)
-                                    {
-                                        sb.Append(_ps.chars, _ps.charPos, tmp2);
-                                    }
+                                    sb?.Append(_ps.chars, _ps.charPos, tmp2);
                                     _ps.charPos = pos;
                                     wsCount += tmp2;
                                 }
@@ -7190,10 +7184,7 @@ namespace System.Xml
                 int tmp3 = pos - _ps.charPos;
                 if (tmp3 > 0)
                 {
-                    if (sb != null)
-                    {
-                        sb.Append(_ps.chars, _ps.charPos, tmp3);
-                    }
+                    sb?.Append(_ps.chars, _ps.charPos, tmp3);
                     _ps.charPos = pos;
                     wsCount += tmp3;
                 }
@@ -7356,10 +7347,7 @@ namespace System.Xml
 
                 if (expand)
                 {
-                    if (internalSubsetBuilder != null)
-                    {
-                        internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
-                    }
+                    internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
                     chars[pos] = ch;
                 }
                 charCount = 1;
@@ -7387,10 +7375,7 @@ namespace System.Xml
                 Debug.Assert(pos > 0);
                 if (expand)
                 {
-                    if (internalSubsetBuilder != null)
-                    {
-                        internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
-                    }
+                    internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
                     chars[pos - 1] = (char)high;
                     chars[pos] = (char)low;
                 }
@@ -7556,10 +7541,7 @@ namespace System.Xml
             Debug.Assert(pos > 0);
             if (expand)
             {
-                if (internalSubsetBuilder != null)
-                {
-                    internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos);
-                }
+                internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos);
                 _ps.chars[pos - 1] = ch;
             }
             return pos;
@@ -8122,10 +8104,7 @@ namespace System.Xml
 
         private void PopEntity()
         {
-            if (_ps.stream != null)
-            {
-                _ps.stream.Dispose();
-            }
+            _ps.stream?.Dispose();
 
             UnregisterEntity();
             PopParsingState();
@@ -8151,10 +8130,7 @@ namespace System.Xml
             // register entity for recursion checkes
             if (entity != null)
             {
-                if (_currentEntities == null)
-                {
-                    _currentEntities = new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
-                }
+                _currentEntities ??= new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
 
                 _currentEntities.Add(entity, entity);
             }
@@ -9323,10 +9299,7 @@ namespace System.Xml
                 prefix = _namespaceManager.LookupPrefix(ns);
 
                 Debug.Assert(prefix != null);
-                if (prefix == null)
-                {
-                    prefix = string.Empty;
-                }
+                prefix ??= string.Empty;
             }
 
             // find out if the attribute is already there
@@ -9733,10 +9706,7 @@ namespace System.Xml
                     }
                     if (j > i + 1)
                     {
-                        if (norValue == null)
-                        {
-                            norValue = new StringBuilder(len);
-                        }
+                        norValue ??= new StringBuilder(len);
                         norValue.Append(value, startPos, i - startPos + 1);
                         startPos = j;
                         i = j - 1;

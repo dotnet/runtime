@@ -9,7 +9,7 @@
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
-    <WasmEnablePerfTracing>true</WasmEnablePerfTracing>
+    <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
     <NoWarn>CA2007</NoWarn> <!-- consider ConfigureAwait() -->
   </PropertyGroup>
 

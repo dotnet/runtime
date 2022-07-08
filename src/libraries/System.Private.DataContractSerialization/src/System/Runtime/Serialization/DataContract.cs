@@ -1128,11 +1128,11 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static bool IsTypeSerializable(Type type)
         {
-            return IsTypeSerializable(type, new HashSet<Type>());
+            return IsTypeSerializable(type, null);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool IsTypeSerializable(Type type, HashSet<Type> previousCollectionTypes)
+        private static bool IsTypeSerializable(Type type, HashSet<Type>? previousCollectionTypes)
         {
             if (type.IsSerializable ||
                 type.IsEnum ||
@@ -1147,6 +1147,7 @@ namespace System.Runtime.Serialization
             }
             if (CollectionDataContract.IsCollection(type, out Type? itemType))
             {
+                previousCollectionTypes ??= new HashSet<Type>();
                 ValidatePreviousCollectionTypes(type, itemType, previousCollectionTypes);
                 if (IsTypeSerializable(itemType, previousCollectionTypes))
                 {
@@ -1564,8 +1565,7 @@ namespace System.Runtime.Serialization
                 endIndex = typeName.IndexOf('`', startIndex);
                 if (endIndex < 0)
                 {
-                    if (localName != null)
-                        localName.Append(typeName.AsSpan(startIndex));
+                    localName?.Append(typeName.AsSpan(startIndex));
                     nestedParamCounts.Add(0);
                     break;
                 }
@@ -1585,8 +1585,7 @@ namespace System.Runtime.Serialization
                 else
                     nestedParamCounts.Add(int.Parse(typeName.AsSpan(endIndex + 1, startIndex - endIndex - 1), provider: CultureInfo.InvariantCulture));
             }
-            if (localName != null)
-                localName.Append("Of");
+            localName?.Append("Of");
             return nestedParamCounts;
         }
 

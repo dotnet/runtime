@@ -19,6 +19,13 @@ extern BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason,
 //*****************************************************************************
 extern "C"
 #ifdef TARGET_UNIX
+
+#if defined(HOST_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
+#endif
+
 DLLEXPORT // For Win32 PAL LoadLibrary emulation
 #endif
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)

@@ -459,7 +459,10 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Fail("Duplicate node name emitted to file",
                     $"Symbol {definedSymbol.GetMangledName(_nodeFactory.NameMangler)} has already been written to the output object file {_objectFilePath} with symbol {alreadyWrittenSymbol}");
                 }
-                _previouslyWrittenNodeNames.Add(symbolName, new NodeInfo(definedSymbol, nodeIndex, symbolIndex));
+                else
+                {
+                    _previouslyWrittenNodeNames.Add(symbolName, new NodeInfo(definedSymbol, nodeIndex, symbolIndex));
+                }
             }
 #endif
 

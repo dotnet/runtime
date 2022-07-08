@@ -110,10 +110,8 @@ namespace System.Xml
 
         public void Close()
         {
-            if (_writer != null)
-                _writer.Close();
-            if (_elementWriter != null)
-                _elementWriter.Close();
+            _writer?.Close();
+            _elementWriter?.Close();
             if (_elementStream != null && _elementStream.Length > 512)
                 _elementStream = null!;
             _elementBuffer = null;

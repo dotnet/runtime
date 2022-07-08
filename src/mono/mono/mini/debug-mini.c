@@ -225,7 +225,6 @@ mono_debug_close_method (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
 	MonoMethod *method;
-	int i;
 
 	info = (MiniDebugMethodInfo *) cfg->debug_info;
 	if (!info || !info->jit) {
@@ -251,7 +250,7 @@ mono_debug_close_method (MonoCompile *cfg)
 		jit->num_params = sig->param_count;
 		jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
 
-		for (i = 0; i < jit->num_locals; i++)
+		for (guint32 i = 0; i < jit->num_locals; i++)
 			write_variable (cfg->locals [i], &jit->locals [i]);
 
 		if (sig->hasthis) {
@@ -259,7 +258,7 @@ mono_debug_close_method (MonoCompile *cfg)
 			write_variable (cfg->args [0], jit->this_var);
 		}
 
-		for (i = 0; i < jit->num_params; i++)
+		for (guint32 i = 0; i < jit->num_params; i++)
 			write_variable (cfg->args [i + sig->hasthis], &jit->params [i]);
 
 		if (cfg->gsharedvt_info_var) {
@@ -273,7 +272,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	jit->num_line_numbers = info->line_numbers->len;
 	jit->line_numbers = g_new0 (MonoDebugLineNumberEntry, jit->num_line_numbers);
 
-	for (i = 0; i < jit->num_line_numbers; i++)
+	for (guint32 i = 0; i < jit->num_line_numbers; i++)
 		jit->line_numbers [i] = g_array_index (info->line_numbers, MonoDebugLineNumberEntry, i);
 
 	mono_debug_add_method (cfg->method_to_register, jit, NULL);
@@ -448,7 +447,6 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 	MonoDebugMethodJitInfo *jit;
 	guint32 size, prev_offset, prev_native_offset;
 	guint8 *buf, *p;
-	int i;
 
 	/* Can't use cfg->debug_info as it is freed by close_method () */
 	jit = mono_debug_find_method (cfg->method, NULL);
@@ -467,13 +465,13 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 	if (jit->has_var_info) {
 		encode_value (jit->num_locals, p, &p);
 
-		for (i = 0; i < jit->num_params; ++i)
+		for (guint32 i = 0; i < jit->num_params; ++i)
 			serialize_variable (&jit->params [i], p, &p);
 
 		if (jit->this_var)
 			serialize_variable (jit->this_var, p, &p);
 
-		for (i = 0; i < jit->num_locals; i++)
+		for (guint32 i = 0; i < jit->num_locals; i++)
 			serialize_variable (&jit->locals [i], p, &p);
 
 		if (jit->gsharedvt_info_var) {
@@ -489,7 +487,7 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 
 	prev_offset = 0;
 	prev_native_offset = 0;
-	for (i = 0; i < jit->num_line_numbers; ++i) {
+	for (guint32 i = 0; i < jit->num_line_numbers; ++i) {
 		/* Sometimes, the offset values are not in increasing order */
 		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
 		encode_value (lne->il_offset - prev_offset, p, &p);
@@ -500,7 +498,7 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 
 	mono_debug_free_method_jit_info (jit);
 
-	g_assert (p - buf < size);
+	g_assert (GPTRDIFF_TO_UINT32(p - buf) < size);
 
 	*out_buf = buf;
 	*buf_len = GPTRDIFF_TO_UINT32 (p - buf);
@@ -538,7 +536,6 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 	gint32 offset, native_offset, prev_offset, prev_native_offset;
 	MonoDebugMethodJitInfo *jit;
 	guint8 *p;
-	int i;
 
 	jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	jit->code_start = code_start;
@@ -556,7 +553,7 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 		jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
 		jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 
-		for (i = 0; i < jit->num_params; ++i)
+		for (guint32 i = 0; i < jit->num_params; ++i)
 			deserialize_variable (&jit->params [i], p, &p);
 
 		if (mono_method_signature_internal (method)->hasthis) {
@@ -564,7 +561,7 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 			deserialize_variable (jit->this_var, p, &p);
 		}
 
-		for (i = 0; i < jit->num_locals; i++)
+		for (guint32 i = 0; i < jit->num_locals; i++)
 			deserialize_variable (&jit->locals [i], p, &p);
 
 		if (decode_value (p, &p)) {
@@ -580,7 +577,7 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 
 	prev_offset = 0;
 	prev_native_offset = 0;
-	for (i = 0; i < jit->num_line_numbers; ++i) {
+	for (guint32 i = 0; i < jit->num_line_numbers; ++i) {
 		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
 
 		offset = prev_offset + decode_value (p, &p);
@@ -665,7 +662,6 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 {
 	MonoJitInfo *ji = mini_jit_info_table_find (ip);
 	MonoDebugMethodJitInfo *jit;
-	int i;
 
 	if (!ji)
 		return;
@@ -680,12 +676,12 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 		mono_method_get_param_names (jinfo_get_method (ji), (const char **) names);
 		if (jit->this_var)
 			print_var_info (jit->this_var, 0, "this", "Arg");
-		for (i = 0; i < jit->num_params; ++i) {
+		for (guint32 i = 0; i < jit->num_params; ++i) {
 			print_var_info (&jit->params [i], i, names [i]? names [i]: "unknown name", "Arg");
 		}
 		g_free (names);
 	} else {
-		for (i = 0; i < jit->num_locals; ++i) {
+		for (guint32 i = 0; i < jit->num_locals; ++i) {
 			print_var_info (&jit->locals [i], i, "", "Local");
 		}
 	}
@@ -737,12 +733,10 @@ mono_debugger_insert_breakpoint (const gchar *method_name, gboolean include_name
 int
 mono_debugger_method_has_breakpoint (MonoMethod *method)
 {
-	int i;
-
 	if (!breakpoints)
 		return 0;
 
-	for (i = 0; i < breakpoints->len; i++) {
+	for (guint i = 0; i < breakpoints->len; i++) {
 		MiniDebugBreakpointInfo *info = (MiniDebugBreakpointInfo *)g_ptr_array_index (breakpoints, i);
 
 		if (!mono_method_desc_full_match (info->desc, method))
