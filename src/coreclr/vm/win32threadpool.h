@@ -23,7 +23,6 @@ Revision History:
 #include "delegateinfo.h"
 #include "util.hpp"
 #include "nativeoverlapped.h"
-#include "hillclimbing.h"
 
 #define MAX_WAITHANDLES 64
 

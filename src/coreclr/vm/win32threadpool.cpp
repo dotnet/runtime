@@ -89,8 +89,6 @@ SVAL_IMPL(LONG,ThreadpoolMgr,MaxLimitTotalWorkerThreads);        // = MaxLimitCP
 
 SVAL_IMPL(LONG,ThreadpoolMgr,cpuUtilization);
 
-HillClimbing ThreadpoolMgr::HillClimbingInstance;
-
 // Cacheline aligned, 3 hot variables updated in a group
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) LONG ThreadpoolMgr::PriorCompletedWorkRequests = 0;
 DWORD ThreadpoolMgr::PriorCompletedWorkRequestsTime;
@@ -374,44 +372,6 @@ union WorkingThreadCounts
 WorkingThreadCounts g_workingThreadCounts;
 
 //
-// If worker tracking is enabled (see above) then this is called immediately before and after a worker thread executes
-// each work item.
-//
-void ThreadpoolMgr::ReportThreadStatus(bool isWorking)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(IsInitialized()); // can't be here without requesting a thread first
-    _ASSERTE(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking));
-
-    while (true)
-    {
-        WorkingThreadCounts currentCounts, newCounts;
-        currentCounts.asLong = VolatileLoad(&g_workingThreadCounts.asLong);
-
-        newCounts = currentCounts;
-
-        if (isWorking)
-            newCounts.currentWorking++;
-
-        if (newCounts.currentWorking > newCounts.maxWorking)
-            newCounts.maxWorking = newCounts.currentWorking;
-
-        if (!isWorking)
-            newCounts.currentWorking--;
-
-        if (currentCounts.asLong == InterlockedCompareExchange(&g_workingThreadCounts.asLong, newCounts.asLong, currentCounts.asLong))
-            break;
-    }
-}
-
-//
 // Returns the max working count since the previous call to TakeMaxWorkingThreadCount, and resets WorkingThreadCounts.maxWorking.
 //
 int TakeMaxWorkingThreadCount()
@@ -651,7 +611,7 @@ void ThreadpoolMgr::ProcessWaitCompletion(WaitInfo* waitInfo,
             InterlockedIncrement(&waitInfo->refCount);
 
 #ifndef TARGET_UNIX
-            if (FALSE == PostQueuedCompletionStatus((LPOVERLAPPED)asyncCallback, (LPOVERLAPPED_COMPLETION_ROUTINE)WaitIOCompletionCallback))
+
 #else  // TARGET_UNIX
             if (FALSE == QueueUserWorkItem(AsyncCallbackCompletion, asyncCallback, QUEUE_ONLY))
 #endif // !TARGET_UNIX
