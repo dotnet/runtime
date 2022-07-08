@@ -134,7 +134,6 @@ namespace System.Net.Quic.Tests
         public async Task CertificateCallbackThrowPropagates()
         {
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
-            X509Certificate? receivedCertificate = null;
             bool validationResult = false;
 
             var listenerOptions = new QuicListenerOptions()
@@ -148,7 +147,7 @@ namespace System.Net.Quic.Tests
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
             {
-                receivedCertificate = cert;
+                Assert.Equal(ServerCertificate, cert);
                 if (validationResult)
                 {
                     return validationResult;
@@ -160,8 +159,6 @@ namespace System.Net.Quic.Tests
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar1";
 
             await Assert.ThrowsAsync<ArithmeticException>(() => CreateQuicConnection(clientOptions).AsTask());
-
-            Assert.Equal(ServerCertificate, receivedCertificate);
 
             // Make sure the listener is still usable and there is no lingering bad connection
             validationResult = true;

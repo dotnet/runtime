@@ -18,6 +18,10 @@ public partial class QuicConnection
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", null);
 
         /// <summary>
+        /// The connection to which these options belong.
+        /// </summary>
+        private readonly QuicConnection _connection;
+        /// <summary>
         /// Determines if the connection is outbound/client or inbound/server.
         /// </summary>
         private readonly bool _isClient;
@@ -38,8 +42,9 @@ public partial class QuicConnection
         /// </summary>
         private readonly RemoteCertificateValidationCallback? _validationCallback;
 
-        public SslConnectionOptions(bool isClient, string? targetHost, bool certificateRequired, X509RevocationMode revocationMode, RemoteCertificateValidationCallback? validationCallback)
+        public SslConnectionOptions(QuicConnection connection, bool isClient, string? targetHost, bool certificateRequired, X509RevocationMode revocationMode, RemoteCertificateValidationCallback? validationCallback)
         {
+            _connection = connection;
             _isClient = isClient;
             _targetHost = targetHost;
             _certificateRequired = certificateRequired;
@@ -96,7 +101,7 @@ public partial class QuicConnection
 
             if (_validationCallback is not null)
             {
-                if (!_validationCallback(this, certificate, chain, sslPolicyErrors))
+                if (!_validationCallback(_connection, certificate, chain, sslPolicyErrors))
                 {
                     if (_isClient)
                     {

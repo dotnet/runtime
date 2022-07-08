@@ -265,6 +265,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
 
             _sslConnectionOptions = new SslConnectionOptions(
+                this,
                 isClient: true,
                 options.ClientAuthenticationOptions.TargetHost,
                 certificateRequired: true,
@@ -303,6 +304,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
 
             _sslConnectionOptions = new SslConnectionOptions(
+                this,
                 isClient: false,
                 targetHost: null,
                 options.ServerAuthenticationOptions.ClientCertificateRequired,
