@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -24,13 +22,15 @@ namespace System.Text.RegularExpressions
             };
         }
 
-        public readonly Dictionary<char, int> Children = new();
+        public Dictionary<char, int> Children { get; } = new();
 
-        public bool IsMatch { get; set; }
+        private bool _isMatch;
+
+        public bool IsMatch => _isMatch;
 
         public bool IsRoot => Depth == 0;
 
-        public int Parent { get; init; }
+        public int Parent { get; set; }
 
         public char AccessingCharacter { get; init; }
 
@@ -45,6 +45,12 @@ namespace System.Text.RegularExpressions
 
         public override string ToString() => Path;
 #endif
+
+        public void SetMatch()
+        {
+            Children.Clear();
+            _isMatch = true;
+        }
     }
 
     internal static class TrieExtensions

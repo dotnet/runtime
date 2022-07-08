@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -9,7 +10,7 @@ namespace System.Text.RegularExpressions
 {
     internal struct TrieBuilder
     {
-        private readonly List<TrieNode> _nodes = new List<TrieNode>() { TrieNode.CreateRoot() };
+        private List<TrieNode> _nodes = new List<TrieNode>() { TrieNode.CreateRoot() };
 
         private readonly int _nodeLimit = CompiledNodeLimit;
 
@@ -70,6 +71,7 @@ namespace System.Text.RegularExpressions
             {
                 return null;
             }
+            builder.RemoveUnreachableNodes();
             builder.ValidateInvariants();
             return builder._nodes;
         }
@@ -82,8 +84,67 @@ namespace System.Text.RegularExpressions
             int count = nodes.Count;
             for (int i = 0; i < count; i++)
             {
-                _nodes[nodes[i]].IsMatch = true;
+                _nodes[nodes[i]].SetMatch();
             }
+        }
+
+        private void RemoveUnreachableNodes()
+        {
+            BitArray visited = new BitArray(_nodes.Count);
+            visited.Set(TrieNode.Root, true);
+            Stack<int> pending = new Stack<int>(DepthLimit);
+            pending.Push(TrieNode.Root);
+            int reachableNodeCount = 1;
+
+            // Start from the root and mark the reachable nodes.
+            while (pending.Count > 0)
+            {
+                int i = pending.Pop();
+                visited.Set(i, true);
+                foreach (KeyValuePair<char, int> child in _nodes[i].Children)
+                {
+                    if (!visited.Get(child.Value))
+                    {
+                        pending.Push(child.Value);
+                        reachableNodeCount++;
+                    }
+                }
+            }
+
+            if (reachableNodeCount == _nodes.Count)
+            {
+                // All nodes are reachable, there's nothing to remove.
+                return;
+            }
+
+            // Create a new list and put only the reachable nodes.
+            List<TrieNode> reachableNodes = new List<TrieNode>(reachableNodeCount);
+            int[] nodeIndexMapping = new int[_nodes.Count];
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                if (visited.Get(i))
+                {
+                    nodeIndexMapping[i] = reachableNodes.Count;
+                    reachableNodes.Add(_nodes[i]);
+                }
+            }
+
+            // Adjust the node indices to point to the reachable nodes.
+            for (int i = 0; i < reachableNodes.Count; i++)
+            {
+                TrieNode node = reachableNodes[i];
+                if (node.Parent != -1)
+                {
+                    node.Parent = nodeIndexMapping[node.Parent];
+                }
+                Dictionary<char, int> children = node.Children;
+                foreach (KeyValuePair<char, int> child in children)
+                {
+                    children[child.Key] = nodeIndexMapping[child.Value];
+                }
+            }
+
+            _nodes = reachableNodes;
         }
 
         /// <summary>
@@ -127,7 +188,7 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            _nodes[newNode].IsMatch = true;
+                            _nodes[newNode].SetMatch();
                         }
                     }
 
@@ -176,8 +237,8 @@ namespace System.Text.RegularExpressions
                 // but that would be a waste of potential since the nodes we added and then removed still counted to the node
                 // limit.
                 // Patterns like "a(b|c*)" would still create unnecessary nodes because "a" would not be added as a match until
-                // it was too late, so we still might need to remove unreachable nodes afterwards. Not making them count towards
-                // the node limit is not something easy though.
+                // it was too late, so we still need to remove unreachable nodes afterwards. Not making them count towards the
+                // node limit is not something easy though.
                 || node.IsMatch)
             {
                 canContinue = false;
@@ -193,7 +254,6 @@ namespace System.Text.RegularExpressions
                     Parent = nodeIndex,
                     AccessingCharacter = c,
                     Depth = node.Depth + 1,
-                    IsMatch = isFinal,
 #if DEBUG || REGEXGENERATOR
                     Path = node.Path + c
 #endif
@@ -202,10 +262,12 @@ namespace System.Text.RegularExpressions
                 node.Children.Add(c, nextNodeIndex);
                 nodes.Add(newNode);
             }
-            else
+
+            if (isFinal)
             {
-                nodes[nextNodeIndex].IsMatch |= isFinal;
+                nodes[nextNodeIndex].SetMatch();
             }
+
             canContinue = true;
             return nextNodeIndex;
         }
@@ -480,10 +542,8 @@ namespace System.Text.RegularExpressions
         {
             for (int i = 0; i < _nodes.Count; i++)
             {
-                if (_nodes[i] is { Children.Count: 0, IsMatch: false })
-                {
-                    Debug.Fail($"Node {i} has no children but it's not a match node.");
-                }
+                TrieNode node = _nodes[i];
+                Debug.Assert(node.IsMatch == (node.Children.Count == 0), $"Node {i} must be childless if and only if it is a match node.");
             }
         }
 
