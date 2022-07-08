@@ -24,6 +24,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetRfc5869TestCases))]
+        [SkipOnPlatform(TestPlatforms.Browser, "MD5 is not supported on Browser")]
         public void Rfc5869ExtractTamperHashTests(Rfc5869TestCase test)
         {
             byte[] prk = Extract(HashAlgorithmName.MD5, 128 / 8, test.Ikm, test.Salt);
@@ -239,7 +240,11 @@ namespace System.Security.Cryptography.Tests
             yield return new object[] { HashAlgorithmName.SHA1, 160 / 8 - 1 };
             yield return new object[] { HashAlgorithmName.SHA256, 256 / 8 - 1 };
             yield return new object[] { HashAlgorithmName.SHA512, 512 / 8 - 1 };
-            yield return new object[] { HashAlgorithmName.MD5, 128 / 8 - 1 };
+
+            if (!PlatformDetection.IsBrowser)
+            {
+                yield return new object[] { HashAlgorithmName.MD5, 128 / 8 - 1 };
+            }
         }
 
         private static Rfc5869TestCase[] Rfc5869TestCases { get; } = new Rfc5869TestCase[7]
