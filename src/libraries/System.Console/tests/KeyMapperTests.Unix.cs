@@ -42,14 +42,14 @@ public class KeyMapperTests
     {
         char[] encoded = terminalData.ConsoleEncoding.GetString(recordedBytes).ToCharArray();
 
-        ConsoleKeyInfo actual = Map(encoded, terminalData.TerminalDb, terminalData.Verase);
+        ConsoleKeyInfo actual = Map(encoded, terminalData.TerminalDb, terminalData.Verase, encoded.Length);
 
         Assert.Equal(expected.Key, actual.Key);
         Assert.Equal(expected.Modifiers, actual.Modifiers);
         Assert.Equal(expected.KeyChar, actual.KeyChar);
     }
 
-    private static ConsoleKeyInfo Map(char[] chars, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte verase)
+    private static ConsoleKeyInfo Map(char[] chars, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte verase, int expectedStartIndex)
     {
         int startIndex = 0;
 
@@ -103,7 +103,7 @@ public class KeyMapperTests
     [MemberData(nameof(AsciiCharactersArguments))]
     public void AsciiCharacters(TerminalData terminalData, char input, ConsoleKey expectedKey)
     {
-        ConsoleKeyInfo consoleKeyInfo = Map(new[] { input }, terminalData.TerminalDb, terminalData.Verase);
+        ConsoleKeyInfo consoleKeyInfo = Map(new[] { input }, terminalData.TerminalDb, terminalData.Verase, 1);
 
         Assert.Equal(input, consoleKeyInfo.KeyChar);
         Assert.Equal(expectedKey, consoleKeyInfo.Key);
@@ -126,6 +126,7 @@ public class KeyMapperTests
             yield return ("\u001BOQ", ConsoleKey.F2);
             yield return ("\u001BOR", ConsoleKey.F3);
             yield return ("\u001BOS", ConsoleKey.F4);
+            yield return ("\u001BOw", ConsoleKey.End); // rxvt
         }
     }
 
@@ -138,7 +139,58 @@ public class KeyMapperTests
     [MemberData(nameof(ThreeCharactersKeysArguments))]
     public void ThreeCharactersKey(TerminalData terminalData, string input, ConsoleKey expectedKey)
     {
-        ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase);
+        ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
+
+        Assert.Equal(expectedKey, consoleKeyInfo.Key);
+        Assert.Equal(default, consoleKeyInfo.KeyChar);
+        Assert.Equal(default, consoleKeyInfo.Modifiers);
+    }
+
+    private static IEnumerable<(string chars, ConsoleKey key)> VTSequences
+    {
+        get
+        {
+            yield return (GetString(1), ConsoleKey.Home);
+            yield return (GetString(2), ConsoleKey.Insert);
+            yield return (GetString(3), ConsoleKey.Delete);
+            yield return (GetString(4), ConsoleKey.End);
+            yield return (GetString(5), ConsoleKey.PageUp);
+            yield return (GetString(6), ConsoleKey.PageDown);
+            yield return (GetString(7), ConsoleKey.Home);
+            yield return (GetString(8), ConsoleKey.End);
+            yield return (GetString(11), ConsoleKey.F1);
+            yield return (GetString(12), ConsoleKey.F2);
+            yield return (GetString(13), ConsoleKey.F3);
+            yield return (GetString(14), ConsoleKey.F4);
+            yield return (GetString(15), ConsoleKey.F5);
+            yield return (GetString(17), ConsoleKey.F6);
+            yield return (GetString(18), ConsoleKey.F7);
+            yield return (GetString(19), ConsoleKey.F8);
+            yield return (GetString(20), ConsoleKey.F9);
+            yield return (GetString(21), ConsoleKey.F10);
+            yield return (GetString(23), ConsoleKey.F11);
+            yield return (GetString(24), ConsoleKey.F12);
+            yield return (GetString(25), ConsoleKey.F13);
+            yield return (GetString(26), ConsoleKey.F14);
+            yield return (GetString(28), ConsoleKey.F15);
+            yield return (GetString(29), ConsoleKey.F16);
+            yield return (GetString(31), ConsoleKey.F17);
+            yield return (GetString(32), ConsoleKey.F18);
+            yield return (GetString(33), ConsoleKey.F19);
+            yield return (GetString(34), ConsoleKey.F20);
+
+            static string GetString(int i) => $"\u001B[{i}~";
+        }
+    }
+
+    public static IEnumerable<object[]> VTSequencesrguments
+        => Terminals.SelectMany(terminal => VTSequences.Select(tuple => new object[] { terminal, tuple.chars, tuple.key }));
+
+    [Theory]
+    [MemberData(nameof(VTSequencesrguments))]
+    public void VTSequencesAreMapped(TerminalData terminalData, string input, ConsoleKey expectedKey)
+    {
+        ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
 
         Assert.Equal(expectedKey, consoleKeyInfo.Key);
         Assert.Equal(default, consoleKeyInfo.KeyChar);
@@ -364,10 +416,7 @@ public class PuTTYData_xterm : TerminalData
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
             yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
             yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
             yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
@@ -414,10 +463,7 @@ public class PuTTYData_linux : TerminalData
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
             yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
             yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
             yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
@@ -466,10 +512,7 @@ public class PuTTYData_putty : TerminalData
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
             yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
             yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
             yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));

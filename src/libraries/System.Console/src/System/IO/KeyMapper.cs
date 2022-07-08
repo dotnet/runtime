@@ -60,13 +60,31 @@ internal static class KeyMapper
     {
         int length = endIndex - startIndex;
 
-        if (length >= 3 && TryDecodeTerminalInputSequence(buffer, terminalFormatStrings, out key, out isShift, out isCtrl, out isAlt, ref startIndex, endIndex))
+        // TODO: add VERASE handling
+
+        // Escape sequences start with Escape. But some terminals (e.g. PuTTY) use Escape to express that for given sequence Alt was pressed.
+        if (length >= 4 && buffer[startIndex] == Escape && buffer[startIndex + 1] == Escape)
+        {
+            startIndex++;
+            if (TryDecodeTerminalInputSequence(buffer, terminalFormatStrings, out key, out isShift, out _, out isCtrl, ref startIndex, endIndex))
+            {
+                isAlt = true;
+                ch = default; // these special keys never produce any char (Home, Arrow, F1 etc)
+                return;
+            }
+            else
+            {
+                startIndex--;
+            }
+        }
+        else if (length >= 3 && TryDecodeTerminalInputSequence(buffer, terminalFormatStrings, out key, out isShift, out isAlt, out isCtrl, ref startIndex, endIndex))
         {
             // these special keys never produce any char (Home, Arrow, F1 etc)
             ch = default;
             return;
         }
-        else if (length == 2 && buffer[startIndex] == Escape)
+
+        if (length == 2 && buffer[startIndex] == Escape)
         {
             DecodeFromSingleChar(buffer[++startIndex], out key, out ch, out isShift, out isCtrl);
             startIndex++;
@@ -90,11 +108,10 @@ internal static class KeyMapper
         // xterm and VT sequences start with "^[[", some xterm start with "^[O" ("^[" stands for Escape (27))
         if (input.Length < 3 || input[0] != Escape || (input[1] != '[' && input[1] != 'O'))
         {
-            key = default;
             return false;
         }
 
-        if (input[1] == 'O' || char.IsAsciiLetterUpper(input[2])) // xterm "^[[O" or xterm "^[["
+        if (input[1] == 'O' || char.IsAsciiLetterUpper(input[2])) // "^[O" or "^[["
         {
             if (!TryMapUsingDatabase(buffer.AsMemory(startIndex, 3), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
             {
@@ -105,9 +122,59 @@ internal static class KeyMapper
             return true;
         }
 
-        if (char.IsAsciiDigit(input[2]))
+        int digitCount = 0;
+        ReadOnlySpan<char> unparsed = input.Slice(2);
+        while (!unparsed.IsEmpty && char.IsAsciiDigit(unparsed[0]))
         {
+            digitCount++;
+            unparsed = unparsed.Slice(1);
+        }
 
+        if (digitCount == 0)
+        {
+            return false;
+        }
+
+        if (unparsed[0] == '~') // it's a VT Sequence like ^[[11~
+        {
+            int sequenceLength = 2 + digitCount + 1; // prefix + digit count + ~
+            if (!TryMapUsingDatabase(buffer.AsMemory(startIndex, sequenceLength), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
+            {
+                key = MapEscapeSequenceNumber(byte.Parse(input.Slice(2, digitCount)));
+                Debug.Assert(key != default, $"Missing '{input.Slice(0, sequenceLength)}' mapping");
+            }
+            startIndex += sequenceLength;
+            return true;
+        }
+
+        if (unparsed[0] != ';' || unparsed.Length < 2 || !char.IsDigit(unparsed[1]) || !(unparsed[2] == '~' || char.IsAsciiLetterUpper(unparsed[2])))
+        {
+            return false;
+        }
+
+        // after ; comes the modifiers:
+        ConsoleModifiers modifiers = MapModifiers(unparsed[1]);
+        if (char.IsAsciiLetterUpper(unparsed[2]))
+        {
+            // after the modifiers it's either a letter (key id)
+            key = Map(unparsed[2]);
+        }
+        else
+        {
+            // or a tylde and the whole thing is a VT Sequence like ^[[24;5~
+            Debug.Assert(unparsed[2] == '~');
+            int sequenceLength = 2 + digitCount + 1; // prefix + digit
+            key = MapEscapeSequenceNumber(byte.Parse(input.Slice(2, digitCount)));
+            Debug.Assert(key != default, $"Missing '{input.Slice(0, sequenceLength)}' mapping");
+        }
+
+        if (key != default)
+        {
+            startIndex += 2 + digitCount + 1 + 1; // prefix + digit count + modifier + ~ or single char
+            isShift = (modifiers & ConsoleModifiers.Shift) != 0;
+            isAlt = (modifiers & ConsoleModifiers.Alt) != 0;
+            isCtrl = (modifiers & ConsoleModifiers.Control) != 0;
+            return true;
         }
 
         return false;
@@ -134,12 +201,59 @@ internal static class KeyMapper
                 'B' => ConsoleKey.DownArrow,
                 'C' => ConsoleKey.RightArrow,
                 'D' => ConsoleKey.LeftArrow,
-                'F' => ConsoleKey.End,
+                'F' or 'w' => ConsoleKey.End, // 'w' can be used by rxvt
                 'H' => ConsoleKey.Home,
                 'P' => ConsoleKey.F1,
                 'Q' => ConsoleKey.F2,
                 'R' => ConsoleKey.F3,
                 'S' => ConsoleKey.F4,
+                _ => default
+            };
+
+        static ConsoleKey MapEscapeSequenceNumber(byte number)
+            => number switch
+            {
+                1 or 7 => ConsoleKey.Home,
+                2 => ConsoleKey.Insert,
+                3 => ConsoleKey.Delete,
+                4 or 8 => ConsoleKey.End,
+                5 => ConsoleKey.PageUp,
+                6 => ConsoleKey.PageDown,
+                // Limitation: 10 is mapped to F0, ConsoleKey does not define it so it's not supported.
+                11 => ConsoleKey.F1,
+                12 => ConsoleKey.F2,
+                13 => ConsoleKey.F3,
+                14 => ConsoleKey.F4,
+                15 => ConsoleKey.F5,
+                17 => ConsoleKey.F6,
+                18 => ConsoleKey.F7,
+                19 => ConsoleKey.F8,
+                20 => ConsoleKey.F9,
+                21 => ConsoleKey.F10,
+                23 => ConsoleKey.F11,
+                24 => ConsoleKey.F12,
+                25 => ConsoleKey.F13,
+                26 => ConsoleKey.F14,
+                28 => ConsoleKey.F15,
+                29 => ConsoleKey.F16,
+                31 => ConsoleKey.F17,
+                32 => ConsoleKey.F18,
+                33 => ConsoleKey.F19,
+                34 => ConsoleKey.F20,
+                // 9, 16, 22, 27, 30 and 35 have no mapping (https://en.wikipedia.org/wiki/ANSI_escape_code#Fe_Escape_sequences)
+                _ => default
+            };
+
+        static ConsoleModifiers MapModifiers(char modifier)
+            => modifier switch
+            {
+                '2' => ConsoleModifiers.Shift,
+                '3' => ConsoleModifiers.Alt,
+                '4' => ConsoleModifiers.Shift | ConsoleModifiers.Alt,
+                '5' => ConsoleModifiers.Control,
+                '6' => ConsoleModifiers.Shift | ConsoleModifiers.Control,
+                '7' => ConsoleModifiers.Alt | ConsoleModifiers.Control,
+                '8' => ConsoleModifiers.Shift | ConsoleModifiers.Alt | ConsoleModifiers.Control,
                 _ => default
             };
     }
@@ -162,7 +276,7 @@ internal static class KeyMapper
             '-' => ConsoleKey.Subtract, // We can't distinguish OemMinus and Subtract (Numeric Keypad). Limitation: OemMinus can't be mapped.
             '+' => ConsoleKey.Add, // We can't distinguish OemPlus and Add (Numeric Keypad). Limitation: OemPlus can't be mapped.
             '=' => default, // '+' is not mapped to OemPlus, so `=` is not mapped to Shift+OemPlus. Limitation: Shift+OemPlus can't be mapped.
-            '!' or '@' or  '#' or '$' or '%' or '^' or '&' or '&' or '*' or '(' or ')' => default, // We can't make assumptions about keyboard layout neither read it. Limitation: Shift+Dx keys can't be mapped.
+            '!' or '@' or '#' or '$' or '%' or '^' or '&' or '&' or '*' or '(' or ')' => default, // We can't make assumptions about keyboard layout neither read it. Limitation: Shift+Dx keys can't be mapped.
             ',' => ConsoleKey.OemComma, // was not previously mapped this way
             '.' => ConsoleKey.OemPeriod, // was not previously mapped this way
             _ when char.IsAsciiLetterLower(single) => ConsoleKey.A + single - 'a',
@@ -191,7 +305,7 @@ internal static class KeyMapper
         static ConsoleKey ControlAndLetterPressed(char single, out char ch, out bool isCtrl)
         {
             // Ctrl+(a-z) characters are mapped to values from 1 to 26.
-            // Ctrl+h is mapped to 8, which also maps to Ctrl+Backspace. Ctrl+h is more likely to be pressed. (TODO: discuss with others)
+            // Ctrl+h is mapped to 8, which also maps to Ctrl+Backspace. Ctrl+h is more likely to be pressed. (TODO: change it)
             // Ctrl+i is mapped to 9, which also maps to Tab. Tab (9) is more likely to be pressed.
             // Ctrl+j is mapped to 10, which also maps to Enter ('\n') and Ctrl+Enter. Enter is more likely to be pressed.
             // Ctrl+m is mapped to 13, which also maps to Enter ('\r'). Enter (13) is more likely to be pressed.
@@ -213,7 +327,7 @@ internal static class KeyMapper
             ch = default; // consistent with Windows
             return single switch
             {
-                '\u0000' => ConsoleKey.D2, // This is what PuTTY does (was not previously mapped this way)
+                '\u0000' => ConsoleKey.D2, // was not previously mapped this way
                 _ => ConsoleKey.D4 + single - 28
             };
         }
