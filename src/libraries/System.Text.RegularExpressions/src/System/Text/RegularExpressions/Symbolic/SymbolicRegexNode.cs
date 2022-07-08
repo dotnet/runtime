@@ -78,6 +78,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary> Create a new node or retrieve one from the builder _nodeCache</summary>
         private static SymbolicRegexNode<TSet> Create(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right, int lower, int upper, TSet? set, SymbolicRegexInfo info)
         {
+            Debug.Assert(kind != SymbolicRegexNodeKind.Singleton || set is not null);
             TSet setOrStartSet = kind == SymbolicRegexNodeKind.Singleton ? set! : ComputeStartSet(builder, kind, left, right);
             var key = (kind, left, right, lower, upper, setOrStartSet, info);
             if (!builder._nodeCache.TryGetValue(key, out SymbolicRegexNode<TSet>? node))
@@ -1594,12 +1595,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.Singleton:
                     Debug.Assert(_set is not null);
-                    sb.Append(_debugBuilder!._solver.PrettyPrint(_set, _debugBuilder._charSetSolver));
+                    sb.Append(_debugBuilder._solver.PrettyPrint(_set, _debugBuilder._charSetSolver));
                     return;
 
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(_left is not null);
-                    if (IsAnyStar(_debugBuilder!._solver))
+                    if (IsAnyStar(_debugBuilder._solver))
                     {
                         sb.Append(".*");
                     }
