@@ -175,8 +175,6 @@
 #include "stacksampler.h"
 #endif
 
-#include "win32threadpool.h"
-
 #include <shlwapi.h>
 
 #ifdef FEATURE_COMINTEROP
