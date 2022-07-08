@@ -28,24 +28,22 @@ internal static partial class Interop
         /// </summary>
         /// <param name="path">The path to the symlink.</param>
         /// <returns>Returns the link to the target path on success; and null otherwise.</returns>
-        internal static unsafe string? ReadLink(ReadOnlySpan<char> path)
+        internal static string? ReadLink(ReadOnlySpan<char> path)
         {
             const int stackBufferSize = 256;
-            int bufferSize = stackBufferSize;
 
             // Use an initial buffer size that prevents disposing and renting
             // a second time when calling ConvertAndTerminateString.
             using var converter = new ValueUtf8Converter(stackalloc byte[stackBufferSize]);
-            Span<byte> stackBuffer = stackalloc byte[stackBufferSize];
+            Span<byte> spanBuffer = stackalloc byte[stackBufferSize];
             byte[]? arrayBuffer = null;
             ref byte pathReference = ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path));
-            ref byte bufferReference = ref MemoryMarshal.GetReference(stackBuffer);
             while (true)
             {
                 int error = 0;
                 try
                 {
-                    int resultLength = ReadLink(ref pathReference, ref bufferReference, bufferSize);
+                    int resultLength = ReadLink(ref pathReference, ref MemoryMarshal.GetReference(spanBuffer), spanBuffer.Length);
 
                     if (resultLength < 0)
                     {
@@ -53,13 +51,10 @@ internal static partial class Interop
                         error = Marshal.GetLastPInvokeError();
                         return null;
                     }
-                    else if (resultLength < bufferSize)
+                    else if (resultLength < spanBuffer.Length)
                     {
                         // success
-                        fixed(byte* bufferPtr = &bufferReference)
-                        {
-                            return Encoding.UTF8.GetString(bufferPtr, resultLength);
-                        }
+                        return Encoding.UTF8.GetString(spanBuffer.Slice(0, resultLength));
                     }
                 }
                 finally
@@ -76,9 +71,8 @@ internal static partial class Interop
                 }
 
                 // Output buffer was too small, loop around again and try with a larger buffer.
-                arrayBuffer = ArrayPool<byte>.Shared.Rent(bufferSize * 2);
-                bufferSize = arrayBuffer.Length;
-                bufferReference = ref arrayBuffer[0];
+                arrayBuffer = ArrayPool<byte>.Shared.Rent(spanBuffer.Length * 2);
+                spanBuffer = arrayBuffer;
             }
         }
     }
