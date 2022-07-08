@@ -4432,6 +4432,26 @@ void CodeGen::genCodeForConditional(GenTreeConditional* tree)
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
+    if (opcond->isContained())
+    {
+        // Generate the code for the condition
+        if (opcond->OperIsCompare())
+        {
+            genCodeForCompare(opcond->AsOp());
+        }
+        else
+        {
+            assert(opcond->OperIsConditionalCompare());
+            genCodeForConditional(opcond->AsConditional());
+        }
+    }
+    else
+    {
+        // Get the result of the condition into the condition flags.
+        emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(opcond)), opcond->GetRegNum(), 1);
+        cond = INS_COND_EQ;
+    }
+
     regNumber targetReg = tree->GetRegNum();
     regNumber srcReg1   = genConsumeReg(op1);
 
@@ -4446,8 +4466,6 @@ void CodeGen::genCodeForConditional(GenTreeConditional* tree)
         assert(!varTypeIsFloating(op2Type));
         // We don't support swapping op1 and op2 to generate cmp reg, imm.
         assert(!op1->isContainedIntOrIImmed());
-        // This should not be generating into a register.
-        assert(targetReg == REG_NA);
 
         // For the ccmp flags, get the condition of the compare.
         insCflags cflags = InsCflagsForCcmp(InsCondForCompareOp(tree));
@@ -4461,6 +4479,13 @@ void CodeGen::genCodeForConditional(GenTreeConditional* tree)
         {
             regNumber srcReg2 = genConsumeReg(op2);
             emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, cond);
+        }
+
+        // Are we evaluating this into a register?
+        if (targetReg != REG_NA)
+        {
+            inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), targetReg);
+            genProduceReg(tree);
         }
     }
 }

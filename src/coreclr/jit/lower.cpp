@@ -3106,53 +3106,49 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    GenTree* relop = jtrue->gtGetOp1();
+    GenTree* relop    = jtrue->gtGetOp1();
+    GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
 
-    if (relop->OperIsCompare())
+    if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
     {
-        GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
-
-        if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
-        {
-            bool         useJCMP = false;
-            GenTreeFlags flags   = GTF_EMPTY;
+        bool         useJCMP = false;
+        GenTreeFlags flags   = GTF_EMPTY;
 
 #if defined(TARGET_LOONGARCH64)
-            if (relop->OperIs(GT_EQ, GT_NE))
-            {
-                // Codegen will use beq or bne.
-                flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
-                useJCMP = true;
-            }
+        if (relop->OperIs(GT_EQ, GT_NE))
+        {
+            // Codegen will use beq or bne.
+            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
+            useJCMP = true;
+        }
 #else  // TARGET_ARM64
-            if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
-            {
-                // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-                flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
-                useJCMP = true;
-            }
-            else if (relop->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
-            {
-                // Codegen will use tbz or tbnz in codegen which do not affect the flag register
-                flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
-                useJCMP = true;
-            }
+        if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
+        {
+            // Codegen will use cbz or cbnz in codegen which do not affect the flag register
+            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
+            useJCMP = true;
+        }
+        else if (relop->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
+        {
+            // Codegen will use tbz or tbnz in codegen which do not affect the flag register
+            flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
+            useJCMP = true;
+        }
 #endif // TARGET_ARM64
 
-            if (useJCMP)
-            {
-                relop->SetOper(GT_JCMP);
-                relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
-                relop->gtFlags |= flags;
-                relop->gtType = TYP_VOID;
+        if (useJCMP)
+        {
+            relop->SetOper(GT_JCMP);
+            relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
+            relop->gtFlags |= flags;
+            relop->gtType = TYP_VOID;
 
-                relopOp2->SetContained();
+            relopOp2->SetContained();
 
-                BlockRange().Remove(jtrue);
+            BlockRange().Remove(jtrue);
 
-                assert(relop->gtNext == nullptr);
-                return nullptr;
-            }
+            assert(relop->gtNext == nullptr);
+            return nullptr;
         }
     }
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64
@@ -7047,12 +7043,15 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
 //
 void Lowering::ContainCheckConditional(GenTreeConditional* node)
 {
-    // The compare does not need to be generated into a register.
+    // Check if the compare does not need to be generated into a register.
     GenTree* cmp = node->gtCond;
     assert(cmp->OperIsCompare() || cmp->OperIsConditionalCompare());
-    cmp->gtType = TYP_VOID;
-    cmp->gtFlags |= GTF_SET_FLAGS;
+    if (IsSafeToContainMem(node, cmp))
+    {
+      cmp->SetContained();
+    }
 
+    // Check if an immediate can be contained.
     if (node->gtOper != GT_SELECT)
     {
         CheckImmedAndMakeContained(node, node->gtOp2);

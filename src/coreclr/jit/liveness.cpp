@@ -2148,15 +2148,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
             DISPNODE(node);
 
             node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-                if (!operand->IsValue())
-                {
-                    // Child sets flags, which are consumed by the parent.
-                    assert(operand->gtSetFlags());
-                }
-                else
-                {
-                    operand->SetUnusedValue();
-                }
+                operand->SetUnusedValue();
                 return GenTree::VisitResult::Continue;
             });
 

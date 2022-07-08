@@ -12511,7 +12511,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
     IndentInfo operandArc = IIArcTop;
     for (GenTree* operand : node->Operands())
     {
-        if (!operand->IsValue() && (operand->gtFlags & GTF_SET_FLAGS) == 0)
+        if (!operand->IsValue())
         {
             // Either of these situations may happen with calls.
             continue;
@@ -16838,14 +16838,6 @@ bool GenTree::isContained() const
     if (!canBeContained())
     {
         assert(!isMarkedContained);
-    }
-
-    // these actually produce a register (the flags reg, we just don't model it)
-    // and are a separate instruction from the branch that consumes the result.
-    // They can only produce a result if the child is a SIMD equality comparison.
-    else if (OperIsCompare())
-    {
-        assert(isMarkedContained == false);
     }
 
     // if it's contained it can't be unused.

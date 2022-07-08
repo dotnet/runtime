@@ -1629,6 +1629,19 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
+        else if (tree->OperIsCompare())
+        {
+            // Compares may be contained by a conditional.
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
+        }
+        else if (tree->OperIsConditionalCompare())
+        {
+            // Conditional compares should always be contained.
+            genConsumeRegs(tree->AsConditional()->gtCond);
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
+        }
 #endif
         else if (tree->OperIsLocalRead())
         {

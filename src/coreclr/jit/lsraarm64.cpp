@@ -801,13 +801,10 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CLE:
         case GT_CGE:
         case GT_CGT:
-            // Don't build a use for the conditional.
-            srcCount = BuildOperandUses(tree->AsConditional()->gtOp1);
+            srcCount = BuildOperandUses(tree->AsConditional()->gtCond);
+            srcCount += BuildOperandUses(tree->AsConditional()->gtOp1);
             srcCount += BuildOperandUses(tree->AsConditional()->gtOp2);
-            if (tree->TypeGet() != TYP_VOID)
-            {
-                BuildDef(tree, dstCandidates);
-            }
+            BuildDef(tree, dstCandidates);
             break;
 
     } // end switch (tree->OperGet())

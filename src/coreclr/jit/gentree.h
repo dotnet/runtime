@@ -8234,7 +8234,7 @@ public:
     {
         assert(relop->OperIsCompare() || relop->OperIsConditionalCompare());
 
-        if (varTypeIsFloating(relop->gtGetOp1()))
+        if (relop->OperIsCompare() && varTypeIsFloating(relop->gtGetOp1()))
         {
             return FromFloatRelop(relop);
         }
