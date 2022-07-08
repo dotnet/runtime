@@ -20213,8 +20213,8 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
             (gtGetHelperArgClassHandle(curArgVal->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode()) !=
              NO_CLASS_HANDLE))
         {
-            inlCurArgInfo->argIsInvariantComplex = true;
-            inlCurArgInfo->argHasSideEff         = false;
+            inlCurArgInfo->argIsInvariant = true;
+            inlCurArgInfo->argHasSideEff  = false;
         }
     }
 
@@ -20253,11 +20253,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         }
         if (inlCurArgInfo->argIsInvariant)
         {
-            printf(" is a constant");
-        }
-        if (inlCurArgInfo->argIsInvariantComplex)
-        {
-            printf(" is an invariant complex expr");
+            printf(" is a constant or invariant");
         }
         if (inlCurArgInfo->argHasGlobRef)
         {
@@ -20523,10 +20519,9 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
                 inlArgInfo[i].argIsLclVar = false;
                 // Try to fold the node in case we have constant arguments.
-                if (inlArgInfo[i].argIsInvariant)
+                if (inlArgInfo[i].argIsInvariant && inlArgNode->OperIsConst())
                 {
                     inlArgNode = gtFoldExprConst(inlArgNode);
-                    assert(inlArgNode->OperIsConst());
                 }
                 *pInlArgNode = inlArgNode;
             }
@@ -20540,10 +20535,9 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
                 /* Try to fold the node in case we have constant arguments */
 
-                if (inlArgInfo[i].argIsInvariant)
+                if (inlArgInfo[i].argIsInvariant && inlArgNode->OperIsConst())
                 {
                     inlArgNode = gtFoldExprConst(inlArgNode);
-                    assert(inlArgNode->OperIsConst());
                 }
                 *pInlArgNode = inlArgNode;
             }
@@ -20774,7 +20768,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
     GenTree* argNode = argInfo.arg->GetNode();
     assert(!argNode->OperIs(GT_RET_EXPR));
 
-    if ((argInfo.argIsInvariant || argInfo.argIsInvariantComplex) && !argCanBeModified)
+    if (argInfo.argIsInvariant && !argCanBeModified)
     {
         // Directly substitute constants or addresses of locals
         //
