@@ -60,11 +60,10 @@ internal sealed class ValueTaskSource : IValueTaskSource
 
             State state = _state;
 
-            // If we're the first here and we will return true.
+            // If we're the first here, we will return true.
             if (state == State.None)
             {
                 // Keep alive the caller object until the result is read from the task.
-                // Used for keeping caller alive during async interop calls.
                 if (keepAlive is not null)
                 {
                     Debug.Assert(!_keepAlive.IsAllocated);
@@ -95,13 +94,13 @@ internal sealed class ValueTaskSource : IValueTaskSource
                         _state = State.Completed;
 
                         // Swap the cancellation registration so the one that's been registered gets eventually Disposed.
-                        // Ideally, we would dispose it here, but if the callbacks kicks in, it tries to take the lock held by this thread.
+                        // Ideally, we would dispose it here, but if the callbacks kicks in, it tries to take the lock held by this thread leading to deadlock.
                         cancellationRegistration = _cancellationRegistration;
                         _cancellationRegistration = default;
 
                         if (exception is not null)
                         {
-                            // Set up the exception stack strace for the caller.
+                            // Set up the exception stack trace for the caller.
                             exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
                             _valueTaskSource.SetException(exception);
                         }
@@ -117,7 +116,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
                 }
                 finally
                 {
-                    // Un-root the the kept alive object in all cases.
+                    // Un-root the kept alive object in all cases.
                     if (_keepAlive.IsAllocated)
                     {
                         _keepAlive.Free();
@@ -128,7 +127,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
         finally
         {
             // Dispose the cancellation if registered.
-            // Must be done outside of lock since Dispose will wait on pending cancellation callbacks which requires taking the lock.
+            // Must be done outside of lock since Dispose will wait on pending cancellation callbacks which require taking the lock.
             cancellationRegistration.Dispose();
         }
     }
