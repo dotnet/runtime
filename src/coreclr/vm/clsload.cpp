@@ -275,6 +275,28 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
     return TRUE;
 }
 
+namespace
+{
+    TypeHandle LoadTypeByNameThrowingWorker(
+        ClassLoader* classLoader,
+        NameHandle* nameHandle,
+        ClassLoader::NotFoundAction fNotFound,
+        ClassLoader::LoadTypesFlag fLoadTypes,
+        ClassLoadLevel level)
+    {
+        WRAPPER_NO_CONTRACT; // The contract is enforced in caller.
+        _ASSERTE(classLoader != NULL);
+        _ASSERTE(nameHandle != NULL);
+
+        if (fLoadTypes == ClassLoader::DontLoadTypes)
+            nameHandle->SetTokenNotToLoad(tdAllTypes);
+        if (fNotFound == ClassLoader::ThrowIfNotFound)
+            return classLoader->LoadTypeHandleThrowIfFailed(nameHandle, level);
+        else
+            return classLoader->LoadTypeHandleThrowing(nameHandle, level);
+    }
+}
+
 // External class loader entry point: load a type by name
 /*static*/
 TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
@@ -305,13 +327,32 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
     }
     CONTRACT_END
 
-    NameHandle nameHandle(nameSpace, name);
-    if (fLoadTypes == DontLoadTypes)
-        nameHandle.SetTokenNotToLoad(tdAllTypes);
-    if (fNotFound == ThrowIfNotFound)
-        RETURN pAssembly->GetLoader()->LoadTypeHandleThrowIfFailed(&nameHandle, level);
-    else
-        RETURN pAssembly->GetLoader()->LoadTypeHandleThrowing(&nameHandle, level);
+    ClassLoader* classLoader = pAssembly->GetLoader();
+
+    NameHandle nameHandle;
+    LPCUTF8 nestedTypeMaybe = strchr(name, '+');
+    if (nestedTypeMaybe == NULL)
+    {
+        nameHandle = NameHandle(nameSpace, name);
+        RETURN LoadTypeByNameThrowingWorker(classLoader, &nameHandle, fNotFound, fLoadTypes, level);
+    }
+
+    // Handle the nested type scenario.
+    // The same NameHandle must be used to retain the scope to look for the nested type.
+    nameHandle = NameHandle(pAssembly->GetModule(), mdtBaseType);
+
+    SString splitName(SString::Utf8, name, (COUNT_T)(nestedTypeMaybe - name));
+    nameHandle.SetName(nameSpace, splitName.GetUTF8());
+
+    // The side-effect of updating the scope in the NameHandle is the point of the call.
+    (void)LoadTypeByNameThrowingWorker(classLoader, &nameHandle, fNotFound, fLoadTypes, level);
+
+    // Now load the nested type.
+    nameHandle.SetName(NULL, nestedTypeMaybe + 1);
+
+    // We don't support nested types in nested types.
+    _ASSERTE(strchr(nameHandle.GetName(), '+') == NULL);
+    RETURN LoadTypeByNameThrowingWorker(classLoader, &nameHandle, fNotFound, fLoadTypes, level);
 }
 
 #ifndef DACCESS_COMPILE

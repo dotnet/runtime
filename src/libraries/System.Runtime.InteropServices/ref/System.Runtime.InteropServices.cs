@@ -2121,18 +2121,27 @@ namespace System.Runtime.InteropServices.ObjectiveC
 namespace System.Runtime.InteropServices.Marshalling
 {
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct AnsiStringMarshaller
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class AnsiStringMarshaller
     {
-        public AnsiStringMarshaller(string? str) { }
-        public AnsiStringMarshaller(string? str, System.Span<byte> buffer) { }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
+        public static byte* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(byte* unmanaged) { throw null; }
+        public static void Free(byte* unmanaged) { throw null; }
+
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public byte* ToUnmanaged()  { throw null; }
+            public void FromUnmanaged(byte* unmanaged) { throw null; }
+            public string? ToManaged() { throw null; }
+            public void Free() { throw null; }
+        }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute.GenericPlaceholder[]),
@@ -2156,20 +2165,28 @@ namespace System.Runtime.InteropServices.Marshalling
         public void FreeNative() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct BStrStringMarshaller
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.BstrStringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.BstrStringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class BstrStringMarshaller
     {
-        public BStrStringMarshaller(string? str) { }
-        public BStrStringMarshaller(string? str, System.Span<ushort> buffer) { }
-        public void* ToNativeValue() { throw null; }
-        public void FromNativeValue(void* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
-    }
+        public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
+        public static void Free(ushort* unmanaged) { throw null; }
 
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public ushort* ToUnmanaged()  { throw null; }
+            public void FromUnmanaged(ushort* unmanaged) { throw null; }
+            public string? ToManaged() { throw null; }
+            public void Free() { throw null; }
+        }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true)]
     public sealed partial class CustomMarshallerAttribute : System.Attribute
     {
@@ -2269,30 +2286,38 @@ namespace System.Runtime.InteropServices.Marshalling
         public void FreeNative() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct Utf8StringMarshaller
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class Utf8StringMarshaller
     {
-        public Utf8StringMarshaller(string? str) { }
-        public Utf8StringMarshaller(string? str, System.Span<byte> buffer) { }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
+        public static byte* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(byte* unmanaged) { throw null; }
+        public static void Free(byte* unmanaged) { throw null; }
+
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public byte* ToUnmanaged()  { throw null; }
+            public void FromUnmanaged(byte* unmanaged) { throw null; }
+            public string? ToManaged() { throw null; }
+            public void Free() { throw null; }
+        }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string),
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct Utf16StringMarshaller
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller))]
+    public static unsafe class Utf16StringMarshaller
     {
-        public Utf16StringMarshaller(string? str) { }
-        public void* ToNativeValue() { throw null; }
-        public void FromNativeValue(void* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
+        public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
+        public static void Free(ushort* unmanaged) { throw null; }
+        public static ref readonly char GetPinnableReference(string? str) { throw null; }
     }
 }
 namespace System.Security

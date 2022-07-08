@@ -11,107 +11,125 @@ namespace System.Runtime.InteropServices.Marshalling
     /// Marshaller for BSTR strings
     /// </summary>
     [CLSCompliant(false)]
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
-        Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
-    public unsafe ref struct BStrStringMarshaller
+    [CustomMarshaller(typeof(string), MarshalMode.Default, typeof(BstrStringMarshaller))]
+    [CustomMarshaller(typeof(string), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanagedIn))]
+    public static unsafe class BstrStringMarshaller
     {
-        private void* _ptrToFirstChar;
-        private bool _allocated;
+        /// <summary>
+        /// Convert a string to an unmanaged version.
+        /// </summary>
+        /// <param name="managed">A managed string</param>
+        /// <returns>An unmanaged string</returns>
+        public static ushort* ConvertToUnmanaged(string? managed)
+            => (ushort*)Marshal.StringToBSTR(managed);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BStrStringMarshaller"/>.
+        /// Convert an unmanaged string to a managed version.
         /// </summary>
-        /// <param name="str">The string to marshal.</param>
-        public BStrStringMarshaller(string? str)
-            : this(str, default)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BStrStringMarshaller"/>.
-        /// </summary>
-        /// <param name="str">The string to marshal.</param>
-        /// <param name="buffer">Buffer that may be used for marshalling.</param>
-        /// <remarks>
-        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
-        /// on the managed heap or it should be pinned.
-        /// </remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
-        public BStrStringMarshaller(string? str, Span<ushort> buffer)
+        /// <param name="unmanaged">An unmanaged string</param>
+        /// <returns>A managed string</returns>
+        public static string? ConvertToManaged(ushort* unmanaged)
         {
-            _allocated = false;
-
-            if (str is null)
-            {
-                _ptrToFirstChar = null;
-                return;
-            }
-
-            ushort* ptrToFirstChar;
-            int lengthInBytes = checked(sizeof(char) * str.Length);
-
-            // A caller provided buffer must be at least (lengthInBytes + 6) bytes
-            // in order to be constructed manually. The 6 extra bytes are 4 for byte length and 2 for wide null.
-            int manualBstrNeeds = checked(lengthInBytes + 6);
-            if (manualBstrNeeds > buffer.Length)
-            {
-                // Use precise byte count when the provided stack-allocated buffer is not sufficient
-                ptrToFirstChar = (ushort*)Marshal.AllocBSTRByteLen((uint)lengthInBytes);
-                _allocated = true;
-            }
-            else
-            {
-                // Set length and update buffer target
-                byte* pBuffer = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
-                *((uint*)pBuffer) = (uint)lengthInBytes;
-                ptrToFirstChar = (ushort*)(pBuffer + sizeof(uint));
-            }
-
-            // Confirm the size is properly set for the allocated BSTR.
-            Debug.Assert(lengthInBytes == Marshal.SysStringByteLen((IntPtr)ptrToFirstChar));
-
-            // Copy characters from the managed string
-            str.CopyTo(new Span<char>(ptrToFirstChar, str.Length));
-            ptrToFirstChar[str.Length] = '\0'; // null-terminate
-            _ptrToFirstChar = ptrToFirstChar;
-        }
-
-        /// <summary>
-        /// Returns the native value representing the string.
-        /// </summary>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        public void* ToNativeValue() => _ptrToFirstChar;
-
-        /// <summary>
-        /// Sets the native value representing the string.
-        /// </summary>
-        /// <param name="value">The native value.</param>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        public void FromNativeValue(void* value)
-        {
-            _ptrToFirstChar = value;
-            _allocated = true;
-        }
-
-        /// <summary>
-        /// Returns the managed string.
-        /// </summary>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        public string? ToManaged()
-        {
-            if (_ptrToFirstChar is null)
+            if (unmanaged is null)
                 return null;
 
-            return Marshal.PtrToStringBSTR((IntPtr)_ptrToFirstChar);
+            return Marshal.PtrToStringBSTR((nint)unmanaged);
         }
 
         /// <summary>
-        /// Frees native resources.
+        /// Free the memory for the unmanaged string.
         /// </summary>
-        /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
-        public void FreeNative()
+        /// <param name="unmanaged">Memory allocated for the unmanaged string.</param>
+        public static void Free(ushort* unmanaged)
+            => Marshal.FreeBSTR((nint)unmanaged);
+
+        /// <summary>
+        /// Custom marshaller to marshal a managed string as a ANSI unmanaged string.
+        /// </summary>
+        public ref struct ManagedToUnmanagedIn
         {
-            if (_allocated)
-                Marshal.FreeBSTR((IntPtr)_ptrToFirstChar);
+            /// <summary>
+            /// Requested buffer size for optimized marshalling.
+            /// </summary>
+            public static int BufferSize { get; } = 0x100;
+
+            private ushort* _ptrToFirstChar;
+            private bool _allocated;
+
+            /// <summary>
+            /// Initialize the marshaller with a managed string and requested buffer.
+            /// </summary>
+            /// <param name="managed">The managed string</param>
+            /// <param name="buffer">A request buffer of at least size, <see cref="BufferSize"/>.</param>
+            public void FromManaged(string? managed, Span<byte> buffer)
+            {
+                _allocated = false;
+
+                if (managed is null)
+                {
+                    _ptrToFirstChar = null;
+                    return;
+                }
+
+                ushort* ptrToFirstChar;
+                int lengthInBytes = checked(sizeof(char) * managed.Length);
+
+                // A caller provided buffer must be at least (lengthInBytes + 6) bytes
+                // in order to be constructed manually. The 6 extra bytes are 4 for byte length and 2 for wide null.
+                int manualBstrNeeds = checked(lengthInBytes + 6);
+                if (manualBstrNeeds > buffer.Length)
+                {
+                    // Use precise byte count when the provided stack-allocated buffer is not sufficient
+                    ptrToFirstChar = (ushort*)Marshal.AllocBSTRByteLen((uint)lengthInBytes);
+                    _allocated = true;
+                }
+                else
+                {
+                    // Set length and update buffer target
+                    byte* pBuffer = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+                    *((uint*)pBuffer) = (uint)lengthInBytes;
+                    ptrToFirstChar = (ushort*)(pBuffer + sizeof(uint));
+                }
+
+                // Confirm the size is properly set for the allocated BSTR.
+                Debug.Assert(lengthInBytes == Marshal.SysStringByteLen((IntPtr)ptrToFirstChar));
+
+                // Copy characters from the managed string
+                managed.CopyTo(new Span<char>(ptrToFirstChar, managed.Length));
+                ptrToFirstChar[managed.Length] = '\0'; // null-terminate
+                _ptrToFirstChar = ptrToFirstChar;
+            }
+
+            /// <summary>
+            /// Convert the current manage string to an unmanaged string.
+            /// </summary>
+            /// <returns>The unmanaged string</returns>
+            public ushort* ToUnmanaged() => _ptrToFirstChar;
+
+            /// <summary>
+            /// Initialize the marshaller with an unmanaged string.
+            /// </summary>
+            /// <param name="unmanaged">An unmanaged string</param>
+            public void FromUnmanaged(ushort* unmanaged)
+            {
+                _ptrToFirstChar = unmanaged;
+                _allocated = true;
+            }
+
+            /// <summary>
+            /// Convert the current unmanage string to an managed string.
+            /// </summary>
+            /// <returns>A managed string</returns>
+            public string? ToManaged() => ConvertToManaged(_ptrToFirstChar);
+
+            /// <summary>
+            /// Free any allocated unmanaged string.
+            /// </summary>
+            public void Free()
+            {
+                if (_allocated)
+                    BstrStringMarshaller.Free(_ptrToFirstChar);
+            }
         }
     }
 }

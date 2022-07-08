@@ -926,12 +926,13 @@ namespace Microsoft.Interop
                     return node.WithRight(
                         CastExpression(MarshallerHelpers.SystemIntPtrType, node.Right));
                 }
+
                 if (node.Right.ToString() == _nativeIdentifier)
                 {
                     return node.WithRight(CastExpression(_nativeType, node.Right));
                 }
 
-                return node;
+                return base.VisitAssignmentExpression(node);
             }
 
             public override SyntaxNode? VisitArgument(ArgumentSyntax node)
@@ -941,7 +942,8 @@ namespace Microsoft.Interop
                     return node.WithExpression(
                         CastExpression(_nativeType, node.Expression));
                 }
-                return node;
+
+                return base.VisitArgument(node);
             }
         }
     }

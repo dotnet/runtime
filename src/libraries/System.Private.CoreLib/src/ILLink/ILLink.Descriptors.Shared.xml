@@ -74,5 +74,14 @@
     <type fullname="System.Reflection.Metadata.MetadataUpdater">
       <method name="GetCapabilities" />
     </type>
+
+    <!-- See https://github.com/dotnet/runtime/issues/71847 -->
+    <type fullname="System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller/ManagedToUnmanagedIn">
+      <method name="FromManaged" />
+      <method name="ToUnmanaged" />
+      <method name="FromUnmanaged" />
+      <method name="ToManaged" />
+      <method name="Free" />
+    </type>
   </assembly>
 </linker>
