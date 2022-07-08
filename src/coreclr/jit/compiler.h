@@ -2702,8 +2702,6 @@ public:
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
 
-    void gtUpdateNodeOperSideEffectsPost(GenTree* tree);
-
     // Returns "true" iff the complexity (not formally defined, but first interpretation
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
@@ -5930,9 +5928,6 @@ private:
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
 
-    static fgWalkPreFn  fgUpdateSideEffectsPre;
-    static fgWalkPostFn fgUpdateSideEffectsPost;
-
     // The given local variable, required to be a struct variable, is being assigned via
     // a "lclField", to make it masquerade as an integral type in the ABI.  Make sure that
     // the variable is not enregistered, and is therefore not promoted independently.
@@ -6468,7 +6463,7 @@ protected:
         int arrayLengthCount;
     };
 
-    static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
+    OptInvertCountTreeInfoType optInvertCountTreeInfo(GenTree* tree);
 
     bool optInvertWhileLoop(BasicBlock* block);
 
@@ -6486,9 +6481,19 @@ private:
                            bool       dupCond,
                            unsigned*  iterCount);
 
-    static fgWalkPreFn optIsVarAssgCB;
-
 protected:
+    struct isVarAssgDsc
+    {
+        GenTree*     ivaSkip;
+        ALLVARSET_TP ivaMaskVal;        // Set of variables assigned to.  This is a set of all vars, not tracked vars.
+        unsigned     ivaVar;            // Variable we are interested in, or -1
+        varRefKinds  ivaMaskInd;        // What kind of indirect assignments are there?
+        callInterf   ivaMaskCall;       // What kind of calls are there?
+        bool         ivaMaskIncomplete; // Variables not representable in ivaMaskVal were assigned to.
+    };
+
+    bool optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc);
+
     bool optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip, unsigned var);
 
     bool optIsVarAssgLoop(unsigned lnum, unsigned var);
@@ -6734,19 +6739,6 @@ protected:
 #endif
 
     void optOptimizeCSEs();
-
-    struct isVarAssgDsc
-    {
-        GenTree*     ivaSkip;
-        ALLVARSET_TP ivaMaskVal; // Set of variables assigned to.  This is a set of all vars, not tracked vars.
-#ifdef DEBUG
-        void* ivaSelf;
-#endif
-        unsigned    ivaVar;            // Variable we are interested in, or -1
-        varRefKinds ivaMaskInd;        // What kind of indirect assignments are there?
-        callInterf  ivaMaskCall;       // What kind of calls are there?
-        bool        ivaMaskIncomplete; // Variables not representable in ivaMaskVal were assigned to.
-    };
 
     static callInterf optCallInterf(GenTreeCall* call);
 
