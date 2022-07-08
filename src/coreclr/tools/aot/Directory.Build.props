@@ -2,5 +2,6 @@
   <Import Project="../Directory.Build.props" />
   <PropertyGroup>
     <IsTrimmable>true</IsTrimmable>
+    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
   </PropertyGroup>
 </Project>
