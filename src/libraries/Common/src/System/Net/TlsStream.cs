@@ -14,6 +14,7 @@ namespace System.Net
         private readonly string _host;
         private readonly X509CertificateCollection? _clientCertificates;
 
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
         public TlsStream(NetworkStream stream, Socket socket, string host, X509CertificateCollection? clientCertificates) : base(socket)
         {
             _sslStream = new SslStream(stream, false, ServicePointManager.ServerCertificateValidationCallback);
@@ -40,6 +41,7 @@ namespace System.Net
                 asyncCallback,
                 state);
         }
+#pragma warning restore SYSLIB0014
 
         public void EndAuthenticateAsClient(IAsyncResult asyncResult)
         {

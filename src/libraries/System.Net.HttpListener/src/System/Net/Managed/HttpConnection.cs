@@ -102,7 +102,9 @@ namespace System.Net
 
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
             if (_sslStream != null) {
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
                 _sslStream.AuthenticateAsServer (_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
+#pragma warning restore SYSLIB0014
             }
             Init();
         }
