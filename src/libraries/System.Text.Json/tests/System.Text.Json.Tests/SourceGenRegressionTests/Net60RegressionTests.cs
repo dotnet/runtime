@@ -145,5 +145,18 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests
             Assert.Equal(2, instance.Low);
             Assert.Equal(2, jsonPropertyInfo.Get(instance));
         }
+
+        [Fact]
+        public static void CombinedContexts_ThrowsInvalidOperationException()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(Net60GeneratedContext.Default, new DefaultJsonTypeInfoResolver())
+            };
+
+            // v6 Contexts do not implement IJsonTypeInfoResolver so combined resolvers will throw by default.
+            // We're fine with this since it doesn't introduce any regressions to existing code.
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new HighLowTemps(), options));
+        }
     }
 }
