@@ -528,6 +528,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
+            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
