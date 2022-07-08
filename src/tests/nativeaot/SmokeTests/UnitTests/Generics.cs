@@ -27,6 +27,7 @@ class Generics
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestGvmLookups.Run();
+        TestSharedAndUnsharedGvmAnalysisRegression.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
         TestReflectionInvoke.Run();
@@ -1661,6 +1662,36 @@ class Generics
         {
             TestInContext<object>();
             TestInContext<int>();
+        }
+    }
+
+    class TestSharedAndUnsharedGvmAnalysisRegression
+    {
+        interface IAtom { }
+        interface IPhantom { }
+        class Atom : IAtom, IPhantom { }
+
+        class Lol<TLeft> where TLeft : IAtom, IPhantom
+        {
+            public static void Run() => ((IPartitionedStreamRecipient<int>)new RightChildResultsRecipient<TLeft, int>()).ReceivePackage<int>();
+        }
+
+        interface IPartitionedStreamRecipient<T>
+        {
+            void ReceivePackage<U>();
+        }
+
+        sealed class RightChildResultsRecipient<TLeftInput, TRightInput> : IPartitionedStreamRecipient<TRightInput>
+        {
+            public void ReceivePackage<U>() => Console.WriteLine("Accepted");
+        }
+
+        static Type s_atom = typeof(Atom);
+
+        public static void Run()
+        {
+            // Make sure the compiler never saw anything more concrete than Lol<__Canon>.
+            typeof(Lol<>).MakeGenericType(s_atom).GetMethod("Run").Invoke(null, Array.Empty<object>());
         }
     }
 
