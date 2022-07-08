@@ -677,15 +677,6 @@ namespace System
                 {
                     return new T[length];
                 }
-
-                // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
-#if !DEBUG
-                // small arrays are allocated using `new[]` as that is generally faster.
-                if (length < 2048 / Unsafe.SizeOf<T>())
-                {
-                    return new T[length];
-                }
-#endif
             }
             else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {

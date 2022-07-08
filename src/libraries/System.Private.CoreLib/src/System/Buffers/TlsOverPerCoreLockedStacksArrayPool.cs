@@ -50,6 +50,19 @@ namespace System.Buffers
         /// <summary>Gets an ID for the pool to use with events.</summary>
         private int Id => GetHashCode();
 
+        // CI test!
+        private static T[] Poison(T[] array)
+        {
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                T t = default!;
+                System.Runtime.InteropServices.MemoryMarshal.CreateSpan(
+                    ref Unsafe.As<T, byte>(ref Unsafe.AsRef(t)), Unsafe.SizeOf<T>()).Fill(0xCD);
+                array.AsSpan().Fill(t);
+            }
+            return array;
+        }
+
         public override T[] Rent(int minimumLength)
         {
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
@@ -71,7 +84,7 @@ namespace System.Buffers
                     {
                         log.BufferRented(buffer.GetHashCode(), buffer.Length, Id, bucketIndex);
                     }
-                    return buffer;
+                    return Poison(buffer);
                 }
             }
 
@@ -89,7 +102,7 @@ namespace System.Buffers
                         {
                             log.BufferRented(buffer.GetHashCode(), buffer.Length, Id, bucketIndex);
                         }
-                        return buffer;
+                        return Poison(buffer);
                     }
                 }
 
