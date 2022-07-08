@@ -214,15 +214,16 @@ namespace System.Net.Http
 
                 _expectingSettingsAck = true;
             }
-            catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
-            {
-                Dispose();
-                // Note, AddHttp2ConnectionAsync handles this OCE separately so don't wrap it.
-                throw;
-            }
             catch (Exception e)
             {
                 Dispose();
+
+                if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
+                {
+                    // Note, AddHttp2ConnectionAsync handles this OCE separately so don't wrap it.
+                    throw;
+                }
+
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 

@@ -1566,15 +1566,15 @@ namespace System.Net.Http
             {
                 await http2Connection.SetupAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException oce) when (oce.CancellationToken == cancellationToken)
-            {
-                // Note, SetupAsync will dispose the connection if there is an exception.
-                // Note, AddHttp2ConnectionAsync handles this OCE separatly so don't wrap it.
-                throw;
-            }
             catch (Exception e)
             {
                 // Note, SetupAsync will dispose the connection if there is an exception.
+                if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
+                {
+                    // Note, AddHttp2ConnectionAsync handles this OCE separatly so don't wrap it.
+                    throw;
+                }
+
                 throw new HttpRequestException(SR.net_http_client_execution_error, e);
             }
 
