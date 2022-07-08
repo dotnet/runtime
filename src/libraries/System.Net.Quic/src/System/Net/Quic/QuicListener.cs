@@ -11,6 +11,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Quic;
 using static System.Net.Quic.MsQuicHelpers;
+using static System.Net.Quic.QuicDefaults;
 using static Microsoft.Quic.MsQuic;
 
 using NEW_CONNECTION_DATA = Microsoft.Quic.QUIC_LISTENER_EVENT._Anonymous_e__Union._NEW_CONNECTION_e__Struct;
@@ -57,7 +58,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
         if (options.ListenBacklog == 0)
         {
-            options.ListenBacklog = 512;
+            options.ListenBacklog = DefaultListenBacklog;
         }
 
         QuicListener listener = new QuicListener(options);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Security;
+using static System.Net.Quic.QuicDefaults;
 
 namespace System.Net.Quic;
 
@@ -50,8 +51,8 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
     /// </summary>
     public QuicClientConnectionOptions()
     {
-        MaxInboundBidirectionalStreams = 0;
-        MaxInboundUnidirectionalStreams = 0;
+        MaxInboundBidirectionalStreams = DefaultClientMaxInboundBidirectionalStreams;
+        MaxInboundUnidirectionalStreams = DefaultServerMaxInboundUnidirectionalStreams;
     }
 
     /// <summary>
@@ -80,8 +81,8 @@ public sealed class QuicServerConnectionOptions : QuicConnectionOptions
     /// </summary>
     public QuicServerConnectionOptions()
     {
-        MaxInboundBidirectionalStreams = 100;
-        MaxInboundUnidirectionalStreams = 10;
+        MaxInboundBidirectionalStreams = DefaultServerMaxInboundBidirectionalStreams;
+        MaxInboundUnidirectionalStreams = DefaultServerMaxInboundUnidirectionalStreams;
     }
 
     /// <summary>

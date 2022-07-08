@@ -24,8 +24,7 @@ public sealed class QuicListenerOptions
     public required List<SslApplicationProtocol> ApplicationProtocols { get; set; }
 
     /// <summary>
-    /// Number of connections to be held without accepting the connection.
-    ///
+    /// Number of connections to be held without accepting any them, i.e. maximum size of the pending connection queue.
     /// </summary>
     public int ListenBacklog { get; set; }
 
