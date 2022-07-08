@@ -188,12 +188,6 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
-        internal static bool IsUnmanagedFunctionPointer(RuntimeType type)
-        {
-            // Fast native path that does not need to create FunctionPointerInfo and parse the Signature.
-            return _IsUnmanagedFunctionPointer(type);
-        }
-
         internal static bool HasElementType(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -395,6 +389,15 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern Type[]? GetCustomModifiersFromFunctionPointer(RuntimeType functionPointerType, int position, bool required);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern byte GetRawCallingConventionsFromFunctionPointer(RuntimeType type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern Type[] GetArgumentTypesFromFunctionPointer(RuntimeType type);
+
         // This is managed wrapper for MethodTable::IntroducedMethodIterator
         internal struct IntroducedMethodEnumerator
         {
@@ -533,9 +536,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsValueType(RuntimeType type);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool _IsUnmanagedFunctionPointer(RuntimeType type);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_ConstructName")]
         private static partial void ConstructName(QCallTypeHandle handle, TypeNameFormatFlags formatFlags, StringHandleOnStack retString);
@@ -1664,16 +1664,6 @@ namespace System
         {
             GetSignature(null, 0, fieldHandle.Value, null, declaringType);
             GC.KeepAlive(fieldHandle);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void GetSignatureFromFunctionPointer(Type functionPointerType);
-
-        public Signature(RuntimeType functionPointerType)
-        {
-            m_arguments = default!;
-            m_returnTypeORfieldType = default!;
-            GetSignatureFromFunctionPointer(functionPointerType);
         }
 
         public Signature(void* pCorSig, int cCorSig, RuntimeType declaringType)

@@ -361,7 +361,6 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
 }
 FCIMPLEND
 
-
 FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pField)
 {
     CONTRACTL {
@@ -899,7 +898,144 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsByRefLike, ReflectClassBaseObject *pTy
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE)
+FCIMPL3(Object *, RuntimeTypeHandle::GetCustomModifiersFromFunctionPointer, ReflectClassBaseObject* pTypeUNSAFE,
+    INT32 position, CLR_BOOL fRequired)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pTypeUNSAFE));
+    }
+    CONTRACTL_END;
+
+    struct
+    {
+        PTRARRAYREF retVal;
+    } gc;
+
+    gc.retVal = NULL;
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    TypeHandle typeHandle = refType->GetType();
+
+    if (!typeHandle.IsFnPtrType())
+        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+
+    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
+
+    CorElementType cmodTypeExpected = fRequired ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
+
+    // Discover the number of required and optional custom modifiers.
+    INT32 currentPos = 0;
+    INT32 cMods = 0;
+    DWORD numMods = fnPtr->GetNumMods();
+    FnPtrTypeDescCustomMod* mods = fnPtr->GetCustomModTypesPointer();
+
+    for (DWORD i = 0; i < numMods; i++)
+    {
+        CorElementType cmodType = mods[i].elementType;
+
+        if (currentPos == position)
+        {
+            if (cmodType == cmodTypeExpected)
+            {
+                cMods++;
+            }
+        }
+
+        if (cmodType == ELEMENT_TYPE_END)                
+        {
+            currentPos++;
+            if (currentPos > position)                    
+            {
+                break;
+            }
+        }
+    }
+
+    if (cMods == 0)
+        return NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    {
+        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
+        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
+        gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cMods);
+
+        currentPos = 0;
+        for (DWORD i = 0; i < numMods; i++)
+        {
+            CorElementType cmodType = mods[i].elementType;
+
+            if (currentPos == position)
+            {
+                if (cmodType == cmodTypeExpected)
+                {
+                    TypeHandle typeHandle = mods[i].typeHandle;
+                    OBJECTREF refType = typeHandle.GetManagedClassObject();
+                    gc.retVal->SetAt(--cMods, refType);                
+                }
+            }
+
+            if (cmodType == ELEMENT_TYPE_END)                
+            {
+                currentPos++;
+                if (currentPos > position)                    
+                {
+                    break;
+                }
+            }
+        }
+    }
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.retVal);
+}
+FCIMPLEND
+
+FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pTypeUNSAFE));
+    }
+    CONTRACTL_END;
+
+    struct
+    {
+        PTRARRAYREF retVal;
+    } gc;
+
+    gc.retVal = NULL;
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    TypeHandle typeHandle = refType->GetType();
+
+    if (!typeHandle.IsFnPtrType())
+        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+
+    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
+    
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    {
+        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
+        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
+        DWORD cArgs = fnPtr->GetNumArgs();
+        gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cArgs + 1);
+
+        for (DWORD position = 0; position <= cArgs; position++)
+        {
+            TypeHandle typeHandle = fnPtr->GetRetAndArgTypes()[position];
+            OBJECTREF refType = typeHandle.GetManagedClassObject();
+            gc.retVal->SetAt(position, refType);                
+        }
+    }
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.retVal);
+}
+FCIMPLEND
+
+FCIMPL1(FC_INT8_RET, RuntimeTypeHandle::GetRawCallingConventionsFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -908,29 +1044,15 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClass
     CONTRACTL_END;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    _ASSERTE(refType != NULL);
-
     TypeHandle typeHandle = refType->GetType();
-    if (!typeHandle.IsFnPtrType())
-        FC_RETURN_BOOL(FALSE);
 
-    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
-    if (fnPtr == NULL)
+    if (!typeHandle.IsFnPtrType())
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
-    switch ((CorCallingConvention)(fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK))
-    {
-        case IMAGE_CEE_CS_CALLCONV_C:
-        case IMAGE_CEE_CS_CALLCONV_STDCALL:
-        case IMAGE_CEE_CS_CALLCONV_THISCALL:
-        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-        case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
-            FC_RETURN_BOOL(TRUE);
-        default:        
-            FC_RETURN_BOOL(FALSE);
-    }
+    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
+    return FC_INT8_RET(fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK);
 }
-FCIMPLEND;
+FCIMPLEND
 
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHandle)
 {
@@ -2090,58 +2212,6 @@ FCIMPL6(void, SignatureNative::GetSignature,
             }
 
             _ASSERTE(gc.pSig->m_returnType != NULL);
-        }
-    }
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, SignatureNative::GetSignatureFromFunctionPointer,
-    SignatureNative* pSignatureNativeUNSAFE,
-    ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeUNSAFE));
-    }
-    CONTRACTL_END;
-
-    struct
-    {
-        REFLECTCLASSBASEREF refType;
-        SIGNATURENATIVEREF pSig;
-    } gc;
-
-    gc.refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    gc.pSig = (SIGNATURENATIVEREF)pSignatureNativeUNSAFE;
-
-    TypeHandle typeHandle = gc.refType->GetType();
-    if (!typeHandle.IsFnPtrType())
-        FCThrowResVoid(kArgumentException, W("Arg_InvalidHandle"));
-
-    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
-
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-    {
-        gc.pSig->m_sig = fnPtr->GetSignature();
-        gc.pSig->m_cSig = fnPtr->GetSignatureLen();
-        gc.pSig->SetCallingConvention(fnPtr->GetCallConv());
-
-        REFLECTCLASSBASEREF refDeclType = (REFLECTCLASSBASEREF)fnPtr->GetManagedClassObject();
-        gc.pSig->SetDeclaringType(refDeclType);
-
-        INT32 numArgs = fnPtr->GetNumArgs();
-        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pRuntimeTypeClass), ELEMENT_TYPE_SZARRAY);
-        PTRARRAYREF ptrArrayarguments = (PTRARRAYREF) AllocateSzArray(arrayHandle, numArgs);
-        gc.pSig->SetArgumentArray(ptrArrayarguments);
-
-        TypeHandle *retAndArgTypes = fnPtr->GetRetAndArgTypesPointer();
-        OBJECTREF refRetType = retAndArgTypes[0].GetManagedClassObject();
-        gc.pSig->SetReturnType(refRetType);
-
-        for (INT32 i = 0; i < numArgs; i++)
-        {
-            OBJECTREF refArgType = retAndArgTypes[i + 1].GetManagedClassObject();
-            gc.pSig->SetArgument(i, refArgType);
         }
     }
     HELPER_METHOD_FRAME_END();

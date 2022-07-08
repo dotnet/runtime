@@ -1616,15 +1616,35 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);
                 bool fReturnTypeOrParameterNotLoaded = false;
 
+                int cMods = 0;
+                BYTE data;
+                SigPointer psigModReread = psig;
                 for (unsigned i = 0; i <= cArgs; i++)
                 {
+                    IfFailThrowBF(psig.PeekByte(&data), BFA_BAD_SIGNATURE, pOrigModule);
+                    CorElementType etyp = (CorElementType)data;
+                    if (etyp == ELEMENT_TYPE_CMOD_OPT || typ == ELEMENT_TYPE_CMOD_REQD)
+                    {
+                        mdToken tk;
+                        SigPointer psigTemp = psig;
+
+                        do {
+                            cMods++;
+                            psigTemp.SkipBytes(1);
+                            IfFailThrowBF(psigTemp.GetToken(&tk), BFA_BAD_SIGNATURE, pOrigModule);
+                            IfFailThrowBF(psigTemp.GetByte(&data), BFA_BAD_SIGNATURE, pOrigModule);
+                            etyp = (CorElementType)data;
+                        } while (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD);
+                    }
+
                     retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
-                                                                   pTypeContext,
-                                                                   fLoadTypes,
-                                                                   level,
-                                                                   dropGenericArgumentLevel,
-                                                                   pSubst,
-                                                                   pZapSigContext);
+                                                                    pTypeContext,
+                                                                    fLoadTypes,
+                                                                    level,
+                                                                    dropGenericArgumentLevel,
+                                                                    pSubst,
+                                                                    pZapSigContext);
+
                     if (retAndArgTypes[i].IsNull())
                     {
                         thRet = TypeHandle();
@@ -1640,11 +1660,71 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                     break;
                 }
 
+                FnPtrTypeDescCustomMod *customMods = NULL;
+
+                if (cMods)
+                {
+                    uint32_t cAllocaSize;
+                    if (!ClrSafeInt<uint32_t>::addition(cArgs, cMods, cAllocaSize) ||
+                        !ClrSafeInt<uint32_t>::multiply(cAllocaSize, sizeof(FnPtrTypeDescCustomMod), cAllocaSize))
+                    {
+                        ThrowHR(COR_E_OVERFLOW);
+                    }
+
+                    customMods = (FnPtrTypeDescCustomMod*) _alloca(cAllocaSize);
+
+                    // Re-parse and store the custom mods
+                    int iCurrent = 0;
+                    for (unsigned i = 0; i <= cArgs; i++)
+                    {
+                        IfFailThrowBF(psigModReread.PeekByte(&data), BFA_BAD_SIGNATURE, pOrigModule);
+                        CorElementType etyp = (CorElementType)data;
+                        if (etyp == ELEMENT_TYPE_CMOD_OPT || typ == ELEMENT_TYPE_CMOD_REQD)
+                        {
+                            do
+                            {
+                                psigModReread.SkipBytes(1);
+
+                                mdToken token;
+                                IfFailThrow(psigModReread.GetToken(&token));
+
+                                TypeHandle typeHandle = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                                    static_cast<Module*>(pOrigModule),
+                                    token,
+                                    pTypeContext,
+                                    ClassLoader::ThrowIfNotFound,
+                                    ClassLoader::FailIfUninstDefOrRef);
+
+                                FnPtrTypeDescCustomMod mod;
+                                mod.elementType = etyp;
+                                mod.typeHandle = typeHandle;
+                                customMods[iCurrent++] = mod;
+
+                                IfFailThrowBF(psigModReread.PeekByte(&data), BFA_BAD_SIGNATURE, pOrigModule);
+                                etyp = (CorElementType)data;
+                            } while (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD);
+                        }
+                                               
+                        IfFailThrowBF(psigModReread.SkipExactlyOne(), BFA_BAD_SIGNATURE, pOrigModule);
+
+                        if (i != cArgs)
+                        {
+                            // Create a mod separator for the parameter.
+                            FnPtrTypeDescCustomMod mod;
+                            mod.elementType = ELEMENT_TYPE_END;
+                            mod.typeHandle = TypeHandle();
+                            customMods[iCurrent++] = mod;
+                        }
+                    }
+
+                    _ASSERT(iCurrent = cMods + cArgs);
+                }
+
                 uint32_t sigLen = sigStart - psig.m_dwLen;
                 PCOR_SIGNATURE sig = (PCOR_SIGNATURE)psig.m_ptr - sigLen;
 
                 // Now find an existing function pointer or make a new one
-                thRet = ClassLoader::LoadFnptrTypeThrowing(static_cast<Module*>(pOrigModule), sig, sigLen, (BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);                
+                thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, cMods, customMods, fLoadTypes, level);                
 #else
                 DacNotImpl();
                 thRet = TypeHandle();

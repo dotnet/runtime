@@ -3789,7 +3789,24 @@ namespace System
 
         #region Function Pointer
         public override bool IsFunctionPointer => RuntimeTypeHandle.IsFunctionPointer(this);
-        public override bool IsUnmanagedFunctionPointer => RuntimeTypeHandle.IsUnmanagedFunctionPointer(this);
+        public override bool IsUnmanagedFunctionPointer
+        {
+            get
+            {
+                switch (GetFunctionPointerInfo().CallingConvention)
+                {
+                    case MdSigCallingConvention.C:
+                    case MdSigCallingConvention.StdCall:
+                    case MdSigCallingConvention.ThisCall:
+                    case MdSigCallingConvention.FastCall:
+                    case MdSigCallingConvention.Unmanaged:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+
         public override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() => GetFunctionPointerInfo().ParameterInfos;
         public override FunctionPointerParameterInfo GetFunctionPointerReturnParameter() => GetFunctionPointerInfo().ReturnParameter;
         public override Type[] GetFunctionPointerCallingConventions() => GetFunctionPointerInfo().GetCallingConventions();
@@ -3805,7 +3822,7 @@ namespace System
                     throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
                 }
 
-                fnPtr = new FunctionPointerInfo(this, new Signature(this));
+                fnPtr = new FunctionPointerInfo(this);
                 Cache.FunctionPointerInfo = fnPtr;
             }
 

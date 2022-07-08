@@ -14,6 +14,6 @@ namespace System.Reflection
 
         public override Type[] GetOptionalCustomModifiers() => throw new NotSupportedException();
         public override Type[] GetRequiredCustomModifiers() => throw new NotSupportedException();
-        internal List<Type> GetOptionalCustomModifiersList() => throw new NotSupportedException();
+        internal void SetCustomModifiersForReturnType(Type[] modifiers) => throw new NotSupportedException();
     }
 }

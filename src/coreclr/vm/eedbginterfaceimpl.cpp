@@ -884,12 +884,12 @@ TypeHandle EEDbgInterfaceImpl::FindLoadedFnptrType(TypeHandle *inst,
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
     //<TODO> : CALLCONV? </TODO>
-    return ClassLoader::LoadFnptrTypeThrowing(NULL, /*module*/
-                                              NULL, /*sig*/
-                                              0, /*sigLen*/
-                                              0, /*callConv*/
+    return ClassLoader::LoadFnptrTypeThrowing(0, // callConv
                                               ntypars,
                                               inst,
+                                              0, // numMods
+                                              NULL, // customModTypes
+
                                               // <TODO> should this be FailIfNotLoaded? - NO - although we may
                                               // want to debug unrestored VCs, we can't do it because the debug API
                                               // is not set up to handle them </TODO>
@@ -1014,12 +1014,12 @@ TypeHandle EEDbgInterfaceImpl::LoadFnptrType(TypeHandle *inst,
     CONTRACTL_END;
 
     /* @TODO : CALLCONV? */
-    return ClassLoader::LoadFnptrTypeThrowing(NULL, /*module*/
-                                              NULL, /*sig*/
-                                              0, /*sigLen*/
-                                              0, /*callConv*/
+    return ClassLoader::LoadFnptrTypeThrowing(0, // callConv
                                               ntypars,
-                                              inst);
+                                              inst,
+                                              0, // numMods
+                                              NULL // customModTypes 
+                                              );
 }
 
 TypeHandle EEDbgInterfaceImpl::LoadElementType(CorElementType et)

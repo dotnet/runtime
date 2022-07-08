@@ -1615,12 +1615,11 @@ TypeHandle ClassLoader::LoadNativeValueTypeThrowing(TypeHandle baseType,
 }
 
 /* static */
-TypeHandle ClassLoader::LoadFnptrTypeThrowing(Module *pModule,
-                                              PCOR_SIGNATURE sig,
-                                              uint32_t sigLen,
-                                              BYTE callConv,
+TypeHandle ClassLoader::LoadFnptrTypeThrowing(BYTE callConv,
                                               DWORD ntypars,
                                               TypeHandle* inst,
+                                              DWORD numMods,
+                                              FnPtrTypeDescCustomMod* customModTypes,                                              
                                               LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                               ClassLoadLevel level/*=CLASS_LOADED*/)
 {
@@ -1637,7 +1636,7 @@ TypeHandle ClassLoader::LoadFnptrTypeThrowing(Module *pModule,
     }
     CONTRACT_END
 
-    TypeKey key(pModule, sig, sigLen, callConv, ntypars, inst);
+    TypeKey key(callConv, ntypars, inst, numMods, customModTypes);
     RETURN(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
 }
 
@@ -2961,22 +2960,32 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
         PREFIX_ASSUME(pLoaderModule != NULL);
         PTR_LoaderHeap loaderHeap = pLoaderModule->GetAssembly()->GetLowFrequencyHeap();
 
-        int32_t sigLen = pKey->GetSignatureLen();
-        PCOR_SIGNATURE pCopyOfSig = (PCOR_SIGNATURE)pamTracker->Track(loaderHeap->AllocMem(S_SIZE_T(sigLen)));
-        memcpy(pCopyOfSig, pKey->GetSignature(), sigLen);
-
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(loaderHeap->AllocMem(
             S_SIZE_T(sizeof(FnPtrTypeDesc)) +
             S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
+        DWORD numMods = pKey->GetNumMods();
+        FnPtrTypeDescCustomMod* modTypes = NULL;
+        if (numMods)
+        {
+            FnPtrTypeDescCustomMod* srcMods = pKey->GetCustomModTypes();
+
+            modTypes = (FnPtrTypeDescCustomMod*) pamTracker->Track(loaderHeap->AllocMem(
+                S_SIZE_T(sizeof(FnPtrTypeDescCustomMod)) * S_SIZE_T(numMods)));
+
+            for (DWORD i = 0; i <= numMods; i++)
+            {
+                modTypes[i] = srcMods[i];
+            }
+        }
+
         typeHnd = TypeHandle(new(mem) FnPtrTypeDesc(
-            pKey->GetModule(),
-            pCopyOfSig,
-            sigLen,
             pKey->GetCallConv(),
             numArgs,
-            pKey->GetRetAndArgTypes()));
+            pKey->GetRetAndArgTypes(),
+            numMods,
+            modTypes));
     }
     else
     {

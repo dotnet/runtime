@@ -53,12 +53,11 @@ class TypeKey
         // m_kind = FNPTR
         struct
         {
-            Module *       m_pModule;
-            PCOR_SIGNATURE m_sig;
-            uint32_t       m_sigLen;
             BYTE           m_callConv;
             DWORD          m_numArgs;
             TypeHandle*    m_pRetAndArgTypes;
+            DWORD          m_numMods;
+            FnPtrTypeDescCustomMod* m_pCustomModTypes;
         } asFnPtr;
     } u;
 
@@ -93,17 +92,16 @@ public:
     }
 
     // Constructor for function pointer type
-    TypeKey(Module *pModule, PCOR_SIGNATURE sig, uint32_t sigLen, BYTE callConv, DWORD numArgs, TypeHandle* retAndArgTypes)
+    TypeKey(BYTE callConv, DWORD numArgs, TypeHandle* retAndArgTypes, DWORD numMods, FnPtrTypeDescCustomMod* customModTypes)
     {
         WRAPPER_NO_CONTRACT;
         PRECONDITION(CheckPointer(retAndArgTypes));
         m_kind = ELEMENT_TYPE_FNPTR;
-        u.asFnPtr.m_pModule = pModule;
-        u.asFnPtr.m_sig = sig;
-        u.asFnPtr.m_sigLen = sigLen;
         u.asFnPtr.m_callConv = callConv;
         u.asFnPtr.m_numArgs = numArgs;
         u.asFnPtr.m_pRetAndArgTypes = retAndArgTypes;
+        u.asFnPtr.m_numMods = numMods;
+        u.asFnPtr.m_pCustomModTypes = customModTypes;
     }
 
     CorElementType GetKind() const
@@ -191,22 +189,6 @@ public:
     }
 
     // Accessors on function pointer types
-    PCOR_SIGNATURE GetSignature() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
-        return u.asFnPtr.m_sig;
-    }
-
-    uint32_t GetSignatureLen() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
-        return u.asFnPtr.m_sigLen;
-    }
-
     DWORD GetNumArgs() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -230,6 +212,22 @@ public:
         PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
         return u.asFnPtr.m_pRetAndArgTypes;
     }
+
+    DWORD GetNumMods() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
+        return u.asFnPtr.m_numMods;
+    }
+    
+    FnPtrTypeDescCustomMod* GetCustomModTypes() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
+        return u.asFnPtr.m_pCustomModTypes;
+    }    
 
     BOOL Equals(TypeKey *pKey) const
     {
@@ -268,7 +266,7 @@ public:
         {
             _ASSERTE(pKey1->m_kind == ELEMENT_TYPE_FNPTR);
 
-            // See also EETypeHashTable::CompareFnPtrType
+            // See also EETypeHashTable::CompareFnPtrType for similar comparison logic.
 
             BYTE callConv = pKey1->u.asFnPtr.m_callConv;
             if (callConv != pKey2->u.asFnPtr.m_callConv ||
@@ -282,25 +280,24 @@ public:
                     return FALSE;
             }
 
-            // Match the signatures.
-            uint32_t sigLen1 = pKey1->u.asFnPtr.m_sigLen;
-            uint32_t sigLen2 = pKey2->u.asFnPtr.m_sigLen;
-            if (sigLen1 == 0 && sigLen2 == 0)
+            // Match the custom modifiers.
+            uint32_t numMods = pKey1->u.asFnPtr.m_numMods;
+            if (numMods != pKey2->u.asFnPtr.m_numMods)
             {
-                // Some keys don't have a signature; just skip in that case.
-                return TRUE;
-            }
-            
-            if (sigLen1 == 0 || sigLen2 == 0)
-            {
-                // Only one key has a signature.
                 return FALSE;
             }
 
-            return MetaSig::CompareMethodSigs(
-                pKey1->u.asFnPtr.m_sig, sigLen1, pKey1->u.asFnPtr.m_pModule, NULL,
-                pKey2->u.asFnPtr.m_sig, sigLen2, pKey2->u.asFnPtr.m_pModule, NULL,
-                FALSE);
+            for (DWORD i = 0; i < numMods; i++)
+            {
+                FnPtrTypeDescCustomMod customModTypes1 = pKey1->u.asFnPtr.m_pCustomModTypes[i];
+                FnPtrTypeDescCustomMod customModTypes2 = pKey2->u.asFnPtr.m_pCustomModTypes[i];
+
+                if ((customModTypes1.elementType != customModTypes2.elementType) ||
+                    (customModTypes1.typeHandle != customModTypes2.typeHandle))
+                    return FALSE;
+            }
+
+            return TRUE;
         }
     }
 };

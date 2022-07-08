@@ -167,7 +167,7 @@ static DWORD HashPossiblyInstantiatedType(mdTypeDef token, Instantiation inst)
 }
 
 // Calculate hash value for a function pointer type
-static DWORD HashFnPtrType(uint32_t sigLen, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes)
+static DWORD HashFnPtrType(BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -181,6 +181,8 @@ static DWORD HashFnPtrType(uint32_t sigLen, BYTE callConv, DWORD numArgs, TypeHa
     {
         dwHash = ((dwHash << 5) + dwHash) ^ retAndArgTypes[i].AsTAddr();
     }
+
+    // Currently we are not hashing on the custom mods.
 
     return (DWORD)dwHash;
 }
@@ -224,7 +226,6 @@ static DWORD HashTypeHandle(TypeHandle t)
     {
         FnPtrTypeDesc* pTD = t.AsFnPtrType();
         retVal = HashFnPtrType(
-            pTD->GetSignatureLen(),
             pTD->GetCallConv(),
             pTD->GetNumArgs(),
             pTD->GetRetAndArgTypesPointer());
@@ -261,7 +262,7 @@ DWORD HashTypeKey(TypeKey* pKey)
     }
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
-        return HashFnPtrType(pKey->GetSignatureLen(), pKey->GetCallConv(), pKey->GetNumArgs(), pKey->GetRetAndArgTypes());
+        return HashFnPtrType(pKey->GetCallConv(), pKey->GetNumArgs(), pKey->GetRetAndArgTypes());
     }
     else
     {
@@ -315,17 +316,16 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
     }
     else if (kind == ELEMENT_TYPE_FNPTR)
     {
-        Module* pModule = pKey->GetModule();
-        PCOR_SIGNATURE sig = pKey->GetSignature();
-        uint32_t sigLen = pKey->GetSignatureLen();
         BYTE callConv = pKey->GetCallConv();
         DWORD numArgs = pKey->GetNumArgs();
         TypeHandle *retAndArgTypes = pKey->GetRetAndArgTypes();
+        DWORD numMods = pKey->GetNumMods();
+        FnPtrTypeDescCustomMod *customModTypes = pKey->GetCustomModTypes();
 
         pSearch = BaseFindFirstEntryByHash(dwHash, &sContext);
         while (pSearch)
         {
-            if (CompareFnPtrType(pSearch->GetTypeHandle(), pModule, sig, sigLen, callConv, numArgs, retAndArgTypes))
+            if (CompareFnPtrType(pSearch->GetTypeHandle(), callConv, numArgs, retAndArgTypes, numMods, customModTypes))
             {
                 result = pSearch;
                 break;
@@ -443,8 +443,8 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     return TRUE;
 }
 
-// See also TypeKey::Equals
-BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, Module* pModule, PCOR_SIGNATURE sig, uint32_t sigLen, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes)
+// See also TypeKey::Equals for similar comparison logic.
+BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes, DWORD numMods, FnPtrTypeDescCustomMod *customModTypes)
 {
     CONTRACTL
     {
@@ -453,8 +453,8 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, Module* pModule, PCOR_SIGNA
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(t));
-        PRECONDITION(CheckPointer(sig, NULL_OK));
         PRECONDITION(CheckPointer(retAndArgTypes));
+        PRECONDITION(CheckPointer(customModTypes, NULL_OK));
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -463,13 +463,6 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, Module* pModule, PCOR_SIGNA
         return FALSE;
 
 #ifndef DACCESS_COMPILE
-
-    // A FnPtrTypeDesc has all signature information already extracted except for
-    // custom mods and it contains a copy of the raw signature. Not all keys however have the
-    // raw signature information, so we first check against the already extracted information,
-    // and then optionally compare the signature in order to verify against custom mods.
-    // If every key (such as DacDbiInterfaceImpl::FindLoadedFnptrType) had a signature, we could 
-    // just compare against the signature.
 
     FnPtrTypeDesc* pTD = t.AsFnPtrType();
 
@@ -486,27 +479,23 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, Module* pModule, PCOR_SIGNA
         }
     }
 
-    // The checks below are made optional to support DacDbiInterfaceImpl::FindLoadedFnptrType which doesn't
-    // consider calling convention (including unmanaged custom modifiers), module or signature. If the signature length
-    // is not provided do not include the comparison against the signature.
-
-    if (sigLen == 0 && pTD->GetSignatureLen() == 0)
+    if (numMods != pTD->GetNumMods())
     {
-        // Some keys don't have a signature; just skip in that case.
-        return TRUE;
-    }
-    
-    if (sigLen == 0 || pTD->GetSignatureLen() == 0)
-    {
-        // Only one side has a signature.
         return FALSE;
     }
-
-    return MetaSig::CompareMethodSigs(
-        pTD->GetSignature(), pTD->GetSignatureLen(), pTD->GetModule(), NULL,
-        sig, sigLen, pModule, NULL,
-        FALSE);
-
+    
+    FnPtrTypeDescCustomMod *customModTypes2 = pTD->GetCustomModTypesPointer();
+    for (DWORD i = 0; i < numMods; i++)
+    {
+        if ((customModTypes2[i].elementType != customModTypes[i].elementType) ||
+            (customModTypes2[i].typeHandle != customModTypes[i].typeHandle))
+        {
+            return FALSE;
+        }
+    }
+    
+    return TRUE;
+   
 #else
     DacNotImpl();
     return FALSE;

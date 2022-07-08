@@ -29,9 +29,10 @@ namespace System.Tests.Types
             Assert.True(t.IsFunctionPointer);
             Assert.False(t.IsPointer); // A function pointer is not compatible with IsPointer semantics.
             Assert.False(t.IsUnmanagedFunctionPointer);
+            Assert.NotNull(t.Module);
+            Assert.NotNull(t.Assembly);
 
             // Common for all function pointers:
-            Assert.Equal(typeof(FunctionPointerTests).Project().Assembly, t.Assembly);
             Assert.Equal(TypeAttributes.Public, t.Attributes);
             Assert.Null(t.BaseType);
             Assert.False(t.ContainsGenericParameters);
@@ -105,7 +106,6 @@ namespace System.Tests.Types
             Assert.True(t.IsVisible);
             Assert.Equal(MemberTypes.TypeInfo, t.MemberType);
             Assert.True(t.MetadataToken != 0);
-            Assert.Equal(typeof(FunctionPointerTests).Project().Module, t.Module);
             Assert.Null(t.ReflectedType);
             Assert.Null(t.TypeInitializer);
 
@@ -234,7 +234,6 @@ namespace System.Tests.Types
             Assert.Null(fnPtrType.AssemblyQualifiedName);
             Assert.Equal("System", fnPtrType.Namespace);
             Assert.Equal("*()", fnPtrType.Name);
-            Assert.Equal(t.Module, fnPtrType.Module);
 
             VerifyArg(fnPtrType.GetFunctionPointerReturnParameter(), expectedFcnPtrReturnName);
 
@@ -262,7 +261,6 @@ namespace System.Tests.Types
             Assert.Equal(expectedToString + " " + name, p.ToString());
 
             Type fnPtrType = p.PropertyType;
-            Assert.Equal(t.Module, fnPtrType.Module);
             Assert.Equal(expectedToString, fnPtrType.ToString());
             VerifyFieldOrProperty(fnPtrType);
         }
@@ -278,7 +276,6 @@ namespace System.Tests.Types
             Assert.Equal(expectedToString + " " + name, f.ToString());
 
             Type fnPtrType = f.FieldType;
-            Assert.Equal(t.Module, fnPtrType.Module);
             Assert.Equal(expectedToString, fnPtrType.ToString());
             VerifyFieldOrProperty(fnPtrType);
         }
@@ -420,6 +417,7 @@ namespace System.Tests.Types
             static Type GetFuncPtr(Type owner, string name) => owner.GetMethod(name, Bindings).ReturnParameter.ParameterType;
         }
 
+        // Tests to add: required modifiers, ask for optional return modifiers before\after calling conventions
         public unsafe class FunctionPointerHolder
         {
             public delegate*<void> ToString_1;

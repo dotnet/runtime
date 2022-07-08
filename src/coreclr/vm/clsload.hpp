@@ -37,6 +37,7 @@ class Thread;
 class EETypeHashTable;
 class DynamicResolver;
 class SigPointer;
+struct FnPtrTypeDescCustomMod;
 
 // Hash table parameter for unresolved class hash
 #define UNRESOLVED_CLASS_HASH_BUCKETS 8
@@ -693,12 +694,11 @@ public:
                                             LoadTypesFlag fLoadTypes = LoadTypes,
                                             ClassLoadLevel level = CLASS_LOADED);
 
-    static TypeHandle LoadFnptrTypeThrowing(Module *pModule,
-                                            PCOR_SIGNATURE sig,
-                                            uint32_t sigLen,
-                                            BYTE callConv,
+    static TypeHandle LoadFnptrTypeThrowing(BYTE callConv,
                                             DWORD numArgs,
                                             TypeHandle* retAndArgTypes,
+                                            DWORD numMods,
+                                            FnPtrTypeDescCustomMod* customModTypes,
                                             LoadTypesFlag fLoadTypes = LoadTypes,
                                             ClassLoadLevel level = CLASS_LOADED);
 

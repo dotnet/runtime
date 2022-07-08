@@ -108,6 +108,8 @@ PTR_Module TypeDesc::GetModule() {
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
+        // Function pointer types belong to no module
+        //PRECONDITION(GetInternalCorElementType() != ELEMENT_TYPE_FNPTR);
     }
     CONTRACTL_END
 
@@ -127,10 +129,7 @@ PTR_Module TypeDesc::GetModule() {
 
     _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
 
-    // A Function pointer keeps the reference to the original module in order to lazily resolve
-    // custom modifier types from its signature.
-    PTR_FnPtrTypeDesc asFn = dac_cast<PTR_FnPtrTypeDesc>(this);
-    return asFn->GetModule();
+    return GetLoaderModule();
 }
 
 Assembly* TypeDesc::GetAssembly() {

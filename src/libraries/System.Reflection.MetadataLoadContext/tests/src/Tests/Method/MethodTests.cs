@@ -248,7 +248,6 @@ namespace System.Reflection.Tests
         {
             using (MetadataLoadContext lc = new MetadataLoadContext(new CoreMetadataAssemblyResolver(), "mscorlib"))
             {
-                
                 Assembly a = lc.LoadFromByteArray(TestData.s_CustomModifiersImage);
                 Type t = a.GetType("N", throwOnError: true);
                 Type reqA = a.GetType("ReqA", throwOnError: true);

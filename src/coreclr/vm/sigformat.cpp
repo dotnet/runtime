@@ -545,12 +545,11 @@ void SigFormat::AddType(TypeHandle th)
                 AddType(pRetAndArgTypes[i+1]);
 
                 if (i != (cArgs - 1))
-                AddString(", ");
+                    AddString(", ");
             }
             if ((pTD->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG)
             {
                 AddString(", ");
-
                 AddString("...");
             }
             AddString(")");

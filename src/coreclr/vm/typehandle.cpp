@@ -1458,12 +1458,12 @@ TypeKey TypeHandle::GetTypeKey() const
         {
             CONSISTENCY_CHECK(etype == ELEMENT_TYPE_FNPTR);
             FnPtrTypeDesc* pFTD = (FnPtrTypeDesc*) pTD;
-            TypeKey tk(NULL /*module*/,
-                pFTD->GetSignature(),
-                pFTD->GetSignatureLen(),
+            TypeKey tk(
                 pFTD->GetCallConv(),
                 pFTD->GetNumArgs(),
-                pFTD->GetRetAndArgTypesPointer());
+                pFTD->GetRetAndArgTypesPointer(),
+                pFTD->GetNumMods(),
+                pFTD->GetCustomModTypesPointer());
             return tk;
         }
     }

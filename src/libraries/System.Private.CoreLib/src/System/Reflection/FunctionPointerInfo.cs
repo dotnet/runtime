@@ -21,24 +21,41 @@ namespace System.Reflection
         {
             if (_callingConventions == null)
             {
-                Type[] customModifiers = _returnInfo.GetOptionalCustomModifiers();
-                List<Type>? list = null;
+                ComputeCallingConventions();
+                Debug.Assert(_callingConventions != null);
+            }
+
+            return CloneArray(_callingConventions);
+        }
+
+        internal void ComputeCallingConventions()
+        {
+           if (_callingConventions == null)
+            {
+                ArrayBuilder<Type> ccBuilder = default;
+                ArrayBuilder<Type> allBuilder = default;
+
+                Type[]? modifiers = GetCustomModifiersFromFunctionPointer(position: 0, required: false);
                 bool foundCallingConvention = false;
 
-                for (int i = 0; i < customModifiers.Length; i++)
+                if (modifiers != null)
                 {
-                    Type type = customModifiers[i];
-                    if (type.FullName!.StartsWith(CallingConventionTypePrefix))
+                    for (int i = 0; i < modifiers.Length; i++)
                     {
-                        list ??= new List<Type>();
-                        list.Add(type);
-
-                        if (type == typeof(CallConvCdecl) ||
-                            type == typeof(CallConvFastcall) ||
-                            type == typeof(CallConvStdcall) ||
-                            type == typeof(CallConvThiscall))
+                        Type type = modifiers[i];
+                        allBuilder.Add(type);
+                        if (type.FullName!.StartsWith(CallingConventionTypePrefix))
                         {
-                            foundCallingConvention = true;
+                            ccBuilder.Add(type);
+
+                            // todo: use StartsWith(CallingConventionTypePrefix) to get any new calling conventions
+                            if (type == typeof(CallConvCdecl) ||
+                                type == typeof(CallConvFastcall) ||
+                                type == typeof(CallConvStdcall) ||
+                                type == typeof(CallConvThiscall))
+                            {
+                                foundCallingConvention = true;
+                            }
                         }
                     }
                 }
@@ -66,17 +83,14 @@ namespace System.Reflection
 
                     if (callConv != null)
                     {
-                        list ??= new List<Type>();
-                        list.Add(callConv);
-                        _returnInfo.GetOptionalCustomModifiersList().Add(callConv);
+                        allBuilder.Add(callConv);
+                        ccBuilder.Add(callConv);
                     }
                 }
 
-                _callingConventions = list == null ? Type.EmptyTypes : list.ToArray();
-                Debug.Assert(_callingConventions != null);
+                _returnInfo.SetCustomModifiersForReturnType(allBuilder.Count == 0 ? Type.EmptyTypes : allBuilder.ToArray());
+                _callingConventions = ccBuilder.Count == 0 ? Type.EmptyTypes : ccBuilder.ToArray();
             }
-
-            return CloneArray(_callingConventions);
         }
 
         private static T[] CloneArray<T>(T[] original)

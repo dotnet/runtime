@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -278,6 +278,9 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
+      <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
+           <Link>/Link>=CommonSystem\Collections\Generic\ArrayBuilder.cs </Link>
+      </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />

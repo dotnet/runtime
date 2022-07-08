@@ -2370,12 +2370,11 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedFnptrType(DWORD numTypeArgs, TypeHandl
     // @dbgtodo : Do we need to worry about calling convention here?
     // LoadFnptrTypeThrowing expects the count of arguments, not
     // including return value, so we subtract 1 from numTypeArgs.
-    return  ClassLoader::LoadFnptrTypeThrowing(NULL, /*module*/
-                                               NULL, /*sig*/
-                                               0, /*sigLen*/
-                                               0, /*callConv*/
+    return  ClassLoader::LoadFnptrTypeThrowing(0, // callConv
                                                numTypeArgs - 1,
                                                pInst,
+                                               0, // numMods
+                                               NULL, // customModTypes
                                                ClassLoader::DontLoadTypes);
 } // DacDbiInterfaceImpl::FindLoadedFnptrType
 

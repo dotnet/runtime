@@ -3,10 +3,7 @@
 //
 // File: typedesc.h
 //
-
-
 //
-
 //
 // ============================================================================
 
@@ -439,6 +436,12 @@ protected:
 /*************************************************************************/
 /* represents a function type.  */
 
+struct FnPtrTypeDescCustomMod
+{
+    CorElementType elementType;
+    TypeHandle typeHandle;
+};
+
 typedef DPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
 
 class FnPtrTypeDesc : public TypeDesc
@@ -447,13 +450,12 @@ class FnPtrTypeDesc : public TypeDesc
 public:
 #ifndef DACCESS_COMPILE
     FnPtrTypeDesc(
-        PTR_Module module,
-        PCOR_SIGNATURE sig /*copy made by caller*/,
-        int32_t sigLen,
         BYTE callConv,
         DWORD numArgs,
-        TypeHandle * retAndArgTypes)
-        : TypeDesc(ELEMENT_TYPE_FNPTR), m_pModule(module), m_hExposedClassObject(0), m_NumArgs(numArgs), m_CallConv(callConv), m_sig(sig), m_sigLen(sigLen)
+        TypeHandle * retAndArgTypes,
+        DWORD numMods,
+        FnPtrTypeDescCustomMod * customModTypes)
+        : TypeDesc(ELEMENT_TYPE_FNPTR), m_hExposedClassObject(0), m_NumArgs(numArgs), m_CallConv(callConv), m_NumMods(numMods), m_pCustomModTypes(customModTypes)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -479,27 +481,6 @@ public:
         return static_cast<BYTE>(m_CallConv);
     }
 
-    PCOR_SIGNATURE GetSignature()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_sig;
-    }
-
-    uint32_t GetSignatureLen()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_sigLen;
-    }
-
-    PTR_Module GetModule()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_pModule;
-    }
-
     // Return a pointer to the types of the signature, return type followed by argument types
     // The type handles are guaranteed to be fixed up
     TypeHandle * GetRetAndArgTypes();
@@ -517,6 +498,21 @@ public:
         SUPPORTS_DAC;
 
         return PTR_TypeHandle(m_RetAndArgTypes);
+    }
+
+    DWORD GetNumMods()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        return m_NumMods;
+    }
+
+    FnPtrTypeDescCustomMod* GetCustomModTypesPointer()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return m_pCustomModTypes;
     }
 
 #ifndef DACCESS_COMPILE
@@ -561,8 +557,6 @@ public:
     }    
 
 protected:
-    PTR_Module m_pModule;
-    
     // Handle back to the internal reflection Type object
     LOADERHANDLE m_hExposedClassObject;
 
@@ -572,8 +566,9 @@ protected:
     // Calling convention (actually just a single byte)
     DWORD m_CallConv;
 
-    PCOR_SIGNATURE m_sig;
-    uint32_t m_sigLen;
+    // Custom modifiers
+    DWORD m_NumMods;
+    FnPtrTypeDescCustomMod* m_pCustomModTypes;
 
     // Return type first, then argument types
     TypeHandle m_RetAndArgTypes[1];

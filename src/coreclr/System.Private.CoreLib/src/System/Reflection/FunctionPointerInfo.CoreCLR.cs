@@ -7,34 +7,34 @@ namespace System.Reflection
 {
     internal partial class FunctionPointerInfo
     {
-        private readonly Signature _signature;
-        private readonly Type _type;
+        private readonly RuntimeType _type;
 
-        internal FunctionPointerInfo(Type type, Signature signature)
+        internal FunctionPointerInfo(RuntimeType type)
         {
-            Debug.Assert(signature.m_csig > 0);
-
             _type = type;
-            _signature = signature;
-            _returnInfo = new RuntimeFunctionPointerParameterInfo(signature.ReturnType.AsType(), -1, signature);
+            Type[] arguments = RuntimeTypeHandle.GetArgumentTypesFromFunctionPointer(type);
+            Debug.Assert(arguments.Length >= 1);
 
-            RuntimeType[] arguments = signature.Arguments;
+            _returnInfo = new RuntimeFunctionPointerParameterInfo(this, arguments[0], 0);
             int count = arguments.Length;
-            if (count == 0)
+            if (count == 1)
             {
                 _parameterInfos = Array.Empty<RuntimeFunctionPointerParameterInfo>();
             }
             else
             {
-                RuntimeFunctionPointerParameterInfo[] parameterInfos = new RuntimeFunctionPointerParameterInfo[count];
-                for (int i = 0; i < count; i++)
+                RuntimeFunctionPointerParameterInfo[] parameterInfos = new RuntimeFunctionPointerParameterInfo[count - 1];
+                for (int i = 0; i < count - 1; i++)
                 {
-                    parameterInfos[i] = new RuntimeFunctionPointerParameterInfo(arguments[i].AsType(), i - 1, signature);
+                    parameterInfos[i] = new RuntimeFunctionPointerParameterInfo(this, arguments[i + 1], i + 1);
                 }
                 _parameterInfos = parameterInfos;
             }
         }
 
-        private unsafe MdSigCallingConvention CallingConvention => (MdSigCallingConvention)((byte*)_signature.m_sig)[0] & MdSigCallingConvention.CallConvMask;
+        internal RuntimeType FunctionPointerType => _type;
+        internal unsafe MdSigCallingConvention CallingConvention => (MdSigCallingConvention)RuntimeTypeHandle.GetRawCallingConventionsFromFunctionPointer(_type);
+        internal Type[]? GetCustomModifiersFromFunctionPointer(int position, bool required) =>
+            RuntimeTypeHandle.GetCustomModifiersFromFunctionPointer(_type, 0, required: false);
     }
 }

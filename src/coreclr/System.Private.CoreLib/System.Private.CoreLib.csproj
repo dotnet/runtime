@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -263,6 +263,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
       <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />

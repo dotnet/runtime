@@ -10,7 +10,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection
 {
-    public partial class TypeDelegator : TypeInfo
+    public class TypeDelegator : TypeInfo
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
