@@ -385,10 +385,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
 #elif defined(TARGET_ARM64)
 
-    // TODO: RhpGcProbe and related asm helpers NYI for ARM64.
-    //       returning "false" will also disable inline suspend at sae points, which is not tested.
-    return false;
-
     if (decoder.HasTailCalls())
     {
         // Do not hijack functions that have tail calls, since there are two problems:

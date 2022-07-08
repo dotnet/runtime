@@ -620,6 +620,12 @@ void Thread::Hijack()
         return;
     }
 
+#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+    // TODO: RhpGcProbe and related asm helpers NYI for ARM64/UNIX.
+    //       disabling hijacking for now.
+    return;
+#endif
+
     // PalHijack will call HijackCallback or make the target thread call it.
     // It may also do nothing if the target thread is in inconvenient state.
     PalHijack(m_hPalThread, this);
