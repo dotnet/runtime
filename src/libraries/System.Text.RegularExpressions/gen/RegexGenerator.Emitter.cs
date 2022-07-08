@@ -169,47 +169,6 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        private const string TrieFieldName = "s_trie";
-
-        private static void EmitTrie(IndentedTextWriter writer, ReadOnlySpan<TrieNodeWithLinks> trie)
-        {
-            writer.Indent++;
-            writer.WriteLine($"// A trie that is used to optimize <see cref=\"TryFindNextPossibleStartingPosition\"/>.");
-            writer.WriteLine($"internal static readonly {HelpersTypeName}.TrieNode[] {TrieFieldName} = new {HelpersTypeName}.TrieNode[]");
-            writer.WriteLine($"{{");
-            for (int i = 0; i < trie.Length; i++)
-            {
-                ref readonly TrieNodeWithLinks node = ref trie[i];
-                writer.WriteLine($"    // {Literal(node.Path)}");
-                writer.WriteLine($"    new {HelpersTypeName}.TrieNode()");
-                writer.WriteLine($"    {{");
-                switch (node.Children.Count)
-                {
-                    case 0:
-                        writer.WriteLine($"        Children = {HelpersTypeName}.TrieNode.s_EmptyChildrenDictionary,");
-                        break;
-                    case 1:
-                        KeyValuePair<char, int> singleKvp = node.Children.Single();
-                        writer.WriteLine($"        Children = new Dictionary<char, int>(1) {{ [{Literal(singleKvp.Key)}] = {singleKvp.Value}}},");
-                        break;
-                    default:
-                        writer.WriteLine($"        Children = new Dictionary<char, int>({node.Children.Count})");
-                        writer.WriteLine($"        {{");
-                        foreach (KeyValuePair<char, int> kvp in node.Children)
-                        {
-                            writer.WriteLine($"            [{Literal(kvp.Key)}] = {kvp.Value},");
-                        }
-                        writer.WriteLine($"        }},");
-                        break;
-                }
-                writer.WriteLine($"        {nameof(TrieNodeWithLinks.SuffixLink)} = {node.SuffixLink},");
-                writer.WriteLine($"        {nameof(TrieNodeWithLinks.MatchLength)} = {node.MatchLength}");
-                writer.WriteLine($"    }}{(i == trie.Length - 1 ? "" : ",")}");
-            }
-            writer.WriteLine($"}};");
-            writer.Indent--;
-        }
-
         /// <summary>Emits the code for the RunnerFactory.  This is the actual logic for the regular expression.</summary>
         private static void EmitRegexDerivedTypeRunnerFactory(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
         {
@@ -222,12 +181,6 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine($"    /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>");
             writer.WriteLine($"    private sealed class Runner : RegexRunner");
             writer.WriteLine($"    {{");
-            if (rm.Tree.FindOptimizations.PrefixMatcher is MultiStringMatcher matcher)
-            {
-                Debug.Assert(rm.Tree.FindOptimizations.FindMode is FindNextStartingPositionMode.LeadingMultiString_LeftToRight);
-                AddTrieSearchHelper(requiredHelpers);
-                EmitTrie(writer, matcher.Trie);
-            }
             if (rm.MatchTimeout is null)
             {
                 // We need to emit timeout checks for everything other than the developer explicitly setting Timeout.Infinite.
@@ -378,66 +331,6 @@ namespace System.Text.RegularExpressions.Generator
                     "        ch == '_' || // underscore",
                     "        ch == '\\u0130'; // latin capital letter I with dot above",
                     "}",
-                });
-            }
-        }
-
-        private static void AddTrieSearchHelper(Dictionary<string, string[]> requiredHelpers)
-        {
-            const string TrieSearch = nameof(TrieSearch);
-            if (!requiredHelpers.ContainsKey(TrieSearch))
-            {
-                requiredHelpers.Add(TrieSearch, new string[]
-                {
-                    "/// <summary>A node of the Aho-Corasick algorithm's trie data structure. Each node represents",
-                    "/// a word that is formed from the path of characters that leads from the root node to this one.</summary>",
-                    "internal readonly struct TrieNode",
-                    "{",
-                    "    /// <summary>A cached empty trie children dictionary.</summary>",
-                    "    internal static readonly Dictionary<char, int> s_EmptyChildrenDictionary = new Dictionary<char, int>();",
-                    "    /// <summary>An associative collection of characters and the node index they lead to.</summary>",
-                    "    internal Dictionary<char, int> Children { get; init; }",
-                    "    /// <summary>The index of the node the algorithm will jump to if it doesn't find a match in the node it is.</summary>",
-                    "    internal int SuffixLink { get; init; }",
-                    "    /// <summary>The length of the word that matches at this node, or -1 if there isn't such word.</summary>",
-                    "    internal int MatchLength { get; init; }",
-                    "}",
-                    "",
-                    "/// <summary>Finds the index of the longest leftmost match of one of <paramref name=\"trie\"/>'s",
-                    "/// strings in <paramref name=\"text\"/>, using the Aho-Corasick algorithm.</summary>",
-                    "internal static int TrieSearch(ReadOnlySpan<TrieNode> trie, ReadOnlySpan<char> text)",
-                    "{",
-                    "    int currentState = 0;",
-                    "",
-                    "    for (int i = 0; i < text.Length; i++)",
-                    "    {",
-                    "        char c = text[i];",
-                    "        while (true)",
-                    "        {",
-                    "            if (trie[currentState].Children.TryGetValue(c, out int nextState))",
-                    "            {",
-                    "                currentState = nextState;",
-                    "                break;",
-                    "            }",
-                    "",
-                    "            if (currentState == 0)",
-                    "            {",
-                    "                break;",
-                    "            }",
-                    "",
-                    "            currentState = trie[currentState].SuffixLink;",
-                    "        }",
-                    "",
-                    "        int matchLength = trie[currentState].MatchLength;",
-                    "",
-                    "        if (matchLength != -1)",
-                    "        {",
-                    "            return i + 1 - matchLength;",
-                    "        }",
-                    "    }",
-                    "",
-                    "    return -1;",
-                    "}"
                 });
             }
         }
@@ -858,15 +751,80 @@ namespace System.Text.RegularExpressions.Generator
             // Emits a trie-based search for one of multiple possible prefixes that can start a match.
             void EmitMultiStringSearch()
             {
-                int matchCount = regexTree.FindOptimizations.PrefixMatcher.GetMatchCount();
-                writer.WriteLine($"// The pattern starts with one of {matchCount} literals. Search for all of them together using a trie.");
-                writer.WriteLine($"// If none of them can be found, there's no match.");
-                writer.WriteLine($"int i = {HelpersTypeName}.TrieSearch({TrieFieldName}, inputSpan.Slice(pos));");
-                using (EmitBlock(writer, "if (i >= 0)"))
+                MultiStringMatcher prefixMatcher = regexTree.FindOptimizations.PrefixMatcher;
+                Debug.Assert(prefixMatcher is not null);
+                ReadOnlySpan<TrieNodeWithLinks> trie = prefixMatcher.Trie;
+
+                // Let's not emit a label for a state's
+                BitArray isSuffixLinkUsed = new BitArray(trie.Length);
+                foreach (ref readonly TrieNodeWithLinks node in trie)
                 {
-                    writer.WriteLine("base.runtextpos = pos + i;");
-                    writer.WriteLine("return true;");
+                    isSuffixLinkUsed.Set(node.SuffixLink, true);
                 }
+
+                int matchCount = prefixMatcher.GetMatchCount();
+                writer.WriteLine($"// The pattern starts with one of {matchCount} literals. Search for all of them together using a trie data structure.");
+                writer.WriteLine($"// If none of them can be found, there's no match.");
+
+                writer.WriteLine($"char c;");
+                writer.WriteLine();
+                writer.WriteLine($"// We are using a simplified version of the Aho-Corasick algorithm.");
+                writer.WriteLine($"// Each of the {trie.Length} states of our trie corresponds to a word. The root");
+                writer.WriteLine($"// of the trie corresponds to the empty string. At each state we read");
+                writer.WriteLine($"// the next character and compare to see if it can lead to one of the");
+                writer.WriteLine($"// state's children. If it does not, we repeat the search with the");
+                writer.WriteLine($"// characters of another state called the \"suffix link\".");
+                writer.WriteLine($"// If the state we landed in represents a match, we go backwards by");
+                writer.WriteLine($"// the length of the word we matched, and report that position.");
+                writer.WriteLine();
+
+                for (int i = 0; i < trie.Length; i++)
+                {
+                    ref readonly TrieNodeWithLinks node = ref trie[i];
+
+                    writer.WriteLine($"// {Literal(node.Path)}");
+                    writer.WriteLine($"State{i}:");
+                    if (node.MatchLength != -1)
+                    {
+                        writer.WriteLine($"pos -= {node.MatchLength};");
+                        writer.WriteLine($"goto FoundMatch;");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"if (pos >= inputSpan.Length) return false;");
+                        writer.WriteLine($"c = inputSpan[pos++];");
+                        writer.WriteLine();
+
+                        if (isSuffixLinkUsed.Get(i))
+                        {
+                            writer.WriteLine($"State{i}_Fallback:");
+                        }
+                        Debug.Assert(node.Children.Count != 0);
+                        using (EmitBlock(writer, $"switch (c)"))
+                        {
+                            foreach (KeyValuePair<char, int> child in node.Children)
+                            {
+                                writer.WriteLine($"case {Literal(child.Key)}: goto State{child.Value};");
+                            }
+
+                            if (i == TrieNode.Root)
+                            {
+                                writer.WriteLine($"// We are at the root state and didn't find a character.");
+                                writer.WriteLine($"// We will restart the algorithm and read a new one.");
+                                writer.WriteLine($"default: goto State{node.SuffixLink};");
+                            }
+                            else
+                            {
+                                writer.WriteLine($"default: goto State{node.SuffixLink}_Fallback;");
+                            }
+                        }
+                    }
+                    writer.WriteLine();
+                }
+
+                writer.WriteLine($"FoundMatch:");
+                writer.WriteLine($"base.runtextpos = pos;");
+                writer.WriteLine($"return true;");
             }
 
             // Emits a case-sensitive right-to-left search for a substring.
