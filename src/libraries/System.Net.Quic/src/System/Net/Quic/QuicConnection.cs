@@ -31,7 +31,6 @@ namespace System.Net.Quic;
 /// After all the streams have been finished, connection should be properly closed with an application code: <see cref="CloseAsync(long, CancellationToken)" />.
 /// If not, the connection will not send the peer information about being closed and the peer's connection will have to wait on its idle timeout.
 /// </remarks>
-[RequiresPreviewFeatures]
 public sealed partial class QuicConnection : IAsyncDisposable
 {
     /// <summary>
