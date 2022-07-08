@@ -54,9 +54,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Runtime.Inte
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator.Unit.Tests", "..\System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj", "{518D3BDB-323D-43EB-B868-A7EDC08A15F5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JSImportGenerator.Unit.Tests", "tests\JsImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj", "{BFED925C-18F2-4C98-833E-66F205234598}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JSImportGenerator.Unit.Tests", "tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj", "{BFED925C-18F2-4C98-833E-66F205234598}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JSImportGenerator", "gen\JsImportGenerator\JSImportGenerator.csproj", "{BE06AA07-F96F-4B63-8445-AFBC688D5CE0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JSImportGenerator", "gen\JSImportGenerator\JSImportGenerator.csproj", "{BE06AA07-F96F-4B63-8445-AFBC688D5CE0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

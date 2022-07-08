@@ -12,10 +12,6 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class JSGeneratorFactory : IMarshallingGeneratorFactory
     {
-        public JSGeneratorFactory(IMarshallingGeneratorFactory _)
-        {
-        }
-
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             Debug.Assert(context != null);

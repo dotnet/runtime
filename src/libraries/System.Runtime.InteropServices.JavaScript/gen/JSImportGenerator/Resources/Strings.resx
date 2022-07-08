@@ -192,13 +192,13 @@
     <value>Only functions with up to 3 arguments are currently supported by source-generated JavaScript interop.</value>
   </data>
   <data name="FuncWrongArgumentCount" xml:space="preserve">
-    <value>`JSType.Function` should have same number of generic arguments as the marshaled managed type.</value>
+    <value>'JSType.Function' should have same number of generic arguments as the marshaled managed type.</value>
   </data>
   <data name="InOutRefNotSupported" xml:space="preserve">
     <value>Parameters with 'in', 'out' and 'ref' modifiers are not supported by source-generated JavaScript interop.</value>
   </data>
   <data name="SpanAndTaskNotSupported" xml:space="preserve">
-    <value>Marshaling 'Span' on method which returns `Task` is not supported.</value>
+    <value>Marshaling 'Span' on method which returns 'Task' is not supported.</value>
   </data>
   <data name="TypeNotSupportedName" xml:space="preserve">
     <value>Type {0} is not supported by source-generated JavaScript interop.</value>

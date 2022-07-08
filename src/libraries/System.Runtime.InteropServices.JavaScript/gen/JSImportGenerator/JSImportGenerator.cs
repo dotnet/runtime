@@ -261,10 +261,7 @@ namespace Microsoft.Interop.JavaScript
 
         private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
         {
-            IMarshallingGeneratorFactory generatorFactory;
-
-            generatorFactory = new UnsupportedMarshallingFactory();
-            JSGeneratorFactory jsGeneratorFactory = new JSGeneratorFactory(generatorFactory);
+            JSGeneratorFactory jsGeneratorFactory = new JSGeneratorFactory();
 
             return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion, options), jsGeneratorFactory);
         }
