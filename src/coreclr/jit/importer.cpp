@@ -4230,6 +4230,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         impPopStack();
                     }
                 }
+                break;
             }
 
             case NI_System_Threading_Thread_get_ManagedThreadId:
