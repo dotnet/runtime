@@ -106,7 +106,7 @@ namespace System.Xml
             where T : unmanaged
         {
             // GetBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
-            var buffer = GetBuffer(1 + Unsafe.SizeOf<T>(), out int offset);
+            byte[] buffer = GetBuffer(1 + Unsafe.SizeOf<T>(), out int offset);
 
             DiagnosticUtility.DebugAssert(offset >= 0 && offset + 1 + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
@@ -121,7 +121,7 @@ namespace System.Xml
             where T : unmanaged
         {
             // GetBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
-            var buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset);
+            byte[] buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset);
 
             DiagnosticUtility.DebugAssert(offset >= 0 && offset + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
@@ -592,7 +592,7 @@ namespace System.Xml
         public override unsafe void WriteText(char[] chars, int offset, int count)
            => WriteText(chars.AsSpan(offset, count));
 
-        private unsafe void WriteText(Span<char> chars)
+        private unsafe void WriteText(ReadOnlySpan<char> chars)
         {
             if (_inAttribute)
             {
@@ -602,7 +602,7 @@ namespace System.Xml
             {
                 if (chars.Length > 0)
                 {
-                    fixed (char* pch = chars)
+                    fixed (char* pch = &MemoryMarshal.GetReference(chars))
                     {
                         UnsafeWriteText(pch, chars.Length);
                     }
@@ -701,18 +701,17 @@ namespace System.Xml
 
         public override void WriteCharEntity(int ch)
         {
-            Span<char> chars = stackalloc char[2];
             if (ch > char.MaxValue)
             {
                 SurrogateChar sch = new SurrogateChar(ch);
                 chars[0] = sch.HighChar;
                 chars[1] = sch.LowChar;
-                WriteText(chars);
+                WriteText(stackalloc char[] { sch.HighChar, sch.Lowchar });
             }
             else
             {
-                chars[0] = (char)ch;
-                WriteText(chars.Slice(0, 1));
+                char castChar = (char)ch;
+                WriteText(new ReadOnlySpan<char>(in castChar));
             }
         }
 
@@ -787,7 +786,7 @@ namespace System.Xml
 
         public override void WriteGuidText(Guid guid)
         {
-            var span = GetTextNodeBuffer(17, out int offset).AsSpan(offset, 17);
+            Span<byte> span = GetTextNodeBuffer(17, out int offset).AsSpan(offset, 17);
             span[0] = (byte)XmlBinaryNodeType.GuidText;
             guid.TryWriteBytes(span.Slice(1));
             Advance(17);
@@ -834,30 +833,30 @@ namespace System.Xml
             base.WriteBytes(bytes);
         }
 
-        public void WriteDateTimeArray(Span<DateTime> items)
+        public void WriteDateTimeArray(ReadOnlySpan<DateTime> items)
         {
             WriteArrayInfo(XmlBinaryNodeType.DateTimeTextWithEndElement, items.Length);
-            foreach (var dateTime in items)
+            foreach (DateTime dateTime in items)
             {
                 WriteInt64(ToBinary(dateTime));
             }
         }
 
-        public void WriteGuidArray(Span<Guid> items)
+        public void WriteGuidArray(ReadOnlySpan<Guid> items)
         {
             WriteArrayInfo(XmlBinaryNodeType.GuidTextWithEndElement, items.Length);
-            foreach (ref var guid in items)
+            foreach (ref readonly Guid guid in items)
             {
-                var bytes = GetBuffer(16, out int bufferOffset).AsSpan(bufferOffset);
+                Span<byte> bytes = GetBuffer(16, out int bufferOffset).AsSpan(bufferOffset);
                 guid.TryWriteBytes(bytes);
                 Advance(16);
             }
         }
 
-        public void WriteTimeSpanArray(Span<TimeSpan> items)
+        public void WriteTimeSpanArray(ReadOnlySpan<TimeSpan> items)
         {
             WriteArrayInfo(XmlBinaryNodeType.TimeSpanTextWithEndElement, items.Length);
-            foreach (ref TimeSpan timespan in items)
+            foreach (ref readonly TimeSpan timespan in items)
             {
                 WriteInt64(timespan.Ticks);
             }
