@@ -1601,9 +1601,9 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData( float.PositiveInfinity,  3,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  4,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  5,  float.PositiveInfinity, 0.0f)]
-        public static void Root32(float x, int n, float expectedResult, float allowedVariance)
+        public static void RootN32(float x, int n, float expectedResult, float allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, NFloat.Root(x, n), allowedVariance);
+            AssertExtensions.Equal(expectedResult, NFloat.RootN(x, n), allowedVariance);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
@@ -2277,9 +2277,9 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData( double.PositiveInfinity,  3,  double.PositiveInfinity, 0.0)]
         [InlineData( double.PositiveInfinity,  4,  double.PositiveInfinity, 0.0)]
         [InlineData( double.PositiveInfinity,  5,  double.PositiveInfinity, 0.0)]
-        public static void Root64(double x, int n, double expectedResult, double allowedVariance)
+        public static void RootN64(double x, int n, double expectedResult, double allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, NFloat.Root((NFloat)x, n), allowedVariance);
+            AssertExtensions.Equal(expectedResult, NFloat.RootN((NFloat)x, n), allowedVariance);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
