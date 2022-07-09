@@ -35,11 +35,12 @@
     push_register   \trashReg                    // save m_RIP
     lea             \trashReg, [rsp + 0]         // trashReg == address of frame
 
-    // allocate space for xmm0 and alignment
-    alloc_stack     0x18
+    // allocate space for xmm0, xmm1 and alignment
+    alloc_stack     0x28
 
-    // save xmm0 in case it`s being used as a return value
-    movdqa          [rsp + 0], xmm0
+    // save xmm0 and xmm1 in case they are used as return values
+    movdqa          [rsp + 0x10], xmm0
+    movdqa          [rsp + 0]   , xmm1
 
     // link the frame into the Thread
     mov             [\threadReg + OFFSETOF__Thread__m_pDeferredTransitionFrame], \trashReg
@@ -50,8 +51,9 @@
 // registers and return value to their values from before the probe was called (while also updating any
 // object refs or byrefs).
 .macro POP_PROBE_FRAME
-    movdqa      xmm0, [rsp + 0]
-    add         rsp, 0x18 + 8  // skip xmm0 and discard RIP
+    movdqa      xmm1, [rsp + 0]
+    movdqa      xmm0, [rsp + 0x10]
+    add         rsp, 0x28 + 8  // skip xmm0, xmm1 and discard RIP
     pop         rbp
     pop         rax     // discard Thread*
     pop         rax     // discard BITMASK
