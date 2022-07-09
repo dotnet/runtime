@@ -42,6 +42,9 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     }
 
     public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;
+    public bool IsCompletedSuccessfully => IsCompleted && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Succeeded;
+    public bool IsCanceled => IsCompleted && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Canceled;
+    public bool IsFaulted => IsCompleted && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Faulted;
 
     public bool TryGetValueTask(out ValueTask valueTask, object? keepAlive = null, CancellationToken cancellationToken = default)
     {
@@ -71,6 +74,10 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 if (keepAlive is not null)
                 {
                     Debug.Assert(!_keepAlive.IsAllocated);
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(keepAlive, $"{keepAlive} rooted.");
+                    }
                     _keepAlive = GCHandle.Alloc(keepAlive);
                 }
 
@@ -147,6 +154,10 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     // Un-root the the kept alive object in all cases.
                     if (_keepAlive.IsAllocated)
                     {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Info(_keepAlive.Target, $"{_keepAlive.Target} un-rooted.");
+                        }
                         _keepAlive.Free();
                     }
                 }

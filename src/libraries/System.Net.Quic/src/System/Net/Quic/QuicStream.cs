@@ -72,6 +72,8 @@ public sealed partial class QuicStream
 
     public Task WritesClosed => _sendTcs.GetFinalTask();
 
+    public override string ToString() => _handle.ToString();
+
     /// <summary>
     /// Initializes a new instance of an outbound <see cref="QuicStream" />.
     /// </summary>
@@ -151,15 +153,19 @@ public sealed partial class QuicStream
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        if (_startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
+        _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
         {
             unsafe
             {
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamStart(
+                int status = MsQuicApi.Api.ApiTable->StreamStart(
                     _handle.QuicHandle,
-                    QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT));
+                    QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+                if (StatusFailed(status))
+                {
+                    // TODO: aborted and the exception type
+                    _startedTcs.TrySetException(new MsQuicException(status));
+                }
             }
-            // TODO: aborted and setting up the startedTcs
         }
 
         return valueTask;
@@ -333,7 +339,7 @@ public sealed partial class QuicStream
 
     private unsafe int HandleEventStartComplete(ref START_COMPLETE data)
     {
-        _id = (long)data.ID;
+        _id = unchecked((long)data.ID);
         if (StatusSucceeded(data.Status))
         {
             if (data.PeerAccepted != 0)
@@ -418,10 +424,11 @@ public sealed partial class QuicStream
     {
         if (data.ConnectionShutdown != 0)
         {
-            _shutdownTcs.TrySetException(new QuicConnectionAbortedException((long)data.ConnectionErrorCode));
-            return QUIC_STATUS_SUCCESS;
+            Exception exception = data.ConnectionShutdownByPeer != 0 ? new QuicConnectionAbortedException((long)data.ConnectionErrorCode) : new QuicOperationAbortedException();
+            _startedTcs.TrySetException(exception);
+            _receiveTcs.TrySetException(exception, final: true);
+            //_sendTcs.TrySetException(exception, final: true);
         }
-
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
@@ -496,7 +503,7 @@ public sealed partial class QuicStream
             return;
         }
 
-        // Flush the queue and dispose all remaining streams.
+        // Abort the read side of the stream if it hasn't been fully consumed.
         if (_receiveTcs.TrySetException(new QuicOperationAbortedException(), final: true))
         {
             unsafe
@@ -515,26 +522,30 @@ public sealed partial class QuicStream
             }
         }
 
-        // Check if the stream has been shut down and if not, shut it down.
-        if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
+        // Only if the stream has been started, try to shut it down.
+        if (_startedTcs.IsCompletedSuccessfully)
         {
-            unsafe
+            // Check if the stream has been shut down and if not, shut it down.
+            if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
             {
-                int status = MsQuicApi.Api.ApiTable->StreamShutdown(
-                    _handle.QuicHandle,
-                    QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL,
-                    default);
-                if (StatusFailed(status))
+                unsafe
                 {
-                    if (NetEventSource.Log.IsEnabled())
+                    int status = MsQuicApi.Api.ApiTable->StreamShutdown(
+                        _handle.QuicHandle,
+                        QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL,
+                        default);
+                    if (StatusFailed(status))
                     {
-                        NetEventSource.Error(this, $"{this} StreamShutdown(GRACEFUL) failed: {MsQuicException.GetErrorCodeForStatus(status)}.");
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Error(this, $"{this} StreamShutdown(GRACEFUL) failed: {MsQuicException.GetErrorCodeForStatus(status)}.");
+                        }
                     }
                 }
             }
-        }
 
-        await valueTask.ConfigureAwait(false);
+            await valueTask.ConfigureAwait(false);
+        }
         _handle.Dispose();
 
         // TODO: memory leak if not disposed

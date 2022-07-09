@@ -648,7 +648,7 @@ namespace System.Net.Quic.Tests
                     await stream.WriteAsync(buffer);
                     await sem.WaitAsync();
 
-                    stream.Dispose();
+                    await stream.DisposeAsync();
 
                     // should not throw ODE on aborting
                     stream.Abort(QuicAbortDirection.Read, 1234);
@@ -674,7 +674,7 @@ namespace System.Net.Quic.Tests
                     QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
 
                     // dispose will flush stream creation on the wire
-                    stream.Dispose();
+                    await stream.DisposeAsync();
 
                     // should not throw ODE on aborting
                     stream.Abort(QuicAbortDirection.Read, 1234);
