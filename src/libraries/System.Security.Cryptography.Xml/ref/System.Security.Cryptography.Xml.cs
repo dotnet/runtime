@@ -81,8 +81,7 @@ namespace System.Security.Cryptography.Xml
         protected internal bool CacheValid { get { throw null; } }
         protected string? ReferenceType { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.TransformChain TransformChain { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
-        public string? Uri { get { throw null; } set { } }
+        public string Uri { get { throw null; } set { } }
         public void AddTransform(System.Security.Cryptography.Xml.Transform transform) { }
         public virtual System.Xml.XmlElement GetXml() { throw null; }
         public virtual void LoadXml(System.Xml.XmlElement value) { }
