@@ -1,29 +1,35 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+/* Copyright (C) 2022 Hewlett-Packard Co.
+     Contributed by David Mosberger-Tang <davidm@hpl.hp.com>.
+This file is part of libunwind.
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
-#include <elf.h>
-#include <fcntl.h>
-#include <string.h>
-#include <unistd.h>
 #include <stddef.h>
-
-#include <sys/mman.h>
-
-#include "_OOP_internal.h"
+#include "libunwind_i.h"
+#include "dwarf-eh.h"
+#include "dwarf_i.h"
 
 int
-_OOP_find_proc_info (
-    unw_word_t start_ip,
-    unw_word_t end_ip,
-    unw_word_t eh_frame_table,
-    unw_word_t eh_frame_table_len,
-    unw_word_t exidx_frame_table,
-    unw_word_t exidx_frame_table_len,
-    unw_addr_space_t as,
-    unw_word_t ip,
-    unw_proc_info_t *pi,
-    int need_unwind_info,
-    void *arg)
+unw_get_proc_info_in_range (unw_word_t start_ip, unw_word_t end_ip,
+                            unw_word_t eh_frame_table, unw_word_t eh_frame_table_len,
+                            unw_word_t exidx_frame_table, unw_word_t exidx_frame_table_len,
+                            unw_addr_space_t as, unw_word_t ip,
+                            unw_proc_info_t *pi, int need_unwind_info,
+                            void *arg)
 {
     int ret = 0;
 

@@ -544,11 +544,8 @@ namespace System.Formats.Tar
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             using (FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: false)))
             {
-                if (DataStream != null)
-                {
-                    // Important: The DataStream will be written from its current position
-                    DataStream.CopyTo(fs);
-                }
+                // Important: The DataStream will be written from its current position
+                DataStream?.CopyTo(fs);
             }
 
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);

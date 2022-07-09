@@ -165,9 +165,9 @@ namespace System.Data.Odbc
             // If we ended up getting released, then we have to release
             // our reference on our parent.
             OdbcHandle? parentHandle = _parentHandle;
-            _parentHandle = null;
-            if (null != parentHandle)
+            if (parentHandle != null)
             {
+                _parentHandle = null;
                 parentHandle.DangerousRelease();
             }
             return true;
