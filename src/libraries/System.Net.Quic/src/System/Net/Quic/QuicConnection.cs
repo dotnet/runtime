@@ -404,16 +404,19 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <param name="errorCode">Application provided code with the reason for closure.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>An asynchronous task that completes when the connection is closed.</returns>
-    public unsafe ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
+    public ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
-            MsQuicApi.Api.ApiTable->ConnectionShutdown(
-                _handle.QuicHandle,
-                QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
-                (ulong)errorCode);
+            unsafe
+            {
+                MsQuicApi.Api.ApiTable->ConnectionShutdown(
+                    _handle.QuicHandle,
+                    QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
+                    (ulong)errorCode);
+            }
         }
 
         return valueTask;
