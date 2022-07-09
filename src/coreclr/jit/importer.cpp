@@ -20519,9 +20519,9 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
                 inlArgInfo[i].argIsLclVar = false;
                 // Try to fold the node in case we have constant arguments.
-                if (inlArgInfo[i].argIsInvariant && inlArgNode->OperIsConst())
+                if (inlArgInfo[i].argIsInvariant)
                 {
-                    inlArgNode = gtFoldExprConst(inlArgNode);
+                    inlArgNode = gtFoldExpr(inlArgNode);
                 }
                 *pInlArgNode = inlArgNode;
             }
@@ -20533,11 +20533,10 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
                 inlArgInfo[i].argIsLclVar = false;
 
-                /* Try to fold the node in case we have constant arguments */
-
-                if (inlArgInfo[i].argIsInvariant && inlArgNode->OperIsConst())
+                // Try to fold the node in case we have constant arguments.
+                if (inlArgInfo[i].argIsInvariant)
                 {
-                    inlArgNode = gtFoldExprConst(inlArgNode);
+                    inlArgNode = gtFoldExpr(inlArgNode);
                 }
                 *pInlArgNode = inlArgNode;
             }
