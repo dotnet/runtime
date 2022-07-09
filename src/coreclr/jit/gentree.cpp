@@ -12896,6 +12896,7 @@ GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
 //    Checks for
 //        typeof(...) == obj.GetType()
 //        typeof(...) == typeof(...)
+//        typeof(...) == null
 //        obj1.GetType() == obj2.GetType()
 //
 //    And potentially optimizes away the need to obtain actual
@@ -12918,7 +12919,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     const TypeProducerKind op2Kind = gtGetTypeProducerKind(op2);
 
     // Fold "typeof(handle) cmp null"
-    if (((op2Kind == TPK_Null) && (op1Kind == TPK_Handle)) || ((op1Kind == TPK_ Null) && (op2Kind == TPK_Handle)))
+    if (((op2Kind == TPK_Null) && (op1Kind == TPK_Handle)) || ((op1Kind == TPK_Null) && (op2Kind == TPK_Handle)))
     {
         GenTree* call   = op1Kind == TPK_Handle ? op1 : op2;
         GenTree* handle = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
