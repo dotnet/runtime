@@ -103,6 +103,10 @@ public sealed partial class QuicListener : IAsyncDisposable
 
     public override string ToString() => _handle.ToString();
 
+    /// <summary>
+    /// Initializes and starts a new instance of a <see cref="QuicListener" />.
+    /// </summary>
+    /// <param name="options">Options to start the listener.</param>
     private unsafe QuicListener(QuicListenerOptions options)
     {
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);

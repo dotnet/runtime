@@ -175,6 +175,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
     public override string ToString() => _handle.ToString();
 
+    /// <summary>
+    /// Initializes a new instance of an outbound <see cref="QuicConnection" />.
+    /// </summary>
     private unsafe QuicConnection()
     {
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
@@ -195,6 +198,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Initializes a new instance of an inbound <see cref="QuicConnection" />.
+    /// </summary>
+    /// <param name="handle">Native handle.</param>
+    /// <param name="info">Related data from the NEW_CONNECTION listener event.</param>
     internal unsafe QuicConnection(QUIC_HANDLE* handle, QUIC_NEW_CONNECTION_INFO* info)
     {
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
