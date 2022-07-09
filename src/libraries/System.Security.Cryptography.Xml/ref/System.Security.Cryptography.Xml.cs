@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Security.Cryptography.Xml
 {
     public sealed partial class CipherData
@@ -65,7 +63,7 @@ namespace System.Security.Cryptography.Xml
     {
         public EncryptedKey() { }
         public string? CarriedKeyName { get { throw null; } set { } }
-        [AllowNull]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string? Recipient { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.ReferenceList ReferenceList { get { throw null; } }
         public void AddReference(System.Security.Cryptography.Xml.DataReference dataReference) { }
@@ -128,6 +126,7 @@ namespace System.Security.Cryptography.Xml
         public System.Text.Encoding Encoding { get { throw null; } set { } }
         public System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Recipient { get { throw null; } set { } }
         public System.Xml.XmlResolver? Resolver { get { throw null; } set { } }
         public int XmlDSigSearchDepth { get { throw null; } set { } }

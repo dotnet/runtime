@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Policy;
@@ -162,6 +163,7 @@ namespace System.Security.Cryptography.Xml
 
         // This is used to specify the EncryptedKey elements that should be considered
         // when an EncryptedData references an EncryptedKey using a CarriedKeyName and Recipient
+        [AllowNull]
         public string Recipient
         {
             get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
