@@ -40,6 +40,7 @@ namespace System.Security.Cryptography.Xml
             get { return _target; }
         }
 
+        [DisallowNull]
         public XmlElement? PropertyElement
         {
             get { return _elemProp; }

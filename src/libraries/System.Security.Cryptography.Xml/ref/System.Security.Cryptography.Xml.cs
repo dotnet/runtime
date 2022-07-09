@@ -163,6 +163,7 @@ namespace System.Security.Cryptography.Xml
         public EncryptionProperty() { }
         public EncryptionProperty(System.Xml.XmlElement elementProperty) { }
         public string? Id { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public System.Xml.XmlElement? PropertyElement { get { throw null; } set { } }
         public string? Target { get { throw null; } }
         public System.Xml.XmlElement GetXml() { throw null; }
