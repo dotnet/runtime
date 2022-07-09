@@ -6,10 +6,11 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    internal static unsafe partial class JSHostImplementation
+    internal static partial class JSHostImplementation
     {
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo s_taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
@@ -264,6 +265,29 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw ex;
             }
             throw new InvalidProgramException();
+        }
+
+        public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken )
+        {
+            Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
+            var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
+            await Task.Yield();// this helps to finish the import before we bind the module in [JSImport]
+            return await wrappedTask.ConfigureAwait(true);
+        }
+
+        private static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
+        {
+            if (jsTask.IsCompletedSuccessfully)
+            {
+                return jsTask.Result;
+            }
+            using (var receiveRegistration = cancellationToken.Register(() =>
+            {
+                CancelablePromise.CancelPromise(jsTask);
+            }))
+            {
+                return await jsTask.ConfigureAwait(true);
+            }
         }
 
         // res type is first argument

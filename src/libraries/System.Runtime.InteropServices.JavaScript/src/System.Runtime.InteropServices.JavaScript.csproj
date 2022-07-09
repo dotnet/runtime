@@ -50,6 +50,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.BigInt64.cs" />

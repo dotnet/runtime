@@ -23,6 +23,9 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 
         const js_function_name = conv_string_root(function_name_root)!;
         const js_module_name = conv_string_root(module_name_root)!;
+        if (runtimeHelpers.config.diagnostic_tracing) {
+            console.trace(`MONO_WASM: Binding [JSImport] ${js_function_name} from ${js_module_name}`);
+        }
         const fn = mono_wasm_lookup_function(js_function_name, js_module_name);
         const args_count = get_signature_argument_count(signature);
 
@@ -81,11 +84,6 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         body += "} catch (ex) {\n";
         body += "  marshal_exception_to_cs(args, ex);\n";
         body += "}}";
-        if (runtimeHelpers.config.diagnostic_tracing) {
-            console.debug("-------");
-            console.debug(body);
-            console.debug("-------");
-        }
         const factory = new Function("closure", body);
         const bound_fn = factory(closure);
         bound_fn[bound_js_function_symbol] = true;
@@ -172,12 +170,19 @@ export async function dynamic_import(module_name: string, module_url: string): P
     mono_assert(module_name, "Invalid module_name");
     mono_assert(module_url, "Invalid module_name");
     let promise = importedModulesPromises.get(module_name);
-    if (!promise) {
+    const newPromise = !promise;
+    if (newPromise) {
+        if (runtimeHelpers.config.diagnostic_tracing)
+            console.trace(`MONO_WASM: importing ES6 module '${module_name}' from '${module_url}'`);
         promise = import(module_url);
         importedModulesPromises.set(module_name, promise);
     }
     const module = await promise;
-    importedModules.set(module_name, module);
+    if (newPromise) {
+        importedModules.set(module_name, module);
+        if (runtimeHelpers.config.diagnostic_tracing)
+            console.trace(`MONO_WASM: imported ES6 module '${module_name}' from '${module_url}'`);
+    }
     return module;
 }
 

@@ -906,49 +906,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             if (_module == null)
             {
+                Log("JavaScriptTestHelper.mjs importing");
                 _module = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+                Log("JavaScriptTestHelper.mjs imported");
             }
         }
-    }
-
-
-    [NativeMarshalling(typeof(Native))]
-    public struct Vector3
-    {
-        public Vector3()
-        {
-            X = 0;
-            Y = 0;
-            Z = 0;
-        }
-
-        [MarshalAs(UnmanagedType.U1)]
-        public int X;
-        [MarshalAs(UnmanagedType.U1)]
-        public int Y;
-        [MarshalAs(UnmanagedType.U1)]
-        public int Z;
-
-        [CustomTypeMarshaller(typeof(Vector3), Features = CustomTypeMarshallerFeatures.None)]
-        public struct Native
-        {
-            public byte X;
-            public byte Y;
-            public byte Z;
-
-            public Native(Vector3 value)
-            {
-                X = (byte)value.X;
-                Y = (byte)value.Y;
-                Z = (byte)value.Z;
-            }
-
-            public Vector3 ToManaged()
-            {
-                return new Vector3 { X = X, Y = Y, Z = Z };
-            }
-        }
-
-        public override string ToString() => $"X: {X}, Y: {Y}, Z: {Z}";
     }
 }
