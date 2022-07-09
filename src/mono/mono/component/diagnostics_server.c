@@ -204,17 +204,24 @@ mono_wasm_diagnostic_server_post_resume_runtime (void)
 typedef struct WasmIpcStreamQueue {
 	uint8_t *buf;
 	int32_t count;
-	volatile int32_t write_done;
+	volatile int32_t buf_full;
 } WasmIpcStreamQueue;
 
 extern void
-mono_wasm_diagnostic_server_stream_signal_work_available (WasmIpcStreamQueue *queue);
+mono_wasm_diagnostic_server_stream_signal_work_available (WasmIpcStreamQueue *queue, int32_t current_thread);
 
 static void
 queue_wake_reader (void *ptr) {
 	/* asynchronously invoked on the ds server thread by the writer. */
 	WasmIpcStreamQueue *q = (WasmIpcStreamQueue *)ptr;
-	mono_wasm_diagnostic_server_stream_signal_work_available (q);
+	mono_wasm_diagnostic_server_stream_signal_work_available (q, 0);
+}
+
+static void
+queue_wake_reader_now (WasmIpcStreamQueue *q)
+{
+	// call only from the diagnostic server thread!
+	mono_wasm_diagnostic_server_stream_signal_work_available (q, 1);
 }
 
 static int32_t
@@ -224,14 +231,41 @@ queue_push_sync (WasmIpcStreamQueue *q, const uint8_t *buf, uint32_t buf_size, u
 	/* single-writer, so there is no write contention */
 	q->buf = (uint8_t*)buf;
 	q->count = buf_size;
-	emscripten_dispatch_to_thread (ds_thread_id, EM_FUNC_SIG_VI, NULL, queue_wake_reader, q);
-	// wait until the reader reads the value
-	int r = mono_wasm_atomic_wait_i32 (&q->write_done, 0, -1);
-	if (G_UNLIKELY (r != 0)) {
-		return -1;
+	/* there's one instance where a thread other than the
+	 * streaming thread is writing: in ep_file_initialize_file
+	 * (called from ep_session_start_streaming), there's a write
+	 * from either the main thread (if the streaming was deferred
+	 * until ep_finish_init is called) or the diagnostic thread if
+	 * the session is started later.
+	 */
+	pthread_t cur = pthread_self ();
+	gboolean will_wait = TRUE;
+	mono_atomic_store_i32 (&q->buf_full, 1);
+	if (cur == ds_thread_id) {
+		queue_wake_reader_now (q);
+		/* doesn't return until the buffer is empty again; no need to wait */
+		will_wait = FALSE;
+	} else {
+		emscripten_dispatch_to_thread (ds_thread_id, EM_FUNC_SIG_VI, &queue_wake_reader, NULL, q);
 	}
-	if (mono_atomic_load_i32 (&q->write_done) != 0)
-		return -1;
+	// wait until the reader reads the value
+	int r = 0;
+	if (G_LIKELY (will_wait)) {
+		while (mono_atomic_load_i32 (&q->buf_full) != 0) {
+			if (G_UNLIKELY (mono_threads_wasm_is_browser_thread ())) {
+				/* can't use memory.atomic.wait32 on the main thread, spin instead */
+				/* this lets Emscripten run queued calls on the main thread */
+				emscripten_thread_sleep (1);
+			} else  {
+				r = mono_wasm_atomic_wait_i32 (&q->buf_full, 1, -1);
+				if (G_UNLIKELY (r == 2)) {
+					/* timed out with infinite wait?? */
+					return -1;
+				}
+				/* if r == 0 (blocked and woken) or r == 1 (not equal), go around again and check if buf_full is now 0 */
+			}
+		}
+	}
 	if (bytes_written)
 		*bytes_written = buf_size;
 	return 0;
@@ -284,6 +318,9 @@ wasm_ipc_stream_read (void *self, uint8_t *buffer, uint32_t bytes_to_read, uint3
 static bool
 wasm_ipc_stream_write (void *self, const uint8_t *buffer, uint32_t bytes_to_write, uint32_t *bytes_written, uint32_t timeout_ms)
 {
+	EM_ASM({
+			console.log ("wasm_ipc_stream_write");
+		});
 	WasmIpcStream *stream = (WasmIpcStream *)self;
 	g_assert (timeout_ms == EP_INFINITE_WAIT); // pass it down to the queue if the timeout param starts being used
 	int r = queue_push_sync (&stream->queue, buffer, bytes_to_write, bytes_written);
@@ -293,6 +330,9 @@ wasm_ipc_stream_write (void *self, const uint8_t *buffer, uint32_t bytes_to_writ
 static bool
 wasm_ipc_stream_flush (void *self)
 {
+	EM_ASM({
+			console.log ("wasm_ipc_stream_flush");
+		});
 	return true;
 }
 static bool

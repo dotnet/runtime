@@ -157,6 +157,8 @@ class DiagnosticServerImpl implements DiagnosticServer {
         if (isEventPipeCommandCollectTracing2(cmd)) {
             const session = await createEventPipeStreamingSession(ws, cmd);
             this.postClientReply(ws, "OK", session.sessionID);
+            console.debug("created session, now streaming: ", session);
+            cwraps.mono_wasm_event_pipe_session_start_streaming(session.sessionID);
         } else if (isEventPipeCommandStopTracing(cmd)) {
             await this.stopEventPipe(cmd.sessionID);
         } else {
@@ -169,8 +171,8 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     async stopEventPipe(sessionID: EventPipeSessionIDImpl): Promise<void> {
-        /* TODO: finish me */
         console.debug("stopEventPipe", sessionID);
+        cwraps.mono_wasm_event_pipe_session_disable(sessionID);
     }
 
     // dispatch Process commands received from the diagnostic client

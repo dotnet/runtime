@@ -124,7 +124,8 @@
       <_EmccCommonFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-msimd128" />
       <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
-      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=2" />
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=4" />
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
       <!--
       <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
       -->

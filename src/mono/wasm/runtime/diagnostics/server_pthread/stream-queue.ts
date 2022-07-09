@@ -49,13 +49,13 @@ export class StreamQueue {
         this.workAvailable.addEventListener("workAvailable", this.onWorkAvailable.bind(this));
     }
 
-    private get wakeup_write_addr(): VoidPtr {
+    private get buf_addr(): VoidPtr {
         return <any>this.queue_addr + BUF_OFFSET;
     }
     private get count_addr(): VoidPtr {
         return <any>this.queue_addr + COUNT_OFFSET;
     }
-    private get wakeup_write_done_addr(): VoidPtr {
+    private get buf_full_addr(): VoidPtr {
         return <any>this.queue_addr + WRITE_DONE_OFFSET;
     }
 
@@ -65,19 +65,26 @@ export class StreamQueue {
         queueMicrotask(this.signalWorkAvailable);
     }
 
+    workAvailableNow(): void {
+        // process the queue immediately, rather than waiting for the next event loop tick.
+        this.onWorkAvailable();
+    }
+
     private signalWorkAvailableImpl(this: StreamQueue): void {
         this.workAvailable.dispatchEvent(new Event("workAvailable"));
     }
 
     private onWorkAvailable(this: StreamQueue /*,event: Event */): void {
-        const buf = Memory.getI32(this.wakeup_write_addr) as unknown as VoidPtr;
+        const buf = Memory.getI32(this.buf_addr) as unknown as VoidPtr;
         const count = Memory.getI32(this.count_addr);
-        Memory.setI32(this.wakeup_write_addr, 0);
+        Memory.setI32(this.buf_addr, 0);
         if (count > 0) {
             this.syncSendBuffer(buf, count);
         }
-        Memory.Atomics.storeI32(this.wakeup_write_done_addr, 0);
-        Memory.Atomics.notifyI32(this.wakeup_write_done_addr, 1);
+        /* buffer is now not full */
+        Memory.Atomics.storeI32(this.buf_full_addr, 0);
+        /* wake up the writer thread */
+        Memory.Atomics.notifyI32(this.buf_full_addr, 1);
     }
 }
 
@@ -96,9 +103,13 @@ export function closeQueue(nativeQueueAddr: VoidPtr): void {
 }
 
 // called from native code on the diagnostic thread by queueing a call from the streaming thread.
-export function mono_wasm_diagnostic_server_stream_signal_work_available(nativeQueueAddr: VoidPtr): void {
+export function mono_wasm_diagnostic_server_stream_signal_work_available(nativeQueueAddr: VoidPtr, current_thread: number): void {
     const queue = streamQueueMap.get(nativeQueueAddr);
     if (queue) {
-        queue.wakeup();
+        if (current_thread === 0) {
+            queue.wakeup();
+        } else {
+            queue.workAvailableNow();
+        }
     }
 }
