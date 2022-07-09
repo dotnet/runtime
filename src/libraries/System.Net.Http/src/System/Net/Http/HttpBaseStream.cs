@@ -28,7 +28,7 @@ namespace System.Net.Http
 
         public sealed override void SetLength(long value) => throw new NotSupportedException();
 
-        public sealed override long Length => throw new NotSupportedException();
+        public override long Length => throw new NotSupportedException();
 
         public sealed override long Position
         {

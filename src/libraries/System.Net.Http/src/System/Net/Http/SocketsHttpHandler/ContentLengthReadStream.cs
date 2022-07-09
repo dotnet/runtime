@@ -12,13 +12,17 @@ namespace System.Net.Http
     {
         private sealed class ContentLengthReadStream : HttpContentReadStream
         {
+            private ulong _contentLength;
             private ulong _contentBytesRemaining;
 
             public ContentLengthReadStream(HttpConnection connection, ulong contentLength) : base(connection)
             {
                 Debug.Assert(contentLength > 0, "Caller should have checked for 0.");
+                _contentLength = contentLength;
                 _contentBytesRemaining = contentLength;
             }
+
+            public override long Length => (long)_contentLength;
 
             public override int Read(Span<byte> buffer)
             {
