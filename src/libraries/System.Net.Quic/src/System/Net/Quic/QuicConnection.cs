@@ -121,13 +121,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// From <see cref="QuicConnectionOptions.DefaultCloseErrorCode"/>, used to close connection in <see cref="DisposeAsync"/>.
     /// </summary>
     private long _defaultCloseErrorCode;
-
-    // TODO: remove once/if https://github.com/microsoft/msquic/pull/2883 is merged
-    internal sealed class State
-    {
-        public long AbortErrorCode = -1;
-    }
-    private State _state = new State();
+    /// <summary>
+    /// From <see cref="QuicConnectionOptions.DefaultStreamErrorCode"/>, passed to newly created <see cref="QuicStream"/>.
+    /// </summary>
+    private long _defaultStreamErrorCode;
 
     /// <summary>
     /// Set when CONNECTED is received or inside the constructor for an inbound connection from NEW_CONNECTION data.
@@ -238,6 +235,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
+            _defaultStreamErrorCode = options.DefaultStreamErrorCode;
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
@@ -326,6 +324,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
+            _defaultStreamErrorCode = options.DefaultStreamErrorCode;
 
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
@@ -359,7 +358,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        QuicStream stream = new QuicStream(_state, _handle, type);
+        QuicStream stream = new QuicStream(_handle, type, _defaultStreamErrorCode);
         try
         {
             await stream.StartAsync(cancellationToken).ConfigureAwait(false);
@@ -455,14 +454,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
         // See: https://github.com/dotnet/runtime/issues/60133
         _abortErrorCode = 0;
-        _state.AbortErrorCode = _abortErrorCode;
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(_abortErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
         _abortErrorCode = (long)data.ErrorCode;
-        _state.AbortErrorCode = _abortErrorCode;
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(_abortErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
@@ -484,7 +481,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
     {
-            QuicStream stream = new QuicStream(_state, _handle, data.Stream, data.Flags);
+        QuicStream stream = new QuicStream(_handle, data.Stream, data.Flags, _defaultStreamErrorCode);
         if (!_acceptQueue.Writer.TryWrite(stream))
         {
             if (NetEventSource.Log.IsEnabled())

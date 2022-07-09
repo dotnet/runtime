@@ -90,44 +90,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
     }
 
     /// <summary>
-    /// Initializes QUIC_BUFFER* with the provided buffers.
-    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
-    /// </summary>
-    /// <param name="buffers">Buffers to be passed to MsQuic as QUIC_BUFFER*.</param>
-    public void Initialize(ReadOnlySequence<byte> buffers)
-    {
-        int count = 0;
-        foreach (ReadOnlyMemory<byte> _ in buffers)
-        {
-            ++count;
-        }
-
-        Reserve(count);
-        int i = 0;
-        foreach (ReadOnlyMemory<byte> buffer in buffers)
-        {
-            SetBuffer(i++, buffer);
-        }
-    }
-
-    /// <summary>
-    /// Initializes QUIC_BUFFER* with the provided buffers.
-    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
-    /// </summary>
-    /// <param name="buffers">Buffers to be passed to MsQuic as QUIC_BUFFER*.</param>
-    public void Initialize(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers)
-    {
-        int count = buffers.Length;
-        Reserve(count);
-
-        ReadOnlySpan<ReadOnlyMemory<byte>> span = buffers.Span;
-        for (int i = 0; i < span.Length; i++)
-        {
-            SetBuffer(i, span[i]);
-        }
-    }
-
-    /// <summary>
     /// Unpins the managed memory and allows reuse of this struct.
     /// </summary>
     public void Reset()

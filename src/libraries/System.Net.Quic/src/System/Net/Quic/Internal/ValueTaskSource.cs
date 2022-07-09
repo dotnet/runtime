@@ -64,6 +64,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
             if (state == State.None)
             {
                 // Keep alive the caller object until the result is read from the task.
+                // Used for keeping caller alive during async interop calls.
                 if (keepAlive is not null)
                 {
                     Debug.Assert(!_keepAlive.IsAllocated);
