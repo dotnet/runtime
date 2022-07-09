@@ -285,25 +285,6 @@ ClrDataAccess::GetWorkRequestData(CLRDATA_ADDRESS addr, struct DacpWorkRequestDa
 }
 
 HRESULT
-ClrDataAccess::GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry *entry)
-{
-    if (addr == 0 || entry == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    HillClimbingLogEntry *pLogEntry = PTR_HillClimbingLogEntry(TO_TADDR(addr));
-    entry->TickCount = pLogEntry->TickCount;
-    entry->NewControlSetting = pLogEntry->NewControlSetting;
-    entry->LastHistoryCount = pLogEntry->LastHistoryCount;
-    entry->LastHistoryMean = pLogEntry->LastHistoryMean;
-    entry->Transition = pLogEntry->Transition;
-
-    SOSDacLeave();
-    return hr;
-}
-
-HRESULT
 ClrDataAccess::GetThreadpoolData(struct DacpThreadpoolData *threadpoolData)
 {
     if (threadpoolData == NULL)
