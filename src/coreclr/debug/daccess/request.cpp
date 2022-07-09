@@ -310,10 +310,6 @@ ClrDataAccess::GetThreadpoolData(struct DacpThreadpoolData *threadpoolData)
 
     threadpoolData->FirstUnmanagedWorkRequest = HOST_CDADDR(ThreadpoolMgr::WorkRequestHead);
 
-    threadpoolData->HillClimbingLog = dac_cast<TADDR>(&HillClimbingLog);
-    threadpoolData->HillClimbingLogFirstIndex = HillClimbingLogFirstIndex;
-    threadpoolData->HillClimbingLogSize = HillClimbingLogSize;
-
 
     //
     // Read ThreadpoolMgr::CPThreadCounter
