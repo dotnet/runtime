@@ -24,10 +24,11 @@ namespace System.Runtime.InteropServices.Marshalling
                 return null;
 
             int exactByteCount = Marshal.GetAnsiStringByteCount(managed); // Includes null terminator
-            Span<byte> buffer = new ((byte*)NativeMemory.Alloc((nuint)exactByteCount), exactByteCount);
+            Span<byte> buffer = new ((byte*)Marshal.AllocCoTaskMem(exactByteCount), exactByteCount);
 
             Marshal.GetAnsiStringBytes(managed, buffer); // Includes null terminator
-            return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+            var ptr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+            return ptr;
         }
 
         /// <summary>
@@ -43,7 +44,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="unmanaged">Memory allocated for the unmanaged string.</param>
         public static void Free(byte* unmanaged)
-            => NativeMemory.Free(unmanaged);
+            => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
         /// <summary>
         /// Custom marshaller to marshal a managed string as a ANSI unmanaged string.
