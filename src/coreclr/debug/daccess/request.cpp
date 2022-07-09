@@ -339,8 +339,7 @@ ClrDataAccess::GetThreadpoolData(struct DacpThreadpoolData *threadpoolData)
     }
 
     threadpoolData->AsyncTimerCallbackCompletionFPtr = (CLRDATA_ADDRESS) GFN_TADDR(ThreadpoolMgr__AsyncTimerCallbackCompletion);
-    SOSDacLeave();
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStoreData)
