@@ -1125,6 +1125,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetHeapAnalyzeData(CLRDATA_ADDRESS addr,struct  DacpGcHeapAnalyzeData *data);
     virtual HRESULT STDMETHODCALLTYPE GetHeapAnalyzeStaticData(struct DacpGcHeapAnalyzeData *data);
     virtual HRESULT STDMETHODCALLTYPE GetMethodDescTransparencyData(CLRDATA_ADDRESS methodDesc, struct DacpMethodDescTransparencyData *data);
+    virtual HRESULT STDMETHODCALLTYPE GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry *data);
     virtual HRESULT STDMETHODCALLTYPE GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int index, struct DacpThreadLocalModuleData *data);
     virtual HRESULT STDMETHODCALLTYPE GetRCWData(CLRDATA_ADDRESS addr, struct DacpRCWData *data);
     virtual HRESULT STDMETHODCALLTYPE GetRCWInterfaces(CLRDATA_ADDRESS rcw, unsigned int count, struct DacpCOMInterfacePointerData interfaces[], unsigned int *pNeeded);

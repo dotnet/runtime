@@ -862,6 +862,10 @@ EXTERN_C const IID IID_ISOSDacInterface;
             CLRDATA_ADDRESS addrWorkRequest,
             struct DacpWorkRequestData *data) = 0;
 
+        virtual HRESULT STDMETHODCALLTYPE GetHillClimbingLogEntry(
+            CLRDATA_ADDRESS addr,
+            struct DacpHillClimbingLogEntry *data) = 0;
+
         virtual HRESULT STDMETHODCALLTYPE GetObjectData(
             CLRDATA_ADDRESS objAddr,
             struct DacpObjectData *data) = 0;
@@ -1317,6 +1321,11 @@ EXTERN_C const IID IID_ISOSDacInterface;
             CLRDATA_ADDRESS addrWorkRequest,
             struct DacpWorkRequestData *data);
 
+        HRESULT ( STDMETHODCALLTYPE *GetHillClimbingLogEntry )(
+            ISOSDacInterface * This,
+            CLRDATA_ADDRESS addr,
+            struct DacpHillClimbingLogEntry *data);
+
         HRESULT ( STDMETHODCALLTYPE *GetObjectData )(
             ISOSDacInterface * This,
             CLRDATA_ADDRESS objAddr,
@@ -1750,6 +1759,9 @@ EXTERN_C const IID IID_ISOSDacInterface;
 
 #define ISOSDacInterface_GetWorkRequestData(This,addrWorkRequest,data)  \
     ( (This)->lpVtbl -> GetWorkRequestData(This,addrWorkRequest,data) )
+
+#define ISOSDacInterface_GetHillClimbingLogEntry(This,addr,data)    \
+    ( (This)->lpVtbl -> GetHillClimbingLogEntry(This,addr,data) )
 
 #define ISOSDacInterface_GetObjectData(This,objAddr,data)   \
     ( (This)->lpVtbl -> GetObjectData(This,objAddr,data) )
