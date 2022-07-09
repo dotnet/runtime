@@ -1235,9 +1235,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             assert(baseReg != addrReg);
         }
 
-        // We don't split HFAs.
-        assert(!compiler->IsHfa(layout->GetClassHandle()));
-
         // Put on stack first
         unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
         unsigned remainingSize = layout->GetSize() - structOffset;
