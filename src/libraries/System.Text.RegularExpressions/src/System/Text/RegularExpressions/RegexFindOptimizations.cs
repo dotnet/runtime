@@ -78,6 +78,16 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
+            // If the trie's root has at most five children, we can perform a vectorized search to find them.
+            // In this case we prefer LeadingMultiString over other potentially vecrotized modes, because this
+            // one is less prone to false positives.
+            if (prefixTrie is not null && prefixTrie[TrieNode.Root].Children.Count <= 5)
+            {
+                FindMode = FindNextStartingPositionMode.LeadingMultiString_LeftToRight;
+                PrefixMatcher = new MultiStringMatcher(prefixTrie);
+                return;
+            }
+
             // We try for modes that have vectorized implementations, and if none was found we will make use of the trie.
 
             // At this point there are no fast-searchable anchors or case-sensitive prefixes. We can now analyze the
@@ -182,10 +192,10 @@ namespace System.Text.RegularExpressions
                         FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0) ? FindNextStartingPositionMode.LeadingSet_LeftToRight
                             : FindNextStartingPositionMode.FixedDistanceSets_LeftToRight;
                         _asciiLookups = new uint[fixedDistanceSets.Count][];
-                        if (FindMode == FindNextStartingPositionMode.FixedDistanceSets_LeftToRight || fixedDistanceSets[0].Chars is null)
+                        if (fixedDistanceSets[0].Chars is null)
                         {
-                            // FixedDistanceSets and LeadingSet with null Chars are not vectorized.
-                            // Use them only if LeadingMultiString is not available.
+                            // If Chars is null the search will not be vectorized.
+                            // Prefer LeadingMultiString if we have a trie.
                             goto PreferLeadingMultiStringIfAvailable;
                         }
                     }
