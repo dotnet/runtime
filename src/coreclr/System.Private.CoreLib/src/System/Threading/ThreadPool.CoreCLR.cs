@@ -18,58 +18,6 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    //
-    // This type is necessary because VS 2010's debugger looks for a method named _ThreadPoolWaitCallbacck.PerformWaitCallback
-    // on the stack to determine if a thread is a ThreadPool thread or not.  We have a better way to do this for .NET 4.5, but
-    // still need to maintain compatibility with VS 2010.  When compat with VS 2010 is no longer an issue, this type may be
-    // removed.
-    //
-    internal static class _ThreadPoolWaitCallback
-    {
-        internal static bool PerformWaitCallback() => ThreadPoolWorkQueue.Dispatch();
-    }
-
-    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
-    {
-        private IntPtr _nativeRegisteredWaitHandle = InvalidHandleValue;
-        private bool _releaseHandle;
-
-        private static bool IsValidHandle(IntPtr handle) => handle != InvalidHandleValue && handle != IntPtr.Zero;
-
-        internal void SetNativeRegisteredWaitHandle(IntPtr nativeRegisteredWaitHandle)
-        {
-            Debug.Assert(!ThreadPool.UsePortableThreadPool);
-            Debug.Assert(IsValidHandle(nativeRegisteredWaitHandle));
-            Debug.Assert(!IsValidHandle(_nativeRegisteredWaitHandle));
-
-            _nativeRegisteredWaitHandle = nativeRegisteredWaitHandle;
-        }
-
-        internal void OnBeforeRegister()
-        {
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Unregisters this wait handle registration from the wait threads.
-        /// </summary>
-        /// <param name="waitObject">The event to signal when the handle is unregistered.</param>
-        /// <returns>If the handle was successfully marked to be removed and the provided wait handle was set as the user provided event.</returns>
-        /// <remarks>
-        /// This method will only return true on the first call.
-        /// Passing in a wait handle with a value of -1 will result in a blocking wait, where Unregister will not return until the full unregistration is completed.
-        /// </remarks>
-        public bool Unregister(WaitHandle waitObject)
-        {
-            return UnregisterPortable(waitObject);
-        }
-
-        ~RegisteredWaitHandle()
-        {
-            return;
-        }
-    }
-
     internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
     {
         void IThreadPoolWorkItem.Execute() => CompleteWait();
@@ -77,7 +25,6 @@ namespace System.Threading
         // Entry point from unmanaged code
         private void CompleteWait()
         {
-            Debug.Assert(ThreadPool.UsePortableThreadPool);
             PortableThreadPool.CompleteWait(_registeredWaitHandle, _timedOut);
         }
     }
@@ -98,7 +45,12 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        private static readonly byte UsePortableThreadPoolConfigValues = InitializeConfigAndDetermineUsePortableThreadPool();
+        internal static bool EnsureConfigInitialized()
+        {
+            return s_initialized;
+        }
+
+        private static bool s_initialized = InitializeConfig();
 
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
@@ -106,9 +58,8 @@ namespace System.Threading
 
         private static readonly bool IsWorkerTrackingEnabledInConfig = GetEnableWorkerTracking();
 
-        private static unsafe byte InitializeConfigAndDetermineUsePortableThreadPool()
+        private static unsafe bool InitializeConfig()
         {
-            byte usePortableThreadPoolConfigValues = 0;
             int configVariableIndex = 0;
             while (true)
             {
@@ -131,7 +82,6 @@ namespace System.Threading
                     // Special case for UsePortableThreadPool and similar, which don't go into the AppContext
                     Debug.Assert(configValue != 0);
                     Debug.Assert(!isBoolean);
-                    usePortableThreadPoolConfigValues = (byte)configValue;
                     continue;
                 }
 
@@ -146,7 +96,7 @@ namespace System.Threading
                 }
             }
 
-            return usePortableThreadPoolConfigValues;
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -212,11 +162,6 @@ namespace System.Threading
             }
         }
 
-        private static long PendingUnmanagedWorkItemCount => 0;
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern long GetPendingUnmanagedWorkItemCount();
-
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -234,8 +179,6 @@ namespace System.Threading
                 (int)millisecondsTimeOutInterval,
                 !executeOnlyOnce);
 
-            registeredWaitHandle.OnBeforeRegister();
-
             PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
 
             return registeredWaitHandle;
@@ -244,22 +187,6 @@ namespace System.Threading
         internal static void RequestWorkerThread()
         {
             PortableThreadPool.ThreadPoolInstance.RequestWorker();
-        }
-
-        /// <summary>
-        /// Called from the gate thread periodically to perform runtime-specific gate activities
-        /// </summary>
-        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
-        /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
-        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization)
-        {
-            return false;
-        }
-
-        // Entry point from unmanaged code
-        private static void UnsafeQueueUnmanagedWorkItem(IntPtr callback, IntPtr state)
-        {
-            UnsafeQueueHighPriorityWorkItemInternal(new UnmanagedThreadPoolWorkItem(callback, state));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

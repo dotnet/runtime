@@ -983,15 +983,6 @@ ep_rt_config_value_get_output_streaming (void)
 
 static
 inline
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void)
-{
-	// Only supports portable thread pool.
-	return true;
-}
-
-static
-inline
 uint32_t
 ep_rt_config_value_get_rundown (void)
 {

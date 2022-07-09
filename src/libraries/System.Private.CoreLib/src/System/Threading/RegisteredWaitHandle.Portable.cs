@@ -106,11 +106,7 @@ namespace System.Threading
         /// </summary>
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
-#if CORECLR
-        private bool UnregisterPortable(WaitHandle waitObject)
-#else
         public bool Unregister(WaitHandle waitObject)
-#endif
         {
             // The registered wait handle must have been registered by this time, otherwise the instance is not handed out to
             // the caller of the public variants of RegisterWaitForSingleObject

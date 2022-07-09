@@ -4183,20 +4183,6 @@ public:
     }
 
 private:
-    //
-    //This context is used for optimizations on I/O thread pool thread. In case the
-    //overlapped structure is from a different appdomain, it is stored in this structure
-    //to be processed later correctly by entering the right domain.
-    PVOID m_pIOCompletionContext;
-    BOOL AllocateIOCompletionContext();
-    VOID FreeIOCompletionContext();
-public:
-    inline PVOID GetIOCompletionContext()
-    {
-        return m_pIOCompletionContext;
-    }
-
-private:
     // Inside a host, we don't own a thread handle, and we avoid DuplicateHandle call.
     // If a thread is dying after we obtain the thread handle, our SuspendThread may fail
     // because the handle may be closed and reused for a completely different type of handle.
@@ -5999,10 +5985,6 @@ struct ManagedThreadBase
     // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
-
-    // The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in
-    // the ThreadPool
-    static void ThreadPool(ADCallBackFcnType pTarget, LPVOID args);
 
     // The Finalizer thread uses this path
     static void FinalizerBase(ADCallBackFcnType pTarget);

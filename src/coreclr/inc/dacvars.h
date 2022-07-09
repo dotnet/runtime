@@ -100,17 +100,6 @@ DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, 
 
 DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
-DEFINE_DACVAR(int, ThreadpoolMgr__cpuUtilization, ThreadpoolMgr::cpuUtilization)
-DEFINE_DACVAR(ThreadpoolMgr::ThreadCounter, ThreadpoolMgr__WorkerCounter, ThreadpoolMgr::WorkerCounter)
-DEFINE_DACVAR(int, ThreadpoolMgr__MinLimitTotalWorkerThreads, ThreadpoolMgr::MinLimitTotalWorkerThreads)
-DEFINE_DACVAR(DWORD, ThreadpoolMgr__MaxLimitTotalWorkerThreads, ThreadpoolMgr::MaxLimitTotalWorkerThreads)
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE /*PTR_WorkRequest*/, ThreadpoolMgr__WorkRequestHead, ThreadpoolMgr::WorkRequestHead)  // PTR_WorkRequest is not defined. So use a pointer type
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE  /*PTR_WorkRequest*/, ThreadpoolMgr__WorkRequestTail, ThreadpoolMgr::WorkRequestTail) //
-DEFINE_DACVAR(ThreadpoolMgr::ThreadCounter, ThreadpoolMgr__CPThreadCounter, ThreadpoolMgr::CPThreadCounter)
-DEFINE_DACVAR(LONG, ThreadpoolMgr__MaxFreeCPThreads, ThreadpoolMgr::MaxFreeCPThreads)
-DEFINE_DACVAR(LONG, ThreadpoolMgr__MaxLimitTotalCPThreads, ThreadpoolMgr::MaxLimitTotalCPThreads)
-DEFINE_DACVAR(LONG, ThreadpoolMgr__MinLimitTotalCPThreads, ThreadpoolMgr::MinLimitTotalCPThreads)
-
 DEFINE_DACVAR(PTR_Thread, dac__g_pFinalizerThread, ::g_pFinalizerThread)
 DEFINE_DACVAR(PTR_Thread, dac__g_pSuspensionThread, ::g_pSuspensionThread)
 

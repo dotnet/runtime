@@ -115,7 +115,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     stublink.cpp
     stubmgr.cpp
     syncblk.cpp
-    threadpoolrequest.cpp
     threads.cpp
     threadstatics.cpp
     tieredcompilation.cpp
@@ -129,7 +128,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     vars.cpp
     versionresilienthashcode.cpp
     virtualcallstub.cpp
-    win32threadpool.cpp
     zapsig.cpp
 )
 
@@ -220,7 +218,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     stubmgr.h
     syncblk.h
     syncblk.inl
-    threadpoolrequest.h
     threads.h
     threads.inl
     threadstatics.h
@@ -237,7 +234,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     vars.hpp
     versionresilienthashcode.h
     virtualcallstub.h
-    win32threadpool.h
     zapsig.h
 )
 

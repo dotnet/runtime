@@ -397,7 +397,6 @@ FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
     FCFuncElement("GetNextConfigUInt32Value", ThreadPoolNative::GetNextConfigUInt32Value)
-    FCFuncElement("GetPendingUnmanagedWorkItemCount", ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
 FCFuncEnd()
 
 FCFuncStart(gRegisteredWaitHandleFuncs)

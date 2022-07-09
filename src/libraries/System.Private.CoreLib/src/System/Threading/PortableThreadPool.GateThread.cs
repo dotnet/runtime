@@ -105,8 +105,6 @@ namespace System.Threading
                         int cpuUtilization = cpuUtilizationReader.CurrentUtilization;
                         threadPoolInstance._cpuUtilization = cpuUtilization;
 
-                        bool needGateThreadForRuntime = ThreadPool.PerformRuntimeSpecificGateActivities(cpuUtilization);
-
                         if (!disableStarvationDetection &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
                             threadPoolInstance._separated.numRequestedWorkers > 0 &&
@@ -164,8 +162,7 @@ namespace System.Threading
                             }
                         }
 
-                        if (!needGateThreadForRuntime &&
-                            threadPoolInstance._separated.numRequestedWorkers <= 0 &&
+                        if (threadPoolInstance._separated.numRequestedWorkers <= 0 &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
                             Interlocked.Decrement(ref threadPoolInstance._separated.gateThreadRunningState) <= GetRunningStateForNumRuns(0))
                         {
@@ -334,7 +331,5 @@ namespace System.Threading
                 }
             }
         }
-
-        internal static void EnsureGateThreadRunning() => GateThread.EnsureRunning(ThreadPoolInstance);
     }
 }

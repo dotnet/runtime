@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Threading
 {
     //
-    // Unix-specific implementation of Timer
+    // Portable implementation of Timer
     //
     internal sealed partial class TimerQueue : IThreadPoolWorkItem
     {

@@ -51,7 +51,6 @@
 
 #include "appdomain.inl"
 #include "typeparse.h"
-#include "threadpoolrequest.h"
 
 #include "nativeoverlapped.h"
 
@@ -1961,14 +1960,7 @@ AppDomain::~AppDomain()
     }
     CONTRACTL_END;
 
-
-    // release the TPIndex.  note that since TPIndex values are recycled the TPIndex
-    // can only be released once all threads in the AppDomain have exited.
-    if (GetTPIndex().m_dwIndex != 0)
-        PerAppDomainTPCountList::ResetAppDomainIndex(GetTPIndex());
-
     m_AssemblyCache.Clear();
-
 }
 
 //*****************************************************************************

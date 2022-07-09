@@ -392,10 +392,6 @@ inline
 bool
 ep_rt_config_value_get_output_streaming (void);
 
-static
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void);
-
 /*
  * EventPipeSampleProfiler.
  */

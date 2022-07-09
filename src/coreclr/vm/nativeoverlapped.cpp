@@ -15,7 +15,6 @@
 #include "fcall.h"
 #include "nativeoverlapped.h"
 #include "corhost.h"
-#include "win32threadpool.h"
 #include "comsynchronizable.h"
 #include "comthreadpool.h"
 #include "marshalnative.h"

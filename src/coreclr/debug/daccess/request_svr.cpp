@@ -16,7 +16,6 @@
 #if defined(FEATURE_SVR_GC)
 
 #include <sigformat.h>
-#include "win32threadpool.h"
 #include "request_common.h"
 
 int GCHeapCount()

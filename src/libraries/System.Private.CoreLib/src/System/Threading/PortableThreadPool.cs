@@ -29,6 +29,12 @@ namespace System.Threading
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
 
+#if CORECLR
+#pragma warning disable CA1823
+        private static readonly bool s_initialized = ThreadPool.EnsureConfigInitialized();
+#pragma warning restore CA1823
+#endif
+
         private static readonly short ForcedMinWorkerThreads =
             AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
         private static readonly short ForcedMaxWorkerThreads =
@@ -161,14 +167,7 @@ namespace System.Threading
                     return false;
                 }
 
-                if (ThreadPool.UsePortableThreadPoolForIO)
-                {
-                    _legacy_minIOCompletionThreads = (short)Math.Max(1, ioCompletionThreads);
-                }
-                else
-                {
-                    ThreadPool.SetMinIOCompletionThreads(ioCompletionThreads);
-                }
+                _legacy_minIOCompletionThreads = (short)Math.Max(1, ioCompletionThreads);
 
                 short newMinThreads = (short)Math.Max(1, workerThreads);
                 if (newMinThreads == _minThreads)
@@ -251,14 +250,7 @@ namespace System.Threading
                     return false;
                 }
 
-                if (ThreadPool.UsePortableThreadPoolForIO)
-                {
-                    _legacy_maxIOCompletionThreads = (short)Math.Min(ioCompletionThreads, MaxPossibleThreadCount);
-                }
-                else
-                {
-                    ThreadPool.SetMaxIOCompletionThreads(ioCompletionThreads);
-                }
+                _legacy_maxIOCompletionThreads = (short)Math.Min(ioCompletionThreads, MaxPossibleThreadCount);
 
                 short newMaxThreads = (short)Math.Min(workerThreads, MaxPossibleThreadCount);
                 if (newMaxThreads == _maxThreads)

@@ -10,7 +10,6 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-#include "win32threadpool.h"
 
 #include "typestring.h"
 #include <gccover.h>
@@ -268,67 +267,20 @@ VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRE
 }
 
 HRESULT
+ClrDataAccess::GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry* entry)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT
 ClrDataAccess::GetWorkRequestData(CLRDATA_ADDRESS addr, struct DacpWorkRequestData *workRequestData)
 {
-    if (addr == 0 || workRequestData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    WorkRequest *pRequest = PTR_WorkRequest(TO_TADDR(addr));
-    workRequestData->Function = (TADDR)(pRequest->Function);
-    workRequestData->Context = (TADDR)(pRequest->Context);
-    workRequestData->NextWorkRequest = (TADDR)(pRequest->next);
-
-    SOSDacLeave();
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT
 ClrDataAccess::GetThreadpoolData(struct DacpThreadpoolData *threadpoolData)
 {
-    if (threadpoolData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    threadpoolData->cpuUtilization = ThreadpoolMgr::cpuUtilization;
-    threadpoolData->MinLimitTotalWorkerThreads = ThreadpoolMgr::MinLimitTotalWorkerThreads;
-    threadpoolData->MaxLimitTotalWorkerThreads = ThreadpoolMgr::MaxLimitTotalWorkerThreads;
-
-    //
-    // Read ThreadpoolMgr::WorkerCounter
-    //
-    TADDR pCounter = DacGetTargetAddrForHostAddr(&ThreadpoolMgr::WorkerCounter,true);
-    ThreadpoolMgr::ThreadCounter counter;
-    DacReadAll(pCounter,&counter,sizeof(ThreadpoolMgr::ThreadCounter),true);
-    ThreadpoolMgr::ThreadCounter::Counts counts = counter.counts;
-
-    threadpoolData->NumWorkingWorkerThreads = counts.NumWorking;
-    threadpoolData->NumIdleWorkerThreads = counts.NumActive - counts.NumWorking;
-    threadpoolData->NumRetiredWorkerThreads = counts.NumRetired;
-
-    threadpoolData->FirstUnmanagedWorkRequest = HOST_CDADDR(ThreadpoolMgr::WorkRequestHead);
-
-
-    //
-    // Read ThreadpoolMgr::CPThreadCounter
-    //
-    pCounter = DacGetTargetAddrForHostAddr(&ThreadpoolMgr::CPThreadCounter,true);
-    DacReadAll(pCounter,&counter,sizeof(ThreadpoolMgr::ThreadCounter),true);
-    counts = counter.counts;
-
-    threadpoolData->NumCPThreads = (LONG)(counts.NumActive + counts.NumRetired);
-    threadpoolData->NumFreeCPThreads = (LONG)(counts.NumActive - counts.NumWorking);
-    threadpoolData->MaxFreeCPThreads  = ThreadpoolMgr::MaxFreeCPThreads;
-    threadpoolData->NumRetiredCPThreads = (LONG)(counts.NumRetired);
-    threadpoolData->MaxLimitTotalCPThreads = ThreadpoolMgr::MaxLimitTotalCPThreads;
-    threadpoolData->CurrentLimitTotalCPThreads = (LONG)(counts.NumActive); //legacy: currently has no meaning
-    threadpoolData->MinLimitTotalCPThreads = ThreadpoolMgr::MinLimitTotalCPThreads;
-    threadpoolData->NumTimers = 0;
-    threadpoolData->AsyncTimerCallbackCompletionFPtr = NULL;
-
-    SOSDacLeave();
     return E_NOTIMPL;
 }
 
