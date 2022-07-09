@@ -11,9 +11,6 @@ namespace System.Text.RegularExpressions
     /// <summary>Detects various forms of prefixes in the regular expression that can help FindFirstChars optimize its search.</summary>
     internal static class RegexPrefixAnalyzer
     {
-        // The minimum number of use to match that it would make sense to use a MultiStringMatcher.
-        private const int MinMultiPrefixes = 5;
-
         /// <summary>
         /// Tries to create a trie from the leading fixed part of a <see cref="RegexNode"/>.
         /// If using the trie is estimated not to be profitable, a leading substring will be
@@ -31,7 +28,7 @@ namespace System.Text.RegularExpressions
 
             if (TrieBuilder.CreateFromPrefixIfPossible(node) is List<TrieNode> trie)
             {
-                if (!IsTrieSuitable(trie))
+                if (!IsTrieSuitable(trie, node.Options))
                 {
                     return (FindPrefix(node), null);
                 }
@@ -66,7 +63,7 @@ namespace System.Text.RegularExpressions
 
             // Judging from a trie, guesses whether using the Aho-Corasick algorithm
             // on it during regex matching would be profitable.
-            static bool IsTrieSuitable(List<TrieNode> trie)
+            static bool IsTrieSuitable(List<TrieNode> trie, RegexOptions nodeOptions)
             {
                 // If the trie has a path of nodes with one child that starts from
                 // the root and leads to a match node it means that all words of the
@@ -79,10 +76,18 @@ namespace System.Text.RegularExpressions
                 }
 
                 int matchCount = trie.GetMatchCount();
+                int minMatches =
+#if REGEXGENERATOR
+                    5;
+#else
+                (nodeOptions & RegexOptions.Compiled) == 0 ? 2 : 5;
+#endif
                 // If the trie's match nodes are less than a certain number, or all but
                 // the root are match nodes (which indicates patterns like "[a-m]x*"),
-                // Aho-Corasick would not make a difference.
-                if (matchCount < MinMultiPrefixes || matchCount == trie.Count - 1)
+                // Aho-Corasick would not make a difference. The minimum match count is
+                // slightly raised in the compiled modes to account for their different
+                // performance characteristics.
+                if (matchCount < minMatches || matchCount == trie.Count - 1)
                 {
                     return false;
                 }

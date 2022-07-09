@@ -59,7 +59,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"abc\Z", RegexOptions.None, (int)FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ, 3, (int)RegexNodeKind.EndZ)]
         [InlineData(@"abc$", RegexOptions.None, (int)FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ, 3, (int)RegexNodeKind.EndZ)]
         [InlineData(@"a{4,10}$", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, 10, (int)RegexNodeKind.EndZ)]
-        [InlineData(@"(abc|defg){1,2}\z", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, 8, (int)RegexNodeKind.End)]
         public void TrailingAnchor(string pattern, RegexOptions options, int expectedMode, int expectedLength, int trailingAnchor)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, options);
@@ -103,7 +102,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[ab]", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "ab")]
         [InlineData(@"[Aa]", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "Aa")]
         [InlineData(@"a", RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "Aa")]
-        [InlineData(@"ab|cd|ef|gh", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "aceg")]
         [InlineData(@"[ab]", RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "ab")]
         [InlineData(@"[Aa]", RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "Aa")]
         [InlineData(@"a", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "Aa")]
@@ -132,7 +130,6 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(@".ab", RegexOptions.None, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ab", 1)]
         [InlineData(@".ab\w\w\wcdef\w\w\w\w\wghijklmnopq\w\w\w", RegexOptions.None, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ghijklmnopq", 15)]
-        [InlineData(@"a[Bb]c[Dd]ef", RegexOptions.None, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ef", 4)]
         public void FixedDistanceString(string pattern, RegexOptions options, int expectedMode, string expectedString, int distance)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, options);
@@ -144,7 +141,10 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(@"january|february|march|april|may|june|july|august|september|october|november|december", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 12, 69)]
         [InlineData(@"a{20}|b|c|d|e|f", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 6, 18)]
+        [InlineData(@"a[Bb]c[Dd]ef", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 4, 18)]
         [InlineData(@"a[Bb]cd[Ee]fgh[Ii]", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 8, 32)]
+        [InlineData(@"(abc|defg){1,2}\z", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 2, 8)]
+        [InlineData(@"ab|cd|ef|gh", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 4, 9)]
         public void LeadingMultiString(string pattern, RegexOptions options, int expectedMode, int expectedMatchCount, int expectedTrieNodeCount)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, options);
