@@ -9,6 +9,10 @@ internal static class KeyMapper
 {
     private const char Escape = '\u001B';
     private const char Delete = '\u007F';
+    private const char VTSeqenceEndTag = '~';
+    private const char ModifierSeparator = ';';
+    private const int MinimalSequenceLength = 3;
+    private const int SequencePrefixLength = 2; // ^[[ ("^[" stands for Escape)
 
     internal static bool MapBufferToConsoleKey(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
         out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
@@ -56,20 +60,26 @@ internal static class KeyMapper
     }
 
     internal static void MapNew(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
-        out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
+        out ConsoleKey key, out char character, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
         int length = endIndex - startIndex;
 
-        // TODO: add VERASE handling
+        // VERASE overrides anything from Terminfo
+        if (buffer[startIndex] != posixDisableValue && buffer[startIndex] == veraseCharacter)
+        {
+            isShift = isAlt = isCtrl = false;
+            character = buffer[startIndex++];
+            key = ConsoleKey.Backspace;
+            return;
+        }
 
-        // Escape sequences start with Escape. But some terminals (e.g. PuTTY) use Escape to express that for given sequence Alt was pressed.
-        if (length >= 4 && buffer[startIndex] == Escape && buffer[startIndex + 1] == Escape)
+        // Escape Sequences start with Escape. But some terminals like PuTTY and rxvt use Escape to express that for given sequence Alt was pressed.
+        if (length >= MinimalSequenceLength + 1 && buffer[startIndex] == Escape && buffer[startIndex + 1] == Escape)
         {
             startIndex++;
-            if (TryDecodeTerminalInputSequence(buffer, terminalFormatStrings, out key, out isShift, out _, out isCtrl, ref startIndex, endIndex))
+            if (TryParseTerminalInputSequence(buffer, terminalFormatStrings, out key, out character, out isShift, out _, out isCtrl, ref startIndex, endIndex))
             {
                 isAlt = true;
-                ch = default; // these special keys never produce any char (Home, Arrow, F1 etc)
                 return;
             }
             else
@@ -77,100 +87,107 @@ internal static class KeyMapper
                 startIndex--;
             }
         }
-        else if (length >= 3 && TryDecodeTerminalInputSequence(buffer, terminalFormatStrings, out key, out isShift, out isAlt, out isCtrl, ref startIndex, endIndex))
+        else if (length >= MinimalSequenceLength && TryParseTerminalInputSequence(buffer, terminalFormatStrings, out key, out character, out isShift, out isAlt, out isCtrl, ref startIndex, endIndex))
         {
-            // these special keys never produce any char (Home, Arrow, F1 etc)
-            ch = default;
             return;
         }
 
-        if (length == 2 && buffer[startIndex] == Escape)
+        if (length == 2 && buffer[startIndex] == Escape && buffer[startIndex + 1] != Escape)
         {
-            DecodeFromSingleChar(buffer[++startIndex], out key, out ch, out isShift, out isCtrl);
+            DecodeFromSingleChar(buffer[++startIndex], out key, out character, out isShift, out isCtrl);
             startIndex++;
             isAlt = key != default; // two char sequences starting with Escape are Alt+$Key
         }
         else
         {
-            DecodeFromSingleChar(buffer[startIndex], out key, out ch, out isShift, out isCtrl);
+            DecodeFromSingleChar(buffer[startIndex], out key, out character, out isShift, out isCtrl);
             startIndex++;
             isAlt = false;
         }
     }
 
-    private static bool TryDecodeTerminalInputSequence(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings,
-        out ConsoleKey key, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
+    private static bool TryParseTerminalInputSequence(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings,
+        out ConsoleKey key, out char character, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
         ReadOnlySpan<char> input = buffer.AsSpan(startIndex, endIndex - startIndex);
         isShift = isAlt = isCtrl = false;
+        character = default;
         key = default;
 
         // xterm and VT sequences start with "^[[", some xterm start with "^[O" ("^[" stands for Escape (27))
-        if (input.Length < 3 || input[0] != Escape || (input[1] != '[' && input[1] != 'O'))
+        if (input.Length < MinimalSequenceLength || input[0] != Escape || (input[1] != '[' && input[1] != 'O'))
         {
             return false;
         }
 
-        if (input[1] == 'O' || char.IsAsciiLetterUpper(input[2])) // "^[O" or "^[["
+        // Is it a three character sequence? (examples: '^[[H' (Home), '^[OP' (F1), '^[Ow' (End))
+        if (input[1] == 'O' || char.IsAsciiLetterUpper(input[2]) || input[2] == 'w')
         {
-            if (!TryMapUsingDatabase(buffer.AsMemory(startIndex, 3), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
+            if (!TryMapUsingTerminfoDb(buffer.AsMemory(startIndex, MinimalSequenceLength), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
             {
-                key = Map(input[2]);
-                Debug.Assert(key != default, $"Missing '{input.Slice(0, 3)}' mapping");
+                key = MapKeyId(input[2]); // fallback to well known mappings
+
+                if (key == default)
+                {
+                    return false; // it was not a known sequence
+                }
             }
-            startIndex += 3;
+            character = key == ConsoleKey.Enter ? '\r' : default; // "^[OM" should produce new line character (was not previously mapped this way)
+            startIndex += MinimalSequenceLength;
             return true;
         }
 
-        int digitCount = 0;
-        ReadOnlySpan<char> unparsed = input.Slice(2);
-        while (!unparsed.IsEmpty && char.IsAsciiDigit(unparsed[0]))
-        {
-            digitCount++;
-            unparsed = unparsed.Slice(1);
-        }
-
-        if (digitCount == 0)
+        if (input.Length == MinimalSequenceLength)
         {
             return false;
         }
 
-        if (unparsed[0] == '~') // it's a VT Sequence like ^[[11~
+        // If sequence does not start with a letter, it must start with one or two digits that represent the Sequence Number
+        int digitCount = !char.IsBetween(input[SequencePrefixLength], '1', '9') // not using IsAsciiDigit as 0 is invalid
+            ? 0
+            : char.IsDigit(input[SequencePrefixLength + 1]) ? 2 : 1;
+
+        if (digitCount == 0 // it does not start with a digit, it's not a sequence
+            || SequencePrefixLength + digitCount >= input.Length) // it's too short to be a complete sequence
         {
-            int sequenceLength = 2 + digitCount + 1; // prefix + digit count + ~
-            if (!TryMapUsingDatabase(buffer.AsMemory(startIndex, sequenceLength), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
+            return false;
+        }
+
+        if (input[SequencePrefixLength + digitCount] is VTSeqenceEndTag) // it's a VT Sequence like ^[[11~
+        {
+            int sequenceLength = SequencePrefixLength + digitCount + 1;
+            if (!TryMapUsingTerminfoDb(buffer.AsMemory(startIndex, sequenceLength), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
             {
-                key = MapEscapeSequenceNumber(byte.Parse(input.Slice(2, digitCount)));
-                Debug.Assert(key != default, $"Missing '{input.Slice(0, sequenceLength)}' mapping");
+                key = MapEscapeSequenceNumber(byte.Parse(input.Slice(SequencePrefixLength, digitCount)));
+
+                if (key == default)
+                {
+                    return false; // it was not a known sequence
+                }
             }
             startIndex += sequenceLength;
             return true;
         }
 
-        if (unparsed[0] != ';' || unparsed.Length < 2 || !char.IsDigit(unparsed[1]) || !(unparsed[2] == '~' || char.IsAsciiLetterUpper(unparsed[2])))
+        // If Sequence Number is not followed by the VT Seqence End Tag,
+        // it can be followed only by a Modifier Separator, Modifier (2-8) and Key ID or VT Seqence End Tag.
+        if (input[SequencePrefixLength + digitCount] is not ModifierSeparator
+            || SequencePrefixLength + digitCount + 2 >= input.Length
+            || !char.IsBetween(input[SequencePrefixLength + digitCount + 1], '2', '8')
+            || (!char.IsAsciiLetterUpper(input[SequencePrefixLength + digitCount + 2]) && input[SequencePrefixLength + digitCount + 2] is not VTSeqenceEndTag))
         {
             return false;
         }
 
-        // after ; comes the modifiers:
-        ConsoleModifiers modifiers = MapModifiers(unparsed[1]);
-        if (char.IsAsciiLetterUpper(unparsed[2]))
-        {
-            // after the modifiers it's either a letter (key id)
-            key = Map(unparsed[2]);
-        }
-        else
-        {
-            // or a tylde and the whole thing is a VT Sequence like ^[[24;5~
-            Debug.Assert(unparsed[2] == '~');
-            int sequenceLength = 2 + digitCount + 1; // prefix + digit
-            key = MapEscapeSequenceNumber(byte.Parse(input.Slice(2, digitCount)));
-            Debug.Assert(key != default, $"Missing '{input.Slice(0, sequenceLength)}' mapping");
-        }
+        ConsoleModifiers modifiers = MapModifiers(input[SequencePrefixLength + digitCount + 1]);
+
+        key = input[SequencePrefixLength + digitCount + 2] is VTSeqenceEndTag
+            ? MapEscapeSequenceNumber(byte.Parse(input.Slice(SequencePrefixLength, digitCount)))
+            : MapKeyId(input[SequencePrefixLength + digitCount + 2]);
 
         if (key != default)
         {
-            startIndex += 2 + digitCount + 1 + 1; // prefix + digit count + modifier + ~ or single char
+            startIndex += SequencePrefixLength + digitCount + 3; // 3 stands for separator, modifier and end tag or id
             isShift = (modifiers & ConsoleModifiers.Shift) != 0;
             isAlt = (modifiers & ConsoleModifiers.Alt) != 0;
             isCtrl = (modifiers & ConsoleModifiers.Control) != 0;
@@ -179,7 +196,7 @@ internal static class KeyMapper
 
         return false;
 
-        static bool TryMapUsingDatabase(ReadOnlyMemory<char> inputSequence, ConsolePal.TerminalFormatStrings terminalFormatStrings,
+        static bool TryMapUsingTerminfoDb(ReadOnlyMemory<char> inputSequence, ConsolePal.TerminalFormatStrings terminalFormatStrings,
             ref ConsoleKey key, ref bool isShift, ref bool isAlt, ref bool isCtrl)
         {
             // Check if the string prefix matches.
@@ -194,7 +211,7 @@ internal static class KeyMapper
             return false;
         }
 
-        static ConsoleKey Map(char single)
+        static ConsoleKey MapKeyId(char single)
             => single switch
             {
                 'A' => ConsoleKey.UpArrow,
@@ -203,6 +220,7 @@ internal static class KeyMapper
                 'D' => ConsoleKey.LeftArrow,
                 'F' or 'w' => ConsoleKey.End, // 'w' can be used by rxvt
                 'H' => ConsoleKey.Home,
+                'M' => ConsoleKey.Enter,
                 'P' => ConsoleKey.F1,
                 'Q' => ConsoleKey.F2,
                 'R' => ConsoleKey.F3,
@@ -265,13 +283,13 @@ internal static class KeyMapper
 
         key = single switch
         {
-            // '\b' is not mapped to ConsoleKey.Backspace on purpose, as it's simply wrong mapping
+            '\b' => ConsoleKey.Backspace,
             '\t' => ConsoleKey.Tab,
             '\r' or '\n' => ConsoleKey.Enter,
             ' ' => ConsoleKey.Spacebar,
-            Escape => ConsoleKey.Escape, // Ctrl+[ and Ctrl+3 are also mapped to 27, but Escape is more likely to be pressed. Limitation: Ctrl+[ and Ctrl+3 can't be mapped.
-            Delete => ConsoleKey.Backspace, // Ctrl+8 and Backspace are mapped to 127, but Backspace is more likely to be pressed. Limitation: Ctrl+8 can't be mapped.
-            '*' => ConsoleKey.Multiply, // We can't distinguish D8+Shift and Multiply (Numeric Keypad). Limitation: Shift+D8 can't be mapped.
+            Escape => ConsoleKey.Escape, // Ctrl+[ and Ctrl+3 are also mapped to 27. Limitation: Ctrl+[ and Ctrl+3 can't be mapped.
+            Delete => ConsoleKey.Backspace, // Ctrl+8 and Backspace are mapped to 127 (ASCII Delete key). Limitation: Ctrl+8 can't be mapped.
+            '*' => ConsoleKey.Multiply, // We can't distinguish Dx+Shift and Multiply (Numeric Keypad). Limitation: Shift+Dx can't be mapped.
             '/' => ConsoleKey.Divide, // We can't distinguish OemX and Divide (Numeric Keypad). Limitation: OemX keys can't be mapped.
             '-' => ConsoleKey.Subtract, // We can't distinguish OemMinus and Subtract (Numeric Keypad). Limitation: OemMinus can't be mapped.
             '+' => ConsoleKey.Add, // We can't distinguish OemPlus and Add (Numeric Keypad). Limitation: OemPlus can't be mapped.
@@ -284,14 +302,13 @@ internal static class KeyMapper
             _ when char.IsAsciiDigit(single) => ConsoleKey.D0 + single - '0', // We can't distinguish DX and Ctrl+DX as they produce same values. Limitation: Ctrl+DX can't be mapped.
             _ when char.IsBetween(single, (char)1, (char)26) => ControlAndLetterPressed(single, out ch, out isCtrl),
             _ when char.IsBetween(single, (char)28, (char)31) => ControlAndDigitPressed(single, out ch, out isCtrl),
-            '\u0000' or Delete => ControlAndDigitPressed(single, out ch, out isCtrl),
+            '\u0000' => ControlAndDigitPressed(single, out ch, out isCtrl),
             _ => default
         };
 
-        // above we map ASCII Delete character to Backspace key, we need to map the char too
-        if (key == ConsoleKey.Backspace)
+        if (single is '\b' or '\n')
         {
-            ch = '\b';
+            isCtrl = true; // Ctrl+Backspace is mapped to '\b' (8), Ctrl+Enter to '\n' (10)
         }
 
         static ConsoleKey UppercaseCharacter(char single, out bool isShift)
@@ -305,12 +322,12 @@ internal static class KeyMapper
         static ConsoleKey ControlAndLetterPressed(char single, out char ch, out bool isCtrl)
         {
             // Ctrl+(a-z) characters are mapped to values from 1 to 26.
-            // Ctrl+h is mapped to 8, which also maps to Ctrl+Backspace. Ctrl+h is more likely to be pressed. (TODO: change it)
-            // Ctrl+i is mapped to 9, which also maps to Tab. Tab (9) is more likely to be pressed.
-            // Ctrl+j is mapped to 10, which also maps to Enter ('\n') and Ctrl+Enter. Enter is more likely to be pressed.
-            // Ctrl+m is mapped to 13, which also maps to Enter ('\r'). Enter (13) is more likely to be pressed.
-            // Limitation: Ctrl+i, Ctrl+j, Crl+m, Ctrl+Backspace and Ctrl+Enter can't be mapped. More: https://unix.stackexchange.com/questions/563469/conflict-ctrl-i-with-tab-in-normal-mode
-            Debug.Assert(single != '\t' && single != '\n' && single != '\r');
+            // Ctrl+H is mapped to 8, which also maps to Ctrl+Backspace.
+            // Ctrl+I is mapped to 9, which also maps to Tab. Tab (9) is more likely to be pressed.
+            // Ctrl+J is mapped to 10, which also maps to Ctrl+Enter ('\n').
+            // Ctrl+M is mapped to 13, which also maps to Enter ('\r').
+            // Limitation: Ctrl+H, Ctrl+I, Ctrl+J and Crl+M can't be mapped. More: https://unix.stackexchange.com/questions/563469/conflict-ctrl-i-with-tab-in-normal-mode
+            Debug.Assert(single != 'b' && single != '\t' && single != '\n' && single != '\r');
 
             isCtrl = true;
             ch = default; // we could use the letter here, but it's impossible to distinguish upper vs lowercase (and Windows doesn't do it as well)
@@ -319,7 +336,7 @@ internal static class KeyMapper
 
         static ConsoleKey ControlAndDigitPressed(char single, out char ch, out bool isCtrl)
         {
-            // Ctrl+(D3-D7) characters are mapped to values from 27 to 31. Escape (27) is more likely to be pressed.
+            // Ctrl+(D3-D7) characters are mapped to values from 27 to 31. Escape is also mapped to 27.
             // Limitation: Ctrl+(D1, D3, D8, D9 and D0) can't be mapped.
             Debug.Assert(single == default || char.IsBetween(single, (char)28, (char)31));
 

@@ -57,7 +57,8 @@ public class KeyMapperTests
             out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length);
         //Assert.True(KeyMapper.MapBufferToConsoleKey(chars, terminalFormatStrings, 0, verase,
         //    out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length));
-        Assert.True(startIndex > 0);
+
+        Assert.Equal(expectedStartIndex, startIndex);
 
         return new ConsoleKeyInfo(ch, consoleKey, isShift, isAlt, isCtrl);
     }
@@ -69,7 +70,6 @@ public class KeyMapperTests
             yield return (' ', ConsoleKey.Spacebar);
             yield return ('\t', ConsoleKey.Tab);
             yield return ('\r', ConsoleKey.Enter);
-            yield return ('\n', ConsoleKey.Enter);
 
             yield return ('+', ConsoleKey.Add);
             yield return ('-', ConsoleKey.Subtract);
@@ -110,6 +110,18 @@ public class KeyMapperTests
         Assert.Equal(char.IsAsciiLetterUpper(input) ? ConsoleModifiers.Shift : 0, consoleKeyInfo.Modifiers);
     }
 
+    [Theory]
+    [MemberData(nameof(AsciiCharactersArguments))]
+    public void VeraseIsRespected(TerminalData terminalData, char input, ConsoleKey ifNotVerase)
+    {
+        ConsoleKeyInfo consoleKeyInfo = Map(new[] { input }, terminalData.TerminalDb, (byte)input, 1);
+
+        Assert.Equal(input, consoleKeyInfo.KeyChar);
+        Assert.Equal(ConsoleKey.Backspace, consoleKeyInfo.Key);
+        Assert.NotEqual(ifNotVerase, consoleKeyInfo.Key);
+        Assert.Equal((ConsoleModifiers)0, consoleKeyInfo.Modifiers);
+    }
+
     private static IEnumerable<(string chars, ConsoleKey key)> ThreeCharactersKeys
     {
         get
@@ -127,6 +139,8 @@ public class KeyMapperTests
             yield return ("\u001BOR", ConsoleKey.F3);
             yield return ("\u001BOS", ConsoleKey.F4);
             yield return ("\u001BOw", ConsoleKey.End); // rxvt
+
+            // "\u001BOM" (enter) is tested elsewhere, as it requires character verification
         }
     }
 
@@ -196,6 +210,155 @@ public class KeyMapperTests
         Assert.Equal(default, consoleKeyInfo.KeyChar);
         Assert.Equal(default, consoleKeyInfo.Modifiers);
     }
+
+    private static IEnumerable<(string chars, ConsoleKeyInfo[] keys)> TrickySequences
+    {
+        get
+        {
+            // Backspace
+            yield return (new string((char)127, 1), new[] { new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false) });
+            // Ctrl+Backspace
+            yield return ("\b", new[] { new ConsoleKeyInfo('\b', ConsoleKey.Backspace, false, false, true) });
+            // Alt+Backspace
+            yield return ("\u001B\u007F", new[] { new ConsoleKeyInfo((char)0x7F, ConsoleKey.Backspace, false, true, false) });
+            // Ctrl+Alt+Backspace
+            yield return ("\u001B\b", new[] { new ConsoleKeyInfo('\b', ConsoleKey.Backspace, false, true, true) });
+            // Enter
+            yield return ("\r", new[] { new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false) });
+            // Ctrl+Enter
+            yield return ("\n", new[] { new ConsoleKeyInfo('\n', ConsoleKey.Enter, false, false, true) });
+            // Enter using "^[OM" special sequence: they char 
+            yield return ("\u001BOM", new[] { new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false) });
+
+            // Escape key pressed multiple times
+            for (int i = 1; i <= 5; i++)
+            {
+                yield return (new string('\u001B', i), Enumerable.Repeat(new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false), i).ToArray());
+            }
+
+            // Home key (^[[H) followed by H key
+            yield return ("\u001B[HH", new[]
+            {
+                new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false),
+                new ConsoleKeyInfo('H', ConsoleKey.H, true, false, false)
+            });
+
+            // escape sequence (F12 '^[[24~') followed by an extra tylde:
+            yield return ($"\u001B[24~~", new[]
+            {
+                new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false),
+                new ConsoleKeyInfo('~', default, false, false, false),
+            });
+
+            // invalid short ID
+            foreach (char letter in Enumerable.Range('E', 'Z' - 'E'))
+            {
+                if (!(letter is 'F' or 'H' or 'M' or 'P' or 'Q' or 'R' or 'S')) // valid letters
+                {
+                    yield return ($"\u001BO{letter}", new[]
+                    {
+                        new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                        new ConsoleKeyInfo('O', ConsoleKey.O, true, false, false),
+                        new ConsoleKeyInfo(letter, ConsoleKey.A + letter - 'A', true, false, false),
+                    });
+                    yield return ($"\u001B[{letter}", new[]
+                    {
+                        new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                        new ConsoleKeyInfo('[', default, false, false, false),
+                        new ConsoleKeyInfo(letter, ConsoleKey.A + letter - 'A', true, false, false),
+                    });
+                }
+            }
+            foreach (char letter in Enumerable.Range('a', 'z' - 'a'))
+            {
+                if (letter is not 'w') // only valid letter
+                {
+                    yield return ($"\u001BO{letter}", new[]
+                    {
+                        new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                        new ConsoleKeyInfo('O', ConsoleKey.O, true, false, false),
+                        new ConsoleKeyInfo(letter, ConsoleKey.A + letter - 'a', false, false, false),
+                    });
+                    yield return ($"\u001B[{letter}", new[]
+                    {
+                        new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                        new ConsoleKeyInfo('[', default, false, false, false),
+                        new ConsoleKeyInfo(letter, ConsoleKey.A + letter - 'a', false, false, false),
+                    });
+                }
+            }
+
+            // Invalid escape sequences:
+            // Invalid modifiers (valid values are <2, 8>)
+            foreach (int invalidModifier in new[] { 0, 1, 9 })
+            {
+                yield return ($"\u001B[1;{invalidModifier}H", new[]
+                {
+                    new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                    new ConsoleKeyInfo('[', default, false, false, false),
+                    new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false),
+                    new ConsoleKeyInfo(';', default, false, false, false),
+                    new ConsoleKeyInfo((char)('0' + invalidModifier), ConsoleKey.D0 + invalidModifier, false, false, false),
+                    new ConsoleKeyInfo('H', ConsoleKey.H, true, false, false)
+                });
+            }
+            // Invalid ID (valid values are <1, 34> except of 9, 16, 22, 27, 30 and 35)
+            foreach (int invalidId in new[] { 16, 22, 27, 30, 35, 36, 77, 99 })
+            {
+                yield return ($"\u001B[{invalidId}~", new[]
+                {
+                    new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                    new ConsoleKeyInfo('[', default, false, false, false),
+                    new ConsoleKeyInfo((char)('0' + invalidId / 10), ConsoleKey.D0 + invalidId / 10, false, false, false),
+                    new ConsoleKeyInfo((char)('0' + invalidId % 10), ConsoleKey.D0 + invalidId % 10, false, false, false),
+                    new ConsoleKeyInfo('~', default, false, false, false),
+                });
+            }
+            // too long ID (more than 2 digits)
+            yield return ($"\u001B[111~", new[]
+            {
+                new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                new ConsoleKeyInfo('[', default, false, false, false),
+                new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false),
+                new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false),
+                new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false),
+                new ConsoleKeyInfo('~', default, false, false, false),
+            });
+            // missing closing tag (tylde):
+            yield return ($"\u001B[24", new[]
+            {
+                new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
+                new ConsoleKeyInfo('[', default, false, false, false),
+                new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false),
+                new ConsoleKeyInfo('4', ConsoleKey.D4, false, false, false),
+            });
+        }
+    }
+
+    public static IEnumerable<object[]> TrickySequencesArguments
+        => Terminals.SelectMany(terminal => TrickySequences.Select(tuple => new object[] { terminal, tuple.chars, tuple.keys }));
+
+    [Theory]
+    [MemberData(nameof(TrickySequencesArguments))]
+    public void TrickySequencesAreHandledProperly(TerminalData terminalData, string input, ConsoleKeyInfo[] expectedKeys)
+    {
+        int startIndex = 0;
+        char[] chars = input.ToCharArray();
+
+        foreach (ConsoleKeyInfo expectedKey in expectedKeys)
+        {
+            KeyMapper.MapNew(chars, terminalData.TerminalDb, 0, terminalData.Verase,
+                out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length);
+
+            ConsoleKeyInfo parsed = new(ch, consoleKey, isShift, isAlt, isCtrl);
+
+            Assert.Equal(expectedKey.Key, parsed.Key);
+            Assert.Equal(expectedKey.KeyChar, parsed.KeyChar);
+            Assert.Equal(expectedKey.Modifiers, parsed.Modifiers);
+        }
+
+        Assert.Equal(chars.Length, startIndex);
+    }
 }
 
 public abstract class TerminalData
@@ -243,8 +406,8 @@ public class GNOMETerminalData : TerminalData
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -259,9 +422,6 @@ public class GNOMETerminalData : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, true, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
@@ -300,7 +460,7 @@ public class XTermData : TerminalData
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 194, 189 }, new ConsoleKeyInfo('\u00BD', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
             yield return (new byte[] { 195, 191 }, new ConsoleKeyInfo('\u00FF', default, false, false, false));
             yield return (new byte[] { 194, 136 }, new ConsoleKeyInfo('\u0088', default, false, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
@@ -317,7 +477,6 @@ public class XTermData : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, false, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
@@ -356,7 +515,7 @@ public class UXTermData : TerminalData
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 194, 189 }, new ConsoleKeyInfo('\u00BD', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
             yield return (new byte[] { 195, 191 }, new ConsoleKeyInfo('\u00FF', default, false, false, false));
             yield return (new byte[] { 194, 136 }, new ConsoleKeyInfo('\u0088', default, false, false, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
@@ -373,7 +532,6 @@ public class UXTermData : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, false, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
@@ -412,21 +570,17 @@ public class PuTTYData_xterm : TerminalData
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
             yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
             yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 27, 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
-            yield return (new byte[] { 27, 10 }, new ConsoleKeyInfo((char)10, ConsoleKey.Enter, false, true, false));
         }
     }
 }
@@ -459,8 +613,8 @@ public class PuTTYData_linux : TerminalData
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
@@ -468,10 +622,8 @@ public class PuTTYData_linux : TerminalData
             yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
             yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
-            yield return (new byte[] { 27, 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, true, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
@@ -508,8 +660,8 @@ public class PuTTYData_putty : TerminalData
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
@@ -517,9 +669,7 @@ public class PuTTYData_putty : TerminalData
             yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
         }
     }
 }
@@ -551,8 +701,8 @@ public class WindowsTerminalData : TerminalData
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, false, false));
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)8, ConsoleKey.Backspace, false, true, false));
+            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
+            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
             yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
@@ -567,7 +717,6 @@ public class WindowsTerminalData : TerminalData
             yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
             yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
             yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 13 }, new ConsoleKeyInfo((char)13, ConsoleKey.Enter, false, false, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
