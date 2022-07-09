@@ -109,10 +109,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            if (_elementExtensions != null)
-            {
-                _elementExtensions.WriteTo(writer, shouldSkipElement);
-            }
+            _elementExtensions?.WriteTo(writer, shouldSkipElement);
         }
 
         public ExtensibleSyndicationObject Clone() => new ExtensibleSyndicationObject(this);

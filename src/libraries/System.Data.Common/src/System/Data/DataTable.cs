@@ -2833,8 +2833,7 @@ namespace System.Data
                 Debug.Assert(null == _rowDiffId, "wasn't previously cleared");
                 _rowDiffId = null;
 
-                if (_dataSet != null)
-                    _dataSet.OnClearFunctionCalled(this);
+                _dataSet?.OnClearFunctionCalled(this);
                 bool shouldFireClearEvents = (Rows.Count != 0); // if Rows is already empty, this is noop
 
                 DataTableClearEventArgs? e = null;
@@ -4610,10 +4609,7 @@ namespace System.Data
                     {
                         _loadIndex = _primaryKey.Key.GetSortIndex(DataViewRowState.OriginalRows);
                     }
-                    if (_loadIndex != null)
-                    {
-                        _loadIndex.AddRef();
-                    }
+                    _loadIndex?.AddRef();
                 }
 
                 if (DataSet != null)
@@ -4642,18 +4638,9 @@ namespace System.Data
                     return;
                 }
 
-                if (_loadIndex != null)
-                {
-                    _loadIndex.RemoveRef();
-                }
-                if (_loadIndexwithOriginalAdded != null)
-                {
-                    _loadIndexwithOriginalAdded.RemoveRef();
-                }
-                if (_loadIndexwithCurrentDeleted != null)
-                {
-                    _loadIndexwithCurrentDeleted.RemoveRef();
-                }
+                _loadIndex?.RemoveRef();
+                _loadIndexwithOriginalAdded?.RemoveRef();
+                _loadIndexwithCurrentDeleted?.RemoveRef();
 
                 _loadIndex = null;
                 _loadIndexwithOriginalAdded = null;
@@ -4758,10 +4745,7 @@ namespace System.Data
                         {
                             _loadIndexwithCurrentDeleted = _primaryKey.Key.GetSortIndex(DataViewRowState.CurrentRows | DataViewRowState.Deleted);
                             Debug.Assert(_loadIndexwithCurrentDeleted != null, "loadIndexwithCurrentDeleted should not be null");
-                            if (_loadIndexwithCurrentDeleted != null)
-                            {
-                                _loadIndexwithCurrentDeleted.AddRef();
-                            }
+                            _loadIndexwithCurrentDeleted?.AddRef();
                         }
                         indextoUse = _loadIndexwithCurrentDeleted;
                     }
@@ -4772,10 +4756,7 @@ namespace System.Data
                         {
                             _loadIndexwithOriginalAdded = _primaryKey.Key.GetSortIndex(DataViewRowState.OriginalRows | DataViewRowState.Added);
                             Debug.Assert(_loadIndexwithOriginalAdded != null, "loadIndexwithOriginalAdded should not be null");
-                            if (_loadIndexwithOriginalAdded != null)
-                            {
-                                _loadIndexwithOriginalAdded.AddRef();
-                            }
+                            _loadIndexwithOriginalAdded?.AddRef();
                         }
                         indextoUse = _loadIndexwithOriginalAdded;
                     }
@@ -6872,8 +6853,7 @@ namespace System.Data
 #if DEBUG
                         // cannot assert that table exists in the usedTables - new tables might be
                         // created during diffgram processing in DataSet.ReadXml.
-                        if (RowDiffIdUsageSection.t_usedTables != null)
-                            RowDiffIdUsageSection.t_usedTables.Remove(table);
+                        RowDiffIdUsageSection.t_usedTables?.Remove(table);
 #endif
                         table._rowDiffId = null;
                     }

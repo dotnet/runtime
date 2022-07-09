@@ -97,10 +97,7 @@ namespace System.Xml
                 _attributeValue = null;
                 _attributeLocalName = null;
                 _nodeWriter.Close();
-                if (_signingWriter != null)
-                {
-                    _signingWriter.Close();
-                }
+                _signingWriter?.Close();
             }
         }
 

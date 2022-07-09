@@ -71,9 +71,11 @@ namespace System.Security.Cryptography.X509Certificates
         public void Dispose()
         {
             SafeCertStoreHandle? certStore = _certStore;
-            _certStore = null!;
             if (certStore != null)
+            {
+                _certStore = null!;
                 certStore.Dispose();
+            }
         }
 
         internal SafeCertStoreHandle SafeCertStoreHandle

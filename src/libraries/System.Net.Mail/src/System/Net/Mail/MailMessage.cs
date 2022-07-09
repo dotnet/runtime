@@ -299,18 +299,9 @@ namespace System.Net.Mail
             {
                 _disposed = true;
 
-                if (_views != null)
-                {
-                    _views.Dispose();
-                }
-                if (_attachments != null)
-                {
-                    _attachments.Dispose();
-                }
-                if (_bodyView != null)
-                {
-                    _bodyView.Dispose();
-                }
+                _views?.Dispose();
+                _attachments?.Dispose();
+                _bodyView?.Dispose();
             }
         }
 

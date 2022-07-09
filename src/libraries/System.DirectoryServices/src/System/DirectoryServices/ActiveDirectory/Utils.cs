@@ -1356,14 +1356,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (partitionsEntry != null)
-                    {
-                        partitionsEntry.Dispose();
-                    }
-                    if (fsmoPartitionsEntry != null)
-                    {
-                        fsmoPartitionsEntry.Dispose();
-                    }
+                    partitionsEntry?.Dispose();
+                    fsmoPartitionsEntry?.Dispose();
                 }
             }
 
@@ -1598,10 +1592,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        if (resCol != null)
-                        {
-                            resCol.Dispose();
-                        }
+                        resCol?.Dispose();
                     }
 
                     if (needToContinueRangeRetrieval)
@@ -1734,10 +1725,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (searchRootEntry != null)
-                {
-                    searchRootEntry.Dispose();
-                }
+                searchRootEntry?.Dispose();
             }
 
             // convert the ntdsa object names to server:port
@@ -2172,8 +2160,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (tokenHandle != null)
-                    tokenHandle.Dispose();
+                tokenHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -2231,8 +2218,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (policyHandle != null)
-                    policyHandle.Dispose();
+                policyHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     global::Interop.Advapi32.LsaFreeMemory(pBuffer);

@@ -108,10 +108,7 @@ namespace System.Net.Mail
                     _sessions.Remove(sessionCookie);
                 }
             }
-            if (clientContext != null)
-            {
-                clientContext.CloseContext();
-            }
+            clientContext?.CloseContext();
         }
 
         // Function for SASL security layer negotiation after
