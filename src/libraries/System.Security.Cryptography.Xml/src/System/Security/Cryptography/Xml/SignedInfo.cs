@@ -73,6 +73,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [AllowNull]
         public string CanonicalizationMethod
         {
             get

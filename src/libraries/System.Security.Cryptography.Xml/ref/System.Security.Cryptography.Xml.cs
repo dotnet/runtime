@@ -337,6 +337,7 @@ namespace System.Security.Cryptography.Xml
     public partial class SignedInfo : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public SignedInfo() { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string CanonicalizationMethod { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.Transform CanonicalizationMethodObject { get { throw null; } }
         public int Count { get { throw null; } }
