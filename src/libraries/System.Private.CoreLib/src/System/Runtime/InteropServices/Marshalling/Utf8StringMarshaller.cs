@@ -20,7 +20,17 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="managed">A managed string</param>
         /// <returns>An unmanaged string</returns>
         public static byte* ConvertToUnmanaged(string? managed)
-            => (byte*)Marshal.StringToCoTaskMemUTF8(managed);
+        {
+            if (managed is null)
+                return null;
+
+            int exactByteCount = checked(Encoding.UTF8.GetByteCount(managed) + 1); // + 1 for null terminator
+            Span<byte> buffer = new ((byte*)NativeMemory.Alloc((nuint)exactByteCount), exactByteCount);
+
+            int byteCount = Encoding.UTF8.GetBytes(managed, buffer);
+            buffer[byteCount] = 0; // null-terminate
+            return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+        }
 
         /// <summary>
         /// Convert an unmanaged string to a managed version.
@@ -28,14 +38,14 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">An unmanaged string</param>
         /// <returns>A managed string</returns>
         public static string? ConvertToManaged(byte* unmanaged)
-            => Marshal.PtrToStringUTF8((nint)unmanaged);
+            => Marshal.PtrToStringUTF8((IntPtr)unmanaged);
 
         /// <summary>
         /// Free the memory for the unmanaged string.
         /// </summary>
         /// <param name="unmanaged">Memory allocated for the unmanaged string.</param>
         public static void Free(byte* unmanaged)
-            => Marshal.FreeCoTaskMem((nint)unmanaged);
+            => NativeMemory.Free(unmanaged);
 
         /// <summary>
         /// Custom marshaller to marshal a managed string as a UTF-8 unmanaged string.

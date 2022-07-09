@@ -26,14 +26,14 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">An unmanaged string</param>
         /// <returns>A managed string</returns>
         public static string? ConvertToManaged(ushort* unmanaged)
-            => Marshal.PtrToStringUni((nint)unmanaged);
+            => Marshal.PtrToStringUni((IntPtr)unmanaged);
 
         /// <summary>
         /// Free the memory for the unmanaged string.
         /// </summary>
         /// <param name="unmanaged">Memory allocated for the unmanaged string.</param>
         public static void Free(ushort* unmanaged)
-            => Marshal.FreeCoTaskMem((nint)unmanaged);
+            => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
         /// <summary>
         /// Get a pinnable reference for the string.

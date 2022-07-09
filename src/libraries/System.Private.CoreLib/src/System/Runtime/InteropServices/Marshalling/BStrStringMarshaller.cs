@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices.Marshalling
             if (unmanaged is null)
                 return null;
 
-            return Marshal.PtrToStringBSTR((nint)unmanaged);
+            return Marshal.PtrToStringBSTR((IntPtr)unmanaged);
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="unmanaged">Memory allocated for the unmanaged string.</param>
         public static void Free(ushort* unmanaged)
-            => Marshal.FreeBSTR((nint)unmanaged);
+            => Marshal.FreeBSTR((IntPtr)unmanaged);
 
         /// <summary>
         /// Custom marshaller to marshal a managed string as a ANSI unmanaged string.
