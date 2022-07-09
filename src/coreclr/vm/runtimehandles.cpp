@@ -927,10 +927,10 @@ FCIMPL3(Object *, RuntimeTypeHandle::GetCustomModifiersFromFunctionPointer, Refl
     // Discover the number of required and optional custom modifiers.
     INT32 currentPos = 0;
     INT32 cMods = 0;
-    DWORD numMods = fnPtr->GetNumMods();
-    FnPtrTypeDescCustomMod* mods = fnPtr->GetCustomModTypesPointer();
+    DWORD numCustomMods = fnPtr->GetNumMods();
+    FnPtrTypeDescCustomMod* mods = fnPtr->GetCustomModsPointer();
 
-    for (DWORD i = 0; i < numMods; i++)
+    for (DWORD i = 0; i < numCustomMods; i++)
     {
         CorElementType cmodType = mods[i].elementType;
 
@@ -962,7 +962,7 @@ FCIMPL3(Object *, RuntimeTypeHandle::GetCustomModifiersFromFunctionPointer, Refl
         gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cMods);
 
         currentPos = 0;
-        for (DWORD i = 0; i < numMods; i++)
+        for (DWORD i = 0; i < numCustomMods; i++)
         {
             CorElementType cmodType = mods[i].elementType;
 

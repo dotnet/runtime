@@ -14,7 +14,8 @@ namespace System.Tests.Types
         private const BindingFlags Bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestTypeMembers()
         {
             // Get an arbitrary function pointer
@@ -25,14 +26,13 @@ namespace System.Tests.Types
             Assert.Null(t.FullName);
             Assert.Null(t.AssemblyQualifiedName);
             Assert.Equal("*()", t.Name);
-            Assert.Equal("System", t.Namespace); // All function pointers report "System"
+            Assert.Null(t.Namespace);
             Assert.True(t.IsFunctionPointer);
             Assert.False(t.IsPointer); // A function pointer is not compatible with IsPointer semantics.
             Assert.False(t.IsUnmanagedFunctionPointer);
-            Assert.NotNull(t.Module);
-            Assert.NotNull(t.Assembly);
 
             // Common for all function pointers:
+            Assert.NotNull(t.Assembly);
             Assert.Equal(TypeAttributes.Public, t.Attributes);
             Assert.Null(t.BaseType);
             Assert.False(t.ContainsGenericParameters);
@@ -106,6 +106,7 @@ namespace System.Tests.Types
             Assert.True(t.IsVisible);
             Assert.Equal(MemberTypes.TypeInfo, t.MemberType);
             Assert.True(t.MetadataToken != 0);
+            Assert.NotNull(t.Module);
             Assert.Null(t.ReflectedType);
             Assert.Null(t.TypeInitializer);
 
@@ -118,7 +119,8 @@ namespace System.Tests.Types
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestNonFunctionPointerThrows()
         {
             Assert.Throws<InvalidOperationException>(() => typeof(int).GetFunctionPointerCallingConventions());
@@ -127,7 +129,8 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestToString()
         {
             // Function pointer types are inline in metadata and can't be loaded independently so they do not support the
@@ -148,7 +151,8 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestFunctionPointerReturn()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -165,7 +169,8 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestFunctionUnmanagedPointerReturn_DifferentReturnValue()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -181,7 +186,8 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestFunctionUnmanagedPointerReturn_DifferentCallingConventions()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -207,6 +213,23 @@ namespace System.Tests.Types
             Assert.Equal(2, modOpts.Length);
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestRequiredModifiers()
+        {
+            Type t = typeof(FunctionPointerHolder).Project();
+            MethodInfo m = t.GetMethod(nameof(FunctionPointerHolder.RequiredModifiers), Bindings);
+            Type fcnPtr1 = m.ReturnType;
+
+            FunctionPointerParameterInfo[] parameters = fcnPtr1.GetFunctionPointerParameterInfos();
+            Assert.Equal(2, parameters.Length);
+            Assert.Equal(1, parameters[0].GetRequiredCustomModifiers().Length);
+            Assert.Equal(typeof(Runtime.InteropServices.InAttribute).Project(), parameters[0].GetRequiredCustomModifiers()[0]);
+            Assert.Equal(1, parameters[1].GetRequiredCustomModifiers().Length);
+            Assert.Equal(typeof(Runtime.InteropServices.OutAttribute).Project(), parameters[1].GetRequiredCustomModifiers()[0]);
+        }
+
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodReturnValue1),
             "MethodReturnValue1()",
@@ -217,7 +240,8 @@ namespace System.Tests.Types
             "Double",
             "System.Double(System.String, System.Boolean*&, System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass, System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyStruct&)",
             "String", "Boolean*&", "MyClass", "MyStruct&")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestMethod(
             string methodName,
             string methodToStringPostfix,
@@ -232,7 +256,6 @@ namespace System.Tests.Types
             Type fnPtrType = m.ReturnType;
             Assert.Null(fnPtrType.FullName);
             Assert.Null(fnPtrType.AssemblyQualifiedName);
-            Assert.Equal("System", fnPtrType.Namespace);
             Assert.Equal("*()", fnPtrType.Name);
 
             VerifyArg(fnPtrType.GetFunctionPointerReturnParameter(), expectedFcnPtrReturnName);
@@ -253,7 +276,8 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Prop_Int), "System.Int32()")]
         [InlineData(nameof(FunctionPointerHolder.Prop_MyClass), "System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass()")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestProperty(string name, string expectedToString)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -268,7 +292,8 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Field_Int), "System.Int32()")]
         [InlineData(nameof(FunctionPointerHolder.Field_MyClass), "System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass()")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestField(string name, string expectedToString)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -285,7 +310,6 @@ namespace System.Tests.Types
             Assert.Null(fnPtrType.FullName);
             Assert.Null(fnPtrType.AssemblyQualifiedName);
             Assert.Equal("*()", fnPtrType.Name);
-            Assert.Equal("System", fnPtrType.Namespace);
             Assert.Null(fnPtrType.DeclaringType);
             Assert.Null(fnPtrType.BaseType);
             Assert.Equal<Type>(Type.EmptyTypes, fnPtrType.GetFunctionPointerCallingConventions());
@@ -293,7 +317,8 @@ namespace System.Tests.Types
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestManagedCallingConvention()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -311,10 +336,11 @@ namespace System.Tests.Types
 
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), typeof(CallConvCdecl))]
-        [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall), typeof(CallConvFastcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Stdcall), typeof(CallConvStdcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Thiscall), typeof(CallConvThiscall))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall), typeof(CallConvFastcall))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestBaseCallingConventions(string methodName, Type callingConventionRuntime)
         {
             Type callingConvention = callingConventionRuntime.Project();
@@ -335,10 +361,11 @@ namespace System.Tests.Types
 
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl_SuppressGCTransition), typeof(CallConvCdecl))]
-        [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall_SuppressGCTransition), typeof(CallConvFastcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Stdcall_SuppressGCTransition), typeof(CallConvStdcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Thiscall_SuppressGCTransition), typeof(CallConvThiscall))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall_SuppressGCTransition), typeof(CallConvFastcall))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestOptionalCallingConventions(string methodName, Type callingConventionRuntime)
         {
             Type suppressGcTransitionType = typeof(CallConvSuppressGCTransition).Project();
@@ -363,7 +390,8 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Field_Int), nameof(FunctionPointerHolder.Field_DateOnly))]
         [InlineData(nameof(FunctionPointerHolder.Field_DateOnly), nameof(FunctionPointerHolder.Field_Int))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestSigEqualityInDifferentModule_Field(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
@@ -382,7 +410,8 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Prop_Int), nameof(FunctionPointerHolder.Prop_DateOnly))]
         [InlineData(nameof(FunctionPointerHolder.Prop_DateOnly), nameof(FunctionPointerHolder.Prop_Int))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestSigEqualityInDifferentModule_Property(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
@@ -401,7 +430,8 @@ namespace System.Tests.Types
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodReturnValue_Int), nameof(FunctionPointerHolder.MethodReturnValue_DateOnly))]
         [InlineData(nameof(FunctionPointerHolder.MethodReturnValue_DateOnly), nameof(FunctionPointerHolder.MethodReturnValue_Int))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]        
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestSigEqualityInDifferentModule_MethodReturn(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
@@ -417,7 +447,6 @@ namespace System.Tests.Types
             static Type GetFuncPtr(Type owner, string name) => owner.GetMethod(name, Bindings).ReturnParameter.ParameterType;
         }
 
-        // Tests to add: required modifiers, ask for optional return modifiers before\after calling conventions
         public unsafe class FunctionPointerHolder
         {
             public delegate*<void> ToString_1;
@@ -446,11 +475,11 @@ namespace System.Tests.Types
             public delegate* unmanaged<int> MethodUnmanagedReturnValue1() => default;
             public delegate* unmanaged<bool> MethodUnmanagedReturnValue2() => default;
 
-
             public delegate* unmanaged[Cdecl, MemberFunction]<int> MethodUnmanagedReturnValue_DifferentCallingConventions1() => default;
             public delegate* unmanaged[Stdcall, MemberFunction]<int> MethodUnmanagedReturnValue_DifferentCallingConventions2() => default;
 
             public delegate* unmanaged[Stdcall, MemberFunction]<string, ref bool*, MyClass, in MyStruct, double> SeveralArguments() => default;
+            public delegate*<in int, out int, void> RequiredModifiers() => default;
 
             // Methods to verify calling conventions and synthesized modopts.
             // The non-SuppressGCTransition variants are encoded with the CallKind byte.
@@ -458,12 +487,12 @@ namespace System.Tests.Types
             public void MethodCallConv_Managed(delegate* managed<ref MyClass, void> f) { }
             public void MethodCallConv_Cdecl(delegate* unmanaged[Cdecl]<void> f) { }
             public void MethodCallConv_Cdecl_SuppressGCTransition(delegate* unmanaged[Cdecl, SuppressGCTransition]<void> f) { }
-            public void MethodCallConv_Fastcall(delegate* unmanaged[Fastcall]<void> f) { }
-            public void MethodCallConv_Fastcall_SuppressGCTransition(delegate* unmanaged[Fastcall, SuppressGCTransition]<void> f) { }
             public void MethodCallConv_Stdcall(delegate* unmanaged[Stdcall]<void> f) { }
             public void MethodCallConv_Stdcall_SuppressGCTransition(delegate* unmanaged[Stdcall, SuppressGCTransition]<void> f) { }
             public void MethodCallConv_Thiscall(delegate* unmanaged[Thiscall]<void> f) { }
             public void MethodCallConv_Thiscall_SuppressGCTransition(delegate* unmanaged[Thiscall, SuppressGCTransition]<void> f) { }
+            public void MethodCallConv_Fastcall(delegate* unmanaged[Fastcall]<void> f) { }
+            public void MethodCallConv_Fastcall_SuppressGCTransition(delegate* unmanaged[Fastcall, SuppressGCTransition]<void> f) { }
 
             public class MyClass { }
             public struct MyStruct { }

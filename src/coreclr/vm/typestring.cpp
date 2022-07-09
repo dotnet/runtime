@@ -791,7 +791,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
     else if (ty.IsFnPtrType())
     {
         // Currently function pointers return NULL for FullName and AssemblyQualifiedName and "*()" for Name.
-        // We need a grammar update in order to support parsing (see https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names)
+        // We need a grammar update in order to support parsing (see https://docs.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names)
         if (format & FormatNamespace)
         {
             FnPtrTypeDesc* fnPtr = ty.AsFnPtrType();

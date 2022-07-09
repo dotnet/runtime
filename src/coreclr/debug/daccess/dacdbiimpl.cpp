@@ -2373,8 +2373,8 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedFnptrType(DWORD numTypeArgs, TypeHandl
     return  ClassLoader::LoadFnptrTypeThrowing(0, // callConv
                                                numTypeArgs - 1,
                                                pInst,
-                                               0, // numMods
-                                               NULL, // customModTypes
+                                               0, // numCustomMods
+                                               NULL, // customMods
                                                ClassLoader::DontLoadTypes);
 } // DacDbiInterfaceImpl::FindLoadedFnptrType
 

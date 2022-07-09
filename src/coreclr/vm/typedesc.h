@@ -453,9 +453,14 @@ public:
         BYTE callConv,
         DWORD numArgs,
         TypeHandle * retAndArgTypes,
-        DWORD numMods,
-        FnPtrTypeDescCustomMod * customModTypes)
-        : TypeDesc(ELEMENT_TYPE_FNPTR), m_hExposedClassObject(0), m_NumArgs(numArgs), m_CallConv(callConv), m_NumMods(numMods), m_pCustomModTypes(customModTypes)
+        DWORD numCustomMods,
+        FnPtrTypeDescCustomMod * customMods)
+        : TypeDesc(ELEMENT_TYPE_FNPTR),
+            m_hExposedClassObject(0),
+            m_NumArgs(numArgs),
+            m_CallConv(callConv),
+            m_NumMods(numCustomMods),
+            m_pCustomMods(customMods)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -500,6 +505,7 @@ public:
         return PTR_TypeHandle(m_RetAndArgTypes);
     }
 
+    // Includes a separator between each parameter except for the last.
     DWORD GetNumMods()
     {
         LIMITED_METHOD_CONTRACT;
@@ -507,12 +513,12 @@ public:
         return m_NumMods;
     }
 
-    FnPtrTypeDescCustomMod* GetCustomModTypesPointer()
+    FnPtrTypeDescCustomMod* GetCustomModsPointer()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return m_pCustomModTypes;
+        return m_pCustomMods;
     }
 
 #ifndef DACCESS_COMPILE
@@ -567,8 +573,8 @@ protected:
     DWORD m_CallConv;
 
     // Custom modifiers
-    DWORD m_NumMods;
-    FnPtrTypeDescCustomMod* m_pCustomModTypes;
+    DWORD m_NumMods; // Includes a separator between each parameter except for the last.
+    FnPtrTypeDescCustomMod* m_pCustomMods;
 
     // Return type first, then argument types
     TypeHandle m_RetAndArgTypes[1];

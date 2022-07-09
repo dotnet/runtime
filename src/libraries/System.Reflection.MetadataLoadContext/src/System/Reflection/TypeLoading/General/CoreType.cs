@@ -55,9 +55,9 @@ namespace System.Reflection.TypeLoading
 
         // For calling convention processing
         CallConvCdecl,
-        CallConvFastcall,
         CallConvStdcall,
         CallConvThiscall,
+        CallConvFastcall,
 
         // Pseudo Custom Attributes
         ComImportAttribute,
@@ -126,9 +126,9 @@ namespace System.Reflection.TypeLoading
                 case CoreType.PreserveSigAttribute: ns = Utf8Constants.SystemRuntimeInteropServices; name = Utf8Constants.PreserveSigAttribute; return;
                 case CoreType.FieldOffsetAttribute: ns = Utf8Constants.SystemRuntimeInteropServices; name = Utf8Constants.FieldOffsetAttribute; return;
                 case CoreType.CallConvCdecl: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvCdecl; return;
-                case CoreType.CallConvFastcall: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvFastcall; return;
                 case CoreType.CallConvStdcall: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvStdcall; return;
                 case CoreType.CallConvThiscall: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvThiscall; return;
+                case CoreType.CallConvFastcall: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvFastcall; return;
                 default:
                     Debug.Fail("Unexpected coreType passed to GetCoreTypeFullName: " + coreType);
                     ns = name = default;

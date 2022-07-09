@@ -44,11 +44,10 @@ namespace System.Reflection
                     {
                         Type type = modifiers[i];
                         allBuilder.Add(type);
-                        if (type.FullName!.StartsWith(CallingConventionTypePrefix))
+                        if (type.FullName!.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
                         {
                             ccBuilder.Add(type);
 
-                            // todo: use StartsWith(CallingConventionTypePrefix) to get any new calling conventions
                             if (type == typeof(CallConvCdecl) ||
                                 type == typeof(CallConvFastcall) ||
                                 type == typeof(CallConvStdcall) ||
@@ -70,14 +69,14 @@ namespace System.Reflection
                         case MdSigCallingConvention.C:
                             callConv = typeof(CallConvCdecl);
                             break;
-                        case MdSigCallingConvention.FastCall:
-                            callConv = typeof(CallConvFastcall);
-                            break;
                         case MdSigCallingConvention.StdCall:
                             callConv = typeof(CallConvStdcall);
                             break;
                         case MdSigCallingConvention.ThisCall:
                             callConv = typeof(CallConvThiscall);
+                            break;
+                        case MdSigCallingConvention.FastCall:
+                            callConv = typeof(CallConvFastcall);
                             break;
                     }
 

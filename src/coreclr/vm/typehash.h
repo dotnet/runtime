@@ -136,7 +136,7 @@ public:
 private:
     EETypeHashEntry_t * FindItem(TypeKey* pKey);
     BOOL CompareInstantiatedType(TypeHandle t, Module *pModule, mdTypeDef token, Instantiation inst);
-    BOOL CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes, DWORD numMods, FnPtrTypeDescCustomMod *customModType);
+    BOOL CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes, DWORD numCustomMods, FnPtrTypeDescCustomMod *customMods);
     BOOL GrowHashTable();
     LoaderAllocator* GetLoaderAllocator();
 };

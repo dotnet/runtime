@@ -697,8 +697,8 @@ public:
     static TypeHandle LoadFnptrTypeThrowing(BYTE callConv,
                                             DWORD numArgs,
                                             TypeHandle* retAndArgTypes,
-                                            DWORD numMods,
-                                            FnPtrTypeDescCustomMod* customModTypes,
+                                            DWORD numCustomMods,
+                                            FnPtrTypeDescCustomMod* customMods,
                                             LoadTypesFlag fLoadTypes = LoadTypes,
                                             ClassLoadLevel level = CLASS_LOADED);
 

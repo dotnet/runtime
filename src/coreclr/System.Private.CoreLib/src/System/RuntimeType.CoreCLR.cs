@@ -1565,7 +1565,7 @@ namespace System
                         if (!m_runtimeType.GetRootElementType().IsGenericTypeDefinition && m_runtimeType.ContainsGenericParameters)
                             return null;
 
-                        // Exclude function pointer; it requires a grammar update (see https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names)
+                        // Exclude function pointer; it requires a grammar update (see https://docs.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names)
                         // and parsing support for Type.GetType(...) and related GetType() methods.
                         if (m_runtimeType.IsFunctionPointer)
                             return null;
@@ -1582,16 +1582,15 @@ namespace System
                 }
             }
 
-            internal string GetNameSpace()
+            internal string? GetNameSpace()
             {
                 // @Optimization - Use ConstructName to populate m_namespace
                 if (m_namespace == null)
                 {
                     Type type = m_runtimeType;
 
-                    // Since Function pointers don't have a TypeDef metadata record just use the namespace for System.Type.
                     if (type.IsFunctionPointer)
-                        return typeof(Type).Namespace!;
+                        return null;
 
                     type = type.GetRootElementType();
 
@@ -3354,7 +3353,7 @@ namespace System
         {
             get
             {
-                string ns = Cache.GetNameSpace();
+                string? ns = Cache.GetNameSpace();
                 if (string.IsNullOrEmpty(ns))
                 {
                     return null;

@@ -1602,7 +1602,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 if ((uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) > 0)
                     THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_GENERIC, pOrigModule);
 
-                // Get arg count;
+                // Get the arg count.
                 uint32_t cArgs = 0;
                 IfFailThrowBF(psig.GetData(&cArgs), BFA_BAD_SIGNATURE, pOrigModule);
 
@@ -1621,9 +1621,10 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 SigPointer psigModReread = psig;
                 for (unsigned i = 0; i <= cArgs; i++)
                 {
+                    // Get the custom mod count.
                     IfFailThrowBF(psig.PeekByte(&data), BFA_BAD_SIGNATURE, pOrigModule);
                     CorElementType etyp = (CorElementType)data;
-                    if (etyp == ELEMENT_TYPE_CMOD_OPT || typ == ELEMENT_TYPE_CMOD_REQD)
+                    if (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD)
                     {
                         mdToken tk;
                         SigPointer psigTemp = psig;
@@ -1637,6 +1638,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                         } while (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD);
                     }
 
+                    // Lookup type handle.
                     retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
                                                                     pTypeContext,
                                                                     fLoadTypes,
@@ -1661,25 +1663,25 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 }
 
                 FnPtrTypeDescCustomMod *customMods = NULL;
-
+                int cModsAndSeparators = cMods;
                 if (cMods)
                 {
+                    // We know the number of mods so allocate and re-parse.
                     uint32_t cAllocaSize;
-                    if (!ClrSafeInt<uint32_t>::addition(cArgs, cMods, cAllocaSize) ||
-                        !ClrSafeInt<uint32_t>::multiply(cAllocaSize, sizeof(FnPtrTypeDescCustomMod), cAllocaSize))
+                    cModsAndSeparators += cArgs; // Each arg has a separator except for the last.
+                    if (!ClrSafeInt<uint32_t>::multiply(cModsAndSeparators, sizeof(FnPtrTypeDescCustomMod), cAllocaSize))
                     {
                         ThrowHR(COR_E_OVERFLOW);
                     }
 
                     customMods = (FnPtrTypeDescCustomMod*) _alloca(cAllocaSize);
 
-                    // Re-parse and store the custom mods
                     int iCurrent = 0;
                     for (unsigned i = 0; i <= cArgs; i++)
                     {
                         IfFailThrowBF(psigModReread.PeekByte(&data), BFA_BAD_SIGNATURE, pOrigModule);
                         CorElementType etyp = (CorElementType)data;
-                        if (etyp == ELEMENT_TYPE_CMOD_OPT || typ == ELEMENT_TYPE_CMOD_REQD)
+                        if (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD)
                         {
                             do
                             {
@@ -1709,7 +1711,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                         if (i != cArgs)
                         {
-                            // Create a mod separator for the parameter.
+                            // Create a mod separator for each parameter except for the last.
                             FnPtrTypeDescCustomMod mod;
                             mod.elementType = ELEMENT_TYPE_END;
                             mod.typeHandle = TypeHandle();
@@ -1723,8 +1725,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 uint32_t sigLen = sigStart - psig.m_dwLen;
                 PCOR_SIGNATURE sig = (PCOR_SIGNATURE)psig.m_ptr - sigLen;
 
-                // Now find an existing function pointer or make a new one
-                thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, cMods, customMods, fLoadTypes, level);                
+                // Find an existing function pointer or make a new one
+                thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, cModsAndSeparators, customMods, fLoadTypes, level);                
 #else
                 DacNotImpl();
                 thRet = TypeHandle();

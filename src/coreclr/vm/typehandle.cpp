@@ -1463,7 +1463,7 @@ TypeKey TypeHandle::GetTypeKey() const
                 pFTD->GetNumArgs(),
                 pFTD->GetRetAndArgTypesPointer(),
                 pFTD->GetNumMods(),
-                pFTD->GetCustomModTypesPointer());
+                pFTD->GetCustomModsPointer());
             return tk;
         }
     }

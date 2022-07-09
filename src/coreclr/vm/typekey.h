@@ -57,7 +57,7 @@ class TypeKey
             DWORD          m_numArgs;
             TypeHandle*    m_pRetAndArgTypes;
             DWORD          m_numMods;
-            FnPtrTypeDescCustomMod* m_pCustomModTypes;
+            FnPtrTypeDescCustomMod* m_pCustomMods;
         } asFnPtr;
     } u;
 
@@ -92,7 +92,7 @@ public:
     }
 
     // Constructor for function pointer type
-    TypeKey(BYTE callConv, DWORD numArgs, TypeHandle* retAndArgTypes, DWORD numMods, FnPtrTypeDescCustomMod* customModTypes)
+    TypeKey(BYTE callConv, DWORD numArgs, TypeHandle* retAndArgTypes, DWORD numCustomMods, FnPtrTypeDescCustomMod* customMods)
     {
         WRAPPER_NO_CONTRACT;
         PRECONDITION(CheckPointer(retAndArgTypes));
@@ -100,8 +100,8 @@ public:
         u.asFnPtr.m_callConv = callConv;
         u.asFnPtr.m_numArgs = numArgs;
         u.asFnPtr.m_pRetAndArgTypes = retAndArgTypes;
-        u.asFnPtr.m_numMods = numMods;
-        u.asFnPtr.m_pCustomModTypes = customModTypes;
+        u.asFnPtr.m_numMods = numCustomMods;
+        u.asFnPtr.m_pCustomMods = customMods;
     }
 
     CorElementType GetKind() const
@@ -221,12 +221,12 @@ public:
         return u.asFnPtr.m_numMods;
     }
     
-    FnPtrTypeDescCustomMod* GetCustomModTypes() const
+    FnPtrTypeDescCustomMod* GetCustomMods() const
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
-        return u.asFnPtr.m_pCustomModTypes;
+        return u.asFnPtr.m_pCustomMods;
     }    
 
     BOOL Equals(TypeKey *pKey) const
@@ -281,16 +281,16 @@ public:
             }
 
             // Match the custom modifiers.
-            uint32_t numMods = pKey1->u.asFnPtr.m_numMods;
-            if (numMods != pKey2->u.asFnPtr.m_numMods)
+            uint32_t numCustomMods = pKey1->u.asFnPtr.m_numMods;
+            if (numCustomMods != pKey2->u.asFnPtr.m_numMods)
             {
                 return FALSE;
             }
 
-            for (DWORD i = 0; i < numMods; i++)
+            for (DWORD i = 0; i < numCustomMods; i++)
             {
-                FnPtrTypeDescCustomMod customModTypes1 = pKey1->u.asFnPtr.m_pCustomModTypes[i];
-                FnPtrTypeDescCustomMod customModTypes2 = pKey2->u.asFnPtr.m_pCustomModTypes[i];
+                FnPtrTypeDescCustomMod customModTypes1 = pKey1->u.asFnPtr.m_pCustomMods[i];
+                FnPtrTypeDescCustomMod customModTypes2 = pKey2->u.asFnPtr.m_pCustomMods[i];
 
                 if ((customModTypes1.elementType != customModTypes2.elementType) ||
                     (customModTypes1.typeHandle != customModTypes2.typeHandle))

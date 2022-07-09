@@ -319,13 +319,13 @@ EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
         BYTE callConv = pKey->GetCallConv();
         DWORD numArgs = pKey->GetNumArgs();
         TypeHandle *retAndArgTypes = pKey->GetRetAndArgTypes();
-        DWORD numMods = pKey->GetNumMods();
-        FnPtrTypeDescCustomMod *customModTypes = pKey->GetCustomModTypes();
+        DWORD numCustomMods = pKey->GetNumMods();
+        FnPtrTypeDescCustomMod *customMods = pKey->GetCustomMods();
 
         pSearch = BaseFindFirstEntryByHash(dwHash, &sContext);
         while (pSearch)
         {
-            if (CompareFnPtrType(pSearch->GetTypeHandle(), callConv, numArgs, retAndArgTypes, numMods, customModTypes))
+            if (CompareFnPtrType(pSearch->GetTypeHandle(), callConv, numArgs, retAndArgTypes, numCustomMods, customMods))
             {
                 result = pSearch;
                 break;
@@ -444,7 +444,13 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
 }
 
 // See also TypeKey::Equals for similar comparison logic.
-BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes, DWORD numMods, FnPtrTypeDescCustomMod *customModTypes)
+BOOL EETypeHashTable::CompareFnPtrType(
+    TypeHandle t,
+    BYTE callConv,
+    DWORD numArgs,
+    TypeHandle *retAndArgTypes,
+    DWORD numModsAndSeperators,
+    FnPtrTypeDescCustomMod *customMods)
 {
     CONTRACTL
     {
@@ -454,7 +460,7 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
         MODE_ANY;
         PRECONDITION(CheckPointer(t));
         PRECONDITION(CheckPointer(retAndArgTypes));
-        PRECONDITION(CheckPointer(customModTypes, NULL_OK));
+        PRECONDITION(CheckPointer(customMods, NULL_OK));
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -479,16 +485,16 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
         }
     }
 
-    if (numMods != pTD->GetNumMods())
+    if (numModsAndSeperators != pTD->GetNumMods())
     {
         return FALSE;
     }
     
-    FnPtrTypeDescCustomMod *customModTypes2 = pTD->GetCustomModTypesPointer();
-    for (DWORD i = 0; i < numMods; i++)
+    FnPtrTypeDescCustomMod *customModTypes2 = pTD->GetCustomModsPointer();
+    for (DWORD i = 0; i < numModsAndSeperators; i++)
     {
-        if ((customModTypes2[i].elementType != customModTypes[i].elementType) ||
-            (customModTypes2[i].typeHandle != customModTypes[i].typeHandle))
+        if ((customModTypes2[i].elementType != customMods[i].elementType) ||
+            (customModTypes2[i].typeHandle != customMods[i].typeHandle))
         {
             return FALSE;
         }

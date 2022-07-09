@@ -100,16 +100,16 @@ namespace System.Reflection.TypeLoading
                         callConv = Loader.GetCoreType(CoreType.CallConvCdecl);
                         unmanaged = true;
                         break;
-                    case SignatureCallingConvention.FastCall:
-                        callConv = Loader.GetCoreType(CoreType.CallConvFastcall);
-                        unmanaged = true;
-                        break;
                     case SignatureCallingConvention.StdCall:
                         callConv = Loader.GetCoreType(CoreType.CallConvStdcall);
                         unmanaged = true;
                         break;
                     case SignatureCallingConvention.ThisCall:
                         callConv = Loader.GetCoreType(CoreType.CallConvThiscall);
+                        unmanaged = true;
+                        break;
+                    case SignatureCallingConvention.FastCall:
+                        callConv = Loader.GetCoreType(CoreType.CallConvFastcall);
                         unmanaged = true;
                         break;
                     case SignatureCallingConvention.Unmanaged:
@@ -157,7 +157,7 @@ namespace System.Reflection.TypeLoading
             }
         }
 
-        protected sealed override string? ComputeNamespace() => typeof(Type).Namespace;
+        protected sealed override string? ComputeNamespace() => null;
         public sealed override string ToString() => GetToString();
         public sealed override string? AssemblyQualifiedName => null;
         internal MethodSignature<RoType> Signature => _signature;

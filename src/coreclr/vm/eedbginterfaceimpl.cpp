@@ -887,8 +887,8 @@ TypeHandle EEDbgInterfaceImpl::FindLoadedFnptrType(TypeHandle *inst,
     return ClassLoader::LoadFnptrTypeThrowing(0, // callConv
                                               ntypars,
                                               inst,
-                                              0, // numMods
-                                              NULL, // customModTypes
+                                              0, // numCustomMods
+                                              NULL, // customMods
 
                                               // <TODO> should this be FailIfNotLoaded? - NO - although we may
                                               // want to debug unrestored VCs, we can't do it because the debug API
@@ -1017,8 +1017,8 @@ TypeHandle EEDbgInterfaceImpl::LoadFnptrType(TypeHandle *inst,
     return ClassLoader::LoadFnptrTypeThrowing(0, // callConv
                                               ntypars,
                                               inst,
-                                              0, // numMods
-                                              NULL // customModTypes 
+                                              0, // numCustomMods
+                                              NULL // customMods 
                                               );
 }
 
