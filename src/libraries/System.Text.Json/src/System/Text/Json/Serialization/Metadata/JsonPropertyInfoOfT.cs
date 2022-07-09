@@ -184,8 +184,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter? customConverter = CustomConverter;
             if (customConverter != null)
             {
-                customConverter = Options.ExpandFactoryConverter(customConverter, PropertyType);
-                JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(customConverter, PropertyType);
+                customConverter = Options.ExpandConverterFactory(customConverter, PropertyType);
             }
 
             JsonConverter converter = customConverter ?? DefaultConverterForType ?? Options.GetConverterFromTypeInfo(PropertyType);
@@ -230,13 +229,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (IgnoreDefaultValuesOnWrite)
             {
-                // If value is null, it is a reference type or nullable<T>.
-                if (value == null)
+                if (default(T) is null)
                 {
-                    return true;
+                    if (value is null)
+                    {
+                        return true;
+                    }
                 }
-
-                if (!PropertyTypeCanBeNull)
+                else
                 {
                     if (EqualityComparer<T>.Default.Equals(default, value))
                     {
@@ -252,7 +252,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
-            if (value == null)
+            if (value is null)
             {
                 Debug.Assert(PropertyTypeCanBeNull);
 
@@ -321,12 +321,10 @@ namespace System.Text.Json.Serialization.Metadata
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !TypedEffectiveConverter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!PropertyTypeCanBeNull)
+                if (default(T) is not null)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypedEffectiveConverter.TypeToConvert);
                 }
-
-                Debug.Assert(default(T) == null);
 
                 if (!IgnoreDefaultValuesOnRead)
                 {
@@ -341,7 +339,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // CanUseDirectReadOrWrite == false when using streams
                 Debug.Assert(!state.IsContinuation);
 
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !PropertyTypeCanBeNull)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || default(T) is not null)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T? fastValue = TypedEffectiveConverter.Read(ref reader, PropertyType, Options);
@@ -353,7 +351,7 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 success = true;
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !PropertyTypeCanBeNull || state.IsContinuation)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || default(T) is not null || state.IsContinuation)
                 {
                     success = TypedEffectiveConverter.TryRead(ref reader, PropertyType, Options, ref state, out T? value);
                     if (success)
@@ -372,7 +370,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
             if (isNullToken && !TypedEffectiveConverter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!PropertyTypeCanBeNull)
+                if (default(T) is not null)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypedEffectiveConverter.TypeToConvert);
                 }

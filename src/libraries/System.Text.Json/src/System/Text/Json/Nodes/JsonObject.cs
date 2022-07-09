@@ -138,10 +138,7 @@ namespace System.Text.Json.Nodes
                 }
             }
 
-            if (Parent != null)
-            {
-                Parent.GetPath(path, this);
-            }
+            Parent?.GetPath(path, this);
         }
 
         internal void SetItem(string propertyName, JsonNode? value)

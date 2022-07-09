@@ -876,10 +876,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\AnsiStringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\ArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\BStrStringMarshaller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerDirection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerFeatures.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerKind.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\MarshalMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\MarshalUsingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\NativeMarshallingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\PointerArrayMarshaller.cs" />
@@ -2425,6 +2427,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IEqualityOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IExponentialFunctions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPointConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPointIeee754.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IHyperbolicFunctions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IIncrementOperators.cs" />

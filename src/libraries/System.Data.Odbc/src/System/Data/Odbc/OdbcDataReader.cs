@@ -361,9 +361,9 @@ namespace System.Data.Odbc
                     Connection.Close();
                 }
             }
-            else if (null != wrapper)
+            else
             {
-                wrapper.Dispose();
+                wrapper?.Dispose();
             }
 
             _command = null;

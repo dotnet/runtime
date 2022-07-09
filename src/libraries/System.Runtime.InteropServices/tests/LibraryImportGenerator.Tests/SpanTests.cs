@@ -113,7 +113,7 @@ namespace LibraryImportGenerator.IntegrationTests
             int end = 20;
 
             IEnumerable<int> expected = Enumerable.Range(start, end - start);
-            Assert.Equal(expected, NativeExportsNE.Collections.CreateRange(start, end, out _));
+            Assert.Equal(expected, NativeExportsNE.Collections.Stateless.CreateRange(start, end, out _));
 
             Span<int> res;
             NativeExportsNE.Span.CreateRange_Out(start, end, out _, out res);
@@ -123,7 +123,7 @@ namespace LibraryImportGenerator.IntegrationTests
         [Fact]
         public void NullBlittableElementSpanReturnedFromNative()
         {
-            Assert.Null(NativeExportsNE.Collections.CreateRange(1, 0, out _));
+            Assert.Null(NativeExportsNE.Collections.Stateless.CreateRange(1, 0, out _));
 
             Span<int> res;
             NativeExportsNE.Span.CreateRange_Out(1, 0, out _, out res);

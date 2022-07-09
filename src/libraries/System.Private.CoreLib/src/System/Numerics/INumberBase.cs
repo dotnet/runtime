@@ -14,12 +14,13 @@ namespace System.Numerics
           IAdditiveIdentity<TSelf, TSelf>,
           IDecrementOperators<TSelf>,
           IDivisionOperators<TSelf, TSelf, TSelf>,
-          IEqualityOperators<TSelf, TSelf>,     // implies IEquatable<TSelf>
+          IEquatable<TSelf>,
+          IEqualityOperators<TSelf, TSelf, bool>,
           IIncrementOperators<TSelf>,
           IMultiplicativeIdentity<TSelf, TSelf>,
           IMultiplyOperators<TSelf, TSelf, TSelf>,
-          ISpanFormattable,                     // implies IFormattable
-          ISpanParsable<TSelf>,                 // implies IParsable<TSelf>
+          ISpanFormattable,
+          ISpanParsable<TSelf>,
           ISubtractionOperators<TSelf, TSelf, TSelf>,
           IUnaryPlusOperators<TSelf, TSelf>,
           IUnaryNegationOperators<TSelf, TSelf>

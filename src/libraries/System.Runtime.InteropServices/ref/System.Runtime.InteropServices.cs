@@ -815,7 +815,7 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void Clear(void* ptr, nuint byteCount) { throw null; }
     }
-    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>
+    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointConstants<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>
     {
         private readonly int _dummyPrimitive;
         public NFloat(double value) { throw null; }
@@ -862,6 +862,9 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Cos(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cosh(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat CosPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -994,7 +997,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Pow(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalSqrtEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
-        public static System.Runtime.InteropServices.NFloat Root(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
+        public static System.Runtime.InteropServices.NFloat RootN(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, int digits) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, int digits, System.MidpointRounding mode) { throw null; }
@@ -1003,6 +1006,7 @@ namespace System.Runtime.InteropServices
         public static int Sign(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Sin(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static (System.Runtime.InteropServices.NFloat Sin, System.Runtime.InteropServices.NFloat Cos) SinCos(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static (System.Runtime.InteropServices.NFloat SinPi, System.Runtime.InteropServices.NFloat CosPi) SinCosPi(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Sinh(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat SinPi(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Sqrt(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -2169,6 +2173,19 @@ namespace System.Runtime.InteropServices.Marshalling
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }
+
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true)]
+    public sealed partial class CustomMarshallerAttribute : System.Attribute
+    {
+        public CustomMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.MarshalMode marshalMode, System.Type marshallerType) { }
+        public System.Type ManagedType { get { throw null; } }
+        public System.Runtime.InteropServices.Marshalling.MarshalMode MarshalMode { get { throw null; } }
+        public System.Type MarshallerType { get { throw null; } }
+        public struct GenericPlaceholder
+        {
+        }
+    }
+
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
     {
@@ -2203,6 +2220,19 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         Value,
         LinearCollection
+    }
+    public enum MarshalMode
+    {
+        Default = 0,
+        ManagedToUnmanagedIn = 1,
+        ManagedToUnmanagedRef = 2,
+        ManagedToUnmanagedOut = 3,
+        UnmanagedToManagedIn = 4,
+        UnmanagedToManagedRef = 5,
+        UnmanagedToManagedOut = 6,
+        ElementIn = 7,
+        ElementRef = 8,
+        ElementOut = 9
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute

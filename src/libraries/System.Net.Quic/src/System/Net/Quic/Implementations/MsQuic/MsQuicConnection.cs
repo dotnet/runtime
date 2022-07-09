@@ -442,7 +442,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal async ValueTask<MsQuicStream> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
             MsQuicStream stream;
 
@@ -460,7 +460,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private async ValueTask<MsQuicStream> OpenStreamAsync(QUIC_STREAM_OPEN_FLAGS flags, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             if (!Connected)
             {
                 throw new InvalidOperationException(SR.net_quic_not_connected);
@@ -500,7 +500,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal unsafe ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
             if (_configuration is null)
             {
@@ -783,14 +783,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE, errorCode);
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed == 1)
-            {
-                throw new ObjectDisposedException(nameof(MsQuicStream));
-            }
         }
     }
 }

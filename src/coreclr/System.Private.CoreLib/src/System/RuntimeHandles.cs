@@ -1426,8 +1426,8 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
+            scoped ReadOnlySpan<IntPtr> typeInstantiationContextHandles = default;
+            scoped ReadOnlySpan<IntPtr> methodInstantiationContextHandles = default;
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)
@@ -1532,8 +1532,8 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
+            scoped ReadOnlySpan<IntPtr> typeInstantiationContextHandles = default;
+            scoped ReadOnlySpan<IntPtr> methodInstantiationContextHandles = default;
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)

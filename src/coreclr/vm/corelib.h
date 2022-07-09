@@ -906,9 +906,6 @@ DEFINE_METHOD(TPWAITORTIMER_HELPER,             PERFORM_WAITORTIMER_CALLBACK,   
 DEFINE_CLASS(TP_WAIT_CALLBACK,         Threading,              _ThreadPoolWaitCallback)
 DEFINE_METHOD(TP_WAIT_CALLBACK,        PERFORM_WAIT_CALLBACK,               PerformWaitCallback,                   SM_RetBool)
 
-DEFINE_CLASS(TIMER_QUEUE,           Threading,                TimerQueue)
-DEFINE_METHOD(TIMER_QUEUE,          APPDOMAIN_TIMER_CALLBACK, AppDomainTimerCallback,   SM_Int_RetVoid)
-
 DEFINE_CLASS(THREAD_POOL,           Threading,                          ThreadPool)
 DEFINE_METHOD(THREAD_POOL,          ENSURE_GATE_THREAD_RUNNING,         EnsureGateThreadRunning,        SM_RetVoid)
 DEFINE_METHOD(THREAD_POOL,          UNSAFE_QUEUE_UNMANAGED_WORK_ITEM,   UnsafeQueueUnmanagedWorkItem,   SM_IntPtr_IntPtr_RetVoid)
@@ -1226,8 +1223,8 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_Ptr
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
-DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_Int_Obj_RetVoid)
-DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_Int_PtrVoid_RetRefObj)
+DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_IntPtr_Obj_RetVoid)
+DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_IntPtr_PtrVoid_RetRefObj)
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)

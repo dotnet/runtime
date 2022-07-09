@@ -1,13 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
-using System.Text;
+using System.Text.Json.Nodes;
+using System.Text.Json.Nodes.Tests;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Tests;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -1177,6 +1178,271 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(typeof(MyClass), typeToConvert);
                 return ConverterInstance;
             }
+        }
+
+        [Fact]
+        public static void ClassWithExtensionDataAttribute_IsReturnedInMetadata()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var jti = resolver.GetTypeInfo(typeof(ClassWithExtensionDataAttribute), new());
+
+            Assert.Equal(3, jti.Properties.Count);
+            Assert.False(jti.Properties[0].IsExtensionData);
+            Assert.False(jti.Properties[1].IsExtensionData);
+
+            JsonPropertyInfo lastProperty = jti.Properties[2];
+            Assert.Equal("ExtensionData", lastProperty.Name);
+            Assert.Equal(typeof(Dictionary<string, object>), lastProperty.PropertyType);
+            Assert.True(lastProperty.IsExtensionData);
+        }
+
+        [Fact]
+        public static void ClassWithExtensionDataAttribute_ChangingExtensionDataFlagDisablesExtensionData()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithExtensionDataAttribute))
+                            {
+                                Assert.Equal(3, jti.Properties.Count);
+                                Assert.True(jti.Properties[2].IsExtensionData);
+                                jti.Properties[2].IsExtensionData = false;
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithExtensionDataAttribute
+            {
+                Value1 = 1,
+                Value2 = 2,
+                ExtensionData = new Dictionary<string, object>
+                {
+                    ["Value3"] = 3
+                }
+            };
+
+            string json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual("""{"Value1":1,"Value2":2,"ExtensionData":{"Value3":3}}""", json);
+
+            value = JsonSerializer.Deserialize<ClassWithExtensionDataAttribute>("""{"unrecognizedValue":42}""", options);
+            Assert.Null(value.ExtensionData);
+        }
+
+        [Fact]
+        public static void ClassWithExtensionDataAttribute_RemovingExtensionDataPropertyIgnoresExtensionData()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithExtensionDataAttribute))
+                            {
+                                Assert.Equal(3, jti.Properties.Count);
+                                Assert.True(jti.Properties[2].IsExtensionData);
+                                jti.Properties.RemoveAt(2);
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithExtensionDataAttribute
+            {
+                Value1 = 1,
+                Value2 = 2,
+                ExtensionData = new Dictionary<string, object>
+                {
+                    ["Value3"] = 3
+                }
+            };
+
+            string json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual("""{"Value1":1,"Value2":2}""", json);
+
+            value = JsonSerializer.Deserialize<ClassWithExtensionDataAttribute>("""{"unrecognizedValue":42}""", options);
+            Assert.Null(value.ExtensionData);
+        }
+
+        [Theory]
+        [InlineData(typeof(IDictionary<string, object>))]
+        [InlineData(typeof(IDictionary<string, JsonElement>))]
+        [InlineData(typeof(Dictionary<string, object>))]
+        [InlineData(typeof(Dictionary<string, JsonElement>))]
+        [InlineData(typeof(ConcurrentDictionary<string, JsonElement>))]
+        [InlineData(typeof(JsonObject))]
+        public static void EnablingExtensionData_SupportedPropertyType(Type type)
+        {
+            var jti = JsonTypeInfo.CreateJsonTypeInfo(typeof(ClassWithExtensionDataAttribute), new());
+            var jpi = jti.CreateJsonPropertyInfo(type, "ExtensionData");
+
+            Assert.False(jpi.IsExtensionData);
+            jpi.IsExtensionData = true;
+            Assert.True(jpi.IsExtensionData);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(ClassWithExtensionDataAttribute))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(IDictionary<string, string>))]
+        [InlineData(typeof(Dictionary<string, int>))]
+        public static void EnablingExtensionData_UnsupportedPropertyType_ThrowsInvalidOperationException(Type type)
+        {
+            var jti = JsonTypeInfo.CreateJsonTypeInfo(typeof(ClassWithExtensionDataAttribute), new());
+            var jpi = jti.CreateJsonPropertyInfo(type, "ExtensionData");
+
+            Assert.False(jpi.IsExtensionData);
+            Assert.Throws<InvalidOperationException>(() => jpi.IsExtensionData = true);
+        }
+
+        public class ClassWithExtensionDataAttribute
+        {
+            public int Value1 { get; set; }
+            public int Value2 { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> ExtensionData { get; set; }
+        }
+
+        [Fact]
+        public static void ClassWithoutExtensionDataAttribute_CanHaveExtensionDataEnabled()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithTwoExtensionDataLikeProperties))
+                            {
+                                JsonPropertyInfo propertyInfo = jti.Properties.First(prop => prop.Name == "ExtensionData2");
+                                propertyInfo.IsExtensionData = true;
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithTwoExtensionDataLikeProperties
+            {
+                ExtensionData1 = new Dictionary<string, object> { ["extension1"] = 1 },
+                ExtensionData2 = new Dictionary<string, object> { ["extension2"] = 2 },
+            };
+
+            string json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual("""{"ExtensionData1":{"extension1":1},"extension2":2}""", json);
+
+            value = JsonSerializer.Deserialize<ClassWithTwoExtensionDataLikeProperties>("""{"unrecognizedData":3}""", options);
+            Assert.Null(value.ExtensionData1);
+            Assert.NotNull(value.ExtensionData2);
+            Assert.True(value.ExtensionData2.ContainsKey("unrecognizedData"));
+        }
+
+        [Fact]
+        public static void ClassWithoutExtensionDataAttribute_SettingDuplicateExtensionDataProperties_ThrowsInvalidOperationException()
+        {
+            bool resolverRanToCompletion = false;
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithTwoExtensionDataLikeProperties))
+                            {
+                                Assert.Equal(2, jti.Properties.Count);
+                                jti.Properties[0].IsExtensionData = true;
+                                jti.Properties[1].IsExtensionData = true;
+                                resolverRanToCompletion = true;
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithTwoExtensionDataLikeProperties();
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, options));
+            Assert.True(resolverRanToCompletion);
+        }
+
+        public class ClassWithTwoExtensionDataLikeProperties
+        {
+            public Dictionary<string, object> ExtensionData1 { get; set; }
+            public Dictionary<string, object> ExtensionData2 { get; set; }
+        }
+
+        [Fact]
+        public static void DefaultJsonTypeInfoResolver_JsonPropertyInfo_ReturnsMemberInfoAsAttributeProvider()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            JsonTypeInfo jti = resolver.GetTypeInfo(typeof(ClassWithFieldsAndProperties), new());
+
+            Assert.Equal(2, jti.Properties.Count);
+
+            JsonPropertyInfo fieldPropInfo = jti.Properties.First(prop => prop.Name == "Field");
+            FieldInfo fieldInfo = typeof(ClassWithFieldsAndProperties).GetField("Field");
+            Assert.NotNull(fieldInfo);
+            Assert.Same(fieldInfo, fieldPropInfo.AttributeProvider);
+
+            JsonPropertyInfo propertyPropInfo = jti.Properties.First(prop => prop.Name == "Property");
+            PropertyInfo propInfo = typeof(ClassWithFieldsAndProperties).GetProperty("Property");
+            Assert.NotNull(propInfo);
+            Assert.Same(propInfo, propertyPropInfo.AttributeProvider);
+        }
+
+        [Fact]
+        public static void JsonPropertyInfo_AttributeProvider_ReassigningValuesHasNoEffect()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithFieldsAndProperties))
+                            {
+                                Assert.Equal(2, jti.Properties.Count);
+
+                                jti.Properties[0].AttributeProvider = jti.Properties[1].AttributeProvider;
+                                Assert.Same(jti.Properties[0].AttributeProvider, jti.Properties[1].AttributeProvider);
+
+                                jti.Properties[1].AttributeProvider = null;
+                                Assert.Null(jti.Properties[1].AttributeProvider);
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithFieldsAndProperties { Field = "Field", Property = 42 };
+            string json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual("""{"Field":"Field","Property":42}""", json);
+        }
+
+        public class ClassWithFieldsAndProperties
+        {
+            [JsonInclude]
+            public string Field;
+            public int Property { get; set; }
         }
     }
 }

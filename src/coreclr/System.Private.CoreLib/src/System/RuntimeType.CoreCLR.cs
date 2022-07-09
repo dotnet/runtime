@@ -1284,7 +1284,7 @@ namespace System
 
                         // All elements initialized to false.
                         int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
-                        Span<bool> usedSlots = stackalloc bool[0];
+                        scoped Span<bool> usedSlots;
                         if (numVirtuals <= 128) // arbitrary stack limit
                         {
                             usedSlots = stackalloc bool[numVirtuals];

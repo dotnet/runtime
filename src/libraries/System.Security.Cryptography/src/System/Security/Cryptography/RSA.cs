@@ -17,6 +17,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static new partial RSA Create();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new RSA? Create(string algName)
         {

@@ -83,10 +83,7 @@ namespace System.Net.WebSockets
             _closeStatus = null;
             _closeStatusDescription = null;
             _innerStreamAsWebSocketStream = innerStream as IWebSocketStream;
-            if (_innerStreamAsWebSocketStream != null)
-            {
-                _innerStreamAsWebSocketStream.SwitchToOpaqueMode(this);
-            }
+            _innerStreamAsWebSocketStream?.SwitchToOpaqueMode(this);
             _keepAliveTracker = KeepAliveTracker.Create(keepAliveInterval);
         }
 
@@ -372,10 +369,7 @@ namespace System.Net.WebSockets
                 _sendOutstandingOperationHelper.CancelIO();
                 _closeOutputOutstandingOperationHelper.CancelIO();
                 _closeOutstandingOperationHelper.CancelIO();
-                if (_innerStreamAsWebSocketStream != null)
-                {
-                    _innerStreamAsWebSocketStream.Abort();
-                }
+                _innerStreamAsWebSocketStream?.Abort();
                 CleanUp();
             }
             finally
@@ -564,11 +558,8 @@ namespace System.Net.WebSockets
 
                 try
                 {
-                    if (_closeNetworkConnectionTask == null)
-                    {
-                        _closeNetworkConnectionTask =
-                            _innerStreamAsWebSocketStream.CloseNetworkConnectionAsync(cancellationToken);
-                    }
+                    _closeNetworkConnectionTask ??=
+                        _innerStreamAsWebSocketStream.CloseNetworkConnectionAsync(cancellationToken);
 
                     if (thisLockTaken && sessionHandleLockTaken)
                     {
@@ -960,10 +951,7 @@ namespace System.Net.WebSockets
             {
                 lock (_thisLock)
                 {
-                    if (_closeOutputOperation == null)
-                    {
-                        _closeOutputOperation = new WebSocketOperation.CloseOutputOperation(this);
-                    }
+                    _closeOutputOperation ??= new WebSocketOperation.CloseOutputOperation(this);
                 }
             }
         }
@@ -1157,35 +1145,12 @@ namespace System.Net.WebSockets
 
             _cleanedUp = true;
 
-            if (SessionHandle != null)
-            {
-                SessionHandle.Dispose();
-            }
-
-            if (_internalBuffer != null)
-            {
-                _internalBuffer.Dispose(this.State);
-            }
-
-            if (_receiveOutstandingOperationHelper != null)
-            {
-                _receiveOutstandingOperationHelper.Dispose();
-            }
-
-            if (_sendOutstandingOperationHelper != null)
-            {
-                _sendOutstandingOperationHelper.Dispose();
-            }
-
-            if (_closeOutputOutstandingOperationHelper != null)
-            {
-                _closeOutputOutstandingOperationHelper.Dispose();
-            }
-
-            if (_closeOutstandingOperationHelper != null)
-            {
-                _closeOutstandingOperationHelper.Dispose();
-            }
+            SessionHandle?.Dispose();
+            _internalBuffer?.Dispose(this.State);
+            _receiveOutstandingOperationHelper?.Dispose();
+            _sendOutstandingOperationHelper?.Dispose();
+            _closeOutputOutstandingOperationHelper?.Dispose();
+            _closeOutstandingOperationHelper?.Dispose();
 
             if (_innerStream != null)
             {
@@ -2104,10 +2069,7 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                if (snapshot != null)
-                {
-                    snapshot.Dispose();
-                }
+                snapshot?.Dispose();
             }
 
             // Has to be called under _ThisLock lock
@@ -2169,10 +2131,7 @@ namespace System.Net.WebSockets
                     _cancellationTokenSource = null;
                 }
 
-                if (snapshot != null)
-                {
-                    snapshot.Dispose();
-                }
+                snapshot?.Dispose();
             }
 
             private void ThrowIfDisposed()

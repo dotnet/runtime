@@ -126,10 +126,7 @@ namespace System.Xml.XPath
                 {
                     value = schemaType.ValueConverter.ToString(typedValue, this);
                     XmlSchemaDatatype? datatype = schemaType.Datatype;
-                    if (datatype != null)
-                    {
-                        datatype.ParseValue(value, NameTable, this);
-                    }
+                    datatype?.ParseValue(value, NameTable, this);
                 }
             }
             value ??= XmlUntypedConverter.Untyped.ToString(typedValue, this);
@@ -346,10 +343,7 @@ namespace System.Xml.XPath
 
         public override object ValueAs(Type returnType, IXmlNamespaceResolver? nsResolver)
         {
-            if (nsResolver == null)
-            {
-                nsResolver = this;
-            }
+            nsResolver ??= this;
             IXmlSchemaInfo? schemaInfo = SchemaInfo;
             XmlSchemaType? schemaType;
             XmlSchemaDatatype? datatype;

@@ -716,12 +716,9 @@ namespace System.Configuration
                 }
 
                 // Add implicit sections to the factory list
-                if (factoryList == null)
-                {
-                    // But if factoryList isn't found in this config, we still try to
-                    // add implicit sections to an empty factoryList.
-                    factoryList = new Hashtable();
-                }
+                // But if factoryList isn't found in this config, we still try to
+                // add implicit sections to an empty factoryList.
+                factoryList ??= new Hashtable();
 
                 AddImplicitSections(factoryList);
                 factoryRecord = (FactoryRecord)factoryList[configKey];

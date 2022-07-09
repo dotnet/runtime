@@ -2034,22 +2034,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif
 
 	/* Fallback if SIMD is disabled */
-	if (in_corlib && !strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) {
+	if (in_corlib && 
+		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) || 
+		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
 		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
 		}
-	}
-
-	// Return false for IsSupported for all types in System.Runtime.Intrinsics.*
-	// if it's not handled in mono_emit_simd_intrinsics
-	if (in_corlib &&
-		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25) &&
-		!strcmp (cmethod->name, "get_IsSupported")) {
-		EMIT_NEW_ICONST (cfg, ins, 0);
-		ins->type = STACK_I4;
-		return ins;
 	}
 
 	// Return false for RuntimeFeature.IsDynamicCodeSupported and RuntimeFeature.IsDynamicCodeCompiled on FullAOT, otherwise true

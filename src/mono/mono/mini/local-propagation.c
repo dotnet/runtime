@@ -500,7 +500,7 @@ mono_local_cprop (MonoCompile *cfg)
 	MonoBasicBlock *bb, *bb_opt;
 	MonoInst **defs;
 	gint32 *def_index;
-	int max;
+	guint32 max;
 	int filter = FILTER_IL_SEQ_POINT;
 	int initial_max_vregs = cfg->next_vreg;
 
