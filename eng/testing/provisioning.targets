@@ -1,25 +1,13 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)ProvisioningVersions.props" />
-
   <PropertyGroup>
-    <BrowserStampDir>$(ArtifactsBinDir)\</BrowserStampDir>
-
     <ChromeDir>$(ArtifactsBinDir)chrome\</ChromeDir>
-    <ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromeDirName), $(ChromeBinaryName)))</ChromeBinaryPath>
-    <ChromeStampFile>$(BrowserStampDir).install-chrome-$(ChromeRevision).stamp</ChromeStampFile>
-
-    <ChromeDriverDir>$(ArtifactsBinDir)chromedriver\</ChromeDriverDir>
-    <ChromeDriverBinaryPath>$([MSBuild]::NormalizePath($(ChromeDriverDir), $(ChromeDriverDirName), $(ChromeDriverBinaryName)))</ChromeDriverBinaryPath>
-    <ChromeDriverStampFile>$(BrowserStampDir).install-chromedriver-$(ChromeRevision).stamp</ChromeDriverStampFile>
-
+    <BrowserStampDir>$(ArtifactsBinDir)\</BrowserStampDir>
+    <ChromeStampFile>$(BrowserStampDir).install-chrome-$(ChromiumRevision).stamp</ChromeStampFile>
     <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
     <FirefoxStampFile>$(BrowserStampDir).install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <_Prereq Include="chrome" Targets="DownloadAndInstallChrome;DownloadAndInstallChromeDriver" />
-    <_Prereq Include="firefox" Targets="DownloadAndInstallFirefox" />
-  </ItemGroup>
+  <Import Project="$(MSBuildThisFileDirectory)ProvisioningVersions.props" />
 
   <Target Name="DownloadAndInstallChrome"
           AfterTargets="Build"
@@ -32,43 +20,22 @@
     <Delete Files="@(_StampFile)" />
     <RemoveDir Directories="$(ChromeDir)" />
 
-    <DownloadFile SourceUrl="$(ChromeUrl)" DestinationFolder="$(ChromeDir)" SkipUnchangedFiles="true">
+    <DownloadFile SourceUrl="$(ChromiumUrl)" DestinationFolder="$(ChromeDir)" SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
     <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDir)" />
 
-    <Error Text="Cannot find chrome at $(ChromeBinaryPath) in the downloaded copy"
-           Condition="!Exists($(ChromeBinaryPath))" />
+    <PropertyGroup>
+      <_ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromiumDirName), $(ChromiumBinaryName)))</_ChromeBinaryPath>
+    </PropertyGroup>
 
-    <Exec Command="chmod +x $(ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+    <Error Text="Cannot find chrome at $(_ChromeBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_ChromeBinaryPath))" />
+
+    <Exec Command="chmod +x $(_ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
 
     <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
   </Target>
-
-  <Target Name="DownloadAndInstallChromeDriver"
-          AfterTargets="Build"
-          Condition="!Exists($(ChromeDriverStampFile)) and '$(InstallChromeDriverForTests)' == 'true'">
-
-    <ItemGroup>
-      <_StampFile Include="$(BrowserStampDir).install-chrome*.stamp" />
-    </ItemGroup>
-
-    <Delete Files="@(_StampFile)" />
-    <RemoveDir Directories="$(ChromeDriverDir)" />
-
-    <DownloadFile SourceUrl="$(ChromeDriverUrl)" DestinationFolder="$(ChromeDriverDir)" SkipUnchangedFiles="true">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDriverDir)" />
-
-    <Error Text="Cannot find chrome at $(ChromeDriverBinaryPath) in the downloaded copy"
-           Condition="!Exists($(ChromeDriverBinaryPath))" />
-
-    <Exec Command="chmod +x $(ChromeDriverBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
-
-    <Touch Files="$(ChromeDriverStampFile)" AlwaysCreate="true" />
-  </Target>
-
 
   <Target Name="DownloadAndInstallFirefox"
           AfterTargets="Build"

@@ -144,15 +144,5 @@
                              RootAttributes="@(FrameworkListRootAttribute)" />
   </Target>
 
-  <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
-
-  <Target Name="InstallWasmTestPrereqs"
-          DependsOnTargets="DownloadAndInstallChrome;DownloadAndInstallChromeDriver" />
-
-  <Target Name="_InstallWasmPrereqsInContainer"
-          DependsOnTargets="InstallWasmTestPrereqs"
-          Condition="Exists('/.dockerenv')"
-          AfterTargets="BuildExternalsProject" />
-
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 </Project>
