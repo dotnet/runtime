@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Creates a <see cref="MultiStringMatcher"/> from a trie, and
-        /// calculates its nodes' suffix and dictionary links.
+        /// calculates its nodes' suffix links and match lengths.
         /// </summary>
         internal MultiStringMatcher(List<TrieNode> trie)
         {
