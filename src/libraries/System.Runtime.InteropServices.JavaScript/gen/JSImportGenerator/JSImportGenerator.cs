@@ -168,9 +168,6 @@ namespace Microsoft.Interop.JavaScript
             MemberDeclarationSyntax containingType = CreateTypeDeclarationWithoutTrivia(stub.StubContainingTypes.First())
                 .AddMembers(stubMethod, sigField);
 
-            // Mark containing type as unsafe such that all the generated functions will be in an unsafe context.
-            // containingType = containingType.WithModifiers(AddToModifiers(containingType.Modifiers, SyntaxKind.UnsafeKeyword));
-
             // Add type to the remaining containing types (skipping the first which was handled above)
             foreach (TypeDeclarationSyntax typeDecl in stub.StubContainingTypes.Skip(1))
             {

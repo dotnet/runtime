@@ -5,33 +5,22 @@ namespace Microsoft.Interop.JavaScript
 {
     internal static class Constants
     {
-        public const int JavaScriptMarshalerArgSize = 16;
         public const string JSMarshalAsAttribute = "System.Runtime.InteropServices.JavaScript.JSMarshalAsAttribute`1";
         public const string MarshalUsingAttribute = "System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute";
         public const string JSImportAttribute = "System.Runtime.InteropServices.JavaScript.JSImportAttribute";
-        public const string JSCustomTypeMarshaller = "System.Runtime.InteropServices.JavaScript.JSCustomTypeMarshaller";
         public const string JSExportAttribute = "System.Runtime.InteropServices.JavaScript.JSExportAttribute";
         public const string JavaScriptMarshal = "System.Runtime.InteropServices.JavaScript.JavaScriptMarshal";
-        public const string JavaScriptPublic = "System.Runtime.InteropServices.JavaScript";
 
-        public const string JavaScriptMarshalGlobal = "global::" + JavaScriptMarshal;
         public const string JSFunctionSignatureGlobal = "global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding";
         public const string JSMarshalerArgumentGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument";
         public const string ModuleInitializerAttributeGlobal = "global::System.Runtime.CompilerServices.ModuleInitializerAttribute";
         public const string DynamicDependencyAttributeGlobal = "global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute";
         public const string ThreadStaticGlobal = "global::System.ThreadStaticAttribute";
-        public const string UnsafeGlobal = "global::System.Runtime.CompilerServices.Unsafe";
-        public const string IntPtrGlobal = "global::System.IntPtr";
-        public const string TypeGlobal = "global::System.Type";
-        public const string StringGlobal = "global::System.String";
         public const string TaskGlobal = "global::System.Threading.Tasks.Task";
-        public const string ValueTypeGlobal = "global::System.ValueType";
         public const string SpanGlobal = "global::System.Span";
         public const string ArraySegmentGlobal = "global::System.ArraySegment";
         public const string FuncGlobal = "global::System.Func";
         public const string ActionGlobal = "global::System.Action";
-        public const string UnsafeSkipInitGlobal = "global::System.Runtime.CompilerServices.Unsafe.SkipInit";
-        public const string ExceptionGlobal = "global::System.Exception";
         public const string OSArchitectureGlobal = "global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture";
         public const string ArchitectureWasmGlobal = "global::System.Runtime.InteropServices.Architecture.Wasm";
         public const string ArgumentsBuffer = "__arguments_buffer";
@@ -39,10 +28,8 @@ namespace Microsoft.Interop.JavaScript
         public const string ArgumentReturn = "__arg_return";
         public const string ToJSMethod = "ToJS";
         public const string ToJSBigMethod = "ToJSBig";
-        public const string ToJSNative = "NativeToJS";
         public const string ToManagedMethod = "ToManaged";
         public const string ToManagedBigMethod = "ToManagedBig";
-        public const string ToManagedNativeMethod = "JSToNative";
         public const string BindJSFunctionMethod = "BindJSFunction";
         public const string BindCSFunctionMethod = "BindManagedFunction";
         public const string JSMarshalerTypeGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType";
