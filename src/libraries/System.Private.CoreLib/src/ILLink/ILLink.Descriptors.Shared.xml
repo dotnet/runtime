@@ -79,8 +79,6 @@
     <type fullname="System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller/ManagedToUnmanagedIn">
       <method name="FromManaged" />
       <method name="ToUnmanaged" />
-      <method name="FromUnmanaged" />
-      <method name="ToManaged" />
       <method name="Free" />
     </type>
   </assembly>

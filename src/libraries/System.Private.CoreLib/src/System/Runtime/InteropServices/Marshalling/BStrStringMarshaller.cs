@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Requested buffer size for optimized marshalling.
             /// </summary>
-            public static int BufferSize { get; } = 0x100;
+            public static int BufferSize => 0x100;
 
             private ushort* _ptrToFirstChar;
             private bool _allocated;
@@ -105,22 +105,6 @@ namespace System.Runtime.InteropServices.Marshalling
             /// </summary>
             /// <returns>The unmanaged string</returns>
             public ushort* ToUnmanaged() => _ptrToFirstChar;
-
-            /// <summary>
-            /// Initialize the marshaller with an unmanaged string.
-            /// </summary>
-            /// <param name="unmanaged">An unmanaged string</param>
-            public void FromUnmanaged(ushort* unmanaged)
-            {
-                _ptrToFirstChar = unmanaged;
-                _allocated = true;
-            }
-
-            /// <summary>
-            /// Convert the current unmanage string to an managed string.
-            /// </summary>
-            /// <returns>A managed string</returns>
-            public string? ToManaged() => ConvertToManaged(_ptrToFirstChar);
 
             /// <summary>
             /// Free any allocated unmanaged string.

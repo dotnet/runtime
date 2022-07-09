@@ -1665,19 +1665,20 @@ namespace Internal.TypeSystem.Interop
             Debug.Assert(_marshallerInstance is null);
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
+                                Marshaller.GetKnownMethod("Free", null)));
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            TypeDesc marshallerIn = MarshallerIn;
-
-            if (_marshallerInstance == null)
-                _marshallerInstance = emitter.NewLocal(marshallerIn);
 
             if (In && !Out && !IsManagedByRef)
             {
+                TypeDesc marshallerIn = MarshallerIn;
+
+                if (_marshallerInstance == null)
+                    _marshallerInstance = emitter.NewLocal(marshallerIn);
+
                 var vBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
                 codeStream.EmitLdc(LocalBufferLength);
                 codeStream.Emit(ILOpcode.localloc);
@@ -1724,10 +1725,8 @@ namespace Internal.TypeSystem.Interop
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
-            if (In && !Out && !IsManagedByRef)
+            if (_marshallerInstance != null)
             {
-                Debug.Assert(_marshallerInstance != null);
-
                 codeStream.EmitLdLoca(_marshallerInstance.Value);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                     MarshallerIn.GetKnownMethod("Free", null)));

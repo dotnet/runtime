@@ -2141,8 +2141,6 @@ namespace System.Runtime.InteropServices.Marshalling
             public static int BufferSize { get { throw null; } }
             public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
             public byte* ToUnmanaged()  { throw null; }
-            public void FromUnmanaged(byte* unmanaged) { throw null; }
-            public string? ToManaged() { throw null; }
             public void Free() { throw null; }
         }
     }
@@ -2185,8 +2183,6 @@ namespace System.Runtime.InteropServices.Marshalling
             public static int BufferSize { get { throw null; } }
             public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
             public ushort* ToUnmanaged()  { throw null; }
-            public void FromUnmanaged(ushort* unmanaged) { throw null; }
-            public string? ToManaged() { throw null; }
             public void Free() { throw null; }
         }
     }
@@ -2306,8 +2302,6 @@ namespace System.Runtime.InteropServices.Marshalling
             public static int BufferSize { get { throw null; } }
             public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
             public byte* ToUnmanaged()  { throw null; }
-            public void FromUnmanaged(byte* unmanaged) { throw null; }
-            public string? ToManaged() { throw null; }
             public void Free() { throw null; }
         }
     }

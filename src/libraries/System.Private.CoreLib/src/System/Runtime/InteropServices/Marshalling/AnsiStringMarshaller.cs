@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Requested buffer size for optimized marshalling.
             /// </summary>
-            public static int BufferSize { get; } = 0x100;
+            public static int BufferSize => 0x100;
 
             private byte* _unmanagedValue;
             private bool _allocated;
@@ -72,7 +72,7 @@ namespace System.Runtime.InteropServices.Marshalling
                     int exactByteCount = Marshal.GetAnsiStringByteCount(managed); // Includes null terminator
                     if (exactByteCount > buffer.Length)
                     {
-                        buffer = new Span<byte>((byte*)Marshal.AllocCoTaskMem(exactByteCount), exactByteCount);
+                        buffer = new Span<byte>((byte*)NativeMemory.Alloc((nuint)exactByteCount), exactByteCount);
                         _allocated = true;
                     }
                 }
@@ -89,28 +89,12 @@ namespace System.Runtime.InteropServices.Marshalling
             public byte* ToUnmanaged() => _unmanagedValue;
 
             /// <summary>
-            /// Initialize the marshaller with an unmanaged string.
-            /// </summary>
-            /// <param name="unmanaged">An unmanaged string</param>
-            public void FromUnmanaged(byte* unmanaged)
-            {
-                _unmanagedValue = unmanaged;
-                _allocated = true;
-            }
-
-            /// <summary>
-            /// Convert the current unmanage string to an managed string.
-            /// </summary>
-            /// <returns>A managed string</returns>
-            public string? ToManaged() => ConvertToManaged(_unmanagedValue);
-
-            /// <summary>
             /// Free any allocated unmanaged string.
             /// </summary>
             public void Free()
             {
                 if (_allocated)
-                    AnsiStringMarshaller.Free(_unmanagedValue);
+                    NativeMemory.Free(_unmanagedValue);
             }
         }
     }
