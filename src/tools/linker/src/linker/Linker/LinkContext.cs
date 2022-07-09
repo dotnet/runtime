@@ -38,6 +38,7 @@ using ILLink.Shared;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Linker.Dataflow;
 using Mono.Linker.Steps;
 
 namespace Mono.Linker

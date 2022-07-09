@@ -10,7 +10,7 @@ using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-namespace Mono.Linker
+namespace Mono.Linker.Dataflow
 {
 	// Currently this is implemented using heuristics
 	public class CompilerGeneratedState
@@ -173,8 +173,8 @@ namespace Mono.Linker
 
 				if (TryGetStateMachineType (method, out TypeDefinition? stateMachineType)) {
 					Debug.Assert (stateMachineType.DeclaringType == type ||
-						(CompilerGeneratedNames.IsGeneratedMemberName (stateMachineType.DeclaringType.Name) &&
-						 stateMachineType.DeclaringType.DeclaringType == type));
+						CompilerGeneratedNames.IsGeneratedMemberName (stateMachineType.DeclaringType.Name) &&
+						 stateMachineType.DeclaringType.DeclaringType == type);
 					callGraph.TrackCall (method, stateMachineType);
 
 					if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd (stateMachineType, method)) {
@@ -396,7 +396,7 @@ namespace Mono.Linker
 					return true;
 			}
 
-			TypeDefinition sourceType = (sourceMember as TypeDefinition) ?? sourceMember.DeclaringType;
+			TypeDefinition sourceType = sourceMember as TypeDefinition ?? sourceMember.DeclaringType;
 
 			if (_compilerGeneratedTypeToUserCodeMethod.TryGetValue (sourceType, out owningMethod))
 				return true;
