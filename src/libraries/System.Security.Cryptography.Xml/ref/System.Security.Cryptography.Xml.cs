@@ -13,7 +13,9 @@ namespace System.Security.Cryptography.Xml
         public CipherData() { }
         public CipherData(byte[] cipherValue) { }
         public CipherData(System.Security.Cryptography.Xml.CipherReference cipherReference) { }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public System.Security.Cryptography.Xml.CipherReference? CipherReference { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public byte[]? CipherValue { get { throw null; } set { } }
         public System.Xml.XmlElement GetXml() { throw null; }
         public void LoadXml(System.Xml.XmlElement value) { }

@@ -33,6 +33,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [DisallowNull]
         public CipherReference? CipherReference
         {
             get { return _cipherReference; }
@@ -48,6 +49,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [DisallowNull]
         public byte[]? CipherValue
         {
             get { return _cipherValue; }
