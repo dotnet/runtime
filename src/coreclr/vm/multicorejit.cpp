@@ -1185,16 +1185,13 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
 
     if ((pProfile != NULL) && (pProfile[0] != 0)) // Ignore empty file name, just same as StopProfile
     {
-        bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
-
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
-            pBinder,
-            gatherProfile);
+            pBinder);
 
         if (pRecorder != NULL)
         {
-            gatherProfile = pRecorder->CanGatherProfile();
+            bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
 
             m_pMulticoreJitRecorder = pRecorder;
 
@@ -1204,9 +1201,11 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
 
             MulticoreJitTrace(("MulticoreJitRecorder session %d created: %x", sessionID, hr));
 
-            if ((hr == COR_E_BADIMAGEFORMAT) || SUCCEEDED(hr)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
+            if ((hr == COR_E_BADIMAGEFORMAT) || (SUCCEEDED(hr) && gatherProfile)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
             {
-                m_fRecorderActive = gatherProfile;
+                m_pMulticoreJitRecorder->Activate();
+
+                m_fRecorderActive = m_pMulticoreJitRecorder->CanGatherProfile();
             }
 
             _FireEtwMulticoreJit(W("STARTPROFILE"), W("Recorder"), m_fRecorderActive, hr, 0);

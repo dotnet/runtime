@@ -369,4 +369,31 @@ public:
         uint32_t        varNumber;
         VarLoc          loc;
     };
+
+    // Represents an individual entry in the inline tree.
+    // This is ordinarily stored as a flat array in which [0] is the root, and
+    // the indices below indicate the tree structure.
+    struct InlineTreeNode
+    {
+        // Method handle of inlinee (or root)
+        CORINFO_METHOD_HANDLE Method;
+        // IL offset of IL instruction resulting in the inline
+        uint32_t ILOffset;
+        // Index of child in tree, 0 if no children
+        uint32_t Child;
+        // Index of sibling in tree, 0 if no sibling
+        uint32_t Sibling;
+    };
+
+    struct RichOffsetMapping
+    {
+        // Offset in emitted code
+        uint32_t NativeOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        uint32_t Inlinee;
+        // IL offset of IL instruction in inlinee that this mapping was created from
+        uint32_t ILOffset;
+        // Source information about the IL instruction in the inlinee
+        SourceTypes Source;
+    };
 };

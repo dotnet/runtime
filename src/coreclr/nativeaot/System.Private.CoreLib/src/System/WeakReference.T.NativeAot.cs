@@ -54,12 +54,7 @@ namespace System
                 if (default(IntPtr) == h)
                     return default;
 
-                T? target = Unsafe.As<T?>(RuntimeImports.RhHandleGet(h));
-
-                if (target == null)
-                {
-                    target = TryGetComTarget() as T;
-                }
+                T? target = Unsafe.As<T?>(RuntimeImports.RhHandleGet(h)) ?? TryGetComTarget() as T;
 
                 // We want to ensure that the handle was still alive when we fetched the target,
                 // so we double check m_handle here. Note that the reading of the handle

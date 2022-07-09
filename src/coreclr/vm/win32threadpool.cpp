@@ -118,8 +118,6 @@ DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) unsigned int ThreadpoolMgr::LastDequeueTime;
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestHead);        // Head of work request queue
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestTail);        // Head of work request queue
 
-SVAL_IMPL(ThreadpoolMgr::LIST_ENTRY,ThreadpoolMgr,TimerQueue);  // queue of timers
-
 //unsigned int ThreadpoolMgr::LastCpuSamplingTime=0;      //  last time cpu utilization was sampled by gate thread
 unsigned int ThreadpoolMgr::LastCPThreadCreation=0;     //  last time a completion port thread was created
 unsigned int ThreadpoolMgr::NumberOfProcessors; // = NumberOfWorkerThreads - no. of blocked threads
@@ -133,20 +131,11 @@ ThreadpoolMgr::LIST_ENTRY ThreadpoolMgr::WaitThreadsHead;
 CLRLifoSemaphore* ThreadpoolMgr::WorkerSemaphore;
 CLRLifoSemaphore* ThreadpoolMgr::RetiredWorkerSemaphore;
 
-CrstStatic ThreadpoolMgr::TimerQueueCriticalSection;
-HANDLE ThreadpoolMgr::TimerThread=NULL;
-Thread *ThreadpoolMgr::pTimerThread=NULL;
-
-// Cacheline aligned, hot variable
-DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) DWORD ThreadpoolMgr::LastTickCount;
-
 // Cacheline aligned, hot variable
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) LONG  ThreadpoolMgr::GateThreadStatus=GATE_THREAD_STATUS_NOT_RUNNING;
 
 // Move out of from preceeding variables' cache line
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) ThreadpoolMgr::RecycledListsWrapper ThreadpoolMgr::RecycledLists;
-
-ThreadpoolMgr::TimerInfo *ThreadpoolMgr::TimerInfosToBeRecycled = NULL;
 
 BOOL ThreadpoolMgr::IsApcPendingOnWaitThread = FALSE;
 
@@ -291,11 +280,6 @@ BOOL ThreadpoolMgr::Initialize()
 
     EX_TRY
     {
-        TimerQueueCriticalSection.Init(CrstThreadpoolTimerQueue);
-
-        // initialize TimerQueue
-        InitializeListHead(&TimerQueue);
-
 #ifndef TARGET_UNIX
         //ThreadPool_CPUGroup
         if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
@@ -308,9 +292,6 @@ BOOL ThreadpoolMgr::Initialize()
     }
     EX_CATCH
     {
-        // Note: It is fine to call Destroy on uninitialized critical sections
-        TimerQueueCriticalSection.Destroy();
-
         bExceptionCaught = TRUE;
     }
     EX_END_CATCH(SwallowAllExceptions);
@@ -1155,6 +1136,7 @@ BOOL ThreadpoolMgr::SufficientDelaySinceLastSample(unsigned int LastThreadCreati
 #endif
 #endif
 
+<<<<<<< HEAD
 /************************************************************************/
 
 struct CreateTimerThreadParams {
@@ -1924,4 +1906,6 @@ void ThreadpoolMgr::DeregisterTimer(TimerInfo* pArgs)
     return;
 }
 
+=======
+>>>>>>> main
 #endif // !DACCESS_COMPILE

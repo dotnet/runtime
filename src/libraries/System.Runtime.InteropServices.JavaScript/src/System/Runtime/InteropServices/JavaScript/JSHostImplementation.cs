@@ -238,9 +238,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (taskType != null)
             {
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                MethodInfo result = taskType.GetMethod(TaskGetResultName);
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+                MethodInfo? result = taskType.GetMethod(TaskGetResultName);
                 if (result != null && result.HasSameMetadataDefinitionAs(s_taskGetResultMethodInfo))
                 {
                     return result;

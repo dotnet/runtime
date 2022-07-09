@@ -20,9 +20,9 @@ namespace SharedTypes
         public string str2;
     }
 
-    [CustomMarshaller(typeof(StringContainer), Scenario.ManagedToUnmanagedIn, typeof(In))]
-    [CustomMarshaller(typeof(StringContainer), Scenario.ManagedToUnmanagedRef, typeof(Ref))]
-    [CustomMarshaller(typeof(StringContainer), Scenario.ManagedToUnmanagedOut, typeof(Out))]
+    [CustomMarshaller(typeof(StringContainer), MarshalMode.ManagedToUnmanagedIn, typeof(In))]
+    [CustomMarshaller(typeof(StringContainer), MarshalMode.ManagedToUnmanagedRef, typeof(Ref))]
+    [CustomMarshaller(typeof(StringContainer), MarshalMode.ManagedToUnmanagedOut, typeof(Out))]
     public static class StringContainerMarshaller
     {
         public struct StringContainerNative
@@ -77,7 +77,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomMarshaller(typeof(double), Scenario.ManagedToUnmanagedIn, typeof(DoubleToBytesBigEndianMarshaller))]
+    [CustomMarshaller(typeof(double), MarshalMode.ManagedToUnmanagedIn, typeof(DoubleToBytesBigEndianMarshaller))]
     public static unsafe class DoubleToBytesBigEndianMarshaller
     {
         public const int BufferSize = 8;
@@ -89,7 +89,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomMarshaller(typeof(double), Scenario.ManagedToUnmanagedIn, typeof(DoubleToLongMarshaller))]
+    [CustomMarshaller(typeof(double), MarshalMode.ManagedToUnmanagedIn, typeof(DoubleToLongMarshaller))]
     public static class DoubleToLongMarshaller
     {
         public static long ConvertToUnmanaged(double managed)
@@ -106,7 +106,7 @@ namespace SharedTypes
         public bool b3;
     }
 
-    [CustomMarshaller(typeof(BoolStruct), Scenario.Default, typeof(BoolStructMarshaller))]
+    [CustomMarshaller(typeof(BoolStruct), MarshalMode.Default, typeof(BoolStructMarshaller))]
     public static class BoolStructMarshaller
     {
         public struct BoolStructNative
@@ -145,7 +145,7 @@ namespace SharedTypes
         public ref int GetPinnableReference() => ref i;
     }
 
-    [CustomMarshaller(typeof(IntWrapper), Scenario.Default, typeof(IntWrapperMarshaller))]
+    [CustomMarshaller(typeof(IntWrapper), MarshalMode.Default, typeof(IntWrapperMarshaller))]
     public static unsafe class IntWrapperMarshaller
     {
         public static int* ConvertToUnmanaged(IntWrapper managed)
@@ -166,7 +166,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomMarshaller(typeof(IntWrapper), Scenario.Default, typeof(Marshaller))]
+    [CustomMarshaller(typeof(IntWrapper), MarshalMode.Default, typeof(Marshaller))]
     public static unsafe class IntWrapperMarshallerStateful
     {
         public struct Marshaller
@@ -205,7 +205,7 @@ namespace SharedTypes
         public int i;
     }
 
-    [CustomMarshaller(typeof(IntWrapperWithoutGetPinnableReference), Scenario.Default, typeof(IntWrapperWithoutGetPinnableReferenceMarshaller))]
+    [CustomMarshaller(typeof(IntWrapperWithoutGetPinnableReference), MarshalMode.Default, typeof(IntWrapperWithoutGetPinnableReferenceMarshaller))]
     public static unsafe class IntWrapperWithoutGetPinnableReferenceMarshaller
     {
         public static int* ConvertToUnmanaged(IntWrapperWithoutGetPinnableReference managed)
@@ -228,7 +228,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomMarshaller(typeof(IntWrapperWithoutGetPinnableReference), Scenario.ManagedToUnmanagedIn, typeof(StatelessGetPinnableReference))]
+    [CustomMarshaller(typeof(IntWrapperWithoutGetPinnableReference), MarshalMode.ManagedToUnmanagedIn, typeof(StatelessGetPinnableReference))]
     public static unsafe class IntWrapperWithoutGetPinnableReferenceStatefulMarshaller
     {
         public struct StatelessGetPinnableReference
@@ -242,7 +242,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomMarshaller(typeof(IntWrapperWithoutGetPinnableReference), Scenario.ManagedToUnmanagedIn, typeof(StatefulGetPinnableReference))]
+    [CustomMarshaller(typeof(IntWrapperWithoutGetPinnableReference), MarshalMode.ManagedToUnmanagedIn, typeof(StatefulGetPinnableReference))]
     public static unsafe class IntWrapperWithoutGetPinnableReferenceStatefulNoAllocMarshaller
     {
         public struct StatefulGetPinnableReference
@@ -281,7 +281,7 @@ namespace SharedTypes
         }
     }
 
-    [CustomMarshaller(typeof(IntWrapperWithNotification), Scenario.Default, typeof(Marshaller))]
+    [CustomMarshaller(typeof(IntWrapperWithNotification), MarshalMode.Default, typeof(Marshaller))]
     public static class IntWrapperWithNotificationMarshaller
     {
         public struct Marshaller
@@ -296,11 +296,11 @@ namespace SharedTypes
 
             public IntWrapperWithNotification ToManaged() => _managed;
 
-            public void NotifyInvokeSucceeded() => _managed.RaiseInvokeSucceeded();
+            public void OnInvoked() => _managed.RaiseInvokeSucceeded();
         }
     }
 
-    [CustomMarshaller(typeof(BoolStruct), Scenario.Default, typeof(Marshaller))]
+    [CustomMarshaller(typeof(BoolStruct), MarshalMode.Default, typeof(Marshaller))]
     public static class BoolStructMarshallerStateful
     {
         public struct BoolStructNative
@@ -339,8 +339,9 @@ namespace SharedTypes
         }
     }
 
-    [CustomMarshaller(typeof(List<>), Scenario.Default, typeof(ListMarshaller<,>))]
-    public unsafe static class ListMarshaller<T, [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+    [ContiguousCollectionMarshaller]
+    [CustomMarshaller(typeof(List<>), MarshalMode.Default, typeof(ListMarshaller<,>))]
+    public unsafe static class ListMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public static byte* AllocateContainerForUnmanagedElements(List<T> managed, out int numElements)
             => AllocateContainerForUnmanagedElements(managed, Span<byte>.Empty, out numElements);
@@ -397,8 +398,94 @@ namespace SharedTypes
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
     }
 
-    [CustomMarshaller(typeof(List<>), Scenario.Default, typeof(ListMarshallerWithPinning<,>))]
-    public unsafe static class ListMarshallerWithPinning<T, [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+    [ContiguousCollectionMarshaller]
+    [CustomMarshaller(typeof(List<>), MarshalMode.Default, typeof(ListMarshallerStateful<,>.Marshaller))]
+    public unsafe static class ListMarshallerStateful<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
+    {
+        public ref struct Marshaller
+        {
+            private List<T> _list;
+            private IntPtr _allocatedMemory;
+            private Span<TUnmanagedElement> _span;
+
+            public static int BufferSize { get; } = 0x200;
+
+            public void FromManaged(List<T> managed)
+            {
+                FromManaged(managed, Span<TUnmanagedElement>.Empty);
+            }
+
+            public void FromManaged(List<T> managed, Span<TUnmanagedElement> buffer)
+            {
+                _allocatedMemory = default;
+                if (managed is null)
+                {
+                    _list = null;
+                    _span = default;
+                    return;
+                }
+
+                _list = managed;
+                // Always allocate at least one byte when the list is zero-length.
+                int spaceToAllocate = Math.Max(managed.Count * sizeof(TUnmanagedElement), 1);
+                if (spaceToAllocate <= buffer.Length)
+                {
+                    _span = buffer[0..spaceToAllocate];
+                }
+                else
+                {
+                    _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+                    _span = new Span<TUnmanagedElement>((void*)_allocatedMemory, managed.Count);
+                }
+            }
+
+            public ReadOnlySpan<T> GetManagedValuesSource() => CollectionsMarshal.AsSpan(_list);
+
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => _span;
+
+            public ref TUnmanagedElement GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
+
+            public byte* ToUnmanaged() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
+
+            public Span<T> GetManagedValuesDestination(int length)
+            {
+                if (_allocatedMemory == IntPtr.Zero)
+                {
+                    _list = null;
+                    return default;
+                }
+
+                _list = new List<T>(length);
+                for (int i = 0; i < length; i++)
+                {
+                    _list.Add(default);
+                }
+                return CollectionsMarshal.AsSpan(_list);
+            }
+
+            public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int length)
+            {
+                if (_allocatedMemory == IntPtr.Zero)
+                    return default;
+
+                return _span = new Span<TUnmanagedElement>((void*)_allocatedMemory, length);
+            }
+
+            public void FromUnmanaged(byte* value)
+            {
+                _allocatedMemory = (IntPtr)value;
+            }
+
+            public List<T> ToManaged() => _list;
+
+            public void Free() => Marshal.FreeCoTaskMem(_allocatedMemory);
+        }
+    }
+
+
+    [CustomMarshaller(typeof(List<>), MarshalMode.Default, typeof(ListMarshallerWithPinning<,>))]
+    [ContiguousCollectionMarshaller]
+    public unsafe static class ListMarshallerWithPinning<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public static byte* AllocateContainerForUnmanagedElements(List<T> managed, out int numElements)
             => AllocateContainerForUnmanagedElements(managed, Span<byte>.Empty, out numElements);
@@ -464,9 +551,115 @@ namespace SharedTypes
         }
     }
 
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), Scenario.Default, typeof(CustomArrayMarshaller<,>))]
-    public unsafe static class CustomArrayMarshaller<T, [ElementUnmanagedType] TUnmanagedElement> where TUnmanagedElement : unmanaged
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.Default, typeof(CustomArrayMarshaller<,>))]
+    [ContiguousCollectionMarshaller]
+    public unsafe static class CustomArrayMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
+        public static byte* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
+        {
+            if (managed is null)
+            {
+                numElements = 0;
+                return null;
+            }
+
+            numElements = managed.Length;
+            return (byte*)Marshal.AllocCoTaskMem(checked(sizeof(TUnmanagedElement) * numElements));
+        }
+
+        public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
+
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(byte* unmanaged, int numElements)
+            => new Span<TUnmanagedElement>(unmanaged, numElements);
+
+        public static T[] AllocateContainerForManagedElements(byte* unmanaged, int length) => unmanaged is null ? null : new T[length];
+
+        public static Span<T> GetManagedValuesDestination(T[] managed) => managed;
+
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* unmanaged, int numElements)
+            => new Span<TUnmanagedElement>(unmanaged, numElements);
+
+        public static void Free(byte* unmanaged) => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
+    }
+
+    [ContiguousCollectionMarshaller]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.Default, typeof(CustomArrayMarshallerStateful<,>.Marshaller))]
+    public unsafe static class CustomArrayMarshallerStateful<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
+    {
+        public ref struct Marshaller
+        {
+            private T[] _array;
+            private IntPtr _allocatedMemory;
+            private Span<TUnmanagedElement> _span;
+
+            public static int BufferSize { get; } = 0x200 / sizeof(TUnmanagedElement);
+
+            public void FromManaged(T[] managed)
+            {
+                FromManaged(managed, Span<TUnmanagedElement>.Empty);
+            }
+
+            public void FromManaged(T[] managed, Span<TUnmanagedElement> buffer)
+            {
+                _allocatedMemory = default;
+                if (managed is null)
+                {
+                    _array = null;
+                    _span = default;
+                    return;
+                }
+
+                _array = managed;
+                // Always allocate at least one byte when the list is zero-length.
+                int spaceToAllocate = Math.Max(managed.Length * sizeof(TUnmanagedElement), 1);
+                if (spaceToAllocate <= buffer.Length)
+                {
+                    _span = buffer[0..spaceToAllocate];
+                }
+                else
+                {
+                    _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+                    _span = new Span<TUnmanagedElement>((void*)_allocatedMemory, managed.Length);
+                }
+            }
+
+            public ReadOnlySpan<T> GetManagedValuesSource() => _array;
+
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => _span;
+
+            public ref TUnmanagedElement GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
+
+            public byte* ToUnmanaged() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
+
+            public Span<T> GetManagedValuesDestination(int length)
+            {
+                if (_allocatedMemory == IntPtr.Zero)
+                {
+                    _array = null;
+                    return default;
+                }
+
+                _array = new T[length];
+                return _array;
+            }
+
+            public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int length)
+            {
+                if (_allocatedMemory == IntPtr.Zero)
+                    return default;
+
+                return _span = new Span<TUnmanagedElement>((void*)_allocatedMemory, length);
+            }
+
+            public void FromUnmanaged(byte* value)
+            {
+                _allocatedMemory = (IntPtr)value;
+            }
+
+            public T[] ToManaged() => _array;
+
+            public void Free() => Marshal.FreeCoTaskMem(_allocatedMemory);
+        }
         public static byte* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
         {
             if (managed is null)

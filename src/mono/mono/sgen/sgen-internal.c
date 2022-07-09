@@ -88,7 +88,7 @@ index_for_size (size_t size)
 	int slot;
 	/* do a binary search or lookup table later. */
 	for (slot = 0; slot < NUM_ALLOCATORS; ++slot) {
-		if (allocator_sizes [slot] >= size)
+		if (GINT_TO_UINT(allocator_sizes [slot]) >= size)
 			return slot;
 	}
 	g_assert_not_reached ();
@@ -107,7 +107,7 @@ sgen_register_fixed_internal_mem_type (int type, size_t size)
 	int slot;
 
 	g_assert (type >= 0 && type < INTERNAL_MEM_MAX);
-	g_assert (size <= allocator_sizes [NUM_ALLOCATORS - 1]);
+	g_assert (size <= GINT_TO_UINT(allocator_sizes [NUM_ALLOCATORS - 1]));
 
 	slot = index_for_size (size);
 	g_assert (slot >= 0);
@@ -174,7 +174,7 @@ sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure)
 	int index;
 	void *p;
 
-	if (size > allocator_sizes [NUM_ALLOCATORS - 1]) {
+	if (size > GINT_TO_UINT(allocator_sizes [NUM_ALLOCATORS - 1])) {
 		p = sgen_alloc_os_memory (size, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), NULL, MONO_MEM_ACCOUNT_SGEN_INTERNAL);
 		if (!p)
 			sgen_assert_memory_alloc (NULL, size, description_for_type (type));
@@ -201,7 +201,7 @@ sgen_free_internal_dynamic (void *addr, size_t size, int type)
 	if (!addr)
 		return;
 
-	if (size > allocator_sizes [NUM_ALLOCATORS - 1])
+	if (size > GINT_TO_UINT(allocator_sizes [NUM_ALLOCATORS - 1]))
 		sgen_free_os_memory (addr, size, SGEN_ALLOC_INTERNAL, MONO_MEM_ACCOUNT_SGEN_INTERNAL);
 	else
 		mono_lock_free_free (addr, block_size (size));

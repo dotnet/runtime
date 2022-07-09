@@ -30,9 +30,6 @@ public:
     static FCDECL0(INT64, GetPendingUnmanagedWorkItemCount);
 };
 
-extern "C" HANDLE QCALLTYPE AppDomainTimer_Create(INT32 dueTime, INT32 timerId);
-extern "C" BOOL QCALLTYPE AppDomainTimer_Change(HANDLE hTimer, INT32 dueTime);
-extern "C" BOOL QCALLTYPE AppDomainTimer_Delete(HANDLE hTimer);
 
 VOID QueueUserWorkItemManagedCallback(PVOID pArg);
 void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,

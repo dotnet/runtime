@@ -1414,10 +1414,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                if (hHash != null)
-                {
-                    hHash.Dispose();
-                }
+                hHash?.Dispose();
             }
         }
 

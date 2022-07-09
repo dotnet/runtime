@@ -152,6 +152,14 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
+
+void CallFClose(FILE* file)
+{
+    fclose(file);
+}
+
+typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
+
 void PgoManager::WritePgoData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
@@ -203,6 +211,8 @@ void PgoManager::WritePgoData()
     {
         return;
     }
+
+    FILEHolder fileHolder(pgoDataFile);
 
     fprintf(pgoDataFile, s_FileHeaderString, pgoDataCount);
 
@@ -319,7 +329,6 @@ void PgoManager::WritePgoData()
     });
 
     fprintf(pgoDataFile, s_FileTrailerString);
-    fclose(pgoDataFile);
 }
 #endif // DACCESS_COMPILE
 
@@ -364,6 +373,8 @@ void PgoManager::ReadPgoData()
     {
         return;
     }
+
+    FILEHolder fileHolder(pgoDataFile);
 
     char     buffer[16384];
     unsigned maxIndex = 0;

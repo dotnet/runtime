@@ -352,17 +352,6 @@ const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags =
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
-/***************************************************************************/
-// Public enum shared between thread and threadpool
-// These are two kinds of threadpool thread that the threadpool mgr needs
-// to keep track of
-enum ThreadpoolThreadType
-{
-    WorkerThread,
-    CompletionPortThread,
-    WaitThread,
-    TimerMgrThread
-};
 //***************************************************************************
 // Public functions
 //
@@ -6011,7 +6000,7 @@ struct ManagedThreadBase
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
 
-    // The IOCompletion, QueueUserWorkItem, AddTimer, RegisterWaitForSingleObject cases in
+    // The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in
     // the ThreadPool
     static void ThreadPool(ADCallBackFcnType pTarget, LPVOID args);
 

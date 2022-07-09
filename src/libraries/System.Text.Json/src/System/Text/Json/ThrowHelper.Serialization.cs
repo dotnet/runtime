@@ -120,7 +120,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_ResolverTypeNotCompatible(Type requestedType, Type actualType)
         {
-            throw new InvalidOperationException(SR.Format(SR.ResolverTypeNotCompatible, requestedType, actualType));
+            throw new InvalidOperationException(SR.Format(SR.ResolverTypeNotCompatible, actualType, requestedType));
         }
 
         [DoesNotReturn]
@@ -292,15 +292,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKindNone()
+        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(JsonTypeInfoKind kind)
         {
-            throw new InvalidOperationException(SR.JsonTypeInfoOperationNotPossibleForKindNone);
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_CollectionIsReadOnly()
-        {
-            throw new InvalidOperationException(SR.CollectionIsReadOnly);
+            throw new InvalidOperationException(SR.Format(SR.InvalidJsonTypeInfoOperationForKind, kind));
         }
 
         [DoesNotReturn]

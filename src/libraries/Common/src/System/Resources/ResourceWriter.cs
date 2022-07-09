@@ -241,10 +241,7 @@ namespace System.Resources
                 {
                     Generate();
                 }
-                if (_output != null)
-                {
-                    _output.Dispose();
-                }
+                _output?.Dispose();
             }
 
             _output = null!;

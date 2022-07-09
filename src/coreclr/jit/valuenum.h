@@ -733,21 +733,15 @@ public:
                                bool         hasOverflowCheck = false);
 
     ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType);
 
-    bool IsVNNotAField(ValueNum vn);
+    ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 
-    ValueNum VNForFieldSeq(FieldSeqNode* fieldSeq);
+    FieldSeq* FieldSeqVNToFieldSeq(ValueNum vn);
 
-    FieldSeqNode* FieldSeqVNToFieldSeq(ValueNum vn);
-
-    ValueNum FieldSeqVNAppend(ValueNum innerFieldSeqVN, FieldSeqNode* outerFieldSeq);
-
-    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, and "opB" is an integer
-    // with a "fieldSeq", returns the VN for the pointer form extended with the field sequence; or else NoVN.
     ValueNum ExtendPtrVN(GenTree* opA, GenTree* opB);
-    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, returns the VN for the
-    // pointer form extended with "fieldSeq"; or else NoVN.
-    ValueNum ExtendPtrVN(GenTree* opA, FieldSeqNode* fieldSeq, ssize_t offset);
+
+    ValueNum ExtendPtrVN(GenTree* opA, FieldSeq* fieldSeq, ssize_t offset);
 
     // Queries on value numbers.
     // All queries taking value numbers require that those value numbers are valid, that is, that
@@ -1175,14 +1169,13 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_Const,     // This chunk contains constant values.
-        CEA_Handle,    // This chunk contains handle constants.
-        CEA_NotAField, // This chunk contains "not a field" values.
-        CEA_Func0,     // Represents functions of arity 0.
-        CEA_Func1,     // ...arity 1.
-        CEA_Func2,     // ...arity 2.
-        CEA_Func3,     // ...arity 3.
-        CEA_Func4,     // ...arity 4.
+        CEA_Const,  // This chunk contains constant values.
+        CEA_Handle, // This chunk contains handle constants.
+        CEA_Func0,  // Represents functions of arity 0.
+        CEA_Func1,  // ...arity 1.
+        CEA_Func2,  // ...arity 2.
+        CEA_Func3,  // ...arity 3.
+        CEA_Func4,  // ...arity 4.
         CEA_Count
     };
 

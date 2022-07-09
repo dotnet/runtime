@@ -110,7 +110,6 @@ DEFINE_DACVAR(ThreadpoolMgr::ThreadCounter, ThreadpoolMgr__CPThreadCounter, Thre
 DEFINE_DACVAR(LONG, ThreadpoolMgr__MaxFreeCPThreads, ThreadpoolMgr::MaxFreeCPThreads)
 DEFINE_DACVAR(LONG, ThreadpoolMgr__MaxLimitTotalCPThreads, ThreadpoolMgr::MaxLimitTotalCPThreads)
 DEFINE_DACVAR(LONG, ThreadpoolMgr__MinLimitTotalCPThreads, ThreadpoolMgr::MinLimitTotalCPThreads)
-DEFINE_DACVAR(LIST_ENTRY, ThreadpoolMgr__TimerQueue, ThreadpoolMgr::TimerQueue)
 
 DEFINE_DACVAR(PTR_Thread, dac__g_pFinalizerThread, ::g_pFinalizerThread)
 DEFINE_DACVAR(PTR_Thread, dac__g_pSuspensionThread, ::g_pSuspensionThread)

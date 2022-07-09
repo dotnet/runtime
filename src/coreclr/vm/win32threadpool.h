@@ -32,10 +32,6 @@ Revision History:
 #define WAIT_ACTIVE         0x02
 #define WAIT_DELETE         0x04
 
-#define TIMER_REGISTERED    0x01
-#define TIMER_ACTIVE        0x02
-#define TIMER_DELETE        0x04
-
 #define WAIT_SINGLE_EXECUTION      0x00000001
 #define WAIT_FREE_CONTEXT          0x00000002
 #define WAIT_INTERNAL_COMPLETION   0x00000004
@@ -96,7 +92,6 @@ class ThreadpoolMgr
     friend class ClrDataAccess;
     friend struct DelegateInfo;
     friend class ThreadPoolNative;
-    friend class TimerNative;
     friend class UnManagedPerAppDomainTPCount;
     friend class ManagedPerAppDomainTPCount;
     friend class PerAppDomainTPCountList;
@@ -216,10 +211,6 @@ public:
         MEMTYPE_COUNT           = 3,
     };
 
-    typedef struct {
-        INT32 TimerId;
-    } TimerInfoContext;
-
 #ifndef DACCESS_COMPILE
     static void StaticInitialize()
     {
@@ -289,24 +280,7 @@ public:
         VolatileStore(&LastDequeueTime, (unsigned int)GetTickCount());
     }
 
-    static BOOL CreateTimerQueueTimer(PHANDLE phNewTimer,
-                                        WAITORTIMERCALLBACK Callback,
-                                        PVOID Parameter,
-                                        DWORD DueTime,
-                                        DWORD Period,
-                                        ULONG Flags);
-
-    static BOOL ChangeTimerQueueTimer(HANDLE Timer,
-                                      ULONG DueTime,
-                                      ULONG Period);
-    static BOOL DeleteTimerQueueTimer(HANDLE Timer,
-                                      HANDLE CompletionEvent);
-
     static void RecycleMemory(LPVOID mem, enum MemType memType);
-
-    static void FlushQueueOfTimerInfos();
-
-    static BOOL HaveTimerInfosToFlush() { return TimerInfosToBeRecycled != NULL; }
 
 #ifndef TARGET_UNIX
     static LPOVERLAPPED CompletionPortDispatchWorkWithinAppDomain(Thread* pThread, DWORD* pErrorCode, DWORD* pNumBytes, size_t* pKey);
@@ -316,12 +290,6 @@ public:
     // Enable filtering of correlation ETW events for cases handled at a higher abstraction level
 
 #ifndef DACCESS_COMPILE
-    static FORCEINLINE BOOL AreEtwQueueEventsSpeciallyHandled(LPTHREAD_START_ROUTINE Function)
-    {
-        // Timer events are handled at a higher abstraction level: in the managed Timer class
-        return (Function == ThreadpoolMgr::AsyncTimerCallbackCompletion);
-    }
-
     static FORCEINLINE BOOL AreEtwIOQueueEventsSpeciallyHandled(LPOVERLAPPED_COMPLETION_ROUTINE Function)
     {
         // We handle registered waits at a higher abstraction level
@@ -539,21 +507,6 @@ private:
         HANDLE      Handle;
     } WaitEvent ;
 
-    // Timer
-    typedef struct {
-        LIST_ENTRY  link;           // doubly linked list of timers
-        ULONG FiringTime;           // TickCount of when to fire next
-        WAITORTIMERCALLBACK Function;             // Function to call when timer fires
-        PVOID Context;              // Context to pass to function when timer fires
-        ULONG Period;
-        DWORD flag;                 // How do we deal with the context
-        DWORD state;
-        LONG refCount;
-        HANDLE ExternalCompletionEvent;     // only one of this is used, but cant do a union since CLREvent has a non-default constructor
-        CLREvent InternalCompletionEvent;   // flags indicates which one is being used
-        OBJECTHANDLE    ExternalEventSafeHandle;
-    } TimerInfo;
-
     static VOID AcquireWaitInfo(WaitInfo *pInfo)
     {
     }
@@ -565,26 +518,8 @@ private:
         pInfo->ExternalCompletionEvent);
 #endif
     }
-    static VOID AcquireTimerInfo(TimerInfo *pInfo)
-    {
-    }
-    static VOID ReleaseTimerInfo(TimerInfo *pInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-#ifndef DACCESS_COMPILE
-        ReleaseInfo(pInfo->ExternalEventSafeHandle,
-        pInfo->ExternalCompletionEvent);
-#endif
-    }
 
     typedef Holder<WaitInfo *, ThreadpoolMgr::AcquireWaitInfo, ThreadpoolMgr::ReleaseWaitInfo> WaitInfoHolder;
-    typedef Holder<TimerInfo *, ThreadpoolMgr::AcquireTimerInfo, ThreadpoolMgr::ReleaseTimerInfo> TimerInfoHolder;
-
-    typedef struct {
-        TimerInfo* Timer;           // timer to be updated
-        ULONG DueTime ;             // new due time
-        ULONG Period ;              // new period
-    } TimerUpdateInfo;
 
     // Definitions and data structures to support recycling of high-frequency
     // memory blocks. We use a spin-lock to access the list
@@ -884,8 +819,6 @@ public:
 
     static DWORD WINAPI AsyncCallbackCompletion(PVOID pArgs);
 
-    static void QueueTimerInfoForRelease(TimerInfo *pTimerInfo);
-
     static void DeactivateWait(WaitInfo* waitInfo);
     static void DeactivateNthWait(WaitInfo* waitInfo, DWORD index);
 
@@ -955,18 +888,6 @@ private:
     static BOOL SufficientDelaySinceLastDequeue();
 
     static LPVOID   GetRecycledMemory(enum MemType memType);
-
-    static DWORD WINAPI TimerThreadStart(LPVOID args);
-    static void TimerThreadFire(); // helper method used by TimerThreadStart
-    static void WINAPI InsertNewTimer(TimerInfo* pArg);
-    static DWORD FireTimers();
-    static DWORD WINAPI AsyncTimerCallbackCompletion(PVOID pArgs);
-    static void DeactivateTimer(TimerInfo* timerInfo);
-    static DWORD WINAPI AsyncDeleteTimer(PVOID pArgs);
-    static void DeleteTimer(TimerInfo* timerInfo);
-    static void WINAPI UpdateTimer(TimerUpdateInfo* pArgs);
-
-    static void WINAPI DeregisterTimer(TimerInfo* pArgs);
 
     inline static DWORD QueueDeregisterWait(HANDLE waitThread, WaitInfo* waitInfo)
     {
@@ -1055,13 +976,6 @@ private:
 
     static CrstStatic WaitThreadsCriticalSection;
     static LIST_ENTRY WaitThreadsHead;                  // queue of wait threads, each thread can handle upto 64 waits
-
-    static TimerInfo *TimerInfosToBeRecycled;           // list of delegate infos associated with deleted timers
-    static CrstStatic TimerQueueCriticalSection;        // critical section to synchronize timer queue access
-    SVAL_DECL(LIST_ENTRY,TimerQueue);                   // queue of timers
-    static HANDLE TimerThread;                          // Currently we only have one timer thread
-    static Thread*  pTimerThread;
-    DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static DWORD LastTickCount;      // the count just before timer thread goes to sleep
 
     static BOOL InitCompletionPortThreadpool;           // flag indicating whether completion port threadpool has been initialized
     static HANDLE GlobalCompletionPort;                 // used for binding io completions on file handles

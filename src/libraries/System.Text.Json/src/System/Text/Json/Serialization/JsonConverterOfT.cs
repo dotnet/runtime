@@ -84,6 +84,7 @@ namespace System.Text.Json.Serialization
 
         internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
         {
+            JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(this, typeof(TTarget));
             return new CastingConverter<TTarget, T>(this);
         }
 
