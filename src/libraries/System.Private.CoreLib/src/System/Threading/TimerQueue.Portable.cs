@@ -40,7 +40,7 @@ namespace System.Threading
             // using UnsafeStart() instead of Start()
             Thread timerThread = new Thread(TimerThread)
             {
-                Name = ".NET Timers",
+                Name = ".NET Timer",
                 IsBackground = true
             };
             timerThread.UnsafeStart();
