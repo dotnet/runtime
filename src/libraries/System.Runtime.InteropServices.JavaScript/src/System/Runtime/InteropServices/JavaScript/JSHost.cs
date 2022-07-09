@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-                throw new NotImplementedException();
+                return JavaScriptImports.GetGlobalThis();
             }
         }
 
@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-                throw new NotImplementedException();
+                return JavaScriptImports.GetDotnetInstance();
             }
         }
 
@@ -45,7 +45,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <returns>A proxy for the JavaScript object that contains the module's exports.</returns>
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            // TODO implement cancelation
+            return JavaScriptImports.DynamicImport(moduleName, moduleUrl);
         }
     }
 }

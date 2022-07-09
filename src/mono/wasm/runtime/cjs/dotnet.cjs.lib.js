@@ -74,13 +74,11 @@ const linked_functions = [
     "mono_wasm_typed_array_copy_to_ref",
     "mono_wasm_typed_array_from_ref",
     "mono_wasm_typed_array_copy_from_ref",
-    "mono_wasm_cancel_promise_ref",
-    "mono_wasm_web_socket_open_ref",
-    "mono_wasm_web_socket_send",
-    "mono_wasm_web_socket_receive",
-    "mono_wasm_web_socket_close_ref",
-    "mono_wasm_web_socket_abort",
     "mono_wasm_compile_function_ref",
+    "mono_wasm_bind_js_function",
+    "mono_wasm_invoke_bound_function",
+    "mono_wasm_bind_cs_function",
+    "mono_wasm_marshal_promise",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
