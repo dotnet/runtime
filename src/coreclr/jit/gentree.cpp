@@ -12918,7 +12918,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     const TypeProducerKind op2Kind = gtGetTypeProducerKind(op2);
 
     // Fold "typeof(handle) cmp null"
-    if ((op2->IsIntegralConst(0) && (op1Kind == TPK_Handle)) || (op1->IsIntegralConst(0) && (op2Kind == TPK_Handle)))
+    if (((op2Kind == TPK_Null) && (op1Kind == TPK_Handle)) || ((op1Kind == TPK_ Null) && (op2Kind == TPK_Handle)))
     {
         GenTree* call   = op1Kind == TPK_Handle ? op1 : op2;
         GenTree* handle = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
