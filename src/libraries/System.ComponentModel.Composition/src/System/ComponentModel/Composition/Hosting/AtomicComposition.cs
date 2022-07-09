@@ -166,13 +166,10 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                         catch (Exception e)
                         {
-                            if (exceptions == null)
-                            {
-                                //If any exceptions leak through the actions we will swallow them for now
-                                // complete processing the list
-                                // and we will throw InvalidOperationException with an AggregateException as it's innerException
-                                exceptions = new List<Exception>();
-                            }
+                            //If any exceptions leak through the actions we will swallow them for now
+                            // complete processing the list
+                            // and we will throw InvalidOperationException with an AggregateException as it's innerException
+                            exceptions ??= new List<Exception>();
                             exceptions.Add(e);
                         }
                     }
@@ -205,12 +202,9 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     catch (Exception e)
                     {
-                        if (exceptions == null)
-                        {
-                            //If any exceptions leak through the actions we will swallow them for now complete processing the list
-                            // and we will throw InvalidOperationException with an AggregateException as it's innerException
-                            exceptions = new List<Exception>();
-                        }
+                        //If any exceptions leak through the actions we will swallow them for now complete processing the list
+                        // and we will throw InvalidOperationException with an AggregateException as it's innerException
+                        exceptions ??= new List<Exception>();
                         exceptions.Add(e);
                     }
                 }

@@ -1404,14 +1404,10 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
-        fgAddFieldSeqForZeroOffset(destAddr,
-                                   GetFieldSeqStore()->CreateSingleton(GetRefanyDataField(),
-                                                                       OFFSETOF__CORINFO_TypedReference__dataPtr));
 
         GenTree*       ptrSlot         = gtNewOperNode(GT_IND, TYP_I_IMPL, destAddr);
         GenTreeIntCon* typeFieldOffset = gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
-        typeFieldOffset->gtFieldSeq =
-            GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField(), OFFSETOF__CORINFO_TypedReference__type);
+
         GenTree* typeSlot =
             gtNewOperNode(GT_IND, TYP_I_IMPL, gtNewOperNode(GT_ADD, destAddr->gtType, destAddrClone, typeFieldOffset));
 
@@ -2495,14 +2491,6 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
     }
 }
 
-void Compiler::impSpillEvalStack()
-{
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
-    {
-        impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillEvalStack"));
-    }
-}
-
 /*****************************************************************************
  *
  *  If the stack contains any trees with side effects in them, assign those
@@ -2597,53 +2585,12 @@ inline void Compiler::impSpillSpecialSideEff()
 
 /*****************************************************************************
  *
- *  Spill all stack references to value classes (TYP_STRUCT nodes)
- */
-
-void Compiler::impSpillValueClasses()
-{
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
-    {
-        GenTree* tree = verCurrentState.esStack[level].val;
-
-        if (fgWalkTreePre(&tree, impFindValueClasses) == WALK_ABORT)
-        {
-            // Tree walk was aborted, which means that we found a
-            // value class on the stack.  Need to spill that
-            // stack entry.
-
-            impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillValueClasses"));
-        }
-    }
-}
-
-/*****************************************************************************
- *
- *  Callback that checks if a tree node is TYP_STRUCT
- */
-
-Compiler::fgWalkResult Compiler::impFindValueClasses(GenTree** pTree, fgWalkData* data)
-{
-    fgWalkResult walkResult = WALK_CONTINUE;
-
-    if ((*pTree)->gtType == TYP_STRUCT)
-    {
-        // Abort the walk and indicate that we found a value class
-
-        walkResult = WALK_ABORT;
-    }
-
-    return walkResult;
-}
-
-/*****************************************************************************
- *
  *  If the stack contains any trees with references to local #lclNum, assign
  *  those trees to temps and replace their place on the stack with refs to
  *  their temps.
  */
 
-void Compiler::impSpillLclRefs(ssize_t lclNum)
+void Compiler::impSpillLclRefs(unsigned lclNum)
 {
     /* Before we make any appends to the tree list we must spill the
      * "special" side effects (GTF_ORDER_SIDEEFF) - GT_CATCH_ARG */
@@ -8963,8 +8910,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     // read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
     // be mutable, but the only current producer of such images, the C++/CLI compiler, does
     // not appear to support mapping different fields to the same address. So we will say
-    // that "mutable overlapping RVA statics" are UB as well. If this ever changes, code in
-    // value numbering will need to be updated to respect "NotAField FldSeq".
+    // that "mutable overlapping RVA statics" are UB as well.
 
     // For statics that are not "boxed", the initial address tree will contain the field sequence.
     // For those that are, we will attach it later, when adding the indirection for the box, since
@@ -8972,25 +8918,25 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
     bool isSharedStatic = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER) ||
                           (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_READYTORUN_HELPER);
-    FieldSeqNode::FieldKind fieldKind =
-        isSharedStatic ? FieldSeqNode::FieldKind::SharedStatic : FieldSeqNode::FieldKind::SimpleStatic;
+    FieldSeq::FieldKind fieldKind =
+        isSharedStatic ? FieldSeq::FieldKind::SharedStatic : FieldSeq::FieldKind::SimpleStatic;
 
-    FieldSeqNode* innerFldSeq = nullptr;
-    FieldSeqNode* outerFldSeq = nullptr;
+    FieldSeq* innerFldSeq;
+    FieldSeq* outerFldSeq;
     if (isBoxedStatic)
     {
-        innerFldSeq = FieldSeqStore::NotAField();
-        outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField, TARGET_POINTER_SIZE, fieldKind);
+        innerFldSeq = nullptr;
+        outerFldSeq = GetFieldSeqStore()->Create(pResolvedToken->hField, TARGET_POINTER_SIZE, fieldKind);
     }
     else
     {
         bool hasConstAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
                             (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
 
-        size_t offset;
+        ssize_t offset;
         if (hasConstAddr)
         {
-            offset = reinterpret_cast<size_t>(info.compCompHnd->getFieldAddress(pResolvedToken->hField));
+            offset = reinterpret_cast<ssize_t>(info.compCompHnd->getFieldAddress(pResolvedToken->hField));
             assert(offset != 0);
         }
         else
@@ -8998,8 +8944,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             offset = pFieldInfo->offset;
         }
 
-        innerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField, offset, fieldKind);
-        outerFldSeq = FieldSeqStore::NotAField();
+        innerFldSeq = GetFieldSeqStore()->Create(pResolvedToken->hField, offset, fieldKind);
+        outerFldSeq = nullptr;
     }
 
     GenTree* op1;
@@ -12359,13 +12305,12 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     // Optimistically assume the jit should expand this as an inline test
     bool shouldExpandInline = true;
+    bool isClassExact       = impIsClassExact(pResolvedToken->hClass);
 
     // Profitability check.
     //
-    // Don't bother with inline expansion when jit is trying to
-    // generate code quickly, or the cast is in code that won't run very
-    // often, or the method already is pretty big.
-    if (compCurBB->isRunRarely() || opts.OptimizationDisabled())
+    // Don't bother with inline expansion when jit is trying to generate code quickly
+    if (opts.OptimizationDisabled())
     {
         // not worth the code expansion if jitting fast or in a rarely run block
         shouldExpandInline = false;
@@ -12378,12 +12323,18 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (JitConfig.JitProfileCasts() == 1))
     {
         // Optimizations are enabled but we're still instrumenting (including casts)
-        if (isCastClass && !impIsClassExact(pResolvedToken->hClass))
+        if (isCastClass && !isClassExact)
         {
             // Usually, we make a speculative assumption that it makes sense to expand castclass
             // even for non-sealed classes, but let's rely on PGO in this specific case
             shouldExpandInline = false;
         }
+    }
+
+    if (shouldExpandInline && compCurBB->isRunRarely())
+    {
+        // For cold blocks we only expand castclass against exact classes becauses because it's cheap
+        shouldExpandInline = isCastClass && isClassExact;
     }
 
     // Pessimistically assume the jit cannot expand this as an inline test
@@ -12409,7 +12360,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
             {
                 // If the class is exact, the jit can expand the IsInst check inline.
-                canExpandInline = impIsClassExact(pResolvedToken->hClass);
+                canExpandInline = isClassExact;
             }
         }
 
@@ -12475,8 +12426,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         op2->gtFlags |= GTF_DONT_CSE;
 
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
-        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) &&
-            !impIsClassExact(pResolvedToken->hClass))
+        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
         {
             HandleHistogramProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
             pInfo->ilOffset                             = ilOffset;
@@ -12567,7 +12517,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     temp    = new (this, GT_COLON) GenTreeColon(TYP_REF, condTrue, condFalse);
     qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp->AsColon());
 
-    if (isCastClass && impIsClassExact(pResolvedToken->hClass) && condTrue->OperIs(GT_CALL))
+    if (isCastClass && isClassExact && condTrue->OperIs(GT_CALL))
     {
         // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
         condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
@@ -16017,8 +15967,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 #endif
 
-                        op1->gtFlags |= (obj->gtFlags & GTF_GLOB_EFFECT);
-
                         if (fgAddrCouldBeNull(obj))
                         {
                             op1->gtFlags |= GTF_EXCEPT;
@@ -16322,8 +16270,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 #endif
 
-                        op1->gtFlags |= (obj->gtFlags & GTF_GLOB_EFFECT);
-
                         if (fgAddrCouldBeNull(obj))
                         {
                             op1->gtFlags |= GTF_EXCEPT;
@@ -16373,7 +16319,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                // Create the member assignment, unless we have a TYP_STRUCT.
+                // "impAssignStruct" will back-substitute the field address tree into calls that return things via
+                // return buffers, so we have to delay calling it until after we have spilled everything needed.
                 bool deferStructAssign = (lclTyp == TYP_STRUCT);
 
                 if (!deferStructAssign)
@@ -16463,10 +16410,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     op1 = gtNewAssignNode(op1, op2);
-
-                    /* Mark the expression as containing an assignment */
-
-                    op1->gtFlags |= GTF_ASG;
                 }
 
                 /* Check if the class needs explicit initialization */
@@ -16484,42 +16427,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                /* stfld can interfere with value classes (consider the sequence
-                   ldloc, ldloca, ..., stfld, stloc).  We will be conservative and
-                   spill all value class references from the stack. */
-
-                if (obj && ((obj->gtType == TYP_BYREF) || (obj->gtType == TYP_I_IMPL)))
-                {
-                    assert(tiObj);
-
-                    // If we can resolve the field to be within some local,
-                    // then just spill that local.
-                    //
-                    GenTreeLclVarCommon* const lcl = obj->IsLocalAddrExpr();
-
-                    if (lcl != nullptr)
-                    {
-                        impSpillLclRefs(lcl->GetLclNum());
-                    }
-                    else if (impIsValueType(tiObj))
-                    {
-                        impSpillEvalStack();
-                    }
-                    else
-                    {
-                        impSpillValueClasses();
-                    }
-                }
-
-                /* Spill any refs to the same member from the stack */
-
-                impSpillLclRefs((ssize_t)resolvedToken.hField);
-
-                /* stsfld also interferes with indirect accesses (for aliased
-                   statics) and calls. But don't need to spill other statics
-                   as we have explicitly spilled this particular static field. */
-
-                impSpillSideEffects(false, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STFLD"));
+                // An indirect store such as "st[s]fld" interferes with indirect accesses, so we must spill
+                // global refs and potentially aliased locals.
+                impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STFLD"));
 
                 if (deferStructAssign)
                 {

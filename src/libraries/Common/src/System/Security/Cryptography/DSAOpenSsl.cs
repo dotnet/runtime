@@ -165,12 +165,7 @@ namespace System.Security.Cryptography
         {
             if (_key != null && _key.IsValueCreated)
             {
-                SafeDsaHandle handle = _key.Value;
-
-                if (handle != null)
-                {
-                    handle.Dispose();
-                }
+                _key.Value?.Dispose();
             }
         }
 

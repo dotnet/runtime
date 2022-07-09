@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(Options != null);
                 Debug.Assert(ShouldDeserialize);
-                return _jsonTypeInfo ??= Options.GetJsonTypeInfoCached(PropertyType);
+                return _jsonTypeInfo ??= Options.GetTypeInfoCached(PropertyType);
             }
             set
             {
@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Type parameterType = parameterInfo.ParameterType;
 
                 DefaultValueHolder holder;
-                if (matchingProperty.Options.TryGetJsonTypeInfoCached(parameterType, out JsonTypeInfo? typeInfo))
+                if (matchingProperty.Options.TryGetTypeInfoCached(parameterType, out JsonTypeInfo? typeInfo))
                 {
                     holder = typeInfo.DefaultValueHolder;
                 }

@@ -486,8 +486,7 @@ namespace System.Data.SqlTypes
 
         public override void Flush()
         {
-            if (_stream != null)
-                _stream.Flush();
+            _stream?.Flush();
         }
 
         protected override void Dispose(bool disposing)

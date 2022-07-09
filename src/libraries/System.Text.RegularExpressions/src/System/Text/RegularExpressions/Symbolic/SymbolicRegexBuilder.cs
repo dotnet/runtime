@@ -66,7 +66,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly Dictionary<(SymbolicRegexNodeKind,
             SymbolicRegexNode<TSet>?, // _left
             SymbolicRegexNode<TSet>?, // _right
-            int, int, TSet?,          // _lower, _upper, _set
+            int, int, TSet,          // _lower, _upper, _set
             SymbolicRegexInfo), SymbolicRegexNode<TSet>> _nodeCache = new();
 
         // The following dictionaries are used as caches for operations that recurse over the structure of SymbolicRegexNode.
