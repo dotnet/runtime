@@ -649,6 +649,20 @@ struct MSLAYOUT DacpWorkRequestData
     }
 };
 
+struct MSLAYOUT DacpHillClimbingLogEntry
+{
+    DWORD TickCount = 0;
+    int Transition = 0;
+    int NewControlSetting = 0;
+    int LastHistoryCount = 0;
+    double LastHistoryMean = 0;
+
+    HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS entry)
+    {
+        return sos->GetHillClimbingLogEntry(entry, this);
+    }
+};
+
 
 // Used for CLR versions >= 4.0
 struct MSLAYOUT DacpThreadpoolData
@@ -1056,6 +1070,7 @@ static_assert(sizeof(DacpMethodTableTransparencyData) == 0xc, "Dacp structs cann
 static_assert(sizeof(DacpThreadLocalModuleData) == 0x30, "Dacp structs cannot be modified due to backwards compatibility.");
 static_assert(sizeof(DacpCOMInterfacePointerData) == 0x18, "Dacp structs cannot be modified due to backwards compatibility.");
 static_assert(sizeof(DacpMethodDescTransparencyData) == 0xc, "Dacp structs cannot be modified due to backwards compatibility.");
+static_assert(sizeof(DacpHillClimbingLogEntry) == 0x18, "Dacp structs cannot be modified due to backwards compatibility.");
 static_assert(sizeof(DacpGenerationData) == 0x20, "Dacp structs cannot be modified due to backwards compatibility.");
 static_assert(sizeof(DacpGcHeapDetails) == 0x120, "Dacp structs cannot be modified due to backwards compatibility.");
 static_assert(sizeof(DacpOomData) == 0x38, "Dacp structs cannot be modified due to backwards compatibility.");
