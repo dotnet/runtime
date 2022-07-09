@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -21,29 +20,7 @@ namespace System
         private extern CorElementType InternalGetCorElementType();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType InternalGetUnderlyingTypeImpl(RuntimeType enumType);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static RuntimeType InternalGetUnderlyingType(RuntimeType enumType)
-        {
-            Type type = Type.GetTypeCode(enumType) switch
-            {
-                TypeCode.Boolean => typeof(bool),
-                TypeCode.Char => typeof(char),
-                TypeCode.SByte => typeof(sbyte),
-                TypeCode.Byte => typeof(byte),
-                TypeCode.Int16 => typeof(short),
-                TypeCode.UInt16 => typeof(ushort),
-                TypeCode.Int32 => typeof(int),
-                TypeCode.UInt32 => typeof(uint),
-                TypeCode.Int64 => typeof(long),
-                TypeCode.UInt64 => typeof(ulong),
-                TypeCode.Single => typeof(float),
-                TypeCode.Double => typeof(double),
-                _ => InternalGetUnderlyingTypeImpl(enumType)
-            };
-            return (RuntimeType)type;
-        }
+        internal static extern RuntimeType InternalGetUnderlyingType(RuntimeType enumType);
 
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {

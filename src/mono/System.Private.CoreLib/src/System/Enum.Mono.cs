@@ -33,11 +33,6 @@ namespace System
             return InternalGetCorElementType(new QCallTypeHandle(ref this_type));
         }
 
-        internal static RuntimeType InternalGetUnderlyingTypeImpl(RuntimeType enumType)
-        {
-            return InternalGetUnderlyingType(enumType);
-        }
-
         internal static RuntimeType InternalGetUnderlyingType(RuntimeType enumType)
         {
             RuntimeType? res = null;

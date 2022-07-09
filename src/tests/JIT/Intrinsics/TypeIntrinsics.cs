@@ -112,6 +112,11 @@ public partial class Program
         IsTrue (typeof(SimpleEnum).IsEnum);
 
         AreSame(Type.GetTypeCode(null),                       TypeCode.Empty);
+        AreSame(Type.GetTypeCode(typeof(void*)),              TypeCode.Object);
+        AreSame(Type.GetTypeCode(typeof(nint)),               TypeCode.Object);
+        AreSame(Type.GetTypeCode(typeof(nuint)),              TypeCode.Object);
+        AreSame(Type.GetTypeCode(typeof(IntPtr)),             TypeCode.Object);
+        AreSame(Type.GetTypeCode(typeof(UIntPtr)),            TypeCode.Object);
         AreSame(Type.GetTypeCode(typeof(bool)),               TypeCode.Boolean);
         AreSame(Type.GetTypeCode(typeof(char)),               TypeCode.Char);
         AreSame(Type.GetTypeCode(typeof(sbyte)),              TypeCode.SByte);

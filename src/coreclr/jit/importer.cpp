@@ -4149,8 +4149,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                  info.compCompHnd->getTypeForPrimitiveNumericClass(hClass) == CORINFO_TYPE_UNDEF &&
                                  // we need to check for void here
                                  infoType != CORINFO_TYPE_UNDEF && infoType != CORINFO_TYPE_VOID)
-                                                 ? 1
-                                                 : 0);
+                                    ? 1
+                                    : 0);
                             break;
                         }
                         case NI_System_Type_get_IsValueType:
@@ -4216,6 +4216,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             break;
                         case CORINFO_TYPE_DOUBLE:
                             typeCode = 14;
+                            break;
+                        case CORINFO_TYPE_NATIVEINT:
+                        case CORINFO_TYPE_NATIVEUINT:
+                        case CORINFO_TYPE_PTR:
+                            typeCode = 1;
                             break;
                         default:
                             if (hClass == impGetStringClass())

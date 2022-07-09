@@ -139,8 +139,28 @@ namespace System
             return ret;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override Type GetEnumUnderlyingType()
         {
+            if (RuntimeHelpers.IsKnownConstant(this))
+            {
+                switch (Type.GetTypeCode(this))
+                {
+                    case TypeCode.Boolean: return typeof(bool);
+                    case TypeCode.Char:    return typeof(char);
+                    case TypeCode.SByte:   return typeof(sbyte);
+                    case TypeCode.Byte:    return typeof(byte);
+                    case TypeCode.Int16:   return typeof(short);
+                    case TypeCode.UInt16:  return typeof(ushort);
+                    case TypeCode.Int32:   return typeof(int);
+                    case TypeCode.UInt32:  return typeof(uint);
+                    case TypeCode.Int64:   return typeof(long);
+                    case TypeCode.UInt64:  return typeof(ulong);
+                    case TypeCode.Single:  return typeof(float);
+                    case TypeCode.Double:  return typeof(double);
+                }
+            }
+
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
@@ -203,7 +223,7 @@ namespace System
                     else if (ReferenceEquals(this, typeof(DateTime)))
                         typeCode = TypeCode.DateTime;
                     else if (IsEnum)
-                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingTypeImpl(this));
+                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
                     else
                         typeCode = TypeCode.Object;
                     break;

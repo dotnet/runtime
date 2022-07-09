@@ -1901,7 +1901,7 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetUninitializedObject(QCall::
 //*************************************************************************************************
 //*************************************************************************************************
 
-FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingTypeImpl, ReflectClassBaseObject *target) {
+FCIMPL1(Object *, ReflectionEnum::InternalGetEnumUnderlyingType, ReflectClassBaseObject *target) {
     FCALL_CONTRACT;
 
     VALIDATEOBJECT(target);
