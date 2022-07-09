@@ -2649,12 +2649,12 @@ namespace System.Xml.XPath
         public virtual void AppendChild(string newChild) { }
         public virtual void AppendChild(System.Xml.XmlReader newChild) { }
         public virtual void AppendChild(System.Xml.XPath.XPathNavigator newChild) { }
-        public virtual void AppendChildElement(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual void AppendChildElement(string? prefix, string localName, string? namespaceURI, string value) { }
         public virtual bool CheckValidity(System.Xml.Schema.XmlSchemaSet schemas, System.Xml.Schema.ValidationEventHandler validationEventHandler) { throw null; }
         public abstract System.Xml.XPath.XPathNavigator Clone();
         public virtual System.Xml.XmlNodeOrder ComparePosition(System.Xml.XPath.XPathNavigator? nav) { throw null; }
         public virtual System.Xml.XPath.XPathExpression Compile(string xpath) { throw null; }
-        public virtual void CreateAttribute(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual void CreateAttribute(string? prefix, string localName, string? namespaceURI, string value) { }
         public virtual System.Xml.XmlWriter CreateAttributes() { throw null; }
         public virtual System.Xml.XPath.XPathNavigator CreateNavigator() { throw null; }
         public virtual void DeleteRange(System.Xml.XPath.XPathNavigator lastSiblingToDelete) { }
@@ -2674,8 +2674,8 @@ namespace System.Xml.XPath
         public virtual void InsertBefore(string newSibling) { }
         public virtual void InsertBefore(System.Xml.XmlReader newSibling) { }
         public virtual void InsertBefore(System.Xml.XPath.XPathNavigator newSibling) { }
-        public virtual void InsertElementAfter(string prefix, string localName, string namespaceURI, string value) { }
-        public virtual void InsertElementBefore(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual void InsertElementAfter(string? prefix, string localName, string? namespaceURI, string value) { }
+        public virtual void InsertElementBefore(string? prefix, string localName, string? namespaceURI, string value) { }
         public virtual bool IsDescendant([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Xml.XPath.XPathNavigator? nav) { throw null; }
         public abstract bool IsSamePosition(System.Xml.XPath.XPathNavigator other);
         public virtual string? LookupNamespace(string prefix) { throw null; }
@@ -2710,7 +2710,7 @@ namespace System.Xml.XPath
         public virtual void PrependChild(string newChild) { }
         public virtual void PrependChild(System.Xml.XmlReader newChild) { }
         public virtual void PrependChild(System.Xml.XPath.XPathNavigator newChild) { }
-        public virtual void PrependChildElement(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual void PrependChildElement(string? prefix, string localName, string? namespaceURI, string value) { }
         public virtual System.Xml.XmlReader ReadSubtree() { throw null; }
         public virtual System.Xml.XmlWriter ReplaceRange(System.Xml.XPath.XPathNavigator lastSiblingToReplace) { throw null; }
         public virtual void ReplaceSelf(string newNode) { }
