@@ -853,6 +853,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]        
         private static unsafe void TestFunctionPointers()
         {
             void* fn = FunctionPointerMethods.GetFunctionPointer();
