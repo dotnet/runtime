@@ -185,8 +185,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
             }
             // If all else fails, use the ToString() - it won't match the legacy CLR but with no metadata, we can't match it anyway.
-            if (genericTypeDefinitionString == null)
-                genericTypeDefinitionString = genericTypeDefinition.ToString();
+            genericTypeDefinitionString ??= genericTypeDefinition.ToString();
 
             // Now, append the generic type arguments.
             StringBuilder sb = new StringBuilder();

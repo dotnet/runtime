@@ -187,6 +187,7 @@
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
       LibraryImportGenerator;
+      JSImportGenerator;
       System.Text.Json.SourceGeneration.Roslyn4.0;
       System.Text.RegularExpressions.Generator;
     </NetCoreAppLibraryGenerator>

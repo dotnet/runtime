@@ -11,15 +11,39 @@ namespace System.Runtime.InteropServices.JavaScript
     [SupportedOSPlatform("browser")] // @kg: Do we really need to platform-lock JSException?
     public sealed class JSException : Exception
     {
-        // TODO after https://github.com/dotnet/runtime/issues/70133
-
+        /// <summary>
+        /// Initializes a new instance of the JSException class with a specified error message.
+        /// </summary>
+        /// <param name="msg">The message that describes the error.</param>
         public JSException(string msg) : base(msg)
         {
         }
 
+        /// <inheritdoc />
+        public override string? StackTrace
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object? obj)
+        {
+            return base.Equals(obj);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        /// <inheritdoc />
         public override string ToString()
         {
-            // skip the expensive stack trace
+            // we avoid expensive stack trace
             return Message;
         }
     }

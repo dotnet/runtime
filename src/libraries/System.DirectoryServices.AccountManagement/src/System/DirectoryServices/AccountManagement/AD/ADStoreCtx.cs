@@ -1248,14 +1248,8 @@ namespace System.DirectoryServices.AccountManagement
                     }
                     finally
                     {
-                        if (gc != null)
-                        {
-                            gc.Dispose();
-                        }
-                        if (forest != null)
-                        {
-                            forest.Dispose();
-                        }
+                        gc?.Dispose();
+                        forest?.Dispose();
                     }
                 }
 
@@ -1359,15 +1353,8 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (null != gcPrincipalDe)
-                {
-                    gcPrincipalDe.Dispose();
-                }
-
-                if (null != memberOfSearcher)
-                {
-                    memberOfSearcher.Dispose();
-                }
+                gcPrincipalDe?.Dispose();
+                memberOfSearcher?.Dispose();
             }
         }
 
@@ -1537,12 +1524,9 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (null != fspContainer)
-                    fspContainer.Dispose();
-                if (null != ds)
-                    ds.Dispose();
-                if (null != dncContainer)
-                    dncContainer.Dispose();
+                fspContainer?.Dispose();
+                ds?.Dispose();
+                dncContainer?.Dispose();
             }
         }
 
@@ -1870,14 +1854,8 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (ds != null)
-                {
-                    ds.Dispose();
-                }
-                if (defaultNCDirEntry != null)
-                {
-                    defaultNCDirEntry.Dispose();
-                }
+                ds?.Dispose();
+                defaultNCDirEntry?.Dispose();
             }
         }
 
@@ -1952,8 +1930,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (ds != null)
-                    ds.Dispose();
+                ds?.Dispose();
             }
         }
 

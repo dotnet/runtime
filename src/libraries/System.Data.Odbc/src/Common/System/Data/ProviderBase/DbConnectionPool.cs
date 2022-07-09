@@ -354,12 +354,7 @@ namespace System.Data.ProviderBase
 
                 for (int i = 0; i < count; ++i)
                 {
-                    obj = _objectList[i];
-
-                    if (null != obj)
-                    {
-                        obj.DoNotPoolThisConnection();
-                    }
+                    _objectList[i]?.DoNotPoolThisConnection();
                 }
             }
 
@@ -574,10 +569,7 @@ namespace System.Data.ProviderBase
             // the error state is cleaned, destroy the timer to avoid periodic invocation
             Timer? t = _errorTimer;
             _errorTimer = null;
-            if (t != null)
-            {
-                t.Dispose(); // Cancel timer request.
-            }
+            t?.Dispose(); // Cancel timer request.
         }
 
 
@@ -1141,10 +1133,7 @@ namespace System.Data.ProviderBase
             // deactivate timer callbacks
             Timer? t = _cleanupTimer;
             _cleanupTimer = null;
-            if (null != t)
-            {
-                t.Dispose();
-            }
+            t?.Dispose();
         }
 
 

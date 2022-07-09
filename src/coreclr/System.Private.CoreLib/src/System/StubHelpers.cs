@@ -1180,9 +1180,11 @@ namespace System.StubHelpers
         {
             Exception? ex = s_pendingExceptionObject;
             if (ex != null)
+            {
                 ex.InternalPreserveStackTrace();
+                s_pendingExceptionObject = null;
+            }
 
-            s_pendingExceptionObject = null;
             return ex;
         }
 

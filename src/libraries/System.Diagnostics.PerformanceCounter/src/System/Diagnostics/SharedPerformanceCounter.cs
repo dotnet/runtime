@@ -711,8 +711,7 @@ namespace System.Diagnostics
                         }
                         finally
                         {
-                            if (categoryKey != null)
-                                categoryKey.Close();
+                            categoryKey?.Close();
                         }
                     }
                 }
@@ -1761,8 +1760,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    if (securityDescriptorPointer != null)
-                        securityDescriptorPointer.Close();
+                    securityDescriptorPointer?.Close();
                 }
 
                 Interlocked.CompareExchange(ref *(int*)_fileViewAddress.DangerousGetHandle().ToPointer(), initialOffset, 0);

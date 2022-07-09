@@ -34,6 +34,8 @@
     <NodeNpmModule Include="ws" Alias="WebSocket" />
     <NodeNpmModule Include="node-fetch" />
     <NodeNpmModule Include="node-abort-controller" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>
 
   <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
