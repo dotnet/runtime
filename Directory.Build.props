@@ -231,6 +231,7 @@
 
   <PropertyGroup>
     <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(Configuration)', 'corehost'))</DotNetHostBinDir>
+    <IsRunningInContainer Condition="Exists('/.dockerenv')">true</IsRunningInContainer>
   </PropertyGroup>
 
   <!--Feature switches -->

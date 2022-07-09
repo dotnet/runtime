@@ -26,6 +26,7 @@ namespace Wasm.Build.Tests
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
+        public static readonly bool             IsRunningInContainer = File.Exists("/.dockerenv");
 
         public BuildEnvironment()
         {
