@@ -291,7 +291,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
 
-                connection.Dispose();
+                await connection.DisposeAsync();
             }
         }
 

@@ -148,7 +148,7 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
 			}
@@ -156,7 +156,7 @@ namespace System.Net.Test.Common
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
-            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 await funcAsync(connection).ConfigureAwait(false);
             }

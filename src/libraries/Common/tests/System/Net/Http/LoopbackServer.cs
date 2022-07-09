@@ -156,7 +156,7 @@ namespace System.Net.Test.Common
 
         public async Task AcceptConnectionAsync(Func<Connection, Task> funcAsync)
         {
-            using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 await funcAsync(connection).ConfigureAwait(false);
             }
@@ -654,7 +654,7 @@ namespace System.Net.Test.Common
                 return null;
             }
 
-            public override void Dispose()
+            public override async ValueTask DisposeAsync()
             {
                 try
                 {
@@ -666,7 +666,7 @@ namespace System.Net.Test.Common
                 }
                 catch (Exception) { }
 
-                _stream.Dispose();
+                await _stream.DisposeAsync();
                 _socket?.Dispose();
             }
 
@@ -1076,7 +1076,7 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
             }

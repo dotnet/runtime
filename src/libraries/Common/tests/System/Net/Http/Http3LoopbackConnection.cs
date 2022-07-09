@@ -56,18 +56,17 @@ namespace System.Net.Test.Common
 
         public long MaxHeaderListSize { get; private set; } = -1;
 
-        // TODO: DisposeAsync?
-        public override void Dispose()
+        public override async ValueTask DisposeAsync()
         {
             // Close any remaining request streams (but NOT control streams, as these should not be closed while the connection is open)
             foreach (Http3LoopbackStream stream in _openStreams.Values)
             {
-                stream.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                await stream.DisposeAsync().ConfigureAwait(false);
             }
 
             foreach (QuicStream stream in _delayedStreams)
             {
-                stream.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                await stream.DisposeAsync().ConfigureAwait(false);
             }
 
             // We don't dispose the connection currently, because this causes races when the server connection is closed before
@@ -80,8 +79,8 @@ namespace System.Net.Test.Common
             _connection.Dispose();
 
             // Dispose control streams so that we release their handles too.
-            _inboundControlStream?.Dispose();
-            _outboundControlStream?.Dispose();
+            await _inboundControlStream?.DisposeAsync().ConfigureAwait(false);
+            await _outboundControlStream?.DisposeAsync().ConfigureAwait(false);
 #endif
         }
 
