@@ -385,6 +385,7 @@ namespace System.Security.Cryptography.Xml
         public SignedXml() { }
         public SignedXml(System.Xml.XmlDocument document) { }
         public SignedXml(System.Xml.XmlElement elem) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Security.Cryptography.Xml.EncryptedXml EncryptedXml { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.KeyInfo KeyInfo { get { throw null; } set { } }
         public System.Xml.XmlResolver Resolver { set { } }

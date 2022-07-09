@@ -170,6 +170,7 @@ namespace System.Security.Cryptography.Xml
             set { _signingKey = value; }
         }
 
+        [AllowNull]
         public EncryptedXml EncryptedXml
         {
             get => _exml ??= new EncryptedXml(_containingDocument!); // default processing rules
