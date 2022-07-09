@@ -791,6 +791,29 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     else
                     {
+                        if (i == TrieNode.Root && prefixMatcher.PossibleFirstCharacters is string possibleFirstCharacters)
+                        {
+                            Debug.Assert(possibleFirstCharacters.Length > 0);
+
+                            writer.WriteLine($"// We can perform a vectorized search to quickly find characters we are interested in.");
+                            writer.WriteLine($"// If we can't find any, the search fails.");
+                            string indexOfMethodCall = possibleFirstCharacters.Length switch
+                            {
+                                1 => $"IndexOf({Literal(possibleFirstCharacters[0])})",
+                                2 => $"IndexOfAny({Literal(possibleFirstCharacters[0])}, {Literal(possibleFirstCharacters[1])})",
+                                3 => $"IndexOfAny({Literal(possibleFirstCharacters[0])}, {Literal(possibleFirstCharacters[1])}, {Literal(possibleFirstCharacters[2])})",
+                                _ => $"IndexOfAny({Literal(possibleFirstCharacters)})"
+                            };
+                            writer.WriteLine($"switch (inputSpan.Slice(pos).{indexOfMethodCall})");
+                            writer.WriteLine($"{{");
+                            writer.WriteLine($"    case -1: return false;");
+                            writer.WriteLine($"    case int firstCharPos:");
+                            writer.WriteLine($"        pos += firstCharPos;");
+                            writer.WriteLine($"        break;");
+                            writer.WriteLine($"}}");
+                            writer.WriteLine();
+                        }
+
                         writer.WriteLine($"if (pos >= inputSpan.Length) return false;");
                         writer.WriteLine($"c = inputSpan[pos++];");
                         writer.WriteLine();

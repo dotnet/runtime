@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -16,12 +16,45 @@ namespace System.Text.RegularExpressions
         internal ReadOnlySpan<TrieNodeWithLinks> Trie => _trie;
 
         /// <summary>
+        /// A string containing the possible first characters of the strings this
+        /// <see cref="MultiStringMatcher"/> finds. It will be used during searching to call
+        /// <see cref="MemoryExtensions.IndexOfAny{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>.
+        /// </summary>
+        /// <remarks>
+        /// This property's value will be <see langword="null"/> if
+        /// the characters are too many for the search to be vectorized.
+        /// </remarks>
+        internal string? PossibleFirstCharacters { get; }
+
+        /// <summary>
         /// Creates a <see cref="MultiStringMatcher"/> from a trie, and
         /// calculates its nodes' suffix links and match lengths.
         /// </summary>
         internal MultiStringMatcher(List<TrieNode> trie)
         {
             _trie = BuildTrieLinks(trie);
+            PossibleFirstCharacters = GetPossibleFirstCharacters(trie[TrieNode.Root].Children);
+        }
+
+        private static string? GetPossibleFirstCharacters(Dictionary<char, int> nodeChildren)
+        {
+            if (nodeChildren.Count > 5)
+            {
+                return null;
+            }
+
+#if REGEXGENERATOR
+            return StringExtensions.Create(nodeChildren.Count, nodeChildren, static (span, nodeChildren) =>
+#else
+            return string.Create(nodeChildren.Count, nodeChildren, static (span, nodeChildren) =>
+#endif
+            {
+                int i = 0;
+                foreach (KeyValuePair<char, int> child in nodeChildren)
+                {
+                    span[i++] = child.Key;
+                }
+            });
         }
 
         private static TrieNodeWithLinks[] BuildTrieLinks(List<TrieNode> trie)
@@ -113,9 +146,24 @@ namespace System.Text.RegularExpressions
         {
             int currentState = TrieNode.Root;
             ReadOnlySpan<TrieNodeWithLinks> trie = Trie;
+            ReadOnlySpan<char> possibleFirstCharacters = PossibleFirstCharacters.AsSpan();
 
             for (int i = 0; i < text.Length; i++)
             {
+                // If we are at the root node, we can quickly skip to the first character we can work with, if
+                // they are few enough to make the search vectorized. And if we didn't find any, the search fails.
+                if (!possibleFirstCharacters.IsEmpty && currentState == TrieNode.Root)
+                {
+                    switch (text.Slice(i).IndexOfAny(possibleFirstCharacters))
+                    {
+                        case -1:
+                            return -1;
+                        case int firstCharPos:
+                            i += firstCharPos;
+                            break;
+                    }
+                }
+
                 char c = text[i];
                 while (true)
                 {

@@ -805,6 +805,61 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
+                        if (i == TrieNode.Root && opts.PrefixMatcher.PossibleFirstCharacters is string possibleFirstCharacters)
+                        {
+                            Debug.Assert(possibleFirstCharacters.Length > 0);
+
+                            // if (int firstCharPos = inputSpan.Slice(pos) ...
+                            // // firstCharPos stays in the stack and does not need a local.
+                            Ldloca(inputSpan);
+                            Ldloc(pos);
+                            Call(s_spanSliceIntMethod);
+
+                            switch (possibleFirstCharacters.Length)
+                            {
+                                case 1:
+                                    // ... .IndexOf(<c0>) ...
+                                    Ldc(possibleFirstCharacters[0]);
+                                    Call(s_spanIndexOfChar);
+                                    break;
+                                case 2:
+                                    // ... .IndexOfAny(<c0>, <c1>) ...
+                                    Ldc(possibleFirstCharacters[0]);
+                                    Ldc(possibleFirstCharacters[1]);
+                                    Call(s_spanIndexOfAnyCharChar);
+                                    break;
+                                case 3:
+                                    // ... .IndexOfAny(<c0>, <c1>, <c2>) ...
+                                    Ldc(possibleFirstCharacters[0]);
+                                    Ldc(possibleFirstCharacters[1]);
+                                    Ldc(possibleFirstCharacters[2]);
+                                    Call(s_spanIndexOfAnyCharCharChar);
+                                    break;
+                                default:
+                                    // ... .IndexOfAny("<str>".AsSpan()) ...
+                                    Ldstr(possibleFirstCharacters);
+                                    Call(s_stringAsSpanMethod);
+                                    Call(s_spanIndexOfAnySpan);
+                                    break;
+                            }
+
+                            // ... != -1) goto characterFound;
+                            // goto returnFalse;
+                            Label characterFound = DefineLabel();
+                            Dup();
+                            Ldc(-1);
+                            Bne(characterFound);
+                            Pop();
+                            BrFar(returnFalse);
+
+                            // characterFound:
+                            // pos += firstCharPos;
+                            MarkLabel(characterFound);
+                            Ldloc(pos);
+                            Add();
+                            Stloc(pos);
+                        }
+
                         // if (pos >= inputSpan.Length) goto ReturnFalse;
                         Ldloc(pos);
                         Ldloca(inputSpan);
