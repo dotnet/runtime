@@ -528,9 +528,29 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				void LocalFunction () => t.RequiresAll ();
 			}
 
+			static void NestedLocalFunctions ()
+			{
+				Type t = GetWithPublicMethods ();
+
+				OuterLocalFunction ();
+
+				void OuterLocalFunction ()
+				{
+					InnerLocalFunction ();
+
+					[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll),
+						ProducedBy = ProducedBy.Trimmer)]
+					void InnerLocalFunction ()
+					{
+						t.RequiresAll ();
+					}
+				}
+			}
+
 			public static void Test ()
 			{
 				IteratorWithLocalFunctions ();
+				NestedLocalFunctions ();
 			}
 		}
 

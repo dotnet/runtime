@@ -45,13 +45,13 @@ namespace Mono.Linker.Dataflow
 	abstract partial class MethodBodyScanner
 	{
 		protected readonly LinkContext _context;
+		protected readonly InterproceduralStateLattice InterproceduralStateLattice;
 		protected static ValueSetLattice<SingleValue> MultiValueLattice => default;
-
-		static InterproceduralStateLattice InterproceduralStateLattice => default;
 
 		protected MethodBodyScanner (LinkContext context)
 		{
 			this._context = context;
+			this.InterproceduralStateLattice = default;
 		}
 
 		internal MultiValue ReturnValue { private set; get; }
@@ -228,13 +228,15 @@ namespace Mono.Linker.Dataflow
 		// reachable from it.
 		public virtual void InterproceduralScan (MethodBody startingMethodBody)
 		{
+			MethodDefinition startingMethod = startingMethodBody.Method;
+
 			// Note that the default value of a hoisted local will be MultiValueLattice.Top, not UnknownValue.Instance.
 			// This ensures that there are no warnings for the "unassigned state" of a parameter.
 			// Definite assignment should ensure that there is no way for this to be an analysis hole.
 			var interproceduralState = InterproceduralStateLattice.Top;
 
 			var oldInterproceduralState = interproceduralState.Clone ();
-			interproceduralState.TrackMethod (new MethodBodyValue (startingMethodBody));
+			interproceduralState.TrackMethod (startingMethodBody);
 
 			while (!interproceduralState.Equals (oldInterproceduralState)) {
 				oldInterproceduralState = interproceduralState.Clone ();
@@ -248,7 +250,7 @@ namespace Mono.Linker.Dataflow
 #if DEBUG
 			// Validate that the compiler-generated callees tracked by the compiler-generated state
 			// are the same set of methods that we discovered and scanned above.
-			if (_context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod (startingMethodBody.Method, out List<IMemberDefinition>? compilerGeneratedCallees)) {
+			if (_context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod (startingMethod, out List<IMemberDefinition>? compilerGeneratedCallees)) {
 				var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition> ();
 				// https://github.com/dotnet/linker/issues/2845
 				// Disabled asserts due to a bug
@@ -269,8 +271,7 @@ namespace Mono.Linker.Dataflow
 			if (!CompilerGeneratedNames.IsLambdaOrLocalFunction (method.Name))
 				return;
 
-			if (method.Body is MethodBody methodBody)
-				interproceduralState.TrackMethod (new MethodBodyValue (methodBody));
+			interproceduralState.TrackMethod (method);
 		}
 
 		protected virtual void Scan (MethodBody methodBody, ref InterproceduralState interproceduralState)

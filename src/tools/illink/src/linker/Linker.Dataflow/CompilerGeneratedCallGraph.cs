@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Mono.Cecil;
 
-namespace Mono.Linker
+namespace Mono.Linker.Dataflow
 {
 	sealed class CompilerGeneratedCallGraph
 	{

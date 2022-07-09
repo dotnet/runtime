@@ -34,16 +34,24 @@ namespace Mono.Linker.Dataflow
 		public InterproceduralState Clone ()
 			=> new (MethodBodies.Clone (), HoistedLocals.Clone (), lattice);
 
-		public void TrackMethod (MethodBodyValue methodBody)
+		public void TrackMethod (MethodDefinition method)
+		{
+			if (method.Body is not MethodBody methodBody)
+				return;
+
+			TrackMethod (methodBody);
+		}
+
+		public void TrackMethod (MethodBody methodBody)
 		{
 			// Work around the fact that ValueSet is readonly
 			var methodsList = new List<MethodBodyValue> (MethodBodies);
-			methodsList.Add (methodBody);
+			methodsList.Add (new MethodBodyValue (methodBody));
 
 			// For state machine methods, also scan the state machine members.
 			// Simplification: assume that all generated methods of the state machine type are
 			// reached at the point where the state machine method is reached.
-			if (CompilerGeneratedState.TryGetStateMachineType (methodBody.MethodBody.Method, out TypeDefinition? stateMachineType)) {
+			if (CompilerGeneratedState.TryGetStateMachineType (methodBody.Method, out TypeDefinition? stateMachineType)) {
 				foreach (var stateMachineMethod in stateMachineType.Methods) {
 					Debug.Assert (!CompilerGeneratedNames.IsLambdaOrLocalFunction (stateMachineMethod.Name));
 					if (stateMachineMethod.Body is MethodBody stateMachineMethodBody)
