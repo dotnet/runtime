@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        internal static XmlReader PreProcessStreamInput(Stream inputStream, XmlResolver? xmlResolver, string baseUri)
+        internal static XmlReader PreProcessStreamInput(Stream inputStream, XmlResolver? xmlResolver, string? baseUri)
         {
             XmlReaderSettings settings = GetSecureXmlReaderSettings(xmlResolver);
             XmlReader reader = XmlReader.Create(inputStream, settings, baseUri);

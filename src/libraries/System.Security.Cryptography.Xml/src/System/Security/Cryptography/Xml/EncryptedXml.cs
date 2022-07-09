@@ -200,7 +200,7 @@ namespace System.Security.Cryptography.Xml
                 if (cipherData.CipherReference.Uri.Length == 0)
                 {
                     // self referenced Uri
-                    string baseUri = _document?.BaseURI!;
+                    string? baseUri = _document?.BaseURI;
                     TransformChain tc = cipherData.CipherReference.TransformChain;
                     if (tc == null)
                     {
