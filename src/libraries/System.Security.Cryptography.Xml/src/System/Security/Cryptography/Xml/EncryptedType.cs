@@ -67,6 +67,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [AllowNull]
         public KeyInfo KeyInfo
         {
             get => _keyInfo ??= new KeyInfo();

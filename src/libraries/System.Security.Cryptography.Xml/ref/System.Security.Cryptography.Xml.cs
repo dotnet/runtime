@@ -94,6 +94,7 @@ namespace System.Security.Cryptography.Xml
         public virtual System.Security.Cryptography.Xml.EncryptionMethod? EncryptionMethod { get { throw null; } set { } }
         public virtual System.Security.Cryptography.Xml.EncryptionPropertyCollection EncryptionProperties { get { throw null; } }
         public virtual string? Id { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Security.Cryptography.Xml.KeyInfo KeyInfo { get { throw null; } set { } }
         public virtual string? MimeType { get { throw null; } set { } }
         public virtual string? Type { get { throw null; } set { } }
