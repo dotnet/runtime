@@ -2352,7 +2352,7 @@ namespace System
                     Span<byte> utf8buffer = outputLen <= 256 ? stackalloc byte[256] : (rentedBytes = ArrayPool<byte>.Shared.Rent(outputLen));
                     OperationStatus status = Base64.EncodeToUtf8(data, utf8buffer, out int _, out int bytesWritten);
                     Debug.Assert(status == OperationStatus.Done && bytesWritten == outputLen);
-                    string result = Encoding.Latin1.GetString(utf8buffer.Slice(outputLen));
+                    string result = Encoding.Latin1.GetString(utf8buffer.Slice(0, outputLen));
                     if (rentedBytes != null)
                     {
                         ArrayPool<byte>.Shared.Return(rentedBytes);
