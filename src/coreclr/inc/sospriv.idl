@@ -221,7 +221,6 @@ interface ISOSDacInterface : IUnknown
     // ThreadPool
     HRESULT GetThreadpoolData(struct DacpThreadpoolData *data);
     HRESULT GetWorkRequestData(CLRDATA_ADDRESS addrWorkRequest, struct DacpWorkRequestData *data);
-    HRESULT GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry *data);
 
     // Objects
     HRESULT GetObjectData(CLRDATA_ADDRESS objAddr, struct DacpObjectData *data);
