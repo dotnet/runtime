@@ -203,6 +203,8 @@ public:
     virtual uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
                                                                 REGDISPLAY *   pRegisterSet) = 0;
 
+    virtual bool IsUnwindable(PTR_VOID pvAddress) = 0;
+
     virtual bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                             REGDISPLAY *    pRegisterSet,           // in
                                             PTR_PTR_VOID *  ppvRetAddrLocation,     // out

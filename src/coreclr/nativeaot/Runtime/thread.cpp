@@ -662,9 +662,21 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
         return;
     }
 
+    if (pThread->IsDoNotTriggerGcSet())
+    {
+        return;
+    }
+
     ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
-    if (codeManager->IsSafePoint(pvAddress) &&
-        !pThread->IsDoNotTriggerGcSet())
+    if (!codeManager->IsUnwindable(pvAddress))
+    {
+        // VirtualUnwind can't handle some cases in prologs/epilogs.
+        // We cannot suspend as the thread would be useless to stackwalks.
+        // We will have to try again.
+        return;
+    }
+
+    if (codeManager->IsSafePoint(pvAddress))
     {
         // if we are not given a thread to hijack
         // perform in-line wait on the current thread
@@ -753,8 +765,7 @@ void Thread::HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void* pvHijac
 //    thread is interrupted at pSuspendCtx in managed code via a signal or similar.
 void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void * pvHijackTargets[])
 {
-    if (IsDoNotTriggerGcSet())
-        return;
+    ASSERT(!IsDoNotTriggerGcSet());
 
     StackFrameIterator frameIterator(this, pSuspendCtx);
     ASSERT(frameIterator.IsValid());
@@ -786,15 +797,8 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* 
         CrossThreadUnhijack();
 
         void* pvRetAddr = *ppvRetAddrLocation;
-        // ASSERT(pvRetAddr != NULL);
-        // ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
-
-        // TODO:      HACK, HACK
-        //            We should always get a valid address or explicitly be unable to get one.
-        //            This is a workaround for VirtualUnwind returning bogus location for some prolog/epilog scenarios.
-        //            We need to find a more reliable way to detect cases when VirtualUnwind may not work.
-        if (!StackFrameIterator::IsValidReturnAddress(pvRetAddr))
-            return;
+        ASSERT(pvRetAddr != NULL);
+        ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
@@ -859,27 +863,7 @@ bool Thread::InlineSuspend(NATIVE_CONTEXT* interruptedContext)
 {
     ASSERT(!IsDoNotTriggerGcSet());
 
-    // TODO: HACK HACK
-    // The following is a crude test for cases where VirtualUnwind cannot work
-    // If we cannot unwind, we cannot do inline suspend either, since the stack would be useless for the GC
-    // We should come up with a better way though.
-
-    PTR_PTR_VOID ppvRetAddrLocation;
-    GCRefKind retValueKind;
-
-    StackFrameIterator frameIterator(this, interruptedContext);
-    ASSERT(frameIterator.IsValid());
-    frameIterator.CalculateCurrentMethodState();
-    if (!frameIterator.GetCodeManager()->GetReturnAddressHijackInfo(frameIterator.GetMethodInfo(),
-        frameIterator.GetRegisterSet(),
-        &ppvRetAddrLocation,
-        &retValueKind))
-    {
-        return false;
-    }
-
-    if (!StackFrameIterator::IsValidReturnAddress(*ppvRetAddrLocation))
-        return false;
+    Unhijack();
 
     m_interruptedContext = interruptedContext;
     WaitForGC(INTERRUPTED_THREAD_MARKER);

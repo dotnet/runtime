@@ -327,6 +327,50 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     return true;
 }
 
+bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
+{
+
+#ifdef TARGET_AMD64
+    MethodInfo pMethodInfo;
+    FindMethodInfo(pvAddress, &pMethodInfo);
+
+    PTR_UInt8 gcInfo;
+    uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
+
+    GcInfoDecoder decoder(
+        GCInfoToken(gcInfo),
+        GcInfoDecoderFlags(GC_INFO_HAS_STACK_BASE_REGISTER),
+        0
+    );
+
+    if (decoder.GetStackBaseRegister() == NO_STACK_BASE_REGISTER)
+    {
+        // TODO: we can't tell in this case, we need more info.
+        return false;
+    }
+    else
+    {
+        if (codeOffset < 10)
+        {
+            // in rbx setup prologue  "push rbp; sub rsp,XX, lea rbp,[rsp + XX]"
+            return false;
+        }
+        else if (*(uint8_t*)pvAddress == 0x5d)
+        {
+            // on "pop rbp" part of rbp restore epilogue "add rsp,XX; pop rbp; retq"
+            return false;
+        }
+        else if (*(uint8_t*)pvAddress == 0xC3)
+        {
+            // on "retq"    part of rbp restore epilogue "add rsp,XX; pop rbp; retq"
+            return false;
+        }
+    }
+#endif
+
+    return true;
+}
+
 // Convert the return kind that was encoded by RyuJIT to the
 // enum used by the runtime.
 GCRefKind GetGcRefKind(ReturnKind returnKind)
@@ -367,9 +411,11 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
 #endif // TARGET_ARM || TARGET_ARM64
-    GcInfoDecoder decoder(GCInfoToken(p), flags);
 
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
+
+    ASSERT(IsUnwindable((PTR_VOID)pRegisterSet->IP));
 
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack

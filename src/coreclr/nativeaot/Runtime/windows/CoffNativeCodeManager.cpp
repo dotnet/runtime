@@ -676,6 +676,12 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     return true;
 }
 
+bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
+{
+    // RtlVirtualUnwind always can unwind.
+    return true;
+}
+
 // Convert the return kind that was encoded by RyuJIT to the
 // enum used by the runtime.
 GCRefKind GetGcRefKind(ReturnKind returnKind)
