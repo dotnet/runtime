@@ -2071,7 +2071,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     {
         noway_assert(intArgRegNum == 0);
 
-        if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
+        if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
         {
             noway_assert((call->gtArgs.GetArgByIndex(0)->GetEarlyNode() == nullptr) ||
                          (call->gtArgs.GetArgByIndex(0)->GetEarlyNode()->TypeGet() == TYP_I_IMPL) ||
