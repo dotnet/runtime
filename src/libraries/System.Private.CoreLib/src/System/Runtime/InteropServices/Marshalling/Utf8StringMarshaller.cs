@@ -25,12 +25,12 @@ namespace System.Runtime.InteropServices.Marshalling
                 return null;
 
             int exactByteCount = checked(Encoding.UTF8.GetByteCount(managed) + 1); // + 1 for null terminator
-            Span<byte> buffer = new ((byte*)Marshal.AllocCoTaskMem(exactByteCount), exactByteCount);
+            byte* mem = (byte*)Marshal.AllocCoTaskMem(exactByteCount);
+            Span<byte> buffer = new (mem, exactByteCount);
 
             int byteCount = Encoding.UTF8.GetBytes(managed, buffer);
             buffer[byteCount] = 0; // null-terminate
-            var ptr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
-            return ptr;
+            return mem;
         }
 
         /// <summary>

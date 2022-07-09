@@ -24,11 +24,11 @@ namespace System.Runtime.InteropServices.Marshalling
                 return null;
 
             int exactByteCount = Marshal.GetAnsiStringByteCount(managed); // Includes null terminator
-            Span<byte> buffer = new ((byte*)Marshal.AllocCoTaskMem(exactByteCount), exactByteCount);
+            byte* mem = (byte*)Marshal.AllocCoTaskMem(exactByteCount);
+            Span<byte> buffer = new (mem, exactByteCount);
 
             Marshal.GetAnsiStringBytes(managed, buffer); // Includes null terminator
-            var ptr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
-            return ptr;
+            return mem;
         }
 
         /// <summary>
