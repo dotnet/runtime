@@ -5419,7 +5419,7 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     // to true/false
 
     // make sure both arguments are `typeof()`
-    CORINFO_CLASS_HANDLE hClassTo = NO_CLASS_HANDLE;
+    CORINFO_CLASS_HANDLE hClassTo   = NO_CLASS_HANDLE;
     CORINFO_CLASS_HANDLE hClassFrom = NO_CLASS_HANDLE;
     if (gtIsTypeof(typeTo, &hClassTo) && gtIsTypeof(typeFrom, &hClassFrom))
     {

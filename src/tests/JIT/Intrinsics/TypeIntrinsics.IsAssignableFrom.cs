@@ -169,10 +169,16 @@ public partial class Program
         // null type
         IsFalse(typeof(int).IsAssignableFrom(null));
         IsFalse(typeof(object).IsAssignableFrom(null));
-        ThrowsNRE(() => { _ = null.IsAssignableFrom(typeof(int)); });
-        ThrowsNRE(() => { _ = null.IsAssignableFrom(typeof(object)); });
-        ThrowsNRE(() => { _ = null.IsAssignableFrom(null); });
-        ThrowsNRE(() => { _ = null.IsAssignableFrom(null); });
+        ThrowsNRE(() => { _ = ((Type)null).IsAssignableFrom(typeof(int)); });
+        ThrowsNRE(() => { _ = ((Type)null).IsAssignableFrom(typeof(object)); });
+        ThrowsNRE(() => { _ = ((Type)null).IsAssignableFrom(null); });
+        ThrowsNRE(() => { _ = ((Type)null).IsAssignableFrom(null); });
+        IsFalse(typeof(int).IsAssignableFrom(__reftype(default)));
+        IsFalse(typeof(object).IsAssignableFrom(__reftype(default)));
+        ThrowsNRE(() => { _ = __reftype(default).IsAssignableFrom(typeof(int)); });
+        ThrowsNRE(() => { _ = __reftype(default).IsAssignableFrom(typeof(object)); });
+        ThrowsNRE(() => { _ = __reftype(default).IsAssignableFrom(__reftype(default)); });
+        ThrowsNRE(() => { _ = __reftype(default).IsAssignableFrom(__reftype(default)); });
 
         // System.__Canon
         IsTrue (IsAssignableFrom<KeyValuePair<IDisposable, IDisposable>, KeyValuePair<IDisposable, IDisposable>>());
