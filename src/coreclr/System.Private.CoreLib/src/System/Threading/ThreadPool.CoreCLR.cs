@@ -50,7 +50,7 @@ namespace System.Threading
             return s_initialized;
         }
 
-        private static bool s_initialized = InitializeConfig();
+        private static readonly bool s_initialized = InitializeConfig();
 
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
