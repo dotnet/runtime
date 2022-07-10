@@ -1633,7 +1633,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                             cMods++;
                             psigTemp.SkipBytes(1);
                             IfFailThrowBF(psigTemp.GetToken(&tk), BFA_BAD_SIGNATURE, pOrigModule);
-                            IfFailThrowBF(psigTemp.GetByte(&data), BFA_BAD_SIGNATURE, pOrigModule);
+                            IfFailThrowBF(psigTemp.PeekByte(&data), BFA_BAD_SIGNATURE, pOrigModule);
                             etyp = (CorElementType)data;
                         } while (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD);
                     }
