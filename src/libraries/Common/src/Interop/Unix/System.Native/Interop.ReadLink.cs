@@ -30,12 +30,12 @@ internal static partial class Interop
         /// <returns>Returns the link to the target path on success; and null otherwise.</returns>
         internal static string? ReadLink(ReadOnlySpan<char> path)
         {
-            const int stackBufferSize = 256;
+            const int StackBufferSize = 256;
 
             // Use an initial buffer size that prevents disposing and renting
             // a second time when calling ConvertAndTerminateString.
-            using var converter = new ValueUtf8Converter(stackalloc byte[stackBufferSize]);
-            Span<byte> spanBuffer = stackalloc byte[stackBufferSize];
+            using var converter = new ValueUtf8Converter(stackalloc byte[StackBufferSize]);
+            Span<byte> spanBuffer = stackalloc byte[StackBufferSize];
             byte[]? arrayBuffer = null;
             ref byte pathReference = ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path));
             while (true)
