@@ -26,7 +26,6 @@ namespace System.Net.Http
         private long _streamId = -1; // A stream does not have an ID until the first I/O against it. This gets set almost immediately following construction.
         private QuicStream _stream;
         private ArrayBuffer _sendBuffer;
-        private readonly ReadOnlyMemory<byte>[] _gatheredSendBuffer = new ReadOnlyMemory<byte>[2];
         private ArrayBuffer _recvBuffer;
         private TaskCompletionSource<bool>? _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
         private bool _disposed;
@@ -426,9 +425,8 @@ namespace System.Net.Http
                     // Because we have a Content-Length, we can write it in a single DATA frame.
                     BufferFrameEnvelope(Http3FrameType.Data, remaining);
 
-                    _gatheredSendBuffer[0] = _sendBuffer.ActiveMemory;
-                    _gatheredSendBuffer[1] = buffer;
-                    await _stream.WriteAsync(_gatheredSendBuffer, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
                     _sendBuffer.Discard(_sendBuffer.ActiveLength);
 
@@ -446,9 +444,8 @@ namespace System.Net.Http
                 // It's up to the HttpContent to give us sufficiently large writes to avoid excessively small DATA frames.
                 BufferFrameEnvelope(Http3FrameType.Data, buffer.Length);
 
-                _gatheredSendBuffer[0] = _sendBuffer.ActiveMemory;
-                _gatheredSendBuffer[1] = buffer;
-                await _stream.WriteAsync(_gatheredSendBuffer, cancellationToken).ConfigureAwait(false);
+                await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
+                await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
                 _sendBuffer.Discard(_sendBuffer.ActiveLength);
             }
@@ -1340,11 +1337,7 @@ namespace System.Net.Http
             public override int Read(Span<byte> buffer)
             {
                 Http3RequestStream? stream = _stream;
-
-                if (stream is null)
-                {
-                    throw new ObjectDisposedException(nameof(Http3RequestStream));
-                }
+                ObjectDisposedException.ThrowIf(stream is null, this);
 
                 Debug.Assert(_response != null);
                 return stream.ReadResponseContent(_response, buffer);

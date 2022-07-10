@@ -45,6 +45,8 @@ namespace System.Net.Quic
 
         public SslApplicationProtocol NegotiatedApplicationProtocol => _provider.NegotiatedApplicationProtocol;
 
+        internal ValueTask FinishHandshakeAsync(QuicServerConnectionOptions options, string? targetHost, CancellationToken cancellationToken = default) => _provider.FinishHandshakeAsync(options, targetHost, cancellationToken);
+
         /// <summary>
         /// Connect to the remote endpoint.
         /// </summary>

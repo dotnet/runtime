@@ -1253,6 +1253,7 @@ EEJitManager::EEJitManager()
     m_AltJITRequired   = false;
 #endif
 
+    m_storeRichDebugInfo = false;
     m_cleanupList = NULL;
 }
 
@@ -1566,7 +1567,6 @@ void EEJitManager::SetCpuInfo()
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         CPUCompileFlags.Set(InstructionSet_Atomics);
-        g_arm64_atomics_present = true;
     }
 
     // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)
@@ -1583,6 +1583,11 @@ void EEJitManager::SetCpuInfo()
         //
         // We set the flag when the instruction is permitted and the block size is 64 bytes.
         CPUCompileFlags.Set(InstructionSet_Dczva);
+    }
+
+    if (CPUCompileFlags.IsSet(InstructionSet_Atomics))
+    {
+        g_arm64_atomics_present = true;
     }
 #endif // TARGET_ARM64
 
@@ -2009,6 +2014,8 @@ BOOL EEJitManager::LoadJIT()
         return TRUE;
 
     SetCpuInfo();
+
+    m_storeRichDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RichDebugInfo) != 0;
 
     ICorJitCompiler* newJitCompiler = NULL;
 
@@ -2517,7 +2524,11 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     DWORD dwSizeAcquiredFromInitialBlock = 0;
     bool fAllocatedFromEmergencyJumpStubReserve = false;
 
-    pBaseAddr = (BYTE *)pInfo->m_pAllocator->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)initialRequestSize, &dwSizeAcquiredFromInitialBlock);
+    size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
+#endif
+    pBaseAddr = (BYTE *)pInfo->m_pAllocator->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)allocationSize, &dwSizeAcquiredFromInitialBlock);
     if (pBaseAddr != NULL)
     {
         pCodeHeap->m_LoaderHeap.SetReservedRegion(pBaseAddr, dwSizeAcquiredFromInitialBlock, FALSE);
@@ -3932,6 +3943,11 @@ BOOL EEJitManager::GetBoundariesAndVars(
     BOOL hasFlagByte = FALSE;
 #endif
 
+    if (m_storeRichDebugInfo)
+    {
+        hasFlagByte = TRUE;
+    }
+
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
@@ -3940,6 +3956,43 @@ BOOL EEJitManager::GetBoundariesAndVars(
         pcVars, ppVars,  // output
         hasFlagByte
     );
+
+    return TRUE;
+}
+
+BOOL EEJitManager::GetRichDebugInfo(
+    const DebugInfoRequest& request,
+    IN FP_IDS_NEW fpNew, IN void* pNewData,
+    OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+    OUT ULONG32* pNumInlineTree,
+    OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+    OUT ULONG32* pNumRichMappings)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting debug info shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    if (!m_storeRichDebugInfo)
+    {
+        return FALSE;
+    }
+
+    CodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    // No header created, which means no debug information is available.
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    CompressDebugInfo::RestoreRichDebugInfo(
+        fpNew, pNewData,
+        pDebugInfo,
+        ppInlineTree, pNumInlineTree,
+        ppRichMappings, pNumRichMappings);
 
     return TRUE;
 }
@@ -6023,6 +6076,17 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
         FALSE);          // no patchpoint info
 
     return TRUE;
+}
+
+BOOL ReadyToRunJitManager::GetRichDebugInfo(
+    const DebugInfoRequest& request,
+    IN FP_IDS_NEW fpNew, IN void* pNewData,
+    OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+    OUT ULONG32* pNumInlineTree,
+    OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+    OUT ULONG32* pNumRichMappings)
+{
+    return FALSE;
 }
 
 #ifdef DACCESS_COMPILE

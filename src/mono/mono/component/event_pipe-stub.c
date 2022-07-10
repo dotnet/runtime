@@ -6,6 +6,9 @@
 #include "mono/component/event_pipe.h"
 #include "mono/component/event_pipe-wasm.h"
 #include "mono/metadata/components.h"
+#ifdef HOST_WASM
+#include <emscripten/emscripten.h>
+#endif
 
 static EventPipeSessionID _dummy_session_id;
 

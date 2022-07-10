@@ -361,9 +361,9 @@ namespace System.Data.Odbc
                     Connection.Close();
                 }
             }
-            else if (null != wrapper)
+            else
             {
-                wrapper.Dispose();
+                wrapper?.Dispose();
             }
 
             _command = null;
@@ -402,11 +402,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._typename == null)
-                {
-                    info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
-                }
-                return info._typename;
+                return info._typename ??= GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -421,11 +417,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._type == null)
-                {
-                    info._type = GetSqlType(i)._type;
-                }
-                return info._type;
+                return info._type ??= GetSqlType(i)._type;
             }
             throw ADP.DataReaderNoData();
         }
@@ -435,15 +427,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._name == null)
-                {
-                    info._name = GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW);
-                    if (null == info._name)
-                    { // MDAC 66681
-                        info._name = "";
-                    }
-                }
-                return info._name;
+                return info._name ??= GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW) ?? "";
             }
             throw ADP.DataReaderNoData();
         }
@@ -2378,10 +2362,7 @@ namespace System.Data.Odbc
                                     _metadata[ordinal].isNullable = false;
                                     _metadata[ordinal].baseTableName = qualifiedTableName.Table;
 
-                                    if (_metadata[ordinal].baseColumnName == null)
-                                    {
-                                        _metadata[ordinal].baseColumnName = columnname;
-                                    }
+                                    _metadata[ordinal].baseColumnName ??= columnname;
                                 }
                                 else
                                 {
@@ -2453,10 +2434,7 @@ namespace System.Data.Odbc
                         if (ordinal != -1)
                         {
                             _metadata[ordinal].isRowVersion = true;
-                            if (_metadata[ordinal].baseColumnName == null)
-                            {
-                                _metadata[ordinal].baseColumnName = columnname;
-                            }
+                            _metadata[ordinal].baseColumnName ??= columnname;
                         }
                     }
                     // Unbind the column
@@ -2656,14 +2634,8 @@ namespace System.Data.Odbc
                         // test test test - we don't know if this is nulalble or not so why do we want to set it to a value?
                         _metadata[indexordinal].isNullable = false;
                         _metadata[indexordinal].isUnique = true;
-                        if (_metadata[indexordinal].baseTableName == null)
-                        {
-                            _metadata[indexordinal].baseTableName = qualifiedTableName.Table;
-                        }
-                        if (_metadata[indexordinal].baseColumnName == null)
-                        {
-                            _metadata[indexordinal].baseColumnName = columnname;
-                        }
+                        _metadata[indexordinal].baseTableName ??= qualifiedTableName.Table;
+                        _metadata[indexordinal].baseColumnName ??= columnname;
                     }
                 }
                 // Unbind the columns

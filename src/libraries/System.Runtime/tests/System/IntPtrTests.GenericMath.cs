@@ -370,6 +370,22 @@ namespace System.Tests
         //
 
         [Fact]
+        public static void AllBitsSetTest()
+        {
+            if (nint.Size == sizeof(int))
+            {
+                Assert.Equal(unchecked((int)0xFFFF_FFFF), BinaryNumberHelper<nint>.AllBitsSet);
+                Assert.Equal(0, ~(int)BinaryNumberHelper<nint>.AllBitsSet);
+            }
+            else
+            {
+                Assert.Equal(unchecked((long)0xFFFF_FFFF_FFFF_FFFF), BinaryNumberHelper<nint>.AllBitsSet);
+                Assert.Equal(0L, ~(long)BinaryNumberHelper<nint>.AllBitsSet);
+            }
+
+        }
+
+        [Fact]
         public static void IsPow2Test()
         {
             if (Environment.Is64BitProcess)
@@ -508,19 +524,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan((nint)0x00000000, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan((nint)0x00000001, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan((nint)0x7FFFFFFF, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0x80000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThan(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan((nint)0x00000000, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan((nint)0x00000001, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan((nint)0x7FFFFFFF, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0x80000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThan(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -529,19 +545,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual((nint)0x00000000, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual((nint)0x00000001, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual((nint)0x7FFFFFFF, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0x80000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_GreaterThanOrEqual(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual((nint)0x00000000, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual((nint)0x00000001, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual((nint)0x7FFFFFFF, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0x80000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_GreaterThanOrEqual(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -550,19 +566,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan((nint)0x00000000, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThan((nint)0x00000001, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThan((nint)0x7FFFFFFF, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0x80000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThan(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan((nint)0x00000000, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan((nint)0x00000001, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan((nint)0x7FFFFFFF, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0x80000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThan(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -571,19 +587,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual((nint)0x00000000, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual((nint)0x00000001, (nint)1));
-                Assert.False(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual((nint)0x7FFFFFFF, (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0x80000000), (nint)1));
-                Assert.True(ComparisonOperatorsHelper<nint, nint>.op_LessThanOrEqual(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual((nint)0x00000000, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual((nint)0x00000001, (nint)1));
+                Assert.False(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual((nint)0x7FFFFFFF, (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0x80000000), (nint)1));
+                Assert.True(ComparisonOperatorsHelper<nint, nint, bool>.op_LessThanOrEqual(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -698,19 +714,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality((nint)0x00000000, (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Equality((nint)0x00000001, (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality((nint)0x7FFFFFFF, (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0x80000000), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Equality(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality((nint)0x00000000, (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Equality((nint)0x00000001, (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality((nint)0x7FFFFFFF, (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0x80000000), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Equality(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -719,19 +735,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x0000000000000000), (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x0000000000000001), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x8000000000000000), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x0000000000000000), (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x0000000000000001), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x7FFFFFFFFFFFFFFF), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x8000000000000000), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0xFFFFFFFFFFFFFFFF), (nint)1));
             }
             else
             {
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality((nint)0x00000000, (nint)1));
-                Assert.False(EqualityOperatorsHelper<nint, nint>.op_Inequality((nint)0x00000001, (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality((nint)0x7FFFFFFF, (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0x80000000), (nint)1));
-                Assert.True(EqualityOperatorsHelper<nint, nint>.op_Inequality(unchecked((nint)0xFFFFFFFF), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality((nint)0x00000000, (nint)1));
+                Assert.False(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality((nint)0x00000001, (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality((nint)0x7FFFFFFF, (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0x80000000), (nint)1));
+                Assert.True(EqualityOperatorsHelper<nint, nint, bool>.op_Inequality(unchecked((nint)0xFFFFFFFF), (nint)1));
             }
         }
 
@@ -2631,19 +2647,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x0000000000000000), 1));
-                Assert.Equal(unchecked((nint)0x0000000000000002), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x0000000000000001), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x8000000000000000), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x0000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000002), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x0000000000000001), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x8000000000000000), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFE), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
             }
             else
             {
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_LeftShift((nint)0x00000000, 1));
-                Assert.Equal((nint)0x00000002, ShiftOperatorsHelper<nint, nint>.op_LeftShift((nint)0x00000001, 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFE), ShiftOperatorsHelper<nint, nint>.op_LeftShift((nint)0x7FFFFFFF, 1));
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0x80000000), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFE), ShiftOperatorsHelper<nint, nint>.op_LeftShift(unchecked((nint)0xFFFFFFFF), 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_LeftShift((nint)0x00000000, 1));
+                Assert.Equal((nint)0x00000002, ShiftOperatorsHelper<nint, int, nint>.op_LeftShift((nint)0x00000001, 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFE), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift((nint)0x7FFFFFFF, 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0x80000000), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFE), ShiftOperatorsHelper<nint, int, nint>.op_LeftShift(unchecked((nint)0xFFFFFFFF), 1));
             }
         }
 
@@ -2652,19 +2668,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x0000000000000000), 1));
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x0000000000000001), 1));
-                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
-                Assert.Equal(unchecked((nint)0xC000000000000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x8000000000000000), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x0000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x0000000000000001), 1));
+                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0xC000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x8000000000000000), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
             }
             else
             {
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_RightShift((nint)0x00000000, 1));
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_RightShift((nint)0x00000001, 1));
-                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_RightShift((nint)0x7FFFFFFF, 1));
-                Assert.Equal(unchecked((nint)0xC0000000), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0x80000000), 1));
-                Assert.Equal(unchecked((nint)0xFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_RightShift(unchecked((nint)0xFFFFFFFF), 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_RightShift((nint)0x00000000, 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_RightShift((nint)0x00000001, 1));
+                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, int, nint>.op_RightShift((nint)0x7FFFFFFF, 1));
+                Assert.Equal(unchecked((nint)0xC0000000), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0x80000000), 1));
+                Assert.Equal(unchecked((nint)0xFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_RightShift(unchecked((nint)0xFFFFFFFF), 1));
             }
         }
 
@@ -2673,19 +2689,19 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000000), 1));
-                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000001), 1));
-                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
-                Assert.Equal(unchecked((nint)0x4000000000000000), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x8000000000000000), 1));
-                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x0000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x0000000000000001), 1));
+                Assert.Equal(unchecked((nint)0x3FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x7FFFFFFFFFFFFFFF), 1));
+                Assert.Equal(unchecked((nint)0x4000000000000000), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x8000000000000000), 1));
+                Assert.Equal(unchecked((nint)0x7FFFFFFFFFFFFFFF), ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFFFFFFFFFF), 1));
             }
             else
             {
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x00000000, 1));
-                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x00000001, 1));
-                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift((nint)0x7FFFFFFF, 1));
-                Assert.Equal((nint)0x40000000, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0x80000000), 1));
-                Assert.Equal((nint)0x7FFFFFFF, ShiftOperatorsHelper<nint, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFF), 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift((nint)0x00000000, 1));
+                Assert.Equal((nint)0x00000000, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift((nint)0x00000001, 1));
+                Assert.Equal((nint)0x3FFFFFFF, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift((nint)0x7FFFFFFF, 1));
+                Assert.Equal((nint)0x40000000, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0x80000000), 1));
+                Assert.Equal((nint)0x7FFFFFFF, ShiftOperatorsHelper<nint, int, nint>.op_UnsignedRightShift(unchecked((nint)0xFFFFFFFF), 1));
             }
         }
 

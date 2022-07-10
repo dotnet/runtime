@@ -116,11 +116,15 @@ namespace Microsoft.Win32.SafeHandles
                     ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
                     || !DirectoryExists(System.IO.Path.GetDirectoryName(System.IO.Path.TrimEndingDirectorySeparator(path!))!));
 
+                if (error.Error == Interop.Error.EISDIR)
+                {
+                    error = Interop.Error.EACCES.Info();
+                }
+
                 Interop.CheckIo(
                     error.Error,
                     path,
-                    isDirectory,
-                    errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
+                    isDirectory);
             }
 
             return handle;

@@ -6,12 +6,12 @@
 
 namespace System.Net.Quic
 {
-    public partial class QuicClientConnectionOptions : System.Net.Quic.QuicOptions
+    public sealed partial class QuicClientConnectionOptions : System.Net.Quic.QuicConnectionOptions
     {
         public QuicClientConnectionOptions() { }
-        public System.Net.Security.SslClientAuthenticationOptions? ClientAuthenticationOptions { get { throw null; } set { } }
+        public required System.Net.Security.SslClientAuthenticationOptions ClientAuthenticationOptions { get { throw null; } set { } }
         public System.Net.IPEndPoint? LocalEndPoint { get { throw null; } set { } }
-        public System.Net.EndPoint? RemoteEndPoint { get { throw null; } set { } }
+        public required System.Net.EndPoint RemoteEndPoint { get { throw null; } set { } }
     }
     public sealed partial class QuicConnection : System.IDisposable
     {
@@ -37,38 +37,45 @@ namespace System.Net.Quic
         public QuicConnectionAbortedException(string message, long errorCode) : base (default(string)) { }
         public long ErrorCode { get { throw null; } }
     }
+    public abstract partial class QuicConnectionOptions
+    {
+        internal QuicConnectionOptions() { }
+        public System.TimeSpan IdleTimeout { get { throw null; } set { } }
+        public int MaxBidirectionalStreams { get { throw null; } set { } }
+        public int MaxUnidirectionalStreams { get { throw null; } set { } }
+    }
     public partial class QuicException : System.Exception
     {
         public QuicException(string? message) { }
         public QuicException(string? message, System.Exception? innerException) { }
         public QuicException(string? message, System.Exception? innerException, int result) { }
     }
-    public sealed partial class QuicListener : System.IDisposable
+    public sealed partial class QuicListener : System.IAsyncDisposable
     {
         internal QuicListener() { }
         public static bool IsSupported { get { throw null; } }
-        public System.Net.IPEndPoint ListenEndPoint { get { throw null; } }
+        public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicListener> ListenAsync(System.Net.Quic.QuicListenerOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override string ToString() { throw null; }
     }
-    public partial class QuicListenerOptions : System.Net.Quic.QuicOptions
+    public sealed partial class QuicListenerOptions
     {
         public QuicListenerOptions() { }
+        public required System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol> ApplicationProtocols { get { throw null; } set { } }
+        public required System.Func<System.Net.Quic.QuicConnection, System.Net.Security.SslClientHelloInfo, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.Net.Quic.QuicServerConnectionOptions>> ConnectionOptionsCallback { get { throw null; } set { } }
         public int ListenBacklog { get { throw null; } set { } }
-        public System.Net.IPEndPoint? ListenEndPoint { get { throw null; } set { } }
-        public System.Net.Security.SslServerAuthenticationOptions? ServerAuthenticationOptions { get { throw null; } set { } }
+        public required System.Net.IPEndPoint ListenEndPoint { get { throw null; } set { } }
     }
     public partial class QuicOperationAbortedException : System.Net.Quic.QuicException
     {
         public QuicOperationAbortedException(string message) : base (default(string)) { }
     }
-    public partial class QuicOptions
+    public sealed partial class QuicServerConnectionOptions : System.Net.Quic.QuicConnectionOptions
     {
-        public QuicOptions() { }
-        public System.TimeSpan IdleTimeout { get { throw null; } set { } }
-        public int MaxBidirectionalStreams { get { throw null; } set { } }
-        public int MaxUnidirectionalStreams { get { throw null; } set { } }
+        public QuicServerConnectionOptions() { }
+        public required System.Net.Security.SslServerAuthenticationOptions ServerAuthenticationOptions { get { throw null; } set { } }
     }
     public sealed partial class QuicStream : System.IO.Stream
     {
@@ -109,8 +116,6 @@ namespace System.Net.Quic
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<System.ReadOnlyMemory<byte>> buffers, bool endStream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<System.ReadOnlyMemory<byte>> buffers, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
     public partial class QuicStreamAbortedException : System.Net.Quic.QuicException

@@ -114,6 +114,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\MemoryManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\OperationStatus.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\StandardFormat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Encoder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" />
@@ -872,10 +875,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\AnsiStringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\ArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\BStrStringMarshaller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerDirection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerFeatures.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerKind.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\MarshalMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\MarshalUsingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\NativeMarshallingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\PointerArrayMarshaller.cs" />
@@ -1881,7 +1886,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\Win32Exception.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSourceHelper.Windows.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
@@ -2176,7 +2180,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\Win32Exception.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Stopwatch.Unix.cs" />
@@ -2371,7 +2374,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.cs" Condition="'$(TargetsBrowser)' != 'true' or '$(FeatureWasmThreads)' == 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.cs" Condition="'$(TargetsBrowser)' != 'true' or '$(FeatureWasmThreads)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
@@ -2423,6 +2426,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IEqualityOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IExponentialFunctions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPointConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IFloatingPointIeee754.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IHyperbolicFunctions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IIncrementOperators.cs" />

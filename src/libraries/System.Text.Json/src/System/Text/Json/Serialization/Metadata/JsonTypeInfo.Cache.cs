@@ -3,10 +3,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -34,10 +35,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         // All of the serializable parameters on a POCO constructor keyed on parameter name.
         // Only parameters which bind to properties are cached.
-        internal JsonPropertyDictionary<JsonParameterInfo>? ParameterCache;
+        internal JsonPropertyDictionary<JsonParameterInfo>? ParameterCache { get; private set; }
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        internal JsonPropertyDictionary<JsonPropertyInfo>? PropertyCache;
+        internal JsonPropertyDictionary<JsonPropertyInfo>? PropertyCache { get; private protected set; }
 
         // Fast cache of constructor parameters by first JSON ordering; may not contain all parameters. Accessed before ParameterCache.
         // Use an array (instead of List<T>) for highest performance.
@@ -51,61 +52,28 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
-        internal JsonPropertyInfo CreateProperty(
-            Type declaredPropertyType,
-            MemberInfo? memberInfo,
-            Type parentClassType,
-            bool isVirtual,
-            JsonConverter converter,
-            JsonSerializerOptions options,
-            JsonIgnoreCondition? ignoreCondition = null,
-            JsonTypeInfo? jsonTypeInfo = null,
-            JsonConverter? customConverter = null,
-            bool isUserDefinedProperty = false)
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, JsonConverter converter)
         {
-            // Create the JsonPropertyInfo instance.
-            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo(parentTypeInfo: this);
+            Debug.Assert(propertyType.IsInSubtypeRelationshipWith(converter.TypeToConvert));
 
-            jsonPropertyInfo.Initialize(
-                parentClassType,
-                declaredPropertyType,
-                converterStrategy: converter.ConverterStrategy,
-                memberInfo,
-                isVirtual,
-                converter,
-                ignoreCondition,
-                options,
-                jsonTypeInfo,
-                isUserDefinedProperty: isUserDefinedProperty);
+            if (converter.TypeToConvert == propertyType)
+            {
+                // For the vast majority of use cases, the converter type matches the property type.
+                // Avoid reflection-based initialization by delegating JsonPropertyInfo<T> construction to the converter itself.
+                return converter.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+            }
 
-            jsonPropertyInfo.CustomConverter = customConverter;
-
-            return jsonPropertyInfo;
+            s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
+            MethodInfo factoryInfo = s_createJsonPropertyInfo.MakeGenericMethod(propertyType);
+            return (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
         }
 
-        /// <summary>
-        /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// See <seealso cref="PropertyInfoForTypeInfo"/>.
-        /// </summary>
-        private JsonPropertyInfo CreatePropertyInfoForTypeInfo(
-            Type declaredPropertyType,
-            JsonConverter converter,
-            JsonSerializerOptions options,
-            JsonTypeInfo? jsonTypeInfo = null)
-        {
-            JsonPropertyInfo jsonPropertyInfo = CreateProperty(
-                declaredPropertyType: declaredPropertyType,
-                memberInfo: null, // Not a real property so this is null.
-                parentClassType: ObjectType, // a dummy value (not used)
-                isVirtual: false,
-                converter: converter,
-                options: options,
-                jsonTypeInfo: jsonTypeInfo);
+        private static JsonPropertyInfo CreateJsonPropertyInfo<T>(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
+            => new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options);
 
-            Debug.Assert(jsonPropertyInfo.IsForTypeInfo);
-
-            return jsonPropertyInfo;
-        }
+        private static MethodInfo? s_createJsonPropertyInfo;
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -251,10 +219,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Check again to append the cache up to the threshold.
                 if (cacheCount < PropertyNameCountCacheThreshold)
                 {
-                    if (frame.PropertyRefCache == null)
-                    {
-                        frame.PropertyRefCache = new List<PropertyRef>();
-                    }
+                    frame.PropertyRefCache ??= new List<PropertyRef>();
 
                     Debug.Assert(info != null);
 
@@ -390,10 +355,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Check again to append the cache up to the threshold.
                 if (cacheCount < ParameterNameCountCacheThreshold)
                 {
-                    if (frame.CtorArgumentState.ParameterRefCache == null)
-                    {
-                        frame.CtorArgumentState.ParameterRefCache = new List<ParameterRef>();
-                    }
+                    frame.CtorArgumentState.ParameterRefCache ??= new List<ParameterRef>();
 
                     parameterRef = new ParameterRef(key, info!, utf8PropertyName);
                     frame.CtorArgumentState.ParameterRefCache.Add(parameterRef);

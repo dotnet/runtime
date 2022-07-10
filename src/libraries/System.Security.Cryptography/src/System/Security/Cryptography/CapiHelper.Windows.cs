@@ -1032,9 +1032,7 @@ namespace System.Security.Cryptography
             if (nameOrOid == null)
                 return CapiHelper.CALG_SHA1;
 
-            string? oidValue = CryptoConfig.MapNameToOID(nameOrOid);
-            if (oidValue == null)
-                oidValue = nameOrOid; // we were probably passed an OID value directly
+            string oidValue = CryptoConfig.MapNameToOID(nameOrOid) ?? nameOrOid; // we were probably passed an OID value directly
 
             int algId = GetAlgIdFromOid(oidValue, oidGroup);
             if (algId == 0 || algId == -1)
@@ -1416,10 +1414,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                if (hHash != null)
-                {
-                    hHash.Dispose();
-                }
+                hHash?.Dispose();
             }
         }
 

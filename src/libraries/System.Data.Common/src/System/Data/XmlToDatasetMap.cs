@@ -176,12 +176,9 @@ namespace System.Data
 
             string _tableLocalName = table.EncodedTableName;            // Table name
 
-            string? tableLocalName = nameTable.Get(_tableLocalName);     // Look it up in nametable
-
-            if (tableLocalName == null)
-            {                                // If not found
-                tableLocalName = nameTable.Add(_tableLocalName);        // Add it
-            }
+            string tableLocalName =
+                nameTable.Get(_tableLocalName) ??     // Look it up in nametable
+                nameTable.Add(_tableLocalName);       // If not found, add it
 
             table._encodedTableName = tableLocalName;                    // And set it back
 
@@ -231,12 +228,9 @@ namespace System.Data
         private static bool AddColumnSchema(XmlNameTable nameTable, DataColumn col, XmlNodeIdHashtable columns)
         {
             string _columnLocalName = XmlConvert.EncodeLocalName(col.ColumnName);
-            string? columnLocalName = nameTable.Get(_columnLocalName);           // Look it up in a name table
-
-            if (columnLocalName == null)
-            {                                       // Not found?
-                columnLocalName = nameTable.Add(_columnLocalName);              // Add it
-            }
+            string columnLocalName =
+                nameTable.Get(_columnLocalName) ?? // Look it up in a name table
+                nameTable.Add(_columnLocalName);   // Not found? Add it
 
             col._encodedColumnName = columnLocalName;                            // And set it back
 
@@ -297,15 +291,11 @@ namespace System.Data
             // Hash tables with columns schema maps
             // and child tables schema maps
 
-            string? dsNamespace = nameTable.Get(dataSet.Namespace);      // Attept to look up DataSet namespace
-                                                                        // in the name table
+            string dsNamespace =
+                nameTable.Get(dataSet.Namespace) ?? // Attempt to look up DataSet namespace in the name table
+                nameTable.Add(dataSet.Namespace);   //  Found? Nope. Add it
 
-            if (dsNamespace == null)
-            {                                  // Found ?
-                dsNamespace = nameTable.Add(dataSet.Namespace);         // Nope. Add it
-            }
-            dataSet._namespaceURI = dsNamespace;                         // Set a DataSet namespace URI
-
+            dataSet._namespaceURI = dsNamespace;    // Set a DataSet namespace URI
 
             foreach (DataTable t in dataSet.Tables)
             {                    // For each table
@@ -334,19 +324,13 @@ namespace System.Data
                             // Handle namespaces and names as usuall
 
                             string _tableLocalName = XmlConvert.EncodeLocalName(r.ChildTable.TableName);
-                            string? tableLocalName = nameTable.Get(_tableLocalName);
+                            string? tableLocalName =
+                                nameTable.Get(_tableLocalName) ??
+                                nameTable.Add(_tableLocalName);
 
-                            if (tableLocalName == null)
-                            {
-                                tableLocalName = nameTable.Add(_tableLocalName);
-                            }
-
-                            string? tableNamespace = nameTable.Get(r.ChildTable.Namespace);
-
-                            if (tableNamespace == null)
-                            {
-                                tableNamespace = nameTable.Add(r.ChildTable.Namespace);
-                            }
+                            string? tableNamespace =
+                                nameTable.Get(r.ChildTable.Namespace) ??
+                                nameTable.Add(r.ChildTable.Namespace);
 
                             XmlNodeIdentety idTable = new XmlNodeIdentety(tableLocalName, tableNamespace);
                             tableSchemaInfo.ColumnsSchemaMap[idTable] = r.ChildTable;
@@ -412,19 +396,14 @@ namespace System.Data
                             // Handle namespaces and names as usuall
 
                             string _tableLocalName = XmlConvert.EncodeLocalName(r.ChildTable.TableName);
-                            string? tableLocalName = nameTable.Get(_tableLocalName);
 
-                            if (tableLocalName == null)
-                            {
-                                tableLocalName = nameTable.Add(_tableLocalName);
-                            }
+                            string? tableLocalName =
+                                nameTable.Get(_tableLocalName) ??
+                                nameTable.Add(_tableLocalName);
 
-                            string? tableNamespace = nameTable.Get(r.ChildTable.Namespace);
-
-                            if (tableNamespace == null)
-                            {
-                                tableNamespace = nameTable.Add(r.ChildTable.Namespace);
-                            }
+                            string? tableNamespace =
+                                nameTable.Get(r.ChildTable.Namespace) ??
+                                nameTable.Add(r.ChildTable.Namespace);
 
                             XmlNodeIdentety idTable = new XmlNodeIdentety(tableLocalName, tableNamespace);
                             tableSchemaInfo.ColumnsSchemaMap[idTable] = r.ChildTable;

@@ -981,14 +981,7 @@ namespace System
                     }
 
                     // check for all back slashes
-                    for (int i = 0; i < str.Length; ++i)
-                    {
-                        if (str[i] == '/')
-                        {
-                            str = str.Replace('/', '\\');
-                            break;
-                        }
-                    }
+                    str = str.Replace('/', '\\');
 
                     return str;
                 }
@@ -4874,13 +4867,10 @@ namespace System
                     if (basePart.IsUnc)
                     {
                         ReadOnlySpan<char> share = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.Unescaped);
-                        for (int i = 1; i < share.Length; ++i)
+                        int i = share.Slice(1).IndexOf('/');
+                        if (i >= 0)
                         {
-                            if (share[i] == '/')
-                            {
-                                share = share.Slice(0, i);
-                                break;
-                            }
+                            share = share.Slice(0, i + 1);
                         }
 
                         if (basePart.IsImplicitFile)

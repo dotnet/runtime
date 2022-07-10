@@ -253,7 +253,7 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("items", () => ImmutableStack.Create((int[])null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableStack.Create<int>());

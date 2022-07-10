@@ -920,10 +920,7 @@ namespace System.Xml.Linq
                         }
                         break;
                     case XmlNodeType.EndElement:
-                        if (_currentContainer.content == null)
-                        {
-                            _currentContainer.content = string.Empty;
-                        }
+                        _currentContainer.content ??= string.Empty;
                         if (_currentContainer == rootContainer) return false;
                         _currentContainer = _currentContainer.parent!;
                         break;
@@ -979,10 +976,7 @@ namespace System.Xml.Linq
                         }
                         break;
                     case XmlNodeType.EndElement:
-                        if (_currentContainer.content == null)
-                        {
-                            _currentContainer.content = string.Empty;
-                        }
+                        _currentContainer.content ??= string.Empty;
                         if (_currentContainer == rootContainer) return false;
                         _currentContainer = _currentContainer.parent!;
                         break;
@@ -1059,10 +1053,7 @@ namespace System.Xml.Linq
                     }
                     case XmlNodeType.EndElement:
                     {
-                        if (_currentContainer.content == null)
-                        {
-                                _currentContainer.content = string.Empty;
-                        }
+                        _currentContainer.content ??= string.Empty;
                         // Store the line info of the end element tag.
                         // Note that since we've got EndElement the current container must be an XElement
                         XElement? e = _currentContainer as XElement;
@@ -1178,10 +1169,7 @@ namespace System.Xml.Linq
                         }
                     case XmlNodeType.EndElement:
                         {
-                            if (_currentContainer.content == null)
-                            {
-                                _currentContainer.content = string.Empty;
-                            }
+                            _currentContainer.content ??= string.Empty;
                             // Store the line info of the end element tag.
                             // Note that since we've got EndElement the current container must be an XElement
                             XElement? e = _currentContainer as XElement;

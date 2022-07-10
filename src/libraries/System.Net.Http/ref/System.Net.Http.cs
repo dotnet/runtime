@@ -239,6 +239,11 @@ namespace System.Net.Http
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public override string ToString() { throw null; }
     }
+    public sealed class HttpProtocolException : System.IO.IOException
+    {
+        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) { }
+        public long ErrorCode { get { throw null; } }
+    }
     public partial class HttpRequestException : System.Exception
     {
         public HttpRequestException() { }

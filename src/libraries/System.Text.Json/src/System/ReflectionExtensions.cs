@@ -19,15 +19,6 @@ namespace System.Text.Json.Reflection
             type.IsGenericType && type.GetGenericTypeDefinition() == s_nullableType;
 
         /// <summary>
-        /// Returns <see langword="true" /> when the given type is either a reference type or of type <see cref="Nullable{T}"/>.
-        /// </summary>
-        /// <remarks>This calls <see cref="Type.IsValueType"/> which is slow. If knowledge already exists
-        /// that the type is a value type, call <see cref="IsNullableOfT"/> instead.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CanBeNull(this Type type) =>
-            !type.IsValueType || type.IsNullableOfT();
-
-        /// <summary>
         /// Returns <see langword="true" /> when the given type is assignable from <paramref name="from"/> including support
         /// when <paramref name="from"/> is <see cref="Nullable{T}"/> by using the {T} generic parameter for <paramref name="from"/>.
         /// </summary>
@@ -41,7 +32,32 @@ namespace System.Text.Json.Reflection
             return type.IsAssignableFrom(from);
         }
 
+        /// <summary>
+        /// Returns <see langword="true" /> when either type is assignable to the other.
+        /// </summary>
+        public static bool IsInSubtypeRelationshipWith(this Type type, Type other) =>
+            type.IsAssignableFromInternal(other) || other.IsAssignableFromInternal(type);
+
         private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)
             => constructorInfo.GetCustomAttribute<JsonConstructorAttribute>() != null;
+
+        public static TAttribute? GetUniqueCustomAttribute<TAttribute>(this MemberInfo memberInfo, bool inherit)
+            where TAttribute : Attribute
+        {
+            object[] attributes = memberInfo.GetCustomAttributes(typeof(TAttribute), inherit);
+
+            if (attributes.Length == 0)
+            {
+                return null;
+            }
+
+            if (attributes.Length == 1)
+            {
+                return (TAttribute)attributes[0];
+            }
+
+            ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(typeof(TAttribute), memberInfo);
+            return null;
+        }
     }
 }

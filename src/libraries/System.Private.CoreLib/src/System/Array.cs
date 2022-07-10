@@ -2469,13 +2469,11 @@ namespace System
                         break;
 
                     keys.SetValue(keys.GetValue(lo + child - 1), lo + i - 1);
-                    if (items != null)
-                        items.SetValue(items.GetValue(lo + child - 1), lo + i - 1);
+                    items?.SetValue(items.GetValue(lo + child - 1), lo + i - 1);
                     i = child;
                 }
                 keys.SetValue(d, lo + i - 1);
-                if (items != null)
-                    items.SetValue(dt, lo + i - 1);
+                items?.SetValue(dt, lo + i - 1);
             }
 
             private void InsertionSort(int lo, int hi)
@@ -2492,14 +2490,12 @@ namespace System
                     while (j >= lo && comparer.Compare(t, keys.GetValue(j)) < 0)
                     {
                         keys.SetValue(keys.GetValue(j), j + 1);
-                        if (items != null)
-                            items.SetValue(items.GetValue(j), j + 1);
+                        items?.SetValue(items.GetValue(j), j + 1);
                         j--;
                     }
 
                     keys.SetValue(t, j + 1);
-                    if (items != null)
-                        items.SetValue(dt, j + 1);
+                    items?.SetValue(dt, j + 1);
                 }
             }
         }

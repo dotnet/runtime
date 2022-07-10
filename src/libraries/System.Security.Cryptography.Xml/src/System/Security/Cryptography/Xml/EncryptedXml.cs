@@ -164,14 +164,8 @@ namespace System.Security.Cryptography.Xml
         // when an EncyptedData references an EncryptedKey using a CarriedKeyName and Recipient
         public string Recipient
         {
-            get
-            {
-                // an unspecified value for an XmlAttribute is string.Empty
-                if (_recipient == null)
-                    _recipient = string.Empty;
-                return _recipient;
-            }
-            set { _recipient = value; }
+            get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
+            set => _recipient = value;
         }
 
         //
@@ -241,8 +235,7 @@ namespace System.Security.Cryptography.Xml
                     Utils.Pump(decInputStream, ms);
                     cipherValue = ms.ToArray();
                     // Close the stream and return
-                    if (inputStream != null)
-                        inputStream.Close();
+                    inputStream?.Close();
                     decInputStream.Close();
                 }
 

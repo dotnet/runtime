@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="System.Net.Quic.cs" />
   </ItemGroup>
 

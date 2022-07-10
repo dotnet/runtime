@@ -454,20 +454,14 @@ namespace System.Speech.Internal.Synthesis
             }
             public void Dispose()
             {
-                if (_waveHeader != null)
-                {
-                    _waveHeader.Dispose();
-                }
+                _waveHeader?.Dispose();
 
                 GC.SuppressFinalize(this);
             }
 
             internal void ReleaseData()
             {
-                if (_waveHeader != null)
-                {
-                    _waveHeader.ReleaseData();
-                }
+                _waveHeader?.ReleaseData();
             }
 
             internal WaveHeader _waveHeader;

@@ -296,8 +296,8 @@ ISpGrammarResourceLoader
 
         void IRecognizerInternal.SetDictationContext(Grammar grammar, string precedingText, string subsequentText)
         {
-            if (precedingText == null) { precedingText = string.Empty; }
-            if (subsequentText == null) { subsequentText = string.Empty; }
+            precedingText ??= string.Empty;
+            subsequentText ??= string.Empty;
 
             SPTEXTSELECTIONINFO selectionInfo = new(0, 0, (uint)precedingText.Length, 0);
             string textString = precedingText + subsequentText + "\0\0";
@@ -1180,10 +1180,7 @@ ISpGrammarResourceLoader
                         return null;
                     }
 
-                    if (_audioFormat == null)
-                    {
-                        _audioFormat = GetSapiAudioFormat();
-                    }
+                    _audioFormat ??= GetSapiAudioFormat();
                 }
                 return _audioFormat;
             }
@@ -2905,11 +2902,8 @@ ISpGrammarResourceLoader
         {
             // In the synchronous case, fire the private event
             EventHandler<RecognizeCompletedEventArgs> recognizeCompletedHandler = RecognizeCompletedSync;
-            if (recognizeCompletedHandler == null)
-            {
-                // If not in sync mode, fire the public event.
-                recognizeCompletedHandler = RecognizeCompleted;
-            }
+            // If not in sync mode, fire the public event.
+            recognizeCompletedHandler ??= RecognizeCompleted;
 
             // Fire the completed event
             if (recognizeCompletedHandler != null)
@@ -2929,11 +2923,8 @@ ISpGrammarResourceLoader
             {
                 // In the synchronous case, fire the private event
                 emulateRecognizeCompletedHandler = EmulateRecognizeCompletedSync;
-                if (emulateRecognizeCompletedHandler == null)
-                {
-                    // If not in sync mode, fire the public event.
-                    emulateRecognizeCompletedHandler = EmulateRecognizeCompleted;
-                }
+                // If not in sync mode, fire the public event.
+                emulateRecognizeCompletedHandler ??= EmulateRecognizeCompleted;
                 _lastResult = null;
                 _lastException = null;
                 _isEmulateRecognition = false;

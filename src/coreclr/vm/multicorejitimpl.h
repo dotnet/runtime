@@ -646,7 +646,7 @@ private:
 
 public:
 
-    MulticoreJitRecorder(AppDomain * pDomain, AssemblyBinder * pBinder, bool fRecorderActive)
+    MulticoreJitRecorder(AppDomain * pDomain, AssemblyBinder * pBinder)
         : m_stats(pDomain->GetMulticoreJitManager().GetStats())
         , m_ModuleList(nullptr)
         , m_JitInfoArray(nullptr)
@@ -656,18 +656,8 @@ public:
         m_pDomain = pDomain;
         m_pBinder = pBinder;
 
-        if (fRecorderActive)
-        {
-            m_ModuleList = new (nothrow) RecorderModuleInfo[MAX_MODULES];
-        }
-
         m_ModuleCount = 0;
         m_ModuleDepCount = 0;
-
-        if (fRecorderActive)
-        {
-            m_JitInfoArray = new (nothrow) RecorderInfo[MAX_METHODS];
-        }
 
         m_JitInfoCount = 0;
         m_fFirstMethod = true;
@@ -713,6 +703,14 @@ public:
 
         return (m_JitInfoCount >= (LONG) MAX_METHODS) ||
                (m_ModuleCount  >= MAX_MODULES);
+    }
+
+    void Activate()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_ModuleList = new (nothrow) RecorderModuleInfo[MAX_MODULES];
+        m_JitInfoArray = new (nothrow) RecorderInfo[MAX_METHODS];
     }
 
     void RecordMethodJitOrLoad(MethodDesc * pMethod, bool application);

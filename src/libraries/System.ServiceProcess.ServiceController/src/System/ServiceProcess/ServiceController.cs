@@ -652,10 +652,7 @@ namespace System.ServiceProcess
             }
 
             // get a handle to SCM with connect access and store it in serviceManagerHandle field.
-            if (_serviceManagerHandle == null)
-            {
-                _serviceManagerHandle = GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
-            }
+            _serviceManagerHandle ??= GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
         }
 
         /// <summary>

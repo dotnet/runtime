@@ -54,7 +54,11 @@ namespace System.Net.Quic.Tests
             var listener = await QuicListener.ListenAsync(new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
+                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(new QuicServerConnectionOptions()
+                {
+                    ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                })
             });
 
             byte[] buffer = new byte[1] { 42 };
@@ -73,7 +77,7 @@ namespace System.Net.Quic.Tests
                     {
                         connection2 = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
                         {
-                            RemoteEndPoint = listener.ListenEndPoint,
+                            RemoteEndPoint = listener.LocalEndPoint,
                             ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
                         });
                         await connection2.ConnectAsync();
@@ -90,7 +94,7 @@ namespace System.Net.Quic.Tests
                 }));
 
             // No need to keep the listener once we have connected connection and streams
-            listener.Dispose();
+            await listener.DisposeAsync();
 
             var result = new StreamPairWithOtherDisposables(stream1, stream2);
             result.Disposables.Add(connection1);

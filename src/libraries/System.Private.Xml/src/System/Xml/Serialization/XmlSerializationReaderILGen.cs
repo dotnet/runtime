@@ -24,17 +24,7 @@ namespace System.Xml.Serialization
         private Dictionary<string, EnumMapping>? _enums;
         private int _nextIdNumber;
 
-        internal Dictionary<string, EnumMapping> Enums
-        {
-            get
-            {
-                if (_enums == null)
-                {
-                    _enums = new Dictionary<string, EnumMapping>();
-                }
-                return _enums;
-            }
-        }
+        internal Dictionary<string, EnumMapping> Enums => _enums ??= new Dictionary<string, EnumMapping>();
 
         private sealed class Member
         {
@@ -1814,12 +1804,7 @@ namespace System.Xml.Serialization
 
         private void WriteID(string? name)
         {
-            if (name == null)
-            {
-                //Writer.Write("null");
-                //return;
-                name = "";
-            }
+            name ??= "";
             if (!_idNames.ContainsKey(name))
             {
                 string? idName = NextIdName(name);

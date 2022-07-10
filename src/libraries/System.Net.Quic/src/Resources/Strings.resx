@@ -181,5 +181,8 @@
   <data name="net_InvalidSocketAddressSize" xml:space="preserve">
     <value>The supplied {0} is an invalid size for the {1} end point.</value>
   </data>
+  <data name="net_quic_accept_not_allowed" xml:space="preserve">
+    <value>QuicConnection is configured to not accept any streams.</value>
+  </data>
 </root>
 

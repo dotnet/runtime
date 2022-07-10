@@ -62,7 +62,34 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
 
     const CoreLibClassDescription *d = m_classDescriptions + (int)id;
 
-    pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name).AsMethodTable();
+    LPCUTF8 nameSpace = d->nameSpace;
+    LPCUTF8 name = d->name;
+
+    LPCUTF8 nestedTypeMaybe = strchr(name, '+');
+    if (nestedTypeMaybe == NULL)
+    {
+        NameHandle nameHandle = NameHandle(nameSpace, name);
+        pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle).AsMethodTable();
+    }
+    else
+    {
+        // Handle the nested type scenario.
+        // The same NameHandle must be used to retain the scope to look for the nested type.
+        NameHandle nameHandle(GetModule(), mdtBaseType);
+
+        SString splitName(SString::Utf8, name, (COUNT_T)(nestedTypeMaybe - name));
+        nameHandle.SetName(nameSpace, splitName.GetUTF8());
+
+        // The side-effect of updating the scope in the NameHandle is the point of the call.
+        (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
+
+        // Now load the nested type.
+        nameHandle.SetName(NULL, nestedTypeMaybe + 1);
+
+        // We don't support nested types in nested types.
+        _ASSERTE(strchr(nameHandle.GetName(), '+') == NULL);
+        pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle).AsMethodTable();
+    }
 
     _ASSERTE(pMT->GetModule() == GetModule());
 
@@ -407,7 +434,7 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
     }
     else {
         if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
-            THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (Module*)NULL);
+            THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (ModuleBase*)NULL);
         argCount = 0;
     }
 
@@ -801,8 +828,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
             size_t len = pUnmanagedTypeEnd - pUnmanagedArg;
             // generate the unmanaged argument signature to show them in the error message if possible
             StackSString ssUnmanagedType(SString::Ascii, pUnmanagedArg, (COUNT_T)len);
-            StackScratchBuffer buffer;
-            const char * pUnManagedType = ssUnmanagedType.GetANSI(buffer);
+            const char * pUnManagedType = ssUnmanagedType.GetUTF8();
 
             if (expectedType != NULL)
             {

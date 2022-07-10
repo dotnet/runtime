@@ -38,18 +38,9 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets the key this section occupies in its parent.
         /// </summary>
-        public string Key
-        {
-            get
-            {
-                if (_key == null)
-                {
-                    // Key is calculated lazily as last portion of Path
-                    _key = ConfigurationPath.GetSectionKey(_path);
-                }
-                return _key;
-            }
-        }
+        public string Key =>
+            // Key is calculated lazily as last portion of Path
+            _key ??= ConfigurationPath.GetSectionKey(_path);
 
         /// <summary>
         /// Gets or sets the section value.

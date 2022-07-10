@@ -91,7 +91,7 @@ namespace Internal.IntrinsicSupport
             return RuntimeAugments.NewObject(comparerType);
         }
 
-        // This one is an intrinsic that is used to make enum comparisions more efficient.
+        // This one is an intrinsic that is used to make enum comparisons more efficient.
         [Intrinsic]
         internal static int EnumOnlyCompare<T>(T x, T y) where T : struct, Enum
         {

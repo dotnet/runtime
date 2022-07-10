@@ -573,10 +573,7 @@ namespace System.Net
                     }
 
                     // HandleAuthentication may have cleaned this up.
-                    if (memoryBlob == null)
-                    {
-                        memoryBlob = new SyncRequestContext(checked((int)size));
-                    }
+                    memoryBlob ??= new SyncRequestContext(checked((int)size));
 
                     requestId = 0;
                 }
@@ -788,13 +785,8 @@ namespace System.Net
                 ExtendedProtectionSelector? extendedProtectionSelector = _extendedProtectionSelectorDelegate;
                 if (extendedProtectionSelector != null)
                 {
-                    extendedProtectionPolicy = extendedProtectionSelector(httpContext.Request);
-
-                    if (extendedProtectionPolicy == null)
-                    {
-                        extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-                    }
                     // Cache the results of extendedProtectionSelector (if any)
+                    extendedProtectionPolicy = extendedProtectionSelector(httpContext.Request) ?? new ExtendedProtectionPolicy(PolicyEnforcement.Never);
                     httpContext.ExtendedProtectionPolicy = extendedProtectionPolicy;
                 }
 
@@ -866,14 +858,8 @@ namespace System.Net
 
                     // Find the beginning of the blob.  Trust that HTTP.SYS parsed out just our header ok.
                     Debug.Assert(authorizationHeader != null);
-                    for (index++; index < authorizationHeader!.Length; index++)
-                    {
-                        if (authorizationHeader[index] != ' ' && authorizationHeader[index] != '\t' &&
-                            authorizationHeader[index] != '\r' && authorizationHeader[index] != '\n')
-                        {
-                            break;
-                        }
-                    }
+                    int nonWhitespace = authorizationHeader.AsSpan(index + 1).IndexOfAnyExcept(" \t\r\n");
+                    index = nonWhitespace >= 0 ? index + 1 + nonWhitespace : authorizationHeader.Length;
                     string inBlob = index < authorizationHeader.Length ? authorizationHeader.Substring(index) : "";
 
                     IPrincipal? principal = null;
@@ -1011,10 +997,7 @@ namespace System.Net
                                     }
                                     finally
                                     {
-                                        if (userContext != null)
-                                        {
-                                            userContext.Dispose();
-                                        }
+                                        userContext?.Dispose();
                                     }
                                 }
                                 else
@@ -1175,10 +1158,7 @@ namespace System.Net
                     Debug.Assert(disconnectResult != null);
                     disconnectResult!.Session = newContext;
 
-                    if (toClose != null)
-                    {
-                        toClose.CloseContext();
-                    }
+                    toClose?.CloseContext();
                 }
 
                 // Send the 401 here.
@@ -1246,10 +1226,7 @@ namespace System.Net
                 {
                     // Check if the connection got deleted while in this method, and clear out the hashtables if it did.
                     // In a nested finally because if this doesn't happen, we leak.
-                    if (disconnectResult != null)
-                    {
-                        disconnectResult.FinishOwningDisconnectHandling();
-                    }
+                    disconnectResult?.FinishOwningDisconnectHandling();
                 }
             }
         }
@@ -1524,10 +1501,7 @@ namespace System.Net
                 if (challenge.Length > 0)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "challenge:" + challenge);
-                    if (challenges == null)
-                    {
-                        challenges = new ArrayList(4);
-                    }
+                    challenges ??= new ArrayList(4);
                     challenges.Add(challenge);
                 }
             }
@@ -1896,10 +1870,7 @@ namespace System.Net
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DisconnectResults {listener.DisconnectResults} removing for _connectionId: {_connectionId}");
                 listener.DisconnectResults.Remove(_connectionId);
-                if (_session != null)
-                {
-                    _session.CloseContext();
-                }
+                _session?.CloseContext();
 
                 // Clean up the identity. This is for scenarios where identity was not cleaned up before due to
                 // identity caching for unsafe ntlm authentication

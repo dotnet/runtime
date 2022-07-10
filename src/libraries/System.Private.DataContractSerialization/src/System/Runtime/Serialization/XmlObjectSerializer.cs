@@ -435,17 +435,6 @@ namespace System.Runtime.Serialization
         }
 
         private static IFormatterConverter? s_formatterConverter;
-        internal static IFormatterConverter FormatterConverter
-        {
-            get
-            {
-                if (s_formatterConverter == null)
-                {
-                    s_formatterConverter = new FormatterConverter();
-                }
-
-                return s_formatterConverter;
-            }
-        }
+        internal static IFormatterConverter FormatterConverter => s_formatterConverter ??= new FormatterConverter();
     }
 }

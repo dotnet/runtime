@@ -7,8 +7,8 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <WasmMainJSPath>main.js</WasmMainJSPath>
     <OutputType>Exe</OutputType>
-    <WasmEnableES6>true</WasmEnableES6>
     <PublishTrimmed>true</PublishTrimmed>
+    <WasmEmitSymbolMap Condition="'$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
   </PropertyGroup>
 
   <ItemGroup>

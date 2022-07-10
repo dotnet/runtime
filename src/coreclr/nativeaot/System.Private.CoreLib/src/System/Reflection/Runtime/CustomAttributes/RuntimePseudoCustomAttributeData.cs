@@ -22,8 +22,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             Type attributeType, IList<CustomAttributeTypedArgument> constructorArguments)
         {
             _attributeType = attributeType;
-            if (constructorArguments == null)
-                constructorArguments = Array.Empty<CustomAttributeTypedArgument>();
+            constructorArguments ??= Array.Empty<CustomAttributeTypedArgument>();
             _constructorArguments = new ReadOnlyCollection<CustomAttributeTypedArgument>(constructorArguments);
         }
 

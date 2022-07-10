@@ -384,7 +384,7 @@ namespace System.Net.Security
                 {
                     pBuffers = unmanagedBuffer
                 };
-                Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)GlobalSSPI.SSPISecureChannel.DecryptMessage(securityContext!, ref sdcInOut, 0);
+                Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)GlobalSSPI.SSPISecureChannel.DecryptMessage(securityContext!, ref sdcInOut, out _);
 
                 // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
                 // We need to find the data.
@@ -420,7 +420,7 @@ namespace System.Net.Security
                 dwAlertType = (uint)alertType,
                 dwAlertNumber = (uint)alertMessage
             };
-            byte[] buffer = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref alertToken, 1)).ToArray();
+            byte[] buffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_ALERT_TOKEN>(in alertToken)).ToArray();
             var securityBuffer = new SecurityBuffer(buffer, SecurityBufferType.SECBUFFER_TOKEN);
 
             var errorCode = (Interop.SECURITY_STATUS)SSPIWrapper.ApplyControlToken(

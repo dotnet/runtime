@@ -163,10 +163,7 @@ namespace System.Data
                 }
             }
 
-            if (value == null)
-                value = string.Empty;
-
-            return value;
+            return value ?? string.Empty;
         }
 
         private static string GetInitialTextFromNodes(ref XmlNode? n)
@@ -197,10 +194,7 @@ namespace System.Data
                 }
             }
 
-            if (value == null)
-                value = string.Empty;
-
-            return value;
+            return value ?? string.Empty;
         }
 
         private static DataColumn? GetTextOnlyColumn(DataRow row)
@@ -437,8 +431,7 @@ namespace System.Data
 
 
                         // nothing left down here, continue from element
-                        if (n == null)
-                            n = e;
+                        n ??= e;
                     }
                 }
 
@@ -596,11 +589,9 @@ namespace System.Data
             // Keep constraints status for datataset/table
             InitNameTable();                                    // Adds DataSet namespaces to reader's nametable
 
-            if (_nodeToSchemaMap == null)
-            {                      // Create XML to dataset map
-                _nodeToSchemaMap = _isTableLevel ? new XmlToDatasetMap(_dataReader.NameTable, _dataTable!) :
+            // Create XML to dataset map
+            _nodeToSchemaMap ??= _isTableLevel ? new XmlToDatasetMap(_dataReader.NameTable, _dataTable!) :
                                                  new XmlToDatasetMap(_dataReader.NameTable, _dataSet!);
-            }
 
             if (_isTableLevel)
             {
@@ -1255,10 +1246,7 @@ namespace System.Data
                                     StringBuilder? builder = null;
                                     while (_dataReader.Read() && entryDepth < _dataReader.Depth && IsTextLikeNode(_dataReader.NodeType))
                                     {
-                                        if (builder == null)
-                                        {
-                                            builder = new StringBuilder(text);
-                                        }
+                                        builder ??= new StringBuilder(text);
                                         builder.Append(_dataReader.Value);  // Concatenate other sequential text like
                                                                             // nodes we might have. This is rare.
                                                                             // We're using this instead of dataReader.ReadString()
