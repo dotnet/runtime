@@ -32,7 +32,6 @@ namespace System.Runtime.Serialization
         public static System.Xml.XmlQualifiedName GetStableName(Type type) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public static Type GetSurrogateType(ISerializationSurrogateProvider surrogateProvider, Type type) { throw null; }
-        public virtual bool HasRoot { get { throw null; } }
         public virtual bool IsBuiltInDataContract { get { throw null; } }
         public virtual bool IsISerializable { get { throw null; } }
         public virtual bool IsKeyValue(out string? keyName, out string? valueName, out string? itemName) { throw null; }
@@ -41,7 +40,7 @@ namespace System.Runtime.Serialization
         public static bool IsTypeSerializable(Type type) { throw null; }
         public virtual bool IsValueType { get { throw null; } }
         public virtual System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>? KnownDataContracts { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } set { throw null; } }
-        public virtual System.Collections.Generic.List<DataMember>? Members { get { throw null; } }
+        public virtual System.Collections.Generic.IList<DataMember>? Members { get { throw null; } }
         public virtual Type OriginalUnderlyingType { get { throw null; } }
         public virtual System.Xml.XmlQualifiedName StableName { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(DataContract.DataContractPreserveMemberTypes)]
@@ -177,6 +176,7 @@ namespace System.Runtime.Serialization
     }
     public sealed partial class XmlDataContract : DataContract
     {
+        public bool HasRoot { get { throw null; } }
         public bool IsAnonymous { get { throw null; } }
         public bool IsTopLevelElementNullable { get { throw null; } }
         public bool IsTypeDefinedOnImport { get { throw null; } set { throw null; } }

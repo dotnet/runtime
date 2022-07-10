@@ -44,13 +44,13 @@ namespace System.Runtime.Serialization
         }
 
         [NotNull]
-        public override List<DataMember>? Members
+        public override IList<DataMember>? Members
         {
             get => _helper.Members;
             internal set => _helper.Members = value!;
         }
 
-        public List<long>? Values
+        public IList<long>? Values
         {
             get => _helper.Values;
             set => _helper.Values = value;
@@ -74,8 +74,8 @@ namespace System.Runtime.Serialization
             private static readonly Dictionary<XmlQualifiedName, Type> s_nameToType = new Dictionary<XmlQualifiedName, Type>();
 
             private DataContract _baseContract;
-            private List<DataMember> _members;
-            private List<long>? _values;
+            private IList<DataMember> _members;
+            private IList<long>? _values;
             private bool _isULong;
             private bool _isFlags;
             private readonly bool _hasDataContract;
@@ -169,13 +169,13 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            internal List<DataMember> Members
+            internal IList<DataMember> Members
             {
                 get => _members;
                 set => _members = value;
             }
 
-            internal List<long>? Values
+            internal IList<long>? Values
             {
                 get => _values;
                 set => _values = value;

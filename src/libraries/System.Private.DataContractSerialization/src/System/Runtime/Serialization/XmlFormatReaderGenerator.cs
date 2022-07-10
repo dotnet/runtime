@@ -462,7 +462,7 @@ namespace System.Runtime.Serialization
             private int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
             {
                 int memberCount = (contract.BaseClassContract == null) ? 0 : GetRequiredMembers(contract.BaseClassContract, requiredMembers);
-                List<DataMember> members = contract.Members!;
+                IList<DataMember> members = contract.Members!;
                 for (int i = 0; i < members.Count; i++, memberCount++)
                 {
                     requiredMembers[memberCount] = members[i].IsRequired;

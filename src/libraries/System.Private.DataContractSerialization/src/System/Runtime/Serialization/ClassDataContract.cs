@@ -63,7 +63,7 @@ namespace System.Runtime.Serialization
             set => _helper.BaseClassContract = value;
         }
 
-        public override List<DataMember>? Members
+        public override IList<DataMember>? Members
         {
             get => _helper.Members;
             internal set => _helper.Members = value;
@@ -578,7 +578,7 @@ namespace System.Runtime.Serialization
             private static Type[]? s_serInfoCtorArgs;
 
             private ClassDataContract? _baseContract;
-            private List<DataMember>? _members;
+            private IList<DataMember>? _members;
             private MethodInfo? _onSerializing, _onSerialized;
             private MethodInfo? _onDeserializing, _onDeserialized;
             private MethodInfo? _extensionDataSetMethod;
@@ -1132,7 +1132,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            internal List<DataMember>? Members
+            internal IList<DataMember>? Members
             {
                 get => _members;
                 set => _members = value;
@@ -1185,7 +1185,6 @@ namespace System.Runtime.Serialization
 
             internal override DataContractDictionary? KnownDataContracts
             {
-
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {

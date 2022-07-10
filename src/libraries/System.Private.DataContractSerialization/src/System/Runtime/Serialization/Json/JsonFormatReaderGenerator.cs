@@ -411,7 +411,7 @@ namespace System.Runtime.Serialization.Json
             {
                 int memberCount = (contract.BaseClassContract == null) ? 0 :
                     SetRequiredElements(contract.BaseClassContract, requiredElements);
-                List<DataMember> members = contract.Members!;
+                IList<DataMember> members = contract.Members!;
                 for (int i = 0; i < members.Count; i++, memberCount++)
                 {
                     if (members[i].IsRequired)

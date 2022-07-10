@@ -175,7 +175,7 @@ namespace System.Runtime.Serialization.Schema
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             EnsureTypeNotGeneric(dataContract.UnderlyingType);
-            if (dataContract.HasRoot)
+            if (dataContract is not XmlDataContract xdc || xdc.HasRoot) // All non-XmlDataContracts "have root".
             {
                 return new XmlQualifiedName(dataContract.TopLevelElementName!.Value, dataContract.TopLevelElementNamespace!.Value);
             }

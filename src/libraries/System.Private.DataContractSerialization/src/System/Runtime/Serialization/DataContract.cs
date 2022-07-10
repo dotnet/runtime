@@ -231,10 +231,10 @@ namespace System.Runtime.Serialization
 
         internal virtual XmlDictionaryString Namespace => _ns;
 
-        public virtual bool HasRoot
+        internal virtual bool HasRoot
         {
             get => true;
-            internal set { }
+            set { }
         }
 
         public virtual XmlDictionaryString? TopLevelElementName
@@ -259,7 +259,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        public virtual List<DataMember>? Members
+        public virtual IList<DataMember>? Members
         {
             get => null;
             internal set { }
@@ -313,7 +313,6 @@ namespace System.Runtime.Serialization
             [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
             private readonly Type _underlyingType;
             private Type? _originalUnderlyingType;
-            private bool _isReference;
             private bool _isValueType;
             private GenericInfo? _genericInfo;
             private XmlQualifiedName _stableName = null!; // StableName is always set in concrete ctors set except for the "invalid" CollectionDataContract
@@ -1005,11 +1004,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            internal bool IsReference
-            {
-                get => _isReference;
-                set => _isReference = value;
-            }
+            internal bool IsReference { get; set; }
 
             internal bool IsValueType
             {

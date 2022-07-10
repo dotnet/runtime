@@ -54,7 +54,7 @@ namespace System.Runtime.Serialization
             set => _helper.IsValueType = value;
         }
 
-        public override bool HasRoot
+        public new bool HasRoot
         {
             get => _helper.HasRoot;
             internal set => _helper.HasRoot = value;

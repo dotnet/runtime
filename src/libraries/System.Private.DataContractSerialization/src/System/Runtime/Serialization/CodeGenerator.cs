@@ -194,10 +194,10 @@ namespace System.Runtime.Serialization
 
         internal LocalBuilder DeclareLocal(Type type, string name)
         {
-            return DeclareLocal(type, name, false);
+            return DeclareLocal(type, false);
         }
 
-        internal LocalBuilder DeclareLocal(Type type, string name, bool isPinned)
+        internal LocalBuilder DeclareLocal(Type type, bool isPinned)
         {
             return _ilGen.DeclareLocal(type, isPinned);
         }
@@ -596,7 +596,6 @@ namespace System.Runtime.Serialization
             else
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.CannotLoadMemberType, "Unknown", memberInfo.DeclaringType, memberInfo.Name)));
 
-            EmitStackTop(memberType);
             return memberType;
         }
 
@@ -901,19 +900,16 @@ namespace System.Runtime.Serialization
         internal void Ldloc(LocalBuilder localBuilder)
         {
             _ilGen.Emit(OpCodes.Ldloc, localBuilder);
-            EmitStackTop(localBuilder.LocalType);
         }
 
         internal void Stloc(LocalBuilder local)
         {
-            EmitStackTop(local.LocalType);
             _ilGen.Emit(OpCodes.Stloc, local);
         }
 
         internal void Ldloca(LocalBuilder localBuilder)
         {
             _ilGen.Emit(OpCodes.Ldloca, localBuilder);
-            EmitStackTop(localBuilder.LocalType);
         }
 
         internal void LdargAddress(ArgBuilder argBuilder)
@@ -992,15 +988,12 @@ namespace System.Runtime.Serialization
                 if (opCode.Equals(OpCodes.Nop))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
                 _ilGen.Emit(opCode);
-                EmitStackTop(arrayElementType);
             }
         }
         internal void Ldelema(Type arrayElementType)
         {
             OpCode opCode = OpCodes.Ldelema;
             _ilGen.Emit(opCode, arrayElementType);
-
-            EmitStackTop(arrayElementType);
         }
 
         private static OpCode GetStelemOpCode(TypeCode typeCode) =>
@@ -1033,7 +1026,6 @@ namespace System.Runtime.Serialization
                 if (opCode.Equals(OpCodes.Nop))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
 
-                EmitStackTop(arrayElementType);
                 _ilGen.Emit(opCode);
             }
         }
@@ -1212,11 +1204,6 @@ namespace System.Runtime.Serialization
         private static void ThrowMismatchException(object expected)
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExpectingEnd, expected.ToString())));
-        }
-
-        internal static void EmitStackTop(Type stackTopType)
-        {
-            return;
         }
 
         internal Label[] Switch(int labelCount)
