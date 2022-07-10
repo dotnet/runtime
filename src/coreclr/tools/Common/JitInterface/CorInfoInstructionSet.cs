@@ -768,6 +768,24 @@ namespace Internal.JitInterface
             }
         }
 
+        public static IEnumerable<string> CpuFamilyToInstructionSets(string cpu)
+        {
+            string sets = cpu switch
+            {
+                "sandybridge" or
+                "ivybridge" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,popcnt",
+
+                "skylake" or
+                "cannonlake" or
+                "haswell" or
+                "broadwell" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,bmi,fma,lzcnt,pclmul,popcnt,movbe,serialize",
+
+                "apple-m1" => "base,neon,aes,crc,dotprod,rdma,sha1,sha2,lse,rcpc",
+                _ => null
+            };
+            return sets?.Split(',');
+        }
+
         public static IEnumerable<InstructionSetInfo> ArchitectureToValidInstructionSets(TargetArchitecture architecture)
         {
             switch (architecture)
