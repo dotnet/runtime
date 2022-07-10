@@ -131,6 +131,8 @@ namespace System.Net.Quic.Tests
                     await sync.WaitAsync();
 
                     await clientConnection.CloseAsync(ExpectedErrorCode);
+
+                    sync.Release();
                 },
                 async serverConnection =>
                 {
@@ -149,6 +151,8 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
                     ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => connectTask);
                     Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+
+                    await sync.WaitAsync();
 
                     // Subsequent attempts should fail
                     ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverConnection.AcceptInboundStreamAsync().AsTask());

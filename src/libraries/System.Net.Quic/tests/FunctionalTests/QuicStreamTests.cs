@@ -438,7 +438,6 @@ namespace System.Net.Quic.Tests
         public async Task Read_WriteAborted_Throws()
         {
             const int ExpectedErrorCode = 0xfffffff;
-
             using SemaphoreSlim sem = new SemaphoreSlim(0);
 
             await RunBidirectionalClientServer(
@@ -812,6 +811,7 @@ namespace System.Net.Quic.Tests
         public async Task WaitForWriteCompletionAsync_ServerWriteAborted_Throws()
         {
             const int ExpectedErrorCode = 0xfffffff;
+            SemaphoreSlim sem = new SemaphoreSlim(0);
 
             TaskCompletionSource waitForAbortTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -819,6 +819,7 @@ namespace System.Net.Quic.Tests
                 async clientStream =>
                 {
                     await clientStream.WriteAsync(new byte[1], endStream: true);
+                    await sem.WaitAsync();
                 },
                 async serverStream =>
                 {
@@ -832,6 +833,7 @@ namespace System.Net.Quic.Tests
                     Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
 
                     serverStream.AbortWrite(ExpectedErrorCode);
+                    sem.Release();
 
                     await waitForAbortTcs.Task;
                     await writeCompletionTask;
