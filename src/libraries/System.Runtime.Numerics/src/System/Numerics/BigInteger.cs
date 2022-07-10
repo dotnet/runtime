@@ -1085,8 +1085,8 @@ namespace System.Numerics
                 return _sign;
 
             HashCode hash = default;
-            hash.Add(_sign);
             hash.AddBytes(MemoryMarshal.AsBytes(_bits.AsSpan()));
+            hash.Add(_sign);
             return hash.ToHashCode();
         }
 
