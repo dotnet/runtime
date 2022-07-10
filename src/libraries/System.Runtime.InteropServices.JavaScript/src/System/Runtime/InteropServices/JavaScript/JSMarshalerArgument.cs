@@ -16,13 +16,45 @@ namespace System.Runtime.InteropServices.JavaScript
     [EditorBrowsable(EditorBrowsableState.Never)]
     public partial struct JSMarshalerArgument
     {
-#pragma warning disable CS0649 // temporary until we have implementation
         internal JSMarshalerArgumentImpl slot;
-#pragma warning restore CS0649
 
         [StructLayout(LayoutKind.Explicit, Pack = 16, Size = 16)]
         internal struct JSMarshalerArgumentImpl
         {
+            [FieldOffset(0)]
+            internal bool BooleanValue;
+            [FieldOffset(0)]
+            internal byte ByteValue;
+            [FieldOffset(0)]
+            internal char CharValue;
+            [FieldOffset(0)]
+            internal short Int16Value;
+            [FieldOffset(0)]
+            internal int Int32Value;
+            [FieldOffset(0)]
+            internal long Int64Value;// must be alligned to 8 because of HEAPI64 alignment
+            [FieldOffset(0)]
+            internal float SingleValue;
+            [FieldOffset(0)]
+            internal double DoubleValue;// must be alligned to 8 because of Module.HEAPF64 view alignment
+            [FieldOffset(0)]
+            internal IntPtr IntPtrValue;
+
+            [FieldOffset(4)]
+            internal IntPtr JSHandle;
+            [FieldOffset(4)]
+            internal IntPtr GCHandle;
+            [FieldOffset(4)]
+            internal MarshalerType ElementType;
+
+            [FieldOffset(8)]
+            internal int Length;
+
+            /// <summary>
+            /// Discriminator
+            /// </summary>
+            [FieldOffset(12)]
+            internal MarshalerType Type;
         }
 
         /// <summary>
@@ -31,7 +63,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Initialize()
         {
-            throw new NotImplementedException();
+            slot.Type = MarshalerType.None;
         }
     }
 }
