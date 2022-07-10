@@ -74,6 +74,8 @@
 // See usage in this file itself and on the link (the assembly name for feature switch in this file will be System.Private.CoreLib),
 // https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md#generate-the-right-input-for-the-linker-in-sdk
 //
+// The FOR_ILLINK define is set when this file is being processed for the IL linker.
+//
 #ifndef BEGIN_ILLINK_FEATURE_SWITCH
 #define BEGIN_ILLINK_FEATURE_SWITCH(featureName, featureValue, featureDefault)
 #endif
@@ -1185,12 +1187,19 @@ DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICast
 #endif // FEATURE_ICASTABLE
 
 DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, CTOR, .ctor, IM_Str_RetVoid)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, CTOR_SPAN, .ctor, IM_Str_SpanOfByte_RetVoid)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, TO_NATIVE_VALUE, ToNativeValue, IM_RetPtrByte)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, FROM_NATIVE_VALUE, FromNativeValue, IM_PtrByte_RetVoid)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, TO_MANAGED, ToManaged, IM_RetStr)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE_NATIVE, FreeNative, IM_RetVoid)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_PtrByte_RetStr)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_UNMANAGED, ConvertToUnmanaged, SM_Str_RetPtrByte)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE, Free, SM_PtrByte_RetVoid)
+
+// The generator for the linker XML doesn't understand inner classes so generation
+// needs to skip the following type.
+// See https://github.com/dotnet/runtime/issues/71847
+#ifndef FOR_ILLINK
+DEFINE_CLASS(UTF8STRINGMARSHALLER_IN, Marshalling, Utf8StringMarshaller+ManagedToUnmanagedIn)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FROM_MANAGED, FromManaged, IM_Str_SpanOfByte_RetVoid)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, TO_UNMANAGED, ToUnmanaged, IM_RetPtrByte)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FREE, Free, IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_NATIVE, ConvertToNative, NoSig)
