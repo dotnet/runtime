@@ -64,6 +64,7 @@ namespace SampleMetadata
     public class GenericClassWithClassConstraint<T> where T : class { }
     public class GenericClassWithStructConstraint<T> where T : struct { }
     public class GenericClassWithNewConstraint<T> where T : new() { }
+    public class GenericClassWithEnumConstraint<T> where T : Enum { }
     public class GenericClassWithTypeConstraints<T> where T : CConstrained1, IConstrained1, IConstrained2<T> { }
     public class GenericClassWithInterfaceConstraints<T> where T : IConstrained1, IConstrained2<T> { }
     public class GenericClassWithQuirkyConstraints1<T, U> where T : U where U : CConstrained1, IConstrained1 { }
