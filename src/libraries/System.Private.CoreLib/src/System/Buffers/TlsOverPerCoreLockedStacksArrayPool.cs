@@ -68,6 +68,8 @@ namespace System.Buffers
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
             T[]? buffer;
 
+            minimumLength += Random.Shared.Next(1, 1000);
+
             // Get the bucket number for the array length. The result may be out of range of buckets,
             // either for too large a value or for 0 and negative values.
             int bucketIndex = Utilities.SelectBucketIndex(minimumLength);
@@ -160,16 +162,7 @@ namespace System.Buffers
                 // Clear the array if the user requested it.
                 if (clearArray)
                 {
-#if DEBUG
-                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    {
-                        // Only clear arrays with GC handles in Debug mode to keep other types of array
-                        // "uninitialized" for debug purposes
-                        Array.Clear(array);
-                    }
-#else
                     Array.Clear(array);
-#endif
                 }
 
                 // Check to see if the buffer is the correct size for this bucket.
