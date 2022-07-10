@@ -142,6 +142,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override Type GetEnumUnderlyingType()
         {
+            if (!IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
             if (RuntimeHelpers.IsKnownConstant(this))
             {
                 switch (Type.GetTypeCode(this))
@@ -160,9 +163,6 @@ namespace System
                     case TypeCode.Double:  return typeof(double);
                 }
             }
-
-            if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             return Enum.InternalGetUnderlyingType(this);
         }
