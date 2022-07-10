@@ -138,7 +138,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation, bool supportAsync)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetJsonTypeInfoForRootType(type);
+            JsonTypeInfo jsonTypeInfo = options.GetTypeInfoForRootType(type);
             return Initialize(jsonTypeInfo, supportContinuation, supportAsync);
         }
 
@@ -406,13 +406,10 @@ namespace System.Text.Json
 
             static void AppendStackFrame(StringBuilder sb, ref WriteStackFrame frame)
             {
-                // Append the property name.
-                string? propertyName = frame.JsonPropertyInfo?.MemberName;
-                if (propertyName == null)
-                {
-                    // Attempt to get the JSON property name from the property name specified in re-entry.
-                    propertyName = frame.JsonPropertyNameAsString;
-                }
+                // Append the property name. Or attempt to get the JSON property name from the property name specified in re-entry.
+                string? propertyName =
+                    frame.JsonPropertyInfo?.MemberName ??
+                    frame.JsonPropertyNameAsString;
 
                 AppendPropertyName(sb, propertyName);
             }

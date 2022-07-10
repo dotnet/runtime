@@ -1162,7 +1162,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man', type=str, required=True,
-                          help='full path to manifest containig the description of events')
+                          help='full path to manifest containing the description of events')
     required.add_argument('--exc',  type=str, required=True,
                                     help='full path to exclusion list')
     required.add_argument('--inc',  type=str,default="",

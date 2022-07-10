@@ -123,10 +123,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                         string? namespaceName = null;
                         foreach (TypeForwarderHandle typeForwarderHandle in namespaceHandle.GetNamespaceDefinition(reader).TypeForwarders)
                         {
-                            if (namespaceName == null)
-                            {
-                                namespaceName = namespaceHandle.ToNamespaceName(reader);
-                            }
+                            namespaceName ??= namespaceHandle.ToNamespaceName(reader);
 
                             TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
                             string typeName = typeForwarder.Name.GetString(reader);

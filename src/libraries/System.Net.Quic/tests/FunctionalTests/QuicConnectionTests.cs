@@ -19,12 +19,12 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task TestConnect()
         {
-            using QuicListener listener = await CreateQuicListener();
+            await using QuicListener listener = await CreateQuicListener();
 
-            using QuicConnection clientConnection = await CreateQuicConnection(listener.ListenEndPoint);
+            using QuicConnection clientConnection = await CreateQuicConnection(listener.LocalEndPoint);
 
             Assert.False(clientConnection.Connected);
-            Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
 
             ValueTask connectTask = clientConnection.ConnectAsync();
             ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
@@ -34,8 +34,8 @@ namespace System.Net.Quic.Tests
 
             Assert.True(clientConnection.Connected);
             Assert.True(serverConnection.Connected);
-            Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
-            Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
+            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
             Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
@@ -226,7 +226,6 @@ namespace System.Net.Quic.Tests
         {
             // Set a short idle timeout so that after we dispose the connection, the peer will discover the connection is dead before too long.
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
-            listenerOptions.IdleTimeout = TimeSpan.FromSeconds(1);
 
             using var sync = new SemaphoreSlim(0);
 

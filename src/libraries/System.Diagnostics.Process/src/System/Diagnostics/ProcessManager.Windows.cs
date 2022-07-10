@@ -231,10 +231,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (tokenHandle != null)
-                {
-                    tokenHandle.Dispose();
-                }
+                tokenHandle?.Dispose();
             }
         }
 

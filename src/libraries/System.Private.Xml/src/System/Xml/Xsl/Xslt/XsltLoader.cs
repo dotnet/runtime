@@ -2137,10 +2137,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            if (select == null /*&& content.Count == 0*/)
-            {
-                select = ".";
-            }
+            select ??= ".";
 
             return SetInfo(F.Sort(select, lang, dataType, order, caseOrder, _input.XslVersion),
                 null, ctxInfo

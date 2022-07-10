@@ -980,11 +980,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (targetDE != null)
-                    targetDE.Close();
-
-                if (sourceDE != null)
-                    sourceDE.Close();
+                targetDE?.Close();
+                sourceDE?.Close();
             }
         }
     }

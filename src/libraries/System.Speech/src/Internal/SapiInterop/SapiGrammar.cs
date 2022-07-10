@@ -92,17 +92,8 @@ namespace System.Speech.Internal.SapiInterop
 
         #region Internal Properties
 
-        internal ISpRecoGrammar2 SpRecoGrammar2
-        {
-            get
-            {
-                if (_sapiGrammar2 == null)
-                {
-                    _sapiGrammar2 = (ISpRecoGrammar2)_sapiGrammar;
-                }
-                return _sapiGrammar2;
-            }
-        }
+        internal ISpRecoGrammar2 SpRecoGrammar2 =>
+            _sapiGrammar2 ??= (ISpRecoGrammar2)_sapiGrammar;
 
         #endregion
 

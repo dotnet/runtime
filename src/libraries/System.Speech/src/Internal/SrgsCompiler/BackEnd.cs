@@ -612,10 +612,7 @@ namespace System.Speech.Internal.SrgsCompiler
                             }
                         }
                         Rule refRule = FindInRules(ruleName);
-                        if (refRule == null)
-                        {
-                            refRule = CloneState(arc.RuleRef._firstState, CloneStack, srcToDestHash);
-                        }
+                        refRule ??= CloneState(arc.RuleRef._firstState, CloneStack, srcToDestHash);
                         newArc.RuleRef = refRule;
                     }
 

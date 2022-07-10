@@ -145,9 +145,9 @@ namespace System.Security.Cryptography
         private void DestroyHash()
         {
             SafeBCryptHashHandle? hHash = _hHash;
-            _hHash = null;
             if (hHash != null)
             {
+                _hHash = null;
                 hHash.Dispose();
             }
 
