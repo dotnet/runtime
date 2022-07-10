@@ -770,12 +770,9 @@ namespace Internal.JitInterface
 
         public static IEnumerable<string> AllCpuFamilies()
         {
+            // Only report these in the help, others are added to CpuFamilyToInstructionSets just for muscle memory after clang/llvm
             yield return "sandybridge";
-            yield return "ivybridge";
-            yield return "skylake";
             yield return "haswell";
-            yield return "cannonlake";
-            yield return "broadwell";
             yield return "apple-m1";
         }
 
