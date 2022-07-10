@@ -92,12 +92,19 @@ public partial class Program
         IsTrue (IsValueTypeRef(ref _varGenericStructStr));
         IsTrue (IsValueTypeRef(ref _varEnum));
 
+        // test __reftype
+        int testInt = 0;
+        IsTrue (__reftype(__makeref(testInt)).IsValueType);
+        object testObject = null;
+        IsFalse(__reftype(__makeref(testInt)).IsValueType);
+
         ThrowsNRE(() => { IsValueType(_varNullableIntNull); });
         ThrowsNRE(() => { IsValueType(_varStringNull); });
         ThrowsNRE(() => { IsValueTypeRef(ref _varNullableIntNull); });
         ThrowsNRE(() => { IsValueTypeRef(ref _varStringNull); });
         ThrowsNRE(() => { _ = Type.GetTypeFromHandle(default).IsValueType; });
         ThrowsNRE(() => { _ = Type.GetTypeFromHandle(new RuntimeTypeHandle()).IsValueType; });
+        ThrowsNRE(() => { _ = __reftype(default).IsValueType; });
 
         TestIsAssignableFrom();
 
