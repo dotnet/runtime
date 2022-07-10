@@ -806,7 +806,7 @@ namespace Internal.JitInterface
                     "broadwell" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,bmi,fma,lzcnt,pclmul,popcnt,movbe,serialize",
 
                     // Rosetta2
-                    "apple-m1" => "base,sse,sse2,sse3,ssse3,sse4.1",
+                    "apple-m1" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,pclmul",
                     _ => null
                 };
             }
