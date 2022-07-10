@@ -43,6 +43,9 @@ namespace System.Threading
         /// the underlying timer continues firing.
         /// </param>
         /// <returns>A task that will be completed due to the timer firing, <see cref="Dispose"/> being called to stop the timer, or cancellation being requested.</returns>
+        /// <exception cref="System.InvalidOperationException">
+        /// A call to <see cref="WaitForNextTickAsync" /> is currently in flight.
+        /// </exception>        
         /// <remarks>
         /// The <see cref="PeriodicTimer"/> behaves like an auto-reset event, in that multiple ticks are coalesced into a single tick if they occur between
         /// calls to <see cref="WaitForNextTickAsync"/>.  Similarly, a call to <see cref="Dispose"/> will void any tick not yet consumed. <see cref="WaitForNextTickAsync"/>
