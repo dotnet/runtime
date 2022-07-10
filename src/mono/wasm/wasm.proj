@@ -139,6 +139,9 @@
       <_EmccLinkFlags Include="-s MODULARIZE=1"/>
       <_EmccLinkFlags Include="-Wl,--allow-undefined"/>
       <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
+      <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
+           active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
+      <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">

@@ -699,10 +699,19 @@ public:
                                             LoadTypesFlag fLoadTypes = LoadTypes,
                                             ClassLoadLevel level = CLASS_LOADED);
 
-    // Load types by name
+    // External class loader entry point
+    // Load types by name - doesn't support nested types.
+    // See overload using NameHandle.
     static TypeHandle LoadTypeByNameThrowing(Assembly *pAssembly,
                                              LPCUTF8 nameSpace,
                                              LPCUTF8 name,
+                                             NotFoundAction fNotFound = ThrowIfNotFound,
+                                             LoadTypesFlag fLoadTypes = LoadTypes,
+                                             ClassLoadLevel level = CLASS_LOADED);
+
+    // Load types using a NameHandle.
+    static TypeHandle LoadTypeByNameThrowing(Assembly *pAssembly,
+                                             NameHandle *pNameHandle,
                                              NotFoundAction fNotFound = ThrowIfNotFound,
                                              LoadTypesFlag fLoadTypes = LoadTypes,
                                              ClassLoadLevel level = CLASS_LOADED);
