@@ -71,7 +71,7 @@ public partial class Program
         IsFalse(typeof(float).IsAssignableFrom(typeof(SimpleEnum_uint)));
         IsFalse(typeof(SimpleEnum_uint).IsAssignableFrom(typeof(ValueType)));
 
-        // Covariance/Contravariance 
+        // Covariance/Contravariance
         IsTrue (typeof(IEnumerable<object>).IsAssignableFrom(typeof(List<string>)));
         IsTrue (typeof(IEnumerable<ClassA>).IsAssignableFrom(typeof(List<ClassB>)));
         IsTrue (typeof(IEnumerable<ClassA>).IsAssignableFrom(typeof(IList<ClassB>)));
@@ -165,6 +165,14 @@ public partial class Program
         IsFalse(typeof(Vector128<float>).IsAssignableFrom(typeof(Vector4)));
         IsFalse(typeof(Vector128<float>).IsAssignableFrom(typeof(Vector<float>)));
         IsFalse(typeof(Vector256<float>).IsAssignableFrom(typeof(Vector<float>)));
+
+        // null type
+        IsFalse(typeof(int).IsAssignableFrom(null));
+        IsFalse(typeof(object).IsAssignableFrom(null));
+        ThrowsNRE(() => { _ = null.IsAssignableFrom(typeof(int)); });
+        ThrowsNRE(() => { _ = null.IsAssignableFrom(typeof(object)); });
+        ThrowsNRE(() => { _ = null.IsAssignableFrom(null); });
+        ThrowsNRE(() => { _ = null.IsAssignableFrom(null); });
 
         // System.__Canon
         IsTrue (IsAssignableFrom<KeyValuePair<IDisposable, IDisposable>, KeyValuePair<IDisposable, IDisposable>>());

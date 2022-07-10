@@ -96,7 +96,7 @@ public partial class Program
         int testInt = 0;
         IsTrue (__reftype(__makeref(testInt)).IsValueType);
         object testObject = null;
-        IsFalse(__reftype(__makeref(testInt)).IsValueType);
+        IsFalse(__reftype(__makeref(testObject)).IsValueType);
 
         ThrowsNRE(() => { IsValueType(_varNullableIntNull); });
         ThrowsNRE(() => { IsValueType(_varStringNull); });
@@ -121,6 +121,7 @@ public partial class Program
         IsFalse(typeof(SimpleStruct).IsEnum);
         IsTrue (typeof(SimpleEnum).IsEnum);
 
+        AreSame(Type.GetTypeCode(__reftype(default)),         TypeCode.Empty);
         AreSame(Type.GetTypeCode(null),                       TypeCode.Empty);
         AreSame(Type.GetTypeCode(typeof(void*)),              TypeCode.Object);
         AreSame(Type.GetTypeCode(typeof(nint)),               TypeCode.Object);
@@ -146,6 +147,11 @@ public partial class Program
         AreSame(Type.GetTypeCode(typeof(GenericStruct<int>)), TypeCode.Object);
         AreSame(Type.GetTypeCode(typeof(SimpleStruct)),       TypeCode.Object);
         AreSame(Type.GetTypeCode(typeof(SimpleEnum)),         TypeCode.Int32);
+
+        int testInt = 0;
+        AreSame(Type.GetTypeCode(__reftype(__makeref(testInt))), TypeCode.Int32);
+        object testObject = null;
+        AreSame(Type.GetTypeCode(__reftype(__makeref(testObject))), TypeCode.Object);
 
         return 100 + _errors;
     }
