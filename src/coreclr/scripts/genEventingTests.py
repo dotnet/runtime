@@ -188,7 +188,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man',  type=str, required=True,
-                                    help='full path to manifest containig the description of events')
+                                    help='full path to manifest containing the description of events')
     required.add_argument('--testdir', type=str, required=True,
                                     help='full path to directory where the test assets will be deployed' )
     args, unknown = parser.parse_known_args(argv)

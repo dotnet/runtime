@@ -445,7 +445,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
     CORINFO_HELP_ARRADDR_ST,        // assign to element of object array with type-checking
-    CORINFO_HELP_LDELEMA_REF,       // does a precise type comparision and returns address
+    CORINFO_HELP_LDELEMA_REF,       // does a precise type comparison and returns address
 
     /* Exceptions */
 
