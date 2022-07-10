@@ -21,6 +21,7 @@ namespace System.Net.Http.Headers
         private HttpGeneralHeaders? _generalHeaders;
         private HttpHeaderValueCollection<NameValueWithParametersHeaderValue>? _expect;
         private bool _expectContinueSet;
+        private string? _protocol;
 
         #region Request Headers
 
@@ -159,7 +160,15 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.MaxForwards.Descriptor, value); }
         }
 
-        public string? Protocol { get; set; }
+        public string? Protocol
+        {
+            get => _protocol;
+            set
+            {
+                CheckContainsNewLine(value);
+                _protocol = value;
+            }
+        }
 
         public AuthenticationHeaderValue? ProxyAuthorization
         {

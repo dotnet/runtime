@@ -21,6 +21,10 @@ namespace System.Net.Http
         // Equivalent to the bytes returned from HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(":protocol")
         private static ReadOnlySpan<byte> ProtocolLiteralHeaderBytes => new byte[] { 0x0, 0x9, 0x3a, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c };
 
+        private static readonly TaskCompletionSourceWithCancellation<bool> s_settingsReceivedSingleton = CreateSuccessfullyCompletedTcs();
+
+        private TaskCompletionSourceWithCancellation<bool>? _initialSettingsReceived;
+
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
 
@@ -175,6 +179,13 @@ namespace System.Net.Http
         ~Http2Connection() => Dispose();
 
         private object SyncObject => _httpStreams;
+
+        internal TaskCompletionSourceWithCancellation<bool> InitialSettingsReceived =>
+            _initialSettingsReceived ??
+            Interlocked.CompareExchange(ref _initialSettingsReceived, new(), null) ??
+            _initialSettingsReceived;
+
+        internal bool IsConnectEnabled { get; private set; }
 
         public async ValueTask SetupAsync()
         {
@@ -1468,7 +1479,6 @@ namespace System.Net.Http
             {
                 if (request.Headers.Protocol != null)
                 {
-                    HttpHeaders.CheckContainsNewLine(request.Headers.Protocol);
                     WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
                     Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
                     WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
@@ -1918,22 +1928,12 @@ namespace System.Net.Http
             EnableConnect = 0x8
         }
 
-        private static readonly TaskCompletionSourceWithCancellation<bool> s_settingsReceivedSingleton = CreateSuccessfullyCompleted();
-
-        internal TaskCompletionSourceWithCancellation<bool> InitialSettingsReceived =>
-            _initialSettingsReceived ??
-            Interlocked.CompareExchange(ref _initialSettingsReceived, new(), null) ??
-            _initialSettingsReceived;
-
-        private TaskCompletionSourceWithCancellation<bool>? _initialSettingsReceived;
-
-        private static TaskCompletionSourceWithCancellation<bool> CreateSuccessfullyCompleted()
+        private static TaskCompletionSourceWithCancellation<bool> CreateSuccessfullyCompletedTcs()
         {
             var tcs = new TaskCompletionSourceWithCancellation<bool>();
             tcs.TrySetResult(true);
             return tcs;
         }
-        internal bool IsConnectEnabled { get; private set; }
 
         // Note that this is safe to be called concurrently by multiple threads.
 

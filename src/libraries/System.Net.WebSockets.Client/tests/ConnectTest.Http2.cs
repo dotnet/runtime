@@ -18,6 +18,7 @@ namespace System.Net.WebSockets.Client.Tests
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "WebSocket over HTTP/2 is not supported on Browser")]
         public async Task ConnectAsync_VersionNotSupported_Throws()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -43,6 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "WebSocket over HTTP/2 is not supported on Browser")]
         public async Task ConnectAsync_VersionSupported_Success()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>

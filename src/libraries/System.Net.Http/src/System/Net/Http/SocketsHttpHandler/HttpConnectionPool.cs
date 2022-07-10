@@ -1024,7 +1024,8 @@ namespace System.Net.Http
                             {
                                 if (request.IsWebSocketH2Request())
                                 {
-                                    if (await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false) && !connection.IsConnectEnabled)
+                                    await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                                    if (!connection.IsConnectEnabled)
                                     {
                                         HttpRequestException exception = new(SR.net_unsupported_extended_connect);
                                         exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;

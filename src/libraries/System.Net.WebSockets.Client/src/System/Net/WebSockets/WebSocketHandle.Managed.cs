@@ -83,7 +83,7 @@ namespace System.Net.WebSockets
 
                         string? secValue = AddWebSocketHeaders(request, options);
 
-                        // Issue the request.  The response must be status code 101.
+                        // Issue the request.
                         CancellationTokenSource? linkedCancellation;
                         CancellationTokenSource externalAndAbortCancellation;
                         if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
@@ -355,7 +355,6 @@ namespace System.Net.WebSockets
             else if (request.Version == HttpVersion.Version20)
             {
                 request.Headers.Protocol = "websocket";
-                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Origin, request.Headers.Host);
             }
 
             request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketVersion, "13");
@@ -413,7 +412,7 @@ namespace System.Net.WebSockets
             {
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
-                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect101Expected, (int)response.StatusCode));
+                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_ConnectStatusExpected, (int)response.StatusCode, (int)HttpStatusCode.SwitchingProtocols));
                 }
 
                 Debug.Assert(secValue != null);
@@ -427,7 +426,7 @@ namespace System.Net.WebSockets
             {
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect200Expected, (int)response.StatusCode));
+                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_ConnectStatusExpected, (int)response.StatusCode, (int)HttpStatusCode.OK));
                 }
             }
 
