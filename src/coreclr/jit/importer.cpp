@@ -16973,7 +16973,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(op1, &isExact, &isNonNull);
 
                     // We can skip the "exact" bit here as we are comparing to a value class.
-                    // compareTypesForEquality should bail on comparisions for shared value classes.
+                    // compareTypesForEquality should bail on comparisons for shared value classes.
                     if (clsHnd != NO_CLASS_HANDLE)
                     {
                         const TypeCompareState compare =
@@ -20334,6 +20334,16 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
             return;
         }
     }
+    else
+    {
+        if (curArgVal->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(curArgVal->AsCall()) &&
+            (gtGetHelperArgClassHandle(curArgVal->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode()) !=
+             NO_CLASS_HANDLE))
+        {
+            inlCurArgInfo->argIsInvariant = true;
+            inlCurArgInfo->argHasSideEff  = false;
+        }
+    }
 
     bool isExact              = false;
     bool isNonNull            = false;
@@ -20370,7 +20380,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         }
         if (inlCurArgInfo->argIsInvariant)
         {
-            printf(" is a constant");
+            printf(" is a constant or invariant");
         }
         if (inlCurArgInfo->argHasGlobRef)
         {
@@ -20638,8 +20648,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 // Try to fold the node in case we have constant arguments.
                 if (inlArgInfo[i].argIsInvariant)
                 {
-                    inlArgNode = gtFoldExprConst(inlArgNode);
-                    assert(inlArgNode->OperIsConst());
+                    inlArgNode = gtFoldExpr(inlArgNode);
                 }
                 *pInlArgNode = inlArgNode;
             }
@@ -20651,12 +20660,10 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
                 inlArgInfo[i].argIsLclVar = false;
 
-                /* Try to fold the node in case we have constant arguments */
-
+                // Try to fold the node in case we have constant arguments.
                 if (inlArgInfo[i].argIsInvariant)
                 {
-                    inlArgNode = gtFoldExprConst(inlArgNode);
-                    assert(inlArgNode->OperIsConst());
+                    inlArgNode = gtFoldExpr(inlArgNode);
                 }
                 *pInlArgNode = inlArgNode;
             }

@@ -21,7 +21,7 @@ const DotnetSupportLib = {
 let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
 if (${usePThreads}) {
     __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
-    __dotnet_replacement_PThread.threadInit = PThread.threadInit;
+    __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
 }
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
@@ -35,7 +35,7 @@ require = __dotnet_replacements.requireOut;
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
     PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
-    PThread.threadInit = __dotnet_replacements.pthreadReplacements.threadInit;
+    PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTS;
 }
 `,
 };
@@ -91,6 +91,7 @@ const linked_functions = [
     "dotnet_browser_simple_digest_hash",
     "dotnet_browser_sign",
     "dotnet_browser_encrypt_decrypt",
+    "dotnet_browser_derive_bits",
 
     /// mono-threads-wasm.c
     #if USE_PTHREADS

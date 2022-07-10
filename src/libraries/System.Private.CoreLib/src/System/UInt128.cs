@@ -287,7 +287,7 @@ namespace System
             }
             else
             {
-                // For values greater than than 2^104 we basically do the same as before but we need to account
+                // For values greater than 2^104 we basically do the same as before but we need to account
                 // for the precision loss that double will have. As such, the lower value effectively drops the
                 // lowest 24 bits and then or's them back to ensure rounding stays correct.
 
@@ -944,28 +944,28 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(UInt128 left, UInt128 right)
         {
             return (left._upper < right._upper)
                 || (left._upper == right._upper) && (left._lower < right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(UInt128 left, UInt128 right)
         {
             return (left._upper < right._upper)
                 || (left._upper == right._upper) && (left._lower <= right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(UInt128 left, UInt128 right)
         {
             return (left._upper > right._upper)
                 || (left._upper == right._upper) && (left._lower > right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(UInt128 left, UInt128 right)
         {
             return (left._upper > right._upper)
@@ -1209,10 +1209,10 @@ namespace System
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(UInt128 left, UInt128 right) => (left._lower == right._lower) && (left._upper == right._upper);
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(UInt128 left, UInt128 right) => (left._lower != right._lower) || (left._upper != right._upper);
 
         //

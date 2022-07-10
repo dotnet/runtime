@@ -1371,7 +1371,10 @@ void SystemDomain::LoadBaseSystemClasses()
     // We have delayed allocation of CoreLib's static handles until we load the object class
     CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
 
-    // Int32 has to be loaded first to break cycle in IShiftOperators
+    // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
+
+    // Int32 has to be loaded next to break cycle in IShiftOperators
     CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4);
 
     // Make sure all primitive types are loaded

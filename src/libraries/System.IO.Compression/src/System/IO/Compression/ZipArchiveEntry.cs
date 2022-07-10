@@ -1063,8 +1063,7 @@ namespace System.IO.Compression
 
         private void UnloadStreams()
         {
-            if (_storedUncompressedData != null)
-                _storedUncompressedData.Dispose();
+            _storedUncompressedData?.Dispose();
             _compressedBytes = null;
             _outstandingWriteStream = null;
         }
@@ -1072,10 +1071,7 @@ namespace System.IO.Compression
         private void CloseStreams()
         {
             // if the user left the stream open, close the underlying stream for them
-            if (_outstandingWriteStream != null)
-            {
-                _outstandingWriteStream.Dispose();
-            }
+            _outstandingWriteStream?.Dispose();
         }
 
         private void VersionToExtractAtLeast(ZipVersionNeededValues value)

@@ -1386,15 +1386,8 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (rwh != null)
-                {
-                    rwh.Unregister(null);
-                }
-
-                if (wh != null)
-                {
-                    wh.Dispose();
-                }
+                rwh?.Unregister(null);
+                wh?.Dispose();
             }
         }
 

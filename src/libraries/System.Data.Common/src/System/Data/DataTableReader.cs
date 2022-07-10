@@ -91,10 +91,7 @@ namespace System.Data
                 }
 
                 _schemaIsChanged = value;
-                if (_listener != null)
-                {
-                    _listener.CleanUp();
-                }
+                _listener?.CleanUp();
             }
         }
 
@@ -121,10 +118,7 @@ namespace System.Data
             }
 
             // no need to listen to events after close
-            if (_listener != null)
-            {
-                _listener.CleanUp();
-            }
+            _listener?.CleanUp();
 
             _listener = null!;
             _schemaTable = null;
@@ -187,10 +181,7 @@ namespace System.Data
             if (_rowCounter >= _currentDataTable.Rows.Count - 1)
             {
                 _reachEORows = true;
-                if (_listener != null)
-                {
-                    _listener.CleanUp();
-                }
+                _listener?.CleanUp();
                 return false;
             }
 
@@ -204,10 +195,7 @@ namespace System.Data
                 if (_rowCounter == _currentDataTable.Rows.Count)
                 {
                     _reachEORows = true;
-                    if (_listener != null)
-                    {
-                        _listener.CleanUp();
-                    }
+                    _listener?.CleanUp();
                     return false;
                 }
                 ValidateRow(_rowCounter);

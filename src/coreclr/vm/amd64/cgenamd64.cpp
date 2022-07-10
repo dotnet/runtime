@@ -772,7 +772,7 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     }
     CONTRACTL_END;
 
-    // Move an an argument into the second argument register and jump to a target function.
+    // Move an argument into the second argument register and jump to a target function.
 
 #ifdef UNIX_AMD64_ABI
     *(UINT16 *)p = 0xBE48; // mov rsi, XXXXXX

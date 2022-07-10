@@ -525,10 +525,7 @@ namespace System
             {
                 if (paramType == DynamicInvokeParamType.Ref)
                 {
-                    if (nullableCopyBackObjects == null)
-                    {
-                        nullableCopyBackObjects = new object[parameters.Length];
-                    }
+                    nullableCopyBackObjects ??= new object[parameters.Length];
 
                     nullableCopyBackObjects[index] = finalObjectToReturn;
                     parameters[index] = null;
@@ -667,10 +664,7 @@ namespace System
                         {
                             // Since this not a by-ref parameter, we don't want to bash the original user-owned argument array but the rules of DynamicInvokeParamHelperCore() require
                             // that we return non-value types as the "index"th element in an array. Thus, create an on-demand throwaway array just for this purpose.
-                            if (argSetupState.customBinderProvidedParameters == null)
-                            {
-                                argSetupState.customBinderProvidedParameters = new object[argSetupState.parameters.Length];
-                            }
+                            argSetupState.customBinderProvidedParameters ??= new object[argSetupState.parameters.Length];
                             argSetupState.customBinderProvidedParameters[index] = incomingParam;
                             return argSetupState.customBinderProvidedParameters;
                         }

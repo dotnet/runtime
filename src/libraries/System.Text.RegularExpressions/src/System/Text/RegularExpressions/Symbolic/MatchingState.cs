@@ -107,7 +107,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public override bool Equals(object? obj) =>
             obj is MatchingState<TSet> s && PrevCharKind == s.PrevCharKind && Node.Equals(s.Node);
 
-        public override int GetHashCode() => (PrevCharKind, Node).GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(PrevCharKind, Node);
 
 #if DEBUG
         public override string ToString() =>

@@ -195,10 +195,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (webSocketHandle != null)
-                {
-                    webSocketHandle.Dispose();
-                }
+                webSocketHandle?.Dispose();
             }
         }
 

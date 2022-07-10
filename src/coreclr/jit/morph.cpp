@@ -3127,8 +3127,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 // - For ARM and ARM64 it must also be a non-HFA struct, or have a single field.
                 // - This is irrelevant for X86, since structs are always passed by value on the stack.
 
-                GenTree* lclVar       = fgIsIndirOfAddrOfLocal(argObj);
-                bool     argIsLocal   = (lclVar != nullptr) || argObj->OperIsLocalRead();
+                GenTree* lclVar       = argObj->OperIs(GT_LCL_VAR) ? argObj : fgIsIndirOfAddrOfLocal(argObj);
+                bool     argIsLocal   = (lclVar != nullptr) || argObj->OperIs(GT_LCL_FLD);
                 bool     canTransform = false;
 
                 if (structBaseType != TYP_STRUCT)
@@ -4084,7 +4084,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     call->gtArgs.SetTemp(arg, tmp);
 #if FEATURE_FIXED_OUT_ARGS
 
-    // Do the copy early, and evalute the temp later (see EvalArgsToTemps)
+    // Do the copy early, and evaluate the temp later (see EvalArgsToTemps)
     // When on Unix create LCL_FLD for structs passed in more than one registers. See fgMakeTmpArgNode
     GenTree* argNode = copyBlk;
 
@@ -7070,7 +7070,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         // JIT will need one or two copies of "this" in the following cases:
         //   1) the call needs null check;
         //   2) StoreArgs stub needs the target function pointer address and if the call is virtual
-        //      the stub also needs "this" in order to evalute the target.
+        //      the stub also needs "this" in order to evaluate the target.
 
         const bool callNeedsNullCheck = call->NeedsNullCheck();
         const bool stubNeedsThisPtr   = stubNeedsTargetFnPtr && call->IsVirtual();
