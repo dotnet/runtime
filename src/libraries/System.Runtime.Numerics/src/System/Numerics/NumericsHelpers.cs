@@ -42,7 +42,9 @@ namespace System.Numerics
             ulong bits;
 
             if (man == 0)
+            {
                 bits = 0;
+            }
             else
             {
                 // Normalize so that 0x0010 0000 0000 0000 is the highest bit set.
