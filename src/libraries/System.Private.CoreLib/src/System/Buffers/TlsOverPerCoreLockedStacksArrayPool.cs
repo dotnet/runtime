@@ -68,7 +68,7 @@ namespace System.Buffers
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
             T[]? buffer;
 
-            if (minimumLength > 64 && minimumLength < 2000000000) 
+            if (minimumLength > 64 && minimumLength < 2000000000)
                 minimumLength += 100;
 
             // Get the bucket number for the array length. The result may be out of range of buckets,
