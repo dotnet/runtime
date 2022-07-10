@@ -96,6 +96,8 @@ public partial class Program
         ThrowsNRE(() => { IsValueType(_varStringNull); });
         ThrowsNRE(() => { IsValueTypeRef(ref _varNullableIntNull); });
         ThrowsNRE(() => { IsValueTypeRef(ref _varStringNull); });
+        ThrowsNRE(() => { Type.GetTypeFromHandle(default).IsValueType; });
+        ThrowsNRE(() => { Type.GetTypeFromHandle(new RuntimeTypeHandle()).IsValueType; });
 
         TestIsAssignableFrom();
 
@@ -103,6 +105,7 @@ public partial class Program
         IsFalse(typeof(int).IsEnum);
         IsFalse(typeof(int?).IsEnum);
         IsFalse(typeof(int*).IsEnum);
+        IsFalse(typeof(nint).IsEnum);
         IsFalse(typeof(void).IsEnum);
         IsFalse(typeof(object).IsEnum);
         IsFalse(typeof(Enum).IsEnum);

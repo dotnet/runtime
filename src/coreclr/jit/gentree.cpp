@@ -17965,7 +17965,7 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
     if (tree->IsCall())
     {
         GenTreeCall* call = tree->AsCall();
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE))
+        if (gtIsTypeHandleToRuntimeTypeHelper(call))
         {
             assert(call->gtArgs.CountArgs() == 1);
             CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
