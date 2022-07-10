@@ -6380,7 +6380,7 @@ void CodeGen::genFnProlog()
 #endif
 
 //------------------------------------------------------------------------
-// getCallTarget - Get the node that evalutes to the call target
+// getCallTarget - Get the node that evaluates to the call target
 //
 // Arguments:
 //    call - the GT_CALL node

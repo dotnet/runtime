@@ -16895,7 +16895,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(op1, &isExact, &isNonNull);
 
                     // We can skip the "exact" bit here as we are comparing to a value class.
-                    // compareTypesForEquality should bail on comparisions for shared value classes.
+                    // compareTypesForEquality should bail on comparisons for shared value classes.
                     if (clsHnd != NO_CLASS_HANDLE)
                     {
                         const TypeCompareState compare =

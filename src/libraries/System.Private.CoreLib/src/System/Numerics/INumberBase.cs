@@ -262,7 +262,7 @@ namespace System.Numerics
         /// <exception cref="OverflowException"><paramref name="s" /> is not representable by <typeparamref name="TSelf" />.</exception>
         static abstract TSelf Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider);
 
-        /// <summary>Tries to convert a value to an instance of the the current type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
+        /// <summary>Tries to convert a value to an instance of the current type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
         /// <param name="result">On return, contains an instance of <typeparamref name="TSelf" /> converted from <paramref name="value" />.</param>
@@ -271,7 +271,7 @@ namespace System.Numerics
         protected static abstract bool TryConvertFromChecked<TOther>(TOther value, [NotNullWhen(true)] out TSelf? result)
             where TOther : INumberBase<TOther>;
 
-        /// <summary>Tries to convert a value to an instance of the the current type, saturating any values that fall outside the representable range of the current type.</summary>
+        /// <summary>Tries to convert a value to an instance of the current type, saturating any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
         /// <param name="result">On return, contains an instance of <typeparamref name="TSelf" /> converted from <paramref name="value" />.</param>
@@ -279,7 +279,7 @@ namespace System.Numerics
         protected static abstract bool TryConvertFromSaturating<TOther>(TOther value, [NotNullWhen(true)] out TSelf? result)
             where TOther : INumberBase<TOther>;
 
-        /// <summary>Tries to convert a value to an instance of the the current type, truncating any values that fall outside the representable range of the current type.</summary>
+        /// <summary>Tries to convert a value to an instance of the current type, truncating any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
         /// <param name="result">On return, contains an instance of <typeparamref name="TSelf" /> converted from <paramref name="value" />.</param>
@@ -287,7 +287,7 @@ namespace System.Numerics
         protected static abstract bool TryConvertFromTruncating<TOther>(TOther value, [NotNullWhen(true)] out TSelf? result)
             where TOther : INumberBase<TOther>;
 
-        /// <summary>Tries to convert an instance of the the current type to another type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
+        /// <summary>Tries to convert an instance of the current type to another type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type to which <paramref name="value" /> should be converted.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TOther" />.</param>
         /// <param name="result">On return, contains an instance of <typeparamref name="TOther" /> converted from <paramref name="value" />.</param>
@@ -296,7 +296,7 @@ namespace System.Numerics
         protected static abstract bool TryConvertToChecked<TOther>(TSelf value, [NotNullWhen(true)] out TOther? result)
             where TOther : INumberBase<TOther>;
 
-        /// <summary>Tries to convert an instance of the the current type to another type, saturating any values that fall outside the representable range of the current type.</summary>
+        /// <summary>Tries to convert an instance of the current type to another type, saturating any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type to which <paramref name="value" /> should be converted.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TOther" />.</param>
         /// <param name="result">On return, contains an instance of <typeparamref name="TOther" /> converted from <paramref name="value" />.</param>
@@ -304,7 +304,7 @@ namespace System.Numerics
         protected static abstract bool TryConvertToSaturating<TOther>(TSelf value, [NotNullWhen(true)] out TOther? result)
             where TOther : INumberBase<TOther>;
 
-        /// <summary>Tries to convert an instance of the the current type to another type, truncating any values that fall outside the representable range of the current type.</summary>
+        /// <summary>Tries to convert an instance of the current type to another type, truncating any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type to which <paramref name="value" /> should be converted.</typeparam>
         /// <param name="value">The value which is used to create the instance of <typeparamref name="TOther" />.</param>
         /// <param name="result">On return, contains an instance of <typeparamref name="TOther" /> converted from <paramref name="value" />.</param>

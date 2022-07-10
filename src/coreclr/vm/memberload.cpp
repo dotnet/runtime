@@ -192,7 +192,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
         }
 
         MethodDesc *pMethodDef = NULL;
-        
+
         if (pModule->IsFullModule())
         {
             Module* pNormalModule = static_cast<Module*>(pModule);
@@ -595,7 +595,7 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
         // For internal purposes we wish to resolve MethodDef from generic classes or for generic methods to
         // the corresponding fully uninstantiated descriptor.  For example, for
         //     class C<T> { void m(); }
-        // then then MethodDef for m resolves to a method descriptor for C<T>.m().  This is the
+        // then MethodDef for m resolves to a method descriptor for C<T>.m().  This is the
         // descriptor that gets stored in the RID map.
         //
         // Normal IL code that uses generic code cannot use MethodDefs in this way: all calls

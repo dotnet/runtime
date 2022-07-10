@@ -1800,7 +1800,7 @@ inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
 {
     if (vnf >= VNF_Boundary)
     {
-        // For integer types we have unsigned comparisions, and
+        // For integer types we have unsigned comparisons, and
         // for floating point types these are the unordered variants.
         //
         return ((vnf == VNF_LT_UN) || (vnf == VNF_LE_UN) || (vnf == VNF_GE_UN) || (vnf == VNF_GT_UN));
