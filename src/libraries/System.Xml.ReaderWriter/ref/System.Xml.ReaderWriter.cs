@@ -398,7 +398,7 @@ namespace System.Xml
     }
     public partial class XmlElement : System.Xml.XmlLinkedNode
     {
-        protected internal XmlElement(string prefix, string localName, string? namespaceURI, System.Xml.XmlDocument doc) { }
+        protected internal XmlElement(string? prefix, string localName, string? namespaceURI, System.Xml.XmlDocument doc) { }
         public override System.Xml.XmlAttributeCollection Attributes { get { throw null; } }
         public virtual bool HasAttributes { get { throw null; } }
         public override string InnerText { get { throw null; } set { } }
