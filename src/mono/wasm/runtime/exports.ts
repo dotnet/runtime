@@ -77,7 +77,7 @@ import {
 } from "./crypto-worker";
 import { mono_wasm_cancel_promise_ref } from "./cancelable-promise";
 import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
-import { mono_wasm_pthread_on_pthread_attached, afterThreadInit } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_attached, afterThreadInitTLS } from "./pthreads/worker";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
@@ -192,7 +192,7 @@ let exportedAPI: DotnetPublicAPI;
 // We need to replace some of the methods in the Emscripten PThreads support with our own
 type PThreadReplacements = {
     loadWasmModuleToWorker: Function,
-    threadInit: Function
+    threadInitTLS: Function
 }
 
 // this is executed early during load of emscripten runtime
@@ -275,10 +275,10 @@ function initializeImportsAndExports(
             originalLoadWasmModuleToWorker(worker, onFinishedLoading);
             afterLoadWasmModuleToWorker(worker);
         };
-        const originalThreadInit = replacements.pthreadReplacements.threadInit;
-        replacements.pthreadReplacements.threadInit = (): void => {
-            originalThreadInit();
-            afterThreadInit();
+        const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
+        replacements.pthreadReplacements.threadInitTLS = (): void => {
+            originalThreadInitTLS();
+            afterThreadInitTLS();
         };
     }
 
