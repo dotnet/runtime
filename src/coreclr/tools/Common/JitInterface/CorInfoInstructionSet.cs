@@ -768,6 +768,17 @@ namespace Internal.JitInterface
             }
         }
 
+        public static IEnumerable<string> AllCpuFamilies()
+        {
+            yield return "sandybridge";
+            yield return "ivybridge";
+            yield return "skylake";
+            yield return "haswell";
+            yield return "cannonlake";
+            yield return "broadwell";
+            yield return "apple-m1";
+        }
+
         public static IEnumerable<string> CpuFamilyToInstructionSets(string cpu)
         {
             string sets = cpu switch

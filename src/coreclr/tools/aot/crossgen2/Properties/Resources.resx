@@ -384,4 +384,7 @@
   <data name="ErrorNonLocalGenericsModule" xml:space="preserve">
     <value>"{0}" was specified to the --non-local-generics-module switch, but was not in the set of modules associated with the compile</value>
   </data>
+  <data name="CpuFamilies" xml:space="preserve">
+    <value>The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:</value>
+  </data>
 </root>
