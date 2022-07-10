@@ -81,7 +81,7 @@ import {
     dotnet_browser_encrypt_decrypt,
     dotnet_browser_derive_bits,
 } from "./crypto-worker";
-import { mono_wasm_pthread_on_pthread_attached, afterThreadInit } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_attached, afterThreadInitTLS } from "./pthreads/worker";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
@@ -197,7 +197,7 @@ let exportedAPI: DotnetPublicAPI;
 // We need to replace some of the methods in the Emscripten PThreads support with our own
 type PThreadReplacements = {
     loadWasmModuleToWorker: Function,
-    threadInit: Function
+    threadInitTLS: Function
 }
 
 // this is executed early during load of emscripten runtime
@@ -280,10 +280,10 @@ function initializeImportsAndExports(
             originalLoadWasmModuleToWorker(worker, onFinishedLoading);
             afterLoadWasmModuleToWorker(worker);
         };
-        const originalThreadInit = replacements.pthreadReplacements.threadInit;
-        replacements.pthreadReplacements.threadInit = (): void => {
-            originalThreadInit();
-            afterThreadInit();
+        const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
+        replacements.pthreadReplacements.threadInitTLS = (): void => {
+            originalThreadInitTLS();
+            afterThreadInitTLS();
         };
     }
 

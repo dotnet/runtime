@@ -287,7 +287,7 @@ namespace System
             }
             else
             {
-                // For values greater than than 2^104 we basically do the same as before but we need to account
+                // For values greater than 2^104 we basically do the same as before but we need to account
                 // for the precision loss that double will have. As such, the lower value effectively drops the
                 // lowest 24 bits and then or's them back to ensure rounding stays correct.
 

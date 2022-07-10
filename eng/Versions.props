@@ -23,7 +23,7 @@
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
   <!--
-    For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn.
+    For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
     We pin these versions as we need to match them exactly for any scenarios that run Roslyn on .NET Framework, like Visual Studio.
   -->
   <PropertyGroup>
