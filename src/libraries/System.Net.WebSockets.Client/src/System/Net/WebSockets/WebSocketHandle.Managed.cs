@@ -215,7 +215,7 @@ namespace System.Net.WebSockets
                 options.Proxy == null &&
                 options.Cookies == null &&
                 options.RemoteCertificateValidationCallback == null &&
-                options._clientCertificates?.Count == 0)
+                (options._clientCertificates?.Count ?? 0) == 0)
             {
                 disposeHandler = false;
                 handler = s_defaultHandler;

@@ -35,6 +35,7 @@ namespace System.Net.WebSockets
             [UnsupportedOSPlatform("browser")]
             set
             {
+                ThrowIfReadOnly();
                 ArgumentNullException.ThrowIfNull(value);
                 _version = value;
             }
@@ -44,7 +45,11 @@ namespace System.Net.WebSockets
         {
             get => _versionPolicy;
             [UnsupportedOSPlatform("browser")]
-            set => _versionPolicy = value;
+            set
+            {
+                ThrowIfReadOnly();
+                _versionPolicy = value;
+            }
         }
 
         internal ClientWebSocketOptions() { } // prevent external instantiation
