@@ -484,7 +484,7 @@ namespace System.Net.Quic.Tests
             cts.Cancel();
 
             // awaiting the task should throw
-            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitTask.AsTask()/*.WaitAsync(TimeSpan.FromSeconds(3))*/);
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             // Close the streams, the waitTask should finish as a result.

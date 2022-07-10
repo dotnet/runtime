@@ -108,11 +108,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private MsQuicSafeHandle? _configuration;
 
     /// <summary>
-    /// Set when SHUTDOWN_INITIATED_BY_PEER is received.
-    /// </summary>
-    private long _abortErrorCode = -1;
-
-    /// <summary>
     /// Used by <see cref="AcceptInboundStreamAsync(CancellationToken)" /> to throw in case no stream can be opened from the peer.
     /// <c>true</c> when at least one of <see cref="QuicConnectionOptions.MaxInboundBidirectionalStreams" /> or <see cref="QuicConnectionOptions.MaxInboundUnidirectionalStreams" /> is greater than <c>0</c>.
     /// </summary>
@@ -358,14 +353,23 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        QuicStream stream = new QuicStream(_handle, type, _defaultStreamErrorCode);
+        QuicStream? stream = null;
         try
         {
+            stream = new QuicStream(_handle, type, _defaultStreamErrorCode);
             await stream.StartAsync(cancellationToken).ConfigureAwait(false);
         }
         catch
         {
-            await stream.DisposeAsync().ConfigureAwait(false);
+            if (stream is not null)
+            {
+                await stream.DisposeAsync().ConfigureAwait(false);
+            }
+            // Propagate connection error if present.
+            if (_acceptQueue.Reader.Completion.IsFaulted)
+            {
+                await _acceptQueue.Reader.Completion.ConfigureAwait(false);
+            }
             throw;
         }
         return stream;
@@ -449,17 +453,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
         _connectedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
-        // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
-        // it wasn't our side who shutdown the connection.
-        // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
-        // See: https://github.com/dotnet/runtime/issues/60133
-        _abortErrorCode = 0;
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(_abortErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
-        _abortErrorCode = (long)data.ErrorCode;
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(_abortErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }

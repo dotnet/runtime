@@ -27,9 +27,10 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     private State _state;
     private ManualResetValueTaskSourceCore<bool> _valueTaskSource;
     private CancellationTokenRegistration _cancellationRegistration;
+    private Action<object?>? _cancellationAction;
     private GCHandle _keepAlive;
 
-    private FinalValueTaskSource _finalTaskSource;
+    private FinalTaskSource _finalTaskSource;
 
     public ResettableValueTaskSource(bool runContinuationsAsynchronously = true)
     {
@@ -38,13 +39,20 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         _cancellationRegistration = default;
         _keepAlive = default;
 
-        _finalTaskSource = new FinalValueTaskSource(runContinuationsAsynchronously);
+        _finalTaskSource = new FinalTaskSource(runContinuationsAsynchronously);
     }
 
+    /// <summary>
+    /// Allows setting additional cancellation action to be called if token passed to <see cref="TryGetValueTask(out ValueTask, object?, CancellationToken)"/> fires off.
+    /// The argument for the action is the <c>keepAlive</c> object from the same <see cref="TryGetValueTask(out ValueTask, object?, CancellationToken)"/> call.
+    /// </summary>
+    public Action<object?> CancellationAction { init { _cancellationAction = value; } }
+
+    /// <summary>
+    /// Returns <c>true</c> is this task source has entered its final state, i.e. <see cref="TryComplete(Exception?, bool)"/> or <see cref="TrySetException(Exception, bool)"/>
+    /// was called with <c>final</c> set to <c>true</c> and the result was propagated.
+    /// </summary>
     public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;
-    public bool IsCompletedSuccessfully => IsCompleted && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Succeeded;
-    public bool IsCanceled => IsCompleted && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Canceled;
-    public bool IsFaulted => IsCompleted && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Faulted;
 
     public bool TryGetValueTask(out ValueTask valueTask, object? keepAlive = null, CancellationToken cancellationToken = default)
     {
@@ -58,9 +66,12 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 {
                     _cancellationRegistration = cancellationToken.UnsafeRegister(static (obj, cancellationToken) =>
                     {
-                        ResettableValueTaskSource parent = (ResettableValueTaskSource)obj!;
-                        parent.TrySetException(new OperationCanceledException(cancellationToken), final: true);
-                    }, this);
+                        (ResettableValueTaskSource parent, object? target) = ((ResettableValueTaskSource, object?))obj!;
+                        if (parent.TrySetException(new OperationCanceledException(cancellationToken)))
+                        {
+                            parent._cancellationAction?.Invoke(target);
+                        }
+                    }, (this, keepAlive));
                 }
             }
 
@@ -74,10 +85,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 if (keepAlive is not null)
                 {
                     Debug.Assert(!_keepAlive.IsAllocated);
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Info(keepAlive, $"{keepAlive} rooted.");
-                    }
                     _keepAlive = GCHandle.Alloc(keepAlive);
                 }
 
@@ -97,6 +104,8 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
             return false;
         }
     }
+
+    public Task GetFinalTask() => _finalTaskSource.Task;
 
     private bool TryComplete(Exception? exception, bool final)
     {
@@ -154,10 +163,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     // Un-root the the kept alive object in all cases.
                     if (_keepAlive.IsAllocated)
                     {
-                        if (NetEventSource.Log.IsEnabled())
-                        {
-                            NetEventSource.Info(_keepAlive.Target, $"{_keepAlive.Target} un-rooted.");
-                        }
                         _keepAlive.Free();
                     }
                 }
@@ -180,8 +185,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     {
         return TryComplete(exception, final);
     }
-
-    public Task GetFinalTask() => _finalTaskSource.Task;
 
     ValueTaskSourceStatus IValueTaskSource.GetStatus(short token)
         => _valueTaskSource.GetStatus(token);
@@ -226,14 +229,15 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         }
     }
 
-    private struct FinalValueTaskSource
+    private struct FinalTaskSource
     {
         private TaskCompletionSource _finalTaskSource;
         private bool _isCompleted;
         private Exception? _exception;
 
-        public FinalValueTaskSource(bool runContinuationsAsynchronously = true)
+        public FinalTaskSource(bool runContinuationsAsynchronously = true)
         {
+            // TODO: defer instantiation only after Task is retrieved
             _finalTaskSource = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
             _isCompleted = false;
             _exception = null;

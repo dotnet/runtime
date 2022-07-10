@@ -553,7 +553,8 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WritePreCanceled_Throws()
         {
-            const long expectedErrorCode = 1234;
+            // Corresponds to default error code in client connection settings.
+            const long expectedErrorCode = 123456;
 
             await RunClientServer(
                 clientFunction: async connection =>
@@ -567,9 +568,6 @@ namespace System.Net.Quic.Tests
 
                     // aborting write causes the write direction to throw on subsequent operations
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.WriteAsync(new byte[1]).AsTask());
-
-                    // manual write abort is still required
-                    stream.Abort(QuicAbortDirection.Write, expectedErrorCode);
                 },
                 serverFunction: async connection =>
                 {
@@ -577,7 +575,8 @@ namespace System.Net.Quic.Tests
 
                     byte[] buffer = new byte[1024 * 1024];
 
-                    await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => ReadAll(stream, buffer));
+                    QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => ReadAll(stream, buffer));
+                    Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
                 }
             );
         }
