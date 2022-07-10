@@ -771,26 +771,45 @@ namespace Internal.JitInterface
         public static IEnumerable<string> AllCpuFamilies()
         {
             // Only report these in the help, others are added to CpuFamilyToInstructionSets just for muscle memory after clang/llvm
+            yield return "generic";
             yield return "sandybridge";
             yield return "haswell";
             yield return "apple-m1";
         }
 
-        public static IEnumerable<string> CpuFamilyToInstructionSets(string cpu)
+        public static IEnumerable<string> CpuFamilyToInstructionSets(string cpu, TargetArchitecture arch)
         {
-            string sets = cpu switch
+            string sets = null;
+
+            if (arch == TargetArchitecture.ARM64)
             {
-                "sandybridge" or
-                "ivybridge" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,popcnt",
+                sets = cpu switch
+                {
+                    "generic" => "base,neon",
 
-                "skylake" or
-                "cannonlake" or
-                "haswell" or
-                "broadwell" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,bmi,fma,lzcnt,pclmul,popcnt,movbe,serialize",
+                    "apple-m1" => "base,neon,aes,crc,dotprod,rdma,sha1,sha2,lse,rcpc",
+                    _ => null
+                };
+            }
+            else if (arch == TargetArchitecture.X64 || arch == TargetArchitecture.X86)
+            {
+                sets = cpu switch
+                {
+                    "generic" => "base,sse,sse2",
 
-                "apple-m1" => "base,neon,aes,crc,dotprod,rdma,sha1,sha2,lse,rcpc",
-                _ => null
-            };
+                    "sandybridge" or
+                    "ivybridge" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,popcnt",
+
+                    "skylake" or
+                    "cannonlake" or
+                    "haswell" or
+                    "broadwell" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,bmi,fma,lzcnt,pclmul,popcnt,movbe,serialize",
+
+                    // Rosetta2
+                    "apple-m1" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2",
+                    _ => null
+                };
+            }
             return sets?.Split(',');
         }
 
