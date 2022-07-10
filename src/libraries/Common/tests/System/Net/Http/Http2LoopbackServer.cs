@@ -44,6 +44,10 @@ namespace System.Net.Test.Common
                     localEndPoint.Address.ToString();
 
                 string scheme = _options.UseSsl ? "https" : "http";
+                if (_options.WebSocketEndpoint)
+                {
+                    scheme = _options.UseSsl ? "wss" : "ws";
+                }
 
                 _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
 
@@ -177,6 +181,7 @@ namespace System.Net.Test.Common
 
     public class Http2Options : GenericLoopbackOptions
     {
+        public bool WebSocketEndpoint { get; set; } = false;
         public bool ClientCertificateRequired { get; set; }
 
         public bool EnableTransparentPingResponse { get; set; } = true;
