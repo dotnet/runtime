@@ -20,18 +20,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private static readonly Version MsQuicVersion = new Version(2, 0);
 
-        public SafeMsQuicRegistrationHandle Registration { get; }
+        public MsQuicSafeHandle Registration { get; }
 
         public QUIC_API_TABLE* ApiTable { get; }
 
         // This is workaround for a bug in ILTrimmer.
         // Without these DynamicDependency attributes, .ctor() will be removed from the safe handles.
         // Remove once fixed: https://github.com/mono/linker/issues/1660
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicListenerHandle))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConnectionHandle))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicStreamHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(MsQuicSafeHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(MsQuicContextSafeHandle))]
         private MsQuicApi(QUIC_API_TABLE* apiTable)
         {
             ApiTable = apiTable;
@@ -47,7 +47,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 QUIC_HANDLE* handle;
                 ThrowIfFailure(ApiTable->RegistrationOpen(&cfg, &handle), "RegistrationOpen failed");
 
-                Registration = new SafeMsQuicRegistrationHandle(handle);
+                Registration = new MsQuicSafeHandle(handle, apiTable->RegistrationClose, SafeHandleType.Registration);
             }
         }
 
