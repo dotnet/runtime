@@ -56,13 +56,6 @@ async function doWork(startWork, stopWork, getIterationsDone) {
 
 function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     return async function () {
-        // const options = MONO.diagnostics.SessionOptionsBuilder
-        //     .Empty
-        //     .setRundownEnabled(false)
-        //     .addProvider({ name: 'WasmHello', level: MONO.diagnostics.EventLevel.Verbose, args: 'EventCounterIntervalSec=1' })
-        //     .build();
-        // console.log('starting providers', options.providers);
-
         let sessions = MONO.diagnostics.getStartupSessions();
 
         if (typeof (sessions) !== "object" || sessions.length === "undefined" || sessions.length == 0)
@@ -73,9 +66,6 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 
         console.debug("eventSession state is ", eventSession._state); // ooh protected member access
 
-        // const eventSession = MONO.diagnostics.createEventPipeSession(options);
-
-        // eventSession.start();
         const ret = await doWork(startWork, stopWork, getIterationsDone);
 
 
@@ -90,25 +80,7 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     }
 }
 
-function websocketTestThing() {
-    console.log("websocketTestThing opening a connection");
-    const ws = new WebSocket("ws://localhost:9090/diagnostics");
-    ws.onopen = function () {
-        ws.send("hello from browser");
-        ws.onmessage = function (event) {
-            console.log("got message from server: ", event.data);
-            ws.close();
-        }
-    }
-    ws.onerror = function (event) {
-        console.log("error from server: ", event);
-    }
-}
-
 async function main() {
-    const wsbtn = document.getElementById("openWS");
-    wsbtn.onclick = websocketTestThing;
-
     const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
         return {
             disableDotnet6Compatibility: true,
