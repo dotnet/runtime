@@ -96,8 +96,8 @@ public partial class Program
         ThrowsNRE(() => { IsValueType(_varStringNull); });
         ThrowsNRE(() => { IsValueTypeRef(ref _varNullableIntNull); });
         ThrowsNRE(() => { IsValueTypeRef(ref _varStringNull); });
-        ThrowsNRE(() => { Type.GetTypeFromHandle(default).IsValueType; });
-        ThrowsNRE(() => { Type.GetTypeFromHandle(new RuntimeTypeHandle()).IsValueType; });
+        ThrowsNRE(() => { _ = Type.GetTypeFromHandle(default).IsValueType; });
+        ThrowsNRE(() => { _ = Type.GetTypeFromHandle(new RuntimeTypeHandle()).IsValueType; });
 
         TestIsAssignableFrom();
 
