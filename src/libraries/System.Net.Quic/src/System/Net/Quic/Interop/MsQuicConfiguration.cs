@@ -113,7 +113,7 @@ internal static class MsQuicConfiguration
         }
         if (options.IdleTimeout < TimeSpan.Zero && options.IdleTimeout != Timeout.InfiniteTimeSpan)
         {
-            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.IdleTimeout)} should either be {Timeout.InfiniteTimeSpan} for infinite, or >= 0", nameof(options));
+            throw new ArgumentOutOfRangeException(nameof(QuicConnectionOptions.IdleTimeout), SR.net_quic_timeout_use_gt_zero);
         }
 
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
