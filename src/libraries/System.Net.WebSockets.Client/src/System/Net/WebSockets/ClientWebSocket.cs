@@ -53,15 +53,10 @@ namespace System.Net.WebSockets
 
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
         {
-            return ConnectAsyncHelper(uri, null, cancellationToken);
+            return ConnectAsync(uri, null, cancellationToken);
         }
 
-        public Task ConnectAsync(Uri uri, HttpMessageInvoker invoker, CancellationToken cancellationToken)
-        {
-            return ConnectAsyncHelper(uri, invoker, cancellationToken);
-        }
-
-        private Task ConnectAsyncHelper(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
+        public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(uri);
 

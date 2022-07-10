@@ -18,6 +18,7 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection : HttpConnectionBase
     {
+        // Equivalent to the bytes returned from HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(":protocol")
         private static ReadOnlySpan<byte> ProtocolLiteralHeaderBytes => new byte[] { 0x0, 0x9, 0x3a, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c };
 
         private readonly HttpConnectionPool _pool;
