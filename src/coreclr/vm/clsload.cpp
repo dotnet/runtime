@@ -2973,7 +2973,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             modTypes = (FnPtrTypeDescCustomMod*) pamTracker->Track(loaderHeap->AllocMem(
                 S_SIZE_T(sizeof(FnPtrTypeDescCustomMod)) * S_SIZE_T(numCustomMods)));
 
-            for (DWORD i = 0; i <= numCustomMods; i++)
+            for (DWORD i = 0; i < numCustomMods; i++)
             {
                 modTypes[i] = srcMods[i];
             }

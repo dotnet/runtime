@@ -449,7 +449,7 @@ BOOL EETypeHashTable::CompareFnPtrType(
     BYTE callConv,
     DWORD numArgs,
     TypeHandle *retAndArgTypes,
-    DWORD numModsAndSeperators,
+    DWORD numMods,
     FnPtrTypeDescCustomMod *customMods)
 {
     CONTRACTL
@@ -485,13 +485,13 @@ BOOL EETypeHashTable::CompareFnPtrType(
         }
     }
 
-    if (numModsAndSeperators != pTD->GetNumMods())
+    if (numMods != pTD->GetNumMods())
     {
         return FALSE;
     }
     
     FnPtrTypeDescCustomMod *customModTypes2 = pTD->GetCustomModsPointer();
-    for (DWORD i = 0; i < numModsAndSeperators; i++)
+    for (DWORD i = 0; i < numMods; i++)
     {
         if ((customModTypes2[i].elementType != customMods[i].elementType) ||
             (customModTypes2[i].typeHandle != customMods[i].typeHandle))
