@@ -13,7 +13,11 @@ namespace System.Security.Cryptography.Xml
         private bool _isInNodeSet;
 
         public CanonicalXmlElement(string? prefix, string localName, string? namespaceURI, XmlDocument doc, bool defaultNodeSetInclusionState)
+#if NET7_0_OR_GREATER
             : base(prefix, localName, namespaceURI, doc)
+#else
+            : base(prefix!, localName, namespaceURI, doc)
+#endif
         {
             _isInNodeSet = defaultNodeSetInclusionState;
         }
