@@ -2174,8 +2174,6 @@ namespace System.Runtime.InteropServices.Marshalling
             public ref TUnmanagedElement GetPinnableReference() { throw null; }
             public static ref T GetPinnableReference(T[]? array) { throw null; }
             public TUnmanagedElement* ToUnmanaged() { throw null; }
-            public void FromUnmanaged(TUnmanagedElement* value) { }
-            public T[]? ToManaged() { throw null; }
             public void Free() { }
         }
     }
@@ -2312,8 +2310,6 @@ namespace System.Runtime.InteropServices.Marshalling
             public ref TUnmanagedElement GetPinnableReference() { throw null; }
             public static ref byte GetPinnableReference(T*[]? array) { throw null; }
             public TUnmanagedElement* ToUnmanaged() { throw null; }
-            public void FromUnmanaged(TUnmanagedElement* value) { }
-            public T*[]? ToManaged() { throw null; }
             public void Free() { }
         }
     }

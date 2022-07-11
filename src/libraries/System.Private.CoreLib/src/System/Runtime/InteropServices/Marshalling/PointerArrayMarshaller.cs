@@ -127,18 +127,6 @@ namespace System.Runtime.InteropServices.Marshalling
             public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
 
             /// <summary>
-            /// Sets the unmanaged value representing the array.
-            /// </summary>
-            /// <param name="value">The unmanaged value.</param>
-            public void FromUnmanaged(TUnmanagedElement* value) => _allocatedMemory = value;
-
-            /// <summary>
-            /// Returns the managed array.
-            /// </summary>
-            /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-            public T*[]? ToManaged() => _managedArray;
-
-            /// <summary>
             /// Frees resources.
             /// </summary>
             public void Free()
