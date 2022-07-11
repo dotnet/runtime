@@ -50,8 +50,8 @@ class MockScriptEngineSocketImpl implements MockRemoteSocket {
         }
         this.engine.mockReplyEventTarget.dispatchEvent(new CloseEvent("close"));
     }
-    dispatchEvent(): boolean {
-        throw new Error("don't call dispatchEvent on a MockRemoteSocket");
+    dispatchEvent(ev: Event): boolean {
+        return this.engine.eventTarget.dispatchEvent(ev);
     }
 }
 

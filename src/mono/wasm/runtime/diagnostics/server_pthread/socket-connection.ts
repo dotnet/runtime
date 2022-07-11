@@ -2,37 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { assertNever } from "../../types";
-import { MockRemoteSocket } from "../mock";
 import { VoidPtr } from "../../types/emscripten";
 import { Module } from "../../imports";
-
+import type { CommonSocket } from "./common-socket";
 enum ListenerState {
     SendingTrailingData,
     Closed,
     Error
 }
-
-
-// the common bits that we depend on from a real WebSocket or a MockRemoteSocket used for testing
-interface CommonSocket {
-    addEventListener<T extends keyof WebSocketEventMap>(type: T, listener: (this: CommonSocket, ev: WebSocketEventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
-    addEventListener(event: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
-    removeEventListener(event: string, listener: EventListenerOrEventListenerObject): void;
-    send(data: string | ArrayBuffer | Uint8Array | Blob | DataView): void;
-    close(): void;
-}
-
-type AssignableTo<T, Q> = Q extends T ? true : false;
-
-function static_assert<Cond extends boolean>(x: Cond): asserts x is Cond { /*empty*/ }
-
-{
-    static_assert<AssignableTo<CommonSocket, WebSocket>>(true);
-    static_assert<AssignableTo<CommonSocket, MockRemoteSocket>>(true);
-
-    static_assert<AssignableTo<{ x: number }, { y: number }>>(false); // sanity check that static_assert works
-}
-
 
 class SocketGuts {
     constructor(private readonly ws: CommonSocket) { }
