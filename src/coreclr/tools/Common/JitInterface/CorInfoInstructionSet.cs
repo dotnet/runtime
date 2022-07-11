@@ -774,6 +774,7 @@ namespace Internal.JitInterface
             yield return "generic";
             yield return "sandybridge";
             yield return "haswell";
+            yield return "ampere";
             yield return "apple-m1";
         }
 
@@ -786,6 +787,8 @@ namespace Internal.JitInterface
                 sets = cpu switch
                 {
                     "generic" => "base,neon",
+
+                    "ampere" => "base,neon,lse",
 
                     "apple-m1" => "base,neon,aes,crc,dotprod,rdma,sha1,sha2,lse,rcpc",
                     _ => null
