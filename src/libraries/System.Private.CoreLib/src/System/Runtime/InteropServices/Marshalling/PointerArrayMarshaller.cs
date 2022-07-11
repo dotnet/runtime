@@ -12,10 +12,10 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <typeparam name="T">Array element pointer type</typeparam>
     /// <typeparam name="TUnmanagedElement">The unmanaged type for the element pointer type</typeparam>
     [CLSCompliant(false)]
-    [CustomMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
         MarshalMode.Default,
         typeof(PointerArrayMarshaller<,>))]
-    [CustomMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
         MarshalMode.ManagedToUnmanagedIn,
         typeof(PointerArrayMarshaller<,>.ManagedToUnmanagedIn))]
     [ContiguousCollectionMarshaller]

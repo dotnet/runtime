@@ -2146,14 +2146,14 @@ namespace System.Runtime.InteropServices.Marshalling
         }
     }
 
-    [CLSCompliant(false)]
-    [CustomMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]),
-        MarshalMode.Default,
-        typeof(ArrayMarshaller<,>))]
-    [CustomMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]),
-        MarshalMode.ManagedToUnmanagedIn,
-        typeof(ArrayMarshaller<,>.ManagedToUnmanagedIn))]
-    [ContiguousCollectionMarshaller]
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.ArrayMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.ArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
     public static unsafe class ArrayMarshaller<T, TUnmanagedElement>
         where TUnmanagedElement : unmanaged
     {
@@ -2283,14 +2283,14 @@ namespace System.Runtime.InteropServices.Marshalling
         public NativeMarshallingAttribute(System.Type nativeType) { }
         public System.Type NativeType { get { throw null; } }
     }
-    [CLSCompliant(false)]
-    [CustomMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
-        MarshalMode.Default,
-        typeof(PointerArrayMarshaller<,>))]
-    [CustomMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
-        MarshalMode.ManagedToUnmanagedIn,
-        typeof(PointerArrayMarshaller<,>.ManagedToUnmanagedIn))]
-    [ContiguousCollectionMarshaller]
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
     public static unsafe class PointerArrayMarshaller<T, TUnmanagedElement>
         where T : unmanaged
         where TUnmanagedElement : unmanaged
