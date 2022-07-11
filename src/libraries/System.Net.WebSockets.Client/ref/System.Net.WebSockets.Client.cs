@@ -4,7 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Collections.Generic;
 
 namespace System.Net.WebSockets
 {
@@ -14,7 +13,7 @@ namespace System.Net.WebSockets
         public override System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get { throw null; } }
         public override string? CloseStatusDescription { get { throw null; } }
         public System.Net.HttpStatusCode HttpStatusCode { get { throw null; } }
-        public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders { get { throw null; } set { } }
+        public System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>>? HttpResponseHeaders { get { throw null; } set { } }
         public System.Net.WebSockets.ClientWebSocketOptions Options { get { throw null; } }
         public override System.Net.WebSockets.WebSocketState State { get { throw null; } }
         public override string? SubProtocol { get { throw null; } }
