@@ -120,8 +120,8 @@
 
     <!-- Host files-->
     <ItemGroup>
-      <RuntimeFiles Include="$(DotNetHostBinDir)\*.so" />
-      <RuntimeFiles Include="$(DotNetHostBinDir)\*.so.dbg" />
+      <RuntimeFiles Include="$(DotNetHostBinDir)\*$(LibSuffix)" />
+      <RuntimeFiles Include="$(DotNetHostBinDir)\*$(SymbolsSuffix)" />
       <RuntimeFiles Include="$(DotNetHostBinDir)\*.dll" />
     </ItemGroup>
 
