@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Xml
 {
     public abstract class EncryptedReference
     {
-        private string _uri = null!;
+        private string _uri;
         private string? _referenceType;
         private TransformChain? _transformChain;
         internal XmlElement? _cachedXml;
@@ -31,6 +31,8 @@ namespace System.Security.Cryptography.Xml
         public string Uri
         {
             get { return _uri; }
+
+            [MemberNotNull(nameof(_uri))]
             set
             {
                 if (value == null)
