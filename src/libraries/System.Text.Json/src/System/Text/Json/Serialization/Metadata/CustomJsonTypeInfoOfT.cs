@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
         internal CustomJsonTypeInfo(JsonSerializerOptions options)
-            : base(options.GetConverterForType(typeof(T)), options)
+            : base(options.GetConverterFromListOrBuiltInConverter(typeof(T)), options)
         {
         }
 

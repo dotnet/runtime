@@ -51,13 +51,16 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
     locate_toolchain_exec(objdump CMAKE_OBJDUMP)
     locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
 
+    execute_process(
+      COMMAND ${CMAKE_OBJCOPY} --help
+      OUTPUT_VARIABLE OBJCOPY_HELP_OUTPUT
+    )
 
-    if(CLR_CMAKE_TARGET_ANDROID)
-      set(TOOLSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
-    elseif(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND
-        CMAKE_SYSTEM_PROCESSOR MATCHES "^(armv8l|armv7l|armv6l|aarch64|arm|s390x|ppc64le)$")
-      set(TOOLSET_PREFIX "${TOOLCHAIN}-")
-    endif()
+    # if llvm-objcopy does not support --only-keep-debug argument, try to locate binutils' objcopy
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT "${OBJCOPY_HELP_OUTPUT}" MATCHES "--only-keep-debug")
+      set(TOOLSET_PREFIX "")
+      locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
+    endif ()
 
   endif()
 endif()

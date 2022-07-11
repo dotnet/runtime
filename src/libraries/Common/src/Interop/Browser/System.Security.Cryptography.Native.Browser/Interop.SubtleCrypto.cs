@@ -52,5 +52,16 @@ internal static partial class Interop
             int input_len,
             byte* output_buffer,
             int output_len);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_DeriveBits")]
+        internal static unsafe partial int DeriveBits(
+            byte* password_buffer,
+            int password_len,
+            byte* salt_buffer,
+            int salt_len,
+            int iterations,
+            SimpleDigest hashAlgorithm,
+            byte* output_buffer,
+            int output_len);
     }
 }

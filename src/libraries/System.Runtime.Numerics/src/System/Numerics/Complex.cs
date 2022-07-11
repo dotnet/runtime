@@ -383,8 +383,7 @@ namespace System.Numerics
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is Complex)) return false;
-            return Equals((Complex)obj);
+            return obj is Complex other && Equals(other);
         }
 
         public bool Equals(Complex value)
@@ -392,14 +391,7 @@ namespace System.Numerics
             return m_real.Equals(value.m_real) && m_imaginary.Equals(value.m_imaginary);
         }
 
-        public override int GetHashCode()
-        {
-            int n1 = 99999997;
-            int realHash = m_real.GetHashCode() % n1;
-            int imaginaryHash = m_imaginary.GetHashCode();
-            int finalHash = realHash ^ imaginaryHash;
-            return finalHash;
-        }
+        public override int GetHashCode() => HashCode.Combine(m_real, m_imaginary);
 
         public override string ToString() => $"<{m_real}; {m_imaginary}>";
 
@@ -965,6 +957,63 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static Complex INumberBase<Complex>.Abs(Complex value) => Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<Complex>.IsCanonical(Complex value) => true;

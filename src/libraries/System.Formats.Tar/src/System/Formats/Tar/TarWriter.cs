@@ -138,10 +138,7 @@ namespace System.Formats.Tar
             TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.None);
 
             WriteEntry(entry);
-            if (entry._header._dataStream != null)
-            {
-                entry._header._dataStream.Dispose();
-            }
+            entry._header._dataStream?.Dispose();
         }
 
         // Asynchronously reads an entry from disk and writes it into the archive stream.
@@ -193,7 +190,7 @@ namespace System.Formats.Tar
         /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(TarEntry entry)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
 
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
@@ -276,7 +273,8 @@ namespace System.Formats.Tar
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            ThrowIfDisposed();
+
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
@@ -330,15 +328,6 @@ namespace System.Formats.Tar
                 {
                     _isDisposed = true;
                 }
-            }
-        }
-
-        // If the underlying archive stream is disposed, throws 'ObjectDisposedException'.
-        private void ThrowIfDisposed()
-        {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
             }
         }
 
@@ -407,7 +396,7 @@ namespace System.Formats.Tar
 
         private (string, string) ValidateWriteEntryArguments(string fileName, string? entryName)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
             string fullPath = Path.GetFullPath(fileName);

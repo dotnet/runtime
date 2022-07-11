@@ -37,10 +37,7 @@ namespace System.Data.ProviderBase
 
             internal void Dispose()
             {
-                if (null != _transaction)
-                {
-                    _transaction.Dispose();
-                }
+                _transaction?.Dispose();
             }
         }
 
@@ -624,12 +621,7 @@ namespace System.Data.ProviderBase
 
                 for (int i = 0; i < count; ++i)
                 {
-                    obj = _objectList[i];
-
-                    if (null != obj)
-                    {
-                        obj.DoNotPoolThisConnection();
-                    }
+                    _objectList[i]?.DoNotPoolThisConnection();
                 }
             }
 
@@ -921,10 +913,7 @@ namespace System.Data.ProviderBase
             // the error state is cleaned, destroy the timer to avoid periodic invocation
             Timer? t = _errorTimer;
             _errorTimer = null;
-            if (t != null)
-            {
-                t.Dispose(); // Cancel timer request.
-            }
+            t?.Dispose(); // Cancel timer request.
         }
 
         // TODO: move this to src/Common and integrate with SqlClient
@@ -991,20 +980,17 @@ namespace System.Data.ProviderBase
                         }
                         catch (System.OutOfMemoryException)
                         {
-                            if (connection != null)
-                            { connection.DoomThisConnection(); }
+                            connection?.DoomThisConnection();
                             throw;
                         }
                         catch (System.StackOverflowException)
                         {
-                            if (connection != null)
-                            { connection.DoomThisConnection(); }
+                            connection?.DoomThisConnection();
                             throw;
                         }
                         catch (System.Threading.ThreadAbortException)
                         {
-                            if (connection != null)
-                            { connection.DoomThisConnection(); }
+                            connection?.DoomThisConnection();
                             throw;
                         }
                         catch (Exception e)
@@ -1680,10 +1666,7 @@ namespace System.Data.ProviderBase
             // deactivate timer callbacks
             Timer? t = _cleanupTimer;
             _cleanupTimer = null;
-            if (null != t)
-            {
-                t.Dispose();
-            }
+            t?.Dispose();
         }
 
         private DbConnectionInternal? UserCreateRequest(DbConnection owningObject, DbConnectionOptions? userOptions, DbConnectionInternal? oldConnection = null)

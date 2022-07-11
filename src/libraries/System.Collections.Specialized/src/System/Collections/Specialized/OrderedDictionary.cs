@@ -239,14 +239,8 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (_objectsTable != null)
-            {
-                _objectsTable.Clear();
-            }
-            if (_objectsArray != null)
-            {
-                _objectsArray.Clear();
-            }
+            _objectsTable?.Clear();
+            _objectsArray?.Clear();
         }
 
         /// <devdoc>
