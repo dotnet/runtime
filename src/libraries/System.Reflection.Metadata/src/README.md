@@ -27,7 +27,7 @@ class Program
     static void Main()
     {
         // Open the Portable Executable (PE) file
-        using var fs = new FileStream(@"Example.dll", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var fs = new FileStream("Example.dll", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using var peReader = new PEReader(fs);
 
         // Display PE header information
