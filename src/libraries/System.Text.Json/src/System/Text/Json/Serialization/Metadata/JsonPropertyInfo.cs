@@ -89,8 +89,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
                 SetSetter(value);
-                // Invalidate any JsonIgnore configuration if delegate set manually by user
-                IgnoreNullTokensOnRead = false;
                 _isUserSpecifiedSetter = true;
             }
         }
