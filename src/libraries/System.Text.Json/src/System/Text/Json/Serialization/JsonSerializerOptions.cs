@@ -180,7 +180,7 @@ namespace System.Text.Json
             }
         }
 
-        // Needed since public property is RUC.
+        // Needed since public property is RequiresUnreferencedCode.
         internal IJsonTypeInfoResolver? TypeInfoResolverSafe => _typeInfoResolver;
 
         /// <summary>
