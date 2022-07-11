@@ -21,6 +21,7 @@ public class KeyMapperTests
         new PuTTYData_putty(),
         new WindowsTerminalData(),
         new TmuxData(),
+        new RxvtUnicode(),
     };
 
     public static IEnumerable<object[]> RecordedScenarios
@@ -161,6 +162,32 @@ public class KeyMapperTests
         Assert.Equal(default, consoleKeyInfo.Modifiers);
     }
 
+    private static IEnumerable<(string chars, ConsoleKey key)> ThreeCharactersKeysRxvt
+    {
+        get
+        {
+            yield return ("\u001BOa", ConsoleKey.UpArrow);
+            yield return ("\u001BOb", ConsoleKey.DownArrow);
+            yield return ("\u001BOc", ConsoleKey.RightArrow);
+            yield return ("\u001BOd", ConsoleKey.LeftArrow);
+        }
+    }
+
+    [Fact]
+    public void ThreeCharactersKeyRxvt()
+    {
+        RxvtUnicode terminalData = new RxvtUnicode();
+
+        foreach ((string input, ConsoleKey expectedKey) in ThreeCharactersKeysRxvt)
+        {
+            ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
+
+            Assert.Equal(expectedKey, consoleKeyInfo.Key);
+            Assert.Equal(default, consoleKeyInfo.KeyChar);
+            Assert.Equal(ConsoleModifiers.Control, consoleKeyInfo.Modifiers); // this particular test excercises the extended strings code path
+        }
+    }
+
     private static IEnumerable<(string chars, ConsoleKey key)> VTSequences
     {
         get
@@ -205,6 +232,11 @@ public class KeyMapperTests
     [MemberData(nameof(VTSequencesrguments))]
     public void VTSequencesAreMapped(TerminalData terminalData, string input, ConsoleKey expectedKey)
     {
+        if (terminalData is RxvtUnicode && input == "\u001B[4~" && expectedKey == ConsoleKey.End)
+        {
+            expectedKey = ConsoleKey.Select; // RXVT binds this key to Select in Terminfo and uses "^[[8~" for End key
+        }
+
         ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
 
         Assert.Equal(expectedKey, consoleKeyInfo.Key);
@@ -270,9 +302,9 @@ public class KeyMapperTests
                     });
                 }
             }
-            foreach (char letter in Enumerable.Range('a', 'z' - 'a'))
+            foreach (char letter in Enumerable.Range('e', 'z' - 'e'))
             {
-                if (letter is not 'w') // only valid letter
+                if (letter is not 'w') // only valid letter in this range
                 {
                     yield return ($"\u001BO{letter}", new[]
                     {
@@ -728,7 +760,37 @@ public class WindowsTerminalData : TerminalData
     }
 }
 
+// Ubuntu 18.04 x64
+public class RxvtUnicode : TerminalData
+{
+    protected override string EncodingCharset => "utf-8";
+    protected override string Term => "rxvt-unicode-256color";
+    internal override byte Verase => 127;
+    protected override string EncodedTerminalDb => "GgFOAB0AHwBwASkFcnh2dC11bmljb2RlLTI1NmNvbG9yfHJ4dnQtdW5pY29kZSB0ZXJtaW5hbCB3aXRoIDI1NiBjb2xvcnMgKFggV2luZG93IFN5c3RlbSkAAQEAAAEBAAABAQAAAAEBAAAAAAABAAEAAAEAAQEAUAAIABgAAAD///////////////////////8AAf9/AAD/////////////////////////////////////BQD//wAAAgAEABUAGgAiACYAKgD//zUARgBIAEwAUwD//1UAYgD//2YAagB0AHgAfAD//4IAhgCLAJAA/////5kA/////54AowCoAK0AtgC6AMEA///NANIA2ADeAP//7wDxAPYA/////y4BMgH//zYB////////OAH//z0B//9BAf////9GAUwBUgFYAV4BZAFqAXABdgF8AYIBhwH//4wB//+QAZUBmgH///////+eAaIBpQH///////////////////////////////////////+oAbEBugHDAcwB1QHeAecB8AH5Af///////wICBgILAv//EAITAv////9HAkoCVQJYAloCXQKuAv//sQKzAv///////7gCvALAAsQCyAL/////zAL//w0D/////xEDFwP/////HQP/////////////////////HgMjA///JwP/////////////////////////////////////////////////////////////LAP//zEDNgP/////OwP//0ADRQNKA/////9OA///UwP///////9YA/////////////9cA2IDaANuA3QDegOAA4YDjAOSA///////////////////////////////////////////////////////////////////////////////////////////////////////////////////mAP/////////////////////////////////////////////////////////////nQOoA60DtQO5A///wgP/////JgSKBP//////////////////7gT////////////////////////zBP////////////////////////////////////////////////////////////////////////////////////////kE////////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"; // /lib/terminfo/r/rxvt-unicode-256color
 
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 52, 36 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
+            yield return (new byte[] { 27, 27, 91, 50, 52, 64 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
+            yield return (new byte[] { 27, 91, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 91, 55, 94 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
+            yield return (new byte[] { 27, 27, 91, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
+            yield return (new byte[] { 27, 27, 91, 55, 94 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
+            yield return (new byte[] { 27, 79, 100 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
+            yield return (new byte[] { 27, 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
+        }
+    }
+}
+
+// Ubuntu 18.04 x64
 public class TmuxData : TerminalData
 {
     protected override string EncodingCharset => "utf-8";

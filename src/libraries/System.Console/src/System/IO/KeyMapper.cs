@@ -121,7 +121,7 @@ internal static class KeyMapper
         }
 
         // Is it a three character sequence? (examples: '^[[H' (Home), '^[OP' (F1), '^[Ow' (End))
-        if (input[1] == 'O' || char.IsAsciiLetterUpper(input[2]) || input[2] == 'w')
+        if (input[1] == 'O' || char.IsAsciiLetter(input[2]))
         {
             if (!TryMapUsingTerminfoDb(buffer.AsMemory(startIndex, MinimalSequenceLength), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
             {
@@ -153,7 +153,7 @@ internal static class KeyMapper
             return false;
         }
 
-        if (input[SequencePrefixLength + digitCount] is VTSeqenceEndTag) // it's a VT Sequence like ^[[11~
+        if (input[SequencePrefixLength + digitCount] is VTSeqenceEndTag or '^' or '$' or '@') // it's a VT Sequence like ^[[11~
         {
             int sequenceLength = SequencePrefixLength + digitCount + 1;
             if (!TryMapUsingTerminfoDb(buffer.AsMemory(startIndex, sequenceLength), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
@@ -165,6 +165,12 @@ internal static class KeyMapper
                     return false; // it was not a known sequence
                 }
             }
+
+            if (input[SequencePrefixLength + digitCount] is '^' or '$' or '@') // rxvt modifiers
+            {
+                Apply(MapRxvtModifiers(input[SequencePrefixLength + digitCount]), ref isShift, ref isAlt, ref isCtrl);
+            }
+
             startIndex += sequenceLength;
             return true;
         }
@@ -188,9 +194,7 @@ internal static class KeyMapper
         if (key != default)
         {
             startIndex += SequencePrefixLength + digitCount + 3; // 3 stands for separator, modifier and end tag or id
-            isShift = (modifiers & ConsoleModifiers.Shift) != 0;
-            isAlt = (modifiers & ConsoleModifiers.Alt) != 0;
-            isCtrl = (modifiers & ConsoleModifiers.Control) != 0;
+            Apply(modifiers, ref isShift, ref isAlt, ref isCtrl);
             return true;
         }
 
@@ -203,22 +207,21 @@ internal static class KeyMapper
             if (terminalFormatStrings.KeyFormatToConsoleKey.TryGetValue(inputSequence, out ConsoleKeyInfo consoleKeyInfo))
             {
                 key = consoleKeyInfo.Key;
-                isShift = (consoleKeyInfo.Modifiers & ConsoleModifiers.Shift) != 0;
-                isAlt = (consoleKeyInfo.Modifiers & ConsoleModifiers.Alt) != 0;
-                isCtrl = (consoleKeyInfo.Modifiers & ConsoleModifiers.Control) != 0;
+                Apply(consoleKeyInfo.Modifiers, ref isShift, ref isAlt, ref isCtrl);
                 return true;
             }
             return false;
         }
 
+        // lowercase characters are used by rxvt
         static ConsoleKey MapKeyId(char single)
             => single switch
             {
-                'A' => ConsoleKey.UpArrow,
-                'B' => ConsoleKey.DownArrow,
-                'C' => ConsoleKey.RightArrow,
-                'D' => ConsoleKey.LeftArrow,
-                'F' or 'w' => ConsoleKey.End, // 'w' can be used by rxvt
+                'A' or 'a' => ConsoleKey.UpArrow,
+                'B' or 'b' => ConsoleKey.DownArrow,
+                'C' or 'c' => ConsoleKey.RightArrow,
+                'D' or 'd' => ConsoleKey.LeftArrow,
+                'F' or 'w' => ConsoleKey.End,
                 'H' => ConsoleKey.Home,
                 'M' => ConsoleKey.Enter,
                 'P' => ConsoleKey.F1,
@@ -274,6 +277,22 @@ internal static class KeyMapper
                 '8' => ConsoleModifiers.Shift | ConsoleModifiers.Alt | ConsoleModifiers.Control,
                 _ => default
             };
+
+        static ConsoleModifiers MapRxvtModifiers(char modifier)
+            => modifier switch
+            {
+                '^' => ConsoleModifiers.Control,
+                '$' => ConsoleModifiers.Shift,
+                '@' => ConsoleModifiers.Control | ConsoleModifiers.Shift,
+                _ => default
+            };
+
+        static void Apply(ConsoleModifiers modifiers, ref bool isShift, ref bool isAlt, ref bool isCtrl)
+        {
+            isShift = (modifiers & ConsoleModifiers.Shift) != 0;
+            isAlt = (modifiers & ConsoleModifiers.Alt) != 0;
+            isCtrl = (modifiers & ConsoleModifiers.Control) != 0;
+        }
     }
 
     private static void DecodeFromSingleChar(char single, out ConsoleKey key, out char ch, out bool isShift, out bool isCtrl)
