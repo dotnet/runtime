@@ -306,7 +306,7 @@ namespace ILCompiler
                 }
 
                 extraHelp.Add("");
-                extraHelp.Add(SR.CpuFamilies);
+                extraHelp.Add("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
                 extraHelp.Add(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuFamilies()));
 
                 argSyntax.ExtraHelpParagraphs = extraHelp;
