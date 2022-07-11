@@ -67,7 +67,13 @@ import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { dynamic_import, get_global_this, get_property, get_typeof_property, has_property, mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, set_property } from "./invoke-js";
+import { mono_wasm_bind_cs_function, mono_wasm_get_assembly_exports } from "./invoke-cs";
+import { mono_wasm_marshal_promise } from "./marshal-to-js";
+import { ws_wasm_abort, ws_wasm_close, ws_wasm_create, ws_wasm_open, ws_wasm_receive, ws_wasm_send } from "./web-socket";
+import { http_wasm_abort_request, http_wasm_abort_response, http_wasm_create_abort_controler, http_wasm_fetch, http_wasm_fetch_bytes, http_wasm_get_response_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes, http_wasm_supports_streaming_response } from "./http";
 import { diagnostics } from "./diagnostics";
+import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import {
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
@@ -75,9 +81,7 @@ import {
     dotnet_browser_encrypt_decrypt,
     dotnet_browser_derive_bits,
 } from "./crypto-worker";
-import { mono_wasm_cancel_promise_ref } from "./cancelable-promise";
-import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
-import { mono_wasm_pthread_on_pthread_attached, afterThreadInit } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_attached, afterThreadInitTLS } from "./pthreads/worker";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
@@ -95,6 +99,7 @@ const MONO = {
     mono_wasm_release_roots,
     mono_run_main,
     mono_run_main_and_exit,
+    mono_wasm_get_assembly_exports,
 
     // for Blazor's future!
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
@@ -192,7 +197,7 @@ let exportedAPI: DotnetPublicAPI;
 // We need to replace some of the methods in the Emscripten PThreads support with our own
 type PThreadReplacements = {
     loadWasmModuleToWorker: Function,
-    threadInit: Function
+    threadInitTLS: Function
 }
 
 // this is executed early during load of emscripten runtime
@@ -275,10 +280,10 @@ function initializeImportsAndExports(
             originalLoadWasmModuleToWorker(worker, onFinishedLoading);
             afterLoadWasmModuleToWorker(worker);
         };
-        const originalThreadInit = replacements.pthreadReplacements.threadInit;
-        replacements.pthreadReplacements.threadInit = (): void => {
-            originalThreadInit();
-            afterThreadInit();
+        const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
+        replacements.pthreadReplacements.threadInitTLS = (): void => {
+            originalThreadInitTLS();
+            afterThreadInitTLS();
         };
     }
 
@@ -393,12 +398,10 @@ export const __linker_exports: any = {
     mono_wasm_typed_array_copy_to_ref,
     mono_wasm_typed_array_from_ref,
     mono_wasm_typed_array_copy_from_ref,
-    mono_wasm_cancel_promise_ref,
-    mono_wasm_web_socket_open_ref,
-    mono_wasm_web_socket_send,
-    mono_wasm_web_socket_receive,
-    mono_wasm_web_socket_close_ref,
-    mono_wasm_web_socket_abort,
+    mono_wasm_bind_js_function,
+    mono_wasm_invoke_bound_function,
+    mono_wasm_bind_cs_function,
+    mono_wasm_marshal_promise,
 
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,
@@ -451,6 +454,37 @@ const INTERNAL: any = {
     mono_wasm_change_debugger_log_level,
     mono_wasm_debugger_attached,
     mono_wasm_runtime_is_ready: <boolean>runtimeHelpers.mono_wasm_runtime_is_ready,
+
+    // interop
+    get_property,
+    set_property,
+    has_property,
+    get_typeof_property,
+    get_global_this,
+    get_dotnet_instance,
+    dynamic_import,
+
+    // BrowserWebSocket
+    mono_wasm_cancel_promise,
+    ws_wasm_create,
+    ws_wasm_open,
+    ws_wasm_send,
+    ws_wasm_receive,
+    ws_wasm_close,
+    ws_wasm_abort,
+
+    // BrowserHttpHandler
+    http_wasm_supports_streaming_response,
+    http_wasm_create_abort_controler,
+    http_wasm_abort_request,
+    http_wasm_abort_response,
+    http_wasm_fetch,
+    http_wasm_fetch_bytes,
+    http_wasm_get_response_header_names,
+    http_wasm_get_response_header_values,
+    http_wasm_get_response_bytes,
+    http_wasm_get_response_length,
+    http_wasm_get_streamed_response_bytes,
 };
 
 // this represents visibility in the javascript

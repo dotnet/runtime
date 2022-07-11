@@ -6921,7 +6921,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
     case CORINFO_TYPE_NATIVEINT:
@@ -6978,7 +6978,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
     case CORINFO_TYPE_LONG:
@@ -7015,7 +7015,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7037,12 +7037,12 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
 
@@ -7084,7 +7084,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7126,7 +7126,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7169,7 +7169,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
 

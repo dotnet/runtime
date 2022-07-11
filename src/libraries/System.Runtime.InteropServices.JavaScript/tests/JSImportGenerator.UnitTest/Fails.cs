@@ -61,7 +61,7 @@ namespace JSImportGenerator.Unit.Tests
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
                 new Microsoft.Interop.JavaScript.JSImportGenerator(),
                 new Microsoft.Interop.JavaScript.JSExportGenerator());
-            JSTestUtils.DumpCode(source, newComp, generatorDiags);
+            // uncomment for debugging JSTestUtils.DumpCode(source, newComp, generatorDiags);
 
             if (generatorMessages != null)
             {

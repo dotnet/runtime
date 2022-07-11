@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // TODO this is only JSObject now, should it handle Uint8Array C# private type too ?
     public partial struct JSMarshalerArgument
     {
         /// <summary>
@@ -15,7 +14,12 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out JSObject? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+            value = JavaScriptExports.CreateCSOwnedProxy(slot.JSHandle);
         }
 
         /// <summary>
@@ -25,7 +29,20 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(JSObject? value)
         {
-            throw new NotImplementedException();
+            if (value == null)
+            {
+                slot.Type = MarshalerType.None;
+            }
+            else
+            {
+                if (value.IsDisposed)
+                {
+                    throw new ObjectDisposedException(nameof(value));
+                }
+                slot.Type = MarshalerType.JSObject;
+                slot.JSHandle = value.JSHandle;
+                if (slot.JSHandle == IntPtr.Zero) throw new ObjectDisposedException(nameof(value));
+            }
         }
 
         /// <summary>
@@ -35,7 +52,22 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out JSObject?[]? value)
         {
-            throw new NotImplementedException();
+            if (slot.Type == MarshalerType.None)
+            {
+                value = null;
+                return;
+            }
+
+            value = new JSObject?[slot.Length];
+            JSMarshalerArgument* payload = (JSMarshalerArgument*)slot.IntPtrValue;
+            for (int i = 0; i < slot.Length; i++)
+            {
+                ref JSMarshalerArgument arg = ref payload[i];
+                JSObject? val;
+                arg.ToManaged(out val);
+                value[i] = val;
+            }
+            Marshal.FreeHGlobal(slot.IntPtrValue);
         }
 
         /// <summary>
@@ -45,7 +77,25 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToJS(JSObject?[] value)
         {
-            throw new NotImplementedException();
+            if (value == null)
+            {
+                slot.Type = MarshalerType.None;
+                return;
+            }
+            slot.Length = value.Length;
+            int bytes = value.Length * Marshal.SizeOf(typeof(JSMarshalerArgument));
+            slot.Type = MarshalerType.Array;
+            slot.ElementType = MarshalerType.JSObject;
+            JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
+            Unsafe.InitBlock(payload, 0, (uint)bytes);
+            for (int i = 0; i < slot.Length; i++)
+            {
+                ref JSMarshalerArgument arg = ref payload[i];
+                JSObject? val = value[i];
+                arg.ToJS(val);
+                value[i] = val;
+            }
+            slot.IntPtrValue = (IntPtr)payload;
         }
     }
 }

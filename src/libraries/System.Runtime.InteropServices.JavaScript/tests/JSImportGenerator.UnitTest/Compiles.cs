@@ -39,7 +39,7 @@ namespace JSImportGenerator.Unit.Tests
                 new Microsoft.Interop.JavaScript.JSImportGenerator(),
                 new Microsoft.Interop.JavaScript.JSExportGenerator());
 
-            JSTestUtils.DumpCode(source, newComp, generatorDiags);
+            // uncomment for debugging JSTestUtils.DumpCode(source, newComp, generatorDiags);
 
             Assert.Empty(generatorDiags);
 

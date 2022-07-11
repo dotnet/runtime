@@ -1633,21 +1633,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             }
             else
             {
-                /* The argument is either not used or a const or lcl var */
-
+                // The argument is either not used or a const or lcl var
                 noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar);
-
-                /* Make sure we didnt change argNode's along the way, or else
-                   subsequent uses of the arg would have worked with the bashed value */
-                if (argInfo.argIsInvariant)
-                {
-                    assert(argNode->OperIsConst() || argNode->gtOper == GT_ADDR);
-                }
                 noway_assert((argInfo.argIsLclVar == 0) ==
                              (argNode->gtOper != GT_LCL_VAR || (argNode->gtFlags & GTF_GLOB_REF)));
 
-                /* If the argument has side effects, append it */
-
+                // If the argument has side effects, append it
                 if (argInfo.argHasSideEff)
                 {
                     noway_assert(argInfo.argIsUsed == false);

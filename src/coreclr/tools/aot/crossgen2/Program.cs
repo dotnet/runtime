@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
@@ -96,7 +97,7 @@ namespace ILCompiler
             _commandLineOptions = new CommandLineOptions(args);
             PerfEventSource.StartStopEvents.CommandLineProcessingStop();
 
-            if (_commandLineOptions.Help)
+            if (_commandLineOptions.Help || _commandLineOptions.Version)
             {
                 return;
             }
@@ -179,6 +180,14 @@ namespace ILCompiler
                 };
             }
 
+        }
+
+        private string GetCompilerVersion()
+        {
+            return  Assembly
+                   .GetExecutingAssembly()
+                   .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                   .InformationalVersion;
         }
 
         public static TargetArchitecture GetTargetArchitectureFromArg(string archArg, out bool armelAbi)
@@ -336,6 +345,13 @@ namespace ILCompiler
             {
                 Console.WriteLine(_commandLineOptions.HelpText);
                 return 1;
+            }
+
+            if (_commandLineOptions.Version)
+            {
+                string version = GetCompilerVersion();
+                Console.WriteLine(version);
+                return 0;
             }
 
             if (_commandLineOptions.OutputFilePath == null && !_commandLineOptions.OutNearInput)

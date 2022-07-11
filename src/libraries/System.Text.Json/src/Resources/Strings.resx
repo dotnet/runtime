@@ -603,7 +603,7 @@
     <value>Invalid configuration provided for 'propInitFunc', 'ctorParamInitFunc' and 'serializeFunc'.</value>
   </data>
   <data name="NoMetadataForTypeProperties" xml:space="preserve">
-    <value>'JsonSerializerContext' '{0}' did not provide property metadata for type '{1}'.</value>
+    <value>TypeInfoResolver '{0}' did not provide property metadata for type '{1}'.</value>
   </data>
   <data name="NoDefaultOptionsForContext" xml:space="preserve">
     <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
@@ -618,7 +618,7 @@
     <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
   </data>
   <data name="NoMetadataForTypeCtorParams" xml:space="preserve">
-    <value>'JsonSerializerContext' '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
+    <value>TypeInfoResolver '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
   </data>
   <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
     <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
