@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO
 {
@@ -28,6 +30,32 @@ namespace System.IO
 
         public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(in value));
 
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            ValidateWrite(buffer, offset, count);
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
+
+            return Task.CompletedTask;
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            ValidateCanWrite();
+            Write(buffer.Span);
+
+            return ValueTask.CompletedTask;
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateRead(buffer, offset, count);
@@ -39,6 +67,28 @@ namespace System.IO
             byte b = 0;
             int result = Read(new Span<byte>(ref b));
             return result != 0 ? b : -1;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            ValidateRead(buffer, offset, count);
+            return Task.FromResult(Read(new Span<byte>(buffer, offset, count)));
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
+            ValidateCanRead();
+            return ValueTask.FromResult(Read(buffer.Span));
         }
 
         protected override void Dispose(bool disposing)
@@ -74,7 +124,11 @@ namespace System.IO
         protected void ValidateRead(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
+            ValidateCanRead();
+        }
 
+        private void ValidateCanRead()
+        {
             if (!_canRead)
             {
                 throw Error.GetReadNotSupported();
@@ -84,7 +138,11 @@ namespace System.IO
         protected void ValidateWrite(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
+            ValidateCanWrite();
+        }
 
+        private void ValidateCanWrite()
+        {
             if (!_canWrite)
             {
                 throw Error.GetWriteNotSupported();
