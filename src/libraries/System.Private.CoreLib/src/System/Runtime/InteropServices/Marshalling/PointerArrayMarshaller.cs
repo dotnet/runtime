@@ -44,12 +44,12 @@ namespace System.Runtime.InteropServices.Marshalling
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
             => new Span<TUnmanagedElement>(unmanaged, numElements);
 
-        public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int length)
+        public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
                 return null;
 
-            return new T*[length];
+            return new T*[numElements];
         }
 
         public static Span<IntPtr> GetManagedValuesDestination(T*[]? managed)
