@@ -77,6 +77,10 @@ namespace Microsoft.Extensions.Configuration.Json
                         ExitContext();
                         index++;
                     }
+                    if (index == 0)
+                    {
+                        VisitValue(JsonDocument.Parse("null").RootElement);
+                    }
                     break;
 
                 case JsonValueKind.Number:

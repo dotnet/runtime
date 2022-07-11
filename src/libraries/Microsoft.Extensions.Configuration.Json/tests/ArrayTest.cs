@@ -254,5 +254,30 @@ namespace Microsoft.Extensions.Configuration.Json.Test
             Assert.Equal("9.10.11.12", jsonConfigSource.Get("ip:1:0"));
             Assert.Equal("13.14.15.16", jsonConfigSource.Get("ip:1:1"));
         }
+
+        [Fact]
+        public void EmptyArrayNotIngored()
+        {
+            var json = @"{
+                ""ip"": {
+                    ""first"": [
+
+                    ]
+                }
+            }";
+
+            var jsonConfigSource = new JsonConfigurationSource { FileProvider = TestStreamHelpers.StringToFileProvider(json) };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.Add(jsonConfigSource);
+            var config = configurationBuilder.Build();
+
+            var configurationSection = config.GetSection("ip");
+
+            Assert.Equal(1, config.GetChildren().Count());
+            Assert.Equal(1, configurationSection.GetChildren().Count());
+
+
+        }
     }
 }
