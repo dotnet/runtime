@@ -31,7 +31,7 @@
          SYSLIB0025: SuppressIldasmAttribute.
          SYSLIB0032: HandleProcessCorruptedStateExceptionsAttribute.
          SYSLIB0036: Regex.CompileToAssembly
-         SYSLIB0014: ServicePointManager.
+         SYSLIB0014: ServicePointManager
     -->
     <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0025;SYSLIB0032;SYSLIB0036;SYSLIB0014</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
