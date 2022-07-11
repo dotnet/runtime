@@ -100,12 +100,16 @@ event_pipe_wait_for_session_signal (
 
 #ifdef HOST_WASM
 static void
-invoke_wasm_early_startup_callback (void);
+mono_wasm_event_pipe_init (void);
 #endif
 
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
+#ifndef HOST_WASM
 	&ep_init,
+#else
+	&mono_wasm_event_pipe_init,
+#endif
 	&ep_finish_init,
 	&ep_shutdown,
 	&event_pipe_enable,
@@ -233,10 +237,6 @@ event_pipe_add_rundown_execution_checkpoint_2 (
 	const ep_char8_t *name,
 	ep_timestamp_t timestamp)
 {
-#ifdef HOST_WASM
-	// If WASM installed any startup session provider configs, start those sessions and record the session IDs
-	invoke_wasm_early_startup_callback ();
-#endif
 	return ep_add_rundown_execution_checkpoint (name, timestamp);
 }
 
@@ -432,6 +432,14 @@ invoke_wasm_early_startup_callback (void)
 		});
 	if (wasm_early_startup_callback)
 		wasm_early_startup_callback ();
+}
+
+
+static void
+mono_wasm_event_pipe_init (void)
+{
+	ep_init ();
+	invoke_wasm_early_startup_callback ();
 }
 
 #endif /* HOST_WASM */
