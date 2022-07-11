@@ -136,7 +136,7 @@ namespace System.Net.Security.Tests
         }
 
 #if WINDOWS
-        [Theory]
+        [ConditionalTheory]
         [OuterLoop("Uses external servers")]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(X509RevocationMode.Offline)]
