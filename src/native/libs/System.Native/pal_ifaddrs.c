@@ -14,10 +14,14 @@
 #include <linux/rtnetlink.h>
 
 #include <android/log.h>
-#define LOG(level, fmt, ...) __android_log_print(level, "DOTNET_NETLINK", fmt, ## __VA_ARGS__)
-#define LOG_DEBUG(fmt, ...) LOG(ANDROID_LOG_DEBUG, fmt, ## __VA_ARGS__)
-#define LOG_INFO(fmt, ...) LOG(ANDROID_LOG_INFO, fmt, ## __VA_ARGS__)
-#define LOG_WARN(fmt, ...) LOG(ANDROID_LOG_WARN, fmt, ## __VA_ARGS__)
+#define LOG(level, ...) __android_log_print(level, "DOTNET_NETLINK", ## __VA_ARGS__)
+#define LOG_INFO(...) LOG(ANDROID_LOG_INFO, ## __VA_ARGS__)
+#define LOG_WARN(...) LOG(ANDROID_LOG_WARN, ## __VA_ARGS__)
+#if DEBUG
+#define LOG_DEBUG(...) LOG(ANDROID_LOG_DEBUG, ## __VA_ARGS__)
+#else
+#define LOG_DEBUG(...) do {} while (0)
+#endif
 
 /* Maximum interface address label size, should be more than enough */
 #define MAX_IFA_LABEL_SIZE 1024
