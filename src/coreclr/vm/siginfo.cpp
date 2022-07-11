@@ -1592,7 +1592,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         case ELEMENT_TYPE_FNPTR:
             {
 #ifndef DACCESS_COMPILE
-                uint32_t sigStart = psig.m_dwLen;
                 uint32_t uCallConv = 0;
                 IfFailThrowBF(psig.GetData(&uCallConv), BFA_BAD_SIGNATURE, pOrigModule);
 
@@ -1640,12 +1639,12 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                     // Lookup type handle.
                     retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
-                                                                    pTypeContext,
-                                                                    fLoadTypes,
-                                                                    level,
-                                                                    dropGenericArgumentLevel,
-                                                                    pSubst,
-                                                                    pZapSigContext);
+                                                                   pTypeContext,
+                                                                   fLoadTypes,
+                                                                   level,
+                                                                   dropGenericArgumentLevel,
+                                                                   pSubst,
+                                                                   pZapSigContext);
 
                     if (retAndArgTypes[i].IsNull())
                     {
@@ -1721,9 +1720,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                     _ASSERT(iCurrent = cMods + cArgs);
                 }
-
-                uint32_t sigLen = sigStart - psig.m_dwLen;
-                PCOR_SIGNATURE sig = (PCOR_SIGNATURE)psig.m_ptr - sigLen;
 
                 // Find an existing function pointer or make a new one
                 thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, cModsAndSeparators, customMods, fLoadTypes, level);                
