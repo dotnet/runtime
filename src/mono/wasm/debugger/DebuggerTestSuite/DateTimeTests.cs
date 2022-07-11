@@ -5,11 +5,14 @@ using System;
 using System.Globalization;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     public class DateTimeTests : DebuggerTests
     {
+        public DateTimeTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
         [Theory]
         [InlineData("en-US", "dddd, MMMM d, yyyy h:mm:ss tt", "dddd, MMMM d, yyyy", "h:mm:ss tt", "M/d/yyyy", "h:mm tt")]

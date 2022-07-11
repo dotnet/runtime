@@ -541,13 +541,13 @@
              Link="Common\Interop\Browser\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SimpleDigestHash.cs"
-             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SimpleDigestHash.cs" /> 
-    <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.Sign.cs"
-             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.Sign.cs" /> 
+    <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs"
+             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SubtleCrypto.cs" /> 
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\AesImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\AesImplementation.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\AesManagedTransform.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\AesSubtleCryptoTransform.Browser.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.Browser.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.NotSupported.cs" />
@@ -566,7 +566,7 @@
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.Browser.cs" />
     <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RC2Implementation.NotSupported.cs" />
@@ -581,6 +581,9 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.NotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+    <Compile Include="System\Security\Cryptography\AesImplementation.NonBrowser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(NeedOpenSslInitializer)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

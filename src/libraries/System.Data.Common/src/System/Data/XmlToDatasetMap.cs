@@ -396,19 +396,14 @@ namespace System.Data
                             // Handle namespaces and names as usuall
 
                             string _tableLocalName = XmlConvert.EncodeLocalName(r.ChildTable.TableName);
-                            string? tableLocalName = nameTable.Get(_tableLocalName);
 
-                            if (tableLocalName == null)
-                            {
-                                tableLocalName = nameTable.Add(_tableLocalName);
-                            }
+                            string? tableLocalName =
+                                nameTable.Get(_tableLocalName) ??
+                                nameTable.Add(_tableLocalName);
 
-                            string? tableNamespace = nameTable.Get(r.ChildTable.Namespace);
-
-                            if (tableNamespace == null)
-                            {
-                                tableNamespace = nameTable.Add(r.ChildTable.Namespace);
-                            }
+                            string? tableNamespace =
+                                nameTable.Get(r.ChildTable.Namespace) ??
+                                nameTable.Add(r.ChildTable.Namespace);
 
                             XmlNodeIdentety idTable = new XmlNodeIdentety(tableLocalName, tableNamespace);
                             tableSchemaInfo.ColumnsSchemaMap[idTable] = r.ChildTable;

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -250,7 +249,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void SetCustomConverterForAProperty()
+        public static void SetCustomConverterForIntProperty()
         {
             DefaultJsonTypeInfoResolver resolver = new();
             resolver.Modifiers.Add((ti) =>
@@ -287,21 +286,114 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void UntypedCreateObjectWithDefaults()
+        public static void SetCustomConverterForListProperty()
+        {
+            DefaultJsonTypeInfoResolver resolver = new();
+            resolver.Modifiers.Add((ti) =>
+            {
+                if (ti.Type == typeof(TestClassWithLists))
+                {
+                    Assert.Equal(JsonTypeInfoKind.Object, ti.Kind);
+                    foreach (var prop in ti.Properties)
+                    {
+                        if (prop.Name == nameof(TestClassWithLists.ListProperty1))
+                        {
+                            prop.CustomConverter = new AddListEntryConverter();
+                        }
+                    }
+                }
+            });
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.IncludeFields = true;
+            options.TypeInfoResolver = resolver;
+
+            TestClassWithLists originalObj = new TestClassWithLists()
+            {
+                ListProperty1 = new List<int> { 2, 3 },
+                ListProperty2 = new List<int> { 4, 5, 6 },
+            };
+
+            string json = JsonSerializer.Serialize(originalObj, options);
+            Assert.Equal(@"{""ListProperty1"":[2,3,-1],""ListProperty2"":[4,5,6]}", json);
+
+            TestClassWithLists deserialized = JsonSerializer.Deserialize<TestClassWithLists>(json, options);
+            Assert.Equal(originalObj.ListProperty1, deserialized.ListProperty1);
+            Assert.Equal(originalObj.ListProperty2, deserialized.ListProperty2);
+        }
+
+        [Fact]
+        public static void SetCustomConverterForDictionaryProperty()
+        {
+            DefaultJsonTypeInfoResolver resolver = new();
+            resolver.Modifiers.Add((ti) =>
+            {
+                if (ti.Type == typeof(TestClassWithDictionaries))
+                {
+                    Assert.Equal(JsonTypeInfoKind.Object, ti.Kind);
+                    foreach (var prop in ti.Properties)
+                    {
+                        if (prop.Name == nameof(TestClassWithDictionaries.DictionaryProperty1))
+                        {
+                            prop.CustomConverter = new AddDictionaryEntryConverter();
+                        }
+                    }
+                }
+            });
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.IncludeFields = true;
+            options.TypeInfoResolver = resolver;
+
+            TestClassWithDictionaries originalObj = new TestClassWithDictionaries()
+            {
+                DictionaryProperty1 = new Dictionary<string, int>
+                {
+                    ["test1"] = 4,
+                    ["test2"] = 5,
+                },
+                DictionaryProperty2 = new Dictionary<string, int>
+                {
+                    ["foo"] = 1,
+                    ["bar"] = 8,
+                },
+            };
+
+            string json = JsonSerializer.Serialize(originalObj, options);
+            Assert.Equal("""{"DictionaryProperty1":{"test1":4,"test2":5,"*test*":-1},"DictionaryProperty2":{"foo":1,"bar":8}}""", json);
+
+            TestClassWithDictionaries deserialized = JsonSerializer.Deserialize<TestClassWithDictionaries>(json, options);
+            Assert.Equal(originalObj.DictionaryProperty1, deserialized.DictionaryProperty1);
+            Assert.Equal(originalObj.DictionaryProperty2, deserialized.DictionaryProperty2);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void CreateObjectWithDefaults(bool useTypedCreateObject)
         {
             DefaultJsonTypeInfoResolver resolver = new();
             resolver.Modifiers.Add((ti) =>
             {
                 if (ti.Type == typeof(TestClass))
                 {
-                    ti.CreateObject = () =>
+                    Func<TestClass> createObj = () => new TestClass()
                     {
-                        return new TestClass()
-                        {
-                            TestField = "test value",
-                            TestProperty = 42,
-                        };
+                        TestField = "test value",
+                        TestProperty = 42,
                     };
+
+                    if (useTypedCreateObject)
+                    {
+                        JsonTypeInfo<TestClass> typedTi = ti as JsonTypeInfo<TestClass>;
+                        Assert.NotNull(typedTi);
+                        typedTi.CreateObject = createObj;
+                    }
+                    else
+                    {
+                        // we want to make sure Func is not a cast to the untyped one
+                        ti.CreateObject = () => createObj();
+                    }
                 }
             });
 
@@ -333,24 +425,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(42, deserialized.TestProperty);
         }
 
-        [Fact]
-        public static void TypedCreateObjectWithDefaults()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void CreateObjectForListWithDefaults(bool useTypedCreateObject)
         {
             DefaultJsonTypeInfoResolver resolver = new();
             resolver.Modifiers.Add((ti) =>
             {
-                if (ti.Type == typeof(TestClass))
+                if (ti.Type == typeof(List<int>))
                 {
-                    JsonTypeInfo<TestClass> typedTi = ti as JsonTypeInfo<TestClass>;
-                    Assert.NotNull(typedTi);
-                    typedTi.CreateObject = () =>
+                    Func<List<int>> createObj = () => new List<int> { 99 };
+
+                    if (useTypedCreateObject)
                     {
-                        return new TestClass()
-                        {
-                            TestField = "test value",
-                            TestProperty = 42,
-                        };
-                    };
+                        JsonTypeInfo<List<int>> typedTi = ti as JsonTypeInfo<List<int>>;
+                        Assert.NotNull(typedTi);
+                        typedTi.CreateObject = createObj;
+                    }
+                    else
+                    {
+                        // we want to make sure Func is not a cast to the untyped one
+                        ti.CreateObject = () => createObj();
+                    }
                 }
             });
 
@@ -358,28 +455,82 @@ namespace System.Text.Json.Serialization.Tests
             options.IncludeFields = true;
             options.TypeInfoResolver = resolver;
 
-            TestClass originalObj = new TestClass()
+            TestClassWithLists originalObj = new TestClassWithLists()
             {
-                TestField = "test value 2",
-                TestProperty = 45,
+                ListProperty1 = new List<int> { 2, 3 },
+                ListProperty2 = new List<int> { },
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestProperty"":45,""TestField"":""test value 2""}", json);
+            Assert.Equal("""{"ListProperty1":[2,3],"ListProperty2":[]}""", json);
 
-            TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
-            Assert.Equal(originalObj.TestField, deserialized.TestField);
-            Assert.Equal(originalObj.TestProperty, deserialized.TestProperty);
+            TestClassWithLists deserialized = JsonSerializer.Deserialize<TestClassWithLists>(json, options);
+            Assert.Equal(new List<int> { 99, 2, 3 }, deserialized.ListProperty1);
+            Assert.Equal(new List<int> { 99 }, deserialized.ListProperty2);
 
             json = @"{}";
-            deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
-            Assert.Equal("test value", deserialized.TestField);
-            Assert.Equal(42, deserialized.TestProperty);
+            deserialized = JsonSerializer.Deserialize<TestClassWithLists>(json, options);
+            Assert.Null(deserialized.ListProperty1);
+            Assert.Null(deserialized.ListProperty2);
 
-            json = @"{""TestField"":""test value 2""}";
-            deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
-            Assert.Equal(originalObj.TestField, deserialized.TestField);
-            Assert.Equal(42, deserialized.TestProperty);
+            json = """{"ListProperty2":[ 123 ]}""";
+            deserialized = JsonSerializer.Deserialize<TestClassWithLists>(json, options);
+            Assert.Null(deserialized.ListProperty1);
+            Assert.Equal(new List<int> { 99, 123 }, deserialized.ListProperty2);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void CreateObjectForDictionaryWithDefaults(bool useTypedCreateObject)
+        {
+            DefaultJsonTypeInfoResolver resolver = new();
+            resolver.Modifiers.Add((ti) =>
+            {
+                if (ti.Type == typeof(Dictionary<string, int>))
+                {
+                    Func<Dictionary<string, int>> createObj = () => new Dictionary<string, int> { ["*test*"] = -1 };
+
+                    if (useTypedCreateObject)
+                    {
+                        JsonTypeInfo<Dictionary<string, int>> typedTi = ti as JsonTypeInfo<Dictionary<string, int>>;
+                        Assert.NotNull(typedTi);
+                        typedTi.CreateObject = createObj;
+                    }
+                    else
+                    {
+                        // we want to make sure Func is not a cast to the untyped one
+                        ti.CreateObject = () => createObj();
+                    }
+                }
+            });
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.IncludeFields = true;
+            options.TypeInfoResolver = resolver;
+
+            TestClassWithDictionaries originalObj = new()
+            {
+                DictionaryProperty1 = new Dictionary<string, int> { ["test1"] = 2, ["test2"] = 3 },
+                DictionaryProperty2 = new Dictionary<string, int>(),
+            };
+
+            string json = JsonSerializer.Serialize(originalObj, options);
+            Assert.Equal("""{"DictionaryProperty1":{"test1":2,"test2":3},"DictionaryProperty2":{}}""", json);
+
+            TestClassWithDictionaries deserialized = JsonSerializer.Deserialize<TestClassWithDictionaries>(json, options);
+            Assert.Equal(new Dictionary<string, int> { ["*test*"] = -1, ["test1"] = 2, ["test2"] = 3 }, deserialized.DictionaryProperty1);
+            Assert.Equal(new Dictionary<string, int> { ["*test*"] = -1 }, deserialized.DictionaryProperty2);
+
+            json = @"{}";
+            deserialized = JsonSerializer.Deserialize<TestClassWithDictionaries>(json, options);
+            Assert.Null(deserialized.DictionaryProperty1);
+            Assert.Null(deserialized.DictionaryProperty2);
+
+            json = """{"DictionaryProperty2":{"foo":123}}""";
+            deserialized = JsonSerializer.Deserialize<TestClassWithDictionaries>(json, options);
+            Assert.Null(deserialized.DictionaryProperty1);
+            Assert.Equal(new Dictionary<string, int> { ["*test*"] = -1, ["foo"] = 123 }, deserialized.DictionaryProperty2);
         }
 
         [Fact]
@@ -545,24 +696,25 @@ namespace System.Text.Json.Serialization.Tests
                 if (jsonTypeInfo.Kind == JsonTypeInfoKind.Object &&
                     type.GetCustomAttribute<DataContractAttribute>() is not null)
                 {
-                    jsonTypeInfo.Properties.Clear(); // TODO should not require clearing
+                    jsonTypeInfo.Properties.Clear();
 
-                    IEnumerable<(PropertyInfo propInfo, DataMemberAttribute attr)> properties = type
-                        .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                        .Where(propInfo => propInfo.GetCustomAttribute<IgnoreDataMemberAttribute>() is null)
-                        .Select(propInfo => (propInfo, attr: propInfo.GetCustomAttribute<DataMemberAttribute>()))
-                        .OrderBy(entry => entry.attr?.Order ?? 0);
-
-                    foreach ((PropertyInfo propertyInfo, DataMemberAttribute? attr) in properties)
+                    foreach (PropertyInfo propInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
                     {
-                        JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(propertyInfo.PropertyType, attr?.Name ?? propertyInfo.Name);
+                        if (propInfo.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null)
+                        {
+                            continue;
+                        }
+
+                        DataMemberAttribute? attr = propInfo.GetCustomAttribute<DataMemberAttribute>();
+                        JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(propInfo.PropertyType, attr?.Name ?? propInfo.Name);
+                        jsonPropertyInfo.Order = attr?.Order ?? 0;
                         jsonPropertyInfo.Get =
-                            propertyInfo.CanRead
-                            ? propertyInfo.GetValue
+                            propInfo.CanRead
+                            ? propInfo.GetValue
                             : null;
 
-                        jsonPropertyInfo.Set = propertyInfo.CanWrite
-                            ? propertyInfo.SetValue
+                        jsonPropertyInfo.Set = propInfo.CanWrite
+                            ? propInfo.SetValue
                             : null;
 
                         jsonTypeInfo.Properties.Add(jsonPropertyInfo);
@@ -685,6 +837,18 @@ namespace System.Text.Json.Serialization.Tests
             public string TestField;
         }
 
+        internal class TestClassWithLists
+        {
+            public List<int> ListProperty1 { get; set; }
+            public List<int> ListProperty2 { get; set; }
+        }
+
+        internal class TestClassWithDictionaries
+        {
+            public Dictionary<string, int> DictionaryProperty1 { get; set; }
+            public Dictionary<string, int> DictionaryProperty2 { get; set; }
+        }
+
         // adds one on write, subtracts one on read
         internal class PlusOneConverter : JsonConverter<int>
         {
@@ -697,6 +861,113 @@ namespace System.Text.Json.Serialization.Tests
             public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
             {
                 writer.WriteNumberValue(value + 1);
+            }
+        }
+
+        // adds list entry in the end on write, removes one on read
+        internal class AddListEntryConverter : JsonConverter<List<int>>
+        {
+            public override List<int> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Assert.Equal(typeof(List<int>), typeToConvert);
+                Assert.Equal(JsonTokenType.StartArray, reader.TokenType);
+
+                List<int> list = new();
+                int? lastEntry = null;
+                while (true)
+                {
+                    Assert.True(reader.Read());
+
+                    if (reader.TokenType == JsonTokenType.EndArray)
+                    {
+                        break;
+                    }
+
+                    if (lastEntry.HasValue)
+                    {
+                        // note: we never add last entry
+                        list.Add(lastEntry.Value);
+                    }
+
+                    Assert.Equal(JsonTokenType.Number, reader.TokenType);
+                    lastEntry = reader.GetInt32();
+                }
+
+                Assert.True(lastEntry.HasValue);
+                Assert.Equal(-1, lastEntry.Value);
+
+                return list;
+            }
+
+            public override void Write(Utf8JsonWriter writer, List<int> value, JsonSerializerOptions options)
+            {
+                writer.WriteStartArray();
+
+                foreach (int element in value)
+                {
+                    writer.WriteNumberValue(element);
+                }
+
+                writer.WriteNumberValue(-1);
+                writer.WriteEndArray();
+            }
+        }
+
+        // Adds extra dictionary entry on write, removes it on read
+        internal class AddDictionaryEntryConverter : JsonConverter<Dictionary<string, int>>
+        {
+            public override Dictionary<string, int> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Assert.Equal(typeof(Dictionary<string, int>), typeToConvert);
+                Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+
+                Dictionary<string, int> dict = new();
+                KeyValuePair<string, int>? lastEntry = null;
+
+                while (true)
+                {
+                    Assert.True(reader.Read());
+
+                    if (reader.TokenType == JsonTokenType.EndObject)
+                    {
+                        break;
+                    }
+
+                    if (lastEntry.HasValue)
+                    {
+                        // note: we never add last entry
+                        dict.Add(lastEntry.Value.Key, lastEntry.Value.Value);
+                    }
+
+                    Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+                    string? key = reader.GetString();
+                    Assert.NotNull(key);
+                    Assert.True(reader.Read());
+
+                    Assert.Equal(JsonTokenType.Number, reader.TokenType);
+                    lastEntry = new KeyValuePair<string, int>(key, reader.GetInt32());
+                }
+
+                Assert.True(lastEntry.HasValue);
+                Assert.Equal("*test*", lastEntry.Value.Key);
+                Assert.Equal(-1, lastEntry.Value.Value);
+
+                return dict;
+            }
+
+            public override void Write(Utf8JsonWriter writer, Dictionary<string, int> value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+
+                foreach (var kv in value)
+                {
+                    writer.WritePropertyName(kv.Key);
+                    writer.WriteNumberValue(kv.Value);
+                }
+
+                writer.WritePropertyName("*test*");
+                writer.WriteNumberValue(-1);
+                writer.WriteEndObject();
             }
         }
     }

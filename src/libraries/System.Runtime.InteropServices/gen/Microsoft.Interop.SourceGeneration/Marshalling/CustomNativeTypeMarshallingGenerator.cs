@@ -54,7 +54,14 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Marshal:
                     if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
-                        return _nativeTypeMarshaller.GenerateMarshalStatements(info, context, _nativeTypeMarshaller.GetNativeTypeConstructorArguments(info, context));
+                        if (_nativeTypeMarshaller is ICustomNativeTypeMarshallingStrategy strategyWithConstructorArgs)
+                        {
+                            return strategyWithConstructorArgs.GenerateMarshalStatements(info, context, strategyWithConstructorArgs.GetNativeTypeConstructorArguments(info, context));
+                        }
+                        else if (_nativeTypeMarshaller is ICustomTypeMarshallingStrategy strategyWithNoConstructorArgs)
+                        {
+                            return strategyWithNoConstructorArgs.GenerateMarshalStatements(info, context);
+                        }
                     }
                     break;
                 case StubCodeContext.Stage.Pin:
@@ -67,6 +74,15 @@ namespace Microsoft.Interop
                     if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
                         return _nativeTypeMarshaller.GeneratePinnedMarshalStatements(info, context);
+                    }
+                    break;
+                case StubCodeContext.Stage.NotifyForSuccessfulInvoke:
+                    if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
+                    {
+                        if (_nativeTypeMarshaller is ICustomTypeMarshallingStrategy strategyWithGuaranteedUnmarshal)
+                        {
+                            return strategyWithGuaranteedUnmarshal.GenerateNotifyForSuccessfulInvokeStatements(info, context);
+                        }
                     }
                     break;
                 case StubCodeContext.Stage.UnmarshalCapture:

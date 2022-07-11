@@ -292,10 +292,7 @@ namespace Internal.Runtime.TypeLoader
         {
             get
             {
-                if (_hasDictionarySlotInVTable == null)
-                {
-                    _hasDictionarySlotInVTable = ComputeHasDictionarySlotInVTable();
-                }
+                _hasDictionarySlotInVTable ??= ComputeHasDictionarySlotInVTable();
                 return _hasDictionarySlotInVTable.Value;
             }
         }
@@ -354,8 +351,7 @@ namespace Internal.Runtime.TypeLoader
         {
             get
             {
-                if (_hasDictionaryInVTable == null)
-                    _hasDictionaryInVTable = ComputeHasDictionaryInVTable();
+                _hasDictionaryInVTable ??= ComputeHasDictionaryInVTable();
                 return _hasDictionaryInVTable.Value;
             }
         }
@@ -452,8 +448,7 @@ namespace Internal.Runtime.TypeLoader
         {
             get
             {
-                if (_numVTableSlots == null)
-                    _numVTableSlots = ComputeNumVTableSlots();
+                _numVTableSlots ??= ComputeNumVTableSlots();
 
                 return _numVTableSlots.Value;
             }
@@ -523,7 +518,6 @@ namespace Internal.Runtime.TypeLoader
 
         public IntPtr? ClassConstructorPointer;
         public IntPtr GcStaticDesc;
-        public IntPtr GcStaticEEType;
         public IntPtr ThreadStaticDesc;
         public bool AllocatedStaticGCDesc;
         public bool AllocatedThreadStaticGCDesc;
@@ -615,8 +609,7 @@ namespace Internal.Runtime.TypeLoader
                                 TypeBuilder.GCLayout fieldGcLayout = GetFieldGCLayout(field.FieldType);
                                 if (!fieldGcLayout.IsNone)
                                 {
-                                    if (instanceGCLayout == null)
-                                        instanceGCLayout = new LowLevelList<bool>();
+                                    instanceGCLayout ??= new LowLevelList<bool>();
 
                                     fieldGcLayout.WriteToBitfield(instanceGCLayout, field.Offset.AsInt);
                                 }
@@ -697,10 +690,6 @@ namespace Internal.Runtime.TypeLoader
                                 ThreadStaticDesc = NativeLayoutInfo.LoadContext.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                                 break;
 
-                            case BagElementKind.GcStaticEEType:
-                                GcStaticEEType = NativeLayoutInfo.LoadContext.GetGCStaticInfo(typeInfoParser.GetUnsigned());
-                                break;
-
                             default:
                                 typeInfoParser.SkipInteger();
                                 break;
@@ -725,14 +714,12 @@ namespace Internal.Runtime.TypeLoader
                         LowLevelList<bool> gcLayoutInfo = null;
                         if (field.IsThreadStatic)
                         {
-                            if (threadStaticLayout == null)
-                                threadStaticLayout = new LowLevelList<bool>();
+                            threadStaticLayout ??= new LowLevelList<bool>();
                             gcLayoutInfo = threadStaticLayout;
                         }
                         else if (field.HasGCStaticBase)
                         {
-                            if (gcStaticLayout == null)
-                                gcStaticLayout = new LowLevelList<bool>();
+                            gcStaticLayout ??= new LowLevelList<bool>();
                             gcLayoutInfo = gcStaticLayout;
                         }
                         else

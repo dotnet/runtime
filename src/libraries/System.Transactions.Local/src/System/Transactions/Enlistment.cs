@@ -147,31 +147,13 @@ namespace System.Transactions
 
         internal Enlistment Enlistment => _enlistment;
 
-        internal PreparingEnlistment PreparingEnlistment
-        {
-            get
-            {
-                if (_preparingEnlistment == null)
-                {
-                    // If there is a race here one of the objects would simply be garbage collected.
-                    _preparingEnlistment = new PreparingEnlistment(this);
-                }
-                return _preparingEnlistment;
-            }
-        }
+        internal PreparingEnlistment PreparingEnlistment =>
+            // If there is a race here one of the objects would simply be garbage collected.
+            _preparingEnlistment ??= new PreparingEnlistment(this);
 
-        internal SinglePhaseEnlistment SinglePhaseEnlistment
-        {
-            get
-            {
-                if (_singlePhaseEnlistment == null)
-                {
-                    // If there is a race here one of the objects would simply be garbage collected.
-                    _singlePhaseEnlistment = new SinglePhaseEnlistment(this);
-                }
-                return _singlePhaseEnlistment;
-            }
-        }
+        internal SinglePhaseEnlistment SinglePhaseEnlistment =>
+            // If there is a race here one of the objects would simply be garbage collected.
+            _singlePhaseEnlistment ??= new SinglePhaseEnlistment(this);
 
         internal InternalTransaction Transaction => _transaction;
 

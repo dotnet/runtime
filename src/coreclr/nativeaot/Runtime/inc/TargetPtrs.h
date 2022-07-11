@@ -4,7 +4,6 @@
 #define _TARGETPTRS_H_
 
 typedef DPTR(class MethodTable) PTR_EEType;
-typedef SPTR(struct StaticGcDesc) PTR_StaticGcDesc;
 
 #ifdef TARGET_AMD64
 typedef uint64_t UIntTarget;
@@ -26,6 +25,5 @@ typedef void *                          TgtPTR_Void;
 typedef PTR_EEType                      TgtPTR_EEType;
 typedef class Thread *                  TgtPTR_Thread;
 typedef struct CORINFO_Object *         TgtPTR_CORINFO_Object;
-typedef PTR_StaticGcDesc                TgtPTR_StaticGcDesc;
 
 #endif // !_TARGETPTRS_H_

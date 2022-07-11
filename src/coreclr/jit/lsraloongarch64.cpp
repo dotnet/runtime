@@ -271,6 +271,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROR:
             srcCount = BuildBinaryUses(tree->AsOp());
+            buildInternalRegisterUses();
             assert(dstCount == 1);
             BuildDef(tree);
             break;

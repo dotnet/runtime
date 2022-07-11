@@ -153,8 +153,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 finally
                 {
-                    if (certChainContext != null)
-                        certChainContext.Dispose();
+                    certChainContext?.Dispose();
                 }
             }
         }

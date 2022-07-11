@@ -152,6 +152,14 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
+
+void CallFClose(FILE* file)
+{
+    fclose(file);
+}
+
+typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
+
 void PgoManager::WritePgoData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
@@ -203,6 +211,8 @@ void PgoManager::WritePgoData()
     {
         return;
     }
+
+    FILEHolder fileHolder(pgoDataFile);
 
     fprintf(pgoDataFile, s_FileHeaderString, pgoDataCount);
 
@@ -319,7 +329,6 @@ void PgoManager::WritePgoData()
     });
 
     fprintf(pgoDataFile, s_FileTrailerString);
-    fclose(pgoDataFile);
 }
 #endif // DACCESS_COMPILE
 
@@ -344,8 +353,8 @@ void PgoManager::ReadPgoData()
 {
     // Skip, if we're not reading, or we're writing profile data, or doing tiered pgo
     //
-    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0) ||
-        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) > 0) ||
+    if (g_pConfig->TieredPGO() ||
+        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0) ||
         (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) == 0))
     {
         return;
@@ -364,6 +373,8 @@ void PgoManager::ReadPgoData()
     {
         return;
     }
+
+    FILEHolder fileHolder(pgoDataFile);
 
     char     buffer[16384];
     unsigned maxIndex = 0;

@@ -102,6 +102,47 @@ namespace System.Runtime.Versioning
         public UnsupportedOSPlatformAttribute(string platformName) : base(platformName)
         {
         }
+        public UnsupportedOSPlatformAttribute(string platformName, string? message) : base(platformName)
+        {
+            Message = message;
+        }
+        public string? Message { get; }
+    }
+
+    /// <summary>
+    /// Marks APIs that were obsoleted in a given operating system version.
+    /// </summary>
+    /// <remarks>
+    /// Primarily used by OS bindings to indicate APIs that should not be used anymore.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Assembly |
+                    AttributeTargets.Class |
+                    AttributeTargets.Constructor |
+                    AttributeTargets.Enum |
+                    AttributeTargets.Event |
+                    AttributeTargets.Field |
+                    AttributeTargets.Interface |
+                    AttributeTargets.Method |
+                    AttributeTargets.Module |
+                    AttributeTargets.Property |
+                    AttributeTargets.Struct,
+                    AllowMultiple = true, Inherited = false)]
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        sealed class ObsoletedInOSPlatformAttribute : OSPlatformAttribute
+    {
+        public ObsoletedInOSPlatformAttribute(string platformName) : base(platformName)
+        {
+        }
+        public ObsoletedInOSPlatformAttribute(string platformName, string? message) : base(platformName)
+        {
+            Message = message;
+        }
+        public string? Message { get; }
+        public string? Url { get; set; }
     }
 
     /// <summary>

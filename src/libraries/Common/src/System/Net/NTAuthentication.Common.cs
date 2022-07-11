@@ -20,6 +20,7 @@ namespace System.Net
         private string? _spn;
 
         private int _tokenSize;
+        private byte[]? _tokenBuffer;
         private ContextFlagsPal _requestedContextFlags;
         private ContextFlagsPal _contextFlags;
 
@@ -147,14 +148,14 @@ namespace System.Net
             _isCompleted = false;
         }
 
-        internal int VerifySignature(byte[] buffer, int offset, int count)
+        internal int Wrap(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, bool isConfidential)
         {
-            return NegotiateStreamPal.VerifySignature(_securityContext!, buffer, offset, count);
+            return NegotiateStreamPal.Wrap(_securityContext!, buffer, ref output, isConfidential);
         }
 
-        internal int MakeSignature(byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
+        internal int Unwrap(Span<byte> buffer, out int newOffset, out bool wasConfidential)
         {
-            return NegotiateStreamPal.MakeSignature(_securityContext!, buffer, offset, count, ref output);
+            return NegotiateStreamPal.Unwrap(_securityContext!, buffer, out newOffset, out wasConfidential);
         }
 
         internal string? GetOutgoingBlob(string? incomingBlob)
@@ -210,9 +211,10 @@ namespace System.Net
 
         internal byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
-            byte[]? result = new byte[_tokenSize];
+            _tokenBuffer ??= _tokenSize == 0 ? Array.Empty<byte>() : new byte[_tokenSize];
 
             bool firstTime = _securityContext == null;
+            int resultBlobLength;
             try
             {
                 if (!_isServer)
@@ -225,18 +227,19 @@ namespace System.Net
                         _requestedContextFlags,
                         incomingBlob,
                         _channelBinding,
-                        ref result,
+                        ref _tokenBuffer,
+                        out resultBlobLength,
                         ref _contextFlags);
 
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SSPIWrapper.InitializeSecurityContext() returns statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
 
                     if (statusCode.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded)
                     {
-                        statusCode = NegotiateStreamPal.CompleteAuthToken(ref _securityContext, result);
+                        statusCode = NegotiateStreamPal.CompleteAuthToken(ref _securityContext, _tokenBuffer.AsSpan(0, resultBlobLength));
 
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SSPIWrapper.CompleteAuthToken() returns statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
 
-                        result = null;
+                        resultBlobLength = 0;
                     }
                 }
                 else
@@ -248,7 +251,8 @@ namespace System.Net
                         _requestedContextFlags,
                         incomingBlob,
                         _channelBinding,
-                        ref result,
+                        ref _tokenBuffer,
+                        out resultBlobLength,
                         ref _contextFlags);
 
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SSPIWrapper.AcceptSecurityContext() returns statusCode:0x{((int)statusCode.ErrorCode):x8} ({statusCode})");
@@ -273,6 +277,7 @@ namespace System.Net
             {
                 CloseContext();
                 _isCompleted = true;
+                _tokenBuffer = null;
                 if (throwOnError)
                 {
                     throw NegotiateStreamPal.CreateExceptionFromError(statusCode);
@@ -286,12 +291,18 @@ namespace System.Net
                 SSPIHandleCache.CacheCredential(_credentialsHandle);
             }
 
+            byte[]? result =
+                resultBlobLength == 0 || _tokenBuffer == null ? null :
+                _tokenBuffer.Length == resultBlobLength ? _tokenBuffer :
+                _tokenBuffer[0..resultBlobLength];
+
             // The return value will tell us correctly if the handshake is over or not
             if (statusCode.ErrorCode == SecurityStatusPalErrorCode.OK
                 || (_isServer && statusCode.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded))
             {
                 // Success.
                 _isCompleted = true;
+                _tokenBuffer = null;
             }
             else
             {
@@ -313,28 +324,24 @@ namespace System.Net
             return spn;
         }
 
-        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, uint sequenceNumber)
+        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
         {
             return NegotiateStreamPal.Encrypt(
                 _securityContext!,
                 buffer,
                 (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
                 IsNTLM,
-                ref output,
-                sequenceNumber);
+                ref output);
         }
 
-        internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
+        internal int Decrypt(Span<byte> payload, out int newOffset)
         {
             return NegotiateStreamPal.Decrypt(
                 _securityContext!,
                 payload,
-                offset,
-                count,
                 (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
                 IsNTLM,
-                out newOffset,
-                expectedSeqNumber);
+                out newOffset);
         }
     }
 }

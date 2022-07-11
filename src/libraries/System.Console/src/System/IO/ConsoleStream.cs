@@ -26,7 +26,7 @@ namespace System.IO
             Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
-        public override void WriteByte(byte value) => Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+        public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(in value));
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -37,7 +37,7 @@ namespace System.IO
         public override int ReadByte()
         {
             byte b = 0;
-            int result = Read(MemoryMarshal.CreateSpan(ref b, 1));
+            int result = Read(new Span<byte>(ref b));
             return result != 0 ? b : -1;
         }
 

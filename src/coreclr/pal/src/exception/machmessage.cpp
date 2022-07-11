@@ -852,6 +852,11 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
                 CHECK_MACH("mach_port_mod_refs()", machret);
 
                 // Deallocate the thread list now we're done with it.
+                for (mach_msg_type_number_t j = 0; j < cThreads; j++)
+                {
+                    machret = mach_port_deallocate(mach_task_self(), pThreads[j]);
+                    CHECK_MACH("mach_port_deallocate()", machret);
+                }
                 machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
                 CHECK_MACH("vm_deallocate()", machret);
 

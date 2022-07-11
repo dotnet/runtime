@@ -69,8 +69,6 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)' and '$(IncludeLibraryImportGeneratorSources)' != 'false'">
-      <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/tests/Ancillary.Interop/CustomTypeMarshallersAttributeBase.cs" />
-      <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/tests/Ancillary.Interop/ManagedToUnmanagedMarshallersAttribute.cs" />
     </ItemGroup>
   </Target>
 

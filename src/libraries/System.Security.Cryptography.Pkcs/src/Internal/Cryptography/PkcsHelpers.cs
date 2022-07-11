@@ -400,48 +400,20 @@ namespace Internal.Cryptography
         /// <summary>
         /// Useful helper for "upgrading" well-known CMS attributes to type-specific objects such as Pkcs9DocumentName, Pkcs9DocumentDescription, etc.
         /// </summary>
-        public static Pkcs9AttributeObject CreateBestPkcs9AttributeObjectAvailable(Oid oid, byte[] encodedAttribute)
+        public static Pkcs9AttributeObject CreateBestPkcs9AttributeObjectAvailable(Oid oid, ReadOnlySpan<byte> encodedAttribute)
         {
-            Pkcs9AttributeObject attributeObject = new Pkcs9AttributeObject(oid, encodedAttribute);
-            switch (oid.Value)
+            return oid.Value switch
             {
-                case Oids.DocumentName:
-                    attributeObject = Upgrade<Pkcs9DocumentName>(attributeObject);
-                    break;
-
-                case Oids.DocumentDescription:
-                    attributeObject = Upgrade<Pkcs9DocumentDescription>(attributeObject);
-                    break;
-
-                case Oids.SigningTime:
-                    attributeObject = Upgrade<Pkcs9SigningTime>(attributeObject);
-                    break;
-
-                case Oids.ContentType:
-                    attributeObject = Upgrade<Pkcs9ContentType>(attributeObject);
-                    break;
-
-                case Oids.MessageDigest:
-                    attributeObject = Upgrade<Pkcs9MessageDigest>(attributeObject);
-                    break;
-
+                Oids.DocumentName => new Pkcs9DocumentName(encodedAttribute),
+                Oids.DocumentDescription => new Pkcs9DocumentDescription(encodedAttribute),
+                Oids.SigningTime => new Pkcs9SigningTime(encodedAttribute),
+                Oids.ContentType => new Pkcs9ContentType(encodedAttribute),
+                Oids.MessageDigest => new Pkcs9MessageDigest(encodedAttribute),
 #if NETCOREAPP || NETSTANDARD2_1
-                case Oids.LocalKeyId:
-                    attributeObject = Upgrade<Pkcs9LocalKeyId>(attributeObject);
-                    break;
+                Oids.LocalKeyId => new Pkcs9LocalKeyId() { RawData = encodedAttribute.ToArray() },
 #endif
-
-                default:
-                    break;
-            }
-            return attributeObject;
-        }
-
-        private static T Upgrade<T>(Pkcs9AttributeObject basicAttribute) where T : Pkcs9AttributeObject, new()
-        {
-            T enhancedAttribute = new T();
-            enhancedAttribute.CopyFrom(basicAttribute);
-            return enhancedAttribute;
+                _ => new Pkcs9AttributeObject(oid, encodedAttribute),
+            };
         }
 
         internal static byte[] OneShot(this ICryptoTransform transform, byte[] data)
@@ -456,7 +428,7 @@ namespace Internal.Cryptography
                 return transform.TransformFinalBlock(data, offset, length);
             }
 
-            using (MemoryStream memoryStream = new MemoryStream())
+            using (MemoryStream memoryStream = new MemoryStream(length))
             {
                 using (var cryptoStream = new CryptoStream(memoryStream, transform, CryptoStreamMode.Write))
                 {

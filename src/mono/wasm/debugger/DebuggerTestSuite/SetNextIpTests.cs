@@ -8,12 +8,15 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
-using System.Threading;
+using Xunit.Abstractions;
 
 namespace DebuggerTests;
 
 public class SetNextIpTests : DebuggerTests
 {
+    public SetNextIpTests(ITestOutputHelper testOutput) : base(testOutput)
+    {}
+
     [ConditionalFact(nameof(RunningOnChrome))]
     public async Task SetAndCheck()
     {
