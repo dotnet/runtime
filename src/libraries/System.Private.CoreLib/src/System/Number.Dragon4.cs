@@ -146,16 +146,15 @@ namespace System
             // We must now adjust the decialExponent to fit within the limits of (0, 28)
             if (decimalExponent < 0)
             {
-                // if decimalExponent is negative, we should normalize it to 0. We can do this by multiplying our final result by 10^(the difference)
-                // To do this, we multiply scaledValue by 10^(0 - decimalExponent)
-                state.scaledValue.MultiplyPow10((uint)-decimalExponent);
+                // if decimalExponent is negative, we should normalize it to 0.
+                // Note: for decimalExponent to be negative, digitExponent needs to be greater than 29, which is out of range
+                // for numbers we can represent as decimal. This case should never be hit.
                 decimalExponent = 0;
+                ThrowOverflowException(TypeCode.Decimal);
             }
             else if (decimalExponent > maxDecimalScale)
             {
-                // If state.decimalExponent is more than 28, we should normalize it to 28. We can do this by dividing our final result by 10^(the difference)
-                // To do this, we multiply scale by 10^(decimalExponent - 28)
-                state.scale.MultiplyPow10((uint)decimalExponent - (uint)maxDecimalScale);
+                // If decimalExponent is more than 28, we should normalize it to 28.
                 decimalExponent = maxDecimalScale;
             }
 
@@ -174,16 +173,29 @@ namespace System
             // Divide scaledValue by scale to get our final result, decimalMantissa
             BigInteger.DivRem(ref state.scaledValue, ref state.scale, out BigInteger decimalMantissa, out _);
 
-            int len = decimalMantissa.GetLength();
-
-            Debug.Assert(len < 3);
-
             uint low = 0;
             uint mid = 0;
             uint high = 0;
 
+            if (decimalMantissa.GetLength() == 4)
+            {
+                // There is an edge case where some numbers utilizing all 29 decimal digits for thier mantissa will overflow past 96 bits.
+                // In these cases, we should scale them down by 10 and adjust the decimalExponent accordingly,
+                // representing the same value with one less sigfig.
+                BigInteger.SetUInt32(out BigInteger ten, 10);
+                BigInteger.DivRem(ref decimalMantissa, ref ten, out decimalMantissa, out _);
+                decimalExponent--;
+            }
+
+            int len = decimalMantissa.GetLength();
+            Debug.Assert(len < 4);
+
             switch (len)
             {
+                case 0:
+                    {
+                        break;
+                    }
                 case 3:
                     {
                         high = decimalMantissa.GetBlock(2);
@@ -205,25 +217,6 @@ namespace System
                         break;
                     }
             }
-            /*            if (len > 3)
-                        {
-                            uint idk = decimalMantissa.GetBlock(3);
-                            UInt128 valueUInt128 = 0;
-                            valueUInt128 += idk;
-                            valueUInt128 = valueUInt128 << 32;
-                            valueUInt128 += high;
-                            valueUInt128 = valueUInt128 << 32;
-                            valueUInt128 += mid;
-                            valueUInt128 = valueUInt128 << 32;
-                            valueUInt128 += low;
-                            throw new Exception("TODO handle this somehow, descaledValue has ended up too big. 4th block: " + idk + ", decimalExponent: " + decimalExponent + ", decimalMantissa: " + valueUInt128.ToString());}*/
-            /*          UInt128 valueUInt128 = 0;
-                        valueUInt128 += high;
-                        valueUInt128 = valueUInt128 << 32;
-                        valueUInt128 += mid;
-                        valueUInt128 = valueUInt128 << 32;
-                        valueUInt128 += low;
-                        Console.WriteLine(valueUInt128.ToString()); */
 
             Debug.Assert(decimalExponent <= maxDecimalScale && decimalExponent >= 0);
             return (low, mid, high, (uint)decimalExponent);
