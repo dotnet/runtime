@@ -13,12 +13,29 @@ namespace System.Net.NetworkInformation
 {
     public partial class NetworkChange
     {
+        private static event NetworkAvailabilityChangedEventHandler? s_networkAvailabilityChanged;
+
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
-            add => throw new PlatformNotSupportedException();
-            remove => throw new PlatformNotSupportedException();
+            add
+            {
+                if (s_networkAvailabilityChanged == null)
+                    BrowserNetworkInterfaceInterop.AddChangeListener(OnNetworkChanged);
+
+                s_networkAvailabilityChanged += value;
+            }
+            remove
+            {
+                s_networkAvailabilityChanged -= value;
+            }
+        }
+
+        private static void OnNetworkChanged(bool isOnline)
+        {
+            if (s_networkAvailabilityChanged != null)
+                s_networkAvailabilityChanged?.Invoke(null, new NetworkAvailabilityEventArgs(isOnline));
         }
 
         [UnsupportedOSPlatform("browser")]

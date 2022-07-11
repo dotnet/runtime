@@ -4,3 +4,8 @@
 export function network_wasm_online(): boolean {
     return globalThis.navigator && globalThis.navigator.onLine;
 }
+
+export function network_wasm_add_change_listener(listener: (onLine: boolean) => void): void {
+    window.addEventListener("offline", () => listener(network_wasm_online()));
+    window.addEventListener("online", () => listener(network_wasm_online()));
+}

@@ -9,6 +9,9 @@ namespace System.Net.NetworkInformation
     {
         [JSImport("INTERNAL.network_wasm_online")]
         public static partial bool IsOnline();
+
+        [JSImport("INTERNAL.network_wasm_add_change_listener")]
+        public static partial void AddChangeListener([JSMarshalAs<JSType.Function<JSType.Boolean>>] Action<bool> handler);
     }
 
     internal static class NetworkInterfacePal
