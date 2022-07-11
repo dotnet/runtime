@@ -8,13 +8,6 @@
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
     <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
   </PropertyGroup>
-  
-  <!-- TMP: https://github.com/dotnet/runtime-assets/pull/251 -->
-  <ItemGroup Condition="'$(TargetOS)' == 'Android'">
-    <None Include="$(MSBuildProjectDirectory)\res\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
