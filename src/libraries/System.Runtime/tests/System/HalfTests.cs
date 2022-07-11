@@ -1650,7 +1650,7 @@ namespace System.Tests
             AssertExtensions.Equal(expectedResult, float.Hypot(+y, +x), allowedVariance);
         }
 
-        public static IEnumerable<object[]> Root_TestData()
+        public static IEnumerable<object[]> RootN_TestData()
         {
             yield return new object[] { Half.NegativeInfinity, -5, -Half.Zero,             Half.Zero };
             yield return new object[] { Half.NegativeInfinity, -4,  Half.NaN,              Half.Zero };
@@ -1754,10 +1754,10 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Root_TestData))]
-        public static void Root(Half x, int n, Half expectedResult, Half allowedVariance)
+        [MemberData(nameof(RootN_TestData))]
+        public static void RootN(Half x, int n, Half expectedResult, Half allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, Half.Root(x, n), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.RootN(x, n), allowedVariance);
         }
 
         public static IEnumerable<object[]> AcosPi_TestData()

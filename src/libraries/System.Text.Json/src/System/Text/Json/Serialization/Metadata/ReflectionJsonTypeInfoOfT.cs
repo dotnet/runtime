@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Reflection;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -17,7 +18,7 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonSerializerOptions options)
-            : this(options.GetConverterForType(typeof(T)), options)
+            : this(DefaultJsonTypeInfoResolver.GetConverterForType(typeof(T), options), options)
         {
         }
 
@@ -196,7 +197,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             try
             {
-                converter = GetConverterFromMember(
+                converter = DefaultJsonTypeInfoResolver.GetConverterForMember(
                     typeToConvert,
                     memberInfo,
                     options,

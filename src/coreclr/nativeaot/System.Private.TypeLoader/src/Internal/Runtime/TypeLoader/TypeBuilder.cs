@@ -183,8 +183,7 @@ namespace Internal.Runtime.TypeLoader
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return;
 
-            if (_typesThatNeedPreparation == null)
-                _typesThatNeedPreparation = new LowLevelList<TypeDesc>();
+            _typesThatNeedPreparation ??= new LowLevelList<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -247,8 +246,7 @@ namespace Internal.Runtime.TypeLoader
             if (hasTypeHandle)
                 return;
 
-            if (state == null)
-                state = type.GetOrCreateTypeBuilderState();
+            state ??= type.GetOrCreateTypeBuilderState();
 
             // If this type was already prepared, do nothing unless we are re-preparing it for the purpose of loading the field layout
             if (state.HasBeenPrepared)
@@ -1548,8 +1546,7 @@ namespace Internal.Runtime.TypeLoader
                     newByRefTypesCount++;
                 else if (typeAsParameterizedType.IsMdArray)
                 {
-                    if (mdArrayNewTypesCount == null)
-                        mdArrayNewTypesCount = new int[MDArray.MaxRank + 1];
+                    mdArrayNewTypesCount ??= new int[MDArray.MaxRank + 1];
                     mdArrayNewTypesCount[((ArrayType)typeAsParameterizedType).Rank]++;
                 }
             }

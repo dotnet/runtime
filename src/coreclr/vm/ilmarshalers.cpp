@@ -1958,19 +1958,24 @@ void ILCUTF8Marshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    if (m_dwInstance == LOCAL_NUM_UNUSED)
-        m_dwInstance = pslILEmit->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__UTF8STRINGMARSHALLER)));
-
     bool bPassByValueInOnly = IsIn(m_dwMarshalFlags) && !IsOut(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags);
     if (bPassByValueInOnly)
     {
+        if (m_dwInstance == LOCAL_NUM_UNUSED)
+            m_dwInstance = pslILEmit->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__UTF8STRINGMARSHALLER_IN)));
+
         DWORD dwBuffer = pslILEmit->NewLocal(ELEMENT_TYPE_I);
         pslILEmit->EmitLDC(LOCAL_BUFFER_LENGTH);
         pslILEmit->EmitLOCALLOC();
         pslILEmit->EmitSTLOC(dwBuffer);
 
+        // Load the marshaller instance.
+        pslILEmit->EmitLDLOCA(m_dwInstance);
+
+        // Argument 1
         EmitLoadManagedValue(pslILEmit);
 
+        // Argument 2
         // Create ReadOnlySpan<byte> from the stack-allocated buffer
         pslILEmit->EmitLDLOC(dwBuffer);
         pslILEmit->EmitLDC(LOCAL_BUFFER_LENGTH);
@@ -1979,20 +1984,17 @@ void ILCUTF8Marshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
             TypeHandle(CoreLibBinder::GetClass(CLASS__SPAN)).Instantiate(Instantiation(&thByte, 1)).AsMethodTable(),
             FALSE, Instantiation(), FALSE);
         pslILEmit->EmitNEWOBJ(pslILEmit->GetToken(pSpanCtor), 2);
+        pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER_IN__FROM_MANAGED, 2, 0);
 
-        pslILEmit->EmitNEWOBJ(METHOD__UTF8STRINGMARSHALLER__CTOR_SPAN, 2);
-        pslILEmit->EmitSTLOC(m_dwInstance);
-
+        pslILEmit->EmitLDLOCA(m_dwInstance);
+        pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER_IN__TO_UNMANAGED, 1, 1);
     }
     else
     {
         EmitLoadManagedValue(pslILEmit);
-        pslILEmit->EmitNEWOBJ(METHOD__UTF8STRINGMARSHALLER__CTOR, 1);
-        pslILEmit->EmitSTLOC(m_dwInstance);
+        pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__CONVERT_TO_UNMANAGED, 1, 1);
     }
 
-    pslILEmit->EmitLDLOCA(m_dwInstance);
-    pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__TO_NATIVE_VALUE, 1, 1);
     EmitStoreNativeValue(pslILEmit);
 }
 
@@ -2000,15 +2002,8 @@ void ILCUTF8Marshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    if (m_dwInstance == LOCAL_NUM_UNUSED)
-        m_dwInstance = pslILEmit->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__UTF8STRINGMARSHALLER)));
-
-    pslILEmit->EmitLDLOCA(m_dwInstance);
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__FROM_NATIVE_VALUE, 2, 0);
-
-    pslILEmit->EmitLDLOCA(m_dwInstance);
-    pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__TO_MANAGED, 1, 1);
+    pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__CONVERT_TO_MANAGED, 1, 1);
     EmitStoreManagedValue(pslILEmit);
 }
 
@@ -2016,20 +2011,15 @@ void ILCUTF8Marshaler::EmitClearNative(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    bool bPassByValueInOnly = IsIn(m_dwMarshalFlags) && !IsOut(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags);
-    if (bPassByValueInOnly)
+    if (m_dwInstance != LOCAL_NUM_UNUSED)
     {
-        _ASSERTE(m_dwInstance != LOCAL_NUM_UNUSED);
-
         pslILEmit->EmitLDLOCA(m_dwInstance);
-        pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__FREE_NATIVE, 1, 0);
+        pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER_IN__FREE, 0, 0);
     }
     else
     {
-        // The marshaller instance is not guaranteed to be initialized with the latest native value.
-        // Free the native value directly.
         EmitLoadNativeValue(pslILEmit);
-        pslILEmit->EmitCALL(METHOD__MARSHAL__FREE_CO_TASK_MEM, 1, 0);
+        pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__FREE, 1, 0);
     }
 }
 

@@ -17,7 +17,7 @@ namespace System.Net.Test.Common
         private X509Certificate2 _cert;
         private QuicListener _listener;
 
-        public override Uri Address => new Uri($"https://{_listener.ListenEndPoint}/");
+        public override Uri Address => new Uri($"https://{_listener.LocalEndPoint}/");
 
         public Http3LoopbackServer(Http3Options options = null)
         {
@@ -28,18 +28,29 @@ namespace System.Net.Test.Common
             var listenerOptions = new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(options.Address, 0),
-                ServerAuthenticationOptions = new SslServerAuthenticationOptions
+                ApplicationProtocols = new List<SslApplicationProtocol>
                 {
-                    EnabledSslProtocols = options.SslProtocols,
-                    ApplicationProtocols = new List<SslApplicationProtocol>
-                    {
-                        new SslApplicationProtocol(options.Alpn)
-                    },
-                    ServerCertificate = _cert,
-                    ClientCertificateRequired = false
+                    new SslApplicationProtocol(options.Alpn)
                 },
-                MaxUnidirectionalStreams = options.MaxUnidirectionalStreams,
-                MaxBidirectionalStreams = options.MaxBidirectionalStreams,
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = new QuicServerConnectionOptions()
+                    {
+                        MaxBidirectionalStreams = options.MaxBidirectionalStreams,
+                        MaxUnidirectionalStreams = options.MaxUnidirectionalStreams,
+                        ServerAuthenticationOptions = new SslServerAuthenticationOptions
+                        {
+                            EnabledSslProtocols = options.SslProtocols,
+                            ApplicationProtocols = new List<SslApplicationProtocol>
+                            {
+                                new SslApplicationProtocol(options.Alpn)
+                            },
+                            ServerCertificate = _cert,
+                            ClientCertificateRequired = false
+                        }
+                    };
+                    return ValueTask.FromResult(serverOptions);
+                }
             };
 
             ValueTask<QuicListener> valueTask = QuicListener.ListenAsync(listenerOptions);
@@ -49,7 +60,7 @@ namespace System.Net.Test.Common
 
         public override void Dispose()
         {
-            _listener.Dispose();
+            _listener.DisposeAsync().GetAwaiter().GetResult();
             _cert.Dispose();
         }
 
@@ -133,7 +144,7 @@ namespace System.Net.Test.Common
 
         public Http3Options()
         {
-            MaxUnidirectionalStreams = 100;
+            MaxUnidirectionalStreams = 10;
             MaxBidirectionalStreams = 100;
             Alpn = SslApplicationProtocol.Http3.ToString();
         }

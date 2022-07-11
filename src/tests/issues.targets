@@ -67,6 +67,9 @@
          <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetUnix/*">
             <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
+            <Issue>https://github.com/dotnet/runtime/issues/10478</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets  on CoreCLR Runtime -->
@@ -524,6 +527,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
+            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>

@@ -467,12 +467,9 @@ namespace System.Security.Cryptography.Xml
             }
             finally
             {
-                if (hashInputStream != null)
-                    hashInputStream.Close();
-                if (response != null)
-                    response.Close();
-                if (inputStream != null)
-                    inputStream.Close();
+                hashInputStream?.Close();
+                response?.Close();
+                inputStream?.Close();
             }
 
             return hashval;

@@ -234,6 +234,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_BROWSER 1)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
+  add_compile_options(-Wno-strict-prototypes)
+  add_compile_options(-Wno-unused-but-set-variable)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)

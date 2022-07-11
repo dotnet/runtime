@@ -163,10 +163,6 @@ endif()
 include(configure.cmake)
 include(${CLR_SRC_NATIVE_DIR}/external/libunwind.cmake)
 
-set(LIBUNWIND_SOURCES
-  ${LIBUNWIND_SOURCES}
-  ${CMAKE_CURRENT_LIST_DIR}/oop/_OOP_find_proc_info.c)
-
 if(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_HOST_OSX)
         add_library(libunwind_dac OBJECT ${LIBUNWIND_SOURCES})
