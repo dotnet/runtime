@@ -124,7 +124,6 @@ namespace System.Runtime.Serialization
             private XmlDictionaryString? _topLevelElementNamespace;
             private bool _isTopLevelElementNullable;
             private bool _isTypeDefinedOnImport;
-            private bool _hasRoot;
             private CreateXmlSerializableDelegate? _createXmlSerializable;
             private XmlSchemaType? _xsdType;
 
@@ -141,12 +140,12 @@ namespace System.Runtime.Serialization
                 XmlSchemaType? xsdType;
                 XmlQualifiedName stableName;
                 SchemaExporter.GetXmlTypeInfo(type, out stableName, out xsdType, out hasRoot);
-                this.StableName = stableName;
-                this.XsdType = xsdType;
-                this.HasRoot = hasRoot;
+                StableName = stableName;
+                XsdType = xsdType;
+                HasRoot = hasRoot;
                 XmlDictionary dictionary = new XmlDictionary();
-                this.Name = dictionary.Add(StableName.Name);
-                this.Namespace = dictionary.Add(StableName.Namespace);
+                Name = dictionary.Add(StableName.Name);
+                Namespace = dictionary.Add(StableName.Namespace);
                 object[]? xmlRootAttributes = UnderlyingType?.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
@@ -206,12 +205,6 @@ namespace System.Runtime.Serialization
             }
 
             internal bool IsAnonymous => _xsdType != null;
-
-            internal override bool HasRoot
-            {
-                get => _hasRoot;
-                set => _hasRoot = value;
-            }
 
             internal override XmlDictionaryString? TopLevelElementName
             {

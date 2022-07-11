@@ -233,8 +233,8 @@ namespace System.Runtime.Serialization
 
         internal virtual bool HasRoot
         {
-            get => true;
-            set { }
+            get => _helper.HasRoot;
+            set => _helper.HasRoot = value;
         }
 
         public virtual XmlDictionaryString? TopLevelElementName
@@ -1049,11 +1049,7 @@ namespace System.Runtime.Serialization
                 set => _ns = value;
             }
 
-            internal virtual bool HasRoot
-            {
-                get => true;
-                set { }
-            }
+            internal virtual bool HasRoot { get; set; } = true;
 
             internal virtual XmlDictionaryString? TopLevelElementName
             {
