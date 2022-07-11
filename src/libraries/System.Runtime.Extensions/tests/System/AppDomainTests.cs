@@ -813,7 +813,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65560", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
             ObjectHandle oh = null;
@@ -864,13 +863,15 @@ namespace System.Tests
 
             // string physicalFileName, string assemblyFile, string typeName, returnedFullNameType, expectedException
             yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassSample", "AssemblyResolveTestApp.PublicClassSample", null };
-            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", "AssemblyResolveTestApp.PublicClassSample", exceptionType };
-
             yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PrivateClassSample", "AssemblyResolveTestApp.PrivateClassSample", null };
-            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", "AssemblyResolveTestApp.PrivateClassSample", exceptionType };
-
             yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) };
-            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclassnodefaultconstructorsample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", exceptionType };
+            
+            if (PlatformDetection.IsCaseInsensitiveOS)
+            {
+                yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", "AssemblyResolveTestApp.PublicClassSample", exceptionType };
+                yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", "AssemblyResolveTestApp.PrivateClassSample", exceptionType };
+                yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclassnodefaultconstructorsample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", exceptionType };
+            }
         }
 
         [Theory]
