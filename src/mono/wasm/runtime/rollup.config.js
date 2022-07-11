@@ -82,13 +82,6 @@ const iffeConfig = {
             plugins,
         }
     ],
-    onwarn: (warning, handler) => {
-        if (warning.code === "EVAL" && warning.loc.file.indexOf("method-calls.ts") != -1) {
-            return;
-        }
-
-        handler(warning);
-    },
     plugins: outputCodePlugins
 };
 const typesConfig = {
@@ -132,7 +125,7 @@ function makeWorkerConfig(workerName, workerInputSourcePath) {
     return workerConfig;
 }
 
-const workerConfigs = findWebWorkerInputs ("./workers").map ((workerInput) => makeWorkerConfig (workerInput.workerName, workerInput.path));
+const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => makeWorkerConfig(workerInput.workerName, workerInput.path));
 
 const allConfigs = [
     iffeConfig,
@@ -257,7 +250,7 @@ function findWebWorkerInputs(basePath) {
     for (const file of files) {
         const match = file.match(re);
         if (match) {
-            results.push ({"workerName": match[1], "path": path.join (basePath, file) });
+            results.push({ "workerName": match[1], "path": path.join(basePath, file) });
         }
     }
     return results;

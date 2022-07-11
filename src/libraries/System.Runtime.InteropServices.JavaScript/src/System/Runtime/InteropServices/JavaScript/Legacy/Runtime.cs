@@ -9,13 +9,7 @@ namespace System.Runtime.InteropServices.JavaScript
     [Obsolete]
     public static class Runtime
     {
-        /// <summary>
-        /// Execute the provided string in the JavaScript context
-        /// </summary>
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
-        public static string InvokeJS(string str)
-            => JavaScriptImports.InvokeJS(str);
-
         public static object GetGlobalObject(string str)
             => JavaScriptImports.GetGlobalObject(str);
 
@@ -40,6 +34,7 @@ namespace System.Runtime.InteropServices.JavaScript
         ///   </para>
         /// </returns>
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
         public static object Invoke(this JSObject self, string method, params object?[] args)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -75,6 +70,7 @@ namespace System.Runtime.InteropServices.JavaScript
         ///   </para>
         /// </returns>
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
         public static object GetObjectProperty(this JSObject self, string name)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -100,6 +96,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="createIfNotExists">Defaults to <see langword="true"/> and creates the property on the javascript object if not found, if set to <see langword="false"/> it will not create the property if it does not exist.  If the property exists, the value is updated with the provided value.</param>
         /// <param name="hasOwnProperty"></param>
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
         public static void SetObjectProperty(this JSObject self, string name, object? value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
             ArgumentNullException.ThrowIfNull(self);
