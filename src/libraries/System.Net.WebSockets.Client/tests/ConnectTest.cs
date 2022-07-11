@@ -337,7 +337,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser, "CollectHttpResponseDetails not supported on Browser")]
-        public async Task ConnectAsync_HttpResponseDetailsCollectedOnSuccess_CustomHeader()
+        public async Task ConnectAsync_HttpResponseDetailsCollectedOnFailure_CustomHeader()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -348,11 +348,34 @@ namespace System.Net.WebSockets.Client.Tests
                     Task t = clientWebSocket.ConnectAsync(uri, cts.Token);
                     await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
 
-                    Assert.Equal(HttpStatusCode.SwitchingProtocols, clientWebSocket.HttpStatusCode);
+                    Assert.Equal(HttpStatusCode.Unauthorized, clientWebSocket.HttpStatusCode);
                     Assert.NotEmpty(clientWebSocket.HttpResponseHeaders);
                     Assert.Contains("X-CustomHeader1", clientWebSocket.HttpResponseHeaders);
                 }
-            }, server => server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.SwitchingProtocols, "X-CustomHeader1:Value1"), new LoopbackServer.Options { WebSocketEndpoint = true });
+            }, server => server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, "X-CustomHeader1:Value1"), new LoopbackServer.Options { WebSocketEndpoint = true });
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "CollectHttpResponseDetails not supported on Browser")]
+        public async Task ConnectAsync_HttpResponseDetailsCollectedOnSuccess_Extentions()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var clientWebSocket = new ClientWebSocket())
+                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                {
+                    clientWebSocket.Options.CollectHttpResponseDetails = true;
+                    await clientWebSocket.ConnectAsync(uri, cts.Token);
+
+                    Assert.Equal(HttpStatusCode.SwitchingProtocols, clientWebSocket.HttpStatusCode);
+                    Assert.NotEmpty(clientWebSocket.HttpResponseHeaders);
+                    Assert.Contains("Sec-WebSocket-Extensions", clientWebSocket.HttpResponseHeaders);
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                Dictionary<string, string> headers = await LoopbackHelper.WebSocketHandshakeAsync(connection, "X-CustomHeader1");
+            }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
     }
 }
