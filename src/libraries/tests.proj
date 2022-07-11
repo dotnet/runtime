@@ -452,6 +452,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread\tests\System.Threading.Thread.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.PerformanceCounter\tests\System.Diagnostics.PerformanceCounter.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
