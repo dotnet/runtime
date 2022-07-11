@@ -1151,7 +1151,7 @@ namespace WebAssemblyInfo
             return true;
         }
 
-        protected delegate void ProcessFunction(UInt32 idx, string name, object? data);
+        protected delegate void ProcessFunction(UInt32 idx, string? name, object? data);
 
         protected void FilterFunctions(ProcessFunction processFunction, object? data = null)
         {
@@ -1161,8 +1161,16 @@ namespace WebAssemblyInfo
             for (UInt32 idx = 0; idx < functions.Length; idx++)
             {
                 string? name = null;
+                bool process = false;
 
-                if (Program.FunctionFilter != null)
+                if (Program.FunctionOffset != -1 && funcsCode != null
+                    && idx < funcsCode.Length
+                    && funcsCode[idx].Offset <= Program.FunctionOffset && funcsCode[idx].Offset + funcsCode[idx].Size > Program.FunctionOffset)
+                {
+                    process = true;
+                }
+
+                if (!process && Program.FunctionFilter != null)
                 {
                     if (!HasFunctionNames)
                         continue;
@@ -1173,9 +1181,16 @@ namespace WebAssemblyInfo
 
                     if (!Program.FunctionFilter.Match(name).Success)
                         continue;
+
+                    process = true;
                 }
-                else
+                else if (process)
+                {
                     name = GetFunctionName(idx);
+                }
+
+                if (!process)
+                    continue;
 
                 processFunction(idx, name, data);
             }

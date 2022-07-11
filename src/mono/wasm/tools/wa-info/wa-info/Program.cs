@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Text.RegularExpressions;
-using System.IO;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text.RegularExpressions;
 
 using Mono.Options;
 
@@ -16,6 +17,7 @@ namespace WebAssemblyInfo
 
         static internal Regex? AssemblyFilter;
         static internal Regex? FunctionFilter;
+        static internal long FunctionOffset = -1;
         static internal Regex? TypeFilter;
         public static bool AotStats;
         public static bool Disassemble;
@@ -102,6 +104,14 @@ namespace WebAssemblyInfo
                 { "f|function-filter=",
                     "Filter wasm functions {REGEX}",
                     v => FunctionFilter = new Regex (v) },
+                { "function-offset=",
+                    "Filter wasm functions {REGEX}",
+                    v => {
+                            if (long.TryParse(v, out var offset))
+                                FunctionOffset = offset;
+                            else if (v.StartsWith("0x") && long.TryParse(v[2..], NumberStyles.AllowHexSpecifier, null, out offset))
+                                FunctionOffset = offset;
+                    } },
                 { "h|help|?",
                     "Show this message and exit",
                     v => help = v != null },
