@@ -445,7 +445,8 @@ namespace ILCompiler
                 if (_targetOS == TargetOS.OSX)
                 {
                     // For osx-arm64 we know that apple-m1 is a baseline (even Apple's clang does so)
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                    bool added = instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                    Debug.Assert(added); // make sure nothing went wrong
                 }
                 else
                 {
