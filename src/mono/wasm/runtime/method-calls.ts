@@ -481,11 +481,11 @@ export function parseFQN(fqn: string)
     }
 
     if (!assembly.trim())
-        throw new Error("No assembly name specified");
+        throw new Error("No assembly name specified " + fqn);
     if (!classname.trim())
-        throw new Error("No class name specified");
+        throw new Error("No class name specified " + fqn);
     if (!methodname.trim())
-        throw new Error("No method name specified");
+        throw new Error("No method name specified " + fqn);
     return { assembly, namespace, classname, methodname };
 }
 
