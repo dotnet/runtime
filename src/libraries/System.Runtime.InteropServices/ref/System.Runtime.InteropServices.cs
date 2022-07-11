@@ -2157,13 +2157,13 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class ArrayMarshaller<T, TUnmanagedElement>
         where TUnmanagedElement : unmanaged
     {
-        public static byte* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements) { throw null; }
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements) { throw null; }
         public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) { throw null; }
-        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(byte* unmanaged, int numElements) { throw null; }
-        public static T[]? AllocateContainerForManagedElements(byte* unmanaged, int length) { throw null; }
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int length) { throw null; }
         public static Span<T> GetManagedValuesDestination(T[]? managed) { throw null; }
-        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* unmanagedValue, int numElements) { throw null; }
-        public static void Free(byte* unmanaged) { }
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static void Free(TUnmanagedElement* unmanaged) { }
 
         public unsafe ref struct ManagedToUnmanagedIn
         {

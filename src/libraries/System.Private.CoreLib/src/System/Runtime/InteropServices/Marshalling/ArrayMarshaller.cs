@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class ArrayMarshaller<T, TUnmanagedElement>
         where TUnmanagedElement : unmanaged
     {
-        public static byte* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements)
         {
             if (managed is null)
             {
@@ -40,10 +40,10 @@ namespace System.Runtime.InteropServices.Marshalling
         public static ReadOnlySpan<T> GetManagedValuesSource(T[]? managed)
             => managed;
 
-        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(byte* unmanaged, int numElements)
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
             => new Span<TUnmanagedElement>(unmanaged, numElements);
 
-        public static T[]? AllocateContainerForManagedElements(byte* unmanaged, int length)
+        public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int length)
         {
             if (unmanaged is null)
                 return null;
@@ -54,10 +54,10 @@ namespace System.Runtime.InteropServices.Marshalling
         public static Span<T> GetManagedValuesDestination(T[]? managed)
             => managed;
 
-        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(byte* unmanagedValue, int numElements)
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
             => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
 
-        public static void Free(byte* unmanaged)
+        public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
         public ref struct ManagedToUnmanagedIn
