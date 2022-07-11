@@ -7048,7 +7048,7 @@ void Lowering::ContainCheckConditional(GenTreeConditional* node)
     assert(cmp->OperIsCompare() || cmp->OperIsConditionalCompare());
     if (IsSafeToContainMem(node, cmp))
     {
-      cmp->SetContained();
+        cmp->SetContained();
     }
 
     // Check if an immediate can be contained.
