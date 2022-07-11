@@ -11,10 +11,10 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <assert.h>
-#if !TARGET_ANDROID && HAVE_GETIFADDRS
+#if HAVE_GETIFADDRS && !defined(TARGET_ANDROID)
 #include <ifaddrs.h>
 #endif
-#if TARGET_ANDROID
+#ifdef TARGET_ANDROID
 #include "pal_ifaddrs.h"
 #endif
 #include <net/if.h>
@@ -105,7 +105,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
-#if HAVE_GETIFADDRS || TARGET_ANDROID
+#if HAVE_GETIFADDRS || defined(TARGET_ANDROID)
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -250,7 +250,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
-#if HAVE_GETIFADDRS || TARGET_ANDROID
+#if HAVE_GETIFADDRS || defined(TARGET_ANDROID)
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#if !TARGET_ANDROID
+#ifndef TARGET_ANDROID
 #error The pal_ifaddrs.h shim is intended only for Android
 #endif
 
