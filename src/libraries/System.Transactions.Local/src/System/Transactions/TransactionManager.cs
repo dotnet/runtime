@@ -374,8 +374,14 @@ namespace System.Transactions
 
                 s_cachedMaxTimeout = true;
                 s_maximumTimeout = value;
-                TimeSpan defaultTimeout = DefaultTimeout;
-                s_defaultTimeout = ValidateTimeout(defaultTimeout);
+
+                if(!s_defaultTimeoutValidated)
+                {
+                    s_defaultTimeout = DefaultSettingsSection.Timeout;
+                }
+
+                TimeSpan defaultTimeout = s_defaultTimeout;
+                s_defaultTimeout = ValidateTimeout(s_defaultTimeout);
                 if (s_defaultTimeout != defaultTimeout)
                 {
                     if (etwLog.IsEnabled())
