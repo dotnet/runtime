@@ -150,13 +150,34 @@ namespace System.IO
 
         internal static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(SafeFileHandle fileHandle)
         {
-            ArgumentNullException.ThrowIfNull(fileHandle);
-
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fileHandle, ref data);
             return errorCode != Interop.Errors.ERROR_SUCCESS
                 ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fileHandle.Path)
                 : data;
+        }
+
+        private static int FillAttributeInfo(SafeFileHandle fileHandle, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data)
+        {
+            if (!Interop.Kernel32.GetFileInformationByHandle(
+                fileHandle,
+                out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInformationData))
+            {
+                return Marshal.GetLastWin32Error();
+            }
+
+            PopulateAttributeData(ref data, fileInformationData);
+            return Interop.Errors.ERROR_SUCCESS;
+        }
+
+        private static void PopulateAttributeData(ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, in Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInformationData)
+        {
+            data.dwFileAttributes = (int)fileInformationData.dwFileAttributes;
+            data.ftCreationTime = fileInformationData.ftCreationTime;
+            data.ftLastAccessTime = fileInformationData.ftLastAccessTime;
+            data.ftLastWriteTime = fileInformationData.ftLastWriteTime;
+            data.nFileSizeHigh = fileInformationData.nFileSizeHigh;
+            data.nFileSizeLow = fileInformationData.nFileSizeLow;
         }
 
         private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)

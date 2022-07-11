@@ -23,16 +23,6 @@ internal static partial class Interop
                 nFileSizeHigh = findData.nFileSizeHigh;
                 nFileSizeLow = findData.nFileSizeLow;
             }
-
-            internal void PopulateFrom(in BY_HANDLE_FILE_INFORMATION fileInformationData)
-            {
-                dwFileAttributes = (int)fileInformationData.dwFileAttributes;
-                ftCreationTime = fileInformationData.ftCreationTime;
-                ftLastAccessTime = fileInformationData.ftLastAccessTime;
-                ftLastWriteTime = fileInformationData.ftLastWriteTime;
-                nFileSizeHigh = fileInformationData.nFileSizeHigh;
-                nFileSizeLow = fileInformationData.nFileSizeLow;
-            }
         }
     }
 }
