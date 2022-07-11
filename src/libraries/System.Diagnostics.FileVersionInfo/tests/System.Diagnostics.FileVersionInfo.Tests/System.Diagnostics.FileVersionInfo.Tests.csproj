@@ -40,9 +40,14 @@
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
+    <!-- Include the test assembly as Content. We don't do this on Browser because Mono-WASM has hacks in the
+         targets to consider all DLL files (including Content) "Assemblies to be bundled" and we end up including the file twice,
+         producing a warning.
+         Works around: Found identical vfs mappings for target path: System.Diagnostics.FileVersionInfo.TestAssembly.dll, source file: .../System.Diagnostics.FileVersionInfo.TestAssembly.dll. Ignoring. -->
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' != 'Browser'">
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>
 </Project>
