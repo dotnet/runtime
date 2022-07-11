@@ -82,6 +82,7 @@ export const diagnostics: Diagnostics = {
 ////  * If the diagnostic server gets more commands it will send us a message through the serverController and we will start additional sessions
 
 let suspendOnStartup = false;
+let diagnosticsServerEnabled = false;
 
 export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Promise<void> {
     if (!is_nullish(options.server)) {
@@ -92,6 +93,7 @@ export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Pr
         const suspend = boolsyOption(options.server.suspend);
         const controller = await startDiagnosticServer(url);
         if (controller) {
+            diagnosticsServerEnabled = true;
             if (suspend) {
                 suspendOnStartup = true;
             }
@@ -114,11 +116,13 @@ function boolsyOption(x: string | boolean): boolean {
 }
 
 export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: VoidPtr): void {
-    /* called on the main thread when the runtime is sufficiently initialized */
-    const controller = getController();
-    controller.postServerAttachToRuntime();
-    // FIXME: is this really the best place to do this?
-    memory.setI32(out_options, suspendOnStartup ? 1 : 0);
+    if (diagnosticsServerEnabled) {
+        /* called on the main thread when the runtime is sufficiently initialized */
+        const controller = getController();
+        controller.postServerAttachToRuntime();
+        // FIXME: is this really the best place to do this?
+        memory.setI32(out_options, suspendOnStartup ? 1 : 0);
+    }
 }
 
 export default diagnostics;
