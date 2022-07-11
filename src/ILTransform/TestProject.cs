@@ -485,7 +485,7 @@ namespace ILTransform
 
         public void DumpFolderStatistics(TextWriter writer)
         {
-            for (int level = 1; level <= 3; level++)
+            for (int level = 1; level <= 5; level++)
             {
                 string title = string.Format("COUNT |  PRI0  |  PRI1  |  FACT  | ILPROJ | TO FIX | {0} (PROPERTIES)", level);
                 writer.WriteLine(title);
@@ -1662,6 +1662,7 @@ namespace ILTransform
                     }
                     if (mainPos >= 0)
                     {
+                        hasFactAttribute = true;
                         mainMethodLine = lineIndex;
                         for (int factIndex = lineIndex; factIndex < lineIndex + 10 && factIndex < lines.Count; factIndex++)
                         {
@@ -1720,6 +1721,9 @@ namespace ILTransform
                     }
                 }
             }
+
+            // IL projects don't actually need the Fact attribute providing they have a Main method
+            hasFactAttribute = (mainMethodLine >= 0);
         }
 
         private void PopulateClassNameMap()
