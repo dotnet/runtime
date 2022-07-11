@@ -131,9 +131,9 @@ namespace System.Security.Cryptography.Xml
             }
 
             // Final processing, either we already have a stream or have to canonicalize
-            if (currentInput is Stream)
+            if (currentInput is Stream inputStream)
             {
-                return (Stream)currentInput;
+                return inputStream;
             }
             if (currentInput is XmlNodeList)
             {
