@@ -19,7 +19,8 @@ public class KeyMapperTests
         new PuTTYData_xterm(),
         new PuTTYData_linux(),
         new PuTTYData_putty(),
-        new WindowsTerminalData()
+        new WindowsTerminalData(),
+        new TmuxData(),
     };
 
     public static IEnumerable<object[]> RecordedScenarios
@@ -728,3 +729,34 @@ public class WindowsTerminalData : TerminalData
 }
 
 
+public class TmuxData : TerminalData
+{
+    protected override string EncodingCharset => "utf-8";
+    protected override string Term => "screen";
+    internal override byte Verase => 127;
+    protected override string EncodedTerminalDb => "GgEqACsAEABpAZkCc2NyZWVufFZUIDEwMC9BTlNJIFgzLjY0IHZpcnR1YWwgdGVybWluYWwAAAEAAAEAAAABAAAAAAEBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAQBQAAgAGAD//////////////////////////wgAQAD+/wAABAAGAAgAGQAeACUAKQAtAP//OABJAEsATwBWAP//WABkAP//aABrAHEAdQD/////eQB7AIAAhQD//44AkwD/////mACdAKIA//+nAKkArgD//7cAvADCAMgA////////ywD////////PAP//0wD////////VAP//2gD//////////94A4gDoAOwA8AD0APoAAAEGAQwBEgEXAf//HAH//yABJQEqAf///////y4BMgE6Af//////////////////////////////////QgH//0UBTgFXAWABaQFyAXsBhAH//40B/////////////////////5YB/////6cBqgG1AbgBugG9AREC//8UAv////////////////////////////8WAv//VwL///////////////9bAv////////////////////9iAv///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////2cCbQL///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9zAv///////////////////////////////////////////////////////////////////////3gC////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////gQL///////+FAo8CG1taAAcADQAbWyVpJXAxJWQ7JXAyJWRyABtbM2cAG1tIG1tKABtbSwAbW0oAG1slaSVwMSVkRwAbWyVpJXAxJWQ7JXAyJWRIAAoAG1tIABtbPzI1bAAIABtbMzRoG1s/MjVoABtbQwAbTQAbWzM0bAAbW1AAG1tNAA4AG1s1bQAbWzFtABtbPzEwNDloABtbMm0AG1s0aAAbWzdtABtbM20AG1s0bQAPABtbbQ8AG1s/MTA0OWwAG1s0bAAbWzIzbQAbWzI0bQAbZwAbKTAAG1tMAH8AG1szfgAbT0IAG09QABtbMjF+ABtPUQAbT1IAG09TABtbMTV+ABtbMTd+ABtbMTh+ABtbMTl+ABtbMjB+ABtbMX4AG1syfgAbT0QAG1s2fgAbWzV+ABtPQwAbT0EAG1s/MWwbPgAbWz8xaBs9ABtFABtbJXAxJWRQABtbJXAxJWRNABtbJXAxJWRCABtbJXAxJWRAABtbJXAxJWRTABtbJXAxJWRMABtbJXAxJWREABtbJXAxJWRDABtbJXAxJWRBABtjG1s/MTAwMGwbWz8yNWgAGzgAG1slaSVwMSVkZAAbNwAKABtNABtbMCU/JXA2JXQ7MSU7JT8lcDEldDszJTslPyVwMiV0OzQlOyU/JXAzJXQ7NyU7JT8lcDQldDs1JTslPyVwNSV0OzIlO20lPyVwOSV0DiVlDyU7ABtIAAkAKyssLC0tLi4wMGBgYWFmZmdnaGhpaWpqa2tsbG1tbm5vb3BwcXFycnNzdHR1dXZ2d3d4eHl5enp7e3x8fX1+fgAbW1oAGyhCGykwABtbNH4AG1syM34AG1syNH4AG1sxSwAbWzM5OzQ5bQAbW00AG1szJXAxJWRtABtbNCVwMSVkbQAAAwABAAsAGgBDAAEBAAABAAAA//8EAP////////////////////8AAAMABgAJAAwADwASABUAGAAeACQAKAAsADAANAAbKEIAGyglcDElYwBBWABHMABYVABVOABFMABFMwBTMABYTQBrRU5ENQBrSE9NNQBrYTIAa2IxAGtiMwBrYzIAeG0A"; // /lib/terminfo/s/screen
+
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
+            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
+            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
+            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
+            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
+            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
+            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
+            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+        }
+    }
+}
