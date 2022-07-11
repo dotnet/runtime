@@ -1037,10 +1037,19 @@ namespace System.Text.Json.Serialization.Tests
                         Assert.Null(property.Set);
                         break;
                     case JsonIgnoreCondition.WhenWritingDefault:
-                        TestIntIgnoreWhenWritingDefault();
+                        Assert.NotNull(property.ShouldSerialize);
+                        Assert.False(property.ShouldSerialize(null, 0));
+                        Assert.True(property.ShouldSerialize(null, 1));
+                        Assert.True(property.ShouldSerialize(null, -1));
+                        Assert.Throws<NullReferenceException>(() => property.ShouldSerialize(null, null));
+                        Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, "string"));
                         break;
                     case JsonIgnoreCondition.WhenWritingNull:
-                        TestStringIgnoreWhenWritingDefault();
+                        Assert.NotNull(property.ShouldSerialize);
+                        Assert.False(property.ShouldSerialize(null, null));
+                        Assert.True(property.ShouldSerialize(null, ""));
+                        Assert.True(property.ShouldSerialize(null, "asd"));
+                        Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
                         break;
                     case JsonIgnoreCondition.Never:
                         Assert.NotNull(property.ShouldSerialize);
@@ -1049,25 +1058,6 @@ namespace System.Text.Json.Serialization.Tests
                         Assert.True(property.ShouldSerialize(null, "asd"));
                         Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
                         break;
-                }
-
-                void TestIntIgnoreWhenWritingDefault()
-                {
-                    Assert.NotNull(property.ShouldSerialize);
-                    Assert.False(property.ShouldSerialize(null, 0));
-                    Assert.True(property.ShouldSerialize(null, 1));
-                    Assert.True(property.ShouldSerialize(null, -1));
-                    Assert.Throws<NullReferenceException>(() => property.ShouldSerialize(null, null));
-                    Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, "string"));
-                }
-
-                void TestStringIgnoreWhenWritingDefault()
-                {
-                    Assert.NotNull(property.ShouldSerialize);
-                    Assert.False(property.ShouldSerialize(null, null));
-                    Assert.True(property.ShouldSerialize(null, ""));
-                    Assert.True(property.ShouldSerialize(null, "asd"));
-                    Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
                 }
 
                 if (modify != ModifyJsonIgnore.DontModify && ignoreConditionOnProperty == JsonIgnoreCondition.Always)
