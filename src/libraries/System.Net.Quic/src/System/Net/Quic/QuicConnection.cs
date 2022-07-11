@@ -117,7 +117,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     private bool _canAccept;
 
-    // TODO: remove once/if https://github.com/microsoft/msquic/pull/2872 is merged
+    // TODO: remove once/if https://github.com/microsoft/msquic/pull/2883 is merged
     internal sealed class State
     {
         public long AbortErrorCode = -1;
@@ -528,7 +528,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(null, $"Received event {connectionEvent->Type}");
+                NetEventSource.Error(null, $"Received event {connectionEvent->Type} while connection is already disposed");
             }
             return QUIC_STATUS_INVALID_STATE;
         }

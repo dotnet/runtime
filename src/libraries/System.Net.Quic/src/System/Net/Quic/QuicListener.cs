@@ -235,7 +235,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(null, $"Received event {listenerEvent->Type}");
+                NetEventSource.Error(null, $"Received event {listenerEvent->Type} while listener is already disposed");
             }
             return QUIC_STATUS_INVALID_STATE;
         }
