@@ -251,9 +251,9 @@ namespace System.Text.Tests
 
         public static IEnumerable<object[]> Append_Decimal_TestData()
         {
-            yield return new object[] { "Hello", (double)0, "Hello0" };
-            yield return new object[] { "Hello", 1.23, "Hello1.23" };
-            yield return new object[] { "", -4.56, "-4.56" };
+            yield return new object[] { "Hello", 0m, "Hello0" };
+            yield return new object[] { "Hello", 1.23m, "Hello1.23" };
+            yield return new object[] { "", -4.56m, "-4.56" };
         }
 
         [Fact]
@@ -263,15 +263,15 @@ namespace System.Text.Tests
             {
                 foreach (var testdata in Append_Decimal_TestData())
                 {
-                    Append_Decimal((string)testdata[0], (double)testdata[1], (string)testdata[2]);
+                    Append_Decimal((string)testdata[0], (decimal)testdata[1], (string)testdata[2]);
                 }
             }
         }
 
-        private static void Append_Decimal(string original, double doubleValue, string expected)
+        private static void Append_Decimal(string original, decimal decimalValue, string expected)
         {
             var builder = new StringBuilder(original);
-            builder.Append(new decimal(doubleValue));
+            builder.Append(decimalValue);
             Assert.Equal(expected, builder.ToString());
         }
 
@@ -1430,9 +1430,9 @@ namespace System.Text.Tests
 
         public static IEnumerable<object[]> Test_Insert_Decimal_TestData()
         {
-            yield return new object[] { "Hello", 0, (double)0, "0Hello" };
-            yield return new object[] { "Hello", 3, 1.23, "Hel1.23lo" };
-            yield return new object[] { "Hello", 5, -4.56, "Hello-4.56" };
+            yield return new object[] { "Hello", 0, 0m, "0Hello" };
+            yield return new object[] { "Hello", 3, 1.23m, "Hel1.23lo" };
+            yield return new object[] { "Hello", 5, -4.56m, "Hello-4.56" };
         }
 
         [Fact]
@@ -1442,15 +1442,15 @@ namespace System.Text.Tests
             {
                 foreach (var testdata in Test_Insert_Decimal_TestData())
                 {
-                    Insert_Decimal((string)testdata[0], (int)testdata[1], (double)testdata[2], (string)testdata[3]);
+                    Insert_Decimal((string)testdata[0], (int)testdata[1], (decimal)testdata[2], (string)testdata[3]);
                 }
             }
         }
 
-        private static void Insert_Decimal(string original, int index, double doubleValue, string expected)
+        private static void Insert_Decimal(string original, int index, decimal decimalValue, string expected)
         {
             var builder = new StringBuilder(original);
-            builder.Insert(index, new decimal(doubleValue));
+            builder.Insert(index, decimalValue);
             Assert.Equal(expected, builder.ToString());
         }
 
