@@ -17,7 +17,7 @@
 #define LOG(level, ...) __android_log_print(level, "DOTNET_NETLINK", ## __VA_ARGS__)
 #define LOG_INFO(...) LOG(ANDROID_LOG_INFO, ## __VA_ARGS__)
 #define LOG_WARN(...) LOG(ANDROID_LOG_WARN, ## __VA_ARGS__)
-#if DEBUG
+#ifdef DEBUG
 #define LOG_DEBUG(...) LOG(ANDROID_LOG_DEBUG, ## __VA_ARGS__)
 #else
 #define LOG_DEBUG(...) do {} while (0)
@@ -307,10 +307,8 @@ static struct ifaddrs *get_link_info(struct nlmsghdr *message)
                 if (!ifa->ifa_name) {
                     goto error;
                 }
-#if DEBUG
                 LOG_DEBUG("   interface name (payload length: %zu; string length: %zu)\n", RTA_PAYLOAD(attribute), strlen(ifa->ifa_name));
                 LOG_DEBUG("     %s\n", ifa->ifa_name);
-#endif // DEBUG
                 break;
 
             case IFLA_BROADCAST:
@@ -648,7 +646,7 @@ static int parse_netlink_reply(struct netlink_session *session, struct ifaddrs *
             goto cleanup;
         }
 
-#if DEBUG
+#ifdef DEBUG
         LOG_DEBUG("response flags:");
         if (netlink_reply.msg_flags == 0)
             LOG_DEBUG("  [NONE]");
