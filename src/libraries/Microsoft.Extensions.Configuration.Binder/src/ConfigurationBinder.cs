@@ -544,7 +544,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
+                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key, true) : child.Key;
                     var valueBindingPoint = new BindingPoint(
                         initialValueProvider: () =>
                         {
