@@ -148,6 +148,68 @@ namespace System
                 1e80
             };
 
+            // Fast access for solving for x in: 2^x = 10^(-n) where n is 0-28
+            private static readonly int[] s_intDecimalScaleToIeeeBase2 = new int[] {
+                0,
+                -1,
+                -2,
+                -4,
+                -5,
+                -7,
+                -8,
+                -10,
+                -11,
+                -12,
+                -14,
+                -15,
+                -17,
+                -18,
+                -20,
+                -21,
+                -23,
+                -24,
+                -25,
+                -27,
+                -28,
+                -30,
+                -31,
+                -33,
+                -34,
+                -36,
+                -37,
+                -38,
+                -40
+/*                315,
+                312,
+                308,
+                305,
+                302,
+                298,
+                295,
+                292,
+                289,
+                285,
+                282,
+                279,
+                275,
+                272,
+                269,
+                265,
+                262,
+                259,
+                255,
+                252,
+                249,
+                245,
+                242,
+                239,
+                235,
+                232,
+                229,
+                225,
+                222*/
+            };
+
 #region Decimal Math Helpers
 
             private static unsafe uint GetExponent(float f)
@@ -1530,7 +1592,6 @@ ReturnZero:
 
             internal static void VarDecFromR8(double input, out decimal result)
             {
-
                 // The smallest non-zero decimal we can represent is 10^-28, which is just slightly more
                 // than 2^-93.  So a float with an exponent of -94 could just
                 // barely reach 0.5, but smaller exponents will always round to zero.
@@ -1538,7 +1599,22 @@ ReturnZero:
                 //
                 if (input.Exponent < -94)
                 {
-                    result = 0.0m;
+                    // If the input is actually zero, we return the smallest precision zero
+                    if (input == double.Zero)
+                    {
+                        result = double.IsPositive(input) ? decimal.Zero : new decimal(0, 0, 0, unchecked((int)SignMask));
+                    }
+                    else
+                    {
+                        // Otherwise, we return the maximum precision verison of zero or negative zero
+                        uint zeroFlags = 0;
+                        if (double.IsNegative(input))
+                        {
+                            zeroFlags = SignMask;
+                        }
+                        zeroFlags |= 28 << ScaleShift;
+                        result = new decimal(0, 0, 0, (int)zeroFlags);
+                    }
                     return;
                 }
 
@@ -1551,7 +1627,7 @@ ReturnZero:
                 }
 
                 uint flags = 0;
-                if (input < 0)
+                if (double.IsNegative(input))
                 {
                     flags = SignMask;
                 }
