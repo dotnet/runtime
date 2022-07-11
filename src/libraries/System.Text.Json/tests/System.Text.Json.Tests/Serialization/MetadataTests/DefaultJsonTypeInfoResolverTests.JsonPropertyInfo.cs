@@ -810,7 +810,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DefaultIgnoreConditionFromOptionsFlowsToShouldSerializePropertyAndOverrideIsRespected()
+        public static void DefaultIgnoreConditionFromOptionsDoesntFlowToShouldSerializePropertyAndOverrideIsRespected()
         {
             TestClassWithNumber obj = new()
             {
@@ -823,8 +823,7 @@ namespace System.Text.Json.Serialization.Tests
                 if (ti.Type == typeof(TestClassWithNumber))
                 {
                     Assert.Equal(1, ti.Properties.Count);
-                    Assert.NotNull(ti.Properties[0].ShouldSerialize);
-                    Assert.False(ti.Properties[0].ShouldSerialize(obj, 0));
+                    Assert.Null(ti.Properties[0].ShouldSerialize);
                     ti.Properties[0].ShouldSerialize = (o, val) =>
                     {
                         Assert.Same(obj, o);
@@ -1020,8 +1019,13 @@ namespace System.Text.Json.Serialization.Tests
 
             static void TestJsonIgnoreConditionDelegate(JsonIgnoreCondition defaultIgnoreCondition, JsonIgnoreCondition? ignoreConditionOnProperty, JsonPropertyInfo property, ModifyJsonIgnore modify)
             {
+                // defaultIgnoreCondition is not taken into account, we might expect null if defaultIgnoreCondition == ignoreConditionOnProperty
                 switch (ignoreConditionOnProperty)
                 {
+                    case null:
+                        Assert.Null(property.ShouldSerialize);
+                        break;
+
                     case JsonIgnoreCondition.Always:
                         Assert.NotNull(property.ShouldSerialize);
                         Assert.False(property.ShouldSerialize(null, null));
@@ -1040,40 +1044,6 @@ namespace System.Text.Json.Serialization.Tests
                         break;
                     case JsonIgnoreCondition.Never:
                         Assert.Null(property.ShouldSerialize);
-                        break;
-
-                    case null:
-                        switch (defaultIgnoreCondition)
-                        {
-                            case JsonIgnoreCondition.WhenWritingDefault:
-                                if (property.PropertyType == typeof(int))
-                                {
-                                    TestIntIgnoreWhenWritingDefault();
-                                }
-                                else
-                                {
-                                    Assert.Equal(typeof(string), property.PropertyType);
-                                    TestStringIgnoreWhenWritingDefault();
-                                }
-                                break;
-
-                            case JsonIgnoreCondition.WhenWritingNull:
-                                if (property.PropertyType == typeof(int))
-                                {
-                                    Assert.Null(property.ShouldSerialize);
-                                }
-                                else
-                                {
-                                    Assert.Equal(typeof(string), property.PropertyType);
-                                    TestStringIgnoreWhenWritingDefault();
-                                }
-                                break;
-
-                            default:
-                                Assert.Null(property.ShouldSerialize);
-                                break;
-                        }
-
                         break;
                 }
 
@@ -1662,11 +1632,14 @@ namespace System.Text.Json.Serialization.Tests
                             Assert.Equal(1, jsonTypeInfo.Properties.Count);
 
                             JsonPropertyInfo jpi = jsonTypeInfo.Properties[0];
-                            Assert.NotNull(jpi.ShouldSerialize);
-                            Assert.False(jpi.ShouldSerialize(value, null));
+                            Assert.Null(jpi.ShouldSerialize);
                             Assert.NotNull(jpi.Get);
 
-                            jpi.ShouldSerialize = null;
+                            // Because null `ShouldSerialize` gets overridden by
+                            // `DefaultIgnoreCondition`/`IgnoreNullValues` post-configuration,
+                            // we need to explicitly set a delegate that always returns true.
+                            // This is a design quirk we might want to consider changing.
+                            jpi.ShouldSerialize = (_,value) => true;
                         }
                     }
                 }

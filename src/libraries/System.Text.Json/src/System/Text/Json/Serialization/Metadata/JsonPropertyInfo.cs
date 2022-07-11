@@ -91,12 +91,13 @@ namespace System.Text.Json.Serialization.Metadata
                 SetSetter(value);
                 // Invalidate any JsonIgnore configuration if delegate set manually by user
                 IgnoreNullTokensOnRead = false;
-                _ignoreCondition = null;
+                _isUserSpecifiedSetter = true;
             }
         }
 
         private protected Func<object, object?>? _untypedGet;
         private protected Action<object, object?>? _untypedSet;
+        private bool _isUserSpecifiedSetter;
 
         private protected abstract void SetGetter(Delegate? getter);
         private protected abstract void SetSetter(Delegate? setter);
@@ -121,7 +122,6 @@ namespace System.Text.Json.Serialization.Metadata
                 SetShouldSerialize(value);
                 // Invalidate any JsonIgnore configuration if delegate set manually by user
                 IgnoreDefaultValuesOnWrite = false;
-                _ignoreCondition = null;
             }
         }
 
@@ -269,6 +269,7 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 DetermineNumberHandlingForProperty();
+                DetermineIgnoreCondition();
             }
         }
 
@@ -315,6 +316,38 @@ namespace System.Text.Json.Serialization.Metadata
 
             NameAsUtf8Bytes = Encoding.UTF8.GetBytes(Name);
             EscapedNameSection = JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
+        }
+
+        internal void DetermineIgnoreCondition()
+        {
+            if (_ignoreCondition != null)
+            {
+                // Do not apply global policy if already configured on the property level.
+                return;
+            }
+
+#pragma warning disable SYSLIB0020 // JsonSerializerOptions.IgnoreNullValues is obsolete
+            if (Options.IgnoreNullValues)
+#pragma warning restore SYSLIB0020
+            {
+                Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
+                if (PropertyTypeCanBeNull)
+                {
+                    IgnoreNullTokensOnRead = !_isUserSpecifiedSetter;
+                    IgnoreDefaultValuesOnWrite = ShouldSerialize is null;
+                }
+            }
+            else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingNull)
+            {
+                if (PropertyTypeCanBeNull)
+                {
+                    IgnoreDefaultValuesOnWrite = ShouldSerialize is null;
+                }
+            }
+            else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault)
+            {
+                IgnoreDefaultValuesOnWrite = ShouldSerialize is null;
+            }
         }
 
         internal void DetermineNumberHandlingForTypeInfo()

@@ -426,6 +426,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             switch (ignoreCondition)
             {
+                case null:
+                    break;
+
                 case JsonIgnoreCondition.Never:
                     break;
 
@@ -450,37 +453,8 @@ namespace System.Text.Json.Serialization.Metadata
                     IgnoreDefaultValuesOnWrite = true;
                     break;
 
-                case not null:
+                default:
                     Debug.Fail($"Unknown value of JsonIgnoreCondition '{ignoreCondition}'");
-                    break;
-
-                case null:
-#pragma warning disable SYSLIB0020 // JsonSerializerOptions.IgnoreNullValues is obsolete
-                    if (Options.IgnoreNullValues)
-#pragma warning restore SYSLIB0020
-                    {
-                        Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
-                        if (PropertyTypeCanBeNull)
-                        {
-                            ShouldSerialize = ShouldSerializeIgnoreWhenWritingDefault;
-                            IgnoreDefaultValuesOnWrite = true;
-                            IgnoreNullTokensOnRead = true;
-                        }
-                    }
-                    else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingNull)
-                    {
-                        if (PropertyTypeCanBeNull)
-                        {
-                            ShouldSerialize = ShouldSerializeIgnoreWhenWritingDefault;
-                            IgnoreDefaultValuesOnWrite = true;
-                        }
-                    }
-                    else if (Options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingDefault)
-                    {
-                        ShouldSerialize = ShouldSerializeIgnoreWhenWritingDefault;
-                        IgnoreDefaultValuesOnWrite = true;
-                    }
-
                     break;
             }
 
