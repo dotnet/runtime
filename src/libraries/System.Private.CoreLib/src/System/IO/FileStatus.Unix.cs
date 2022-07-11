@@ -191,6 +191,7 @@ namespace System.IO
 
         private FileAttributes GetAttributes(SafeFileHandle? handle, ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
+            Debug.Assert(handle is not null || path.Length > 0);
             EnsureCachesInitialized(handle, path, continueOnError);
 
             if (!EntryExists)

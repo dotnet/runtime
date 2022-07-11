@@ -48,6 +48,7 @@ namespace System.IO
 
         private static unsafe Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string? path, long seconds, long nanoseconds)
         {
+            Debug.Assert(handle is not null || path is not null);
             Interop.Sys.TimeSpec timeSpec = default;
 
             timeSpec.TvSec = seconds;
