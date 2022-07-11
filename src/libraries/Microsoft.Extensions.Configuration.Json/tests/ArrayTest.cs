@@ -256,7 +256,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         }
 
         [Fact]
-        public void EmptyArrayNotIngored()
+        public void EmptyArrayNotIgnored()
         {
             var json = @"{
                 ""ip"": {
