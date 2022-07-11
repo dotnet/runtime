@@ -172,15 +172,15 @@ namespace System.Security.Cryptography
             if (cb <= 0)
                 throw new ArgumentOutOfRangeException(nameof(cb), SR.ArgumentOutOfRange_NeedPosNum);
 
-            byte[] password = new byte[cb];
-            GetBytes(password);
-            return password;
+            byte[] ret = new byte[cb];
+            GetBytes(ret);
+            return ret;
         }
 
-        internal void GetBytes(Span<byte> password)
+        internal void GetBytes(Span<byte> destination)
         {
             Debug.Assert(_blockSize > 0);
-            int cb = password.Length;
+            int cb = destination.Length;
             int offset = 0;
             int size = _endIndex - _startIndex;
             ReadOnlySpan<byte> bufferSpan = _buffer;
@@ -189,13 +189,13 @@ namespace System.Security.Cryptography
             {
                 if (cb >= size)
                 {
-                    bufferSpan.Slice(_startIndex, size).CopyTo(password);
+                    bufferSpan.Slice(_startIndex, size).CopyTo(destination);
                     _startIndex = _endIndex = 0;
                     offset += size;
                 }
                 else
                 {
-                    bufferSpan.Slice(_startIndex, cb).CopyTo(password);
+                    bufferSpan.Slice(_startIndex, cb).CopyTo(destination);
                     _startIndex += cb;
                     return;
                 }
@@ -209,12 +209,12 @@ namespace System.Security.Cryptography
                 int remainder = cb - offset;
                 if (remainder >= _blockSize)
                 {
-                    bufferSpan.Slice(0, _blockSize).CopyTo(password.Slice(offset));
+                    bufferSpan.Slice(0, _blockSize).CopyTo(destination.Slice(offset));
                     offset += _blockSize;
                 }
                 else
                 {
-                    bufferSpan.Slice(0, remainder).CopyTo(password.Slice(offset));
+                    bufferSpan.Slice(0, remainder).CopyTo(destination.Slice(offset));
                     _startIndex = remainder;
                     _endIndex = _buffer.Length;
                     return;
