@@ -626,7 +626,7 @@ endif()
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
   # Copy PGO dependency to target dir
   set(PGORT_DLL "pgort140.dll")
-  if(ARCH_TARGET_NAME STREQUAL "arm64")
+  if(CLR_CMAKE_TARGET_ARCH_ARM64)
     cmake_path(SET PGORT_DIR "$ENV{VCToolsInstallDir}bin/arm64")
   else()
     cmake_path(SET PGORT_DIR "$ENV{VCToolsInstallDir}bin/Hostx64/x64")
