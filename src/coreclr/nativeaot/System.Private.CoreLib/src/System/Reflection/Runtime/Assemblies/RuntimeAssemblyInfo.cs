@@ -146,10 +146,7 @@ namespace System.Reflection.Runtime.Assemblies
                 }
                 else
                 {
-                    if (exceptions == null)
-                    {
-                        exceptions = new List<Exception>();
-                    }
+                    exceptions ??= new List<Exception>();
                     exceptions.Add(exception);
                 }
             }

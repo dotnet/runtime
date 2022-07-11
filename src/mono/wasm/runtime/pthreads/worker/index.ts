@@ -62,7 +62,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): 
 /// This is an implementation detail function.
 /// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
 /// for the same worker, since emscripten can reuse workers.  This is an implementation detail, that shouldn't be used directly.
-export function afterThreadInit(): void {
+export function afterThreadInitTLS(): void {
     // don't do this callback for the main thread
     if (ENVIRONMENT_IS_PTHREAD) {
         const pthread_ptr = (<any>Module)["_pthread_self"]();

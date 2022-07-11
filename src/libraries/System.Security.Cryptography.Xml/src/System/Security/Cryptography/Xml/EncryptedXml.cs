@@ -235,8 +235,7 @@ namespace System.Security.Cryptography.Xml
                     Utils.Pump(decInputStream, ms);
                     cipherValue = ms.ToArray();
                     // Close the stream and return
-                    if (inputStream != null)
-                        inputStream.Close();
+                    inputStream?.Close();
                     decInputStream.Close();
                 }
 

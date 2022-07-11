@@ -138,10 +138,7 @@ namespace System.Formats.Tar
             TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.None);
 
             WriteEntry(entry);
-            if (entry._header._dataStream != null)
-            {
-                entry._header._dataStream.Dispose();
-            }
+            entry._header._dataStream?.Dispose();
         }
 
         // Asynchronously reads an entry from disk and writes it into the archive stream.

@@ -263,10 +263,7 @@ namespace System.Formats.Asn1
                 byte[]? oldBytes = _buffer;
                 Array.Resize(ref _buffer, BlockSize * blocks);
 
-                if (oldBytes != null)
-                {
-                    oldBytes.AsSpan(0, _offset).Clear();
-                }
+                oldBytes?.AsSpan(0, _offset).Clear();
 #endif
 
 #if DEBUG

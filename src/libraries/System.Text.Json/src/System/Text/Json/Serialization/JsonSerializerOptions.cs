@@ -180,6 +180,9 @@ namespace System.Text.Json
             }
         }
 
+        // Needed since public property is RequiresUnreferencedCode.
+        internal IJsonTypeInfoResolver? TypeInfoResolverSafe => _typeInfoResolver;
+
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
         /// is allowed (and ignored) within the JSON payload being deserialized.
@@ -576,27 +579,18 @@ namespace System.Text.Json
         // Workaround https://github.com/dotnet/linker/issues/2715
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "Dynamic path is guarded by the runtime feature switch.")]
-        internal MemberAccessor MemberAccessorStrategy
-        {
-            get
-            {
-                if (_memberAccessorStrategy == null)
-                {
+        internal MemberAccessor MemberAccessorStrategy =>
+            _memberAccessorStrategy ??=
 #if NETCOREAPP
-                    // if dynamic code isn't supported, fallback to reflection
-                    _memberAccessorStrategy = RuntimeFeature.IsDynamicCodeSupported ?
-                        new ReflectionEmitCachingMemberAccessor() :
-                        new ReflectionMemberAccessor();
+                // if dynamic code isn't supported, fallback to reflection
+                RuntimeFeature.IsDynamicCodeSupported ?
+                    new ReflectionEmitCachingMemberAccessor() :
+                    new ReflectionMemberAccessor();
 #elif NETFRAMEWORK
-                    _memberAccessorStrategy = new ReflectionEmitCachingMemberAccessor();
+                new ReflectionEmitCachingMemberAccessor();
 #else
-                    _memberAccessorStrategy = new ReflectionMemberAccessor();
+                new ReflectionMemberAccessor();
 #endif
-                }
-
-                return _memberAccessorStrategy;
-            }
-        }
 
         internal bool IsLockedInstance
         {

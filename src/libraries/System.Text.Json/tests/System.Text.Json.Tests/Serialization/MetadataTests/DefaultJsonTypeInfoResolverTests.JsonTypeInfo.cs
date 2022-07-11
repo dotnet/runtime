@@ -1,14 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Tests;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -920,17 +917,27 @@ namespace System.Text.Json.Serialization.Tests
                             if (ti.Type == typeof(ClassWithExplicitOrderOfProperties))
                             {
                                 Assert.Equal(5, ti.Properties.Count);
+
                                 Assert.Equal("A", ti.Properties[0].Name);
                                 Assert.Equal("B", ti.Properties[1].Name);
                                 Assert.Equal("C", ti.Properties[2].Name);
                                 Assert.Equal("D", ti.Properties[3].Name);
                                 Assert.Equal("E", ti.Properties[4].Name);
 
-                                // swapping A,B (both with Order property)
-                                (ti.Properties[0], ti.Properties[1]) = (ti.Properties[1], ti.Properties[0]);
+                                Assert.Equal(-2, ti.Properties[0].Order);
+                                Assert.Equal(-1, ti.Properties[1].Order);
+                                Assert.Equal(0, ti.Properties[2].Order);
+                                Assert.Equal(1, ti.Properties[3].Order);
+                                Assert.Equal(2, ti.Properties[4].Order);
 
-                                // swapping E,C (one with Order property one without)
-                                (ti.Properties[2], ti.Properties[4]) = (ti.Properties[4], ti.Properties[2]);
+                                // swapping A,B order values
+                                (ti.Properties[0].Order, ti.Properties[1].Order) = (ti.Properties[1].Order, ti.Properties[0].Order);
+
+                                // swapping E,C order values
+                                (ti.Properties[2].Order, ti.Properties[4].Order) = (ti.Properties[4].Order, ti.Properties[2].Order);
+
+                                // swapping B,D properties (has no effect on contract)
+                                (ti.Properties[1], ti.Properties[3]) = (ti.Properties[3], ti.Properties[1]);
                             }
                         }
                     }
@@ -953,9 +960,11 @@ namespace System.Text.Json.Serialization.Tests
         private class ClassWithExplicitOrderOfProperties
         {
             public string C { get; set; }
-            public string D { get; set; }
 
             [JsonPropertyOrder(1)]
+            public string D { get; set; }
+
+            [JsonPropertyOrder(2)]
             public string E { get; set; }
 
             [JsonPropertyOrder(-1)]
@@ -1127,6 +1136,107 @@ namespace System.Text.Json.Serialization.Tests
                 public override ClassWithConverterAttribute? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
                 public override void Write(Utf8JsonWriter writer, ClassWithConverterAttribute value, JsonSerializerOptions options) => throw new NotImplementedException();
             }
+        }
+
+        [Fact]
+        public static void ClassWithCallBacks_JsonTypeInfoCallbackDelegatesArePopulated()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var jti = resolver.GetTypeInfo(typeof(ClassWithCallBacks), new());
+
+            Assert.NotNull(jti.OnSerializing);
+            Assert.NotNull(jti.OnSerialized);
+            Assert.NotNull(jti.OnDeserializing);
+            Assert.NotNull(jti.OnDeserialized);
+
+            var value = new ClassWithCallBacks();
+            jti.OnSerializing(value);
+            Assert.Equal(1, value.IsOnSerializingInvocations);
+
+            jti.OnSerialized(value);
+            Assert.Equal(1, value.IsOnSerializedInvocations);
+
+            jti.OnDeserializing(value);
+            Assert.Equal(1, value.IsOnDeserializingInvocations);
+
+            jti.OnDeserialized(value);
+            Assert.Equal(1, value.IsOnDeserializedInvocations);
+        }
+
+        [Fact]
+        public static void ClassWithCallBacks_CanCustomizeCallbacks()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static jti =>
+                        {
+                            if (jti.Type == typeof(ClassWithCallBacks))
+                            {
+                                jti.OnSerializing = null;
+                                jti.OnSerialized = (obj => ((ClassWithCallBacks)obj).IsOnSerializedInvocations += 10);
+
+                                jti.OnDeserializing = null;
+                                jti.OnDeserialized = (obj => ((ClassWithCallBacks)obj).IsOnDeserializedInvocations += 7);
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new ClassWithCallBacks();
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("{}", json);
+
+            Assert.Equal(0, value.IsOnSerializingInvocations);
+            Assert.Equal(10, value.IsOnSerializedInvocations);
+
+            value = JsonSerializer.Deserialize<ClassWithCallBacks>(json, options);
+            Assert.Equal(0, value.IsOnDeserializingInvocations);
+            Assert.Equal(7, value.IsOnDeserializedInvocations);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(Dictionary<string, int>))]
+        public static void SettingCallbacksOnUnsupportedTypes_ThrowsInvalidOperationException(Type type)
+        {
+            var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
+
+            Assert.NotEqual(JsonTypeInfoKind.Object, jti.Kind);
+            Assert.Throws<InvalidOperationException>(() => jti.OnSerializing = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnSerializing = (obj => { }));
+            Assert.Throws<InvalidOperationException>(() => jti.OnSerialized = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnSerialized = (obj => { }));
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = (obj => { }));
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserialized = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserialized = (obj => { }));
+        }
+
+        public class ClassWithCallBacks :
+            IJsonOnSerializing, IJsonOnSerialized,
+            IJsonOnDeserializing, IJsonOnDeserialized
+        {
+            [JsonIgnore]
+            public int IsOnSerializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnSerializedInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializedInvocations { get; set; }
+
+            public void OnSerializing() => IsOnSerializingInvocations++;
+            public void OnSerialized() => IsOnSerializedInvocations++;
+            public void OnDeserializing() => IsOnDeserializingInvocations++;
+            public void OnDeserialized() => IsOnDeserializedInvocations++;
         }
     }
 }

@@ -144,7 +144,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverterAttribute? converterAttribute = memberInfo.GetUniqueCustomAttribute<JsonConverterAttribute>(inherit: false);
             customConverter = converterAttribute is null ? null : GetConverterFromAttribute(converterAttribute, typeToConvert, memberInfo, options);
 
-            return options.TryGetJsonTypeInfoCached(typeToConvert, out JsonTypeInfo? typeInfo)
+            return options.TryGetTypeInfoCached(typeToConvert, out JsonTypeInfo? typeInfo)
                 ? typeInfo.Converter
                 : GetConverterForType(typeToConvert, options);
         }

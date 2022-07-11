@@ -275,11 +275,22 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
     return TRUE;
 }
 
-// External class loader entry point: load a type by name
 /*static*/
 TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
                                                LPCUTF8 nameSpace,
                                                LPCUTF8 name,
+                                               NotFoundAction fNotFound,
+                                               ClassLoader::LoadTypesFlag fLoadTypes,
+                                               ClassLoadLevel level)
+{
+    WRAPPER_NO_CONTRACT;
+    NameHandle nameHandle(nameSpace, name);
+    return LoadTypeByNameThrowing(pAssembly, &nameHandle, fNotFound, fLoadTypes, level);
+}
+
+/*static*/
+TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
+                                               NameHandle *pNameHandle,
                                                NotFoundAction fNotFound,
                                                ClassLoader::LoadTypesFlag fLoadTypes,
                                                ClassLoadLevel level)
@@ -294,6 +305,7 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
 
         PRECONDITION(CheckPointer(pAssembly));
+        PRECONDITION(pNameHandle != NULL);
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
         POSTCONDITION(CheckPointer(RETVAL,
                      (fNotFound == ThrowIfNotFound && fLoadTypes == LoadTypes )? NULL_NOT_OK : NULL_OK));
@@ -305,13 +317,14 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
     }
     CONTRACT_END
 
-    NameHandle nameHandle(nameSpace, name);
-    if (fLoadTypes == DontLoadTypes)
-        nameHandle.SetTokenNotToLoad(tdAllTypes);
-    if (fNotFound == ThrowIfNotFound)
-        RETURN pAssembly->GetLoader()->LoadTypeHandleThrowIfFailed(&nameHandle, level);
+    if (fLoadTypes == ClassLoader::DontLoadTypes)
+        pNameHandle->SetTokenNotToLoad(tdAllTypes);
+
+    ClassLoader* classLoader = pAssembly->GetLoader();
+    if (fNotFound == ClassLoader::ThrowIfNotFound)
+        RETURN classLoader->LoadTypeHandleThrowIfFailed(pNameHandle, level);
     else
-        RETURN pAssembly->GetLoader()->LoadTypeHandleThrowing(&nameHandle, level);
+        RETURN classLoader->LoadTypeHandleThrowing(pNameHandle, level);
 }
 
 #ifndef DACCESS_COMPILE

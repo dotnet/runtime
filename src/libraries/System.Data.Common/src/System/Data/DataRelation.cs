@@ -484,10 +484,7 @@ namespace System.Data
                                 }
                                 Debug.Assert(ChildTable != null, "On a DataSet, but not on Table. Bad state");
                                 ForeignKeyConstraint? constraint = ChildTable.Constraints.FindForeignKeyConstraint(ChildKey.ColumnsReference, ParentKey.ColumnsReference);
-                                if (constraint != null)
-                                {
-                                    constraint.CheckConstraint();
-                                }
+                                constraint?.CheckConstraint();
                                 ValidateMultipleNestedRelations();
                             }
                         }
