@@ -72,6 +72,7 @@ import { mono_wasm_bind_cs_function, mono_wasm_get_assembly_exports } from "./in
 import { mono_wasm_marshal_promise } from "./marshal-to-js";
 import { ws_wasm_abort, ws_wasm_close, ws_wasm_create, ws_wasm_open, ws_wasm_receive, ws_wasm_send } from "./web-socket";
 import { http_wasm_abort_request, http_wasm_abort_response, http_wasm_create_abort_controler, http_wasm_fetch, http_wasm_fetch_bytes, http_wasm_get_response_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes, http_wasm_supports_streaming_response } from "./http";
+import { network_wasm_online } from "./network-information";
 import { diagnostics } from "./diagnostics";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import {
@@ -485,6 +486,9 @@ const INTERNAL: any = {
     http_wasm_get_response_bytes,
     http_wasm_get_response_length,
     http_wasm_get_streamed_response_bytes,
+
+    // NetworkInformation
+    network_wasm_online
 };
 
 // this represents visibility in the javascript

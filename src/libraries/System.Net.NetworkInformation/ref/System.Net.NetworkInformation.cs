@@ -337,6 +337,7 @@ namespace System.Net.NetworkInformation
         public NetworkChange() { }
         [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public static event System.Net.NetworkInformation.NetworkAddressChangedEventHandler? NetworkAddressChanged { add { } remove { } }
         [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]

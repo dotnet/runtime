@@ -28,6 +28,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged

@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <DefineConstants>$(DefineConstants);NETWORKINFORMATION_TEST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
