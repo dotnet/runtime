@@ -16,7 +16,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal sealed class SafeMsQuicConfigurationHandle : MsQuicSafeHandle
     {
         public unsafe SafeMsQuicConfigurationHandle(QUIC_HANDLE* handle)
-            : base(handle, ptr => MsQuicApi.Api.ApiTable->ConfigurationClose((QUIC_HANDLE*)ptr), SafeHandleType.Configuration)
+            : base(handle, MsQuicApi.Api.ApiTable->ConfigurationClose, SafeHandleType.Configuration)
         { }
 
         // TODO: consider moving the static code from here to keep all the handle classes small and simple.
@@ -72,7 +72,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return Create(options, flags, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols, options.ClientAuthenticationOptions?.CipherSuitesPolicy);
         }
 
-        public static SafeMsQuicConfigurationHandle Create(QuicOptions options, SslServerAuthenticationOptions? serverAuthenticationOptions, string? targetHost = null)
+        public static SafeMsQuicConfigurationHandle Create(QuicServerConnectionOptions options, SslServerAuthenticationOptions? serverAuthenticationOptions, string? targetHost = null)
         {
             QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.NONE;
             X509Certificate? certificate = serverAuthenticationOptions?.ServerCertificate;
@@ -102,7 +102,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         // TODO: this is called from MsQuicListener and when it fails it wreaks havoc in MsQuicListener finalizer.
         //       Consider moving bigger logic like this outside of constructor call chains.
-        private static unsafe SafeMsQuicConfigurationHandle Create(QuicOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, SslStreamCertificateContext? certificateContext, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy)
+        private static unsafe SafeMsQuicConfigurationHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, SslStreamCertificateContext? certificateContext, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy)
         {
             // TODO: some of these checks should be done by the QuicOptions type.
             if (alpnProtocols == null || alpnProtocols.Count == 0)
@@ -147,15 +147,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             settings.IsSet.PeerBidiStreamCount = 1;
             settings.PeerBidiStreamCount = (ushort)options.MaxBidirectionalStreams;
 
-            settings.IsSet.IdleTimeoutMs = 1;
-            if (options.IdleTimeout != Timeout.InfiniteTimeSpan)
+            if (options.IdleTimeout != TimeSpan.Zero)
             {
-                if (options.IdleTimeout <= TimeSpan.Zero) throw new Exception("IdleTimeout must not be negative.");
-                settings.IdleTimeoutMs = (ulong)options.IdleTimeout.TotalMilliseconds;
-            }
-            else
-            {
-                settings.IdleTimeoutMs = 0;
+                settings.IsSet.IdleTimeoutMs = 1;
+                if (options.IdleTimeout != Timeout.InfiniteTimeSpan)
+                {
+                    if (options.IdleTimeout <= TimeSpan.Zero) throw new Exception("IdleTimeout must not be negative.");
+                    settings.IdleTimeoutMs = (ulong)options.IdleTimeout.TotalMilliseconds;
+                }
+                else
+                {
+                    settings.IdleTimeoutMs = 0;
+                }
             }
 
             SafeMsQuicConfigurationHandle configurationHandle;

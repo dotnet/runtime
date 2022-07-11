@@ -61,9 +61,9 @@ namespace System
             Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
             var d = Unsafe.As<MulticastDelegate>(obj);
 
-            // there are 2 kind of delegate kinds for comparision
+            // there are 2 kind of delegate kinds for comparison
             // 1- Multicast (m_helperObject is Delegate[])
-            // 2- Single-cast delegate, which can be compared with a structural comparision
+            // 2- Single-cast delegate, which can be compared with a structural comparison
 
             IntPtr multicastThunk = GetThunk(MulticastThunk);
             if (m_functionPointer == multicastThunk)

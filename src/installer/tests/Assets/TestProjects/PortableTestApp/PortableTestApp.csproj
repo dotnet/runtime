@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="xunit.netcore.extensions" Version="1.0.0-prerelease-00206" />
     <PackageReference Include="dotnet-test-xunit" Version="1.0.0-rc2-192208-24" />
   </ItemGroup>

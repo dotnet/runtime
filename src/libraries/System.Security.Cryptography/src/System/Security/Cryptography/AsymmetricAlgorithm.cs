@@ -17,6 +17,7 @@ namespace System.Security.Cryptography
         public static AsymmetricAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static AsymmetricAlgorithm? Create(string algName) =>
             (AsymmetricAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);

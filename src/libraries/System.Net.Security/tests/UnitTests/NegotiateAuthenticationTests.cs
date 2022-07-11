@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
 using System.Net.Security;
@@ -184,6 +185,44 @@ namespace System.Net.Security.Tests
             DoNtlmExchange(fakeNtlmServer, ntAuth);
 
             Assert.False(fakeNtlmServer.IsAuthenticated);
+        }
+
+        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
+        public void NtlmSignatureTest()
+        {
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.EncryptAndSign
+                });
+
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+
+            // Test MakeSignature on client side and decoding it on server side
+            ArrayBufferWriter<byte> output = new ArrayBufferWriter<byte>();
+            NegotiateAuthenticationStatusCode statusCode;
+            statusCode = ntAuth.Wrap(s_Hello, output, ntAuth.IsEncrypted, out bool isEncrypted);
+            Assert.Equal(16 + s_Hello.Length, output.WrittenCount);
+            // Unseal the content and check it
+            byte[] temp = new byte[s_Hello.Length];
+            fakeNtlmServer.Unwrap(output.WrittenSpan, temp);
+            Assert.Equal(s_Hello, temp);
+
+            // Test creating signature on server side and decoding it with VerifySignature on client side 
+            byte[] serverSignedMessage = new byte[16 + s_Hello.Length];
+            fakeNtlmServer.Wrap(s_Hello, serverSignedMessage);
+            output.Clear();
+            statusCode = ntAuth.Unwrap(serverSignedMessage, output, out isEncrypted);
+            Assert.Equal(NegotiateAuthenticationStatusCode.Completed, statusCode);
+            Assert.Equal(s_Hello.Length, output.WrittenCount);
+            Assert.Equal(s_Hello, output.WrittenSpan.ToArray());
         }
 
         private void DoNtlmExchange(FakeNtlmServer fakeNtlmServer, NegotiateAuthentication ntAuth)

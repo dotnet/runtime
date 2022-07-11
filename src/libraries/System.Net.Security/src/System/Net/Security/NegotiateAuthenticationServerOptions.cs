@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Principal;
 
 namespace System.Net.Security
 {
@@ -32,5 +34,16 @@ namespace System.Net.Security
         /// and any further data exchange. Default value is None.
         /// </summary>
         public ProtectionLevel RequiredProtectionLevel { get; set; } = ProtectionLevel.None;
+
+        /// <summary>
+        /// Indicates extended security and validation policies.
+        /// </summary>
+        public ExtendedProtectionPolicy? Policy { get; set; }
+
+        /// <summary>
+        /// One of the <see cref="TokenImpersonationLevel" /> values, indicating how the server
+        /// can use the client's credentials to access resources.
+        /// </summary>
+        public TokenImpersonationLevel RequiredImpersonationLevel { get; set; } = TokenImpersonationLevel.None;
     }
 }

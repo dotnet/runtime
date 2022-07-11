@@ -880,7 +880,7 @@ namespace System.Net.Http
                 QuicConnection quicConnection;
                 try
                 {
-                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -1595,11 +1595,17 @@ namespace System.Net.Http
             Http2Connection http2Connection = new Http2Connection(this, stream);
             try
             {
-                await http2Connection.SetupAsync().ConfigureAwait(false);
+                await http2Connection.SetupAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception e)
             {
                 // Note, SetupAsync will dispose the connection if there is an exception.
+                if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
+                {
+                    // Note, AddHttp2ConnectionAsync handles this OCE separatly so don't wrap it.
+                    throw;
+                }
+
                 throw new HttpRequestException(SR.net_http_client_execution_error, e);
             }
 

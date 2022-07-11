@@ -120,7 +120,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_ResolverTypeNotCompatible(Type requestedType, Type actualType)
         {
-            throw new InvalidOperationException(SR.Format(SR.ResolverTypeNotCompatible, requestedType, actualType));
+            throw new InvalidOperationException(SR.Format(SR.ResolverTypeNotCompatible, actualType, requestedType));
         }
 
         [DoesNotReturn]

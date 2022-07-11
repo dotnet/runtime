@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -18,24 +18,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static object GetGlobalObject(string str)
             => JavaScriptImports.GetGlobalObject(str);
-
-        public static void CancelPromise(IntPtr promiseJSHandle)
-            => JavaScriptImports.CancelPromise(promiseJSHandle);
-
-        public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out IntPtr promiseJSHandle)
-            => JavaScriptImports.WebSocketOpen(uri, subProtocols, onClosed, out webSocket, out promiseJSHandle);
-
-        public static unsafe Task<object>? WebSocketSend(JSObject webSocket, ArraySegment<byte> buffer, int messageType, bool endOfMessage, out IntPtr promiseJSHandle)
-            => JavaScriptImports.WebSocketSend(webSocket, buffer, messageType, endOfMessage, out promiseJSHandle);
-
-        public static unsafe Task<object>? WebSocketReceive(JSObject webSocket, ArraySegment<byte> buffer, ReadOnlySpan<int> response, out IntPtr promiseJSHandle)
-            => JavaScriptImports.WebSocketReceive(webSocket, buffer, response, out promiseJSHandle);
-
-        public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out IntPtr promiseJSHandle)
-            => JavaScriptImports.WebSocketClose(webSocket, code, reason, waitForCloseReceived, out promiseJSHandle);
-
-        public static void WebSocketAbort(JSObject webSocket)
-            => JavaScriptImports.WebSocketAbort(webSocket);
 
         /// <summary>
         ///   Invoke a named method of the object, or throws a JSException on error.
@@ -57,6 +39,7 @@ namespace System.Runtime.InteropServices.JavaScript
         ///     valuews.
         ///   </para>
         /// </returns>
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static object Invoke(this JSObject self, string method, params object?[] args)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -91,6 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript
         ///     valuews.
         ///   </para>
         /// </returns>
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static object GetObjectProperty(this JSObject self, string name)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -115,6 +99,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// float[], double[]) </param>
         /// <param name="createIfNotExists">Defaults to <see langword="true"/> and creates the property on the javascript object if not found, if set to <see langword="false"/> it will not create the property if it does not exist.  If the property exists, the value is updated with the provided value.</param>
         /// <param name="hasOwnProperty"></param>
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void SetObjectProperty(this JSObject self, string name, object? value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
             ArgumentNullException.ThrowIfNull(self);

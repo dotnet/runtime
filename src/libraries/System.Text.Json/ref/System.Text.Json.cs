@@ -356,6 +356,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver TypeInfoResolver { [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications."), System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")] get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
@@ -363,6 +364,9 @@ namespace System.Text.Json
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Getting a converter for a type may require reflection which depends on runtime code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Getting a metadata for a type may require reflection which depends on unreferenced code.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Getting a metadata for a type may require reflection which depends on runtime code generation.")]
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo GetTypeInfo(System.Type type) { throw null; }
     }
     public enum JsonTokenType : byte
     {
@@ -1147,11 +1151,14 @@ namespace System.Text.Json.Serialization.Metadata
     public abstract partial class JsonPropertyInfo
     {
         internal JsonPropertyInfo() { }
+        public System.Reflection.ICustomAttributeProvider? AttributeProvider { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonConverter? CustomConverter { get { throw null; } set { } }
         public System.Func<object, object?>? Get { get { throw null; } set { } }
+        public bool IsExtensionData { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
         public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
+        public int Order { get { throw null; } set { } }
         public System.Type PropertyType { get { throw null; } }
         public System.Action<object, object?>? Set { get { throw null; } set { } }
         public System.Func<object, object?, bool>? ShouldSerialize { get { throw null; } set { } }
@@ -1182,6 +1189,10 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Func<object>? CreateObject { get { throw null; } set { } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfoKind Kind { get { throw null; } }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
+        public System.Action<object>? OnDeserialized { get { throw null; } set { } }
+        public System.Action<object>? OnDeserializing { get { throw null; } set { } }
+        public System.Action<object>? OnSerialized { get { throw null; } set { } }
+        public System.Action<object>? OnSerializing { get { throw null; } set { } }
         public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions? PolymorphismOptions { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.JsonPropertyInfo> Properties { get { throw null; } }

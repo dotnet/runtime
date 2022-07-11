@@ -1,14 +1,18 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
+    // this maps to src\mono\wasm\runtime\corebindings.c
+    // the methods are protected from trimming by DynamicDependency on JSFunctionBinding
     internal static unsafe partial class JavaScriptExports
     {
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void GetCSOwnedObjectByJSHandleRef(IntPtr jsHandle, int shouldAddInflight, out JSObject? result)
         {
             lock (JSHostImplementation.s_csOwnedObjects)
@@ -27,6 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
             result = null;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr TryGetCSOwnedObjectJSHandleRef(in object rawObj, int shouldAddInflight)
         {
             JSObject? jsObject = rawObj as JSObject;
@@ -37,18 +42,19 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? IntPtr.Zero;
         }
 
-        public static void CreateCSOwnedProxyRef(IntPtr jsHandle, JSHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject? jsObject)
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        public static void CreateCSOwnedProxyRef(IntPtr jsHandle, JSHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
         {
-            jsObject = null;
+            JSObject? res = null;
 
             lock (JSHostImplementation.s_csOwnedObjects)
             {
                 if (!JSHostImplementation.s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out jsObject) ||
-                    jsObject.IsDisposed)
+                    !reference.TryGetTarget(out res) ||
+                    res.IsDisposed)
                 {
 #pragma warning disable CS0612 // Type or member is obsolete
-                    jsObject = mappedType switch
+                    res = mappedType switch
                     {
                         JSHostImplementation.MappedType.JSObject => new JSObject(jsHandle),
                         JSHostImplementation.MappedType.Array => new Array(jsHandle),
@@ -59,21 +65,24 @@ namespace System.Runtime.InteropServices.JavaScript
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
 #pragma warning restore CS0612 // Type or member is obsolete
-                    JSHostImplementation.s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(jsObject, trackResurrection: true);
+                    JSHostImplementation.s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
                 }
             }
             if (shouldAddInflight != 0)
             {
-                jsObject.AddInFlight();
+                res.AddInFlight();
             }
+            jsObject = res;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void GetJSOwnedObjectByGCHandleRef(int gcHandle, out object result)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             result = h.Target!;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr GetJSOwnedObjectGCHandleRef(in object obj)
         {
             return JSHostImplementation.GetJSOwnedObjectGCHandleRef(obj, GCHandleType.Normal);
@@ -81,6 +90,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void ReleaseJSOwnedObjectByGCHandle(IntPtr gcHandle)
         {
             GCHandle handle = (GCHandle)gcHandle;
@@ -91,12 +101,14 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr CreateTaskSource()
         {
             var tcs = new TaskCompletionSource<object>();
             return GetJSOwnedObjectGCHandleRef(tcs);
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void SetTaskSourceResultRef(int tcsGCHandle, in object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
@@ -105,6 +117,7 @@ namespace System.Runtime.InteropServices.JavaScript
             tcs.SetResult(result);
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void SetTaskSourceFailure(int tcsGCHandle, string reason)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
@@ -113,6 +126,7 @@ namespace System.Runtime.InteropServices.JavaScript
             tcs.SetException(new JSException(reason));
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void GetTaskSourceTaskRef(int tcsGCHandle, out object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
@@ -121,11 +135,13 @@ namespace System.Runtime.InteropServices.JavaScript
             result = tcs.Task;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void TaskFromResultRef(in object obj, out object result)
         {
             result = Task.FromResult(obj);
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void SetupJSContinuationRef(in Task _task, JSObject continuationObj)
         {
             // HACK: Attempting to use the in-param will produce CS1628, so we make a temporary copy
@@ -172,11 +188,13 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static string ObjectToStringRef(ref object o)
         {
             return o.ToString() ?? string.Empty;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static double GetDateValueRef(ref object dtv)
         {
             ArgumentNullException.ThrowIfNull(dtv);
@@ -192,22 +210,27 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // HACK: We need to implicitly box by using an 'object' out-param.
         // Note that the return value would have been boxed on the C#->JS transition anyway.
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void CreateDateTimeRef(double ticks, out object result)
         {
             DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
             result = unixTime.DateTime;
         }
 
+        // TODO remove this to allow trimming of Uri assembly
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void CreateUriRef(string uri, out Uri result)
         {
             result = new Uri(uri);
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static bool IsSimpleArrayRef(ref object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static string GetCallSignatureRef(IntPtr _methodHandle, in object objForRuntimeType)
         {
             var methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(_methodHandle);
@@ -232,13 +255,13 @@ namespace System.Runtime.InteropServices.JavaScript
             return new string(result);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void StopProfile()
         {
         }
 
         // Called by the AOT profiler to save profile data into INTERNAL.aot_profile_data
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
             if (len == 0)
@@ -249,12 +272,52 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 var span = new ReadOnlySpan<byte>(p, len);
                 // Send it to JS
-#pragma warning disable CS0612 // Type or member is obsolete
-                var internalJS = (JSObject)JavaScriptImports.GetGlobalObject("INTERNAL");
-                if (internalJS == null) throw new InvalidOperationException();
-                internalJS.SetObjectProperty("aot_profile_data", Uint8Array.From(span));
-#pragma warning restore CS0612 // Type or member is obsolete
+                var module = JSHost.DotnetInstance.GetPropertyAsJSObject("INTERNAL");
+                if (module == null)
+                    throw new InvalidOperationException();
+
+                module.SetProperty("aot_profile_data", span.ToArray());
             }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        internal static JSObject CreateCSOwnedProxy(IntPtr jsHandle)
+        {
+            CreateCSOwnedProxyRef(jsHandle, JSHostImplementation.MappedType.JSObject, 0, out JSObject? res);
+            return res;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        public static IntPtr CreateTaskCallback()
+        {
+            JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
+            return GetJSOwnedObjectGCHandleRef(holder);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        public static void CallDelegate(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_return = ref arguments_buffer[1];
+            GCHandle callback_gc_handle = (GCHandle)arg_return.slot.GCHandle;
+
+            JSHostImplementation.ToManagedCallback? cb = (JSHostImplementation.ToManagedCallback?)callback_gc_handle.Target;
+            if (cb == null)
+                throw new InvalidOperationException("ToManagedCallback is null");
+
+            cb(arguments_buffer);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        public static void CompleteTask(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_return = ref arguments_buffer[1];
+            GCHandle callback_gc_handle = (GCHandle)arg_return.slot.GCHandle;
+
+            JSHostImplementation.TaskCallback? holder = (JSHostImplementation.TaskCallback?)callback_gc_handle.Target;
+            if (holder == null || holder.Callback == null)
+                throw new InvalidOperationException("TaskCallback is null");
+
+            holder.Callback(arguments_buffer);
         }
     }
 }
