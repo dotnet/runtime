@@ -585,7 +585,7 @@ namespace WebAssemblyInfo
                     instruction.SIMDImmByteArray = Reader.ReadBytes(16);
                     break;
                 case SIMDOpcode.I8x16_Shuffle:
-                    instruction.SIMDImmLaneIdxArray = Reader.ReadBytes(16);
+                    instruction.SIMDImmByteArray = Reader.ReadBytes(16);
                     break;
                 case SIMDOpcode.I8x16_Extract_Lane_S:
                 case SIMDOpcode.I8x16_Extract_Lane_U:

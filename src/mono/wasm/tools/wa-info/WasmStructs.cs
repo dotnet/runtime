@@ -31,7 +31,6 @@ namespace WebAssemblyInfo
 
         public SIMDOpcode SIMDOpcode;
         public byte[] SIMDImmByteArray;
-        public byte[] SIMDImmLaneIdxArray;
         public byte SIMDImmLaneIdx;
 
         public string ToString(WasmReader? reader)
@@ -109,6 +108,7 @@ namespace WebAssemblyInfo
                     switch(SIMDOpcode)
                     {
                         case SIMDOpcode.V128_Const:
+                        case SIMDOpcode.I8x16_Shuffle:
                             var sb = new StringBuilder(" 0x");
                             for (var i = 15; i >= 0; i--)
                                 sb.Append($"{SIMDImmByteArray[i]:x2}");
