@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System.IO.Tests
 {
@@ -88,6 +89,28 @@ namespace System.IO.Tests
         {
             using SafeFileHandle fileHandle = OpenFileHandle(path, FileAccess.Read);
             return File.GetLastWriteTimeUtc(fileHandle);
+        }
+
+        [Fact]
+        public void NullArgumentValidation()
+        {
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetCreationTime(default(SafeFileHandle)!));
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetCreationTime(default(SafeFileHandle)!, DateTime.Now));
+            
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetCreationTimeUtc(default(SafeFileHandle)!));
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetCreationTimeUtc(default(SafeFileHandle)!, DateTime.Now));
+            
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetLastAccessTime(default(SafeFileHandle)!));
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetLastAccessTime(default(SafeFileHandle)!, DateTime.Now));
+
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetLastAccessTimeUtc(default(SafeFileHandle)!));
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetLastAccessTimeUtc(default(SafeFileHandle)!, DateTime.Now));
+
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetLastWriteTime(default(SafeFileHandle)!));
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetLastWriteTime(default(SafeFileHandle)!, DateTime.Now));
+
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetLastWriteTimeUtc(default(SafeFileHandle)!));
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetLastWriteTimeUtc(default(SafeFileHandle)!, DateTime.Now));
         }
     }
 }

@@ -150,6 +150,8 @@ namespace System.IO
 
         internal static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(SafeFileHandle fileHandle)
         {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fileHandle, ref data);
             return errorCode != Interop.Errors.ERROR_SUCCESS

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System.IO.Tests
 {
@@ -26,6 +27,13 @@ namespace System.IO.Tests
         {
             using SafeFileHandle fileHandle = OpenFileHandle(path, FileAccess.ReadWrite);
             File.SetAttributes(fileHandle, attributes);
+        }
+
+        [Fact]
+        public void NullArgumentValidation()
+        {
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.GetAttributes(default(SafeFileHandle)!));
+            Assert.Throws<ArgumentNullException>("fileHandle", static () => File.SetAttributes(default(SafeFileHandle)!, (FileAttributes)0));
         }
     }
 }
