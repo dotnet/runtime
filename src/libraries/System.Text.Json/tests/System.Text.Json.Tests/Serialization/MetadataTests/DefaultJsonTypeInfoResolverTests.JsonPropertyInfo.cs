@@ -1043,7 +1043,11 @@ namespace System.Text.Json.Serialization.Tests
                         TestStringIgnoreWhenWritingDefault();
                         break;
                     case JsonIgnoreCondition.Never:
-                        Assert.Null(property.ShouldSerialize);
+                        Assert.NotNull(property.ShouldSerialize);
+                        Assert.True(property.ShouldSerialize(null, null));
+                        Assert.True(property.ShouldSerialize(null, ""));
+                        Assert.True(property.ShouldSerialize(null, "asd"));
+                        Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
                         break;
                 }
 
@@ -1065,6 +1069,7 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.True(property.ShouldSerialize(null, "asd"));
                     Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
                 }
+
                 if (modify != ModifyJsonIgnore.DontModify && ignoreConditionOnProperty == JsonIgnoreCondition.Always)
                 {
                     property.Get = (o) => ((TestClassWithEveryPossibleJsonIgnore)o).AlwaysProperty;

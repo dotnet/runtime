@@ -430,6 +430,7 @@ namespace System.Text.Json.Serialization.Metadata
                     break;
 
                 case JsonIgnoreCondition.Never:
+                    ShouldSerialize = ShouldSerializeIgnoreConditionNever;
                     break;
 
                 case JsonIgnoreCondition.Always:
@@ -458,6 +459,7 @@ namespace System.Text.Json.Serialization.Metadata
                     break;
             }
 
+            static bool ShouldSerializeIgnoreConditionNever(object _, T? value) => true;
             static bool ShouldSerializeIgnoreConditionAlways(object _, T? value) => false;
             static bool ShouldSerializeIgnoreWhenWritingDefault(object _, T? value)
             {
