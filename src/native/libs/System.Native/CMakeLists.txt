@@ -84,6 +84,8 @@ set(NATIVE_LIBS_EXTRA)
 append_extra_system_libs(NATIVE_LIBS_EXTRA)
 
 if (CLR_CMAKE_TARGET_ANDROID)
+    add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
+
     list (APPEND NATIVE_LIBS_EXTRA -llog)
     list (APPEND NATIVE_SOURCES pal_ifaddrs.c)
 endif ()
