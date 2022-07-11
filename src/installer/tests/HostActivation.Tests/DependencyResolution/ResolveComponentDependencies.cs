@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         IClassFixture<ResolveComponentDependencies.SharedTestState>
     {
         private readonly SharedTestState sharedTestState;
+        private const string AdditionalDependencyName = "AdditionalDependency";
 
         public ResolveComponentDependencies(SharedTestState fixture)
         {
@@ -237,9 +238,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{sharedTestState.ComponentWithDependencies.AppDll}{Path.PathSeparator}" +
-                    $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]")
+                    $"]")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies native_search_paths:[" +
                     $"{Path.Combine(sharedTestState.ComponentWithDependencies.Location, "runtimes", "win10-x86", "native")}" +
@@ -259,9 +261,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(component.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
-                    $"{Path.Combine(component.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
+                    $"]");
         }
 
         [Fact]
@@ -277,9 +280,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{Path.Combine(component.Location, "ComponentDependency.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
-                    $"{Path.Combine(component.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
+                    $"]");
         }
 
         [Fact]
@@ -299,8 +303,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
                 .And.HaveStdOutContaining(
                     $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{Path.Combine(component.Location, $"{AdditionalDependencyName}.dll")}{Path.PathSeparator}" +
                     $"{component.AppDll}{Path.PathSeparator}" +
-                    $"{Path.Combine(component.Location, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
+                    $"]");
         }
 
         [Fact]
@@ -449,10 +454,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 NetCoreAppBuilder builder = NetCoreAppBuilder.PortableForNETCoreApp(componentWithDependencies)
                     .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
                     .WithProject("ComponentDependency", "1.0.0", p => p.WithAssemblyGroup(null, g => g.WithAsset("ComponentDependency.dll")))
-                    .WithPackage("Newtonsoft.Json", "13.0.1", p => p.WithAssemblyGroup(null, g => g
-                        .WithAsset("lib/netstandard1.0/Newtonsoft.Json.dll", f => f
-                            .WithVersion("13.0.0.0", "13.0.1.25517")
-                            .WithFileOnDiskPath("Newtonsoft.Json.dll"))))
+                    .WithPackage(AdditionalDependencyName, "2.0.1", p => p.WithAssemblyGroup(null, g => g
+                        .WithAsset($"lib/netstandard1.0/{AdditionalDependencyName}.dll", f => f
+                            .WithVersion("2.0.0.0", "2.0.1.23344")
+                            .WithFileOnDiskPath($"{AdditionalDependencyName}.dll"))))
                     .WithPackage("Libuv", "1.9.1", p => p
                         .WithNativeLibraryGroup("debian-x64", g => g.WithAsset("runtimes/debian-x64/native/libuv.so"))
                         .WithNativeLibraryGroup("fedora-x64", g => g.WithAsset("runtimes/fedora-x64/native/libuv.so"))
