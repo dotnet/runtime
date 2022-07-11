@@ -6,7 +6,6 @@
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
-    <NativeBinDir Condition="'$(MonoWasmBuildVariant)' != ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)-$(MonoWasmBuildVariant)'))</NativeBinDir>
   </PropertyGroup>
 
   <PropertyGroup>
