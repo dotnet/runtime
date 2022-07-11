@@ -205,7 +205,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             if (ThrowOnDeserialize)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.SerializerContext, Type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolverSafe, Type);
             }
         }
 
