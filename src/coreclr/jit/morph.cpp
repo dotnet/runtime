@@ -3692,7 +3692,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             if (location->OperIsLocalRead())
             {
-                if (!location->OperIs(GT_LCL_VAR) ||
+                if (!location->OperIs(GT_LCL_VAR) || (location->TypeGet() != argObj->TypeGet()) ||
                     !ClassLayout::AreCompatible(lvaGetDesc(location->AsLclVarCommon())->GetLayout(), layout))
                 {
                     unsigned lclOffset = location->AsLclVarCommon()->GetLclOffs();
