@@ -295,20 +295,6 @@ namespace System.Reflection.Tests
         [Fact]
         public static void GetAssemblyName()
         {
-            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AssemblyName.GetAssemblyName(null));
-            AssertExtensions.Throws<ArgumentException>("path", null, () => AssemblyName.GetAssemblyName(string.Empty));
-            Assert.Throws<System.IO.FileNotFoundException>(() => AssemblyName.GetAssemblyName("IDontExist"));
-
-            using (var tempFile = new TempFile(Path.GetTempFileName(), 0)) // Zero-size file
-            {
-                Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-            }
-
-            using (var tempFile = new TempFile(Path.GetTempFileName(), 42))
-            {
-                Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-            }
-
             if (!PlatformDetection.IsNativeAot)
             {
                 Assembly a = typeof(AssemblyNameTests).Assembly;
