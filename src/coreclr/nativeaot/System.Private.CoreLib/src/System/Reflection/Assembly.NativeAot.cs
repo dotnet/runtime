@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Assemblies;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.IO;
 
@@ -16,7 +17,8 @@ namespace System.Reflection
 
         [System.Runtime.CompilerServices.Intrinsic]
         public static Assembly GetExecutingAssembly() { throw NotImplemented.ByDesign; } //Implemented by toolchain.
-
+        
+        [RequiresDynamicCode("Assembly.GetCallingAssembly is not supported in AOT environments.")]
         public static Assembly GetCallingAssembly()
         {
             if (AppContext.TryGetSwitch("Switch.System.Reflection.Assembly.SimulatedCallingAssembly", out bool isSimulated) && isSimulated)

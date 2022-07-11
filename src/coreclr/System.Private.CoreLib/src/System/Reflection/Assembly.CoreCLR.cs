@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -71,6 +72,7 @@ namespace System.Reflection
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [RequiresDynamicCode("Assembly.GetCallingAssembly is not supported in AOT environments.")]
         public static Assembly GetCallingAssembly()
         {
             // LookForMyCallersCaller is not guaranteed to return the correct stack frame

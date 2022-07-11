@@ -10731,6 +10731,7 @@ namespace System.Reflection
         public static string CreateQualifiedName(string? assemblyName, string? typeName) { throw null; }
         public override bool Equals(object? o) { throw null; }
         public static System.Reflection.Assembly? GetAssembly(System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Assembly.GetCallingAssembly is not supported in AOT environments.")]
         public static System.Reflection.Assembly GetCallingAssembly() { throw null; }
         public virtual object[] GetCustomAttributes(bool inherit) { throw null; }
         public virtual object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
