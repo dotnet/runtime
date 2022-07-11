@@ -433,12 +433,7 @@ namespace System.IO.Compression
         private void AddEntry(ZipArchiveEntry entry)
         {
             _entries.Add(entry);
-
-            string entryName = entry.FullName;
-            if (!_entriesDictionary.ContainsKey(entryName))
-            {
-                _entriesDictionary.Add(entryName, entry);
-            }
+            _entriesDictionary.TryAdd(entry.FullName, entry);
         }
 
         [Conditional("DEBUG")]
