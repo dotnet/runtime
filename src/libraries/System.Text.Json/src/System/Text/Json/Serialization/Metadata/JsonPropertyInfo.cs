@@ -143,7 +143,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Setting a custom attribute provider will have no impact on the contract model,
         /// but serves as metadata for downstream contract modifiers.
         /// </remarks>
-        internal ICustomAttributeProvider? AttributeProvider
+        public ICustomAttributeProvider? AttributeProvider
         {
             get => _attributeProvider;
             set
@@ -166,7 +166,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Properties annotated with <see cref="JsonExtensionDataAttribute"/>
         /// will appear here when using <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>.
         /// </remarks>
-        internal bool IsExtensionData
+        public bool IsExtensionData
         {
             get => _isExtensionDataProperty;
             set
@@ -581,7 +581,7 @@ namespace System.Text.Json.Serialization.Metadata
         // There are 3 copies of the property name:
         // 1) Name. The unescaped property name.
         // 2) NameAsUtf8Bytes. The Utf8 version of Name. Used during during deserialization for property lookup.
-        // 3) EscapedNameSection. The escaped verson of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
+        // 3) EscapedNameSection. The escaped version of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
 
         /// <summary>
         /// Gets or sets the JSON property name used when serializing the property.
@@ -631,7 +631,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// When using <see cref="DefaultJsonTypeInfoResolver"/>, properties annotated
         /// with the <see cref="JsonPropertyOrderAttribute"/> will map to this value.
         /// </remarks>
-        internal int Order
+        public int Order
         {
             get => _order;
             set
@@ -757,7 +757,7 @@ namespace System.Text.Json.Serialization.Metadata
                 else
                 {
                     // GetOrAddJsonTypeInfo already ensures it's configured.
-                    _jsonTypeInfo = Options.GetOrAddJsonTypeInfo(PropertyType);
+                    _jsonTypeInfo = Options.GetTypeInfoCached(PropertyType);
                 }
 
                 return _jsonTypeInfo;

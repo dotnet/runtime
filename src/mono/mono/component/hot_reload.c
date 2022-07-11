@@ -1145,7 +1145,7 @@ hot_reload_relative_delta_index (MonoImage *image_dmeta, DeltaInfo *delta_info, 
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "relative index for token 0x%08x -> table 0x%02x row 0x%08x", token, table, return_val);
 			return return_val;
 		} else {
-			/* Otherwise we stopped either: because we saw an an entry for a row after
+			/* Otherwise we stopped either: because we saw an entry for a row after
 			 * the one we wanted - we were looking for a modification, but the encmap
 			 * has an addition; or, because we saw the last entry in the encmap and it
 			 * still wasn't for a row as high as the one we wanted.  either way, the

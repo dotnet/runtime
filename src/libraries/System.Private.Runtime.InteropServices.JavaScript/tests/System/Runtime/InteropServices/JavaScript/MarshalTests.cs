@@ -12,26 +12,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void MarshalPrimitivesToCS()
         {
             HelperMarshal._i32Value = 0;
-            Runtime.InvokeJS("App.call_test_method (\"InvokeI32\", [10, 20])");
+            Utils.InvokeJS("App.call_test_method (\"InvokeI32\", [10, 20])");
             Assert.Equal(30, HelperMarshal._i32Value);
 
             HelperMarshal._f32Value = 0;
-            Runtime.InvokeJS("App.call_test_method (\"InvokeFloat\", [1.5])");
+            Utils.InvokeJS("App.call_test_method (\"InvokeFloat\", [1.5])");
             Assert.Equal(1.5f, HelperMarshal._f32Value);
 
             HelperMarshal._f64Value = 0;
-            Runtime.InvokeJS("App.call_test_method (\"InvokeDouble\", [4.5])");
+            Utils.InvokeJS("App.call_test_method (\"InvokeDouble\", [4.5])");
             Assert.Equal(4.5, HelperMarshal._f64Value);
 
             HelperMarshal._i64Value = 0;
-            Runtime.InvokeJS("App.call_test_method (\"InvokeLong\", [99])");
+            Utils.InvokeJS("App.call_test_method (\"InvokeLong\", [99])");
             Assert.Equal(99, HelperMarshal._i64Value);
         }
 
         [Fact]
         public static void MarshalArrayBuffer()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var buffer = new ArrayBuffer(16);
                 App.call_test_method (""MarshalArrayBuffer"", [ buffer ]);
             ");
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void MarshalStringToCS()
         {
             HelperMarshal._stringResource = null;
-            Runtime.InvokeJS("App.call_test_method(\"InvokeString\", [\"hello\"])");
+            Utils.InvokeJS("App.call_test_method(\"InvokeString\", [\"hello\"])");
             Assert.Equal("hello", HelperMarshal._stringResource);
         }
 
@@ -53,15 +53,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void MarshalUnicodeStringToCS()
         {
             HelperMarshal._stringResource = null;
-            Runtime.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"\u0050\u0159\u00ed\u006c\u0069\u0161\u0020\u017e\u006c\u0075\u0165\u006f\u0075\u010d\u006b\u00fd\u0020\u006b\u016f\u0148\u202f\u00fa\u0070\u011b\u006c\u0020\u010f\u00e1\u0062\u0065\u006c\u0073\u006b\u00e9\u0020\u00f3\u0064\u0079\"])");
+            Utils.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"\u0050\u0159\u00ed\u006c\u0069\u0161\u0020\u017e\u006c\u0075\u0165\u006f\u0075\u010d\u006b\u00fd\u0020\u006b\u016f\u0148\u202f\u00fa\u0070\u011b\u006c\u0020\u010f\u00e1\u0062\u0065\u006c\u0073\u006b\u00e9\u0020\u00f3\u0064\u0079\"])");
             Assert.Equal("Got:  \u0050\u0159\u00ed\u006c\u0069\u0161\u0020\u017e\u006c\u0075\u0165\u006f\u0075\u010d\u006b\u00fd\u0020\u006b\u016f\u0148\u202f\u00fa\u0070\u011b\u006c\u0020\u010f\u00e1\u0062\u0065\u006c\u0073\u006b\u00e9\u0020\u00f3\u0064\u0079", HelperMarshal._stringResource);
 
             HelperMarshal._stringResource = null;
-            Runtime.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"\uFEFF\u0000\uFFFE\"])");
+            Utils.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"\uFEFF\u0000\uFFFE\"])");
             Assert.Equal("Got:  \uFEFF\0\uFFFE", HelperMarshal._stringResource);
 
             HelperMarshal._stringResource = null;
-            Runtime.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"\u02F3o\u0302\u0303\u0308\u0930\u0903\u0951\"])");
+            Utils.InvokeJS("App.call_test_method(\"StoreAndReturnNew\", [' '+\"\u02F3o\u0302\u0303\u0308\u0930\u0903\u0951\"])");
             Assert.Equal("Got:  \u02F3o\u0302\u0303\u0308\u0930\u0903\u0951", HelperMarshal._stringResource);
         }
 
@@ -69,7 +69,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void MarshalNullStringToCS()
         {
             HelperMarshal._stringResource = null;
-            Runtime.InvokeJS("App.call_test_method(\"InvokeString\", [ null ])");
+            Utils.InvokeJS("App.call_test_method(\"InvokeString\", [ null ])");
             Assert.Null(HelperMarshal._stringResource);
         }
 
@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void MarshalStringToJS()
         {
             HelperMarshal._marshaledString = HelperMarshal._stringResource = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var str = App.call_test_method (""InvokeMarshalString"");
                 App.call_test_method (""InvokeString"", [ str ]);
             ");
@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void JSObjectKeepIdentityAcrossCalls()
         {
             HelperMarshal._object1 = HelperMarshal._object2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = { foo: 10 };
                 var res = App.call_test_method (""InvokeObj1"", [ obj ]);
                 App.call_test_method (""InvokeObj2"", [ res ]);
@@ -103,7 +103,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void CSObjectKeepIdentityAcrossCalls()
         {
             HelperMarshal._marshaledObject = HelperMarshal._object1 = HelperMarshal._object2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = App.call_test_method (""InvokeMarshalObj"");
                 var res = App.call_test_method (""InvokeObj1"", [ obj ]);
                 App.call_test_method (""InvokeObj2"", [ res ]);
@@ -129,7 +129,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._marshaledObject = o;
             HelperMarshal._object1 = HelperMarshal._object2 = null;
-            var value = Runtime.InvokeJS(@"
+            var value = Utils.InvokeJS(@"
                 var obj = App.call_test_method (""InvokeReturnMarshalObj"");
                 var res = App.call_test_method (""InvokeObj1"", [ obj.toString() ]);
             ");
@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._marshaledObject = o;
             HelperMarshal._object1 = HelperMarshal._object2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = App.call_test_method (""InvokeReturnMarshalObj"");
                 var res = App.call_test_method (""InvokeObj1"", [ obj ]);
             ");
@@ -163,7 +163,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void InvokeUnboxInt()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = App.call_test_method (""InvokeReturnInt"");
                 var res = App.call_test_method (""InvokeObj1"", [ obj ]);
             ");
@@ -174,7 +174,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void InvokeUnboxDouble()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = App.call_test_method (""InvokeReturnDouble"");
                 var res = App.call_test_method (""InvokeObj1"", [ obj ]);
             ");
@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void InvokeUnboxLongFail()
         {
-            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@"
+            var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@"
                 console.log(""the exception in InvokeReturnLong after this is intentional"");
                 App.call_test_method (""InvokeReturnLong"");
             "));
@@ -206,7 +206,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeUnboxStringNumber(object o, object expected = null)
         {
             HelperMarshal._marshaledObject = HelperMarshal._object1 = HelperMarshal._object2 = null;
-            Runtime.InvokeJS(String.Format(@"
+            Utils.InvokeJS(String.Format(@"
                 var res = App.call_test_method (""InvokeObj1"", [ {0} ]);
             ", o));
 
@@ -216,7 +216,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void JSInvokeInt()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = {
                     foo: 10,
                     inc: function() {
@@ -237,7 +237,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void JSInvokeTypes()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = {
                     return_int: function() { return 100; },
                     return_double: function() { return 4.5; },
@@ -257,7 +257,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void JSObjectApply()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var do_add = function(a, b) { return a + b };
                 App.call_test_method (""UseFunction"", [ do_add ]);
             ");
@@ -267,7 +267,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void JSObjectAsFunction()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var do_add = function(a, b) { return a + b };
                 App.call_test_method (""UseAsFunction"", [ do_add ]);
             ");
@@ -278,7 +278,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void BindStaticMethod()
         {
             HelperMarshal._intValue = 0;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (200);
             ");
@@ -290,7 +290,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void BindIntPtrStaticMethod()
         {
             HelperMarshal._intPtrValue = IntPtr.Zero;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 var invoke_int_ptr = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeIntPtr"");
                 invoke_int_ptr (42);
             ");
@@ -301,7 +301,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void MarshalIntPtrToJS()
         {
             HelperMarshal._marshaledIntPtrValue = IntPtr.Zero;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 var invokeMarshalIntPtr = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeMarshalIntPtr"");
                 var r = invokeMarshalIntPtr ();
 
@@ -314,7 +314,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeStaticMethod()
         {
             HelperMarshal._intValue = 0;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 INTERNAL.call_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"", [ 300 ]);
             ");
 
@@ -325,7 +325,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void ResolveMethod()
         {
             HelperMarshal._intValue = 0;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_method_resolve (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 App.call_test_method (""InvokeInt"", [ invoke_int ]);
             ");
@@ -336,7 +336,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void GetObjectProperties()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = {myInt: 100, myDouble: 4.5, myString: ""Hic Sunt Dracones"", myBoolean: true};
                 App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
@@ -350,7 +350,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void SetObjectProperties()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = {myInt: 200, myDouble: 0, myString: ""foo"", myBoolean: false};
                 App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);
                 App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
@@ -366,7 +366,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void SetObjectPropertiesIfNotExistsFalse()
         {
             // This test will not create the properties if they do not already exist
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = {myInt: 200};
                 App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);
                 App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
@@ -383,7 +383,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             // This test will set the value of the property if it exists and will create and
             // set the value if it does not exists
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = {myInt: 200};
                 App.call_test_method (""PopulateObjectProperties"", [ obj, true ]);
                 App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
@@ -398,7 +398,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void MarshalTypedArray()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var buffer = new ArrayBuffer(16);
                 var uint8View = new Uint8Array(buffer);
                 App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);
@@ -409,7 +409,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private static void RunMarshalTypedArrayJS(string type)
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var obj = { };
                 App.call_test_method (""SetTypedArray" + type + @""", [ obj ]);
                 App.call_test_method (""GetTypedArray" + type + @""", [ obj ]);
@@ -432,7 +432,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void TestFunctionSum()
         {
             HelperMarshal._sumValue = 0;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 App.call_test_method (""CreateFunctionSum"", []);
                 App.call_test_method (""CallFunctionSum"", []);
             ");
@@ -443,7 +443,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void TestFunctionApply()
         {
             HelperMarshal._minValue = 0;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 App.call_test_method (""CreateFunctionApply"", []);
                 App.call_test_method (""CallFunctionApply"", []);
             ");
@@ -454,7 +454,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void BoundStaticMethodMissingArgs()
         {
             HelperMarshal._intValue = 1;
-            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@$"
+            var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int ();
             "));
@@ -466,7 +466,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void BoundStaticMethodExtraArgs()
         {
             HelperMarshal._intValue = 0;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (200, 400);
             ");
@@ -478,7 +478,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             // no numbers bigger than 32 bits
-            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@$"
+            var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (Number.MAX_SAFE_INTEGER);
             "));
@@ -491,7 +491,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             // no floating point rounding
-            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@$"
+            var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (3.14);
             "));
@@ -504,7 +504,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             // no string conversion
-            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@$"
+            var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@$"
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (""200"");
             "));
@@ -516,7 +516,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void PassUintArgument()
         {
             HelperMarshal._uintValue = 0;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 var invoke_uint = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
                 invoke_uint (0xFFFFFFFE);
             ");
@@ -529,7 +529,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._uintValue = 0;
             HelperMarshal._enumValue = TestEnum.BigValue;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 var get_value = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetEnumValue"");
                 var e = get_value ();
                 var invoke_uint = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
@@ -542,7 +542,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void PassUintEnumByValue()
         {
             HelperMarshal._enumValue = TestEnum.Zero;
-            Runtime.InvokeJS(@$"
+            Utils.InvokeJS(@$"
                 var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
                 set_enum (0xFFFFFFFE);
             ");
@@ -554,7 +554,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._enumValue = TestEnum.Zero;
             var exc = Assert.Throws<JSException>(() =>
-               Runtime.InvokeJS(@$"
+               Utils.InvokeJS(@$"
                     var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
                     set_enum (""BigValue"");
                 ")
@@ -566,7 +566,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void CannotUnboxUint64()
         {
             var exc = Assert.Throws<JSException>(() =>
-               Runtime.InvokeJS(@$"
+               Utils.InvokeJS(@$"
                     var get_u64 = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetUInt64"", """");
                     var u64 = get_u64();
                 ")
@@ -578,7 +578,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void BareStringArgumentsAreNotInterned()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var jsLiteral = ""hello world"";
                 App.call_test_method (""InvokeString"", [ jsLiteral ]);
                 App.call_test_method (""InvokeString2"", [ jsLiteral ]);
@@ -592,7 +592,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InternedStringSignaturesAreInternedOnJavascriptSide()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var sym = ""interned string"";
                 App.call_test_method (""InvokeString"", [ sym ], ""S"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""S"");
@@ -606,7 +606,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void OnceAJSStringIsInternedItIsAlwaysUsedIfPossible()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var sym = ""interned string 2"";
                 App.call_test_method (""InvokeString"", [ sym ], ""S"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""s"");
@@ -620,7 +620,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void ManuallyInternString()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var sym = INTERNAL.mono_intern_string(""interned string 3"");
                 App.call_test_method (""InvokeString"", [ sym ], ""s"");
                 App.call_test_method (""InvokeString2"", [ sym ], ""s"");
@@ -634,7 +634,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void LargeStringsAreNotAutomaticallyLocatedInInternTable()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var s = ""long interned string"";
                 for (var i = 0; i < 1024; i++)
                     s += String(i % 10);
@@ -650,7 +650,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void CanInternVeryManyStrings()
         {
             HelperMarshal._stringResource = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 for (var i = 0; i < 10240; i++)
                     INTERNAL.mono_intern_string('s' + i);
                 App.call_test_method (""InvokeString"", [ 's5000' ], ""S"");
@@ -663,7 +663,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void SymbolsAreMarshaledAsStrings()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 var jsLiteral = Symbol(""custom symbol"");
                 App.call_test_method (""InvokeString"", [ jsLiteral ]);
                 App.call_test_method (""InvokeString2"", [ jsLiteral ]);
@@ -678,7 +678,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
             var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
-            Runtime.InvokeJS(
+            Utils.InvokeJS(
                 $"var a = INTERNAL.mono_bind_static_method('{fqn}')('test');\r\n" +
                 $"var b = INTERNAL.mono_bind_static_method('{fqn}')(a);\r\n" +
                 "App.call_test_method ('InvokeString2', [ b ]);"
@@ -690,34 +690,34 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void InvokeJSExpression()
         {
-            var result = Runtime.InvokeJS(@"1 + 2");
+            var result = Utils.InvokeJS(@"1 + 2");
             Assert.Equal("3", result);
         }
 
         [Fact]
         public static void InvokeJSNullExpression()
         {
-            var result = Runtime.InvokeJS(@"null");
+            var result = Utils.InvokeJS(@"null");
             Assert.Null(result);
         }
 
         [Fact]
         public static void InvokeJSUndefinedExpression()
         {
-            var result = Runtime.InvokeJS(@"undefined");
+            var result = Utils.InvokeJS(@"undefined");
             Assert.Null(result);
         }
 
         [Fact]
         public static void InvokeJSNotInGlobalScope()
         {
-            var result = Runtime.InvokeJS(@"var test_local_variable_name = 5; globalThis.test_local_variable_name");
+            var result = Utils.InvokeJS(@"var test_local_variable_name = 5; globalThis.test_local_variable_name");
             Assert.Null(result);
         }
 
         private static async Task<bool> MarshalTask(string helperMethodName, string helperMethodArgs = "", string resolvedBody = "")
         {
-            Runtime.InvokeJS(
+            Utils.InvokeJS(
                 @"globalThis.__test_promise_completed = false; " +
                 @"globalThis.__test_promise_resolved = false; " +
                 @"globalThis.__test_promise_failed = false; " +
@@ -730,10 +730,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             await Task.Delay(1);
 
-            var completed = bool.Parse(Runtime.InvokeJS(@"globalThis.__test_promise_completed"));
+            var completed = bool.Parse(Utils.InvokeJS(@"globalThis.__test_promise_completed"));
             Assert.True(completed, "JavasScript promise did not completed.");
 
-            var resolved = bool.Parse(Runtime.InvokeJS(@"globalThis.__test_promise_resolved"));
+            var resolved = bool.Parse(Utils.InvokeJS(@"globalThis.__test_promise_resolved"));
             return resolved;
         }
 

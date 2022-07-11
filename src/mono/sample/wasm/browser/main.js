@@ -12,8 +12,16 @@ function wasm_exit(exit_code, reason) {
     console.log(`WASM EXIT ${exit_code}`);
 }
 
+function add(a, b) {
+    return a + b;
+}
+
+function sub(a, b) {
+    return a - b;
+}
+
 try {
-    const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
+    const { MONO, RuntimeBuildInfo, IMPORTS } = await createDotnetRuntime(() => {
         console.log('user code in createDotnetRuntime');
         return {
             configSrc: "./mono-config.json",
@@ -24,11 +32,20 @@ try {
         }
     });
     console.log('after createDotnetRuntime');
+    IMPORTS.Sample = {
+        Test: {
+            add,
+            sub
+        }
+    };
 
-    const testMeaning = BINDING.bind_static_method("[Wasm.Browser.ES6.Sample] Sample.Test:TestMeaning");
-    const ret = testMeaning();
-    document.getElementById("out").innerHTML = `${ret} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
-    console.debug(`ret: ${ret}`);
+    const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.ES6.Sample.dll");
+    const meaning = exports.Sample.Test.TestMeaning();
+    console.debug(`meaning: ${meaning}`);
+    if (!exports.Sample.Test.IsPrime(meaning)) {
+        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+        console.debug(`ret: ${meaning}`);
+    }
 
     let exit_code = await MONO.mono_run_main("Wasm.Browser.ES6.Sample.dll", []);
     wasm_exit(exit_code);

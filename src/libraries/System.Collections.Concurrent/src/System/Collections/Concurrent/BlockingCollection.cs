@@ -438,10 +438,7 @@ namespace System.Collections.Concurrent
                 }
                 finally
                 {
-                    if (linkedTokenSource != null)
-                    {
-                        linkedTokenSource.Dispose();
-                    }
+                    linkedTokenSource?.Dispose();
                 }
             }
             if (waitForSemaphoreWasSuccessful)
@@ -495,10 +492,7 @@ namespace System.Collections.Concurrent
                     {
                         //TryAdd did not result in increasing the size of the underlying store and hence we need
                         //to increment back the count of the _freeNodes semaphore.
-                        if (_freeNodes != null)
-                        {
-                            _freeNodes.Release();
-                        }
+                        _freeNodes?.Release();
                         throw;
                     }
                     if (addingSucceeded)
@@ -1529,11 +1523,7 @@ namespace System.Collections.Concurrent
         {
             if (!_isDisposed)
             {
-                if (_freeNodes != null)
-                {
-                    _freeNodes.Dispose();
-                }
-
+                _freeNodes?.Dispose();
                 _occupiedNodes.Dispose();
 
                 _isDisposed = true;
@@ -1643,24 +1633,12 @@ namespace System.Collections.Concurrent
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         public IEnumerable<T> GetConsumingEnumerable(CancellationToken cancellationToken)
         {
-            CancellationTokenSource? linkedTokenSource = null;
-            try
+            using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
+            while (!IsCompleted)
             {
-                linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
-                while (!IsCompleted)
+                if (TryTakeWithNoTimeValidation(out T? item, Timeout.Infinite, cancellationToken, linkedTokenSource))
                 {
-                    T? item;
-                    if (TryTakeWithNoTimeValidation(out item, Timeout.Infinite, cancellationToken, linkedTokenSource))
-                    {
-                        yield return item;
-                    }
-                }
-            }
-            finally
-            {
-                if (linkedTokenSource != null)
-                {
-                    linkedTokenSource.Dispose();
+                    yield return item;
                 }
             }
         }

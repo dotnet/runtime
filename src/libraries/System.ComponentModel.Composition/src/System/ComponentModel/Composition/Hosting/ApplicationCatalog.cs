@@ -117,10 +117,7 @@ namespace System.ComponentModel.Composition.Hosting
                         _innerCatalog = null;
                         _isDisposed = true;
                     }
-                    if (innerCatalog != null)
-                    {
-                        innerCatalog.Dispose();
-                    }
+                    innerCatalog?.Dispose();
                 }
             }
             finally

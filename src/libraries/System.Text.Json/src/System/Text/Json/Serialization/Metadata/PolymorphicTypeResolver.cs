@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Metadata
             public Type DerivedType { get; }
             public object? TypeDiscriminator { get; }
             public JsonTypeInfo GetJsonTypeInfo(JsonSerializerOptions options)
-                => _jsonTypeInfo ??= options.GetOrAddJsonTypeInfo(DerivedType);
+                => _jsonTypeInfo ??= options.GetTypeInfoCached(DerivedType);
         }
     }
 }
