@@ -16,6 +16,7 @@ Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic
 
+    <RequiresDynamicCode("The FileSystem module is not supported in AOT environments. Use members of the System.IO namespace instead.")>
     Public Module FileSystem
 
         Private Const ERROR_FILE_NOT_FOUND As Integer = 2

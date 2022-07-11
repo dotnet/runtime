@@ -2,6 +2,7 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Global.Microsoft.VisualBasic.CompilerServices
 
@@ -177,6 +178,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
             Err.Clear()
         End Sub
 
+        <RequiresDynamicCode("ProjectData.EndApp is not supported in AOT environments. Use System.Environment.Exit(0) instead.")>
         Public Shared Sub EndApp()
             FileSystem.CloseAllFiles(System.Reflection.Assembly.GetCallingAssembly())
             System.Environment.Exit(0) 'System.Environment.Exit will cause finalizers to be run at shutdown

@@ -316,6 +316,7 @@ namespace Microsoft.VisualBasic
         public string Source { get { throw null; } set { } }
         public void Clear() { }
         public System.Exception? GetException() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("ErrObject.Raise is not supported in AOT environments. Throw exceptions with the Throw keyword instead.")]
         public void Raise(int Number, object? Source = null, object? Description = null, object? HelpFile = null, object? HelpContext = null) { }
     }
     [System.FlagsAttribute]
@@ -329,6 +330,7 @@ namespace Microsoft.VisualBasic
         Directory = 16,
         Archive = 32,
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The FileSystem module is not supported in AOT environments. Use members of the System.IO namespace instead.")]
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class FileSystem
     {
@@ -1146,6 +1148,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal ProjectData() { }
         public static void ClearProjectError() { }
         public static System.Exception CreateProjectError(int hr) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("ProjectData.EndApp is not supported in AOT environments. Use System.Environment.Exit(0) instead.")]
         public static void EndApp() { }
         public static void SetProjectError(System.Exception? ex) { }
         public static void SetProjectError(System.Exception? ex, int lErl) { }

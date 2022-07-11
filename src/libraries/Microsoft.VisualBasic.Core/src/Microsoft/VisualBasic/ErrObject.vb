@@ -5,6 +5,7 @@ Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Imports System
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Runtime.InteropServices
 
 Namespace Microsoft.VisualBasic
@@ -269,6 +270,7 @@ Namespace Microsoft.VisualBasic
         ''' <param name="Description">If not supplied, we try to look one up based on the error code being raised</param>
         ''' <param name="HelpFile"></param>
         ''' <param name="HelpContext"></param>
+        <RequiresDynamicCode("ErrObject.Raise is not supported in AOT environments. Throw exceptions with the Throw keyword instead.")>
         Public Sub Raise(ByVal Number As Integer,
                          Optional ByVal Source As Object = Nothing,
                          Optional ByVal Description As Object = Nothing,
