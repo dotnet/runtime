@@ -8,43 +8,28 @@ namespace System.Transactions.Tests
     public class TransactionManagerTest
     {
         [Fact]
-        public void DefaultTimeout_Set_LessThanMaximum()
+        public void DefaultTimeout_MaxTimeout_Set_Get()
         {
             TimeSpan tsDefault = TimeSpan.Parse("00:02:00");
+            TimeSpan tsMax = TimeSpan.Parse("00:30:00");
+
             TransactionManager.DefaultTimeout = tsDefault;
-
             Assert.Equal(tsDefault, TransactionManager.DefaultTimeout);
-        }
 
-        [Fact]
-        public void DefaultTimeout_Set_ExceedMaximum()
-        {
+            TransactionManager.MaximumTimeout = tsMax; 
+            Assert.Equal(tsMax, TransactionManager.MaximumTimeout);
+
             TimeSpan ts = TransactionManager.MaximumTimeout.Add(TimeSpan.FromMinutes(10));
             TransactionManager.DefaultTimeout = ts;
-
+            Assert.Equal(tsMax, TransactionManager.MaximumTimeout);
             Assert.Equal(TransactionManager.DefaultTimeout, TransactionManager.MaximumTimeout);
         }
        
         [Fact]
-        public void DefaultTimeout_Set_Negative()
+        public void DefaultTimeout_MaxTimeout_Set_Negative()
         {
             TimeSpan ts = TimeSpan.Parse("-00:01:00");
             Assert.Throws<ArgumentOutOfRangeException>(() => TransactionManager.DefaultTimeout = ts);
-        }
-
-        [Fact]
-        public void MaximumTimeout_Set_Positive()
-        {
-            TimeSpan ts = TimeSpan.Parse("00:30:00");
-            TransactionManager.MaximumTimeout = ts;
-
-            Assert.Equal(ts, TransactionManager.MaximumTimeout);
-        }
-
-        [Fact]
-        public void MaximumTimeout_Set_Negative()
-        {
-            TimeSpan ts = TimeSpan.Parse("-00:10:00");
             Assert.Throws<ArgumentOutOfRangeException>(() => TransactionManager.MaximumTimeout = ts);
         }
     }
