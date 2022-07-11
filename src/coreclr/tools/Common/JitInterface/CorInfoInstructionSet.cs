@@ -798,7 +798,7 @@ namespace Internal.JitInterface
             {
                 sets = cpu switch
                 {
-                    "generic" => "base,sse",
+                    "generic" => "base,sse,sse2",
 
                     "sandybridge" or
                     "ivybridge" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,popcnt",
