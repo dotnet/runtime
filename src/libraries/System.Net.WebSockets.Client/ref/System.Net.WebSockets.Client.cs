@@ -13,8 +13,8 @@ namespace System.Net.WebSockets
         public ClientWebSocket() { }
         public override System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get { throw null; } }
         public override string? CloseStatusDescription { get { throw null; } }
-        public System.Net.HttpStatusCode HttpStatusCode { get; }
-        public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders { get; set; }
+        public System.Net.HttpStatusCode HttpStatusCode { get { throw null; } }
+        public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders { get { throw null; } set { } }
         public System.Net.WebSockets.ClientWebSocketOptions Options { get { throw null; } }
         public override System.Net.WebSockets.WebSocketState State { get { throw null; } }
         public override string? SubProtocol { get { throw null; } }
@@ -36,7 +36,7 @@ namespace System.Net.WebSockets
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.CookieContainer? Cookies { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public bool CollectHttpResponseDetails { get; set; }
+        public bool CollectHttpResponseDetails { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
