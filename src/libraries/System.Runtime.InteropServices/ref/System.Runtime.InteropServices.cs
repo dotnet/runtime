@@ -2217,42 +2217,6 @@ namespace System.Runtime.InteropServices.Marshalling
         {
         }
     }
-
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
-    public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
-    {
-        public CustomTypeMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind marshallerKind = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.Value) { }
-        public System.Type ManagedType { get { throw null; } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind MarshallerKind { get { throw null; } }
-        public int BufferSize { get { throw null; } set { } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerDirection Direction { get { throw null; } set { } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures Features { get { throw null; } set { } }
-        public struct GenericPlaceholder
-        {
-        }
-    }
-    [System.FlagsAttribute]
-    public enum CustomTypeMarshallerDirection
-    {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        None = 0,
-        In = 0x1,
-        Out = 0x2,
-        Ref = In | Out,
-    }
-    [System.FlagsAttribute]
-    public enum CustomTypeMarshallerFeatures
-    {
-        None = 0,
-        UnmanagedResources = 0x1,
-        CallerAllocatedBuffer = 0x2,
-        TwoStageMarshalling = 0x4
-    }
-    public enum CustomTypeMarshallerKind
-    {
-        Value,
-        LinearCollection
-    }
     public enum MarshalMode
     {
         Default = 0,

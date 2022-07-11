@@ -9,12 +9,12 @@
 
   <!-- Code included from System.Runtime.InteropServices -->
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerKind.cs"
-             Link="Production\CustomTypeMarshallerKind.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerDirection.cs"
-             Link="Production\CustomTypeMarshallerDirection.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerFeatures.cs"
-             Link="Production\CustomTypeMarshallerFeatures.cs" />
+    <Compile Include="..\..\tests\Ancillary.Interop\CustomTypeMarshallerKind.cs"
+             Link="V1\CustomTypeMarshallerKind.cs" />
+    <Compile Include="..\..\tests\Ancillary.Interop\CustomTypeMarshallerDirection.cs"
+             Link="V1\CustomTypeMarshallerDirection.cs" />
+    <Compile Include="..\..\tests\Ancillary.Interop\CustomTypeMarshallerFeatures.cs"
+             Link="V1\CustomTypeMarshallerFeatures.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs"
              Link="Production\StringMarshalling.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\MarshalMode.cs"
