@@ -497,7 +497,7 @@ namespace System.Net.Http
                     $"Requests without a connection attempt: {_http11RequestQueue.RequestsWithoutAConnectionAttempt}, " +
                     $"Pending HTTP/1.1 connections: {_pendingHttp11ConnectionCount}, Total associated HTTP/1.1 connections: {_associatedHttp11ConnectionCount}, " +
                     $"Max HTTP/1.1 connection limit: {_maxHttp11Connections}, " +
-                    $"will inject connection: {willInject}.");
+                    $"Will inject connection: {willInject}.");
             }
 
             if (willInject)
@@ -517,8 +517,6 @@ namespace System.Net.Http
 
         private bool TryGetPooledHttp11Connection(HttpRequestMessage request, bool async, [NotNullWhen(true)] out HttpConnection? connection, [NotNullWhen(false)] out HttpConnectionWaiter<HttpConnection>? waiter)
         {
-            waiter = null;
-            connection = null;
             while (true)
             {
                 lock (SyncObj)
@@ -542,7 +540,7 @@ namespace System.Net.Http
 
                         // There were no available idle connections. This request has been added to the request queue.
                         if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/1.1 connections; request queued.");
-
+                        connection = null;
                         return false;
                     }
                 }
@@ -562,6 +560,7 @@ namespace System.Net.Http
                 }
 
                 if (NetEventSource.Log.IsEnabled()) connection.Trace("Found usable HTTP/1.1 connection in pool.");
+                waiter = null;
                 return true;
             }
         }
