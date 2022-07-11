@@ -819,6 +819,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if !FEATURE_FIXED_OUT_ARGS
                 if (prevArg.AbiInfo.GetRegNum() == REG_STK)
                 {
+                    // All stack args are already evaluated and placed in order
+                    // in this case.
                     continue;
                 }
 #endif
@@ -897,6 +899,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if !FEATURE_FIXED_OUT_ARGS
                 if (prevArg.AbiInfo.GetRegNum() == REG_STK)
                 {
+                    // All stack args are already evaluated and placed in order
+                    // in this case.
                     continue;
                 }
 #endif
@@ -958,6 +962,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if !FEATURE_FIXED_OUT_ARGS
                         if (prevArg.AbiInfo.GetRegNum() == REG_STK)
                         {
+                            // All stack args are already evaluated and placed in order
+                            // in this case.
                             continue;
                         }
 #endif
