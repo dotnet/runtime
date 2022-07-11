@@ -105,7 +105,7 @@ namespace System.Net.Security
 
                 if (_credential != null)
                 {
-                    _credential.Dispose();
+                    _credential.DangerousRelease();
                     _credential = null;
                 }
             }
