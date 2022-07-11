@@ -772,6 +772,7 @@ namespace Internal.JitInterface
         {
             // Only report these in the help, others are added to CpuFamilyToInstructionSets just for muscle memory after clang/llvm
             yield return "generic";
+            yield return "nehalem";
             yield return "sandybridge";
             yield return "haswell";
             yield return "ampere-altra";
@@ -786,11 +787,12 @@ namespace Internal.JitInterface
             {
                 sets = cpu switch
                 {
-                    "generic" => "base,neon",
+                    "generic" => "neon",
 
-                    "ampere-altra" => "base,neon,lse",
+                    "ampere-altra" => "neon,lse",
 
-                    "apple-m1" => "base,neon,aes,crc,dotprod,rdma,sha1,sha2,lse,rcpc",
+                    "apple-m1" => "neon,aes,crc,dotprod,rdma,sha1,sha2,lse,rcpc",
+
                     _ => null
                 };
             }
@@ -798,18 +800,21 @@ namespace Internal.JitInterface
             {
                 sets = cpu switch
                 {
-                    "generic" => "base,sse,sse2",
+                    "generic" => "sse2",
+
+                    "nehalem" => "sse4.2",
+
+                    // Rosetta2
+                    "apple-m1" => "sse4.2,pclmul",
 
                     "sandybridge" or
-                    "ivybridge" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,popcnt",
+                    "ivybridge" => "avx,popcnt",
 
                     "haswell" or
                     "broadwell" or
                     "skylake" or
-                    "cannonlake" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,bmi,fma,lzcnt,pclmul,popcnt,movbe,serialize",
+                    "cannonlake" => "avx2,bmi,fma,lzcnt,pclmul,popcnt,movbe",
 
-                    // Rosetta2
-                    "apple-m1" => "base,sse,sse2,sse3,ssse3,sse4.1,sse4.2,pclmul",
                     _ => null
                 };
             }
