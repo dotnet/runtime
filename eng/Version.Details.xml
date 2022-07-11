@@ -48,9 +48,9 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>33221526688e13aa1e41398fbed14fd7ad8fe147</Sha>
     </Dependency>
-    <Dependency Name="System.CommandLine" Version="2.0.0-beta3.22151.2">
+    <Dependency Name="System.CommandLine" Version="2.0.0-beta4.22355.1">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
-      <Sha>021ec68a4cb510c2cc125c6ebb78b9cfd4e3847a</Sha>
+      <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
