@@ -2167,6 +2167,8 @@ namespace System.Runtime.InteropServices.Marshalling
 
         public unsafe ref struct ManagedToUnmanagedIn
         {
+            private object _dummy;
+            private int _dummyPrimitive;
             public static int BufferSize { get { throw null; } }
             public void FromManaged(T[]? array, System.Span<TUnmanagedElement> buffer) { }
             public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
@@ -2303,6 +2305,8 @@ namespace System.Runtime.InteropServices.Marshalling
 
         public unsafe ref struct ManagedToUnmanagedIn
         {
+            private object _dummy;
+            private int _dummyPrimitive;
             public static int BufferSize { get { throw null; } }
             public void FromManaged(T*[]? array, System.Span<TUnmanagedElement> buffer) { }
             public System.ReadOnlySpan<IntPtr> GetManagedValuesSource() { throw null; }
