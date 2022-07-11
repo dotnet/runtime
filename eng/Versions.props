@@ -158,7 +158,8 @@
     <XUnitAnalyzersVersion>0.12.0-pre.20</XUnitAnalyzersVersion>
     <XUnitRunnerVisualStudioVersion>2.4.5</XUnitRunnerVisualStudioVersion>
     <CoverletCollectorVersion>3.1.2</CoverletCollectorVersion>
-    <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
+    <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
+    <NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion>
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>

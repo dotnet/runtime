@@ -449,9 +449,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 NetCoreAppBuilder builder = NetCoreAppBuilder.PortableForNETCoreApp(componentWithDependencies)
                     .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
                     .WithProject("ComponentDependency", "1.0.0", p => p.WithAssemblyGroup(null, g => g.WithAsset("ComponentDependency.dll")))
-                    .WithPackage("Newtonsoft.Json", "9.0.1", p => p.WithAssemblyGroup(null, g => g
+                    .WithPackage("Newtonsoft.Json", "13.0.1", p => p.WithAssemblyGroup(null, g => g
                         .WithAsset("lib/netstandard1.0/Newtonsoft.Json.dll", f => f
-                            .WithVersion("9.0.0.0", "9.0.1.19813")
+                            .WithVersion("13.0.0.0", "13.0.1.25517")
                             .WithFileOnDiskPath("Newtonsoft.Json.dll"))))
                     .WithPackage("Libuv", "1.9.1", p => p
                         .WithNativeLibraryGroup("debian-x64", g => g.WithAsset("runtimes/debian-x64/native/libuv.so"))
