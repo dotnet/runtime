@@ -1150,6 +1150,7 @@ namespace System.Text.Json.Serialization.Tests
         // Needs support for more collections.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53393")]
 #endif
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71981")]
         public async Task JsonIgnoreAttribute_UnsupportedCollection()
         {
             string json =
