@@ -182,85 +182,127 @@ namespace System.IO
             => FileSystem.SetCreationTime(Path.GetFullPath(path), creationTime, asDirectory: false);
 
         public static void SetCreationTime(SafeFileHandle fileHandle, DateTime creationTime)
-            => FileSystem.SetCreationTime(fileHandle, creationTime);
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetCreationTime(fileHandle, creationTime);
+        }
 
         public static void SetCreationTimeUtc(string path, DateTime creationTimeUtc)
             => FileSystem.SetCreationTime(Path.GetFullPath(path), GetUtcDateTimeOffset(creationTimeUtc), asDirectory: false);
 
         public static void SetCreationTimeUtc(SafeFileHandle fileHandle, DateTime creationTimeUtc)
-            => FileSystem.SetCreationTime(fileHandle, GetUtcDateTimeOffset(creationTimeUtc));
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetCreationTime(fileHandle, GetUtcDateTimeOffset(creationTimeUtc));
+        }
 
         public static DateTime GetCreationTime(string path)
             => FileSystem.GetCreationTime(Path.GetFullPath(path)).LocalDateTime;
 
         public static DateTime GetCreationTime(SafeFileHandle fileHandle)
-            => FileSystem.GetCreationTime(fileHandle).LocalDateTime;
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetCreationTime(fileHandle).LocalDateTime;
+        }
 
         public static DateTime GetCreationTimeUtc(string path)
             => FileSystem.GetCreationTime(Path.GetFullPath(path)).UtcDateTime;
 
         public static DateTime GetCreationTimeUtc(SafeFileHandle fileHandle)
-            => FileSystem.GetCreationTime(fileHandle).UtcDateTime;
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetCreationTime(fileHandle).UtcDateTime;
+        }
 
         public static void SetLastAccessTime(string path, DateTime lastAccessTime)
             => FileSystem.SetLastAccessTime(Path.GetFullPath(path), lastAccessTime, false);
 
         public static void SetLastAccessTime(SafeFileHandle fileHandle, DateTime lastAccessTime)
-            => FileSystem.SetLastAccessTime(fileHandle, lastAccessTime);
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetLastAccessTime(fileHandle, lastAccessTime);
+        }
 
         public static void SetLastAccessTimeUtc(string path, DateTime lastAccessTimeUtc)
             => FileSystem.SetLastAccessTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastAccessTimeUtc), false);
 
         public static void SetLastAccessTimeUtc(SafeFileHandle fileHandle, DateTime lastAccessTimeUtc)
-            => FileSystem.SetLastAccessTime(fileHandle, GetUtcDateTimeOffset(lastAccessTimeUtc));
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetLastAccessTime(fileHandle, GetUtcDateTimeOffset(lastAccessTimeUtc));
+        }
 
         public static DateTime GetLastAccessTime(string path)
             => FileSystem.GetLastAccessTime(Path.GetFullPath(path)).LocalDateTime;
 
         public static DateTime GetLastAccessTime(SafeFileHandle fileHandle)
-            => FileSystem.GetLastAccessTime(fileHandle).LocalDateTime;
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetLastAccessTime(fileHandle).LocalDateTime;
+        }
 
         public static DateTime GetLastAccessTimeUtc(string path)
             => FileSystem.GetLastAccessTime(Path.GetFullPath(path)).UtcDateTime;
 
         public static DateTime GetLastAccessTimeUtc(SafeFileHandle fileHandle)
-            => FileSystem.GetLastAccessTime(fileHandle).UtcDateTime;
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetLastAccessTime(fileHandle).UtcDateTime;
+        }
 
         public static void SetLastWriteTime(string path, DateTime lastWriteTime)
             => FileSystem.SetLastWriteTime(Path.GetFullPath(path), lastWriteTime, false);
 
         public static void SetLastWriteTime(SafeFileHandle fileHandle, DateTime lastWriteTime)
-            => FileSystem.SetLastWriteTime(fileHandle, lastWriteTime);
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetLastWriteTime(fileHandle, lastWriteTime);
+        }
 
         public static void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc)
             => FileSystem.SetLastWriteTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastWriteTimeUtc), false);
 
         public static void SetLastWriteTimeUtc(SafeFileHandle fileHandle, DateTime lastWriteTimeUtc)
-            => FileSystem.SetLastWriteTime(fileHandle, GetUtcDateTimeOffset(lastWriteTimeUtc));
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetLastWriteTime(fileHandle, GetUtcDateTimeOffset(lastWriteTimeUtc));
+        }
 
         public static DateTime GetLastWriteTime(string path)
             => FileSystem.GetLastWriteTime(Path.GetFullPath(path)).LocalDateTime;
 
         public static DateTime GetLastWriteTime(SafeFileHandle fileHandle)
-            => FileSystem.GetLastWriteTime(fileHandle).LocalDateTime;
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetLastWriteTime(fileHandle).LocalDateTime;
+        }
 
         public static DateTime GetLastWriteTimeUtc(string path)
             => FileSystem.GetLastWriteTime(Path.GetFullPath(path)).UtcDateTime;
 
         public static DateTime GetLastWriteTimeUtc(SafeFileHandle fileHandle)
-            => FileSystem.GetLastWriteTime(fileHandle).UtcDateTime;
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetLastWriteTime(fileHandle).UtcDateTime;
+        }
 
         public static FileAttributes GetAttributes(string path)
             => FileSystem.GetAttributes(Path.GetFullPath(path));
 
         public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
-            => FileSystem.GetAttributes(fileHandle);
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            return FileSystem.GetAttributes(fileHandle);
+        }
 
         public static void SetAttributes(string path, FileAttributes fileAttributes)
             => FileSystem.SetAttributes(Path.GetFullPath(path), fileAttributes);
 
         public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes fileAttributes)
-            => FileSystem.SetAttributes(fileHandle, fileAttributes);
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+            FileSystem.SetAttributes(fileHandle, fileAttributes);
+        }
 
         /// <summary>Gets the <see cref="T:System.IO.UnixFileMode" /> of the file on the path.</summary>
         /// <param name="path">The path to the file.</param>
