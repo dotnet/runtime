@@ -231,18 +231,21 @@ namespace ILCompiler
             InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
 
             // Ready to run images are built with certain instruction set baselines
-            if (_targetArchitecture == TargetArchitecture.ARM64 && _targetOS == TargetOS.OSX)
+            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                // For osx-arm64 we know that apple-m1 is a baseline
-                bool added = instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
-                Debug.Assert(added);
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
             }
-            else if ((_targetArchitecture == TargetArchitecture.X86) ||
-                     (_targetArchitecture == TargetArchitecture.X64) ||
-                     (_targetArchitecture == TargetArchitecture.ARM64))
+            else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                bool added = instructionSetSupportBuilder.AddSupportedInstructionSet("generic");
-                Debug.Assert(added);
+                if (_targetOS == TargetOS.OSX)
+                {
+                    // For osx-arm64 we know that apple-m1 is a baseline
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                }
             }
 
             if (_commandLineOptions.InstructionSet != null)
