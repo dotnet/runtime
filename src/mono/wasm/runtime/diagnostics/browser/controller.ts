@@ -3,19 +3,16 @@
 
 import cwraps from "../../cwraps";
 import { withStackAlloc, getI32 } from "../../memory";
-import { PromiseController } from "../../promise-utils";
 import { Thread, waitForThread } from "../../pthreads/browser";
 import { makeDiagnosticServerControlCommand } from "../shared/controller-commands";
 import { isDiagnosticMessage } from "../shared/types";
 
 /// An object that can be used to control the diagnostic server.
 export interface ServerController {
-    waitForStartupResume(): Promise<void>;
     postServerAttachToRuntime(): void;
 }
 
 class ServerControllerImpl implements ServerController {
-    private readonly startupResumePromise: PromiseController<void> = new PromiseController();
     constructor(private server: Thread) {
         server.port.addEventListener("message", this.onServerReply.bind(this));
     }
@@ -27,9 +24,6 @@ class ServerControllerImpl implements ServerController {
         console.debug("signaling the diagnostic server to stop");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("stop"));
     }
-    async waitForStartupResume(): Promise<void> {
-        await this.startupResumePromise.promise;
-    }
     postServerAttachToRuntime(): void {
         console.debug("signal the diagnostic server to attach to the runtime");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("attach_to_runtime"));
@@ -39,12 +33,8 @@ class ServerControllerImpl implements ServerController {
         const d = event.data;
         if (isDiagnosticMessage(d)) {
             switch (d.cmd) {
-                case "startup_resume":
-                    console.debug("diagnostic server startup resume");
-                    this.startupResumePromise.resolve();
-                    break;
                 default:
-                    console.warn("Unknown control command: ", <any>d);
+                    console.warn("Unknown control reply command: ", <any>d);
                     break;
             }
         }

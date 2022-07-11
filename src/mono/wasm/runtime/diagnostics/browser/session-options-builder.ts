@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { EventPipeSessionOptions } from "../types";
+import { EventPipeSessionOptions } from "../../types";
 
 export const eventLevel = {
     LogAlways: 0,

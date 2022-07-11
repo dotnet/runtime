@@ -1,126 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../imports";
-import cwraps from "../cwraps";
 import type {
     DiagnosticOptions,
     EventPipeSessionOptions,
-    EventPipeSessionID,
 } from "../types";
 import { is_nullish } from "../types";
 import type { VoidPtr } from "../types/emscripten";
 import { getController, startDiagnosticServer } from "./browser/controller";
 import * as memory from "../memory";
 
-export type { ProviderConfiguration } from "./session-options-builder";
+export type { ProviderConfiguration } from "./browser/session-options-builder";
 import {
     eventLevel, EventLevel,
     SessionOptionsBuilder,
-} from "./session-options-builder";
-
-const sizeOfInt32 = 4;
-
-type EventPipeSessionIDImpl = number;
-
-// An EventPipe session object represents a single diagnostic tracing session that is collecting
-/// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
-/// Each session subscribes to a number of providers and will collect events from the time that start() is called, until stop() is called.
-/// Upon completion the session saves the events to a file on the VFS.
-/// The data can then be retrieved as Blob.
-export interface EventPipeSession {
-    // session ID for debugging logging only
-    get sessionID(): EventPipeSessionID;
-    isIPCStreamingSession(): boolean;
-    start(): void;
-    stop(): void;
-    getTraceBlob(): Blob;
-}
-
-
-// internal session state of the JS instance
-enum State {
-    Initialized,
-    Started,
-    Done,
-}
-
-function start_streaming(sessionID: EventPipeSessionIDImpl): void {
-    cwraps.mono_wasm_event_pipe_session_start_streaming(sessionID);
-}
-
-function stop_streaming(sessionID: EventPipeSessionIDImpl): void {
-    cwraps.mono_wasm_event_pipe_session_disable(sessionID);
-}
-
-abstract class EventPipeSessionBase {
-    isIPCStreamingSession() { return false; }
-}
-
-
-/// An EventPipe session that saves the event data to a file in the VFS.
-class EventPipeFileSession extends EventPipeSessionBase implements EventPipeSession {
-    protected _state: State;
-    private _sessionID: EventPipeSessionIDImpl;
-    private _tracePath: string; // VFS file path to the trace file
-
-    get sessionID(): bigint { return BigInt(this._sessionID); }
-
-    constructor(sessionID: EventPipeSessionIDImpl, tracePath: string) {
-        super();
-        this._state = State.Initialized;
-        this._sessionID = sessionID;
-        this._tracePath = tracePath;
-        console.debug(`EventPipe session ${this.sessionID} created`);
-    }
-
-    start = () => {
-        if (this._state !== State.Initialized) {
-            throw new Error(`EventPipe session ${this.sessionID} already started`);
-        }
-        this._state = State.Started;
-        start_streaming(this._sessionID);
-        console.debug(`EventPipe session ${this.sessionID} started`);
-    }
-
-    stop = () => {
-        if (this._state !== State.Started) {
-            throw new Error(`cannot stop an EventPipe session in state ${this._state}, not 'Started'`);
-        }
-        this._state = State.Done;
-        stop_streaming(this._sessionID);
-        console.debug(`EventPipe session ${this.sessionID} stopped`);
-    }
-
-    getTraceBlob = () => {
-        if (this._state !== State.Done) {
-            throw new Error(`session is in state ${this._state}, not 'Done'`);
-        }
-        const data = Module.FS_readFile(this._tracePath, { encoding: "binary" }) as Uint8Array;
-        return new Blob([data], { type: "application/octet-stream" });
-    }
-}
-
-// a conter for the number of sessions created
-let totalSessions = 0;
-
-function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions, tracePath: string): false | number {
-    const defaultRundownRequested = true;
-    const defaultProviders = ""; // empty string means use the default providers
-    const defaultBufferSizeInMB = 1;
-
-    const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
-    const providers = options?.providers ?? defaultProviders;
-
-    // TODO: if options.message_port, create a streaming session instead of a file session
-
-    memory.setI32(sessionIdOutPtr, 0);
-    if (!cwraps.mono_wasm_event_pipe_enable(tracePath, 0 as unknown as VoidPtr, defaultBufferSizeInMB, providers, rundown, sessionIdOutPtr)) {
-        return false;
-    } else {
-        return memory.getI32(sessionIdOutPtr);
-    }
-}
+} from "./browser/session-options-builder";
+import { EventPipeSession, makeEventPipeSession } from "./browser/file-session";
 
 export interface Diagnostics {
     EventLevel: EventLevel;
@@ -129,7 +24,6 @@ export interface Diagnostics {
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
     getStartupSessions(): (EventPipeSession | null)[];
 }
-
 
 let startup_session_configs: EventPipeSessionOptions[] = [];
 let startup_sessions: (EventPipeSession | null)[] | null = null;
@@ -147,27 +41,13 @@ export function mono_wasm_event_pipe_early_startup_callback(): void {
 
 
 function createAndStartEventPipeSession(options: (EventPipeSessionOptions)): EventPipeSession | null {
-    const session = createEventPipeSession(options);
+    const session = makeEventPipeSession(options);
     if (session === null) {
         return null;
     }
     session.start();
 
     return session;
-}
-
-function createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
-    // The session trace is saved to a file in the VFS. The file name doesn't matter,
-    // but we'd like it to be distinct from other traces.
-    const tracePath = `/trace-${totalSessions++}.nettrace`;
-
-    const success = memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, <EventPipeSessionOptions>options, tracePath);
-
-    if (success === false)
-        return null;
-    const sessionID = success;
-
-    return new EventPipeFileSession(sessionID, tracePath);
 }
 
 /// APIs for working with .NET diagnostics from JavaScript.
@@ -185,7 +65,7 @@ export const diagnostics: Diagnostics = {
     /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
     /// Use the options to control the kinds of events to be collected.
     /// Multiple sessions may be created and started at the same time.
-    createEventPipeSession: createEventPipeSession,
+    createEventPipeSession: makeEventPipeSession,
     getStartupSessions(): (EventPipeSession | null)[] {
         return Array.from(startup_sessions || []);
     },
@@ -214,9 +94,6 @@ export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Pr
         if (controller) {
             if (suspend) {
                 suspendOnStartup = true;
-                //console.debug("waiting for the diagnostic server to resume us");
-                //const response = await controller.waitForStartupResume();
-                //console.debug("diagnostic server resumed us", response);
             }
         }
     }

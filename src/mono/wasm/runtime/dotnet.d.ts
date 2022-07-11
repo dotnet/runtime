@@ -286,11 +286,11 @@ declare class SessionOptionsBuilder {
 
 interface EventPipeSession {
     get sessionID(): EventPipeSessionID;
-    isIPCStreamingSession(): boolean;
     start(): void;
     stop(): void;
     getTraceBlob(): Blob;
 }
+
 interface Diagnostics {
     EventLevel: EventLevel;
     SessionOptionsBuilder: typeof SessionOptionsBuilder;
