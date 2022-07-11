@@ -3,8 +3,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <!-- Use following lines to write the generated files to disk. -->
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <RootNamespace></RootNamespace>
   </PropertyGroup>
 
@@ -28,6 +26,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.Generated.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.cs" />
 
@@ -51,6 +50,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.BigInt64.cs" />
@@ -71,5 +71,8 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.String.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
 
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" Pack="true" ReferenceAnalyzer="true" />
   </ItemGroup>
 </Project>
