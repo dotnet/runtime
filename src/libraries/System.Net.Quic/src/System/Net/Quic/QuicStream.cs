@@ -507,7 +507,7 @@ public sealed partial class QuicStream
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(null, $"Received event {streamEvent->Type}");
+                NetEventSource.Error(null, $"Received event {streamEvent->Type} while connection is already disposed");
             }
             return QUIC_STATUS_INVALID_STATE;
         }
@@ -534,7 +534,7 @@ public sealed partial class QuicStream
     /// <summary>
     /// If the read side is not fully consumed, i.e.: <see cref="ReadsClosed"/> is completed and/or <see cref="ReadAsync(Memory{byte}, CancellationToken)"/> returned <c>0</c>,
     /// dispose will abort the read side with provided <see cref="QuicConnectionOptions.DefaultStreamErrorCode"/>.
-    /// If the write side hasn't been closed, it'll be closed gracefully as if <see cref="CompleteWrites"/> was called.    ///
+    /// If the write side hasn't been closed, it'll be closed gracefully as if <see cref="CompleteWrites"/> was called.
     /// Finally, all resources associated with the stream will be released.
     /// </summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>

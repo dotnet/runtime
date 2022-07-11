@@ -2443,12 +2443,12 @@ namespace Microsoft.Quic
                 {
                     get
                     {
-                        return (byte)((_bitfield >> 3) & 0x4Fu);
+                        return (byte)((_bitfield >> 3) & 0x1Fu);
                     }
 
                     set
                     {
-                        _bitfield = (byte)((_bitfield & ~(0x4Fu << 3)) | ((value & 0x4Fu) << 3));
+                        _bitfield = (byte)((_bitfield & ~(0x1Fu << 3)) | ((value & 0x1Fu) << 3));
                     }
                 }
 
