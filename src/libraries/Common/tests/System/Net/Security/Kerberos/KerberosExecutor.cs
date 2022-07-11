@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Kerberos.NET.Configuration;
 using Kerberos.NET.Crypto;
 using Kerberos.NET.Entities;
 using Kerberos.NET.Server;
@@ -31,10 +32,14 @@ public class KerberosExecutor : IDisposable
 
     public KerberosExecutor(string realm)
     {
+        var krb5Config = Krb5Config.Default();
+        krb5Config.KdcDefaults.RegisterDefaultPkInitPreAuthHandler = false;
+
         _options = new ListenerOptions
         {
+            Configuration = krb5Config,
             DefaultRealm = realm,
-            RealmLocator = realm => new FakeRealmService(realm)
+            RealmLocator = realm => new FakeRealmService(realm, krb5Config)
         };
 
         _kdcListener = new FakeKdcServer(_options);

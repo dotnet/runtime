@@ -10,9 +10,6 @@
     </Compile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)FakeKdcCertificate.cs">
-      <Link>CommonTest\System\Net\Security\Kerberos\FakeKdcCertificate.cs</Link>
-    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)FakeKdcServer.cs">
       <Link>CommonTest\System\Net\Security\Kerberos\FakeKdcServer.cs</Link>
     </Compile>

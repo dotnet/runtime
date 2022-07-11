@@ -50,7 +50,7 @@ class FakePrincipalService : IPrincipalService
 
     public X509Certificate2 RetrieveKdcCertificate()
     {
-        return FakeKdcCertificate.Certificate;
+        throw new NotImplementedException();
     }
 
     private static readonly Dictionary<KeyAgreementAlgorithm, IExchangeKey> KeyCache = new();
