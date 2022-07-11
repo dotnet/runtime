@@ -295,21 +295,7 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                SystemVClassificationType fieldClassificationType;
-                if (typeDesc.IsByReferenceOfT)
-                {
-                    // ByReference<T> is a special type whose single IntPtr field holds a by-ref potentially interior pointer to GC
-                    // memory, so classify its field as such
-                    Debug.Assert(numIntroducedFields == 1);
-                    Debug.Assert(field.FieldType.IsWellKnownType(WellKnownType.IntPtr));
-
-                    fieldClassificationType = SystemVClassificationTypeIntegerByRef;
-                }
-                else
-                {
-                    fieldClassificationType = TypeDef2SystemVClassification(field.FieldType);
-                }
-
+                SystemVClassificationType fieldClassificationType = TypeDef2SystemVClassification(field.FieldType);
                 if (fieldClassificationType == SystemVClassificationTypeStruct)
                 {
                     bool inEmbeddedStructPrev = helper.InEmbeddedStruct;

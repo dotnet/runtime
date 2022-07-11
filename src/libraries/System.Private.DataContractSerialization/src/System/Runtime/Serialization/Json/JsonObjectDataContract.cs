@@ -49,10 +49,7 @@ namespace System.Runtime.Serialization.Json
                     throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, contentMode));
             }
 
-            if (context != null)
-            {
-                context.AddNewObject(obj);
-            }
+            context?.AddNewObject(obj);
             return obj;
         }
 

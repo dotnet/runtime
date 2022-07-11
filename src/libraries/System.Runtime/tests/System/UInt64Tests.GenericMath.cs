@@ -273,41 +273,41 @@ namespace System.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0x0000000000000000, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0x0000000000000001, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0x8000000000000000, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThan((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0x0000000000000000, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0x0000000000000001, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0x8000000000000000, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThan((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0x0000000000000000, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0x0000000000000001, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0x8000000000000000, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_GreaterThanOrEqual((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0x0000000000000000, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0x0000000000000001, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0x8000000000000000, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_GreaterThanOrEqual((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0x0000000000000000, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0x0000000000000001, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0x8000000000000000, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThan((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0x0000000000000000, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0x0000000000000001, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0x8000000000000000, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThan((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0x0000000000000000, 1));
-            Assert.True(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0x0000000000000001, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0x8000000000000000, 1));
-            Assert.False(ComparisonOperatorsHelper<ulong, ulong>.op_LessThanOrEqual((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0x0000000000000000, 1));
+            Assert.True(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0x0000000000000001, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0x8000000000000000, 1));
+            Assert.False(ComparisonOperatorsHelper<ulong, ulong, bool>.op_LessThanOrEqual((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         //
@@ -370,21 +370,21 @@ namespace System.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0x0000000000000000, 1));
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0x0000000000000001, 1));
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0x8000000000000000, 1));
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Equality((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0x0000000000000000, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0x0000000000000001, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0x8000000000000000, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Equality((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0x0000000000000000, 1));
-            Assert.False(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0x0000000000000001, 1));
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0x8000000000000000, 1));
-            Assert.True(EqualityOperatorsHelper<ulong, ulong>.op_Inequality((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0x0000000000000000, 1));
+            Assert.False(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0x0000000000000001, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0x8000000000000000, 1));
+            Assert.True(EqualityOperatorsHelper<ulong, ulong, bool>.op_Inequality((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         //
@@ -1600,31 +1600,31 @@ namespace System.Tests
         [Fact]
         public static void op_LeftShiftTest()
         {
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x0000000000000000, 1));
-            Assert.Equal((ulong)0x0000000000000002, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x0000000000000001, 1));
-            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x8000000000000000, 1));
-            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000002, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFE, ShiftOperatorsHelper<ulong, int, ulong>.op_LeftShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x0000000000000000, 1));
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x0000000000000001, 1));
-            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x8000000000000000, 1));
-            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, int, ulong>.op_RightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x0000000000000000, 1));
-            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x0000000000000001, 1));
-            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
-            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x8000000000000000, 1));
-            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, int, ulong>.op_UnsignedRightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         //

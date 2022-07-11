@@ -542,10 +542,7 @@ namespace System.Net.Mail
             finally
             {
                 InCall = false;
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                }
+                _timer?.Dispose();
             }
         }
 
@@ -633,8 +630,7 @@ namespace System.Net.Mail
                             ValidateUnicodeRequirement(message, _recipients, allowUnicode);
                             message.Send(_writer, true, allowUnicode);
 
-                            if (_writer != null)
-                                _writer.Close();
+                            _writer?.Close();
 
                             AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(null, false, _asyncOp.UserSuppliedState);
                             InCall = false;

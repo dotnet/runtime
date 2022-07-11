@@ -454,10 +454,7 @@ namespace System.Security.Cryptography
                 return null;
             }
 
-            if (args == null)
-            {
-                args = Array.Empty<object>();
-            }
+            args ??= Array.Empty<object>();
 
             List<MethodBase> candidates = new List<MethodBase>();
             for (int i = 0; i < cons.Length; i++)

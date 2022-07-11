@@ -1653,8 +1653,6 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
     // Allocate "m_defs" here, according to the typ/attribs pair.
     switch (attribs)
     {
-        case CEA_NotAField:
-            break; // Nothing to do.
         case CEA_Const:
             switch (typ)
             {
@@ -2894,8 +2892,11 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             // If arg0 has a possible exception, it wouldn't have been constant.
             assert(!VNHasExc(arg0VN));
             // Otherwise...
-            assert(arg0VN == VNForNull());         // Only other REF constant.
-            assert(func == VNFunc(GT_ARR_LENGTH)); // Only function we can apply to a REF constant!
+            assert(arg0VN == VNForNull()); // Only other REF constant.
+
+            // Only functions we can apply to a REF constant!
+            assert((func == VNFunc(GT_ARR_LENGTH)) || (func == VNF_MDArrLength) ||
+                   (func == VNFunc(GT_MDARR_LOWER_BOUND)));
             return VNWithExc(VNForVoid(), VNExcSetSingleton(VNForFunc(TYP_REF, VNF_NullPtrExc, VNForNull())));
         }
         default:
@@ -4545,55 +4546,18 @@ ValueNumPair ValueNumStore::VNPairForLoadStoreBitCast(ValueNumPair value, var_ty
 }
 
 //------------------------------------------------------------------------
-// IsVNNotAField: Is the value number a "NotAField" field sequence?
-//
-// Arguments:
-//    vn - the value number in question
-//
-// Return Value:
-//    Whether "vn" represents a "NotAField" field sequence.
-//
-// Notes:
-//    "NotAField" field sequences always get a "new, unique" number, since
-//    they represent unknown locations. Thus they get their own chunk kind,
-//    for which no actual memory is allocated to hold VNFunc data.
-//
-bool ValueNumStore::IsVNNotAField(ValueNum vn)
-{
-    return m_chunks.GetNoExpand(GetChunkNum(vn))->m_attribs == CEA_NotAField;
-}
-
-//------------------------------------------------------------------------
 // VNForFieldSeq: Get the value number representing a field sequence.
 //
 // Arguments:
 //    fieldSeq - the field sequence
 //
 // Return Value:
-//    "VNForNull" if the sequence is empty ("nullptr").
-//    "IsVNNotAField" VN if it is a "NotAField".
-//    "GTF_FIELD_SEQ_PTR" handle VN otherwise.
+//    "GTF_FIELD_SEQ_PTR" handle VN for the sequences.
 //
-ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
+ValueNum ValueNumStore::VNForFieldSeq(FieldSeq* fieldSeq)
 {
-    if (fieldSeq == nullptr)
-    {
-        return VNForNull();
-    }
-
-    ValueNum fieldSeqVN;
-    if (fieldSeq == FieldSeqStore::NotAField())
-    {
-        // We always allocate a new, unique VN in this call.
-        Chunk*   c                 = GetAllocChunk(TYP_REF, CEA_NotAField);
-        unsigned offsetWithinChunk = c->AllocVN();
-        fieldSeqVN                 = c->m_baseVN + offsetWithinChunk;
-    }
-    else
-    {
-        // This encoding relies on the canonicality of field sequences.
-        fieldSeqVN = VNForHandle(reinterpret_cast<ssize_t>(fieldSeq), GTF_ICON_FIELD_SEQ);
-    }
+    // This encoding relies on the canonicality of field sequences.
+    ValueNum fieldSeqVN = VNForHandle(reinterpret_cast<ssize_t>(fieldSeq), GTF_ICON_FIELD_SEQ);
 
 #ifdef DEBUG
     if (m_pComp->verbose)
@@ -4616,58 +4580,25 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
 // Return Value:
 //    The field sequence associated with "vn".
 //
-FieldSeqNode* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
+FieldSeq* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
 {
-    if (vn == VNForNull())
-    {
-        return nullptr;
-    }
-
-    if (IsVNNotAField(vn))
-    {
-        return FieldSeqStore::NotAField();
-    }
-
     assert(IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ));
 
-    return reinterpret_cast<FieldSeqNode*>(ConstantValue<ssize_t>(vn));
-}
-
-//------------------------------------------------------------------------
-// FieldSeqVNAppend: Append a field sequences to one represented as a VN.
-//
-// Arguments:
-//    innerFieldSeqVN - VN of the field sequence being appended to
-//    outerFieldSeq   - the field sequence being appended
-//
-// Return Value:
-//    The value number representing [innerFieldSeq, outerFieldSeq].
-//
-ValueNum ValueNumStore::FieldSeqVNAppend(ValueNum innerFieldSeqVN, FieldSeqNode* outerFieldSeq)
-{
-    FieldSeqNode* innerFieldSeq = FieldSeqVNToFieldSeq(innerFieldSeqVN);
-    FieldSeqNode* fullFieldSeq  = m_pComp->GetFieldSeqStore()->Append(innerFieldSeq, outerFieldSeq);
-
-    return VNForFieldSeq(fullFieldSeq);
+    return reinterpret_cast<FieldSeq*>(ConstantValue<ssize_t>(vn));
 }
 
 ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, GenTree* opB)
 {
     if (opB->OperGet() == GT_CNS_INT)
     {
-        FieldSeqNode* fldSeq = opB->AsIntCon()->gtFieldSeq;
-        if (fldSeq != nullptr)
-        {
-            return ExtendPtrVN(opA, fldSeq, opB->AsIntCon()->IconValue());
-        }
+        return ExtendPtrVN(opA, opB->AsIntCon()->gtFieldSeq, opB->AsIntCon()->IconValue());
     }
+
     return NoVN;
 }
 
-ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq, ssize_t offset)
+ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeq* fldSeq, ssize_t offset)
 {
-    assert(fldSeq != nullptr);
-
     ValueNum res = NoVN;
 
     ValueNum opAvnWx = opA->gtVNPair.GetLiberal();
@@ -4685,7 +4616,8 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq, ssize_t 
 
     if (funcApp.m_func == VNF_PtrToStatic)
     {
-        res = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0], FieldSeqVNAppend(funcApp.m_args[1], fldSeq),
+        fldSeq = m_pComp->GetFieldSeqStore()->Append(FieldSeqVNToFieldSeq(funcApp.m_args[1]), fldSeq);
+        res    = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0], VNForFieldSeq(fldSeq),
                         VNForIntPtrCon(ConstantValue<ssize_t>(funcApp.m_args[2]) + offset));
     }
     else if (funcApp.m_func == VNF_PtrToArrElem)
@@ -4905,15 +4837,9 @@ void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFu
 // Notes:
 //    Only assigns normal VNs to "loadTree".
 //
-void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset)
+void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset)
 {
-    assert(fieldSeq != nullptr);
-
-    if (fieldSeq == FieldSeqStore::NotAField())
-    {
-        loadTree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, loadTree->TypeGet()));
-        return;
-    }
+    noway_assert(fieldSeq != nullptr);
 
     // Two cases:
     //
@@ -4961,15 +4887,9 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 //    value     - The value being stored
 //
 void Compiler::fgValueNumberFieldStore(
-    GenTree* storeNode, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value)
+    GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value)
 {
-    assert(fieldSeq != nullptr);
-
-    if (fieldSeq == FieldSeqStore::NotAField())
-    {
-        fgMutateGcHeap(storeNode DEBUGARG("NotAField field store"));
-        return;
-    }
+    noway_assert(fieldSeq != nullptr);
 
     // Two cases:
     //  1) Instance field / "complex" static: heap[field][baseAddr][offset + load size] = value.
@@ -5691,13 +5611,15 @@ ValueNum ValueNumStore::GetArrForLenVn(ValueNum vn)
     }
 
     VNFuncApp funcAttr;
-    if (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == (VNFunc)GT_ARR_LENGTH)
+    if (GetVNFunc(vn, &funcAttr) &&
+        ((funcAttr.m_func == (VNFunc)GT_ARR_LENGTH) || (funcAttr.m_func == VNF_MDArrLength)))
     {
         return funcAttr.m_args[0];
     }
     return NoVN;
 }
 
+// TODO-MDArray: support JitNewMdArr, probably with a IsVNNewMDArr() function
 bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
 {
     if (vn == NoVN)
@@ -5712,6 +5634,8 @@ bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
     return result;
 }
 
+// TODO-MDArray: support array dimension length of a specific dimension for JitNewMdArr, with a GetNewMDArrSize()
+// function.
 int ValueNumStore::GetNewArrSize(ValueNum vn)
 {
     VNFuncApp funcApp;
@@ -5733,7 +5657,8 @@ bool ValueNumStore::IsVNArrLen(ValueNum vn)
         return false;
     }
     VNFuncApp funcAttr;
-    return (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == (VNFunc)GT_ARR_LENGTH);
+    return GetVNFunc(vn, &funcAttr) &&
+           ((funcAttr.m_func == (VNFunc)GT_ARR_LENGTH) || (funcAttr.m_func == VNF_MDArrLength));
 }
 
 bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
@@ -6383,9 +6308,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     {
         printf("NoVN");
     }
-    else if (IsVNNotAField(vn) || (IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ)))
+    else if (IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ))
     {
-        comp->gtDispAnyFieldSeq(FieldSeqVNToFieldSeq(vn));
+        comp->gtDispFieldSeq(FieldSeqVNToFieldSeq(vn), 0);
         printf(" ");
     }
     else if (IsVNHandle(vn))
@@ -6798,6 +6723,9 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
+                                                 GT_MDARR_LENGTH,
+                                                 GT_MDARR_LOWER_BOUND, // 'dim' value must be considered
+                                                 GT_BITCAST,           // Needs to encode the target type.
 
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
@@ -8202,7 +8130,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             ssize_t              offset     = 0;
             unsigned             storeSize  = lhs->AsIndir()->Size();
             GenTree*             baseAddr   = nullptr;
-            FieldSeqNode*        fldSeq     = nullptr;
+            FieldSeq*            fldSeq     = nullptr;
 
             if (argIsVNFunc && (funcApp.m_func == VNF_PtrToStatic))
             {
@@ -8218,7 +8146,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             }
             else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
             {
-                assert(fldSeq != FieldSeqStore::NotAField());
+                assert(fldSeq != nullptr);
                 fgValueNumberFieldStore(tree, baseAddr, fldSeq, offset, storeSize, rhsVNPair.GetLiberal());
             }
             else if (arg->DefinesLocalAddr(&lclVarTree, &offset))
@@ -8433,18 +8361,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // An untracked local, and other odd cases.
                         lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
                     }
-
-                    // When we have a TYP_BYREF LclVar it can have a zero offset field sequence that needs to be added.
-                    FieldSeqNode* zeroOffsetFldSeq = nullptr;
-                    if ((typ == TYP_BYREF) && GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFldSeq))
-                    {
-                        ValueNum addrExtended = vnStore->ExtendPtrVN(lcl, zeroOffsetFldSeq, 0);
-                        if (addrExtended != ValueNumStore::NoVN)
-                        {
-                            assert(lcl->gtVNPair.BothEqual());
-                            lcl->gtVNPair.SetBoth(addrExtended);
-                        }
-                    }
                 }
                 else
                 {
@@ -8475,17 +8391,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         lclFld->gtVNPair =
                             vnStore->VNPairForLoad(lclVarValue, lvaLclExactSize(lclNum), lclFld->TypeGet(),
                                                    lclFld->GetLclOffs(), lclFld->GetSize());
-
-                        // If we have byref field, we may have a zero-offset sequence to add.
-                        FieldSeqNode* zeroOffsetFldSeq = nullptr;
-                        if ((typ == TYP_BYREF) && GetZeroOffsetFieldMap()->Lookup(lclFld, &zeroOffsetFldSeq))
-                        {
-                            ValueNum addrExtended = vnStore->ExtendPtrVN(lclFld, zeroOffsetFldSeq, 0);
-                            if (addrExtended != ValueNumStore::NoVN)
-                            {
-                                lclFld->gtVNPair.SetBoth(addrExtended);
-                            }
-                        }
                     }
                 }
                 else
@@ -8553,37 +8458,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
             else if ((location->gtOper == GT_IND) || location->OperIsBlk())
             {
-                // Usually the ADDR and IND just cancel out...
-                // except when this GT_ADDR has a valid zero-offset field sequence
+                // They just cancel, so fetch the ValueNumber from the op1 of the GT_IND node.
                 //
+                GenTree*     addr    = location->AsIndir()->Addr();
+                ValueNumPair addrVNP = addr->gtVNPair;
 
-                ValueNumPair  addrVNP            = ValueNumPair();
-                FieldSeqNode* zeroOffsetFieldSeq = nullptr;
-                if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq))
-                {
-                    ValueNum addrExtended = vnStore->ExtendPtrVN(location->AsIndir()->Addr(), zeroOffsetFieldSeq, 0);
-                    if (addrExtended != ValueNumStore::NoVN)
-                    {
-                        // We don't care about lib/cons differences for addresses.
-                        addrVNP.SetBoth(addrExtended);
-                    }
-                    else
-                    {
-                        // ExtendPtrVN returned a failure result - give this address a new unique value.
-                        addrVNP.SetBoth(vnStore->VNForExpr(compCurBB, TYP_BYREF));
-                    }
-                }
-                else
-                {
-                    // They just cancel, so fetch the ValueNumber from the op1 of the GT_IND node.
-                    //
-                    GenTree* addr = location->AsIndir()->Addr();
-                    addrVNP       = addr->gtVNPair;
-
-                    // For the CSE phase mark the address as GTF_DONT_CSE
-                    // because it will end up with the same value number as tree (the GT_ADDR).
-                    addr->gtFlags |= GTF_DONT_CSE;
-                }
+                // For the CSE phase mark the address as GTF_DONT_CSE
+                // because it will end up with the same value number as tree (the GT_ADDR).
+                addr->gtFlags |= GTF_DONT_CSE;
 
                 tree->gtVNPair = vnStore->VNPWithExc(addrVNP, vnStore->VNPExceptionSet(location->gtVNPair));
             }
@@ -8601,7 +8483,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // can recognize redundant loads with no stores between them.
             GenTree*             addr       = tree->AsIndir()->Addr();
             GenTreeLclVarCommon* lclVarTree = nullptr;
-            FieldSeqNode*        fldSeq     = nullptr;
+            FieldSeq*            fldSeq     = nullptr;
             GenTree*             baseAddr   = nullptr;
             bool                 isVolatile = (tree->gtFlags & GTF_IND_VOLATILE) != 0;
 
@@ -8713,7 +8595,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 else if (addr->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                 {
-                    assert(fldSeq != FieldSeqStore::NotAField());
+                    assert(fldSeq != nullptr);
                     fgValueNumberFieldLoad(tree, baseAddr, fldSeq, offset);
                 }
                 else // We don't know where the address points, so it is an ByrefExposed load.
@@ -8765,8 +8647,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             // If we are fetching the array length for an array ref that came from global memory
                             // then for CSE safety we must use the conservative value number for both
                             //
-                            if ((tree->OperGet() == GT_ARR_LENGTH) &&
-                                ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
+                            if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
                             {
                                 // use the conservative value number for both when computing the VN for the ARR_LENGTH
                                 op1VNP.SetBoth(op1VNP.GetConservative());
@@ -8809,7 +8690,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     // Check for the addition of a field offset constant
                     //
-                    if ((oper == GT_ADD) && (!tree->gtOverflowEx()))
+                    if ((oper == GT_ADD) && !tree->gtOverflowEx())
                     {
                         newVN = vnStore->ExtendPtrVN(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
                     }
@@ -8844,6 +8725,34 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     case GT_ARR_ADDR:
                         fgValueNumberArrIndexAddr(tree->AsArrAddr());
                         break;
+
+                    case GT_MDARR_LENGTH:
+                    case GT_MDARR_LOWER_BOUND:
+                    {
+                        VNFunc   mdarrVnf = (oper == GT_MDARR_LENGTH) ? VNF_MDArrLength : VNF_MDArrLowerBound;
+                        GenTree* arrRef   = tree->AsMDArr()->ArrRef();
+                        unsigned dim      = tree->AsMDArr()->Dim();
+
+                        ValueNumPair arrVNP;
+                        ValueNumPair arrVNPx;
+                        vnStore->VNPUnpackExc(arrRef->gtVNPair, &arrVNP, &arrVNPx);
+
+                        // If we are fetching the array length for an array ref that came from global memory
+                        // then for CSE safety we must use the conservative value number for both.
+                        //
+                        if ((arrRef->gtFlags & GTF_GLOB_REF) != 0)
+                        {
+                            arrVNP.SetBoth(arrVNP.GetConservative());
+                        }
+
+                        ValueNumPair intPair;
+                        intPair.SetBoth(vnStore->VNForIntCon(dim));
+
+                        ValueNumPair normalPair = vnStore->VNPairForFunc(tree->TypeGet(), mdarrVnf, arrVNP, intPair);
+
+                        tree->gtVNPair = vnStore->VNPWithExc(normalPair, arrVNPx);
+                        break;
+                    }
 
                     case GT_BOUNDS_CHECK:
                     {
@@ -8934,6 +8843,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             vnStore->VNPUniqueWithExc(tree->TypeGet(),
                                                       vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
                         break;
+
+                    case GT_BITCAST:
+                    {
+                        fgValueNumberBitCast(tree);
+                        break;
+                    }
 
                     default:
                         assert(!"Unhandled node in fgValueNumberTree");
@@ -9079,8 +8994,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             printf("\n");
         }
     }
-
-    fgDebugCheckValueNumberedTree(tree);
 #endif // DEBUG
 }
 
@@ -9201,7 +9114,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 
         if (isMemoryLoad)
         {
-            // Currently the only SIMD operation with MemoryLoad sematics is SIMDIntrinsicInitArray
+            // Currently the only SIMD operation with MemoryLoad semantics is SIMDIntrinsicInitArray
             // and it has to be handled specially since it has an optional op2
             //
             assert(tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray);
@@ -9538,6 +9451,29 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
 }
 
 //------------------------------------------------------------------------
+// fgValueNumberBitCast: Value number a bitcast.
+//
+// Arguments:
+//    tree - The tree performing the bitcast
+//
+void Compiler::fgValueNumberBitCast(GenTree* tree)
+{
+    assert(tree->OperGet() == GT_BITCAST);
+
+    ValueNumPair srcVNPair  = tree->gtGetOp1()->gtVNPair;
+    var_types    castToType = tree->TypeGet();
+
+    ValueNumPair srcNormVNPair;
+    ValueNumPair srcExcVNPair;
+    vnStore->VNPUnpackExc(srcVNPair, &srcNormVNPair, &srcExcVNPair);
+
+    ValueNumPair resultNormVNPair = vnStore->VNPairForBitCast(srcNormVNPair, castToType);
+    ValueNumPair resultExcVNPair  = srcExcVNPair;
+
+    tree->gtVNPair = vnStore->VNPWithExc(resultNormVNPair, resultExcVNPair);
+}
+
+//------------------------------------------------------------------------
 // VNForBitCast: Get the VN representing bitwise reinterpretation of types.
 //
 // Arguments:
@@ -9587,6 +9523,20 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
     return VNForFunc(castToType, VNF_BitCast, srcVN, VNForIntCon(castToType));
 }
 
+//------------------------------------------------------------------------
+// VNPairForBitCast: VNForBitCast applied to a ValueNumPair.
+//
+ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType)
+{
+    ValueNum srcLibVN = srcVNPair.GetLiberal();
+    ValueNum srcConVN = srcVNPair.GetConservative();
+
+    ValueNum bitCastLibVN = VNForBitCast(srcLibVN, castToType);
+    ValueNum bitCastConVN = VNForBitCast(srcConVN, castToType);
+
+    return ValueNumPair(bitCastLibVN, bitCastConVN);
+}
+
 void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc)
 {
     unsigned nArgs = ValueNumStore::VNFuncArity(vnf);
@@ -9616,6 +9566,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         case VNF_JitNewMdArr:
         {
+            // TODO-MDArray: support value numbering new MD array helper
             generateUniqueVN = true;
         }
         break;
@@ -10752,10 +10703,13 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_ARR_LENGTH:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrLen()->ArrRef());
+            case GT_MDARR_LENGTH:
+            case GT_MDARR_LOWER_BOUND:
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrCommon()->ArrRef());
                 break;
 
             case GT_ARR_ELEM:
+                assert(!opts.compJitEarlyExpandMDArrays);
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrElem()->gtArrObj);
                 break;
 
@@ -10835,67 +10789,6 @@ void Compiler::fgDebugCheckExceptionSets()
             }
 
             ExceptionSetsChecker::CheckTree(stmt->GetRootNode(), vnStore);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// fgDebugCheckValueNumberedTree: Verify proper numbering for "tree".
-//
-// Currently only checks that we have not forgotten to add a zero-offset
-// field sequence to "tree"'s value number.
-//
-// Arguments:
-//    tree - The tree, that has just been numbered, to check
-//
-void Compiler::fgDebugCheckValueNumberedTree(GenTree* tree)
-{
-    FieldSeqNode* zeroOffsetFldSeq;
-    if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFldSeq))
-    {
-        // Empty field sequences should never be recorded in the map.
-        assert(zeroOffsetFldSeq != nullptr);
-
-        ValueNum vns[] = {tree->GetVN(VNK_Liberal), tree->GetVN(VNK_Conservative)};
-        for (ValueNum vn : vns)
-        {
-            VNFuncApp vnFunc;
-            if (vnStore->GetVNFunc(vn, &vnFunc))
-            {
-                FieldSeqNode* fullFldSeq;
-                switch (vnFunc.m_func)
-                {
-                    case VNF_PtrToStatic:
-                        fullFldSeq = vnStore->FieldSeqVNToFieldSeq(vnFunc.m_args[1]);
-                        break;
-
-                    default:
-                        continue;
-                }
-
-                // Verify that the "fullFldSeq" we have just collected is of the
-                // form "[outer fields, zeroOffsetFldSeq]", or is "NotAField".
-                if (fullFldSeq == FieldSeqStore::NotAField())
-                {
-                    continue;
-                }
-
-                // This check relies on the canonicality of field sequences.
-                FieldSeqNode* fldSeq                = fullFldSeq;
-                bool          zeroOffsetFldSeqFound = false;
-                while (fldSeq != nullptr)
-                {
-                    if (fldSeq == zeroOffsetFldSeq)
-                    {
-                        zeroOffsetFldSeqFound = true;
-                        break;
-                    }
-
-                    fldSeq = fldSeq->GetNext();
-                }
-
-                assert(zeroOffsetFldSeqFound);
-            }
         }
     }
 }

@@ -11,12 +11,13 @@ import { runtimeHelpers } from "./imports";
 import { conv_string_root } from "./strings";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
-import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
+import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy, _lookup_js_owned_object } from "./gc-handles";
 import { mono_method_get_call_signature_ref, call_method_ref, wrap_error_root } from "./method-calls";
 import { js_to_mono_obj_root } from "./js-to-cs";
-import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
+import { _are_promises_supported, create_cancelable_promise } from "./cancelable-promise";
 import { getU32, getI32, getF32, getF64 } from "./memory";
 import { Int32Ptr, VoidPtr } from "./types/emscripten";
+import { ManagedObject } from "./marshal";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
@@ -224,15 +225,7 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
             delegateRoot.release();
         }
 
-        // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry. Except in case of EventListener where we cleanup after unregistration.
-        if (_use_finalization_registry) {
-            // register for GC of the deleate after the JS side is done with the function
-            _js_owned_object_registry.register(result, gc_handle);
-        }
-
-        // register for instance reuse
-        // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef. Except in case of EventListener where we cleanup after unregistration.
-        _register_js_owned_object(gc_handle, result);
+        setup_managed_proxy(result, gc_handle);
     }
 
     return result;
@@ -302,11 +295,9 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
 
     // If the promise for this gc_handle was already collected (or was never created)
     if (!result) {
-        const explicitFinalization = _use_finalization_registry
-            ? undefined
-            : () => _js_owned_object_finalized(gc_handle);
+        const explicitFinalization = () => teardown_managed_proxy(result, gc_handle);
 
-        const { promise, promise_control } = _create_cancelable_promise(explicitFinalization, explicitFinalization);
+        const { promise, promise_control } = create_cancelable_promise(explicitFinalization, explicitFinalization);
 
         // note that we do not implement promise/task roundtrip
         // With more complexity we could recover original instance when this promise is marshaled back to C#.
@@ -315,13 +306,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
         // register C# side of the continuation
         corebindings._setup_js_cont_ref(root.address, promise_control);
 
-        // register for GC of the Task after the JS side is done with the promise
-        if (_use_finalization_registry) {
-            _js_owned_object_registry.register(result, gc_handle);
-        }
-
-        // register for instance reuse
-        _register_js_owned_object(gc_handle, result);
+        setup_managed_proxy(result, gc_handle);
     }
 
     return result;
@@ -351,20 +336,12 @@ export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): a
 
     // If the JS object for this gc_handle was already collected (or was never created)
     if (is_nullish(result)) {
-        result = {};
+        result = new ManagedObject();
 
         // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
         result[js_owned_gc_handle_symbol] = gc_handle;
 
-        // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
-        if (_use_finalization_registry) {
-            // register for GC of the C# object after the JS side is done with the object
-            _js_owned_object_registry.register(result, gc_handle);
-        }
-
-        // register for instance reuse
-        // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
-        _register_js_owned_object(gc_handle, result);
+        setup_managed_proxy(result, gc_handle);
     }
 
     return result;

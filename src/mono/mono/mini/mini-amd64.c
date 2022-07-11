@@ -2077,14 +2077,13 @@ arg_storage_to_llvm_arg_storage (MonoCompile *cfg, ArgStorage storage)
 LLVMCallInfo*
 mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 {
-	int i, n;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	int j;
 	LLVMCallInfo *linfo;
 	MonoType *t;
 
-	n = sig->param_count + sig->hasthis;
+	guint n = sig->param_count + sig->hasthis;
 
 	cinfo = get_call_info (cfg->mempool, sig);
 
@@ -2132,7 +2131,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		break;
 	}
 
-	for (i = 0; i < n; ++i) {
+	for (guint i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
 		if (i >= sig->hasthis)

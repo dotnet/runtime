@@ -578,8 +578,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            if (TplEventSource.Log != null)
-                TplEventSource.Log.SetActivityId(activityId);
+            TplEventSource.Log?.SetActivityId(activityId);
 
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.
@@ -680,8 +679,7 @@ namespace System.Diagnostics.Tracing
 
             // We don't call the activityDying callback here because the caller has declared that
             // it is not dying.
-            if (TplEventSource.Log != null)
-                TplEventSource.Log.SetActivityId(activityId);
+            TplEventSource.Log?.SetActivityId(activityId);
         }
 #endregion
 
@@ -2235,10 +2233,7 @@ namespace System.Diagnostics.Tracing
                     data.Size = (uint)(2 * (msgString.Length + 1));
                     data.Reserved = 0;
 #if FEATURE_MANAGED_ETW
-                    if (m_etwProvider != null)
-                    {
-                        m_etwProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
-                    }
+                    m_etwProvider?.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
 #endif // FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
                     if (m_eventPipeProvider != null)
@@ -4070,15 +4065,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public event EventHandler<EventWrittenEventArgs>? EventWritten;
 
-        static EventListener()
-        {
-#if FEATURE_PERFTRACING
-            // This allows NativeRuntimeEventSource to get initialized so that EventListeners can subscribe to the runtime events emitted from
-            // native side.
-            GC.KeepAlive(NativeRuntimeEventSource.Log);
-#endif
-        }
-
         /// <summary>
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
         /// them on).
@@ -4487,7 +4473,18 @@ namespace System.Diagnostics.Tracing
             get
             {
                 if (s_EventSources == null)
+                {
                     Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference<EventSource>>(2), null);
+#if FEATURE_PERFTRACING
+                    // It is possible that another thread could observe the s_EventSources list at this point and it
+                    // won't have the NativeRuntimeEventSource in it. In the past we guaranteed that the NativeRuntimeEventSource
+                    // was always visible in the list by initializing it in the EventListener static constructor, however doing it
+                    // that way triggered deadlocks between the static constructor and an OS ETW lock. There is no known issue here
+                    // having a small window of time where NativeRuntimeEventSource is not in the list as long
+                    // as we still guarantee it gets initialized eventually.
+                    GC.KeepAlive(NativeRuntimeEventSource.Log);
+#endif
+                }
                 return s_EventSources;
             }
         }

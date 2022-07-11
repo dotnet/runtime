@@ -9,6 +9,7 @@ namespace System.Net.Mail
 {
     internal sealed class SmtpNegotiateAuthenticationModule : ISmtpAuthenticationModule
     {
+        private static byte[] _saslNoSecurtyLayerToken = new byte[] { 1, 0, 0, 0 };
         private readonly Dictionary<object, NTAuthentication> _sessions = new Dictionary<object, NTAuthentication>();
 
         internal SmtpNegotiateAuthenticationModule()
@@ -29,10 +30,19 @@ namespace System.Net.Mail
                             return null;
                         }
 
+                        ContextFlagsPal contextFlags = ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity;
+                        // Workaround for https://github.com/gssapi/gss-ntlmssp/issues/77
+                        // GSSAPI NTLM SSP does not support gss_wrap/gss_unwrap unless confidentiality
+                        // is negotiated.
+                        if (OperatingSystem.IsLinux())
+                        {
+                            contextFlags |= ContextFlagsPal.Confidentiality;
+                        }
+
                         _sessions[sessionCookie] =
                             clientContext =
                             new NTAuthentication(false, "Negotiate", credential, spn,
-                                                 ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, channelBindingToken);
+                                                 contextFlags, channelBindingToken);
                     }
 
                     byte[]? byteResp;
@@ -98,10 +108,7 @@ namespace System.Net.Mail
                     _sessions.Remove(sessionCookie);
                 }
             }
-            if (clientContext != null)
-            {
-                clientContext.CloseContext();
-            }
+            clientContext?.CloseContext();
         }
 
         // Function for SASL security layer negotiation after
@@ -121,10 +128,13 @@ namespace System.Net.Mail
             byte[] input = Convert.FromBase64String(challenge);
 
             int len;
+            int newOffset;
+            Span<byte> unwrappedChallenge;
 
             try
             {
-                len = clientContext.VerifySignature(input);
+                len = clientContext.Unwrap(input, out newOffset, out _);
+                unwrappedChallenge = input.AsSpan(newOffset, len);
             }
             catch (Win32Exception)
             {
@@ -150,15 +160,11 @@ namespace System.Net.Mail
             //       Sender calls GSS_Wrap with conf_flag set to TRUE
             //
             // Exchange 2007 and our client only support
-            // "No security layer". Therefore verify first byte is value 1
-            // and the 2nd-4th bytes are value zero since token size is not
-            // applicable when there is no security layer.
+            // "No security layer". We verify that the server offers
+            // option to use no security layer and negotiate that if
+            // possible.
 
-            if (len < 4 ||          // expect 4 bytes
-                input[0] != 1 ||    // first value 1
-                input[1] != 0 ||    // rest value 0
-                input[2] != 0 ||
-                input[3] != 0)
+            if (unwrappedChallenge.Length != 4 || (unwrappedChallenge[0] & 1) != 1)
             {
                 return null;
             }
@@ -171,15 +177,13 @@ namespace System.Net.Mail
             //   is able to receive, and the remaining octets containing the
             //   authorization identity.
             //
-            // So now this contructs the "wrapped" response.  The response is
-            // payload is identical to the received server payload and the
-            // "authorization identity" is not supplied as it is unnecessary.
+            // So now this contructs the "wrapped" response.
 
             // let MakeSignature figure out length of output
             byte[]? output = null;
             try
             {
-                len = clientContext.MakeSignature(input.AsSpan(0, 4), ref output);
+                len = clientContext.Wrap(_saslNoSecurtyLayerToken, ref output, false);
             }
             catch (Win32Exception)
             {

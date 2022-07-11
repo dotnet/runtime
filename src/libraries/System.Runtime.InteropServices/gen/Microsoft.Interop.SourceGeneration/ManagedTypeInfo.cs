@@ -45,6 +45,10 @@ namespace Microsoft.Interop
             {
                 return new DelegateTypeInfo(typeName, diagonsticFormattedName);
             }
+            if (type.TypeKind == TypeKind.TypeParameter)
+            {
+                return new TypeParameterTypeInfo(typeName, diagonsticFormattedName);
+            }
             if (type.IsValueType)
             {
                 return new ValueTypeInfo(typeName, diagonsticFormattedName, type.IsRefLikeType);
@@ -79,6 +83,8 @@ namespace Microsoft.Interop
     public sealed record SzArrayType(ManagedTypeInfo ElementTypeInfo) : ManagedTypeInfo($"{ElementTypeInfo.FullTypeName}[]", $"{ElementTypeInfo.DiagnosticFormattedName}[]");
 
     public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+
+    public sealed record TypeParameterTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
     public sealed record ValueTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsByRefLike) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 

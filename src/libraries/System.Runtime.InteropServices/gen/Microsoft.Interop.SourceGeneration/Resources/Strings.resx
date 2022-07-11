@@ -216,4 +216,7 @@
   <data name="MarshallerTypeMustBeStatic" xml:space="preserve">
     <value>The marshaller type '{0}' for managed type '{1}' must be static.</value>
   </data>
+  <data name="MarshallerEntryPointTypeMustMatchArity" xml:space="preserve">
+    <value>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</value>
+  </data>
 </root>

@@ -241,6 +241,81 @@ namespace System.Linq
                     CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        /// <summary>
+        /// Sorts the elements of a sequence in ascending order.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <param name="source">A sequence of values to order.</param>
+        /// <returns>An <see cref="IOrderedEnumerable{TElement}"/> whose elements are sorted.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}"/> whose type argument is one
+        /// of the <see cref="Func{T,TResult}"/> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}"/>.
+        ///
+        /// The <see cref="Order{T}(IQueryable{T})"/> method generates a <see cref="MethodCallExpression"/> that represents
+        /// calling <see cref="Enumerable.Order{T}(IEnumerable{T})"/> itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression"/> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)"/> method
+        /// of the <see cref="IQueryProvider"/> represented by the <see cref="IQueryable.Provider"/> property of the <paramref name="source"/>
+        /// parameter. The result of calling <see cref="IQueryProvider.CreateQuery{TElement}(Expression)"/> is cast to
+        /// type <see cref="IOrderedQueryable{T}"/> and returned.
+        ///
+        /// The query behavior that occurs as a result of executing an expression tree
+        /// that represents calling <see cref="Enumerable.Order{T}(IEnumerable{T})"/>
+        /// depends on the implementation of the <paramref name="source"/> parameter.
+        /// The expected behavior is that it sorts the elements of <paramref name="source"/> by itself.
+        /// </remarks>
+        [DynamicDependency("Order`1", typeof(Enumerable))]
+        public static IOrderedQueryable<T> Order<T>(this IQueryable<T> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Order_T_1(typeof(T)),
+                    source.Expression
+                    ));
+        }
+
+        /// <summary>
+        /// Sorts the elements of a sequence in ascending order.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <param name="source">A sequence of values to order.</param>
+        /// <param name="comparer">An <see cref="IComparer{T}"/> to compare elements.</param>
+        /// <returns>An <see cref="IOrderedEnumerable{TElement}"/> whose elements are sorted.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}"/> whose type argument is one
+        /// of the <see cref="Func{T,TResult}"/> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}"/>.
+        ///
+        /// The <see cref="Order{T}(IQueryable{T})"/> method generates a <see cref="MethodCallExpression"/> that represents
+        /// calling <see cref="Enumerable.Order{T}(IEnumerable{T})"/> itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression"/> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)"/> method
+        /// of the <see cref="IQueryProvider"/> represented by the <see cref="IQueryable.Provider"/> property of the <paramref name="source"/>
+        /// parameter. The result of calling <see cref="IQueryProvider.CreateQuery{TElement}(Expression)"/> is cast to
+        /// type <see cref="IOrderedQueryable{T}"/> and returned.
+        ///
+        /// The query behavior that occurs as a result of executing an expression tree
+        /// that represents calling <see cref="Enumerable.Order{T}(IEnumerable{T})"/>
+        /// depends on the implementation of the <paramref name="source"/> parameter.
+        /// The expected behavior is that it sorts the elements of <paramref name="source"/> by itself.
+        /// </remarks>
+        [DynamicDependency("Order`1", typeof(Enumerable))]
+        public static IOrderedQueryable<T> Order<T>(this IQueryable<T> source, IComparer<T> comparer)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Order_T_2(typeof(T)),
+                    source.Expression, Expression.Constant(comparer, typeof(IComparer<T>))
+                    ));
+        }
+
         [DynamicDependency("OrderBy`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
@@ -266,6 +341,81 @@ namespace System.Linq
                     null,
                     CachedReflectionInfo.OrderBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
                     source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
+                    ));
+        }
+
+        /// <summary>
+        /// Sorts the elements of a sequence in descending order.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <param name="source">A sequence of values to order.</param>
+        /// <returns>An <see cref="IOrderedEnumerable{TElement}"/> whose elements are sorted.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}"/> whose type argument is one
+        /// of the <see cref="Func{T,TResult}"/> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}"/>.
+        ///
+        /// The <see cref="Order{T}(IQueryable{T})"/> method generates a <see cref="MethodCallExpression"/> that represents
+        /// calling <see cref="Enumerable.Order{T}(IEnumerable{T})"/> itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression"/> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)"/> method
+        /// of the <see cref="IQueryProvider"/> represented by the <see cref="IQueryable.Provider"/> property of the <paramref name="source"/>
+        /// parameter. The result of calling <see cref="IQueryProvider.CreateQuery{TElement}(Expression)"/> is cast to
+        /// type <see cref="IOrderedQueryable{T}"/> and returned.
+        ///
+        /// The query behavior that occurs as a result of executing an expression tree
+        /// that represents calling <see cref="Enumerable.Order{T}(IEnumerable{T})"/>
+        /// depends on the implementation of the <paramref name="source"/> parameter.
+        /// The expected behavior is that it sorts the elements of <paramref name="source"/> by itself.
+        /// </remarks>
+        [DynamicDependency("OrderDescending`1", typeof(Enumerable))]
+        public static IOrderedQueryable<T> OrderDescending<T>(this IQueryable<T> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.OrderDescending_T_1(typeof(T)),
+                    source.Expression
+                    ));
+        }
+
+        /// <summary>
+        /// Sorts the elements of a sequence in descending order.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <param name="source">A sequence of values to order.</param>
+        /// <param name="comparer">An <see cref="IComparer{T}"/> to compare elements.</param>
+        /// <returns>An <see cref="IOrderedEnumerable{TElement}"/> whose elements are sorted.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// This method has at least one parameter of type <see cref="Expression{TDelegate}"/> whose type argument is one
+        /// of the <see cref="Func{T,TResult}"/> types.
+        /// For these parameters, you can pass in a lambda expression and it will be compiled to an <see cref="Expression{TDelegate}"/>.
+        ///
+        /// The <see cref="Order{T}(IQueryable{T})"/> method generates a <see cref="MethodCallExpression"/> that represents
+        /// calling <see cref="Enumerable.Order{T}(IEnumerable{T})"/> itself as a constructed generic method.
+        /// It then passes the <see cref="MethodCallExpression"/> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)"/> method
+        /// of the <see cref="IQueryProvider"/> represented by the <see cref="IQueryable.Provider"/> property of the <paramref name="source"/>
+        /// parameter. The result of calling <see cref="IQueryProvider.CreateQuery{TElement}(Expression)"/> is cast to
+        /// type <see cref="IOrderedQueryable{T}"/> and returned.
+        ///
+        /// The query behavior that occurs as a result of executing an expression tree
+        /// that represents calling <see cref="Enumerable.Order{T}(IEnumerable{T})"/>
+        /// depends on the implementation of the <paramref name="source"/> parameter.
+        /// The expected behavior is that it sorts the elements of <paramref name="source"/> by itself.
+        /// </remarks>
+        [DynamicDependency("OrderDescending`1", typeof(Enumerable))]
+        public static IOrderedQueryable<T> OrderDescending<T>(this IQueryable<T> source, IComparer<T> comparer)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.OrderDescending_T_2(typeof(T)),
+                    source.Expression, Expression.Constant(comparer, typeof(IComparer<T>))
                     ));
         }
 

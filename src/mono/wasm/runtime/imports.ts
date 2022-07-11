@@ -12,6 +12,8 @@ export let Module: EmscriptenModule & DotnetModule;
 export let MONO: any;
 export let BINDING: any;
 export let INTERNAL: any;
+export let EXPORTS: any;
+export let IMPORTS: any;
 
 // these are imported and re-exported from emscripten internals
 export let ENVIRONMENT_IS_ESM: boolean;
@@ -19,6 +21,7 @@ export let ENVIRONMENT_IS_NODE: boolean;
 export let ENVIRONMENT_IS_SHELL: boolean;
 export let ENVIRONMENT_IS_WEB: boolean;
 export let ENVIRONMENT_IS_WORKER: boolean;
+export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let locateFile: Function;
 export let quit: Function;
 export let ExitStatus: ExitStatusError;
@@ -31,25 +34,30 @@ export interface ExitStatusError {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function setImportsAndExports(
-    imports: { isESM: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, isWorker: boolean, locateFile: Function, ExitStatus: ExitStatusError, quit_: Function, requirePromise: Promise<Function> },
-    exports: { mono: any, binding: any, internal: any, module: any },
+    imports: { isESM: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, isWorker: boolean, isPThread: boolean, locateFile: Function, ExitStatus: ExitStatusError, quit_: Function, requirePromise: Promise<Function> },
+    exports: { mono: any, binding: any, internal: any, module: any, marshaled_exports: any, marshaled_imports: any },
 ): void {
     MONO = exports.mono;
     BINDING = exports.binding;
     INTERNAL = exports.internal;
     Module = exports.module;
+
+    EXPORTS = exports.marshaled_exports; // [JSExport]
+    IMPORTS = exports.marshaled_imports; // [JSImport]
+
     ENVIRONMENT_IS_ESM = imports.isESM;
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;
     ENVIRONMENT_IS_WEB = imports.isWeb;
     ENVIRONMENT_IS_WORKER = imports.isWorker;
+    ENVIRONMENT_IS_PTHREAD = imports.isPThread;
     locateFile = imports.locateFile;
     quit = imports.quit_;
     ExitStatus = imports.ExitStatus;
     requirePromise = imports.requirePromise;
 }
 
-let monoConfig: MonoConfig;
+let monoConfig: MonoConfig = {} as any;
 let runtime_is_ready = false;
 
 export const runtimeHelpers: RuntimeHelpers = <any>{

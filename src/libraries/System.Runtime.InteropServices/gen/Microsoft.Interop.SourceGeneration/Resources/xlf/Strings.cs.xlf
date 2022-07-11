@@ -102,6 +102,11 @@
         <target state="translated">Určený parametr musí být zařazený ze spravovaného do nespravovaného, ale zařazovací typ {0} to nepodporuje.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">Typ vstupního bodu řadiče „{0}“ pro spravovaný typ „{1}“ musí mít aritu o jednu větší než spravovaný typ.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStatic">
         <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
         <target state="translated">Typ zařazovače {0} pro spravovaný typ {1} musí být statický.</target>

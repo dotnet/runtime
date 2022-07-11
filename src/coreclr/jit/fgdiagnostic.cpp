@@ -402,6 +402,22 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
         fgDumpTree(fgxFile, arr);
         fprintf(fgxFile, ".Length");
     }
+    else if (tree->OperIs(GT_MDARR_LENGTH))
+    {
+        GenTreeMDArr* arrOp = tree->AsMDArr();
+        GenTree*      arr   = arrOp->ArrRef();
+        unsigned      dim   = arrOp->Dim();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".GetLength(%u)", dim);
+    }
+    else if (tree->OperIs(GT_MDARR_LOWER_BOUND))
+    {
+        GenTreeMDArr* arrOp = tree->AsMDArr();
+        GenTree*      arr   = arrOp->ArrRef();
+        unsigned      dim   = arrOp->Dim();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".GetLowerBound(%u)", dim);
+    }
     else
     {
         fprintf(fgxFile, "[%s]", GenTree::OpName(tree->OperGet()));
@@ -983,7 +999,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
-            if (block->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY))
+            if (block->bbFlags & BBF_HAS_NEWOBJ)
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
             }
