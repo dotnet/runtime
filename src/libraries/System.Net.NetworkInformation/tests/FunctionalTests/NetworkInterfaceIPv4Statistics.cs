@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class NetworkInterfaceIPv4Statistics
     {
         private readonly ITestOutputHelper _log;

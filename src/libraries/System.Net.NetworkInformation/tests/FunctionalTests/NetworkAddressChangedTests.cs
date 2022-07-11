@@ -7,6 +7,7 @@ namespace System.Net.NetworkInformation.Tests
 {
     // Partial class used for both NetworkAddressChanged and NetworkAvailabilityChanged
     // so that the tests for each don't run concurrently
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class NetworkChangedTests
     {
         private readonly NetworkAddressChangedEventHandler _addressHandler = delegate { };

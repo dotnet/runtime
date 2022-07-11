@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class IPGlobalPropertiesTest
     {
         private readonly ITestOutputHelper _log;

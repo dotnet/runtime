@@ -20,6 +20,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void BasicTest_GetNetworkInterfaces_AtLeastOne()
         {
             Assert.NotEqual<int>(0, NetworkInterface.GetAllNetworkInterfaces().Length);
@@ -131,6 +132,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void BasicTest_StaticLoopbackIndex_MatchesLoopbackNetworkInterface()
         {
             Assert.True(Capability.IPv4Support());
@@ -154,6 +156,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv4", "true")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void BasicTest_StaticLoopbackIndex_ExceptionIfV4NotSupported()
         {
             Assert.True(Capability.IPv4Support());
@@ -163,6 +166,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Trait("IPv6", "true")]
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void BasicTest_StaticIPv6LoopbackIndex_MatchesLoopbackNetworkInterface()
         {
             Assert.True(Capability.IPv6Support());
@@ -187,6 +191,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Trait("IPv6", "true")]
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void BasicTest_StaticIPv6LoopbackIndex_ExceptionIfV6NotSupported()
         {
             Assert.True(Capability.IPv6Support());
@@ -277,6 +282,7 @@ namespace System.Net.NetworkInformation.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
