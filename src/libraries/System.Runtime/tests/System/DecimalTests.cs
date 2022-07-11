@@ -59,32 +59,48 @@ namespace System.Tests
             Assert.Equal(value, new decimal(value));
         }
 
+        // We generated the expected bits via decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float))
         public static IEnumerable<object[]> Ctor_Float_TestData()
         {
-            yield return new object[] { 123456789.123456f, new int[] { 123456800, 0, 0, 0 } };
-            yield return new object[] { 2.0123456789123456f, new int[] { 2012346, 0, 0, 393216 } };
+            yield return new object[] { 123456789.123456f, new int[] { 123456792, 0, 0, 0 } };
+            yield return new object[] { .08157714f, new int[] { -1458651891, -1948140306, 442230, 1703936 } };
+            yield return new object[] { .8157714f, new int[] { -129083771, 241621592, 44223, 1572864 } };
+            yield return new object[] { 8.157714f, new int[] { 186437583, 958016553, 44, 1310720 } };
+            yield return new object[] { 81.57714f, new int[] { 770324155, 1899365820, 0, 1114112 } };
+            yield return new object[] { 92371.57714f, new int[] { -2117702387, 21, 0, 393216 } };
+            yield return new object[] { 79228157791897854723898736640f, new int[] { 0, 0, -256, 0 } };
+            yield return new object[] { 495176015714152.25f, new int[] { 637534208, 115292, 0, 0 } };
+            yield return new object[] { 2.0123456789123456f, new int[] { -875096961, 384330476, 109, 1376256 } };
             yield return new object[] { 2E-28f, new int[] { 2, 0, 0, 1835008 } };
-            yield return new object[] { 2E-29f, new int[] { 0, 0, 0, 0 } };
-            yield return new object[] { 2E28f, new int[] { 536870912, 2085225666, 1084202172, 0 } };
+            yield return new object[] { 2E-29f, new int[] { 0, 0, 0, 1835008 } };
+            yield return new object[] { 2E28f, new int[] { 0, 0, 1084202112, 0 } };
             yield return new object[] { 1.5f, new int[] { 15, 0, 0, 65536 } };
             yield return new object[] { 0f, new int[] { 0, 0, 0, 0 } };
-            yield return new object[] { float.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { float.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, -2147483648 } };
 
-            yield return new object[] { 1000000.1f, new int[] { 1000000, 0, 0, 0 } };
-            yield return new object[] { 100000.1f, new int[] { 1000001, 0, 0, 65536 } };
-            yield return new object[] { 10000.1f, new int[] { 100001, 0, 0, 65536 } };
-            yield return new object[] { 1000.1f, new int[] { 10001, 0, 0, 65536 } };
-            yield return new object[] { 100.1f, new int[] { 1001, 0, 0, 65536 } };
-            yield return new object[] { 10.1f, new int[] { 101, 0, 0, 65536 } };
-            yield return new object[] { 1.1f, new int[] { 11, 0, 0, 65536 } };
+            yield return new object[] { 1000000.1f, new int[] { 1000000125, 0, 0, 196608 } };
+            yield return new object[] { 100000.1f, new int[] { -726364343, 232, 0, 458752 } };
+            yield return new object[] { 10000.1f, new int[] { 1415744287, 2328, 0, 589824 } };
+            yield return new object[] { 1000.1f, new int[] { 903398831, 2328539, 0, 851968 } };
+            yield return new object[] { 100.1f, new int[] { 1924567103, -1964332589, 0, 1114112 } };
+            yield return new object[] { 10.1f, new int[] { 941681113, 2041059417, 5, 1245184 } };
+            yield return new object[] { 1.1f, new int[] { 736553673, 481370989, 5963, 1507328 } };
             yield return new object[] { 1f, new int[] { 1, 0, 0, 0 } };
-            yield return new object[] { 0.1f, new int[] { 1, 0, 0, 65536 } };
-            yield return new object[] { 0.01f, new int[] { 10, 0, 0, 196608 } };
-            yield return new object[] { 0.001f, new int[] { 1, 0, 0, 196608 } };
-            yield return new object[] { 0.0001f, new int[] { 10, 0, 0, 327680 } };
-            yield return new object[] { 0.00001f, new int[] { 10, 0, 0, 393216 } };
+            yield return new object[] { 0.1f, new int[] { 369308857, -243924598, 5421010, 1769472 } };
+            yield return new object[] { 0.01f, new int[] { 419115242, -1111286336, 5421010, 1835008 } };
+            yield return new object[] { 0.001f, new int[] { -504298085, 480998421, 542101, 1835008 } };
+            yield return new object[] { 0.0001f, new int[] { -673569463, 460655912, 54210, 1835008 } };
+            yield return new object[] { 0.00001f, new int[] { 1221133243, 46065591, 5421, 1835008 } };
             yield return new object[] { 0.0000000000000000000000000001f, new int[] { 1, 0, 0, 1835008 } };
-            yield return new object[] { 0.00000000000000000000000000001f, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { 0.00000000000000000000000000001f, new int[] { 0, 0, 0, 1835008 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Float_TestData))]
+        public void Validate_Ctor_Float_TestData(float value, int[] bits)
+        {
+            // Assert that the test data is correct
+            Assert.Equal(bits, decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float)));
         }
 
         [Theory]
@@ -97,12 +113,35 @@ namespace System.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Ctor_Float_TestData))]
+        public void Ctor_Float_RoundTrip(float valueFloat, int[] bits)
+        {
+
+            // Ignore data that is smaller or larger than what can fit in a decimal, we don't expect this to successfully RoundTrip
+            if (valueFloat < 10E-28f || valueFloat > 79228162514264337593543950335.0f)
+            {
+                return;
+            }
+
+            // Ignore unused parameter
+            _ = bits;
+
+            // Cast to a decimal
+            decimal valueDecimal = new decimal(valueFloat);
+
+            // Cast back to float, ensuring no precision loss
+            float valueRoundTripFloat = (float)valueDecimal;
+            Assert.Equal(valueFloat, valueRoundTripFloat);
+        }
+
+        [Theory]
         [InlineData(2E29)]
         [InlineData(float.NaN)]
         [InlineData(float.MaxValue)]
         [InlineData(float.MinValue)]
         [InlineData(float.PositiveInfinity)]
         [InlineData(float.NegativeInfinity)]
+        [InlineData(79228162514264337593543950335.0f)]
         public void Ctor_InvalidFloat_ThrowsOverlowException(float value)
         {
             Assert.Throws<OverflowException>(() => new decimal(value));
@@ -173,40 +212,56 @@ namespace System.Tests
             Assert.Equal(value, new decimal(value));
         }
 
+        // We generated the expected bits via decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float))
         public static IEnumerable<object[]> Ctor_Double_TestData()
         {
-            yield return new object[] { 123456789.123456, new int[] { -2045800064, 28744, 0, 393216 } };
-            yield return new object[] { 2.0123456789123456, new int[] { -1829795549, 46853, 0, 917504 } };
+            yield return new object[] { 123456789.123456, new int[] { 320956445, -521069915, 669260594, 1310720 } };
+            yield return new object[] { .08157714, new int[] { 1257235526, 887241781, 44223056, 1835008 } };
+            yield return new object[] { .8157714, new int[] { 1304571459, 282483156, 442230562, 1835008 } };
+            yield return new object[] { 8.157714, new int[] { 1304571459, 282483156, 442230562, 1769472 } };
+            yield return new object[] { 81.57714, new int[] { -1779478149, 282483073, 442230562, 1703936 } };
+            yield return new object[] { 92371.57714, new int[] { -83052646, 238378239, 500747323, 1507328 } };
+            yield return new object[] { 79228162514264328797450928128.0, new int[] { 0, -2048, -1, 0 } };
+            yield return new object[] { 495176015714152.25, new int[] { 197862585, 11529215, 0, 131072 } };
+            yield return new object[] { 2.0123456789123456, new int[] { 984009685, 1865266894, 1090894778, 1835008 } };
             yield return new object[] { 2E-28, new int[] { 2, 0, 0, 1835008 } };
-            yield return new object[] { 2E-29, new int[] { 0, 0, 0, 0 } };
-            yield return new object[] { 2E28, new int[] { 536870912, 2085225666, 1084202172, 0 } };
+            yield return new object[] { 2E-29, new int[] { 0, 0, 0, 1835008 } }; // TODO confirm and edge case this
+            yield return new object[] { 2E28, new int[] { 0, 2085225472, 1084202172, 0 } };
             yield return new object[] { 1.5, new int[] { 15, 0, 0, 65536 } };
             yield return new object[] { 0, new int[] { 0, 0, 0, 0 } };
-            yield return new object[] { double.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { double.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, -2147483648 } }; // TODO confirm and edge case this
 
-            yield return new object[] { 100000000000000.1, new int[] { 276447232, 23283, 0, 0 } };
-            yield return new object[] { 10000000000000.1, new int[] { 276447233, 23283, 0, 65536 } };
-            yield return new object[] { 1000000000000.1, new int[] { 1316134913, 2328, 0, 65536 } };
-            yield return new object[] { 100000000000.1, new int[] { -727379967, 232, 0, 65536 } };
-            yield return new object[] { 10000000000.1, new int[] { 1215752193, 23, 0, 65536 } };
-            yield return new object[] { 1000000000.1, new int[] { 1410065409, 2, 0, 65536 } };
-            yield return new object[] { 100000000.1, new int[] { 1000000001, 0, 0, 65536 } };
-            yield return new object[] { 10000000.1, new int[] { 100000001, 0, 0, 65536 } };
-            yield return new object[] { 1000000.1, new int[] { 10000001, 0, 0, 65536 } };
-            yield return new object[] { 100000.1, new int[] { 1000001, 0, 0, 65536 } };
-            yield return new object[] { 10000.1, new int[] { 100001, 0, 0, 65536 } };
-            yield return new object[] { 1000.1, new int[] { 10001, 0, 0, 65536 } };
-            yield return new object[] { 100.1, new int[] { 1001, 0, 0, 65536 } };
-            yield return new object[] { 10.1, new int[] { 101, 0, 0, 65536 } };
-            yield return new object[] { 1.1, new int[] { 11, 0, 0, 65536 } };
+            yield return new object[] { 100000000000000.1, new int[] { -1981274977, -1966660860, 0, 327680 } };
+            yield return new object[] { 10000000000000.1, new int[] { -1204819169, 434162106, 542, 589824 } };
+            yield return new object[] { 1000000000000.1, new int[] { 269993391, 370410033, 542101, 851968 } };
+            yield return new object[] { 100000000000.1, new int[] { 1615233513, -590846009, 5421010, 983040 } };
+            yield return new object[] { 10000000000.1, new int[] { 1055397730, 1065895986, 542101086, 1179648 } };
+            yield return new object[] { 1000000000.1, new int[] { 977194654, 1275443532, 542101086, 1245184 } };
+            yield return new object[] { 100000000.1, new int[] { -758842506, -924048166, 542101086, 1310720 } };
+            yield return new object[] { 10000000.1, new int[] { -1231413974, -1444126665, 542101091, 1376256 } };
+            yield return new object[] { 1000000.1, new int[] { -1193913798, 1945022448, 542101140, 1441792 } };
+            yield return new object[] { 100000.1, new int[] { 1220031087, 1476775075, 542101628, 1507328 } };
+            yield return new object[] { 10000.1, new int[] { -1165287547, 1089266688, 542106507, 1572864 } };
+            yield return new object[] { 1000.1, new int[] { -1584991309, 1509150595, 542155296, 1638400 } };
+            yield return new object[] { 100.1, new int[] { 11443904, 1413022501, 542643187, 1703936 } };
+            yield return new object[] { 10.1, new int[] { 1009591096, 451743457, 547522097, 1769472 } };
+            yield return new object[] { 1.1, new int[] { -1014028300, -571112596, 596311194, 1835008 } };
             yield return new object[] { 1, new int[] { 1, 0, 0, 0 } };
-            yield return new object[] { 0.1, new int[] { 1, 0, 0, 65536 } };
-            yield return new object[] { 0.01, new int[] { 1, 0, 0, 131072 } };
-            yield return new object[] { 0.001, new int[] { 1, 0, 0, 196608 } };
-            yield return new object[] { 0.0001, new int[] { 1, 0, 0, 262144 } };
-            yield return new object[] { 0.00001, new int[] { 1, 0, 0, 327680 } };
+            yield return new object[] { 0.1, new int[] { -726076801, -1613725623, 54210108, 1835008 } };
+            yield return new object[] { 0.01, new int[] { 1611906123, -590869293, 5421010, 1835008 } };
+            yield return new object[] { 0.001, new int[] { 1449680801, 370409800, 542101, 1835008 } };
+            yield return new object[] { 0.0001, new int[] { -1545913784, 466537709, 54210, 1835008 } };
+            yield return new object[] { 0.00001, new int[] { -151203247, 46653770, 5421, 1835008 } };
             yield return new object[] { 0.0000000000000000000000000001, new int[] { 1, 0, 0, 1835008 } };
-            yield return new object[] { 0.00000000000000000000000000001, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { 0.00000000000000000000000000001, new int[] { 0, 0, 0, 1835008 } }; // TODO confirm and edge case this
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Double_TestData))]
+        public void Validate_Ctor_Double_TestData(double value, int[] bits)
+        {
+            // Assert that the test data is correct
+            Assert.Equal(bits, decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float)));
         }
 
         [Theory]
@@ -216,6 +271,28 @@ namespace System.Tests
             var d = new decimal(value);
             Assert.Equal((decimal)value, d);
             Assert.Equal(bits, Decimal.GetBits(d));
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Double_TestData))]
+        public void Ctor_Double_RoundTrip(double valueDouble, int[] bits)
+        {
+
+            // Ignore data that is smaller or larger than what can fit in a decimal, we don't expect this to successfully RoundTrip
+            if (valueDouble < 10E-28 || valueDouble > 79228162514264337593543950335.0)
+            {
+                return;
+            }
+
+            // Ignore unused parameter
+            _ = bits;
+
+            // Cast to a decimal
+            decimal valueDecimal = new decimal(valueDouble);
+
+            // Cast back to double, ensuring no precision loss
+            double valueRoundTripDouble = (double)valueDecimal;
+            Assert.Equal(valueDouble, valueRoundTripDouble);
         }
 
         [Theory]
@@ -245,23 +322,6 @@ namespace System.Tests
             // Cast back to double, ensuring no precision loss
             double largeRoundTripDouble = (double)largeDecimal;
             Assert.Equal(largeDouble, largeRoundTripDouble);
-
-        }
-
-        [Fact]
-        public void Ctor_SmallDoubleRoundsUp()
-        {
-            // Create a double with decimal's smallest non-zero value
-            double x = .0000000000000000000000000001;
-
-            // Cast to a decimal
-            decimal y = new decimal(x);
-
-            Assert.NotEqual(decimal.Zero, y);
-
-            // Use strings to ensure decimal is correct
-            string y_string = y.ToString("G99");
-            Assert.Equal(".0000000000000000000000000001", y_string);
         }
 
         public static IEnumerable<object[]> Ctor_Int_Int_Int_Bool_Byte_TestData()
