@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.Xml
                     cipherValue = ms.ToArray();
                     // Close the stream and return
                     inputStream?.Close();
-                    decInputStream.Close();
+                    decInputStream!.Close();
                 }
 
                 // cache the cipher value for Perf reasons in case we call this routine twice
