@@ -101,7 +101,7 @@ namespace System.Text.Json.Serialization.Metadata
             else if (predicate is Func<object, T?, bool> typedPredicate)
             {
                 _shouldSerializeTyped = typedPredicate;
-                _shouldSerialize = typedPredicate is Func<object, object?, bool> untypedPredicate ? untypedPredicate : (obj, value) => typedPredicate(obj, (T)value!);
+                _shouldSerialize = typedPredicate is Func<object, object?, bool> untypedPredicate ? untypedPredicate : (obj, value) => typedPredicate(obj, (T?)value);
             }
             else
             {
