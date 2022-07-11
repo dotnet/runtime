@@ -452,31 +452,42 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/1.1 connection for pool.");
 
             HttpConnectionWaiter<HttpConnection> waiter = queueItem.Waiter;
-            HttpConnection connection;
-            using (CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource())
+            HttpConnection? connection = null;
+            Exception? connectionException = null;
+
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
+            waiter.ConnectionCancellationTokenSource = cts;
+            try
             {
-                waiter.ConnectionCancellationTokenSource = cts;
-                try
+                connection = await CreateHttp11ConnectionAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
+            {
+                connectionException = CreateConnectTimeoutException(oce);
+            }
+            catch (Exception e)
+            {
+                connectionException = e;
+            }
+            finally
+            {
+                waiter.ConnectionCancellationTokenSource = null;
+                lock (waiter)
                 {
-                    connection = await CreateHttp11ConnectionAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
-                    waiter.ConnectionCancellationTokenSource = null;
-                }
-                catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
-                {
-                    waiter.ConnectionCancellationTokenSource = null;
-                    HandleHttp11ConnectionFailure(waiter, CreateConnectTimeoutException(oce));
-                    return;
-                }
-                catch (Exception e)
-                {
-                    waiter.ConnectionCancellationTokenSource = null;
-                    HandleHttp11ConnectionFailure(waiter, e);
-                    return;
+                    cts.Dispose();
                 }
             }
 
-            // Add the established connection to the pool.
-            ReturnHttp11Connection(connection, isNewConnection: true, queueItem.Waiter);
+            if (connection is not null)
+            {
+                // Add the established connection to the pool.
+                ReturnHttp11Connection(connection, isNewConnection: true, queueItem.Waiter);
+            }
+            else
+            {
+                Debug.Assert(connectionException is not null);
+                HandleHttp11ConnectionFailure(waiter, connectionException);
+            }
         }
 
         private void CheckForHttp11ConnectionInjection()
@@ -639,71 +650,82 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/2 connection for pool.");
 
-            Http2Connection connection;
+            Http2Connection? connection = null;
+            Exception? connectionException = null;
             HttpConnectionWaiter<Http2Connection?> waiter = queueItem.Waiter;
-            using (CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource())
+
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
+            waiter.ConnectionCancellationTokenSource = cts;
+            try
             {
-                waiter.ConnectionCancellationTokenSource = cts;
-                try
+                (Stream stream, TransportContext? transportContext) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+
+                if (IsSecure)
                 {
-                    (Stream stream, TransportContext? transportContext) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+                    SslStream sslStream = (SslStream)stream;
 
-                    if (IsSecure)
+                    if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
                     {
-                        SslStream sslStream = (SslStream)stream;
+                        // The server accepted our request for HTTP2.
 
-                        if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
+                        if (sslStream.SslProtocol < SslProtocols.Tls12)
                         {
-                            // The server accepted our request for HTTP2.
-
-                            if (sslStream.SslProtocol < SslProtocols.Tls12)
-                            {
-                                stream.Dispose();
-                                throw new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
-                            }
-
-                            connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
-                            waiter.ConnectionCancellationTokenSource = null;
+                            stream.Dispose();
+                            connectionException = new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
                         }
                         else
                         {
-                            // We established an SSL connection, but the server denied our request for HTTP2.
-                            await HandleHttp11Downgrade(queueItem.Request, stream, transportContext, cts.Token).ConfigureAwait(false);
-                            waiter.ConnectionCancellationTokenSource = null;
-                            return;
+                            connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
-                        waiter.ConnectionCancellationTokenSource = null;
+                        // We established an SSL connection, but the server denied our request for HTTP2.
+                        await HandleHttp11Downgrade(queueItem.Request, stream, transportContext, cts.Token).ConfigureAwait(false);
+                        return;
                     }
                 }
-                catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
+                else
                 {
-                    waiter.ConnectionCancellationTokenSource = null;
-                    HandleHttp2ConnectionFailure(waiter, CreateConnectTimeoutException(oce));
-                    return;
+                    connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
                 }
-                catch (Exception e)
+            }
+            catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
+            {
+                connectionException = CreateConnectTimeoutException(oce);
+            }
+            catch (Exception e)
+            {
+                connectionException = e;
+            }
+            finally
+            {
+                waiter.ConnectionCancellationTokenSource = null;
+                lock (waiter)
                 {
-                    waiter.ConnectionCancellationTokenSource = null;
-                    HandleHttp2ConnectionFailure(waiter, e);
-                    return;
+                    cts.Dispose();
                 }
             }
 
-            // Register for shutdown notification.
-            // Do this before we return the connection to the pool, because that may result in it being disposed.
-            ValueTask shutdownTask = connection.WaitForShutdownAsync();
+            if (connection is not null)
+            {
+                // Register for shutdown notification.
+                // Do this before we return the connection to the pool, because that may result in it being disposed.
+                ValueTask shutdownTask = connection.WaitForShutdownAsync();
 
-            // Add the new connection to the pool.
-            ReturnHttp2Connection(connection, isNewConnection: true, queueItem.Waiter);
+                // Add the new connection to the pool.
+                ReturnHttp2Connection(connection, isNewConnection: true, queueItem.Waiter);
 
-            // Wait for connection shutdown.
-            await shutdownTask.ConfigureAwait(false);
+                // Wait for connection shutdown.
+                await shutdownTask.ConfigureAwait(false);
 
-            InvalidateHttp2Connection(connection);
+                InvalidateHttp2Connection(connection);
+            }
+            else
+            {
+                Debug.Assert(connectionException is not null);
+                HandleHttp2ConnectionFailure(waiter, connectionException);
+            }
         }
 
         private void CheckForHttp2ConnectionInjection()
@@ -1105,29 +1127,27 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    Debug.Assert(http11ConnectionWaiter == null || http2ConnectionWaiter == null);
-                    CancelWithGlobalTimeout(this, http11ConnectionWaiter?.ConnectionCancellationTokenSource);
-                    CancelWithGlobalTimeout(this, http2ConnectionWaiter?.ConnectionCancellationTokenSource);
+                    CancelWithGlobalTimeout(this, http11ConnectionWaiter);
+                    CancelWithGlobalTimeout(this, http2ConnectionWaiter);
                 }
             }
+        }
 
-            static void CancelWithGlobalTimeout(HttpConnectionPool pool, CancellationTokenSource? cts)
+        private static void CancelWithGlobalTimeout<T>(HttpConnectionPool pool, HttpConnectionWaiter<T>? waiter)
+        {
+            if (waiter == null || waiter.ConnectionCancellationTokenSource == null) return;
+
+            lock (waiter)
             {
-                if (cts == null) return;
+                if (waiter.ConnectionCancellationTokenSource == null) return;
+
                 if (NetEventSource.Log.IsEnabled())
                     pool.Trace($"Cancelling a pending connection attempt with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms");
 
-                try
-                {
-                    if (GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion > 0)
-                        cts.CancelAfter(GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion);
-                    else
-                        cts.Cancel(); // Cancel immediately by default
-                }
-                catch (ObjectDisposedException)
-                {
-                    // There is a low-probability race for the CTS being disposed by the time of the cancellation call, ignore this ODE.
-                }
+                if (GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion > 0)
+                    waiter.ConnectionCancellationTokenSource.CancelAfter(GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion);
+                else
+                    waiter.ConnectionCancellationTokenSource.Cancel(); // Cancel immediately by default
             }
         }
 
