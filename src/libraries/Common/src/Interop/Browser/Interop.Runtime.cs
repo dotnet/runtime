@@ -26,8 +26,6 @@ internal static partial class Interop
         #region Legacy
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string InvokeJS(string str, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InvokeJSWithArgsRef(IntPtr jsHandle, in string method, in object?[] parms, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void GetObjectPropertyRef(IntPtr jsHandle, in string propertyName, out int exceptionalResult, out object result);
