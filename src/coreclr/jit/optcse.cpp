@@ -278,11 +278,6 @@ bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     auto expCost1 = exp1->GetCostEx();
     auto expCost2 = exp2->GetCostEx();
 
-    if (expCost2 != expCost1)
-    {
-        return expCost2 < expCost1;
-    }
-
     // Sort the higher Use Counts toward the top
     if (dsc2->csdUseWtCnt != dsc1->csdUseWtCnt)
     {
@@ -293,6 +288,11 @@ bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     if (dsc1->csdDefWtCnt != dsc2->csdDefWtCnt)
     {
         return dsc1->csdDefWtCnt < dsc2->csdDefWtCnt;
+    }
+
+    if (expCost2 != expCost1)
+    {
+        return expCost2 < expCost1;
     }
 
     // In order to ensure that we have a stable sort, we break ties using the csdIndex
@@ -314,10 +314,6 @@ bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     auto expCost1 = exp1->GetCostSz();
     auto expCost2 = exp2->GetCostSz();
 
-    if (expCost2 != expCost1)
-    {
-        return expCost2 < expCost1;
-    }
 
     // Sort the higher Use Counts toward the top
     if (dsc2->csdUseCount != dsc1->csdUseCount)
@@ -329,6 +325,11 @@ bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     if (dsc1->csdDefCount != dsc2->csdDefCount)
     {
         return dsc1->csdDefCount < dsc2->csdDefCount;
+    }
+
+    if (expCost2 != expCost1)
+    {
+        return expCost2 < expCost1;
     }
 
     // In order to ensure that we have a stable sort, we break ties using the csdIndex
