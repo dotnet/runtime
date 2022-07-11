@@ -205,7 +205,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else if (numArgs != 0)
     {
-        if (retType == TYP_VOID)
+        if (sig->hasThis() && (retType == TYP_VOID))
         {
             simdBaseJitType = strip(info.compCompHnd->getArgType(sig, sig->args, &argClass));
         }
@@ -933,16 +933,21 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
 
-            bool implicitConstructor = isInstanceMethod && (newobjThis == nullptr) && retType == TYP_VOID;
+            bool implicitConstructor = isInstanceMethod && (newobjThis == nullptr) && (retType == TYP_VOID);
 
-            argType = implicitConstructor
-                          ? TYP_REF
-                          : isInstanceMethod
-                                ? simdType
-                                : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            if (implicitConstructor)
+            {
+                op1 = getArgForHWIntrinsic(TYP_BYREF, argClass, isInstanceMethod, newobjThis);
+            }
+            else
+            {
+                argType = isInstanceMethod
+                              ? simdType
+                              : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
 
-            op1 = getArgForHWIntrinsic(argType, (newobjThis != nullptr) ? clsHnd : argClass, isInstanceMethod,
-                                       newobjThis);
+                op1 = getArgForHWIntrinsic(argType, (newobjThis != nullptr) ? clsHnd : argClass, isInstanceMethod,
+                                           newobjThis);
+            }
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 

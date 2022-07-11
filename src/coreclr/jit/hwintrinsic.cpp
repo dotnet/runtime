@@ -497,20 +497,12 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
             impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(argClass).NormaliseForStack());
         }
     }
-    else if (argType == TYP_REF)
-    {
-        assert(newobjThis == nullptr);
-
-        arg = impPopStack().val;
-
-        assert(arg->TypeIs(TYP_BYREF));
-    }
     else
     {
-        assert(varTypeIsArithmetic(argType));
+        assert(varTypeIsArithmetic(argType) || (argType == TYP_BYREF) && (newobjThis == nullptr));
 
         arg = impPopStack().val;
-        assert(varTypeIsArithmetic(arg->TypeGet()));
+        assert(varTypeIsArithmetic(arg->TypeGet()) || (argType == TYP_BYREF) && arg->TypeIs(TYP_BYREF));
 
         assert(genActualType(arg->gtType) == genActualType(argType));
     }
