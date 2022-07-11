@@ -60,6 +60,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>CoreCLR does not implement the mono embedding API</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/tests/fileversionpreservation">
+            <Issue>https://github.com/dotnet/runtime/issues/11412 ILASM does not support embedding or generating resource data</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
