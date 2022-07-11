@@ -12,10 +12,8 @@ namespace System.Security.Cryptography.Xml
     {
         private bool _isInNodeSet;
 
-        // The ! on prefix is because System.Xml has a bug where the parameter is not null when it should be.
-        // We can remove this when we fix the associated bug filed against System.Xml: https://github.com/dotnet/runtime/issues/71858
         public CanonicalXmlElement(string? prefix, string localName, string? namespaceURI, XmlDocument doc, bool defaultNodeSetInclusionState)
-            : base(prefix!, localName, namespaceURI, doc)
+            : base(prefix, localName, namespaceURI, doc)
         {
             _isInNodeSet = defaultNodeSetInclusionState;
         }
