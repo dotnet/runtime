@@ -153,8 +153,7 @@ namespace Microsoft.Interop
         CustomTypeMarshallers Marshallers,
         bool IsPinnableManagedType,
         CountInfo ElementCountInfo,
-        ManagedTypeInfo PlaceholderTypeParameter,
-        bool UseDefaultMarshalling) : NativeMarshallingAttributeInfo(
+        ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
             EntryPointType,
             Marshallers,
             IsPinnableManagedType);
@@ -168,7 +167,6 @@ namespace Microsoft.Interop
         CustomTypeMarshallerDirection Direction,
         CustomTypeMarshallerFeatures MarshallingFeatures,
         CustomTypeMarshallerPinning PinningFeatures,
-        bool UseDefaultMarshalling,
         bool IsStrictlyBlittable,
         ManagedTypeInfo? BufferElementType,
         int? BufferSize) : MarshallingInfo;
@@ -188,7 +186,6 @@ namespace Microsoft.Interop
         CustomTypeMarshallerDirection Direction,
         CustomTypeMarshallerFeatures MarshallingFeatures,
         CustomTypeMarshallerPinning PinningFeatures,
-        bool UseDefaultMarshalling,
         int? BufferSize,
         CountInfo ElementCountInfo,
         ManagedTypeInfo ElementType,
@@ -198,7 +195,6 @@ namespace Microsoft.Interop
             Direction,
             MarshallingFeatures,
             PinningFeatures,
-            UseDefaultMarshalling,
             IsStrictlyBlittable: false,
             SpecialTypeInfo.Byte,
             BufferSize
@@ -653,8 +649,7 @@ namespace Microsoft.Interop
                             marshallers.Value,
                             isPinnableManagedType,
                             parsedCountInfo,
-                            ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType.TypeParameters.Last()),
-                            UseDefaultMarshalling: !isMarshalUsingAttribute);
+                            ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType.TypeParameters.Last()));
                     }
                 }
                 else
@@ -730,7 +725,6 @@ namespace Microsoft.Interop
                     customTypeMarshallerData.Value.Direction,
                     customTypeMarshallerData.Value.Features,
                     pinning,
-                    UseDefaultMarshalling: !isMarshalUsingAttribute,
                     customTypeMarshallerData.Value.BufferSize,
                     parsedCountInfo,
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(elementType),
@@ -742,8 +736,7 @@ namespace Microsoft.Interop
                 nativeType,
                 attrData,
                 customTypeMarshallerData.Value,
-                allowPinningManagedType: !isMarshalUsingAttribute,
-                useDefaultMarshalling: !isMarshalUsingAttribute);
+                allowPinningManagedType: !isMarshalUsingAttribute);
         }
 
         private MarshallingInfo CreateNativeMarshallingInfoForValue_V1(
@@ -751,8 +744,7 @@ namespace Microsoft.Interop
             INamedTypeSymbol nativeType,
             AttributeData attrData,
             CustomTypeMarshallerData_V1 customTypeMarshallerData,
-            bool allowPinningManagedType,
-            bool useDefaultMarshalling)
+            bool allowPinningManagedType)
         {
             ManagedTypeInfo? bufferElementTypeInfo = null;
             if (customTypeMarshallerData.Features.HasFlag(CustomTypeMarshallerFeatures.CallerAllocatedBuffer))
@@ -792,7 +784,6 @@ namespace Microsoft.Interop
                 customTypeMarshallerData.Direction,
                 customTypeMarshallerData.Features,
                 pinning,
-                useDefaultMarshalling,
                 nativeType.IsStrictlyBlittable(),
                 bufferElementTypeInfo,
                 customTypeMarshallerData.BufferSize);
@@ -940,8 +931,7 @@ namespace Microsoft.Interop
                         marshallers.Value,
                         IsPinnableManagedType: false,
                         countInfo,
-                        ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller.TypeParameters.Last()),
-                        UseDefaultMarshalling: true);
+                        ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller.TypeParameters.Last()));
                 }
             }
             else
@@ -967,7 +957,6 @@ namespace Microsoft.Interop
                 Direction: customTypeMarshallerData.Value.Direction,
                 MarshallingFeatures: customTypeMarshallerData.Value.Features,
                 PinningFeatures: CustomTypeMarshallerPinning.NativeType,
-                UseDefaultMarshalling: true,
                 customTypeMarshallerData.Value.BufferSize,
                 ElementCountInfo: countInfo,
                 ElementType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(elementType),
@@ -1020,8 +1009,7 @@ namespace Microsoft.Interop
                 stringMarshaller,
                 null,
                 customTypeMarshallerData.Value,
-                allowPinningManagedType: marshallerName is TypeNames.Utf16StringMarshaller,
-                useDefaultMarshalling: false);
+                allowPinningManagedType: marshallerName is TypeNames.Utf16StringMarshaller);
         }
 
         private MarshallingInfo GetBlittableMarshallingInfo(ITypeSymbol type)
