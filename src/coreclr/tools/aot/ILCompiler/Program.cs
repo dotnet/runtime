@@ -442,7 +442,9 @@ namespace ILCompiler
                 bool added = instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
                 Debug.Assert(added);
             }
-            else
+            else if ((_targetArchitecture == TargetArchitecture.X86) ||
+                     (_targetArchitecture == TargetArchitecture.X64) ||
+                     (_targetArchitecture == TargetArchitecture.ARM64))
             {
                 bool added = instructionSetSupportBuilder.AddSupportedInstructionSet("generic");
                 Debug.Assert(added);

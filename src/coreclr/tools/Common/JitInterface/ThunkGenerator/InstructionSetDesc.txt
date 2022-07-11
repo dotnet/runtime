@@ -139,7 +139,6 @@ implication        ,ARM64 ,Vector128 ,AdvSimd
 instructionsetgroup  ,generic   ,X86    ,sse2
 instructionsetgroup  ,generic   ,X64    ,sse2
 instructionsetgroup  ,generic   ,ARM64  ,neon
-instructionsetgroup  ,generic   ,ARM    ,
 instructionsetgroup  ,haswell   ,X64    ,avx2 bmi fma lzcnt pclmul popcnt movbe
 instructionsetgroup  ,haswell   ,X86    ,avx2 bmi fma lzcnt pclmul popcnt movbe
 instructionsetgroup  ,apple-m1  ,ARM64  ,neon aes crc dotprod rdma sha1 sha2 lse rcpc

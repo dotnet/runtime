@@ -759,7 +759,6 @@ namespace Internal.JitInterface
                 new ("generic", TargetArchitecture.X86, "sse2"),
                 new ("generic", TargetArchitecture.X64, "sse2"),
                 new ("generic", TargetArchitecture.ARM64, "neon"),
-                new ("generic", TargetArchitecture.ARM, ""),
                 new ("haswell", TargetArchitecture.X64, "avx2 bmi fma lzcnt pclmul popcnt movbe"),
                 new ("haswell", TargetArchitecture.X86, "avx2 bmi fma lzcnt pclmul popcnt movbe"),
                 new ("apple-m1", TargetArchitecture.ARM64, "neon aes crc dotprod rdma sha1 sha2 lse rcpc"),
