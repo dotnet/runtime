@@ -1095,8 +1095,6 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.True(property.ShouldSerialize(null, "asd"));
                     Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
                 }
-
-
                 if (modify != ModifyJsonIgnore.DontModify && ignoreConditionOnProperty == JsonIgnoreCondition.Always)
                 {
                     property.Get = (o) => ((TestClassWithEveryPossibleJsonIgnore)o).AlwaysProperty;
