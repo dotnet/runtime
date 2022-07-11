@@ -5,14 +5,13 @@ using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Security;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Kerberos.NET.Configuration;
 using Kerberos.NET.Crypto;
 using Kerberos.NET.Entities;
 using Kerberos.NET.Server;
+using Kerberos.NET.Logging;
+using Xunit.Abstractions;
 
 namespace System.Net.Security.Kerberos;
 
@@ -30,16 +29,23 @@ public class KerberosExecutor : IDisposable
 
     public static string FakePassword { get; } = "P@ssw0rd!";
 
-    public KerberosExecutor(string realm)
+    public KerberosExecutor(ITestOutputHelper testOutputHelper, string realm)
     {
         var krb5Config = Krb5Config.Default();
         krb5Config.KdcDefaults.RegisterDefaultPkInitPreAuthHandler = false;
+
+        var logger = new KerberosDelegateLogger(
+            (level, categoryName, eventId, scopeState, logState, exception, log) =>
+                testOutputHelper.WriteLine($"[{level}] [{categoryName}] {log}")
+        );
 
         _options = new ListenerOptions
         {
             Configuration = krb5Config,
             DefaultRealm = realm,
-            RealmLocator = realm => new FakeRealmService(realm, krb5Config)
+            RealmLocator = realm => new FakeRealmService(realm, krb5Config),
+            Log = logger,
+            IsDebug = true,
         };
 
         _kdcListener = new FakeKdcServer(_options);

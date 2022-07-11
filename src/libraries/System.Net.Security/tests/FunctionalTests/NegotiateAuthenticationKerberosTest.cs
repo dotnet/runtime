@@ -1,26 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Buffers;
-using System.Buffers.Binary;
-using System.IO;
-using System.Net.Security;
-using System.Text;
 using System.Threading.Tasks;
-using System.Net.Test.Common;
 using System.Net.Security.Kerberos;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Security.Tests
 {
     [ConditionalClass(typeof(KerberosExecutor), nameof(KerberosExecutor.IsSupported))]
     public class NegotiateAuthenticationKerberosTest
     {
+        private readonly ITestOutputHelper _testOutputHelper;
+
+        public NegotiateAuthenticationKerberosTest(ITestOutputHelper testOutputHelper)
+        {
+            _testOutputHelper = testOutputHelper;
+        }
+    
         [Fact]
         public async Task Loopback_Kerberos_Authentication()
         {
-            using var kerberosExecutor = new KerberosExecutor("LINUX.CONTOSO.COM");
+            using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
 
             kerberosExecutor.AddService("HTTP/linux.contoso.com");
 
