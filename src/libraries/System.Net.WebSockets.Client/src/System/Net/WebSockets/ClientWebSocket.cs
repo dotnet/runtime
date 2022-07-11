@@ -51,7 +51,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        public System.Net.HttpStatusCode HttpStatusCode => _innerWebSocket != null ? _innerWebSocket.HttpStatusCode : 0;
+        public System.Net.HttpStatusCode HttpStatusCode => _innerWebSocket?.HttpStatusCode ?? 0;
 
         // setter to clean up when not needed anymore
         public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders
