@@ -74,5 +74,11 @@ namespace System.Net.Security
         /// Use extreme caution when changing this setting.
         /// </summary>
         public CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
+
+        /// <summary>
+        /// Specifies X509ChainPolicy to use for remote certificate
+        /// validation. If set, CertificateRevocationCheckMode and SslCertificateTrust is ignored.
+        /// </summary>
+        public X509ChainPolicy? ValidationPolicy { get; set; }
     }
 }

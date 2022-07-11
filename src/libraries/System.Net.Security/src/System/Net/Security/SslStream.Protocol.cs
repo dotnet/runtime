@@ -925,7 +925,7 @@ namespace System.Net.Security
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain);
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.ValidationPolicy);
                 if (_remoteCertificate != null && certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
@@ -944,23 +944,40 @@ namespace System.Net.Security
                 else
                 {
                     chain ??= new X509Chain();
-                    chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
-                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
-                    // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                    chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
-
-                    if (trust != null)
+                    if (_sslAuthenticationOptions.ValidationPolicy != null)
                     {
-                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                        if (trust._store != null)
+                        chain.ChainPolicy = _sslAuthenticationOptions.ValidationPolicy;
+                        if (_sslAuthenticationOptions.ValidationPolicy.VerificationTimeIgnored)
                         {
-                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                            // Update VerificationTime to 'Now' unless explicitly set for whatever reason.
+                            chain.ChainPolicy.VerificationTime = DateTime.Now;
                         }
-                        if (trust._trustList != null)
+                    }
+                    else
+                    {
+                        chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
+                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                        if (trust != null)
                         {
-                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                            if (trust._store != null)
+                            {
+                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                            }
+                            if (trust._trustList != null)
+                            {
+                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                            }
                         }
+                    }
+
+                    // set ApplicationPolicy unless already provided.
+                    if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
+                    {
+                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
+                        chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
                     }
 
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(

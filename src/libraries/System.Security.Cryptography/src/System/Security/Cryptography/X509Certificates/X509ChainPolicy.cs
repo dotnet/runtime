@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.X509Certificates
         private X509RevocationFlag _revocationFlag;
         private X509VerificationFlags _verificationFlags;
         private X509ChainTrustMode _trustMode;
+        private DateTime _verificationTime;
         internal OidCollection? _applicationPolicy;
         internal OidCollection? _certificatePolicy;
         internal X509Certificate2Collection? _extraStore;
@@ -29,6 +30,16 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The default is <see langword="false" />.
         /// </value>
         public bool DisableCertificateDownloads { get; set; }
+
+        /// <summary>
+        ///   Gets or sets a value that indicates if VerificationTime was set and should be used or if it defaults to DateTime.Now from object creation.
+        /// </summary>
+        /// <value>
+        ///   <see langword="false" /> if VerificationTime was explicitly set and shall be used
+        ///   otherwise, <see langword="false" />.
+        ///   The default is <see langword="true" />.
+        /// </value>
+        public bool VerificationTimeIgnored { get; set; } = true;
 
         public OidCollection ApplicationPolicy => _applicationPolicy ??= new OidCollection();
 
@@ -94,7 +105,15 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public DateTime VerificationTime { get; set; }
+        public DateTime VerificationTime
+        {
+            get => _verificationTime;
+            set
+            {
+                _verificationTime = value;
+                VerificationTimeIgnored = false;
+            }
+        }
 
         public TimeSpan UrlRetrievalTimeout { get; set; }
 
@@ -109,8 +128,15 @@ namespace System.Security.Cryptography.X509Certificates
             _revocationFlag = X509RevocationFlag.ExcludeRoot;
             _verificationFlags = X509VerificationFlags.NoFlag;
             _trustMode = X509ChainTrustMode.System;
-            VerificationTime = DateTime.Now;
+            _verificationTime = DateTime.Now;
+            VerificationTimeIgnored = true;
+
             UrlRetrievalTimeout = TimeSpan.Zero; // default timeout
+        }
+
+        public X509ChainPolicy Clone()
+        {
+            return (X509ChainPolicy)MemberwiseClone();
         }
     }
 }

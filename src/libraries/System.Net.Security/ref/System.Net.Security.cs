@@ -196,6 +196,7 @@ namespace System.Net.Security
         public System.Net.Security.LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
         public string? TargetHost { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? ValidationPolicy { get { throw null; } set { } }
     }
     public readonly partial struct SslClientHelloInfo
     {
@@ -218,6 +219,7 @@ namespace System.Net.Security
         public System.Security.Cryptography.X509Certificates.X509Certificate? ServerCertificate { get { throw null; } set { } }
         public System.Net.Security.SslStreamCertificateContext? ServerCertificateContext { get { throw null; } set { } }
         public System.Net.Security.ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? ValidationPolicy { get { throw null; } set { } }
     }
     public partial class SslStream : System.Net.Security.AuthenticatedStream
     {

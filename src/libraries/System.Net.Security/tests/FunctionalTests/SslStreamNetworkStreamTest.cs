@@ -745,32 +745,23 @@ namespace System.Net.Security.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
-        public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
+        public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            clientOptions.RemoteCertificateValidationCallback =
-                (sender, certificate, chain, sslPolicyErrors) =>
+            clientOptions.ValidationPolicy = new X509ChainPolicy() { RevocationMode = X509RevocationMode.NoCheck,
+                                                                     TrustMode = X509ChainTrustMode.CustomRootTrust };
+            clientOptions.ValidationPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
+            // Add only one CA to verify that peer did send intermediate CA cert.
+            // In case of partial chain, we need to make missing certs available.
+            if (usePartialChain)
+            {
+                for (int i = split; i < certificates.serverChain.Count - 1; i++)
                 {
-                    // add our custom root CA
-                    chain.ChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
-                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    // Add only one CA to verify that peer did send intermediate CA cert.
-                    // In case of partial chain, we need to make missing certs available.
-                    if (usePartialChain)
-                    {
-                        for (int i = split; i < certificates.serverChain.Count - 1; i++)
-                        {
-                            chain.ChainPolicy.ExtraStore.Add(certificates.serverChain[i]);
-                        }
-                    }
-
-                    bool result = chain.Build((X509Certificate2)certificate);
-                    Assert.True(result);
-
-                    return result;
-                };
+                    clientOptions.ValidationPolicy.ExtraStore.Add(certificates.serverChain[i]);
+                }
+            }
 
             var serverOptions = new SslServerAuthenticationOptions();
             X509Certificate2Collection serverChain;
