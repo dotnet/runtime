@@ -752,6 +752,24 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
+        private record InstructionSetGroup(string Name, TargetArchitecture Arch, string Sets);
+
+        private static InstructionSetGroup[] AllInstructionSetGroups { get; } =
+            {
+                new ("generic", TargetArchitecture.X86, "sse2"),
+                new ("generic", TargetArchitecture.X64, "sse2"),
+                new ("generic", TargetArchitecture.ARM64, "neon"),
+                new ("generic", TargetArchitecture.ARM, ""),
+                new ("haswell", TargetArchitecture.X64, "avx2 bmi fma lzcnt pclmul popcnt movbe"),
+                new ("haswell", TargetArchitecture.X86, "avx2 bmi fma lzcnt pclmul popcnt movbe"),
+                new ("apple-m1", TargetArchitecture.ARM64, "neon aes crc dotprod rdma sha1 sha2 lse rcpc"),
+            };
+
+        public static IEnumerable<string> AllCpuNames => AllInstructionSetGroups.Select(x => x.Name).Distinct();
+
+        public static IEnumerable<string> CpuNameToInstructionSets(string cpu, TargetArchitecture arch) =>
+            AllInstructionSetGroups.FirstOrDefault(g => g.Name == cpu && g.Arch == arch)?.Sets.Split(' ');
+
         public struct InstructionSetInfo
         {
             public readonly string Name;
@@ -766,59 +784,6 @@ namespace Internal.JitInterface
                 InstructionSet = instructionSet;
                 Specifiable = specifiable;
             }
-        }
-
-        public static IEnumerable<string> AllCpuFamilies()
-        {
-            // Only report these in the help, others are added to CpuFamilyToInstructionSets just for muscle memory after clang/llvm
-            yield return "generic";
-            yield return "nehalem";
-            yield return "sandybridge";
-            yield return "haswell";
-            yield return "ampere-altra";
-            yield return "apple-m1";
-        }
-
-        public static IEnumerable<string> CpuFamilyToInstructionSets(string cpu, TargetArchitecture arch)
-        {
-            string sets = null;
-
-            if (arch == TargetArchitecture.ARM64)
-            {
-                sets = cpu switch
-                {
-                    "generic" => "neon",
-
-                    "ampere-altra" => "neon,lse",
-
-                    "apple-m1" => "neon,aes,crc,dotprod,rdma,sha1,sha2,lse,rcpc",
-
-                    _ => null
-                };
-            }
-            else if (arch == TargetArchitecture.X64 || arch == TargetArchitecture.X86)
-            {
-                sets = cpu switch
-                {
-                    "generic" => "sse2",
-
-                    "nehalem" => "sse4.2",
-
-                    // Rosetta2
-                    "apple-m1" => "sse4.2,pclmul",
-
-                    "sandybridge" or
-                    "ivybridge" => "avx,popcnt",
-
-                    "haswell" or
-                    "broadwell" or
-                    "skylake" or
-                    "cannonlake" => "avx2,bmi,fma,lzcnt,pclmul,popcnt,movbe",
-
-                    _ => null
-                };
-            }
-            return sets?.Split(',');
         }
 
         public static IEnumerable<InstructionSetInfo> ArchitectureToValidInstructionSets(TargetArchitecture architecture)

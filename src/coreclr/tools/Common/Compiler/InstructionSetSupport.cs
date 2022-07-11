@@ -191,8 +191,8 @@ namespace ILCompiler
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
         public bool AddSupportedInstructionSet(string instructionSet)
         {
-            // First, check if it's a "known cpu family" group of instruction sets e.g. "skylake"
-            var sets = InstructionSetFlags.CpuFamilyToInstructionSets(instructionSet, _architecture);
+            // First, check if it's a "known cpu family" group of instruction sets e.g. "haswell"
+            var sets = InstructionSetFlags.CpuNameToInstructionSets(instructionSet, _architecture);
             if (sets != null)
             {
                 foreach (string set in sets)

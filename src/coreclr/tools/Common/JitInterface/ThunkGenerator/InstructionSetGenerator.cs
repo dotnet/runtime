@@ -58,6 +58,8 @@ namespace Thunkerator
             }
         }
 
+        record InstructionSetGroup(string Name, string Arch, string Sets);
+
         class InstructionSetImplication
         {
             public string Architecture { get; }
@@ -81,6 +83,7 @@ namespace Thunkerator
 
         List<InstructionSetInfo> _instructionSets = new List<InstructionSetInfo>();
         List<InstructionSetImplication> _implications = new List<InstructionSetImplication>();
+        List<InstructionSetGroup> _instructionSetsGroups = new List<InstructionSetGroup>();
         Dictionary<string, HashSet<string>> _64bitVariants = new Dictionary<string, HashSet<string>>();
         SortedDictionary<string,int> _r2rNamesByName = new SortedDictionary<string,int>();
         SortedDictionary<int,string> _r2rNamesByNumber = new SortedDictionary<int,string>();
@@ -183,6 +186,11 @@ namespace Thunkerator
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
                             _implications.Add(new InstructionSetImplication(command[1],command[2], command[3]));
+                            break;
+                        case "instructionsetgroup":
+                            if (command.Length != 4)
+                                throw new Exception("Incorrect number of args for instructionsetgroup");
+                            _instructionSetsGroups.Add(new InstructionSetGroup(command[1], command[2], command[3]));
                             break;
                         case "copyinstructionsets":
                             if (command.Length != 3)
@@ -604,6 +612,22 @@ namespace Internal.JitInterface
 
             return resultflags;
         }
+
+        private record InstructionSetGroup(string Name, TargetArchitecture Arch, string Sets);
+
+        private static InstructionSetGroup[] AllInstructionSetGroups { get; } =
+            {
+");
+            foreach (InstructionSetGroup group in _instructionSetsGroups)
+            {
+                tr.WriteLine($"                new (\"{group.Name}\", TargetArchitecture.{group.Arch}, \"{group.Sets}\"),");
+            }
+            tr.Write(@"            };
+
+        public static IEnumerable<string> AllCpuNames => AllInstructionSetGroups.Select(x => x.Name).Distinct();
+
+        public static IEnumerable<string> CpuNameToInstructionSets(string cpu, TargetArchitecture arch) =>
+            AllInstructionSetGroups.FirstOrDefault(g => g.Name == cpu && g.Arch == arch)?.Sets.Split(' ');
 
         public struct InstructionSetInfo
         {

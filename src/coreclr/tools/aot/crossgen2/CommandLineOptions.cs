@@ -241,7 +241,7 @@ namespace ILCompiler
 
                 extraHelp.Add("");
                 extraHelp.Add(SR.CpuFamilies);
-                extraHelp.Add(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuFamilies()));
+                extraHelp.Add(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
 
                 argSyntax.ExtraHelpParagraphs = extraHelp;
 
