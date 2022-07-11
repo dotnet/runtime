@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+int g_readProcessMemoryResult = KERN_SUCCESS;
+
 bool
 CrashInfo::Initialize()
 {
@@ -21,6 +23,26 @@ CrashInfo::Initialize()
 void
 CrashInfo::CleanupAndResumeProcess()
 {
+    if (g_diagnosticsVerbose)
+    {
+        thread_basic_info_data_t info;
+        mach_msg_type_number_t count;
+        kern_return_t result;
+
+        for (ThreadInfo* thread : m_threads)
+        {
+            count = THREAD_BASIC_INFO_COUNT;
+            result = ::thread_info(thread->Port(), THREAD_BASIC_INFO, (thread_info_t)&info, &count);
+            if (result == KERN_SUCCESS)
+            {
+                TRACE("thread_info(%d) state %d flags %%08x suspend %d\n", thread->Tid(), info.run_state, info.flags, info.suspend_count);
+            }
+            else
+            {
+                TRACE("thread_info(%d) FAILED %x %s\n", thread->Tid(), result, mach_error_string(result));
+            }
+        }
+    }
     // Resume all the threads suspended in EnumerateAndSuspendThreads
     ::task_resume(Task());
 }
@@ -362,6 +384,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         kern_return_t result = ::vm_read_overwrite(Task(), addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
+            g_readProcessMemoryResult = result;
             TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %x %s\n",
                 address, size, bytesLeft, bytesRead, (void*)addressAligned, result, mach_error_string(result));
             break;
