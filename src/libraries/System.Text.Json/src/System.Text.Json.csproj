@@ -61,7 +61,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
-    <Compile Include="System\Text\Json\JsonPropertyInfoDictionaryValueList.cs" />
     <Compile Include="System\Text\Json\JsonPropertyDictionary.cs" />
     <Compile Include="System\Text\Json\JsonPropertyDictionary.KeyCollection.cs" />
     <Compile Include="System\Text\Json\JsonPropertyDictionary.ValueCollection.cs" />

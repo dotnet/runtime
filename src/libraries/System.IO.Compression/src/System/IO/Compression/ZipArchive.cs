@@ -204,8 +204,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                if (extraTempStream != null)
-                    extraTempStream.Dispose();
+                extraTempStream?.Dispose();
 
                 throw;
             }
@@ -460,8 +459,7 @@ namespace System.IO.Compression
 
         internal void ThrowIfDisposed()
         {
-            if (_isDisposed)
-                throw new ObjectDisposedException(GetType().ToString());
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         private void CloseStreams()

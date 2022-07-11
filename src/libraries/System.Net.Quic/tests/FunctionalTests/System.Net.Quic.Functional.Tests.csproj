@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

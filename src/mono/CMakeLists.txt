@@ -9,6 +9,11 @@ project(mono)
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 
+if (MSVC)
+  # Also set by configurecompiler.cmake, which isn't used by mono yet
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
+endif(MSVC)
+
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")
@@ -229,6 +234,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_BROWSER 1)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
+  add_compile_options(-Wno-strict-prototypes)
+  add_compile_options(-Wno-unused-but-set-variable)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)

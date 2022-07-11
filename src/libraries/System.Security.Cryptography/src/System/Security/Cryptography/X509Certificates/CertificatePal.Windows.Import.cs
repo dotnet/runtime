@@ -97,12 +97,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
             finally
             {
-                if (hCertStore != null)
-                    hCertStore.Dispose();
-                if (hCryptMsg != null)
-                    hCryptMsg.Dispose();
-                if (pCertContext != null)
-                    pCertContext.Dispose();
+                hCertStore?.Dispose();
+                hCryptMsg?.Dispose();
+                pCertContext?.Dispose();
             }
         }
 

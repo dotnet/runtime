@@ -20,19 +20,29 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo? ParentTypeInfo { get; private set; }
         private JsonTypeInfo? _jsonTypeInfo;
 
-        internal ConverterStrategy ConverterStrategy;
+        internal ConverterStrategy ConverterStrategy { get; private protected set; }
 
         /// <summary>
         /// Converter resolved from PropertyType and not taking in consideration any custom attributes or custom settings.
         /// - for reflection we store the original value since we need it in order to construct typed JsonPropertyInfo
         /// - for source gen it remains null, we will initialize it only if someone used resolver to remove CustomConverter
         /// </summary>
-        internal JsonConverter? DefaultConverterForType { get; set; }
+        internal JsonConverter? DefaultConverterForType
+        {
+            get => _defaultConverterForType;
+            set
+            {
+                _defaultConverterForType = value;
+                ConverterStrategy = value?.ConverterStrategy ?? default;
+            }
+        }
+
+        private JsonConverter? _defaultConverterForType;
 
         /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
         /// </summary>
-        internal abstract JsonConverter EffectiveConverter { get; set; }
+        internal abstract JsonConverter EffectiveConverter { get; }
 
         /// <summary>
         /// Custom converter override at the property level, equivalent to <see cref="JsonConverterAttribute" /> annotation.
@@ -98,9 +108,8 @@ namespace System.Text.Json.Serialization.Metadata
                 VerifyMutable();
                 _shouldSerialize = value;
                 // By default we will go through faster path (not using delegate) and use IgnoreCondition
-                // If users sets it explicitly we always go through delegate
+                // If user sets it explicitly we always go through delegate
                 _ignoreCondition = null;
-                IsIgnored = false;
                 _shouldSerializeIsExplicitlySet = true;
             }
         }
@@ -113,7 +122,6 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(!_isConfigured);
 
                 _ignoreCondition = value;
-                IsIgnored = value == JsonIgnoreCondition.Always;
                 _shouldSerialize = value != null ? GetShouldSerializeForIgnoreCondition(value.Value) : null;
                 _shouldSerializeIsExplicitlySet = false;
             }
@@ -135,7 +143,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Setting a custom attribute provider will have no impact on the contract model,
         /// but serves as metadata for downstream contract modifiers.
         /// </remarks>
-        internal ICustomAttributeProvider? AttributeProvider
+        public ICustomAttributeProvider? AttributeProvider
         {
             get => _attributeProvider;
             set
@@ -158,7 +166,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Properties annotated with <see cref="JsonExtensionDataAttribute"/>
         /// will appear here when using <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>.
         /// </remarks>
-        internal bool IsExtensionData
+        public bool IsExtensionData
         {
             get => _isExtensionDataProperty;
             set
@@ -176,18 +184,19 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool _isExtensionDataProperty;
 
-        internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? parentTypeInfo, JsonSerializerOptions options)
+        internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
+            Debug.Assert(declaringTypeInfo is null || declaringTypeInfo.Type == declaringType);
+
             DeclaringType = declaringType;
             PropertyType = propertyType;
+            ParentTypeInfo = declaringTypeInfo; // null parentTypeInfo means it's not tied yet
             Options = options;
-            ParentTypeInfo = parentTypeInfo; // null parentTypeInfo means it's not tied yet
-            PropertyTypeCanBeNull = PropertyType.CanBeNull();
         }
 
         internal static JsonPropertyInfo GetPropertyPlaceholder()
         {
-            JsonPropertyInfo info = new JsonPropertyInfo<object>(typeof(object), typeof(object), parentTypeInfo: null, options: null!);
+            JsonPropertyInfo info = new JsonPropertyInfo<object>(typeof(object), declaringTypeInfo: null, options: null!);
 
             Debug.Assert(!info.IsForTypeInfo);
             Debug.Assert(!info.CanDeserialize);
@@ -211,7 +220,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private bool _isConfigured;
+        private volatile bool _isConfigured;
 
         internal void EnsureConfigured()
         {
@@ -225,9 +234,11 @@ namespace System.Text.Json.Serialization.Metadata
             _isConfigured = true;
         }
 
-        internal virtual void Configure()
+        internal void Configure()
         {
             Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(!ParentTypeInfo.IsConfigured);
+
             DeclaringTypeNumberHandling = ParentTypeInfo.NumberHandling;
 
             if (!IsForTypeInfo)
@@ -241,7 +252,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             DetermineEffectiveConverter();
-            ConverterStrategy = EffectiveConverter.ConverterStrategy;
 
             if (IsForTypeInfo)
             {
@@ -571,7 +581,7 @@ namespace System.Text.Json.Serialization.Metadata
         // There are 3 copies of the property name:
         // 1) Name. The unescaped property name.
         // 2) NameAsUtf8Bytes. The Utf8 version of Name. Used during during deserialization for property lookup.
-        // 3) EscapedNameSection. The escaped verson of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
+        // 3) EscapedNameSection. The escaped version of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
 
         /// <summary>
         /// Gets or sets the JSON property name used when serializing the property.
@@ -590,7 +600,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
                 }
 
                 _name = value;
@@ -621,7 +631,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// When using <see cref="DefaultJsonTypeInfoResolver"/>, properties annotated
         /// with the <see cref="JsonPropertyOrderAttribute"/> will map to this value.
         /// </remarks>
-        internal int Order
+        public int Order
         {
             get => _order;
             set
@@ -747,7 +757,7 @@ namespace System.Text.Json.Serialization.Metadata
                 else
                 {
                     // GetOrAddJsonTypeInfo already ensures it's configured.
-                    _jsonTypeInfo = Options.GetOrAddJsonTypeInfo(PropertyType);
+                    _jsonTypeInfo = Options.GetTypeInfoCached(PropertyType);
                 }
 
                 return _jsonTypeInfo;
@@ -767,7 +777,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool CanDeserialize { get; private set; }
 
-        internal bool IsIgnored { get; private set; }
+        internal bool IsIgnored => _ignoreCondition == JsonIgnoreCondition.Always;
 
         /// <summary>
         /// Relevant to source generated metadata: did the property have the <see cref="JsonIncludeAttribute"/>?
@@ -805,7 +815,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonNumberHandling? EffectiveNumberHandling { get; set; }
 
         //  Whether the property type can be null.
-        internal bool PropertyTypeCanBeNull { get; }
+        internal abstract bool PropertyTypeCanBeNull { get; }
 
         /// <summary>
         /// Default value used for parameterized ctor invocation.

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Reflection;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -17,7 +18,7 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonSerializerOptions options)
-            : this(options.GetConverterForType(typeof(T)), options)
+            : this(DefaultJsonTypeInfoResolver.GetConverterForType(typeof(T), options), options)
         {
         }
 
@@ -172,6 +173,10 @@ namespace System.Text.Json.Serialization.Metadata
             propertyOrderSpecified |= jsonPropertyInfo.Order != 0;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked as RequiresUnreferencedCode")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         private JsonPropertyInfo? AddProperty(
             Type typeToConvert,
             MemberInfo memberInfo,
@@ -192,7 +197,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             try
             {
-                converter = GetConverterFromMember(
+                converter = DefaultJsonTypeInfoResolver.GetConverterForMember(
                     typeToConvert,
                     memberInfo,
                     options,
@@ -203,7 +208,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return null;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = CreateProperty(typeToConvert, converter);
+            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert, converter);
             jsonPropertyInfo.IgnoreCondition = ignoreCondition;
             jsonPropertyInfo.CustomConverter = customConverter;
             jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo);

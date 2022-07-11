@@ -400,10 +400,10 @@
     <value>The converter '{0}' is not compatible with the type '{1}'.</value>
   </data>
   <data name="ResolverTypeNotCompatible" xml:space="preserve">
-    <value>TypeInfoResolver expected to return JsonTypeInfo of type '{0}' but returned JsonTypeInfo of type '{1}'.</value>
+    <value>The IJsonTypeInfoResolver returned an incompatible JsonTypeInfo instance of type '{0}', expected type '{1}'.</value>
   </data>
   <data name="ResolverTypeInfoOptionsNotCompatible" xml:space="preserve">
-    <value>TypeInfoResolver expected to return JsonTypeInfo options bound to the JsonSerializerOptions provided in the argument.</value>
+    <value>The IJsonTypeInfoResolver returned a JsonTypeInfo instance whose JsonSerializerOptions setting does not match the provided argument.</value>
   </data>
   <data name="SerializationConverterWrite" xml:space="preserve">
     <value>The converter '{0}' wrote too much or not enough.</value>
@@ -603,7 +603,7 @@
     <value>Invalid configuration provided for 'propInitFunc', 'ctorParamInitFunc' and 'serializeFunc'.</value>
   </data>
   <data name="NoMetadataForTypeProperties" xml:space="preserve">
-    <value>'JsonSerializerContext' '{0}' did not provide property metadata for type '{1}'.</value>
+    <value>TypeInfoResolver '{0}' did not provide property metadata for type '{1}'.</value>
   </data>
   <data name="NoDefaultOptionsForContext" xml:space="preserve">
     <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
@@ -618,7 +618,7 @@
     <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
   </data>
   <data name="NoMetadataForTypeCtorParams" xml:space="preserve">
-    <value>'JsonSerializerContext' '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
+    <value>TypeInfoResolver '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
   </data>
   <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
     <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
@@ -653,8 +653,8 @@
   <data name="Polymorphism_RuntimeTypeDiamondAmbiguity" xml:space="preserve">
     <value>Runtime type '{0}' has a diamond ambiguity between derived types '{1}' and '{2}' of polymorphic type '{3}'. Consider either removing one of the derived types or removing the 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' setting.</value>
   </data>
-  <data name="JsonTypeInfoOperationNotPossibleForKindNone" xml:space="preserve">
-    <value>Operation is not possible when Kind is JsonTypeKind.None.</value>
+  <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
+    <value>Invalid JsonTypeInfo operation for metadata kind '{0}'.</value>
   </data>
   <data name="CombineOneOfResolversIsNull" xml:space="preserve">
     <value>One of the provided resolvers is null.</value>
@@ -667,8 +667,5 @@
   </data>
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
-  </data>
-  <data name="SerializationCallbacksNotSupported" xml:space="preserve">
-    <value>Serialization callbacks are not supported in metadata kind '{0}'.</value>
   </data>
 </root>

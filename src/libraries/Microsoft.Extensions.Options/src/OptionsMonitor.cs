@@ -66,10 +66,7 @@ namespace Microsoft.Extensions.Options
             name ??= Options.DefaultName;
             _cache.TryRemove(name);
             TOptions options = Get(name);
-            if (_onChange != null)
-            {
-                _onChange.Invoke(options, name);
-            }
+            _onChange?.Invoke(options, name);
         }
 
         /// <summary>

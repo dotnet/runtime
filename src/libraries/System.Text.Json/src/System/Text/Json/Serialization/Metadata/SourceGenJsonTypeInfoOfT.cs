@@ -89,27 +89,24 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
         }
 
-        internal override void LateAddProperties()
-        {
-            AddPropertiesUsingSourceGenInfo();
-        }
-
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            JsonSerializerContext? context = Options.SerializerContext;
             JsonParameterInfoValues[] array;
             if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolverSafe, Type);
                 return null!;
             }
 
             return array;
         }
 
-        internal void AddPropertiesUsingSourceGenInfo()
+        internal override void LateAddProperties()
         {
-            if (PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            Debug.Assert(!IsConfigured);
+            Debug.Assert(PropertyCache is null);
+
+            if (Kind != JsonTypeInfoKind.Object)
             {
                 return;
             }
@@ -129,13 +126,13 @@ namespace System.Text.Json.Serialization.Metadata
                     return;
                 }
 
-                if (SerializeHandler != null && Options.SerializerContext?.CanUseSerializationLogic == true)
+                if (SerializeHandler != null && context?.CanUseSerializationLogic == true)
                 {
                     ThrowOnDeserialize = true;
                     return;
                 }
 
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolverSafe, Type);
                 return;
             }
 

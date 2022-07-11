@@ -44,7 +44,7 @@ namespace System.Text.Json
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             AddValue(propertyName, value);
@@ -111,7 +111,7 @@ namespace System.Text.Json
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             return TryRemoveProperty(propertyName, out _);
@@ -156,9 +156,9 @@ namespace System.Text.Json
             }
         }
 
-        public ICollection<string> Keys => GetKeyCollection();
+        public IList<string> Keys => GetKeyCollection();
 
-        public ICollection<T> Values => GetValueCollection();
+        public IList<T> Values => GetValueCollection();
 
         public bool TryGetValue(string propertyName, [MaybeNullWhen(false)] out T value)
         {
@@ -218,7 +218,7 @@ namespace System.Text.Json
 
             if (propertyName == null)
             {
-                throw new ArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
             CreateDictionaryIfThresholdMet();

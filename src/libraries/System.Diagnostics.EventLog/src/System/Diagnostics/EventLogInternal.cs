@@ -1180,10 +1180,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    if (interestedComponents[i] != null)
-                    {
-                        interestedComponents[i].CompletionCallback(null);
-                    }
+                    interestedComponents[i]?.CompletionCallback(null);
                 }
                 catch (ObjectDisposedException)
                 {

@@ -66,7 +66,6 @@ jobs:
       - Browser_wasm_win
     alwaysRun: ${{ variables.isRollingBuild }}
     scenarios:
-      - normal
       - WasmTestOnBrowser
 
 # AOT Library tests
@@ -100,6 +99,28 @@ jobs:
     # ff tests are unstable currently
     shouldContinueOnError: true
     alwaysRun: ${{ variables.isRollingBuild }}
+
+#
+# Build the whole product using Mono
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - FreeBSD_x64
+    jobParameters:
+      testScope: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+      timeoutInMinutes: 120
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
 
 #
 # Build the whole product using Mono and run libraries tests

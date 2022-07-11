@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
         }
 
-        internal abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, Type propertyType, JsonSerializerOptions options);
+        internal abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options);
 
         internal abstract JsonParameterInfo CreateJsonParameterInfo();
 

@@ -174,6 +174,8 @@ if ($iOSMono) {
         Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
         Copy-Item -path "$SourceDirectory\MauiiOSDefaultIPA" $PayloadDirectory\MauiiOSDefaultIPA -Recurse
         Copy-Item -path "$SourceDirectory\MauiMacCatalystDefault\MauiMacCatalystDefault.app" $PayloadDirectory\MauiMacCatalystDefault -Recurse
+        Copy-Item -path "$SourceDirectory\MauiBlazoriOSDefaultIPA" $PayloadDirectory\MauiBlazoriOSDefaultIPA -Recurse
+        Copy-Item -path "$SourceDirectory\MauiBlazorMacCatalystDefault\MauiBlazorMacCatalystDefault.app" $PayloadDirectory\MauiBlazorMacCatalystDefault -Recurse
         Copy-Item -path "$SourceDirectory\MauiiOSPodcastIPA" $PayloadDirectory\MauiiOSPodcastIPA -Recurse
     }
 

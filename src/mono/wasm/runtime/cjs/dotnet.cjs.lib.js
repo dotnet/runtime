@@ -21,7 +21,7 @@ const DotnetSupportLib = {
 let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
 if (${usePThreads}) {
     __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
-    __dotnet_replacement_PThread.threadInit = PThread.threadInit;
+    __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
 }
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
@@ -35,7 +35,7 @@ require = __dotnet_replacements.requireOut;
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
 if (${usePThreads}) {
     PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
-    PThread.threadInit = __dotnet_replacements.pthreadReplacements.threadInit;
+    PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTS;
 }
 `,
 };
@@ -74,13 +74,11 @@ const linked_functions = [
     "mono_wasm_typed_array_copy_to_ref",
     "mono_wasm_typed_array_from_ref",
     "mono_wasm_typed_array_copy_from_ref",
-    "mono_wasm_cancel_promise_ref",
-    "mono_wasm_web_socket_open_ref",
-    "mono_wasm_web_socket_send",
-    "mono_wasm_web_socket_receive",
-    "mono_wasm_web_socket_close_ref",
-    "mono_wasm_web_socket_abort",
     "mono_wasm_compile_function_ref",
+    "mono_wasm_bind_js_function",
+    "mono_wasm_invoke_bound_function",
+    "mono_wasm_bind_cs_function",
+    "mono_wasm_marshal_promise",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
@@ -90,6 +88,8 @@ const linked_functions = [
     "dotnet_browser_can_use_subtle_crypto_impl",
     "dotnet_browser_simple_digest_hash",
     "dotnet_browser_sign",
+    "dotnet_browser_encrypt_decrypt",
+    "dotnet_browser_derive_bits",
 
     /// mono-threads-wasm.c
     #if USE_PTHREADS

@@ -86,21 +86,25 @@
     <!-- LibraryImportGenerator runtime tests depend on DNNE, which does not support mobile platforms. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'arm'">
     <!-- LibraryImportGenerator runtime tests depend on DNNE, which does not support Windows ARM32 as we don't officially support it. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetArchitecture)' == 'armel'">
     <!-- LibraryImportGenerator runtime tests depend on DNNE, which does not support armel as we don't officially support it. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'FreeBSD'">
     <!-- LibraryImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for FreeBSD. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'linux' and '$(TargetArchitecture)' == 's390x'">
@@ -108,17 +112,20 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
     <!-- LibraryImportGenerator unit tests fail since NuGet 5.6.0 signature verification does not work on big-endian systems (needs >= 5.11.0). -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'linux' and '$(TargetArchitecture)' == 'ppc64le'">
     <!-- LibraryImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for ppc64le. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />    
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Windows' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisabledMonoTestsOnWindows)' != 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/53281 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
     <!-- Issue: https://github.com/dotnet/runtime/issues/63723 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
   </ItemGroup>
@@ -317,6 +324,7 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.Platforms\tests\Microsoft.NETCore.Platforms.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
 
     <!-- This test is disabled via an assembly-level attribute in source. We exclude it here to avoid queuing/running a work item entirely.
          https://github.com/dotnet/runtime/issues/35970 -->
@@ -394,7 +402,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <!--Needs work to get these tests to pass -->
     <!--These tests have failures-->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj"
+    <!-- System.Collection.Immutable running into https://github.com/dotnet/runtime/issues/70012 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" 
                       Condition="'$(TargetOS)' == 'linux'" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"
                       Condition="'$(TargetOS)' == 'linux'" />
@@ -509,7 +520,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug\tests\System.Diagnostics.Debug.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.FileVersionInfo\tests\System.Diagnostics.FileVersionInfo.Tests\System.Diagnostics.FileVersionInfo.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.PerformanceCounter\tests\System.Diagnostics.PerformanceCounter.Tests.csproj" />
@@ -539,6 +549,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
@@ -563,9 +574,7 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
-    <!-- Remove the condition after fix, https://github.com/dotnet/runtime/issues/70010 -->
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj"
-                      Condition="'$(TargetOS)' == 'windows'" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />

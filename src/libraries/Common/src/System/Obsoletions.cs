@@ -144,5 +144,8 @@ namespace System
 
         internal const string AssemblyNameCodeBaseMessage = "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.";
         internal const string AssemblyNameCodeBaseDiagId = "SYSLIB0044";
+
+        internal const string CryptoStringFactoryMessage = "Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.";
+        internal const string CryptoStringFactoryDiagId = "SYSLIB0045";
     }
 }

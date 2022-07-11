@@ -17,8 +17,8 @@
              Link="Production\CustomTypeMarshallerFeatures.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs"
              Link="Production\StringMarshalling.cs" />
-    <Compile Include="..\..\tests\Ancillary.Interop\Scenario.cs"
-             Link="Production\Scenario.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\MarshalMode.cs"
+             Link="Production\MarshalMode.cs" />
   </ItemGroup>
 
   <ItemGroup>

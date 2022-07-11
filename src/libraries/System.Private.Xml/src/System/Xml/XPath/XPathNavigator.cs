@@ -126,10 +126,7 @@ namespace System.Xml.XPath
                 {
                     value = schemaType.ValueConverter.ToString(typedValue, this);
                     XmlSchemaDatatype? datatype = schemaType.Datatype;
-                    if (datatype != null)
-                    {
-                        datatype.ParseValue(value, NameTable, this);
-                    }
+                    datatype?.ParseValue(value, NameTable, this);
                 }
             }
             value ??= XmlUntypedConverter.Untyped.ToString(typedValue, this);
@@ -346,10 +343,7 @@ namespace System.Xml.XPath
 
         public override object ValueAs(Type returnType, IXmlNamespaceResolver? nsResolver)
         {
-            if (nsResolver == null)
-            {
-                nsResolver = this;
-            }
+            nsResolver ??= this;
             IXmlSchemaInfo? schemaInfo = SchemaInfo;
             XmlSchemaType? schemaType;
             XmlSchemaDatatype? datatype;
@@ -1566,7 +1560,7 @@ namespace System.Xml.XPath
             DeleteRange(this);
         }
 
-        public virtual void PrependChildElement(string prefix, string localName, string namespaceURI, string value)
+        public virtual void PrependChildElement(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = PrependChild();
             writer.WriteStartElement(prefix, localName, namespaceURI);
@@ -1578,7 +1572,7 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void AppendChildElement(string prefix, string localName, string namespaceURI, string value)
+        public virtual void AppendChildElement(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = AppendChild();
             writer.WriteStartElement(prefix, localName, namespaceURI);
@@ -1590,7 +1584,7 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void InsertElementBefore(string prefix, string localName, string namespaceURI, string value)
+        public virtual void InsertElementBefore(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = InsertBefore();
             writer.WriteStartElement(prefix, localName, namespaceURI);
@@ -1602,7 +1596,7 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void InsertElementAfter(string prefix, string localName, string namespaceURI, string value)
+        public virtual void InsertElementAfter(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = InsertAfter();
             writer.WriteStartElement(prefix, localName, namespaceURI);
@@ -1614,7 +1608,7 @@ namespace System.Xml.XPath
             writer.Close();
         }
 
-        public virtual void CreateAttribute(string prefix, string localName, string namespaceURI, string value)
+        public virtual void CreateAttribute(string? prefix, string localName, string? namespaceURI, string? value)
         {
             XmlWriter writer = CreateAttributes();
             writer.WriteStartAttribute(prefix, localName, namespaceURI);
