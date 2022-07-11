@@ -466,7 +466,7 @@ public sealed partial class QuicStream
     {
         if (data.ConnectionShutdown != 0)
         {
-            Exception exception = data.ConnectionShutdownByPeer != 0 ? new QuicConnectionAbortedException((long)data.ConnectionErrorCode) : new QuicOperationAbortedException();
+            Exception exception = data.ConnectionShutdownByApp != 0 && data.ConnectionClosedRemotely == 0 ? new QuicOperationAbortedException() :  new QuicConnectionAbortedException((long)data.ConnectionErrorCode);
             _startedTcs.TrySetException(exception);
             _receiveTcs.TrySetException(exception, final: true);
             _sendTcs.TrySetException(exception, final: true);

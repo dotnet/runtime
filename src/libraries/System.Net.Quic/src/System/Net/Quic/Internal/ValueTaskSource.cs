@@ -69,10 +69,6 @@ internal sealed class ValueTaskSource : IValueTaskSource
                 if (keepAlive is not null)
                 {
                     Debug.Assert(!_keepAlive.IsAllocated);
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Info(keepAlive, $"{keepAlive} rooted.");
-                    }
                     _keepAlive = GCHandle.Alloc(keepAlive);
                 }
 
@@ -125,10 +121,6 @@ internal sealed class ValueTaskSource : IValueTaskSource
                     // Un-root the kept alive object in all cases.
                     if (_keepAlive.IsAllocated)
                     {
-                        if (NetEventSource.Log.IsEnabled())
-                        {
-                            NetEventSource.Info(_keepAlive.Target, $"{_keepAlive.Target} un-rooted.");
-                        }
                         _keepAlive.Free();
                     }
                 }
