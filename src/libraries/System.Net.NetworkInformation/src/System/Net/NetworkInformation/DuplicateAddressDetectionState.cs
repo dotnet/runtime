@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Specifies the current state of an IP address.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum DuplicateAddressDetectionState
     {
         Invalid = 0,

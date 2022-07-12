@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Specifies types of network interfaces.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum NetworkInterfaceType
     {
         Unknown = 1,

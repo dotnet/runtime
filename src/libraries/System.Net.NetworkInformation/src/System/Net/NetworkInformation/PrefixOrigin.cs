@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Specifies how an IP address network prefix was located.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum PrefixOrigin
     {
         Other = 0,

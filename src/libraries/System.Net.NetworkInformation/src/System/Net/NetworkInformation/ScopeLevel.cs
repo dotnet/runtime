@@ -4,6 +4,7 @@
 namespace System.Net.NetworkInformation
 {
     // See SCOPE_LEVEL
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum ScopeLevel
     {
         None = 0,

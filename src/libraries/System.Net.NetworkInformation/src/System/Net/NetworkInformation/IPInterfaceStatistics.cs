@@ -9,6 +9,7 @@ namespace System.Net.NetworkInformation
     /// Provides statistics information for a particular network interface,
     /// such as the total number of bytes sent and received.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class IPInterfaceStatistics
     {
         /// <summary>

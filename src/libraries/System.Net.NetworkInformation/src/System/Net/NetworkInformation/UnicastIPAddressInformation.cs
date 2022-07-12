@@ -9,6 +9,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Provides information about a network interface's unicast address.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class UnicastIPAddressInformation : IPAddressInformation
     {
         /// <summary>

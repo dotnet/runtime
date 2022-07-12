@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -48,7 +48,7 @@
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformation.cs" Link="Common\System\Net\NetworkInformation\HostInformation.cs" />
+    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformation.cs" Link="Common\System\Net\NetworkInformation\HostInformation.cs" Condition="'$(TargetPlatformIdentifier)' != 'Browser'" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\NetworkInformationException.cs" Link="Common\System\Net\NetworkInformation\NetworkInformationException.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
@@ -98,7 +98,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAIoctl.cs" Link="Common\Interop\Windows\WinSock\Interop.WSAIoctl.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="System\Net\NetworkInformation\IPAddressUtil.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkFiles.cs" />
     <Compile Include="System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.Unix.cs" />

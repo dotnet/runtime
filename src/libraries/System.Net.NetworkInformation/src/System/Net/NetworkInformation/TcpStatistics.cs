@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Provides Transmission Control Protocol (TCP) statistical data.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class TcpStatistics
     {
         /// <summary>

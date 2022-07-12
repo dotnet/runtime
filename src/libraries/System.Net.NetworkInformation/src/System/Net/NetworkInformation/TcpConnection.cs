@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Provides information about the Transmission Control Protocol (TCP) connections on the local computer.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class TcpConnectionInformation
     {
         /// <summary>

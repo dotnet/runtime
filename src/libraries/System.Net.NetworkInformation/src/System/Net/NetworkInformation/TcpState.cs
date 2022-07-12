@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Specifies the states of a Transmission Control Protocol (TCP) connection.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum TcpState
     {
         Unknown,

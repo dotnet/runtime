@@ -8,6 +8,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Provides Internet Protocol (IP) statistical data for the local machine.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class IPGlobalStatistics
     {
         /// <summary>

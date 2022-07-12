@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Provides Internet Control Message Protocol for Internet Protocol version 6 (ICMPv6) statistical data for the local computer.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class IcmpV6Statistics
     {
         /// <summary>

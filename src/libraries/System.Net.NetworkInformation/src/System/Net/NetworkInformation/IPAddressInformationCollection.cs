@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public class IPAddressInformationCollection : ICollection<IPAddressInformation>
     {
         private readonly List<IPAddressInformation> _addresses = new List<IPAddressInformation>();

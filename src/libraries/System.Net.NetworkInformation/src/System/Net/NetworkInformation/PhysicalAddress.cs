@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.NetworkInformation
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public class PhysicalAddress
     {
         private readonly byte[] _address;

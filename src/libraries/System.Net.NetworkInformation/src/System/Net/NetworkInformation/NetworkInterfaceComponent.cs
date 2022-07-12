@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Specified the list of Networking components that are supported on a Network Interface
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum NetworkInterfaceComponent
     {
         /// <summary>

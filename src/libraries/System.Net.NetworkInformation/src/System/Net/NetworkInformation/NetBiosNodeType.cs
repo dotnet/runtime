@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Specifies the Network Basic Input/Output System (NetBIOS) node type.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum NetBiosNodeType
     {
         Unknown = 0,

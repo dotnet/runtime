@@ -3,6 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum OperationalStatus
     {
         Up = 1,

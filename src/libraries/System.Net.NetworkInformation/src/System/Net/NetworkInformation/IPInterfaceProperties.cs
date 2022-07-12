@@ -9,6 +9,7 @@ namespace System.Net.NetworkInformation
     /// Provides information about a network interface that supports Internet Protocol (IP).
     /// such as the addresses assigned to the adapter, and other DNS and routing-related information.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class IPInterfaceProperties
     {
         /// <summary>

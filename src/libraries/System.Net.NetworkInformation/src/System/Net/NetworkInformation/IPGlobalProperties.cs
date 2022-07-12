@@ -10,6 +10,7 @@ namespace System.Net.NetworkInformation
     /// Provides various global machine properties related to Internet Protocol (IP),
     /// such as the local host name, domain name, and active socket connections.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class IPGlobalProperties
     {
         [UnsupportedOSPlatform("illumos")]

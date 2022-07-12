@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public class MulticastIPAddressInformationCollection : ICollection<MulticastIPAddressInformation>
     {
         private readonly List<MulticastIPAddressInformation> _addresses = new List<MulticastIPAddressInformation>();

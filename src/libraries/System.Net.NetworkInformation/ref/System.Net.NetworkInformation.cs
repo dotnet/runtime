@@ -6,6 +6,7 @@
 
 namespace System.Net.NetworkInformation
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum DuplicateAddressDetectionState
     {
         Invalid = 0,
@@ -14,11 +15,13 @@ namespace System.Net.NetworkInformation
         Deprecated = 3,
         Preferred = 4,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class GatewayIPAddressInformation
     {
         protected GatewayIPAddressInformation() { }
         public abstract System.Net.IPAddress Address { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class GatewayIPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.GatewayIPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.GatewayIPAddressInformation>, System.Collections.IEnumerable
     {
         protected internal GatewayIPAddressInformationCollection() { }
@@ -33,6 +36,7 @@ namespace System.Net.NetworkInformation
         public virtual bool Remove(System.Net.NetworkInformation.GatewayIPAddressInformation address) { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IcmpV4Statistics
     {
         protected IcmpV4Statistics() { }
@@ -63,6 +67,7 @@ namespace System.Net.NetworkInformation
         public abstract long TimestampRequestsReceived { get; }
         public abstract long TimestampRequestsSent { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IcmpV6Statistics
     {
         protected IcmpV6Statistics() { }
@@ -99,6 +104,7 @@ namespace System.Net.NetworkInformation
         public abstract long TimeExceededMessagesReceived { get; }
         public abstract long TimeExceededMessagesSent { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IPAddressInformation
     {
         protected IPAddressInformation() { }
@@ -106,6 +112,7 @@ namespace System.Net.NetworkInformation
         public abstract bool IsDnsEligible { get; }
         public abstract bool IsTransient { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class IPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.IPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.IPAddressInformation>, System.Collections.IEnumerable
     {
         internal IPAddressInformationCollection() { }
@@ -120,6 +127,7 @@ namespace System.Net.NetworkInformation
         public virtual bool Remove(System.Net.NetworkInformation.IPAddressInformation address) { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IPGlobalProperties
     {
         protected IPGlobalProperties() { }
@@ -158,6 +166,7 @@ namespace System.Net.NetworkInformation
         public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection GetUnicastAddresses() { throw null; }
         public virtual System.Threading.Tasks.Task<System.Net.NetworkInformation.UnicastIPAddressInformationCollection> GetUnicastAddressesAsync() { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IPGlobalStatistics
     {
         protected IPGlobalStatistics() { }
@@ -204,6 +213,7 @@ namespace System.Net.NetworkInformation
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract long ReceivedPacketsWithUnknownProtocol { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IPInterfaceProperties
     {
         protected IPInterfaceProperties() { }
@@ -228,6 +238,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.IPv4InterfaceProperties GetIPv4Properties();
         public abstract System.Net.NetworkInformation.IPv6InterfaceProperties GetIPv6Properties();
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IPInterfaceStatistics
     {
         protected IPInterfaceStatistics() { }
@@ -248,6 +259,7 @@ namespace System.Net.NetworkInformation
         public abstract long UnicastPacketsReceived { get; }
         public abstract long UnicastPacketsSent { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IPv4InterfaceProperties
     {
         protected IPv4InterfaceProperties() { }
@@ -264,6 +276,7 @@ namespace System.Net.NetworkInformation
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract bool UsesWins { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IPv4InterfaceStatistics
     {
         protected IPv4InterfaceStatistics() { }
@@ -284,6 +297,7 @@ namespace System.Net.NetworkInformation
         public abstract long UnicastPacketsReceived { get; }
         public abstract long UnicastPacketsSent { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class IPv6InterfaceProperties
     {
         protected IPv6InterfaceProperties() { }
@@ -291,6 +305,7 @@ namespace System.Net.NetworkInformation
         public abstract int Mtu { get; }
         public virtual long GetScopeId(System.Net.NetworkInformation.ScopeLevel scopeLevel) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class MulticastIPAddressInformation : System.Net.NetworkInformation.IPAddressInformation
     {
         protected MulticastIPAddressInformation() { }
@@ -301,6 +316,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.PrefixOrigin PrefixOrigin { get; }
         public abstract System.Net.NetworkInformation.SuffixOrigin SuffixOrigin { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class MulticastIPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.MulticastIPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.MulticastIPAddressInformation>, System.Collections.IEnumerable
     {
         protected internal MulticastIPAddressInformationCollection() { }
@@ -315,6 +331,7 @@ namespace System.Net.NetworkInformation
         public virtual bool Remove(System.Net.NetworkInformation.MulticastIPAddressInformation address) { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum NetBiosNodeType
     {
         Unknown = 0,
@@ -356,39 +373,57 @@ namespace System.Net.NetworkInformation
     public abstract partial class NetworkInterface
     {
         protected NetworkInterface() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual string Description { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual string Id { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static int IPv6LoopbackInterfaceIndex { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual bool IsReceiveOnly { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static int LoopbackInterfaceIndex { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual string Name { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual System.Net.NetworkInformation.NetworkInterfaceType NetworkInterfaceType { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual System.Net.NetworkInformation.OperationalStatus OperationalStatus { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual long Speed { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual bool SupportsMulticast { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static System.Net.NetworkInformation.NetworkInterface[] GetAllNetworkInterfaces() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual System.Net.NetworkInformation.IPInterfaceProperties GetIPProperties() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public virtual System.Net.NetworkInformation.IPInterfaceStatistics GetIPStatistics() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public virtual System.Net.NetworkInformation.IPv4InterfaceStatistics GetIPv4Statistics() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static bool GetIsNetworkAvailable() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual System.Net.NetworkInformation.PhysicalAddress GetPhysicalAddress() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public virtual bool Supports(System.Net.NetworkInformation.NetworkInterfaceComponent networkInterfaceComponent) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum NetworkInterfaceComponent
     {
         IPv4 = 0,
         IPv6 = 1,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum NetworkInterfaceType
     {
         Unknown = 1,
@@ -420,6 +455,7 @@ namespace System.Net.NetworkInformation
         Wwanpp = 243,
         Wwanpp2 = 244,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum OperationalStatus
     {
         Up = 1,
@@ -430,6 +466,7 @@ namespace System.Net.NetworkInformation
         NotPresent = 6,
         LowerLayerDown = 7,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class PhysicalAddress
     {
         public static readonly System.Net.NetworkInformation.PhysicalAddress None;
@@ -443,6 +480,7 @@ namespace System.Net.NetworkInformation
         public static bool TryParse(ReadOnlySpan<char> address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.NetworkInformation.PhysicalAddress? value) { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum PrefixOrigin
     {
         Other = 0,
@@ -451,6 +489,7 @@ namespace System.Net.NetworkInformation
         Dhcp = 3,
         RouterAdvertisement = 4,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum ScopeLevel
     {
         None = 0,
@@ -462,6 +501,7 @@ namespace System.Net.NetworkInformation
         Organization = 8,
         Global = 14,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum SuffixOrigin
     {
         Other = 0,
@@ -471,6 +511,7 @@ namespace System.Net.NetworkInformation
         LinkLayerAddress = 4,
         Random = 5,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class TcpConnectionInformation
     {
         protected TcpConnectionInformation() { }
@@ -478,6 +519,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.IPEndPoint RemoteEndPoint { get; }
         public abstract System.Net.NetworkInformation.TcpState State { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public enum TcpState
     {
         Unknown = 0,
@@ -494,6 +536,7 @@ namespace System.Net.NetworkInformation
         TimeWait = 11,
         DeleteTcb = 12,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class TcpStatistics
     {
         protected TcpStatistics() { }
@@ -512,6 +555,7 @@ namespace System.Net.NetworkInformation
         public abstract long SegmentsResent { get; }
         public abstract long SegmentsSent { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class UdpStatistics
     {
         protected UdpStatistics() { }
@@ -521,6 +565,7 @@ namespace System.Net.NetworkInformation
         public abstract long IncomingDatagramsWithErrors { get; }
         public abstract int UdpListeners { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract partial class UnicastIPAddressInformation : System.Net.NetworkInformation.IPAddressInformation
     {
         protected UnicastIPAddressInformation() { }
@@ -533,6 +578,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.PrefixOrigin PrefixOrigin { get; }
         public abstract System.Net.NetworkInformation.SuffixOrigin SuffixOrigin { get; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class UnicastIPAddressInformationCollection : System.Collections.Generic.ICollection<System.Net.NetworkInformation.UnicastIPAddressInformation>, System.Collections.Generic.IEnumerable<System.Net.NetworkInformation.UnicastIPAddressInformation>, System.Collections.IEnumerable
     {
         protected internal UnicastIPAddressInformationCollection() { }

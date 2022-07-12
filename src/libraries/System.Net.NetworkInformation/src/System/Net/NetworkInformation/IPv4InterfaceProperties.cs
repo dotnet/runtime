@@ -8,6 +8,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Provides information about network interfaces that support Internet Protocol (IP) version 4.0.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class IPv4InterfaceProperties
     {
         /// <summary>

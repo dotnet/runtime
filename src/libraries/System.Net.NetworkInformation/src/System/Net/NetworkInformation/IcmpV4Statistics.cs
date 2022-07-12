@@ -6,6 +6,7 @@ namespace System.Net.NetworkInformation
     /// <summary>
     /// Provides Internet Control Message Protocol for IPv4 (ICMPv4) statistical data for the local computer.
     /// </summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public abstract class IcmpV4Statistics
     {
         /// <summary>
