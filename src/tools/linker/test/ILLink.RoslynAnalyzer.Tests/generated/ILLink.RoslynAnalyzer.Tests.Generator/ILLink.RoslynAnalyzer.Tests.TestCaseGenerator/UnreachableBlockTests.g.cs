@@ -20,6 +20,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task ComplexConditionsOptimized ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task DataFlowRelated ()
 		{
 			return RunTest (allowMissingWarnings: true);
