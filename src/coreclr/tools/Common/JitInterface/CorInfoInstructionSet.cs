@@ -763,11 +763,12 @@ namespace Internal.JitInterface
                 { ("skylake",    TargetArchitecture.X64),   "x86-x64-v3 pclmul aes" },
                 { ("skylake",    TargetArchitecture.X86),   "x86-x64-v3 pclmul aes" },
                 { ("armv8.0",    TargetArchitecture.ARM64), "neon" },
-                { ("armv8.1",    TargetArchitecture.ARM64), "armv8 lse crc rdma sha1 sha2 aes" },
+                { ("armv8.1",    TargetArchitecture.ARM64), "armv8 lse crc rdma" },
                 { ("armv8.2",    TargetArchitecture.ARM64), "armv8.1" },
                 { ("armv8.3",    TargetArchitecture.ARM64), "armv8.2 rcpc" },
                 { ("armv8.4",    TargetArchitecture.ARM64), "armv8.3 dotprod" },
-                { ("apple-m1",   TargetArchitecture.ARM64), "armv8.4" },
+                { ("armv8.6",    TargetArchitecture.ARM64), "armv8.4 aes sha1 sha2" },
+                { ("apple-m1",   TargetArchitecture.ARM64), "armv8.4 aes sha1 sha2" },
             };
 
         public static IEnumerable<string> AllCpuNames =>

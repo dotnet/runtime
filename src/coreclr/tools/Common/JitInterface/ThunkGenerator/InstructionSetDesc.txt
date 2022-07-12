@@ -144,8 +144,11 @@ instructionsetgroup  ,x86-x64-v3                 ,X64 X86  ,x86-x64-v2 avx2 bmi 
 instructionsetgroup  ,skylake                    ,X64 X86  ,x86-x64-v3 pclmul aes
 
 instructionsetgroup  ,armv8.0                    ,ARM64    ,neon
-instructionsetgroup  ,armv8.1                    ,ARM64    ,armv8 lse crc rdma sha1 sha2 aes
+instructionsetgroup  ,armv8.1                    ,ARM64    ,armv8 lse crc rdma
 instructionsetgroup  ,armv8.2                    ,ARM64    ,armv8.1
 instructionsetgroup  ,armv8.3                    ,ARM64    ,armv8.2 rcpc
 instructionsetgroup  ,armv8.4                    ,ARM64    ,armv8.3 dotprod
-instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8.4
+instructionsetgroup  ,armv8.6                    ,ARM64    ,armv8.4 aes sha1 sha2
+
+; Technically, apple-m1 is v8.5+
+instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8.4 aes sha1 sha2
