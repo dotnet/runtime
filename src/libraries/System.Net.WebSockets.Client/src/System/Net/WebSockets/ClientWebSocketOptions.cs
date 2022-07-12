@@ -28,6 +28,7 @@ namespace System.Net.WebSockets
         internal List<string>? _requestedSubProtocols;
         private Version _version = Net.HttpVersion.Version11;
         private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+        private bool _collectHttpResponseDetails;
 
         internal ClientWebSocketOptions() { } // prevent external instantiation
 
@@ -233,7 +234,15 @@ namespace System.Net.WebSockets
         }
 
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public bool CollectHttpResponseDetails { get; set; }
+        public bool CollectHttpResponseDetails
+        {
+            get => _collectHttpResponseDetails;
+            set
+            {
+                ThrowIfReadOnly();
+                _collectHttpResponseDetails = value;
+            }
+        }
 
         #endregion WebSocket settings
 
