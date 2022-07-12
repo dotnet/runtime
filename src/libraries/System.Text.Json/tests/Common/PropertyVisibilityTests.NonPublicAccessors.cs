@@ -325,6 +325,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public virtual async Task NonPublicProperty_WithJsonInclude_Invalid(Type type)
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
