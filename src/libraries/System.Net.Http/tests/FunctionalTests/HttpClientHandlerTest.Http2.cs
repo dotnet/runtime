@@ -129,6 +129,38 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        public async Task Http2_StreamResetByServerBeforePrefix_RequestFailsWithGoawayProtocolError()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                Http2LoopbackConnection connection = await server.AcceptConnectionAsync(timeout: null);
+                _ = await connection.ReadSettingsAsync();
+
+                GoAwayFrame goAwayFrame = new GoAwayFrame(lastStreamId: 0, (int)ProtocolErrors.HTTP_1_1_REQUIRED, additionalDebugData: Array.Empty<byte>(), streamId: 0);
+                await connection.WriteFrameAsync(goAwayFrame);
+
+                var ex = await Assert.ThrowsAnyAsync<Exception>(() => sendTask);
+
+                // Position of HttpProtocolException in exception hierarchy can change depending on timing.
+                var current = ex;
+                do
+                {
+                    if (current is HttpProtocolException protocolException)
+                    {
+                        Assert.Equal((long)ProtocolErrors.HTTP_1_1_REQUIRED, protocolException.ErrorCode);
+                        return;
+                    }
+                } while ((current = current.InnerException) != null);
+
+                Assert.Fail($"Couldn't find {nameof(HttpProtocolException)} with matching error code in exception: {ex}");
+            }
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_NoResponseBody_Success()
@@ -2514,6 +2546,70 @@ namespace System.Net.Http.Functional.Tests
                 // On handler dispose, client should shutdown the connection without sending additional frames.
                 await connection.WaitForClientDisconnectAsync();
             }
+        }
+
+        [Fact]
+        public async Task ConnectAsync_ReadWriteWebSocketStream()
+        {
+            var clientMessage = new byte[] { 1, 2, 3 };
+            var serverMessage = new byte[] { 4, 5, 6, 7 };
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            Http2LoopbackConnection connection = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
+
+                // read request headers
+                (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+
+                // send response headers
+                await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
+
+                // send reply
+                await connection.SendResponseDataAsync(streamId, serverMessage, endStream: false);
+
+                // send server EOS
+                await connection.SendResponseDataAsync(streamId, Array.Empty<byte>(), endStream: true);
+            });
+
+            StreamingHttpContent requestContent = new StreamingHttpContent();
+
+            using var handler = new SocketsHttpHandler();
+            handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+            using HttpClient client = new HttpClient(handler);
+
+            HttpRequestMessage request = new(HttpMethod.Connect, server.Address);
+            request.Version = HttpVersion.Version20;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            request.Headers.Protocol = "websocket";
+
+            // initiate request
+            var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            using HttpResponseMessage response = await responseTask.WaitAsync(TimeSpan.FromSeconds(10));
+
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(60));
+
+            var responseStream = await response.Content.ReadAsStreamAsync();
+
+            // receive data
+            var readBuffer = new byte[10];
+            int bytesRead = await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(bytesRead, serverMessage.Length);
+            Assert.Equal(serverMessage, readBuffer[..bytesRead]);
+
+            await responseStream.WriteAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+
+            // Send client's EOS
+            requestContent.CompleteStream();
+            // Receive server's EOS
+            Assert.Equal(0, await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
+
+            Assert.NotNull(connection);
+            connection.Dispose();
         }
 
         [Fact]

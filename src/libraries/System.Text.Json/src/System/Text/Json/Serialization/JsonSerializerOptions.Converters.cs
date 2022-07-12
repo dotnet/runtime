@@ -4,12 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
-using System.Threading;
 
 namespace System.Text.Json
 {
@@ -25,67 +22,6 @@ namespace System.Text.Json
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
         public IList<JsonConverter> Converters => _converters;
-
-        // This may return factory converter
-        internal JsonConverter? GetCustomConverterFromMember(Type typeToConvert, MemberInfo memberInfo)
-        {
-            Debug.Assert(memberInfo.DeclaringType != null, "Properties and fields always have a declaring type.");
-            JsonConverter? converter = null;
-
-            JsonConverterAttribute? converterAttribute = memberInfo.GetUniqueCustomAttribute<JsonConverterAttribute>(inherit: false);
-            if (converterAttribute != null)
-            {
-                converter = GetConverterFromAttribute(converterAttribute, typeToConvert, memberInfo);
-            }
-
-            return converter;
-        }
-
-        /// <summary>
-        /// Gets converter for type but does not use TypeInfoResolver
-        /// </summary>
-        internal JsonConverter GetConverterForType(Type typeToConvert)
-        {
-            JsonConverter converter = GetConverterFromOptionsOrReflectionConverter(typeToConvert);
-            Debug.Assert(converter != null);
-
-            converter = ExpandFactoryConverter(converter, typeToConvert);
-
-            CheckConverterNullabilityIsSameAsPropertyType(converter, typeToConvert);
-
-            return converter;
-        }
-
-        [return: NotNullIfNotNull("converter")]
-        internal JsonConverter? ExpandFactoryConverter(JsonConverter? converter, Type typeToConvert)
-        {
-            if (converter is JsonConverterFactory factory)
-            {
-                converter = factory.GetConverterInternal(typeToConvert, this);
-
-                // A factory cannot return null; GetConverterInternal checked for that.
-                Debug.Assert(converter != null);
-            }
-
-            return converter;
-        }
-
-        internal static void CheckConverterNullabilityIsSameAsPropertyType(JsonConverter converter, Type propertyType)
-        {
-            // User has indicated that either:
-            //   a) a non-nullable-struct handling converter should handle a nullable struct type or
-            //   b) a nullable-struct handling converter should handle a non-nullable struct type.
-            // User should implement a custom converter for the underlying struct and remove the unnecessary CanConvert method override.
-            // The serializer will automatically wrap the custom converter with NullableConverter<T>.
-            //
-            // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
-            // which would cause an InvalidProgramException when the generated IL is invoked.
-            if (propertyType.IsValueType && converter.IsValueType &&
-                (propertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
-            {
-                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(propertyType, converter);
-            }
-        }
 
         /// <summary>
         /// Returns the converter for the specified type.
@@ -110,7 +46,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
             }
 
-            DefaultJsonTypeInfoResolver.RootDefaultInstance();
+            _typeInfoResolver ??= DefaultJsonTypeInfoResolver.RootDefaultInstance();
             return GetConverterFromTypeInfo(typeToConvert);
         }
 
@@ -119,39 +55,25 @@ namespace System.Text.Json
         /// </summary>
         internal JsonConverter GetConverterFromTypeInfo(Type typeToConvert)
         {
-            if (_cachingContext == null)
-            {
-                if (_isLockedInstance)
-                {
-                    InitializeCachingContext();
-                }
-                else
-                {
-                    // We do not want to lock options instance here but we need to return correct answer
-                    // which means we need to go through TypeInfoResolver but without caching because that's the
-                    // only place which will have correct converter for JsonSerializerContext and reflection
-                    // based resolver. It will also work correctly for combined resolvers.
-                    return GetTypeInfoInternal(typeToConvert)?.Converter
-                        ?? GetConverterFromOptionsOrReflectionConverter(typeToConvert);
+            JsonConverter? converter;
 
-                }
+            if (IsLockedInstance)
+            {
+                converter = GetCachingContext()?.GetOrAddJsonTypeInfo(typeToConvert)?.Converter;
+            }
+            else
+            {
+                // We do not want to lock options instance here but we need to return correct answer
+                // which means we need to go through TypeInfoResolver but without caching because that's the
+                // only place which will have correct converter for JsonSerializerContext and reflection
+                // based resolver. It will also work correctly for combined resolvers.
+                converter = GetTypeInfoNoCaching(typeToConvert)?.Converter;
             }
 
-            JsonConverter? converter = _cachingContext.GetOrAddJsonTypeInfo(typeToConvert)?.Converter;
-
-            // we can get here if resolver returned null but converter was added for the type
-            converter ??= GetConverterFromOptions(typeToConvert);
-
-            if (converter == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_BuiltInConvertersNotRooted(typeToConvert);
-                return null!;
-            }
-
-            return converter;
+            return converter ?? GetConverterFromListOrBuiltInConverter(typeToConvert);
         }
 
-        private JsonConverter? GetConverterFromOptions(Type typeToConvert)
+        internal JsonConverter? GetConverterFromList(Type typeToConvert)
         {
             foreach (JsonConverter item in _converters)
             {
@@ -164,94 +86,54 @@ namespace System.Text.Json
             return null;
         }
 
-        private JsonConverter GetConverterFromOptionsOrReflectionConverter(Type typeToConvert)
+        internal JsonConverter GetConverterFromListOrBuiltInConverter(Type typeToConvert)
         {
-            Debug.Assert(typeToConvert != null);
+            JsonConverter? converter = GetConverterFromList(typeToConvert);
+            return GetCustomOrBuiltInConverter(typeToConvert, converter);
+        }
 
-            // Priority 1: Attempt to get custom converter from the Converters list.
-            JsonConverter? converter = GetConverterFromOptions(typeToConvert);
+        internal JsonConverter GetCustomOrBuiltInConverter(Type typeToConvert, JsonConverter? converter)
+        {
+            // Attempt to get built-in converter.
+            converter ??= DefaultJsonTypeInfoResolver.GetBuiltInConverter(typeToConvert);
+            // Expand potential convert converter factory.
+            converter = ExpandConverterFactory(converter, typeToConvert);
 
-            // Priority 2: Attempt to get converter from [JsonConverter] on the type being converted.
-            if (converter == null)
+            if (!converter.TypeToConvert.IsInSubtypeRelationshipWith(typeToConvert))
             {
-                JsonConverterAttribute? converterAttribute = typeToConvert.GetUniqueCustomAttribute<JsonConverterAttribute>(inherit: false);
-                if (converterAttribute != null)
-                {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: typeToConvert, memberInfo: null);
-                }
+                ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), converter.TypeToConvert);
             }
 
-            // Priority 3: Attempt to get built-in converter.
-            converter ??= DefaultJsonTypeInfoResolver.GetDefaultConverter(typeToConvert);
+            CheckConverterNullabilityIsSameAsPropertyType(converter, typeToConvert);
+            return converter;
+        }
 
-            // Allow redirection for generic types or the enum converter.
+        [return: NotNullIfNotNull("converter")]
+        internal JsonConverter? ExpandConverterFactory(JsonConverter? converter, Type typeToConvert)
+        {
             if (converter is JsonConverterFactory factory)
             {
                 converter = factory.GetConverterInternal(typeToConvert, this);
-
-                // A factory cannot return null; GetConverterInternal checked for that.
-                Debug.Assert(converter != null);
-            }
-
-            Type converterTypeToConvert = converter.TypeToConvert;
-
-            if (!converterTypeToConvert.IsAssignableFromInternal(typeToConvert)
-                && !typeToConvert.IsAssignableFromInternal(converterTypeToConvert))
-            {
-                ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
 
             return converter;
         }
 
-        // This suppression needs to be removed. https://github.com/dotnet/runtime/issues/68878
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "The factory constructors are only invoked in the context of reflection serialization code paths " +
-            "and are marked RequiresDynamicCode")]
-        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, MemberInfo? memberInfo)
+        internal static void CheckConverterNullabilityIsSameAsPropertyType(JsonConverter converter, Type propertyType)
         {
-            JsonConverter? converter;
-
-            Type declaringType = memberInfo?.DeclaringType ?? typeToConvert;
-            Type? converterType = converterAttribute.ConverterType;
-            if (converterType == null)
+            // User has indicated that either:
+            //   a) a non-nullable-struct handling converter should handle a nullable struct type or
+            //   b) a nullable-struct handling converter should handle a non-nullable struct type.
+            // User should implement a custom converter for the underlying struct and remove the unnecessary CanConvert method override.
+            // The serializer will automatically wrap the custom converter with NullableConverter<T>.
+            //
+            // We also throw to avoid passing an invalid argument to setters for nullable struct properties,
+            // which would cause an InvalidProgramException when the generated IL is invoked.
+            if (propertyType.IsValueType && converter.IsValueType &&
+                (propertyType.IsNullableOfT() ^ converter.TypeToConvert.IsNullableOfT()))
             {
-                // Allow the attribute to create the converter.
-                converter = converterAttribute.CreateConverter(typeToConvert);
-                if (converter == null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(declaringType, memberInfo, typeToConvert);
-                }
+                ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(propertyType, converter);
             }
-            else
-            {
-                ConstructorInfo? ctor = converterType.GetConstructor(Type.EmptyTypes);
-                if (!typeof(JsonConverter).IsAssignableFrom(converterType) || ctor == null || !ctor.IsPublic)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(declaringType, memberInfo);
-                }
-
-                converter = (JsonConverter)Activator.CreateInstance(converterType)!;
-            }
-
-            Debug.Assert(converter != null);
-            if (!converter.CanConvert(typeToConvert))
-            {
-                Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
-                if (underlyingType != null && converter.CanConvert(underlyingType))
-                {
-                    if (converter is JsonConverterFactory converterFactory)
-                    {
-                        converter = converterFactory.GetConverterInternal(underlyingType, this);
-                    }
-
-                    // Allow nullable handling to forward to the underlying type's converter.
-                    return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
-                }
-
-                ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(declaringType, memberInfo, typeToConvert);
-            }
-
-            return converter;
         }
     }
 }

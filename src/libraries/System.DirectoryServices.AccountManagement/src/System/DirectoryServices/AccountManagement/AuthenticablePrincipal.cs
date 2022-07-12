@@ -524,15 +524,9 @@ namespace System.DirectoryServices.AccountManagement
 
             RefreshOriginalThumbprintList();
 
-            if (_accountInfo != null)
-            {
-                _accountInfo.ResetAllChangeStatus();
-            }
+            _accountInfo?.ResetAllChangeStatus();
 
-            if (_passwordInfo != null)
-            {
-                _passwordInfo.ResetAllChangeStatus();
-            }
+            _passwordInfo?.ResetAllChangeStatus();
 
             rosf.ResetAllChangeStatus();
 

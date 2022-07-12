@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -212,7 +213,6 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
-#if false // FIXME: playwright on CI
         [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         public async Task BlazorRunTest()
         {
@@ -267,6 +267,5 @@ namespace Wasm.Build.Tests
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
         }
-#endif
     }
 }

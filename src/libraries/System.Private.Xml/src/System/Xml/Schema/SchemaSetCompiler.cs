@@ -595,10 +595,7 @@ namespace System.Xml.Schema
             else
             {
                 group.IsProcessing = true;
-                if (group.CanonicalParticle == null)
-                {
-                    group.CanonicalParticle = CannonicalizeParticle(group.Particle, true);
-                }
+                group.CanonicalParticle ??= CannonicalizeParticle(group.Particle, true);
                 Debug.Assert(group.CanonicalParticle != null);
                 group.IsProcessing = false; //Not enclosung in try -finally as cannonicalizeParticle will not throw exception
             }
@@ -2501,10 +2498,7 @@ namespace System.Xml.Schema
                         xa.SetAttributeType(DatatypeImplementation.AnySimpleType);
                     }
                     //} //Removed this here since the following should be done only if RefName is Empty
-                    if (decl.Datatype != null)
-                    {
-                        decl.Datatype.VerifySchemaValid(_notations, xa);
-                    }
+                    decl.Datatype?.VerifySchemaValid(_notations, xa);
                     SetDefaultFixed(xa, decl);
                 } //End of Else for !RefName.IsEmpty
 
@@ -2747,10 +2741,7 @@ namespace System.Xml.Schema
                     decl.IsNillable = xe.IsNillable;
                     decl.Block |= xe.BlockResolved;
                 }
-                if (decl.Datatype != null)
-                {
-                    decl.Datatype.VerifySchemaValid(_notations, xe);
-                }
+                decl.Datatype?.VerifySchemaValid(_notations, xe);
 
                 if (xe.DefaultValue != null || xe.FixedValue != null)
                 {

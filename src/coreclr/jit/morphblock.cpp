@@ -192,12 +192,10 @@ void MorphInitBlockHelper::PrepareDst()
     if (m_dst->IsLocal())
     {
         m_dstLclNode   = m_dst->AsLclVarCommon();
-        m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNode);
         m_dstLclOffset = m_dstLclNode->GetLclOffs();
 
         if (m_dst->TypeIs(TYP_STRUCT))
         {
-            assert(m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize);
             m_blockLayout = m_dstLclNode->GetLayout(m_comp);
         }
     }
@@ -212,9 +210,19 @@ void MorphInitBlockHelper::PrepareDst()
         ssize_t dstLclOffset = 0;
         if (dstAddr->DefinesLocalAddr(&m_dstLclNode, &dstLclOffset))
         {
-            // Note that lclNode can be a field, like `BLK<4> struct(ADD(ADDR(LCL_FLD int), CNST_INT))`.
-            m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNode);
-            m_dstLclOffset = static_cast<unsigned>(dstLclOffset);
+            // Treat out-of-bounds access to locals opaquely to simplify downstream logic.
+            unsigned dstLclSize = m_comp->lvaLclExactSize(m_dstLclNode->GetLclNum());
+
+            if (!FitsIn<unsigned>(dstLclOffset) ||
+                ((static_cast<uint64_t>(dstLclOffset) + m_dst->AsIndir()->Size()) > dstLclSize))
+            {
+                assert(m_comp->lvaGetDesc(m_dstLclNode)->IsAddressExposed());
+                m_dstLclNode = nullptr;
+            }
+            else
+            {
+                m_dstLclOffset = static_cast<unsigned>(dstLclOffset);
+            }
         }
 
         if (m_dst->TypeIs(TYP_STRUCT))
@@ -236,6 +244,10 @@ void MorphInitBlockHelper::PrepareDst()
     if (m_dstLclNode != nullptr)
     {
         m_dstLclNum = m_dstLclNode->GetLclNum();
+        m_dstVarDsc = m_comp->lvaGetDesc(m_dstLclNum);
+
+        assert((m_dstVarDsc->TypeGet() != TYP_STRUCT) ||
+               (m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize));
 
         // Kill everything about m_dstLclNum (and its field locals)
         if (m_comp->optLocalAssertionProp && (m_comp->optAssertionCount > 0))
@@ -566,7 +578,18 @@ void MorphCopyBlockHelper::PrepareSrc()
         ssize_t srcLclOffset = 0;
         if (m_src->AsIndir()->Addr()->DefinesLocalAddr(&m_srcLclNode, &srcLclOffset))
         {
-            m_srcLclOffset = static_cast<unsigned>(srcLclOffset);
+            // Treat out-of-bounds access to locals opaquely to simplify downstream logic.
+            unsigned srcLclSize = m_comp->lvaLclExactSize(m_srcLclNode->GetLclNum());
+
+            if (!FitsIn<unsigned>(srcLclOffset) || ((static_cast<uint64_t>(srcLclOffset) + m_blockSize) > srcLclSize))
+            {
+                assert(m_comp->lvaGetDesc(m_srcLclNode)->IsAddressExposed());
+                m_srcLclNode = nullptr;
+            }
+            else
+            {
+                m_srcLclOffset = static_cast<unsigned>(srcLclOffset);
+            }
         }
     }
 
@@ -1122,25 +1145,14 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 LclVarDsc* srcVarDsc      = m_comp->lvaGetDesc(m_srcLclNum);
                 unsigned   srcFieldLclNum = srcVarDsc->lvFieldLclStart + i;
                 LclVarDsc* srcFieldVarDsc = m_comp->lvaGetDesc(srcFieldLclNum);
-
-                // Have to set the field sequence -- which means we need the field handle.
-                CORINFO_CLASS_HANDLE classHnd = srcVarDsc->GetStructHnd();
-                CORINFO_FIELD_HANDLE fieldHnd =
-                    m_comp->info.compCompHnd->getFieldInClass(classHnd, srcFieldVarDsc->lvFldOrdinal);
-
-                unsigned      srcFieldOffset = m_comp->lvaGetDesc(srcFieldLclNum)->lvFldOffset;
-                var_types     srcType        = srcFieldVarDsc->TypeGet();
-                FieldSeqNode* curFieldSeq    = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd, srcFieldOffset);
+                unsigned   srcFieldOffset = srcFieldVarDsc->lvFldOffset;
+                var_types  srcType        = srcFieldVarDsc->TypeGet();
 
                 if (!m_dstUseLclFld)
                 {
-                    if (srcFieldOffset == 0)
+                    if (srcFieldOffset != 0)
                     {
-                        m_comp->fgAddFieldSeqForZeroOffset(dstAddrClone, curFieldSeq);
-                    }
-                    else
-                    {
-                        GenTree* fieldOffsetNode = m_comp->gtNewIconNode(srcFieldVarDsc->lvFldOffset, curFieldSeq);
+                        GenTree* fieldOffsetNode = m_comp->gtNewIconNode(srcFieldVarDsc->lvFldOffset, TYP_I_IMPL);
                         dstAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, dstAddrClone, fieldOffsetNode);
                     }
 
@@ -1218,14 +1230,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                 }
 
-                CORINFO_CLASS_HANDLE classHnd = m_comp->lvaGetDesc(m_dstLclNum)->GetStructHnd();
-                CORINFO_FIELD_HANDLE fieldHnd =
-                    m_comp->info.compCompHnd->getFieldInClass(classHnd,
-                                                              m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOrdinal);
-
-                unsigned      fldOffset   = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
-                var_types     destType    = m_comp->lvaGetDesc(dstFieldLclNum)->lvType;
-                FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd, fldOffset);
+                unsigned  fldOffset = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
+                var_types destType  = m_comp->lvaGetDesc(dstFieldLclNum)->lvType;
 
                 bool done = false;
                 if (fldOffset == 0)
@@ -1257,15 +1263,12 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     if (!m_srcUseLclFld)
                     {
                         assert(srcAddrClone != nullptr);
-                        if (fldOffset == 0)
+                        if (fldOffset != 0)
                         {
-                            m_comp->fgAddFieldSeqForZeroOffset(srcAddrClone, curFieldSeq);
-                        }
-                        else
-                        {
-                            GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fldOffset, curFieldSeq);
+                            GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fldOffset, TYP_I_IMPL);
                             srcAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, srcAddrClone, fldOffsetNode);
                         }
+
                         srcFld = m_comp->gtNewIndir(destType, srcAddrClone);
                     }
                     else

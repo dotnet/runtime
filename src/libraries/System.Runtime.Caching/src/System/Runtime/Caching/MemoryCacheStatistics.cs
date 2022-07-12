@@ -348,10 +348,7 @@ namespace System.Runtime.Caching
                 {
                     Thread.Sleep(100);
                 }
-                if (_cacheMemoryMonitor != null)
-                {
-                    _cacheMemoryMonitor.Dispose();
-                }
+                _cacheMemoryMonitor?.Dispose();
                 // Don't need to call GC.SuppressFinalize(this) for sealed types without finalizers.
             }
         }

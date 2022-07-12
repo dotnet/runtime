@@ -64,7 +64,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             if ((memberType != null) && memberType.IsGenericType && specifiedContractType.IsGenericType)
             {
-                // if the memeber type is closed and the specified contract type is open and they have exatly the same number of parameters
+                // if the member type is closed and the specified contract type is open and they have exatly the same number of parameters
                 // we will close the specfied contract type
                 if (specifiedContractType.ContainsGenericParameters && !memberType.ContainsGenericParameters)
                 {
@@ -476,7 +476,7 @@ namespace System.ComponentModel.Composition.Hosting
                 return Enumerable.Empty<KeyValuePair<string, Type>>();
             }
 
-            // A metadata view is required to be an Intrerface, and therefore only properties are allowed
+            // A metadata view is required to be an Interface, and therefore only properties are allowed
             List<PropertyInfo> properties = metadataViewType.GetAllProperties().
                 Where(property => property.GetFirstAttribute<DefaultValueAttribute>() == null).
                 ToList();

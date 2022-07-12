@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,6 +53,11 @@ namespace System.Net.WebSockets
 
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
         {
+            return ConnectAsync(uri, null, cancellationToken);
+        }
+
+        public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
+        {
             ArgumentNullException.ThrowIfNull(uri);
 
             if (!uri.IsAbsoluteUri)
@@ -77,16 +83,16 @@ namespace System.Net.WebSockets
             }
 
             Options.SetToReadOnly();
-            return ConnectAsyncCore(uri, cancellationToken);
+            return ConnectAsyncCore(uri, invoker, cancellationToken);
         }
 
-        private async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken)
+        private async Task ConnectAsyncCore(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             _innerWebSocket = new WebSocketHandle();
 
             try
             {
-                await _innerWebSocket.ConnectAsync(uri, cancellationToken, Options).ConfigureAwait(false);
+                await _innerWebSocket.ConnectAsync(uri, invoker, cancellationToken, Options).ConfigureAwait(false);
             }
             catch
             {
@@ -123,11 +129,9 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if ((InternalState)_state == InternalState.Disposed)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
-                else if ((InternalState)_state != InternalState.Connected)
+                ObjectDisposedException.ThrowIf((InternalState)_state == InternalState.Disposed, this);
+
+                if ((InternalState)_state != InternalState.Connected)
                 {
                     throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
                 }

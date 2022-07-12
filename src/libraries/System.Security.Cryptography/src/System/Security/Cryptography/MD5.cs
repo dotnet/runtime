@@ -37,6 +37,7 @@ namespace System.Security.Cryptography
 
         public static new MD5 Create() => new Implementation();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new MD5? Create(string algName) => (MD5?)CryptoConfig.CreateFromName(algName);
 

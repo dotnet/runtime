@@ -811,8 +811,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 asm = store.GetAssemblyByName(assemblyName);
                 if (asm == null)
                 {
-                    logger.LogDebug($"Unable to find assembly: {assemblyName}");
-                    return null;
+                    asm = new AssemblyInfo(assemblyName, logger);
+                    logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }
             asm.SetDebugId(assemblyId);
@@ -858,10 +858,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
+            string methodName = await GetMethodName(methodId, token);
             if (method == null)
             {
-                logger.LogDebug($"Unable to find method token: {methodToken} assembly name: {asm.Name}");
-                return null;
+                //get information from runtime
+                method = await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
             }
             string methodName = await GetMethodName(methodId, token);
             var type = await GetTypeFromMethodId(methodId, token);
@@ -898,6 +899,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return methods[methodId];
         }
 
+        public async Task<MethodInfo> CreateMethodInfoFromRuntimeInformation (AssemblyInfo asm, int methodId, string methodName, int methodToken, CancellationToken token )
+        {
+            var typeToken = await GetTypeTokenFromMethodId(methodId, token);
+            TypeInfo typeInfo = asm.TypesByToken[typeToken];
+            var attrs =  await GetAttributesFromMethodId(methodId, token);
+            return new MethodInfo(asm, methodName, methodToken, typeInfo, attrs);
+        }
         public async Task<TypeInfoWithDebugInformation> GetTypeInfo(int typeId, CancellationToken token)
         {
             if (types.TryGetValue(typeId, out TypeInfoWithDebugInformation typeDebugInfo))
@@ -920,8 +928,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (type == null)
             {
-                logger.LogDebug($"Unable to find type token: {typeName} assembly name: {asm.Name}");
-                return null;
+                type = asm.CreateTypeInfo(typeName, typeToken);
             }
 
             types[typeId] = new TypeInfoWithDebugInformation(type, typeId, typeName);
@@ -1008,6 +1015,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(value);
             using var stringDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAppDomain.CreateString, commandParamsWriter, token);
             return stringDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<MethodAttributes> GetAttributesFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetInfo, commandParamsWriter, token);
+            var flags = retDebuggerCmdReader.ReadInt32();
+            return (MethodAttributes) flags;
+        }
+
+        public async Task<int> GetTypeTokenFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.ClassToken, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadInt32(); //token
         }
 
         public async Task<int> GetMethodToken(int methodId, CancellationToken token)
@@ -1263,13 +1289,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             var methodInfo = await GetMethodInfo(methodId, token);
             if (methodInfo != null)
                 return methodInfo.Info.IsStatic();
-
-            using var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter.Write(methodId);
-
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetInfo, commandParamsWriter, token);
-            var flags = retDebuggerCmdReader.ReadInt32();
-            return (flags & 0x0010) > 0; //check method is static
+            var attrs = await GetAttributesFromMethodId(methodId, token);
+            return (attrs & MethodAttributes.Static) > 0;
         }
 
         public async Task<int> GetParamCount(int methodId, CancellationToken token)

@@ -114,6 +114,8 @@ function set_exit_code(exit_code, reason) {
 
     } else if (App && App.INTERNAL) {
         if (is_node) {
+            // NodeJS is lazy with flushing of console stream. 
+            // We need all of the output, so we force it to flush.
             let _flush = function (_stream) {
                 return new Promise((resolve, reject) => {
                     setTimeout(() => { reject(new Error("timed out waiting for stdout/stderr streams to flush")) }, 30000);
@@ -537,6 +539,15 @@ const App = {
             args[arg_count + 4] = globalThis.App.EXPORTS;
             return userFunction(...args);
         };
+    },
+    invoke_js(js_code) {
+        const closedEval = function (Module, MONO, BINDING, INTERNAL, code) {
+            return eval(code);
+        };
+        const res = closedEval(globalThis.App.Module, globalThis.App.MONO, globalThis.App.BINDING, globalThis.App.INTERNAL, js_code);
+        return (res === undefined || res === null || typeof res === "string")
+            ? null
+            : res.toString();
     }
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly

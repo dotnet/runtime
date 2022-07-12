@@ -158,8 +158,7 @@ namespace System.Resources
                     // that we may call Close n times, but that's safe.
                     BinaryReader copyOfStore = _store;
                     _store = null!;
-                    if (copyOfStore != null)
-                        copyOfStore.Close();
+                    copyOfStore?.Close();
                 }
                 _store = null!;
                 _namePositions = null;

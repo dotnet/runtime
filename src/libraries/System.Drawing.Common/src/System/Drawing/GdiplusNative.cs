@@ -4384,7 +4384,7 @@ namespace System.Drawing
 #endif
                 WmfPlaceableFileHeader wmfplaceable,
 #if NET7_0_OR_GREATER
-                [MarshalUsing(typeof(MetafileHeaderWmf.InPlaceMarshaller))]
+                [MarshalUsing(typeof(MetafileHeaderWmf.Marshaller))]
                 ref MetafileHeaderWmf metafileHeaderWmf
 #else
                 MetafileHeaderWmf metafileHeaderWmf

@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />
-    <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
     <Compile Include="System\Text\RegularExpressions\ValueMatch.cs" />
     <Compile Include="System\Threading\StackHelper.cs" />
     <Compile Include="System\Text\SegmentStringBuilder.cs" />
@@ -64,7 +63,7 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\CharSetSolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\MatchingState.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DoublyLinkedList.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\ISolver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermClassifier.cs" />
@@ -76,6 +75,7 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexNode.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexInfo.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Automata.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Dgml.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Explore.cs" />
@@ -91,6 +91,7 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Common\System\Collections\Generic\ValueListBuilder.Pop.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

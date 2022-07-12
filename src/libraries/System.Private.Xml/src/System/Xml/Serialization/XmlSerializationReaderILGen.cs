@@ -1804,12 +1804,7 @@ namespace System.Xml.Serialization
 
         private void WriteID(string? name)
         {
-            if (name == null)
-            {
-                //Writer.Write("null");
-                //return;
-                name = "";
-            }
+            name ??= "";
             if (!_idNames.ContainsKey(name))
             {
                 string? idName = NextIdName(name);
