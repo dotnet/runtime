@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
 
@@ -140,9 +141,14 @@ namespace System.Formats.Asn1
                 throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
             }
 
-            // The following code is equivalent to
-            // BigInteger.TryParse(temp, NumberStyles.None, CultureInfo.InvariantCulture, out value)
-            // TODO: Split this for netstandard vs netcoreapp for span-perf?.
+#if NETCOREAPP2_1_OR_GREATER
+            if ((endIndex > 1 && oidValue[0] == '0') ||
+                !BigInteger.TryParse(oidValue.Slice(0, endIndex), NumberStyles.None, CultureInfo.InvariantCulture, out BigInteger value))
+            {
+                // T-REC X.680-201508 sec 12.26
+                throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
+            }
+#else
             BigInteger value = BigInteger.Zero;
 
             for (int position = 0; position < endIndex; position++)
@@ -156,7 +162,7 @@ namespace System.Formats.Asn1
                 value *= 10;
                 value += AtoI(oidValue[position]);
             }
-
+#endif
             oidValue = oidValue.Slice(Math.Min(oidValue.Length, endIndex + 1));
             return value;
         }

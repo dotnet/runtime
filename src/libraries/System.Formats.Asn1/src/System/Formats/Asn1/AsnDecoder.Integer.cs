@@ -104,7 +104,9 @@ namespace System.Formats.Asn1
         {
             ReadOnlySpan<byte> contents = ReadIntegerBytes(source, ruleSet, out int consumed, expectedTag);
 
-            // TODO: Split this for netcoreapp/netstandard to use the Big-Endian BigInteger parsing
+#if NETCOREAPP2_1_OR_GREATER
+            BigInteger value = new BigInteger(contents, isUnsigned: false, isBigEndian: true);
+#else
             byte[] tmp = CryptoPool.Rent(contents.Length);
             BigInteger value;
 
@@ -124,6 +126,7 @@ namespace System.Formats.Asn1
                 // is returned to the array pool.
                 CryptoPool.Return(tmp);
             }
+#endif
 
             bytesConsumed = consumed;
             return value;
