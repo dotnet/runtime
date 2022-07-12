@@ -301,7 +301,8 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion >= HttpVersion30)
             {
-                throw new SkipTestException("This test relies on ConnectCallback, and the scenario is not yet validated for HTTP/3.");
+                // This test relies on ConnectCallback, and the scenario is not yet validated for HTTP/3.
+                return;
             }
 
             const int AttemptCount = 3;
