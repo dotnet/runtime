@@ -8869,26 +8869,30 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			mono_type_get_desc (res, &type->data.generic_class->container_class->_byval_arg, TRUE);
 			buffer_add_string (buf, (g_string_free (res, FALSE)));
 			context = &type->data.generic_class->context;
-			if (context->class_inst) {
+			if (context->class_inst)
 				buffer_add_int (buf, context->class_inst->type_argc);
+			else
+				buffer_add_int (buf, 0);
+
+			if (context->method_inst)
+				buffer_add_int (buf, context->method_inst->type_argc);
+			else
+				buffer_add_int (buf, 0);
+
+			if (context->class_inst) {
 				for (guint i = 0; i < context->class_inst->type_argc; ++i) {
 					res = g_string_new ("");
 					mono_type_get_desc (res, context->class_inst->type_argv [i], FALSE);
 					buffer_add_string (buf, (g_string_free (res, FALSE)));
 				}
 			}
-			else
-				buffer_add_int (buf, 0);
 			if (context->method_inst) {
-				buffer_add_int (buf, context->method_inst->type_argc);
 				for (guint i = 0; i < context->method_inst->type_argc; ++i) {
 					res = g_string_new ("");
 					mono_type_get_desc (res, context->method_inst->type_argv [i], FALSE);
 					buffer_add_string (buf, (g_string_free (res, FALSE)));
 				}
 			}
-			else
-				buffer_add_int (buf, 0);
 		}
 		else if (type->type == MONO_TYPE_CLASS)
 		{

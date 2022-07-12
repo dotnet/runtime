@@ -768,7 +768,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly ILogger logger;
         private static Regex regexForAsyncLocals = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
         private static Regex regexForAsyncMethodName = new Regex(@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
-        private static Regex regexForGenericArgs = new Regex(@"[`][0-9]*", RegexOptions.Compiled);
+        private static Regex regexForGenericArgs = new Regex(@"[`][0-9]+", RegexOptions.Compiled);
         private static Regex regexForNestedLeftRightAngleBrackets = new Regex("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled);
         public JObjectValueCreator ValueCreator { get; init; }
 
@@ -1211,31 +1211,28 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.GenericInst:
                 {
                     var ret = retDebuggerCmdReader.ReadString();
-                    if (methodName.IndexOf(':') is int index && index > 0)
+                    Console.WriteLine("ret - " + ret);
+                    if (ret.IndexOf(':') is int index && index > 0)
                         ret = ret.Substring(0, index);
                     ret = regexForAsyncMethodName.Replace(ret, "$1");
-                    var lenClassInstTypeArgc = retDebuggerCmdReader.ReadInt32();
-                    var listArgC = new List<string>();
-                    for (int i = 0 ; i < lenClassInstTypeArgc; i++)
+                    var numGenericTypeArgs = retDebuggerCmdReader.ReadInt32();
+                    var numGenericMethodArgs = retDebuggerCmdReader.ReadInt32();
+                    int numTotalGenericArgs = numGenericTypeArgs + numGenericMethodArgs;
+                    var genericArgs = new List<string>(capacity: numTotalGenericArgs);
+                    for (int i = 0; i < numTotalGenericArgs; i++)
                     {
                         var typeArgC = retDebuggerCmdReader.ReadString();
+                        Console.WriteLine("typeArgC - " + typeArgC);
                         typeArgC = regexForGenericArgs.Replace(typeArgC, "");
-                        listArgC.Add(typeArgC);
-                    }
-                    var lenMethodInstTypeArgc = retDebuggerCmdReader.ReadInt32();
-                    for (int i = 0 ; i < lenMethodInstTypeArgc; i++)
-                    {
-                        var typeArgC = retDebuggerCmdReader.ReadString();
-                        typeArgC = regexForGenericArgs.Replace(typeArgC, "");
-                        listArgC.Add(typeArgC);
+                        genericArgs.Add(typeArgC);
                     }
                     var match = regexForGenericArgs.Match(ret);
                     while (match.Success)
                     {
                         var countArgs = Convert.ToInt32(match.Value.Remove(0, 1));
                         ret = ret.Remove(match.Index, match.Value.Length);
-                        ret = ret.Insert(match.Index, $"<{string.Join(", ", listArgC.Take(countArgs))}>");
-                        listArgC.RemoveRange(0, countArgs);
+                        ret = ret.Insert(match.Index, $"<{string.Join(", ", genericArgs.Take(countArgs))}>");
+                        genericArgs.RemoveRange(0, countArgs);
                         match = regexForGenericArgs.Match(ret);
                     }
                     ret = ret.Replace('/', '.');
@@ -1249,6 +1246,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     for (int i = 0 ; i <= countNested; i++)
                     {
                         var klassName = retDebuggerCmdReader.ReadString();
+                        Console.WriteLine("klassName - " + klassName);
                         if (klassName.Contains("<>"))
                         {
                             if (anonymousMethodId.LastIndexOf('_') >= 0)
@@ -1265,6 +1263,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                     var methodName = retDebuggerCmdReader.ReadString();
+                    Console.WriteLine("methodName - " + methodName);
                     var matchOnMethodName = regexForNestedLeftRightAngleBrackets.Match(methodName);
                     if (matchOnMethodName.Success && matchOnMethodName.Groups[5].Captures.Count > 0)
                     {

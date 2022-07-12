@@ -713,7 +713,7 @@ namespace DebuggerTests
         [InlineData("DebuggerTests.EvaluateNonStaticClassWithStaticFields", "RunAsync", "DebuggerTests", "EvaluateNonStaticClassWithStaticFields", 1, 7, true)]
         public async Task EvaluateStaticFields(string bpLocation, string bpMethod, string namespaceName, string className, int bpLine, int expectedInt, bool isAsync = false) => 
             await CheckInspectLocalsAtBreakpointSite(
-                bpLocation, bpMethod, bpLine, isAsync ? "MoveNext" : bpMethod,
+                bpLocation, bpMethod, bpLine, $"{bpLocation}.{bpMethod}",
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
                 wait_for_event_fn: async (pause_location) =>
                 {
@@ -827,7 +827,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticClassesNestedWithSameNames() => await CheckInspectLocalsAtBreakpointSite(
-            "NestedWithSameNames.B.NestedWithSameNames.B", "Run", 1, "Run",
+            "NestedWithSameNames.B.NestedWithSameNames.B", "Run", 1, "NestedWithSameNames.B.NestedWithSameNames.B.Run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] NestedWithSameNames:Evaluate'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -861,7 +861,7 @@ namespace DebuggerTests
         [InlineData("DebuggerTests", "EvaluateNonStaticClassWithStaticFields", 7, true)]
         [InlineData("DebuggerTestsV2", "EvaluateStaticClass", 2)]
         public async Task EvaluateStaticFieldsFromDifferentNamespaceInDifferentFrames(string namespaceName, string className, int expectedInt, bool isFromDifferentNamespace = false) => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTestsV2.EvaluateStaticClass", "Run", 1, "Run",
+            "DebuggerTestsV2.EvaluateStaticClass", "Run", 1, "DebuggerTestsV2.EvaluateStaticClass.Run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
             {
