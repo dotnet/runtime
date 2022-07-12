@@ -666,7 +666,11 @@ namespace System.Net.Test.Common
                 }
                 catch (Exception) { }
 
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
                 await _stream.DisposeAsync();
+#else
+                _stream.Dispose();
+#endif
                 _socket?.Dispose();
             }
 

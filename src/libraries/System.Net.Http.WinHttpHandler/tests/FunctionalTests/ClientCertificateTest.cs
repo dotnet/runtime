@@ -41,7 +41,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 },
                 async s =>
                 {
-                    using (LoopbackServer.Connection connection = await s.EstablishConnectionAsync().ConfigureAwait(false))
+                    await using (LoopbackServer.Connection connection = await s.EstablishConnectionAsync().ConfigureAwait(false))
                     {
                         SslStream sslStream = connection.Stream as SslStream;
                         Assert.NotNull(sslStream);
