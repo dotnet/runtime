@@ -263,7 +263,7 @@ static bool IsCertInKeychain(CFTypeRef needle, SecKeychainRef haystack)
         ret = false;
     }
     
-    if (result != null)
+    if (result != NULL)
     {
         CFRelease(result);
     }
