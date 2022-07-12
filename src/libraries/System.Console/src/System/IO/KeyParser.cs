@@ -67,18 +67,40 @@ internal static class KeyParser
         character = default;
         key = default;
 
-        // xterm and VT sequences start with "^[[", some xterm start with "^[O" ("^[" stands for Escape (27))
+        // sequences start with either "^[[" or "^[O". "^[" stands for Escape (27).
         if (input.Length < MinimalSequenceLength || input[0] != Escape || (input[1] != '[' && input[1] != 'O'))
         {
             return false;
         }
 
-        // Is it a three character sequence? (examples: '^[[H' (Home), '^[OP' (F1), '^[Ow' (End))
-        if (input[1] == 'O' || char.IsAsciiLetter(input[2]))
+        // Is it a three character sequence? (examples: '^[[H' (Home), '^[OP' (F1))
+        if (input[1] == 'O' || char.IsAsciiLetter(input[2]) || input.Length == MinimalSequenceLength)
         {
             if (!TryMapUsingTerminfoDb(buffer.AsMemory(startIndex, MinimalSequenceLength), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
             {
-                key = MapKeyId(input[2]); // fallback to well known mappings
+                // All terminals which use "^[O{letter}" escape sequences don't define conflicting mappings.
+                // Example: ^[OH either means Home or simply is not used by given terminal.
+                // But with "^[[{character}" sequences, there are conflicts between rxvt and SCO.
+                // Example: "^[[a" is Shift+UpArrow for rxvt and Shift+F3 for SCO.
+                if (input[1] == 'O'|| terminalFormatStrings.IsRxvtTerm)
+                {
+                    key = MapKeyIdOXterm(input[2]); // fallback to well known mappings
+
+                    if (key != default)
+                    {
+                        // lowercase characters are used by rxvt to express Shift modifier for the arrow keys
+                        isShift = char.IsBetween(input[2], 'a', 'd');
+                    }
+                }
+                else
+                {
+                    (key, ConsoleModifiers mod) = MapSCO(input[2]); // fallback to well known mappings
+
+                    if (key != default)
+                    {
+                        Apply(mod, ref isShift, ref isAlt, ref isCtrl);
+                    }
+                }
 
                 if (key == default)
                 {
@@ -90,9 +112,15 @@ internal static class KeyParser
             return true;
         }
 
-        if (input.Length == MinimalSequenceLength)
+        // Is it a four character sequence used by Linux Console or PuTTy configured to emulate it? (examples: '^[[[A' (F1), '^[[[B' (F2))
+        if (input[1] == '[' && input[2] == '[' && char.IsBetween(input[3], 'A', 'E'))
         {
-            return false;
+            if (!TryMapUsingTerminfoDb(buffer.AsMemory(startIndex, 4), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
+            {
+                key = ConsoleKey.F1 + input[3] - 'A';
+            }
+            startIndex += 4;
+            return true;
         }
 
         // If sequence does not start with a letter, it must start with one or two digits that represent the Sequence Number
@@ -142,7 +170,7 @@ internal static class KeyParser
 
         key = input[SequencePrefixLength + digitCount + 2] is VtSequenceEndTag
             ? MapEscapeSequenceNumber(byte.Parse(input.Slice(SequencePrefixLength, digitCount)))
-            : MapKeyId(input[SequencePrefixLength + digitCount + 2]);
+            : MapKeyIdOXterm(input[SequencePrefixLength + digitCount + 2]);
 
         if (key != default)
         {
@@ -166,24 +194,53 @@ internal static class KeyParser
             return false;
         }
 
-        static ConsoleKey MapKeyId(char single)
-            => single switch
+        // maps "^[O{character}" for all Terminals and "^[[{character}" for rxvt Terminals
+        static ConsoleKey MapKeyIdOXterm(char character)
+            => character switch
             {
-                // lowercase characters are used by rxvt
                 'A' or 'a' => ConsoleKey.UpArrow,
                 'B' or 'b' => ConsoleKey.DownArrow,
                 'C' or 'c' => ConsoleKey.RightArrow,
                 'D' or 'd' => ConsoleKey.LeftArrow,
                 'F' or 'w' => ConsoleKey.End,
                 'H' => ConsoleKey.Home,
-                'M' => ConsoleKey.Enter,
                 'P' => ConsoleKey.F1,
                 'Q' => ConsoleKey.F2,
                 'R' => ConsoleKey.F3,
                 'S' => ConsoleKey.F4,
+                'T' => ConsoleKey.F5, // VT 100+
+                'U' => ConsoleKey.F6, // VT 100+
+                'V' => ConsoleKey.F7, // VT 100+
+                'W' => ConsoleKey.F8, // VT 100+
+                'X' => ConsoleKey.F9, // VT 100+
+                'Y' => ConsoleKey.F10, // VT 100+
+                'Z' => ConsoleKey.F11, // VT 100+
+                '[' => ConsoleKey.F12, // VT 100+
                 _ => default
             };
 
+        // maps "^[[{character}" for SCO terminals, based on https://vt100.net/docs/vt510-rm/chapter6.html
+        static (ConsoleKey key, ConsoleModifiers modifiers) MapSCO(char character)
+            => character switch
+            {
+                'H' => (ConsoleKey.Home, 0),
+                _ when char.IsBetween(character, 'M', 'X') => (ConsoleKey.F1 + character - 'M', 0),
+                _ when char.IsBetween(character, 'Y', 'Z') => (ConsoleKey.F1 + character - 'Y', ConsoleModifiers.Shift),
+                _ when char.IsBetween(character, 'a', 'j') => (ConsoleKey.F3 + character - 'a', ConsoleModifiers.Shift),
+                _ when char.IsBetween(character, 'k', 'v') => (ConsoleKey.F1 + character - 'k', ConsoleModifiers.Control),
+                _ when char.IsBetween(character, 'w', 'z') => (ConsoleKey.F1 + character - 'w', ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                '@' => (ConsoleKey.F5, ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                '[' => (ConsoleKey.F6, ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                '<' or '\\' => (ConsoleKey.F7, ConsoleModifiers.Control | ConsoleModifiers.Shift), // the Spec says <, PuTTy uses \.
+                ']' => (ConsoleKey.F8, ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                '^' => (ConsoleKey.F9, ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                '_' => (ConsoleKey.F10, ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                '`' => (ConsoleKey.F11, ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                '{' => (ConsoleKey.F12, ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                _ => default
+            };
+
+        // based on https://en.wikipedia.org/wiki/ANSI_escape_code#Fe_Escape_sequences
         static ConsoleKey MapEscapeSequenceNumber(byte number)
             => number switch
             {
@@ -214,10 +271,11 @@ internal static class KeyParser
                 32 => ConsoleKey.F18,
                 33 => ConsoleKey.F19,
                 34 => ConsoleKey.F20,
-                // 9, 16, 22, 27, 30 and 35 have no mapping (https://en.wikipedia.org/wiki/ANSI_escape_code#Fe_Escape_sequences)
+                // 9, 16, 22, 27, 30 and 35 have no mapping
                 _ => default
             };
 
+        // based on https://www.xfree86.org/current/ctlseqs.html
         static ConsoleModifiers MapXtermModifiers(char modifier)
             => modifier switch
             {

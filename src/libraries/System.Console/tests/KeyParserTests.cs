@@ -15,7 +15,7 @@ public class KeyParserTests
     {
         new XTermData(),
         new GNOMETerminalData(),
-        new UXTermData(),
+        new LinuxConsole(),
         new PuTTYData_xterm(),
         new PuTTYData_linux(),
         new PuTTYData_putty(),
@@ -35,6 +35,477 @@ public class KeyParserTests
                     yield return new object[] { terminalData, bytes, cki };
                 }
             }
+
+            // PuTTY has multiple settings that can customize key mappings.
+            // 1. Connection => Data => Terminal details => Terminal-type string: this string controls the TERM env var.
+            // The default value is xterm. Users can set it to putty, linux or any other known TERM.
+            // For all these different TERMs we have different Terminfo databases.
+            // On top of that, other Terminal settings can be applied (listed and tested below).
+            // These settings often use different byte representation than stated in Terminfo.
+            // Example: Terminfo says that F1 should be represented with X, but by using some other setting it's represented with Y.
+            // That is why here we test their combinations.
+            // From the implementation perspective, we test the Terminfo fallback code path (no mapping found).
+            foreach (TerminalData putty in new TerminalData[] { new PuTTYData_xterm(), new PuTTYData_linux(), new PuTTYData_putty() })
+            {
+                // 2. Terminal => Keyboard => The Home and End keys
+                // 2a: Standard
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyStandardHomeAndEndKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+                // 2b: rxvt
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyRxvtHomeAndEndKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+
+                // 3. Terminal => Keyboard => The function keys and keypad
+                // 3a: ESC[n~
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyESCnFunctionKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+                // 3b: Linux
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyLinuxFunctionKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+                // 3c: Xterm R6
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyXtermR6FunctionKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+                // 3d: VT 400
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyVT400FunctionKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+                // 3e: VT 100+
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyVT100FunctionKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+                // 3f: SCO
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTySCOFunctionKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+                // 3g: Xterm 216+
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyXterm216FunctionKeys)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+
+                // 4: Terminal => Keyboard => Shift/Ctrl/Alt with arrow keys
+                // 4a: Ctrl toggles app mode
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in PuTTyCtrlTogglesAppModeArrows)
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+                // 4b: xterm-style bitmap does not work as expected in application mode, so we don't test it
+            }
+        }
+    }
+
+    // PuTTy: Home and End keys: Standard
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyStandardHomeAndEndKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false)); // Alt+Home
+            yield return (new byte[] { 27, 91, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 27, 91, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, false)); // Alt+End
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, false)); // Alt+PageUp
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+            yield return (new byte[] { 27, 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, false)); // Alt+PageDown
+        }
+    }
+
+    // PuTTy: Home and End keys: rxvt
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyRxvtHomeAndEndKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 27, 91, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false)); // Alt+Home
+            yield return (new byte[] { 27, 79, 119 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 27, 79, 119 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, false)); // Alt+End
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, false)); // Alt+PageUp
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+            yield return (new byte[] { 27, 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, false)); // Alt+PageDown
+        }
+    }
+
+    // PuTTy: The function keys and keypad: ESC[n~
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyESCnFunctionKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 49, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 91, 49, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 91, 49, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 91, 49, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 27, 91, 49, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, true, false)); // Alt+F1
+            yield return (new byte[] { 27, 27, 91, 49, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, true, false)); // Alt+F2
+            yield return (new byte[] { 27, 27, 91, 49, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, true, false)); // Alt+F5
+            yield return (new byte[] { 27, 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, true, false)); // Alt+F6
+            yield return (new byte[] { 27, 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, true, false)); // Alt+F7
+            yield return (new byte[] { 27, 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, true, false)); // Alt+F8
+            yield return (new byte[] { 27, 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, true, false)); // Alt+F10
+            yield return (new byte[] { 27, 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // Shift+F1=F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // Shift+F2=F12
+            yield return (new byte[] { 27, 91, 50, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F13, false, false, false)); // Shift+F3=F13
+            yield return (new byte[] { 27, 91, 50, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F14, false, false, false)); // Shift+F4=F14
+            yield return (new byte[] { 27, 91, 50, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F15, false, false, false)); // Shift+F5=F15
+            yield return (new byte[] { 27, 91, 50, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F16, false, false, false)); // Shift+F6=F16
+            yield return (new byte[] { 27, 91, 51, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F17, false, false, false)); // Shift+F7=F17
+            yield return (new byte[] { 27, 91, 51, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F18, false, false, false)); // Shift+F8=F18
+            yield return (new byte[] { 27, 91, 51, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F19, false, false, false)); // Shift+F9=F19
+            yield return (new byte[] { 27, 91, 51, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F20, false, false, false)); // Shift+F10=F20
+        }
+    }
+
+    // PuTTy: The function keys and keypad: Linux
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyLinuxFunctionKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 91, 65 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 91, 91, 66 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 91, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 91, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 91, 69 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 27, 91, 91, 65 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, true, false)); // Alt+F1
+            yield return (new byte[] { 27, 27, 91, 91, 66 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, true, false)); // Alt+F2
+            yield return (new byte[] { 27, 27, 91, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 27, 91, 91, 69 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, true, false)); // Alt+F5
+            yield return (new byte[] { 27, 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, true, false)); // Alt+F6
+            yield return (new byte[] { 27, 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, true, false)); // Alt+F7
+            yield return (new byte[] { 27, 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, true, false)); // Alt+F8
+            yield return (new byte[] { 27, 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, true, false)); // Alt+F10
+            yield return (new byte[] { 27, 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // Shift+F1=F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // Shift+F2=F12
+            yield return (new byte[] { 27, 91, 50, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F13, false, false, false)); // Shift+F3=F13
+            yield return (new byte[] { 27, 91, 50, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F14, false, false, false)); // Shift+F4=F14
+            yield return (new byte[] { 27, 91, 50, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F15, false, false, false)); // Shift+F5=F15
+            yield return (new byte[] { 27, 91, 50, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F16, false, false, false)); // Shift+F6=F16
+            yield return (new byte[] { 27, 91, 51, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F17, false, false, false)); // Shift+F7=F17
+            yield return (new byte[] { 27, 91, 51, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F18, false, false, false)); // Shift+F8=F18
+            yield return (new byte[] { 27, 91, 51, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F19, false, false, false)); // Shift+F9=F19
+            yield return (new byte[] { 27, 91, 51, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F20, false, false, false)); // Shift+F10=F20
+        }
+    }
+
+    // PuTTy: The function keys and keypad: Xterm R6
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyXtermR6FunctionKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 79, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, true, false)); // Alt+F1
+            yield return (new byte[] { 27, 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, true, false)); // Alt+F2
+            yield return (new byte[] { 27, 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, true, false)); // Alt+F5
+            yield return (new byte[] { 27, 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, true, false)); // Alt+F6
+            yield return (new byte[] { 27, 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, true, false)); // Alt+F7
+            yield return (new byte[] { 27, 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, true, false)); // Alt+F8
+            yield return (new byte[] { 27, 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, true, false)); // Alt+F10
+            yield return (new byte[] { 27, 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // Shift+F1=F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // Shift+F2=F12
+            yield return (new byte[] { 27, 91, 50, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F13, false, false, false)); // Shift+F3=F13
+            yield return (new byte[] { 27, 91, 50, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F14, false, false, false)); // Shift+F4=F14
+            yield return (new byte[] { 27, 91, 50, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F15, false, false, false)); // Shift+F5=F15
+            yield return (new byte[] { 27, 91, 50, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F16, false, false, false)); // Shift+F6=F16
+            yield return (new byte[] { 27, 91, 51, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F17, false, false, false)); // Shift+F7=F17
+            yield return (new byte[] { 27, 91, 51, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F18, false, false, false)); // Shift+F8=F18
+            yield return (new byte[] { 27, 91, 51, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F19, false, false, false)); // Shift+F9=F19
+            yield return (new byte[] { 27, 91, 51, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F20, false, false, false)); // Shift+F10=F20
+        }
+    }
+
+    // PuTTy: The function keys and keypad: VT 400
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyVT400FunctionKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 49, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 91, 49, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 91, 49, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 91, 49, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 27, 91, 49, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, true, false)); // Alt+F1
+            yield return (new byte[] { 27, 27, 91, 49, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, true, false)); // Alt+F2
+            yield return (new byte[] { 27, 27, 91, 49, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, true, false)); // Alt+F5
+            yield return (new byte[] { 27, 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, true, false)); // Alt+F6
+            yield return (new byte[] { 27, 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, true, false)); // Alt+F7
+            yield return (new byte[] { 27, 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, true, false)); // Alt+F8
+            yield return (new byte[] { 27, 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, true, false)); // Alt+F10
+            yield return (new byte[] { 27, 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // Shift+F1=F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // Shift+F2=F12
+            yield return (new byte[] { 27, 91, 50, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F13, false, false, false)); // Shift+F3=F13
+            yield return (new byte[] { 27, 91, 50, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F14, false, false, false)); // Shift+F4=F14
+            yield return (new byte[] { 27, 91, 50, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F15, false, false, false)); // Shift+F5=F15
+            yield return (new byte[] { 27, 91, 50, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F16, false, false, false)); // Shift+F6=F16
+            yield return (new byte[] { 27, 91, 51, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F17, false, false, false)); // Shift+F7=F17
+            yield return (new byte[] { 27, 91, 51, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F18, false, false, false)); // Shift+F8=F18
+            yield return (new byte[] { 27, 91, 51, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F19, false, false, false)); // Shift+F9=F19
+            yield return (new byte[] { 27, 91, 51, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F20, false, false, false)); // Shift+F10=F20
+        }
+    }
+
+    // PuTTy: The function keys and keypad: VT 100+
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyVT100FunctionKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 79, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 79, 84 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 79, 85 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 79, 86 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 79, 87 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 79, 88 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 79, 89 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 79, 90 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 79, 91 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, true, false)); // Alt+F1
+            yield return (new byte[] { 27, 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, true, false)); // Alt+F2
+            yield return (new byte[] { 27, 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 27, 79, 84 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, true, false)); // Alt+F5
+            yield return (new byte[] { 27, 27, 79, 85 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, true, false)); // Alt+F6
+            yield return (new byte[] { 27, 27, 79, 86 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, true, false)); // Alt+F7
+            yield return (new byte[] { 27, 27, 79, 87 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, true, false)); // Alt+F8
+            yield return (new byte[] { 27, 27, 79, 88 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 27, 79, 89 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, true, false)); // Alt+F10
+            yield return (new byte[] { 27, 27, 79, 90 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 27, 79, 91 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 79, 90 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // Shift+F1=F11
+            yield return (new byte[] { 27, 79, 91 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // Shift+F2=F12
+            yield return (new byte[] { 27, 91, 50, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F13, false, false, false)); // Shift+F3=F13
+            yield return (new byte[] { 27, 91, 50, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F14, false, false, false)); // Shift+F4=F14
+            yield return (new byte[] { 27, 91, 50, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F15, false, false, false)); // Shift+F5=F15
+            yield return (new byte[] { 27, 91, 50, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F16, false, false, false)); // Shift+F6=F16
+            yield return (new byte[] { 27, 91, 51, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F17, false, false, false)); // Shift+F7=F17
+            yield return (new byte[] { 27, 91, 51, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F18, false, false, false)); // Shift+F8=F18
+            yield return (new byte[] { 27, 91, 51, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F19, false, false, false)); // Shift+F9=F19
+            yield return (new byte[] { 27, 91, 51, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F20, false, false, false)); // Shift+F10=F20
+        }
+    }
+
+    // PuTTy: The function keys and keypad: SCO
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTySCOFunctionKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 77 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 91, 78 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 91, 79 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 91, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 84 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 85 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 86 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 87 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 88 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 91, 107 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, true)); // Ctrl+F1
+            yield return (new byte[] { 27, 91, 108 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, true)); // Ctrl+F2
+            yield return (new byte[] { 27, 91, 109 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, true)); // Ctrl+F3
+            yield return (new byte[] { 27, 91, 110 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, true)); // Ctrl+F4
+            yield return (new byte[] { 27, 91, 111 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, true)); // Ctrl+F5
+            yield return (new byte[] { 27, 91, 112 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, true)); // Ctrl+F6
+            yield return (new byte[] { 27, 91, 113 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, true)); // Ctrl+F7
+            yield return (new byte[] { 27, 91, 114 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, true)); // Ctrl+F8
+            yield return (new byte[] { 27, 91, 115 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, true)); // Ctrl+F9
+            yield return (new byte[] { 27, 91, 116 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, true)); // Ctrl+F10
+            yield return (new byte[] { 27, 91, 117 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, true)); // Ctrl+F11
+            yield return (new byte[] { 27, 91, 118 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true)); // Ctrl+F12
+            yield return (new byte[] { 27, 27, 91, 77 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, true, false)); // Alt+F1
+            yield return (new byte[] { 27, 27, 91, 78 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, true, false)); // Alt+F2
+            yield return (new byte[] { 27, 27, 91, 79 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 27, 91, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, true, false)); // Alt+F5
+            yield return (new byte[] { 27, 27, 91, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, true, false)); // Alt+F6
+            yield return (new byte[] { 27, 27, 91, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, true, false)); // Alt+F7
+            yield return (new byte[] { 27, 27, 91, 84 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, true, false)); // Alt+F8
+            yield return (new byte[] { 27, 27, 91, 85 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 27, 91, 86 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, true, false)); // Alt+F10
+            yield return (new byte[] { 27, 27, 91, 87 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 27, 91, 88 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 89 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, false, false)); // Shift+F1
+            // { 27, 91, 90 } is not supported in this case as Terminfo binds it to Shift+Tab (Backtab)
+            // yield return (new byte[] { 27, 91, 90 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, false, false)); // Shift+F2
+            yield return (new byte[] { 27, 91, 97 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, false, false)); // Shift+F3
+            yield return (new byte[] { 27, 91, 98 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, false, false)); // Shift+F4
+            yield return (new byte[] { 27, 91, 99 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, false, false)); // Shift+F5
+            yield return (new byte[] { 27, 91, 100 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, false, false)); // Shift+F6
+            yield return (new byte[] { 27, 91, 101 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, false, false)); // Shift+F7
+            yield return (new byte[] { 27, 91, 102 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, false, false)); // Shift+F8
+            yield return (new byte[] { 27, 91, 103 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, false, false)); // Shift+F9
+            yield return (new byte[] { 27, 91, 104 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, false, false)); // Shift+F10
+            yield return (new byte[] { 27, 91, 105 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, false, false)); // Shift+F11
+            yield return (new byte[] { 27, 91, 106 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false)); // Shift+F12
+            yield return (new byte[] { 27, 91, 119 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, false, true)); // Ctrl+Shift+F1
+            yield return (new byte[] { 27, 91, 120 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, false, true)); // Ctrl+Shift+F2
+            yield return (new byte[] { 27, 91, 121 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, false, true)); // Ctrl+Shift+F3
+            yield return (new byte[] { 27, 91, 122 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, false, true)); // Ctrl+Shift+F4
+            yield return (new byte[] { 27, 91, 64 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, false, true)); // Ctrl+Shift+F5
+            yield return (new byte[] { 27, 91, 91 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, false, true)); // Ctrl+Shift+F6
+            yield return (new byte[] { 27, 91, 92 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, false, true)); // Ctrl+Shift+F7
+            yield return (new byte[] { 27, 91, 93 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, false, true)); // Ctrl+Shift+F8
+            yield return (new byte[] { 27, 91, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, false, true)); // Ctrl+Shift+F9
+            yield return (new byte[] { 27, 91, 95 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, false, true)); // Ctrl+Shift+F10
+            yield return (new byte[] { 27, 91, 96 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, false, true)); // Ctrl+Shift+F11
+            yield return (new byte[] { 27, 91, 123 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, true)); // Ctrl+Shift+F12
+            yield return (new byte[] { 27, 27, 91, 119 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, true, true)); // Ctrl+Alt+Shift+F1
+            yield return (new byte[] { 27, 27, 91, 120 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, true, true)); // Ctrl+Alt+Shift+F2
+            yield return (new byte[] { 27, 27, 91, 121 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, true, true)); // Ctrl+Alt+Shift+F3
+            yield return (new byte[] { 27, 27, 91, 64 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, true, true)); // Ctrl+Alt+Shift+F5
+            yield return (new byte[] { 27, 27, 91, 91 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, true, true)); // Ctrl+Alt+Shift+F6
+            yield return (new byte[] { 27, 27, 91, 92 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, true, true)); // Ctrl+Alt+Shift+F7
+            yield return (new byte[] { 27, 27, 91, 93 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, true, true)); // Ctrl+Alt+Shift+F8
+            yield return (new byte[] { 27, 27, 91, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, true, true)); // Ctrl+Alt+Shift+F9
+            yield return (new byte[] { 27, 27, 91, 95 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, true, true)); // Ctrl+Alt+Shift+F10
+            yield return (new byte[] { 27, 27, 91, 96 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, true, true)); // Ctrl+Alt+Shift+F11
+            yield return (new byte[] { 27, 27, 91, 123 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true)); // Ctrl+Alt+Shift+F12
+        }
+    }
+
+    // PuTTy: The function keys and keypad: Xterm 216+
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyXterm216FunctionKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 79, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 91, 49, 59, 53, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, true)); // Ctrl+F1
+            yield return (new byte[] { 27, 91, 49, 59, 53, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, true)); // Ctrl+F2
+            yield return (new byte[] { 27, 91, 49, 59, 53, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, true)); // Ctrl+F3
+            yield return (new byte[] { 27, 91, 49, 59, 53, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, true)); // Ctrl+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, true)); // Ctrl+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, true)); // Ctrl+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, true)); // Ctrl+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, true)); // Ctrl+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, true)); // Ctrl+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, true)); // Ctrl+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, true)); // Ctrl+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true)); // Ctrl+F12
+            yield return (new byte[] { 27, 27, 91, 49, 59, 51, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, true, false)); // Alt+F1
+            yield return (new byte[] { 27, 27, 91, 49, 59, 51, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, true, false)); // Alt+F2
+            yield return (new byte[] { 27, 27, 91, 49, 59, 51, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 27, 91, 49, 53, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, true, false)); // Alt+F5
+            yield return (new byte[] { 27, 27, 91, 49, 55, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, true, false)); // Alt+F6
+            yield return (new byte[] { 27, 27, 91, 49, 56, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, true, false)); // Alt+F7
+            yield return (new byte[] { 27, 27, 91, 49, 57, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, true, false)); // Alt+F8
+            yield return (new byte[] { 27, 27, 91, 50, 48, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 27, 91, 50, 49, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, true, false)); // Alt+F10
+            yield return (new byte[] { 27, 27, 91, 50, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 49, 59, 50, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, false, false)); // Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 50, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, false, false)); // Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 50, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, false, false)); // Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 50, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, false, false)); // Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, false, false)); // Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, false, false)); // Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, false, false)); // Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, false, false)); // Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, false, false)); // Shift+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, false, false)); // Shift+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, false, false)); // Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false)); // Shift+F12
+            yield return (new byte[] { 27, 27, 91, 49, 59, 56, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, true, true)); // Ctrl+Alt+Shift+F1
+            yield return (new byte[] { 27, 27, 91, 49, 59, 56, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, true, true)); // Ctrl+Alt+Shift+F2
+            yield return (new byte[] { 27, 27, 91, 49, 59, 56, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, true, true)); // Ctrl+Alt+Shift+F3
+            yield return (new byte[] { 27, 27, 91, 49, 53, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, true, true)); // Ctrl+Alt+Shift+F5
+            yield return (new byte[] { 27, 27, 91, 49, 55, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, true, true)); // Ctrl+Alt+Shift+F6
+            yield return (new byte[] { 27, 27, 91, 49, 56, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, true, true)); // Ctrl+Alt+Shift+F7
+            yield return (new byte[] { 27, 27, 91, 49, 57, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, true, true)); // Ctrl+Alt+Shift+F8
+            yield return (new byte[] { 27, 27, 91, 50, 48, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, true, true)); // Ctrl+Alt+Shift+F9
+            yield return (new byte[] { 27, 27, 91, 50, 49, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, true, true)); // Ctrl+Alt+Shift+F10
+            yield return (new byte[] { 27, 27, 91, 50, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, true, true)); // Ctrl+Alt+Shift+F11
+            yield return (new byte[] { 27, 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true)); // Ctrl+Alt+Shift+F12
+        }
+    }
+
+    // PuTTY: Shift/Ctrl/Alt with arrow keys: Ctrl toggles app mode
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> PuTTyCtrlTogglesAppModeArrows
+    {
+        get
+        {
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // LeftArrow
+            yield return (new byte[] { 27, 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false)); // Alt+LeftArrow
+            yield return (new byte[] { 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // UpArrow
+            yield return (new byte[] { 27, 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, true, false)); // Alt+UpArrow
+            yield return (new byte[] { 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // DownArrow
+            yield return (new byte[] { 27, 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, true, false)); // Alt+DownArrow
+            yield return (new byte[] { 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // RightArrow
+            yield return (new byte[] { 27, 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, true, false)); // Alt+RightArrow
+            // Ctrl and Shift key modifiers are not supported for PuTTy arrow keys as they use mappings that contradict data stored in Terminfo.
+            // example: PuTTy configured with "putty" Terminal-type string sets TERM=putty.
+            // "putty" Terminfo says that "27, 91, 68" (\[[D) stored under KeySLeft is LeftArrow with Shift,
+            // but PuTTy itself uses it for Ctrl+LeftArrow.
         }
     }
 
@@ -124,44 +595,6 @@ public class KeyParserTests
         Assert.Equal((ConsoleModifiers)0, consoleKeyInfo.Modifiers);
     }
 
-    private static IEnumerable<(string chars, ConsoleKey key)> ThreeCharactersKeys
-    {
-        get
-        {
-            // "^[["
-            yield return ("\u001B[H", ConsoleKey.Home);
-            yield return ("\u001B[F", ConsoleKey.End);
-            yield return ("\u001B[A", ConsoleKey.UpArrow);
-            yield return ("\u001B[B", ConsoleKey.DownArrow);
-            yield return ("\u001B[C", ConsoleKey.RightArrow);
-            yield return ("\u001B[D", ConsoleKey.LeftArrow);
-            // "^[O"
-            yield return ("\u001BOP", ConsoleKey.F1);
-            yield return ("\u001BOQ", ConsoleKey.F2);
-            yield return ("\u001BOR", ConsoleKey.F3);
-            yield return ("\u001BOS", ConsoleKey.F4);
-            yield return ("\u001BOw", ConsoleKey.End); // rxvt
-
-            // "\u001BOM" (enter) is tested elsewhere, as it requires character verification
-        }
-    }
-
-    public static IEnumerable<object[]> ThreeCharactersKeysArguments
-        => Terminals
-            .Where(t => t is not PuTTYData_putty) // different mappings (handled by KeysAreProperlyMapped test)
-            .SelectMany(terminal => ThreeCharactersKeys.Select(tuple => new object[] { terminal, tuple.chars, tuple.key }));
-
-    [Theory]
-    [MemberData(nameof(ThreeCharactersKeysArguments))]
-    public void ThreeCharactersKey(TerminalData terminalData, string input, ConsoleKey expectedKey)
-    {
-        ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
-
-        Assert.Equal(expectedKey, consoleKeyInfo.Key);
-        Assert.Equal(default, consoleKeyInfo.KeyChar);
-        Assert.Equal(default, consoleKeyInfo.Modifiers);
-    }
-
     private static IEnumerable<(string chars, ConsoleKey key)> ThreeCharactersKeysRxvt
     {
         get
@@ -225,11 +658,11 @@ public class KeyParserTests
         }
     }
 
-    public static IEnumerable<object[]> VTSequencesrguments
+    public static IEnumerable<object[]> VTSequencesArguments
         => Terminals.SelectMany(terminal => VTSequences.Select(tuple => new object[] { terminal, tuple.chars, tuple.key }));
 
     [Theory]
-    [MemberData(nameof(VTSequencesrguments))]
+    [MemberData(nameof(VTSequencesArguments))]
     public void VTSequencesAreMapped(TerminalData terminalData, string input, ConsoleKey expectedKey)
     {
         if (terminalData is RxvtUnicode && input == "\u001B[4~" && expectedKey == ConsoleKey.End)
@@ -260,8 +693,6 @@ public class KeyParserTests
             yield return ("\r", new[] { new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false) });
             // Ctrl+Enter
             yield return ("\n", new[] { new ConsoleKeyInfo('\n', ConsoleKey.Enter, false, false, true) });
-            // Enter using "^[OM" special sequence: they char
-            yield return ("\u001BOM", new[] { new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false) });
 
             // Escape key pressed multiple times
             for (int i = 1; i <= 5; i++)
@@ -282,44 +713,6 @@ public class KeyParserTests
                 new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false),
                 new ConsoleKeyInfo('~', default, false, false, false),
             });
-
-            // invalid short ID
-            foreach (char letter in Enumerable.Range('E', 'Z' - 'E'))
-            {
-                if (!(letter is 'F' or 'H' or 'M' or 'P' or 'Q' or 'R' or 'S')) // valid letters
-                {
-                    yield return ($"\u001BO{letter}", new[]
-                    {
-                        new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
-                        new ConsoleKeyInfo('O', ConsoleKey.O, true, false, false),
-                        new ConsoleKeyInfo(letter, ConsoleKey.A + letter - 'A', true, false, false),
-                    });
-                    yield return ($"\u001B[{letter}", new[]
-                    {
-                        new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
-                        new ConsoleKeyInfo('[', default, false, false, false),
-                        new ConsoleKeyInfo(letter, ConsoleKey.A + letter - 'A', true, false, false),
-                    });
-                }
-            }
-            foreach (char letter in Enumerable.Range('e', 'z' - 'e'))
-            {
-                if (letter is not 'w') // only valid letter in this range
-                {
-                    yield return ($"\u001BO{letter}", new[]
-                    {
-                        new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
-                        new ConsoleKeyInfo('O', ConsoleKey.O, true, false, false),
-                        new ConsoleKeyInfo(letter, ConsoleKey.A + letter - 'a', false, false, false),
-                    });
-                    yield return ($"\u001B[{letter}", new[]
-                    {
-                        new ConsoleKeyInfo('\u001B', ConsoleKey.Escape, false, false, false),
-                        new ConsoleKeyInfo('[', default, false, false, false),
-                        new ConsoleKeyInfo(letter, ConsoleKey.A + letter - 'a', false, false, false),
-                    });
-                }
-            }
 
             // Invalid escape sequences:
             // Invalid modifiers (valid values are <2, 8>)
@@ -392,6 +785,30 @@ public class KeyParserTests
 
         Assert.Equal(chars.Length, startIndex);
     }
+
+    [Fact]
+    public void NewLineEscapeSequenceProducesCharacter()
+    {
+        XTermData xTerm = new();
+
+        ConsoleKeyInfo consoleKeyInfo = Map("\u001BOM".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
+
+        Assert.Equal(ConsoleKey.Enter, consoleKeyInfo.Key);
+        Assert.Equal('\r', consoleKeyInfo.KeyChar);
+        Assert.Equal((ConsoleModifiers)0, consoleKeyInfo.Modifiers);
+    }
+
+    [Fact]
+    public void BackTabEscapeSequence()
+    {
+        XTermData xTerm = new();
+
+        ConsoleKeyInfo consoleKeyInfo = Map("\u001B[Z".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
+
+        Assert.Equal(ConsoleKey.Tab, consoleKeyInfo.Key);
+        Assert.Equal(default, consoleKeyInfo.KeyChar);
+        Assert.Equal(ConsoleModifiers.Shift, consoleKeyInfo.Modifiers);
+    }
 }
 
 public abstract class TerminalData
@@ -441,26 +858,103 @@ public class GNOMETerminalData : TerminalData
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
-            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
             yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 79, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 91, 49, 59, 53, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, true)); // Ctrl+F1
+            yield return (new byte[] { 27, 91, 49, 59, 53, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, true)); // Ctrl+F2
+            yield return (new byte[] { 27, 91, 49, 59, 53, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, true)); // Ctrl+F3
+            yield return (new byte[] { 27, 91, 49, 59, 53, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, true)); // Ctrl+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, true)); // Ctrl+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, true)); // Ctrl+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, true)); // Ctrl+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, true)); // Ctrl+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, true)); // Ctrl+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, true)); // Ctrl+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, true)); // Ctrl+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true)); // Ctrl+F12
+            yield return (new byte[] { 27, 91, 50, 48, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 91, 50, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 49, 59, 50, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, false, false)); // Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 50, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, false, false)); // Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 50, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, false, false)); // Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 50, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, false, false)); // Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, false, false)); // Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, false, false)); // Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, false, false)); // Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, false, false)); // Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, false, false)); // Shift+F9
+            yield return (new byte[] { 27, 91, 50, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, false, false)); // Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false)); // Shift+F12
+            yield return (new byte[] { 27, 91, 49, 59, 56, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, true, true)); // Ctrl+Alt+Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 56, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, true, true)); // Ctrl+Alt+Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 56, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, true, true)); // Ctrl+Alt+Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 56, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, true, true)); // Ctrl+Alt+Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, true, true)); // Ctrl+Alt+Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, true, true)); // Ctrl+Alt+Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, true, true)); // Ctrl+Alt+Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, true, true)); // Ctrl+Alt+Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, true, true)); // Ctrl+Alt+Shift+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, true, true)); // Ctrl+Alt+Shift+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, true, true)); // Ctrl+Alt+Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true)); // Ctrl+Alt+Shift+F12
+            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true)); // Ctrl+Home
+            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false)); // Alt+Home
+            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true)); // Ctrl+Alt+Home
+            yield return (new byte[] { 27, 79, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 91, 49, 59, 53, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, true)); // Ctrl+End
+            yield return (new byte[] { 27, 91, 49, 59, 51, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, false)); // Alt+End
+            yield return (new byte[] { 27, 91, 49, 59, 55, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, true)); // Ctrl+Alt+End
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, true)); // Ctrl+PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, false)); // Alt+PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, true)); // Ctrl+Alt+PageUp
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, true)); // Ctrl+PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, false)); // Alt+PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, true)); // Ctrl+Alt+PageDown
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true)); // Ctrl+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false)); // Alt+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, true, false, false)); // Shift+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, true, true, false)); // Shift+Alt+LeftArrow
+            yield return (new byte[] { 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, true)); // Ctrl+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, true, false)); // Alt+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, false, false)); // Shift+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, true, false)); // Shift+Alt+UpArrow
+            yield return (new byte[] { 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, true)); // Ctrl+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, true, false)); // Alt+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, false, false)); // Shift+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, true, false)); // Shift+Alt+DownArrow
+            yield return (new byte[] { 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, true)); // Ctrl+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, true, false)); // Alt+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, false, false)); // Shift+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, true, false)); // Shift+Alt+RightArrow
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 50, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, true, false)); // Alt+Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 91, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, true)); // Ctrl+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, true, false)); // Alt+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, false)); // Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
         }
     }
 }
@@ -496,86 +990,151 @@ public class XTermData : TerminalData
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
             yield return (new byte[] { 195, 191 }, new ConsoleKeyInfo('\u00FF', default, false, false, false));
             yield return (new byte[] { 194, 136 }, new ConsoleKeyInfo('\u0088', default, false, false, false));
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
             yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
-            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+
+            yield return (new byte[] { 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 79, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 91, 49, 59, 53, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, true)); // Ctrl+F1
+            yield return (new byte[] { 27, 91, 49, 59, 53, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, true)); // Ctrl+F2
+            yield return (new byte[] { 27, 91, 49, 59, 53, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, true)); // Ctrl+F3
+            yield return (new byte[] { 27, 91, 49, 59, 53, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, true)); // Ctrl+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, true)); // Ctrl+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, true)); // Ctrl+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, true)); // Ctrl+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, true)); // Ctrl+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, true)); // Ctrl+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, true)); // Ctrl+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, true)); // Ctrl+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true)); // Ctrl+F12
+            yield return (new byte[] { 27, 91, 49, 59, 51, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 91, 50, 48, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 91, 50, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 49, 59, 50, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, false, false)); // Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 50, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, false, false)); // Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 50, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, false, false)); // Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 50, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, false, false)); // Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, false, false)); // Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, false, false)); // Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, false, false)); // Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, false, false)); // Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, false, false)); // Shift+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, false, false)); // Shift+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, false, false)); // Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false)); // Shift+F12
+            yield return (new byte[] { 27, 91, 49, 59, 56, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, true, true)); // Ctrl+Alt+Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 56, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, true, true)); // Ctrl+Alt+Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 56, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, true, true)); // Ctrl+Alt+Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 56, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, true, true)); // Ctrl+Alt+Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, true, true)); // Ctrl+Alt+Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, true, true)); // Ctrl+Alt+Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, true, true)); // Ctrl+Alt+Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, true, true)); // Ctrl+Alt+Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, true, true)); // Ctrl+Alt+Shift+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, true, true)); // Ctrl+Alt+Shift+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, true, true)); // Ctrl+Alt+Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true)); // Ctrl+Alt+Shift+F12
+            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true)); // Ctrl+Home
+            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false)); // Alt+Home
+            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true)); // Ctrl+Alt+Home
+            yield return (new byte[] { 27, 79, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 91, 49, 59, 53, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, true)); // Ctrl+End
+            yield return (new byte[] { 27, 91, 49, 59, 51, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, false)); // Alt+End
+            yield return (new byte[] { 27, 91, 49, 59, 55, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, true)); // Ctrl+Alt+End
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, true)); // Ctrl+PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, false)); // Alt+PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, true)); // Ctrl+Alt+PageUp
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, true)); // Ctrl+PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, false)); // Alt+PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, true)); // Ctrl+Alt+PageDown
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true)); // Ctrl+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false)); // Alt+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, true, false, false)); // Shift+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, true, true, false)); // Shift+Alt+LeftArrow
+            yield return (new byte[] { 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, true)); // Ctrl+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, true, false)); // Alt+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, false, false)); // Shift+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, true, false)); // Shift+Alt+UpArrow
+            yield return (new byte[] { 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, true)); // Ctrl+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, true, false)); // Alt+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, false, false)); // Shift+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, true, false)); // Shift+Alt+DownArrow
+            yield return (new byte[] { 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, true)); // Ctrl+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, true, false)); // Alt+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, false, false)); // Shift+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, true, false)); // Shift+Alt+RightArrow
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 50, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, true, false)); // Alt+Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 91, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, true)); // Ctrl+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, true, false)); // Alt+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, false)); // Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
         }
     }
 }
 
-// Ubuntu 18.04 x64
-public class UXTermData : TerminalData
+// Ubuntu 18.04 x64 (Press Ctrl+ALt+F6 to enter the text console, then switch back to GUI by pressing Ctrl+ALt+F1)
+public class LinuxConsole : TerminalData
 {
     protected override string EncodingCharset => "utf-8";
-    protected override string Term => "xterm";
+    protected override string Term => "linux";
     internal override byte Verase => 127;
-    protected override string EncodedTerminalDb => "GgEpACYADwCdAbgFeHRlcm18eHRlcm0tZGViaWFufFgxMSB0ZXJtaW5hbCBlbXVsYXRvcgAAAQAAAQAAAAEAAAAAAQEAAAAAAAAAAQAAAQAAAQAAAAAAAAAAAQBQAAgAGAD//////////////////////////wgAQAAAAAQABgAIABkAHgAmACoALgD//zkASgBMAFAAVwD//1kAZgD//2oAbgB4AHwA/////4AAhACJAI4A//+gAKUAqgD//68AtAC5AL4AxwDLANIA///kAOkA7wD1AP///////wcB////////GQH//x0B////////HwH//yQB//////////8oASwBMgE2AToBPgFEAUoBUAFWAVwBYAH//2UB//9pAW4BcwF3AX4B//+FAYkBkQH/////////////////////////////mQGiAf////+rAbQBvQHGAc8B2AHhAeoB8wH8Af///////wUCCQIOAhMCJwIqAv////88Aj8CSgJNAk8CUgKvAv//sgL///////////////+0Av//////////uAL//+0C//////EC9wL//////////////////////////////QIBA///////////////////////////////////////////////////////////////////BQP/////DAP//////////xMDGgMhA/////8oA///LwP///////82A/////////////89A0MDSQNQA1cDXgNlA20DdQN9A4UDjQOVA50DpQOsA7MDugPBA8kD0QPZA+ED6QPxA/kDAQQIBA8EFgQdBCUELQQ1BD0ERQRNBFUEXQRkBGsEcgR5BIEEiQSRBJkEoQSpBLEEuQTABMcEzgT/////////////////////////////////////////////////////////////0wTeBOME9gT6BP//////////AwVJBf//////////////////jwX///////////////////////+UBf///////////////////////////////////////////////////////////////////////////////////////5oF////////ngWoBf////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+yBbUFG1taAAcADQAbWyVpJXAxJWQ7JXAyJWRyABtbM2cAG1tIG1sySgAbW0sAG1tKABtbJWklcDElZEcAG1slaSVwMSVkOyVwMiVkSAAKABtbSAAbWz8yNWwACAAbWz8xMmwbWz8yNWgAG1tDABtbQQAbWz8xMjsyNWgAG1tQABtbTQAbKDAAG1s1bQAbWzFtABtbPzEwNDloG1syMjswOzB0ABtbMm0AG1s0aAAbWzhtABtbN20AG1s3bQAbWzRtABtbJXAxJWRYABsoQgAbKEIbW20AG1s/MTA0OWwbWzIzOzA7MHQAG1s0bAAbWzI3bQAbWzI0bQAbWz81aCQ8MTAwLz4bWz81bAAbWyFwG1s/Mzs0bBtbNGwbPgAbW0wAfwAbWzN+ABtPQgAbT1AAG1syMX4AG09RABtPUgAbT1MAG1sxNX4AG1sxN34AG1sxOH4AG1sxOX4AG1syMH4AG09IABtbMn4AG09EABtbNn4AG1s1fgAbT0MAG1sxOzJCABtbMTsyQQAbT0EAG1s/MWwbPgAbWz8xaBs9ABtbPzEwMzRsABtbPzEwMzRoABtbJXAxJWRQABtbJXAxJWRNABtbJXAxJWRCABtbJXAxJWRAABtbJXAxJWRTABtbJXAxJWRMABtbJXAxJWREABtbJXAxJWRDABtbJXAxJWRUABtbJXAxJWRBABtbaQAbWzRpABtbNWkAJXAxJWMbWyVwMiV7MX0lLSVkYgAbYwAbWyFwG1s/Mzs0bBtbNGwbPgAbOAAbWyVpJXAxJWRkABs3AAoAG00AJT8lcDkldBsoMCVlGyhCJTsbWzAlPyVwNiV0OzElOyU/JXA1JXQ7MiU7JT8lcDIldDs0JTslPyVwMSVwMyV8JXQ7NyU7JT8lcDQldDs1JTslPyVwNyV0OzglO20AG0gACQAbT0UAYGBhYWZmZ2dpaWpqa2tsbG1tbm5vb3BwcXFycnNzdHR1dXZ2d3d4eHl5enp7e3x8fX1+fgAbW1oAG1s/N2gAG1s/N2wAG09GABtPTQAbWzM7Mn4AG1sxOzJGABtbMTsySAAbWzI7Mn4AG1sxOzJEABtbNjsyfgAbWzU7Mn4AG1sxOzJDABtbMjN+ABtbMjR+ABtbMTsyUAAbWzE7MlEAG1sxOzJSABtbMTsyUwAbWzE1OzJ+ABtbMTc7Mn4AG1sxODsyfgAbWzE5OzJ+ABtbMjA7Mn4AG1syMTsyfgAbWzIzOzJ+ABtbMjQ7Mn4AG1sxOzVQABtbMTs1UQAbWzE7NVIAG1sxOzVTABtbMTU7NX4AG1sxNzs1fgAbWzE4OzV+ABtbMTk7NX4AG1syMDs1fgAbWzIxOzV+ABtbMjM7NX4AG1syNDs1fgAbWzE7NlAAG1sxOzZRABtbMTs2UgAbWzE7NlMAG1sxNTs2fgAbWzE3OzZ+ABtbMTg7Nn4AG1sxOTs2fgAbWzIwOzZ+ABtbMjE7Nn4AG1syMzs2fgAbWzI0OzZ+ABtbMTszUAAbWzE7M1EAG1sxOzNSABtbMTszUwAbWzE1OzN+ABtbMTc7M34AG1sxODszfgAbWzE5OzN+ABtbMjA7M34AG1syMTszfgAbWzIzOzN+ABtbMjQ7M34AG1sxOzRQABtbMTs0UQAbWzE7NFIAG1sxSwAbWyVpJWQ7JWRSABtbNm4AG1s/JVs7MDEyMzQ1Njc4OV1jABtbYwAbWzM5OzQ5bQAbWzMlPyVwMSV7MX0lPSV0NCVlJXAxJXszfSU9JXQ2JWUlcDElezR9JT0ldDElZSVwMSV7Nn0lPSV0MyVlJXAxJWQlO20AG1s0JT8lcDElezF9JT0ldDQlZSVwMSV7M30lPSV0NiVlJXAxJXs0fSU9JXQxJWUlcDElezZ9JT0ldDMlZSVwMSVkJTttABtbM20AG1syM20AG1tNABtbMyVwMSVkbQAbWzQlcDElZG0AG2wAG20AAgAAAEAAggADAwEBAAAHABMAGAAqADAAOgBBAEgATwBWAF0AZABrAHIAeQCAAIcAjgCVAJwAowCqALEAuAC/AMYAzQDUANsA4gDpAPAA9wD+AAUBDAETARoBIQEoAS8BNgE9AUQBSwFSAVkBYAFnAW4BdQF8AYMBigGRAZgBnwH//////////6YBrAEAAAMABgAJAAwADwASABUAGAAdACIAJwAsADEANQA6AD8ARABJAE4AVABaAGAAZgBsAHIAeAB+AIQAigCPAJQAmQCeAKMAqQCvALUAuwDBAMcAzQDTANkA3wDlAOsA8QD3AP0AAwEJAQ8BFQEbAR8BJAEpAS4BMwE4ATwBQAFEAUgBTQEbXTExMgcAG10xMjslcDElcwcAG1szSgAbXTUyOyVwMSVzOyVwMiVzBwAbWzIgcQAbWyVwMSVkIHEAG1szOzN+ABtbMzs0fgAbWzM7NX4AG1szOzZ+ABtbMzs3fgAbWzE7MkIAG1sxOzNCABtbMTs0QgAbWzE7NUIAG1sxOzZCABtbMTs3QgAbWzE7M0YAG1sxOzRGABtbMTs1RgAbWzE7NkYAG1sxOzdGABtbMTszSAAbWzE7NEgAG1sxOzVIABtbMTs2SAAbWzE7N0gAG1syOzN+ABtbMjs0fgAbWzI7NX4AG1syOzZ+ABtbMjs3fgAbWzE7M0QAG1sxOzREABtbMTs1RAAbWzE7NkQAG1sxOzdEABtbNjszfgAbWzY7NH4AG1s2OzV+ABtbNjs2fgAbWzY7N34AG1s1OzN+ABtbNTs0fgAbWzU7NX4AG1s1OzZ+ABtbNTs3fgAbWzE7M0MAG1sxOzRDABtbMTs1QwAbWzE7NkMAG1sxOzdDABtbMTsyQQAbWzE7M0EAG1sxOzRBABtbMTs1QQAbWzE7NkEAG1sxOzdBABtbMjltABtbOW0AQVgAWFQAQ3IAQ3MARTMATXMAU2UAU3MAa0RDMwBrREM0AGtEQzUAa0RDNgBrREM3AGtETgBrRE4zAGtETjQAa0RONQBrRE42AGtETjcAa0VORDMAa0VORDQAa0VORDUAa0VORDYAa0VORDcAa0hPTTMAa0hPTTQAa0hPTTUAa0hPTTYAa0hPTTcAa0lDMwBrSUM0AGtJQzUAa0lDNgBrSUM3AGtMRlQzAGtMRlQ0AGtMRlQ1AGtMRlQ2AGtMRlQ3AGtOWFQzAGtOWFQ0AGtOWFQ1AGtOWFQ2AGtOWFQ3AGtQUlYzAGtQUlY0AGtQUlY1AGtQUlY2AGtQUlY3AGtSSVQzAGtSSVQ0AGtSSVQ1AGtSSVQ2AGtSSVQ3AGtVUABrVVAzAGtVUDQAa1VQNQBrVVA2AGtVUDcAa2EyAGtiMQBrYjMAa2MyAHJteHgAc214eAA="; // /lib/terminfo/x/xterm
+    protected override string EncodedTerminalDb => "GgEUAB0AEAB9AUUDbGludXh8bGludXggY29uc29sZQAAAQAAAQEAAAAAAAAAAQEAAAAAAAEAAAAAAAABAQD//wgA/////////////////////////////wgAQAASAP//AAACAAQAFQAaACEAJQApAP//NABFAEcASwBXAP//WQBlAP//aQBtAHkAfQD/////gQCDAIgA/////40AkgD/////lwCcAKEApgCvALEA/////7YAuwDBAMcA////////////////2QDdAP//4QD////////jAP//6AD//////////+wA8QD3APwAAQEGAQsBEQEXAR0BIwEoAf//LQH//zEBNgE7Af///////z8B////////////////////////////////////////QwH//0YBTwFYAWEB//9qAXMBfAH//4UB//////////////////+OAf///////5QBlwGiAaUBpwGqAQEC//8EAv///////////////wYC//////////8KAv//TQL/////UQJXAv////9dAv////////////////////9hAv//////////////////////////////////////////////////ZgL//////////////////////////////////////////////////////////////////////////////////2gCbgJ0AnoCgAKGAowCkgKYAp4C//////////////////////////////////////////////////////////////////////////////////////////////////////////////////+kAv////////////////////////////////////////////////////////////+pArQCuQK/AsMCzALQAv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////IQP///////8lAy8D////////////////////////////////////////////////OQM/AwcADQAbWyVpJXAxJWQ7JXAyJWRyABtbM2cAG1tIG1tKABtbSwAbW0oAG1slaSVwMSVkRwAbWyVpJXAxJWQ7JXAyJWRIAAoAG1tIABtbPzI1bBtbPzFjAAgAG1s/MjVoG1s/MGMAG1tDABtbQQAbWz8yNWgbWz84YwAbW1AAG1tNAA4AG1s1bQAbWzFtABtbMm0AG1s0aAAbWzdtABtbN20AG1s0bQAbWyVwMSVkWAAPABtbbQ8AG1s0bAAbWzI3bQAbWzI0bQAbWz81aCQ8MjAwLz4bWz81bAAbW0AAG1tMAH8AG1szfgAbW0IAG1tbQQAbWzIxfgAbW1tCABtbW0MAG1tbRAAbW1tFABtbMTd+ABtbMTh+ABtbMTl+ABtbMjB+ABtbMX4AG1syfgAbW0QAG1s2fgAbWzV+ABtbQwAbW0EADQoAG1slcDElZFAAG1slcDElZE0AG1slcDElZEIAG1slcDElZEAAG1slcDElZEwAG1slcDElZEQAG1slcDElZEMAG1slcDElZEEAG2MbXVIAGzgAG1slaSVwMSVkZAAbNwAKABtNABtbMDsxMCU/JXAxJXQ7NyU7JT8lcDIldDs0JTslPyVwMyV0OzclOyU/JXA0JXQ7NSU7JT8lcDUldDsyJTslPyVwNiV0OzElO20lPyVwOSV0DiVlDyU7ABtIAAkAG1tHACsrLCwtLS4uMDBfX2BgYWFmZmdnaGhpaWpqa2tsbG1tbm5vb3BwcXFycnNzdHR1dXZ2d3d4eHl5enp7e3x8fWN+fgAbW1oAG1s/N2gAG1s/N2wAGykwABtbNH4AGgAbWzIzfgAbWzI0fgAbWzI1fgAbWzI2fgAbWzI4fgAbWzI5fgAbWzMxfgAbWzMyfgAbWzMzfgAbWzM0fgAbWzFLABtbJWklZDslZFIAG1s2bgAbWz82YwAbW2MAG1szOTs0OW0AG11SABtdUCVwMSV4JXAyJXsyNTV9JSolezEwMDB9JS8lMDJ4JXAzJXsyNTV9JSolezEwMDB9JS8lMDJ4JXA0JXsyNTV9JSolezEwMDB9JS8lMDJ4ABtbTQAbWzMlcDElZG0AG1s0JXAxJWRtABtbMTFtABtbMTBtAAADAAEACwAaADwAAQAAAAEA//8AAP///////////////////////wAAAwAGAAkADAAPABIAFQAYAB4AJAAoACwAMAA0ABtbM0oAQVgARzAAWFQAVTgARTAARTMAUzAAWE0Aa0VORDUAa0hPTTUAa2EyAGtiMQBrYjMAa2MyAHhtAA=="; // /lib/terminfo/l/linux
 
     internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
     {
         get
         {
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
-            yield return (new byte[] { 195, 161 }, new ConsoleKeyInfo('\u00E1', default, false, false, false));
-            yield return (new byte[] { 194, 129 }, new ConsoleKeyInfo('\u0081', default, false, false, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 194, 177 }, new ConsoleKeyInfo('\u00B1', default, false, false, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
-            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
-            yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
-            yield return (new byte[] { 194, 178 }, new ConsoleKeyInfo('\u00B2', default, false, false, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
-            yield return (new byte[] { 194, 189 }, new ConsoleKeyInfo('\u00BD', default, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
-            yield return (new byte[] { 195, 191 }, new ConsoleKeyInfo('\u00FF', default, false, false, false));
-            yield return (new byte[] { 194, 136 }, new ConsoleKeyInfo('\u0088', default, false, false, false));
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
-            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
-            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
-            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 91, 91, 65 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 91, 91, 66 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 91, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 91, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 91, 69 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 91, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // LeftArrow
+            yield return (new byte[] { 27, 91, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // UpArrow
+            yield return (new byte[] { 27, 91, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // DownArrow
+            yield return (new byte[] { 27, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // RightArrow
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
         }
     }
 }
 
-// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using default settings ("xterm" Terminal-type setting)
+// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using TERM=xterm (default)
 public class PuTTYData_xterm : TerminalData
 {
     protected override string EncodingCharset => "";
@@ -583,42 +1142,10 @@ public class PuTTYData_xterm : TerminalData
     internal override byte Verase => 127;
     protected override string EncodedTerminalDb => "GgEpACYADwCdAaQFeHRlcm18eHRlcm0tZGViaWFufFgxMSB0ZXJtaW5hbCBlbXVsYXRvcgAAAQAAAQAAAAEAAAAAAQEAAAAAAAAAAQAAAQAAAQAAAAAAAAAAAQBQAAgAGAD//////////////////////////wgAQAAAAAQABgAIABkAHgAmACoALgD//zkASgBMAFAAVwD//1kAZgD//2oAbgB4AHwA/////4AAhACJAI4A//+gAKUAqgD//68AtAC5AL4AxwDLANIA///kAOkA7wD1AP///////wcB////////GQH//x0B////////HwH//yQB//////////8oASwBMgE2AToBPgFEAUoBUAFWAVwBYAH//2UB//9pAW4BcwF3AX4B//+FAYkBkQH/////////////////////////////mQGiAf////+rAbQBvQHGAc8B2AHhAeoB8wH8Af///////wUCCQIOAv//EwIWAv////8oAisCNgI5AjsCPgKbAv//ngL///////////////+gAv//////////pAL//9kC/////90C4wL/////////////////////////////6QLtAv//////////////////////////////////////////////////////////////////8QL/////+AL///////////8CBgMNA/////8UA///GwP///////8iA/////////////8pAy8DNQM8A0MDSgNRA1kDYQNpA3EDeQOBA4kDkQOYA58DpgOtA7UDvQPFA80D1QPdA+UD7QP0A/sDAgQJBBEEGQQhBCkEMQQ5BEEESQRQBFcEXgRlBG0EdQR9BIUEjQSVBJ0EpQSsBLMEugT/////////////////////////////////////////////////////////////vwTKBM8E4gTmBP//////////7wQ1Bf//////////////////ewX///////////////////////+ABf///////////////////////////////////////////////////////////////////////////////////////4YF////////igWUBf////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+eBaEFG1taAAcADQAbWyVpJXAxJWQ7JXAyJWRyABtbM2cAG1tIG1sySgAbW0sAG1tKABtbJWklcDElZEcAG1slaSVwMSVkOyVwMiVkSAAKABtbSAAbWz8yNWwACAAbWz8xMmwbWz8yNWgAG1tDABtbQQAbWz8xMjsyNWgAG1tQABtbTQAbKDAAG1s1bQAbWzFtABtbPzEwNDloG1syMjswOzB0ABtbMm0AG1s0aAAbWzhtABtbN20AG1s3bQAbWzRtABtbJXAxJWRYABsoQgAbKEIbW20AG1s/MTA0OWwbWzIzOzA7MHQAG1s0bAAbWzI3bQAbWzI0bQAbWz81aCQ8MTAwLz4bWz81bAAbWyFwG1s/Mzs0bBtbNGwbPgAbW0wAfwAbWzN+ABtPQgAbT1AAG1syMX4AG09RABtPUgAbT1MAG1sxNX4AG1sxN34AG1sxOH4AG1sxOX4AG1syMH4AG09IABtbMn4AG09EABtbNn4AG1s1fgAbT0MAG1sxOzJCABtbMTsyQQAbT0EAG1s/MWwbPgAbWz8xaBs9ABtbPzEwMzRsABtbPzEwMzRoABtbJXAxJWRQABtbJXAxJWRNABtbJXAxJWRCABtbJXAxJWRAABtbJXAxJWRTABtbJXAxJWRMABtbJXAxJWREABtbJXAxJWRDABtbJXAxJWRUABtbJXAxJWRBABtbaQAbWzRpABtbNWkAG2MAG1shcBtbPzM7NGwbWzRsGz4AGzgAG1slaSVwMSVkZAAbNwAKABtNACU/JXA5JXQbKDAlZRsoQiU7G1swJT8lcDYldDsxJTslPyVwNSV0OzIlOyU/JXAyJXQ7NCU7JT8lcDElcDMlfCV0OzclOyU/JXA0JXQ7NSU7JT8lcDcldDs4JTttABtIAAkAG09FAGBgYWFmZmdnaWlqamtrbGxtbW5ub29wcHFxcnJzc3R0dXV2dnd3eHh5eXp6e3t8fH19fn4AG1taABtbPzdoABtbPzdsABtPRgAbT00AG1szOzJ+ABtbMTsyRgAbWzE7MkgAG1syOzJ+ABtbMTsyRAAbWzY7Mn4AG1s1OzJ+ABtbMTsyQwAbWzIzfgAbWzI0fgAbWzE7MlAAG1sxOzJRABtbMTsyUgAbWzE7MlMAG1sxNTsyfgAbWzE3OzJ+ABtbMTg7Mn4AG1sxOTsyfgAbWzIwOzJ+ABtbMjE7Mn4AG1syMzsyfgAbWzI0OzJ+ABtbMTs1UAAbWzE7NVEAG1sxOzVSABtbMTs1UwAbWzE1OzV+ABtbMTc7NX4AG1sxODs1fgAbWzE5OzV+ABtbMjA7NX4AG1syMTs1fgAbWzIzOzV+ABtbMjQ7NX4AG1sxOzZQABtbMTs2UQAbWzE7NlIAG1sxOzZTABtbMTU7Nn4AG1sxNzs2fgAbWzE4OzZ+ABtbMTk7Nn4AG1syMDs2fgAbWzIxOzZ+ABtbMjM7Nn4AG1syNDs2fgAbWzE7M1AAG1sxOzNRABtbMTszUgAbWzE7M1MAG1sxNTszfgAbWzE3OzN+ABtbMTg7M34AG1sxOTszfgAbWzIwOzN+ABtbMjE7M34AG1syMzszfgAbWzI0OzN+ABtbMTs0UAAbWzE7NFEAG1sxOzRSABtbMUsAG1slaSVkOyVkUgAbWzZuABtbPyVbOzAxMjM0NTY3ODldYwAbW2MAG1szOTs0OW0AG1szJT8lcDElezF9JT0ldDQlZSVwMSV7M30lPSV0NiVlJXAxJXs0fSU9JXQxJWUlcDElezZ9JT0ldDMlZSVwMSVkJTttABtbNCU/JXAxJXsxfSU9JXQ0JWUlcDElezN9JT0ldDYlZSVwMSV7NH0lPSV0MSVlJXAxJXs2fSU9JXQzJWUlcDElZCU7bQAbWzNtABtbMjNtABtbTQAbWzMlcDElZG0AG1s0JXAxJWRtABtsABttAAIAAAA8AHoA8wIBAQAABwATABgAKgAwADoAQQBIAE8AVgBdAGQAawByAHkAgACHAI4AlQCcAKMAqgCxALgAvwDGAM0A1ADbAOIA6QDwAPcA/gAFAQwBEwEaASEBKAEvATYBPQFEAUsBUgFZAWABZwFuAXUBfAGDAYoBkQGYAZ8BpgGsAQAAAwAGAAkADAAPABIAFQAYAB0AIgAnACwAMQA1ADoAPwBEAEkATgBUAFoAYABmAGwAcgB4AH4AhACKAI8AlACZAJ4AowCpAK8AtQC7AMEAxwDNANMA2QDfAOUA6wDxAPcA/QADAQkBDwEVARsBHwEkASkBLgEzATgBPQEbXTExMgcAG10xMjslcDElcwcAG1szSgAbXTUyOyVwMSVzOyVwMiVzBwAbWzIgcQAbWyVwMSVkIHEAG1szOzN+ABtbMzs0fgAbWzM7NX4AG1szOzZ+ABtbMzs3fgAbWzE7MkIAG1sxOzNCABtbMTs0QgAbWzE7NUIAG1sxOzZCABtbMTs3QgAbWzE7M0YAG1sxOzRGABtbMTs1RgAbWzE7NkYAG1sxOzdGABtbMTszSAAbWzE7NEgAG1sxOzVIABtbMTs2SAAbWzE7N0gAG1syOzN+ABtbMjs0fgAbWzI7NX4AG1syOzZ+ABtbMjs3fgAbWzE7M0QAG1sxOzREABtbMTs1RAAbWzE7NkQAG1sxOzdEABtbNjszfgAbWzY7NH4AG1s2OzV+ABtbNjs2fgAbWzY7N34AG1s1OzN+ABtbNTs0fgAbWzU7NX4AG1s1OzZ+ABtbNTs3fgAbWzE7M0MAG1sxOzRDABtbMTs1QwAbWzE7NkMAG1sxOzdDABtbMTsyQQAbWzE7M0EAG1sxOzRBABtbMTs1QQAbWzE7NkEAG1sxOzdBABtbMjltABtbOW0AQVgAWFQAQ3IAQ3MARTMATXMAU2UAU3MAa0RDMwBrREM0AGtEQzUAa0RDNgBrREM3AGtETgBrRE4zAGtETjQAa0RONQBrRE42AGtETjcAa0VORDMAa0VORDQAa0VORDUAa0VORDYAa0VORDcAa0hPTTMAa0hPTTQAa0hPTTUAa0hPTTYAa0hPTTcAa0lDMwBrSUM0AGtJQzUAa0lDNgBrSUM3AGtMRlQzAGtMRlQ0AGtMRlQ1AGtMRlQ2AGtMRlQ3AGtOWFQzAGtOWFQ0AGtOWFQ1AGtOWFQ2AGtOWFQ3AGtQUlYzAGtQUlY0AGtQUlY1AGtQUlY2AGtQUlY3AGtSSVQzAGtSSVQ0AGtSSVQ1AGtSSVQ2AGtSSVQ3AGtVUABrVVAzAGtVUDQAa1VQNQBrVVA2AGtVUDcAcm14eABzbXh4AA=="; // /lib/terminfo/x/xterm
 
-    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
-    {
-        get
-        {
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
-            yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
-            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
-            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
-            yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
-            yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
-            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-        }
-    }
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios => Array.Empty<(byte[], ConsoleKeyInfo)>();
 }
 
-// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using "linux" Terminal-type setting
+// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using TERM=linux
 public class PuTTYData_linux : TerminalData
 {
     protected override string EncodingCharset => "";
@@ -626,47 +1153,10 @@ public class PuTTYData_linux : TerminalData
     internal override byte Verase => 127;
     protected override string EncodedTerminalDb => "GgEUAB0AEAB9AUUDbGludXh8bGludXggY29uc29sZQAAAQAAAQEAAAAAAAAAAQEAAAAAAAEAAAAAAAABAQD//wgA/////////////////////////////wgAQAASAP//AAACAAQAFQAaACEAJQApAP//NABFAEcASwBXAP//WQBlAP//aQBtAHkAfQD/////gQCDAIgA/////40AkgD/////lwCcAKEApgCvALEA/////7YAuwDBAMcA////////////////2QDdAP//4QD////////jAP//6AD//////////+wA8QD3APwAAQEGAQsBEQEXAR0BIwEoAf//LQH//zEBNgE7Af///////z8B////////////////////////////////////////QwH//0YBTwFYAWEB//9qAXMBfAH//4UB//////////////////+OAf///////5QBlwGiAaUBpwGqAQEC//8EAv///////////////wYC//////////8KAv//TQL/////UQJXAv////9dAv////////////////////9hAv//////////////////////////////////////////////////ZgL//////////////////////////////////////////////////////////////////////////////////2gCbgJ0AnoCgAKGAowCkgKYAp4C//////////////////////////////////////////////////////////////////////////////////////////////////////////////////+kAv////////////////////////////////////////////////////////////+pArQCuQK/AsMCzALQAv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////IQP///////8lAy8D////////////////////////////////////////////////OQM/AwcADQAbWyVpJXAxJWQ7JXAyJWRyABtbM2cAG1tIG1tKABtbSwAbW0oAG1slaSVwMSVkRwAbWyVpJXAxJWQ7JXAyJWRIAAoAG1tIABtbPzI1bBtbPzFjAAgAG1s/MjVoG1s/MGMAG1tDABtbQQAbWz8yNWgbWz84YwAbW1AAG1tNAA4AG1s1bQAbWzFtABtbMm0AG1s0aAAbWzdtABtbN20AG1s0bQAbWyVwMSVkWAAPABtbbQ8AG1s0bAAbWzI3bQAbWzI0bQAbWz81aCQ8MjAwLz4bWz81bAAbW0AAG1tMAH8AG1szfgAbW0IAG1tbQQAbWzIxfgAbW1tCABtbW0MAG1tbRAAbW1tFABtbMTd+ABtbMTh+ABtbMTl+ABtbMjB+ABtbMX4AG1syfgAbW0QAG1s2fgAbWzV+ABtbQwAbW0EADQoAG1slcDElZFAAG1slcDElZE0AG1slcDElZEIAG1slcDElZEAAG1slcDElZEwAG1slcDElZEQAG1slcDElZEMAG1slcDElZEEAG2MbXVIAGzgAG1slaSVwMSVkZAAbNwAKABtNABtbMDsxMCU/JXAxJXQ7NyU7JT8lcDIldDs0JTslPyVwMyV0OzclOyU/JXA0JXQ7NSU7JT8lcDUldDsyJTslPyVwNiV0OzElO20lPyVwOSV0DiVlDyU7ABtIAAkAG1tHACsrLCwtLS4uMDBfX2BgYWFmZmdnaGhpaWpqa2tsbG1tbm5vb3BwcXFycnNzdHR1dXZ2d3d4eHl5enp7e3x8fWN+fgAbW1oAG1s/N2gAG1s/N2wAGykwABtbNH4AGgAbWzIzfgAbWzI0fgAbWzI1fgAbWzI2fgAbWzI4fgAbWzI5fgAbWzMxfgAbWzMyfgAbWzMzfgAbWzM0fgAbWzFLABtbJWklZDslZFIAG1s2bgAbWz82YwAbW2MAG1szOTs0OW0AG11SABtdUCVwMSV4JXAyJXsyNTV9JSolezEwMDB9JS8lMDJ4JXAzJXsyNTV9JSolezEwMDB9JS8lMDJ4JXA0JXsyNTV9JSolezEwMDB9JS8lMDJ4ABtbTQAbWzMlcDElZG0AG1s0JXAxJWRtABtbMTFtABtbMTBtAAABAAEAAQAEAA4AAQABAAAAAAADAAYAG1szSgBBWABVOABFMwA="; // /lib/terminfo/l/linux
 
-    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
-    {
-        get
-        {
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
-            yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
-            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
-            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
-            yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
-            yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
-            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
-            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-        }
-    }
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios => Array.Empty<(byte[], ConsoleKeyInfo)>();
 }
 
-// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using "putty" Terminal-type setting
+// Windows 11 machine connected via PuTTY to Ubuntu 20.04 arm64 machine using TERM=putty
 public class PuTTYData_putty : TerminalData
 {
     protected override string EncodingCharset => "";
@@ -674,37 +1164,7 @@ public class PuTTYData_putty : TerminalData
     internal override byte Verase => 127;
     protected override string EncodedTerminalDb => "GgEeAB0AEAB9AXwEcHV0dHl8UHVUVFkgdGVybWluYWwgZW11bGF0b3IAAQEAAAEAAAAAAQAAAAEBAAAAAAABAAAAAAAAAQEA//8IAP////////////////////////////8IAEAAFgAAAAQABgAIABkAHgAlACkALQD//zgASQBMAFAAVwD//1kAYAD//2QA//9nAGsAbwD//3UAdwB8AIEA/////4gA/////40AkgCXAJwApQCnAKwA//+3ALwAwgDIAP//2gD//9wA/////////gD//wIB////////BAH//wkB//////////8NARMBGQEfASUBKwExATcBPQFDAUkBTgH//1MB//9XAVwBYQFlAWkB//9tAXEBeQH//////////////////////////////////4EB//+EAY0BlgH//58BqAGxAboBwwHMAf/////////////////////VAf/////2AfkBBAIHAgkCDAJUAv//VwJZAv////////////9eAv//////////YgL//5UC/////5kCnwL/////pQL/////////////////////rAL//////////////////////////////////////////////////7EC//////////////////////////////////////////+zAv////////////////////+3Av////////////+7AsECxwLNAtMC2QLfAuUC6wLxAv//////////////////////////////////////////////////////////////////////////////////////////////////////////////////9wL//////////////////////////////////////////////////////////////AIHAwwDEgMWAx8DIwP//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////3QD////////eAOCA////////4wDkgOYA/////////////////////////////+eA3AEdgQbW1oABwANABtbJWklcDElZDslcDIlZHIAG1szZwAbW0gbW0oAG1tLABtbSgAbWyVpJXAxJWRHABtbJWklcDElZDslcDIlZEgAG0QAG1tIABtbPzI1bAAIABtbPzI1aAAbW0MAG00AG1tQABtbTQAbXTA7BwAOABtbNW0AG1sxbQAbWz80N2gAG1s0aAAbWzdtABtbN20AG1s0bQAbWyVwMSVkWAAPABtbbQ8AG1syShtbPzQ3bAAbWzRsABtbMjdtABtbMjRtABtbPzVoJDwxMDAvPhtbPzVsAAcAGzcbW3IbW20bWz83aBtbPzE7NDs2bBtbNGwbOBs+G11SABtbTAB/ABtbM34AG09CABtbMTF+ABtbMjF+ABtbMTJ+ABtbMTN+ABtbMTR+ABtbMTV+ABtbMTd+ABtbMTh+ABtbMTl+ABtbMjB+ABtbMX4AG1syfgAbT0QAG1s2fgAbWzV+ABtPQwAbW0IAG1tBABtPQQAbWz8xbBs+ABtbPzFoGz0ADQoAG1slcDElZFAAG1slcDElZE0AG1slcDElZEIAG1slcDElZFMAG1slcDElZEwAG1slcDElZEQAG1slcDElZEMAG1slcDElZFQAG1slcDElZEEAGzwbWyJwG1s1MDs2InAbYxtbPzNsG11SG1s/MTAwMGwAGzgAG1slaSVwMSVkZAAbNwAKABtNABtbMCU/JXAxJXA2JXwldDsxJTslPyVwMiV0OzQlOyU/JXAxJXAzJXwldDs3JTslPyVwNCV0OzUlO20lPyVwOSV0DiVlDyU7ABtIAAkAG10wOwAbW0cAYGBhYWZmZ2dqamtrbGxtbW5ub29wcHFxcnJzc3R0dXV2dnd3eHh5eXp6e3t8fH19fn4AG1taABtbPzdoABtbPzdsABsoQhspMAAbWzR+ABoAG1tEABtbQwAbWzIzfgAbWzI0fgAbWzI1fgAbWzI2fgAbWzI4fgAbWzI5fgAbWzMxfgAbWzMyfgAbWzMzfgAbWzM0fgAbWzFLABtbJWklZDslZFIAG1s2bgAbWz82YwAbW2MAG1szOTs0OW0AG11SABtdUCVwMSV4JXAyJXsyNTV9JSolezEwMDB9JS8lMDJ4JXAzJXsyNTV9JSolezEwMDB9JS8lMDJ4JXA0JXsyNTV9JSolezEwMDB9JS8lMDJ4ABtbPAAbWzMlcDElZG0AG1s0JXAxJWRtABtbMTBtABtbMTFtABtbMTJtACU/JXAxJXs4fSU9JXQbJSVH4peYGyUlQCVlJXAxJXsxMH0lPSV0GyUlR+KXmRslJUAlZSVwMSV7MTJ9JT0ldBslJUfimYAbJSVAJWUlcDElezEzfSU9JXQbJSVH4pmqGyUlQCVlJXAxJXsxNH0lPSV0GyUlR+KZqxslJUAlZSVwMSV7MTV9JT0ldBslJUfimLwbJSVAJWUlcDElezI3fSU9JXQbJSVH4oaQGyUlQCVlJXAxJXsxNTV9JT0ldBslJUfggqIbJSVAJWUlcDElYyU7ABtbMTFtABtbMTBtAAEAAQAEAAoAYQABAAEAAAAFAAoAKgAAAAMABgAJAAwADwAbWzNKABtdMDsAG1s/MTAwNjsxMDAwJT8lcDElezF9JT0ldGglZWwlOwAbWzwlaSVwMyVkOyVwMSVkOyVwMiVkOyU/JXA0JXRNJWVtJTsAWFQAVTgARTMAVFMAWE0AeG0A"; // /usr/share/terminfo/p/putty
 
-    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios
-    {
-        get
-        {
-            yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
-            yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
-            yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
-            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
-            yield return (new byte[] { 27, 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, true, false));
-            yield return (new byte[] { 33 }, new ConsoleKeyInfo('!', default, false, false, false));
-            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
-            yield return (new byte[] { 0 }, new ConsoleKeyInfo(default, ConsoleKey.D2, false, false, true));
-            yield return (new byte[] { 27, 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, true, false));
-            yield return (new byte[] { 64 }, new ConsoleKeyInfo('@', default, false, false, false));
-            yield return (new byte[] { 61 }, new ConsoleKeyInfo('=', default, false, false, false));
-            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
-            yield return (new byte[] { 27, 61 }, new ConsoleKeyInfo('=', default, false, false, false));
-            yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
-            yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
-            yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-        }
-    }
+    internal override IEnumerable<(byte[], ConsoleKeyInfo)> RecordedScenarios => Array.Empty<(byte[], ConsoleKeyInfo)>();
 }
 
 // Windows (11) Terminal connected via SSH to Ubuntu 20.04 arm64
@@ -736,26 +1196,108 @@ public class WindowsTerminalData : TerminalData
             yield return (new byte[] { 27 }, new ConsoleKeyInfo((char)27, ConsoleKey.Escape, false, false, false));
             yield return (new byte[] { 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false)); // verase
             yield return (new byte[] { 27, 127 }, new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, true, false));
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
-            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
             yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
             yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
-            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+
+            yield return (new byte[] { 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 79, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 91, 49, 59, 53, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, true)); // Ctrl+F1
+            yield return (new byte[] { 27, 91, 49, 59, 53, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, true)); // Ctrl+F2
+            yield return (new byte[] { 27, 91, 49, 59, 53, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, true)); // Ctrl+F3
+            yield return (new byte[] { 27, 91, 49, 59, 53, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, true)); // Ctrl+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, true)); // Ctrl+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, true)); // Ctrl+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, true)); // Ctrl+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, true)); // Ctrl+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, true)); // Ctrl+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, true)); // Ctrl+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, true)); // Ctrl+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true)); // Ctrl+F12
+            yield return (new byte[] { 27, 91, 49, 59, 51, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, true, false)); // Alt+F1
+            yield return (new byte[] { 27, 91, 49, 59, 51, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, true, false)); // Alt+F2
+            yield return (new byte[] { 27, 91, 49, 59, 51, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 91, 49, 53, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, true, false)); // Alt+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, true, false)); // Alt+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, true, false)); // Alt+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, true, false)); // Alt+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, true, false)); // Alt+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 49, 59, 50, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, false, false)); // Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 50, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, false, false)); // Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 50, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, false, false)); // Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 50, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, false, false)); // Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, false, false)); // Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, false, false)); // Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, false, false)); // Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, false, false)); // Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, false, false)); // Shift+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, false, false)); // Shift+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, false, false)); // Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false)); // Shift+F12
+            yield return (new byte[] { 27, 91, 49, 59, 56, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, true, true)); // Ctrl+Alt+Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 56, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, true, true)); // Ctrl+Alt+Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 56, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, true, true)); // Ctrl+Alt+Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 56, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, true, true)); // Ctrl+Alt+Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, true, true)); // Ctrl+Alt+Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, true, true)); // Ctrl+Alt+Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, true, true)); // Ctrl+Alt+Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, true, true)); // Ctrl+Alt+Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, true, true)); // Ctrl+Alt+Shift+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, true, true)); // Ctrl+Alt+Shift+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, true, true)); // Ctrl+Alt+Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true)); // Ctrl+Alt+Shift+F12
+            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true)); // Ctrl+Home
+            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false)); // Alt+Home
+            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true)); // Ctrl+Alt+Home
+            yield return (new byte[] { 27, 79, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 91, 49, 59, 53, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, true)); // Ctrl+End
+            yield return (new byte[] { 27, 91, 49, 59, 51, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, false)); // Alt+End
+            yield return (new byte[] { 27, 91, 49, 59, 55, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, true)); // Ctrl+Alt+End
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, true)); // Ctrl+PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, false)); // Alt+PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, true)); // Ctrl+Alt+PageUp
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, true)); // Ctrl+PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, false)); // Alt+PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, true)); // Ctrl+Alt+PageDown
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true)); // Ctrl+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false)); // Alt+LeftArrow
+            yield return (new byte[] { 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, true)); // Ctrl+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, true, false)); // Alt+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, false, false)); // Shift+UpArrow
+            yield return (new byte[] { 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, true)); // Ctrl+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, true, false)); // Alt+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, false, false)); // Shift+DownArrow
+            yield return (new byte[] { 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, true)); // Ctrl+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, true, false)); // Alt+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, false, false)); // Shift+RightArrow
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 50, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, true, false)); // Alt+Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 91, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, true)); // Ctrl+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, true, false)); // Alt+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, false)); // Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
         }
     }
 }
@@ -772,20 +1314,101 @@ public class RxvtUnicode : TerminalData
     {
         get
         {
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
-            yield return (new byte[] { 27, 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 36 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 27, 91, 50, 52, 64 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
-            yield return (new byte[] { 27, 91, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 55, 94 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 27, 91, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 27, 91, 55, 94 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 79, 100 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
+            yield return (new byte[] { 27, 91, 49, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 91, 49, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 91, 49, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 91, 49, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, false)); // F10
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 91, 49, 49, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, true)); // Ctrl+F1
+            yield return (new byte[] { 27, 91, 49, 50, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, true)); // Ctrl+F2
+            yield return (new byte[] { 27, 91, 49, 51, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, true)); // Ctrl+F3
+            yield return (new byte[] { 27, 91, 49, 52, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, true)); // Ctrl+F4
+            yield return (new byte[] { 27, 91, 49, 53, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, true)); // Ctrl+F5
+            yield return (new byte[] { 27, 91, 49, 55, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, true)); // Ctrl+F6
+            yield return (new byte[] { 27, 91, 49, 56, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, true)); // Ctrl+F7
+            yield return (new byte[] { 27, 91, 49, 57, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, true)); // Ctrl+F8
+            yield return (new byte[] { 27, 91, 50, 48, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, true)); // Ctrl+F9
+            yield return (new byte[] { 27, 91, 50, 49, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, true)); // Ctrl+F10
+            yield return (new byte[] { 27, 91, 50, 51, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, true)); // Ctrl+F11
+            yield return (new byte[] { 27, 91, 50, 52, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true)); // Ctrl+F12
+            yield return (new byte[] { 27, 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 91, 50, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, false)); // Shift+F1=F11
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // Shift+F2=F12
+            yield return (new byte[] { 27, 91, 50, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F13, false, false, false)); // Shift+F3=F13
+            yield return (new byte[] { 27, 91, 50, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F14, false, false, false)); // Shift+F4=F14
+            yield return (new byte[] { 27, 91, 50, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F15, false, false, false)); // Shift+F5=F14
+            yield return (new byte[] { 27, 91, 50, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F16, false, false, false)); // Shift+F6=F16
+            yield return (new byte[] { 27, 91, 51, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F17, false, false, false)); // Shift+F7=F17
+            yield return (new byte[] { 27, 91, 51, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F18, false, false, false)); // Shift+F8=F18
+            yield return (new byte[] { 27, 91, 51, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F19, false, false, false)); // Shift+F9=F19
+            yield return (new byte[] { 27, 91, 51, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F20, false, false, false)); // Shift+F10=F20
+            yield return (new byte[] { 27, 91, 50, 51, 36 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, false, false)); // Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 36 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false)); // Shift+F12
+            yield return (new byte[] { 27, 27, 91, 50, 51, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, true)); // Ctrl+Alt+Shift+F1=Ctrl+Alt+F11
+            yield return (new byte[] { 27, 27, 91, 50, 52, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, true)); // Ctrl+Alt+Shift+F2=Ctrl+Alt+F12
+            yield return (new byte[] { 27, 27, 91, 50, 53, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F13, false, true, true)); // Ctrl+Alt+Shift+F3=Ctrl+Alt+F13
+            yield return (new byte[] { 27, 27, 91, 50, 54, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F14, false, true, true)); // Ctrl+Alt+Shift+F4=Ctrl+Alt+F14
+            yield return (new byte[] { 27, 27, 91, 50, 56, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F15, false, true, true)); // Ctrl+Alt+Shift+F5=Ctrl+Alt+F15
+            yield return (new byte[] { 27, 27, 91, 50, 57, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F16, false, true, true)); // Ctrl+Alt+Shift+F6=Ctrl+Alt+F16
+            yield return (new byte[] { 27, 27, 91, 51, 49, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F17, false, true, true)); // Ctrl+Alt+Shift+F7=Ctrl+Alt+F17
+            yield return (new byte[] { 27, 27, 91, 51, 50, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F18, false, true, true)); // Ctrl+Alt+Shift+F8=Ctrl+Alt+F18
+            yield return (new byte[] { 27, 27, 91, 51, 51, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F19, false, true, true)); // Ctrl+Alt+Shift+F9=Ctrl+Alt+F19
+            yield return (new byte[] { 27, 27, 91, 51, 52, 94 }, new ConsoleKeyInfo(default, ConsoleKey.F20, false, true, true)); // Ctrl+Alt+Shift+F10=Ctrl+Alt+F20
+            yield return (new byte[] { 27, 27, 91, 50, 51, 64 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, true, true)); // Ctrl+Alt+Shift+F11
+            yield return (new byte[] { 27, 27, 91, 50, 52, 64 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true)); // Ctrl+Alt+Shift+F12
+            yield return (new byte[] { 27, 91, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 91, 55, 94 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true)); // Ctrl+Home
+            yield return (new byte[] { 27, 27, 91, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false)); // Alt+Home
+            yield return (new byte[] { 27, 27, 91, 55, 94 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true)); // Ctrl+Alt+Home
+            yield return (new byte[] { 27, 91, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 91, 56, 94 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, true)); // Ctrl+End
+            yield return (new byte[] { 27, 27, 91, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, false)); // Alt+End
+            yield return (new byte[] { 27, 27, 91, 56, 94 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, true)); // Ctrl+Alt+End
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 91, 53, 94 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, true)); // Ctrl+PageUp
+            yield return (new byte[] { 27, 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, false)); // Alt+PageUp
+            yield return (new byte[] { 27, 27, 91, 53, 94 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, true)); // Ctrl+Alt+PageUp
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+            yield return (new byte[] { 27, 91, 54, 94 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, true)); // Ctrl+PageDown
+            yield return (new byte[] { 27, 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, false)); // Alt+PageDown
+            yield return (new byte[] { 27, 27, 91, 54, 94 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, true)); // Ctrl+Alt+PageDown
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // LeftArrow
+            yield return (new byte[] { 27, 79, 100 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true)); // Ctrl+LeftArrow
+            yield return (new byte[] { 27, 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false)); // Alt+LeftArrow
+            yield return (new byte[] { 27, 91, 100 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, true, false, false)); // Shift+LeftArrow
+            yield return (new byte[] { 27, 27, 91, 100 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, true, true, false)); // Shift+Alt+LeftArrow
+            yield return (new byte[] { 27, 91, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // UpArrow
+            yield return (new byte[] { 27, 79, 97 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, true)); // Ctrl+UpArrow
+            yield return (new byte[] { 27, 27, 91, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, true, false)); // Alt+UpArrow
+            yield return (new byte[] { 27, 91, 97 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, false, false)); // Shift+UpArrow
+            yield return (new byte[] { 27, 27, 91, 97 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, true, false)); // Shift+Alt+UpArrow
+            yield return (new byte[] { 27, 91, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // DownArrow
+            yield return (new byte[] { 27, 79, 98 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, true)); // Ctrl+DownArrow
+            yield return (new byte[] { 27, 27, 91, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, true, false)); // Alt+DownArrow
+            yield return (new byte[] { 27, 91, 98 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, false, false)); // Shift+DownArrow
+            yield return (new byte[] { 27, 27, 91, 98 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, true, false)); // Shift+Alt+DownArrow
+            yield return (new byte[] { 27, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // RightArrow
+            yield return (new byte[] { 27, 79, 99 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, true)); // Ctrl+RightArrow
+            yield return (new byte[] { 27, 27, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, true, false)); // Alt+RightArrow
+            yield return (new byte[] { 27, 91, 99 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, false, false)); // Shift+RightArrow
+            yield return (new byte[] { 27, 27, 91, 99 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, true, false)); // Shift+Alt+RightArrow
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, true, false)); // Alt+Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 91, 51, 94 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, true)); // Ctrl+Delete
+            yield return (new byte[] { 27, 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, true, false)); // Alt+Delete
+            yield return (new byte[] { 27, 91, 51, 36 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, false)); // Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 64 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
+            yield return (new byte[] { 27, 27, 91, 51, 36 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
+            yield return (new byte[] { 27, 27, 91, 51, 64 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
         }
     }
 }
@@ -802,23 +1425,100 @@ public class TmuxData : TerminalData
     {
         get
         {
-            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false));
-            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true));
-            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
-            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true));
-            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false));
-            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false));
-            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true));
-            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false));
+            yield return (new byte[] { 27, 79, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, false)); // F1
+            yield return (new byte[] { 27, 79, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, false)); // F2
+            yield return (new byte[] { 27, 79, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, false)); // F3
+            yield return (new byte[] { 27, 79, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, false)); // F4
+            yield return (new byte[] { 27, 91, 49, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, false)); // F5
+            yield return (new byte[] { 27, 91, 49, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, false)); // F6
+            yield return (new byte[] { 27, 91, 49, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, false)); // F7
+            yield return (new byte[] { 27, 91, 49, 57, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, false)); // F8
+            yield return (new byte[] { 27, 91, 50, 48, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, false)); // F9
+            yield return (new byte[] { 27, 91, 50, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, false)); // F12
+            yield return (new byte[] { 27, 91, 49, 59, 53, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, false, false, true)); // Ctrl+F1
+            yield return (new byte[] { 27, 91, 49, 59, 53, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, false, false, true)); // Ctrl+F2
+            yield return (new byte[] { 27, 91, 49, 59, 53, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, false, true)); // Ctrl+F3
+            yield return (new byte[] { 27, 91, 49, 59, 53, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, false, false, true)); // Ctrl+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, false, false, true)); // Ctrl+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, false, false, true)); // Ctrl+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, false, false, true)); // Ctrl+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, false, false, true)); // Ctrl+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, false, true)); // Ctrl+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, false, false, true)); // Ctrl+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, false, true)); // Ctrl+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, false, true)); // Ctrl+F12
+            yield return (new byte[] { 27, 91, 49, 59, 51, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, false, true, false)); // Alt+F3
+            yield return (new byte[] { 27, 91, 50, 48, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, false, true, false)); // Alt+F9
+            yield return (new byte[] { 27, 91, 50, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, false, true, false)); // Alt+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, false, true, false)); // Alt+F12
+            yield return (new byte[] { 27, 91, 49, 59, 50, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, false, false)); // Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 50, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, false, false)); // Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 50, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, false, false)); // Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 50, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, false, false)); // Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, false, false)); // Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, false, false)); // Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, false, false)); // Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, false, false)); // Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, false, false)); // Shift+F9
+            yield return (new byte[] { 27, 91, 50, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, false, false)); // Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, false, false)); // Shift+F12
+            yield return (new byte[] { 27, 91, 49, 59, 56, 80 }, new ConsoleKeyInfo(default, ConsoleKey.F1, true, true, true)); // Ctrl+Alt+Shift+F1
+            yield return (new byte[] { 27, 91, 49, 59, 56, 81 }, new ConsoleKeyInfo(default, ConsoleKey.F2, true, true, true)); // Ctrl+Alt+Shift+F2
+            yield return (new byte[] { 27, 91, 49, 59, 56, 82 }, new ConsoleKeyInfo(default, ConsoleKey.F3, true, true, true)); // Ctrl+Alt+Shift+F3
+            yield return (new byte[] { 27, 91, 49, 59, 56, 83 }, new ConsoleKeyInfo(default, ConsoleKey.F4, true, true, true)); // Ctrl+Alt+Shift+F4
+            yield return (new byte[] { 27, 91, 49, 53, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F5, true, true, true)); // Ctrl+Alt+Shift+F5
+            yield return (new byte[] { 27, 91, 49, 55, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F6, true, true, true)); // Ctrl+Alt+Shift+F6
+            yield return (new byte[] { 27, 91, 49, 56, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F7, true, true, true)); // Ctrl+Alt+Shift+F7
+            yield return (new byte[] { 27, 91, 49, 57, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F8, true, true, true)); // Ctrl+Alt+Shift+F8
+            yield return (new byte[] { 27, 91, 50, 48, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F9, true, true, true)); // Ctrl+Alt+Shift+F9
+            yield return (new byte[] { 27, 91, 50, 49, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F10, true, true, true)); // Ctrl+Alt+Shift+F10
+            yield return (new byte[] { 27, 91, 50, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F11, true, true, true)); // Ctrl+Alt+Shift+F11
+            yield return (new byte[] { 27, 91, 50, 52, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.F12, true, true, true)); // Ctrl+Alt+Shift+F12
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 91, 49, 59, 53, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, true)); // Ctrl+Home
+            yield return (new byte[] { 27, 91, 49, 59, 51, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, false)); // Alt+Home
+            yield return (new byte[] { 27, 91, 49, 59, 55, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, true, true)); // Ctrl+Alt+Home
+            yield return (new byte[] { 27, 91, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 91, 49, 59, 53, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, true)); // Ctrl+End
+            yield return (new byte[] { 27, 91, 49, 59, 51, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, false)); // Alt+End
+            yield return (new byte[] { 27, 91, 49, 59, 55, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, true, true)); // Ctrl+Alt+End
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, true)); // Ctrl+PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, false)); // Alt+PageUp
+            yield return (new byte[] { 27, 91, 53, 59, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, true, true)); // Ctrl+Alt+PageUp
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, true)); // Ctrl+PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, false)); // Alt+PageDown
+            yield return (new byte[] { 27, 91, 54, 59, 55, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, true, true)); // Ctrl+Alt+PageDown
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, true)); // Ctrl+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, true, false)); // Alt+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, true, false, false)); // Shift+LeftArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, true, true, false)); // Shift+Alt+LeftArrow
+            yield return (new byte[] { 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, true)); // Ctrl+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, true, false)); // Alt+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, false, false)); // Shift+UpArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, true, true, false)); // Shift+Alt+UpArrow
+            yield return (new byte[] { 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, true)); // Ctrl+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, true, false)); // Alt+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, false, false)); // Shift+DownArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, true, true, false)); // Shift+Alt+DownArrow
+            yield return (new byte[] { 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 53, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, true)); // Ctrl+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 51, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, true, false)); // Alt+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 50, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, false, false)); // Shift+RightArrow
+            yield return (new byte[] { 27, 91, 49, 59, 52, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, true, true, false)); // Shift+Alt+RightArrow
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 50, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, true, false)); // Alt+Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 91, 51, 59, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, true)); // Ctrl+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, true, false)); // Alt+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, false)); // Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
+            yield return (new byte[] { 27, 91, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
         }
     }
 }

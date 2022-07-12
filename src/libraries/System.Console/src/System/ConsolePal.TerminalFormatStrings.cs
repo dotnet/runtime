@@ -61,6 +61,8 @@ internal static partial class ConsolePal
         public readonly int MinKeyFormatLength;
         /// <summary>The ANSI string used to enter "application" / "keypad transmit" mode.</summary>
         public readonly string? KeypadXmit;
+        /// <summary>Indicates that it was created out of rxvt TERM</summary>
+        public readonly bool IsRxvtTerm;
 
         public TerminalFormatStrings(TermInfo.Database? db)
         {
@@ -81,6 +83,7 @@ internal static partial class ConsolePal
             CursorLeft = db.GetString(TermInfo.WellKnownStrings.CursorLeft);
             ClrEol = db.GetString(TermInfo.WellKnownStrings.ClrEol);
 
+            IsRxvtTerm = !string.IsNullOrEmpty(db.Term) && db.Term.IndexOf("rxvt", StringComparison.OrdinalIgnoreCase) >= 0;
             Title = GetTitle(db);
 
             Debug.WriteLineIf(db.GetString(TermInfo.WellKnownStrings.CursorPositionReport) != CursorPositionReport,
