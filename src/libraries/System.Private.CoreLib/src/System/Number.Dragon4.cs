@@ -114,7 +114,7 @@ namespace System
 
             if ((mantissa >> DiyFp.DoubleImplicitBitIndex) != 0)
             {
-                mantissaHighBitIdx = DiyFp.DoubleImplicitBitIndex; // Enters Here
+                mantissaHighBitIdx = DiyFp.DoubleImplicitBitIndex;
                 hasUnequalMargins = (mantissa == (1UL << DiyFp.DoubleImplicitBitIndex));
             }
             else
@@ -123,7 +123,7 @@ namespace System
                 mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
-            Dragon4State state = Dragon4GetScaleValueMargin(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
+            Dragon4State state = Dragon4GetState(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
 
             // At this point, here is the state
             // scaledValue / scale =  value * 10 / 10^digitExponent
@@ -158,7 +158,6 @@ namespace System
                 decimalExponent = maxDecimalScale;
             }
 
-
             // Compute the numerator or denomonator by multiplying scaledValue by 10^(digitExponent - 1) and 10^decimalExponent
             int totalExtraScale = state.digitExponent + decimalExponent - 1;
             if (totalExtraScale >= 0)
@@ -171,21 +170,70 @@ namespace System
             }
 
             // Divide scaledValue by scale to get our final result, decimalMantissa
-            BigInteger.DivRem(ref state.scaledValue, ref state.scale, out BigInteger decimalMantissa, out _);
+            BigInteger.DivRem(ref state.scaledValue, ref state.scale, out BigInteger decimalMantissa, out BigInteger rem);
+
+            // Check if we should round up
+            BigInteger.Multiply(ref rem, 2, out BigInteger rem2);
+            BigInteger.SetUInt32(out BigInteger one, 1);
+
+            if (BigInteger.Compare(ref rem2, ref state.scale) > 0)
+            {
+                // Round up
+                BigInteger.Add(ref decimalMantissa, ref one, out decimalMantissa);
+            }
+            else if (BigInteger.Compare(ref rem2, ref state.scale) == 0)
+            {
+                // Round to even
+                // Isolate the smallest digit of decimalMantissa, if it is odd, round up to even
+                BigInteger.SetUInt32(out BigInteger ten, 10);
+                BigInteger.DivRem(ref decimalMantissa, ref ten, out _, out BigInteger smallestDigit);
+                uint smallestDigitUint = smallestDigit.GetBlock(0);
+                if (smallestDigitUint % 2 == 1)
+                {
+                    // Round up
+                    BigInteger.Add(ref decimalMantissa, ref one, out decimalMantissa);
+                }
+            }
+
+            // There is an edge case where some numbers utilizing all 29 decimal digits for thier mantissa will overflow past 96 bits.
+            // In these cases, we should scale them down by 10 and adjust the decimalExponent accordingly,
+            // representing the same value with one less sigfig.
+            if (decimalMantissa.GetLength() == 4)
+            {
+                BigInteger.SetUInt32(out BigInteger ten, 10);
+                BigInteger.DivRem(ref decimalMantissa, ref ten, out decimalMantissa, out BigInteger smallestDigit);
+                decimalExponent--;
+
+                // Round up if needed
+                uint smallestDigitUint = smallestDigit.GetBlock(0);
+                if (smallestDigitUint > 5)
+                {
+                    // Round up
+                    BigInteger.Add(ref decimalMantissa, ref one, out decimalMantissa);
+                }
+                else if (smallestDigitUint == 5)
+                {
+                    // Check if we have trailing digits using rem
+                    if (rem.IsZero())
+                    {
+                        // No trailing digits, round to even
+                        if (smallestDigitUint % 2 == 1)
+                        {
+                            // Round up
+                            BigInteger.Add(ref decimalMantissa, ref one, out decimalMantissa);
+                        }
+                    }
+                    else
+                    {
+                        // Trailing digits, round up
+                        BigInteger.Add(ref decimalMantissa, ref one, out decimalMantissa);
+                    }
+                }
+            }
 
             uint low = 0;
             uint mid = 0;
             uint high = 0;
-
-            if (decimalMantissa.GetLength() == 4)
-            {
-                // There is an edge case where some numbers utilizing all 29 decimal digits for thier mantissa will overflow past 96 bits.
-                // In these cases, we should scale them down by 10 and adjust the decimalExponent accordingly,
-                // representing the same value with one less sigfig.
-                BigInteger.SetUInt32(out BigInteger ten, 10);
-                BigInteger.DivRem(ref decimalMantissa, ref ten, out decimalMantissa, out _);
-                decimalExponent--;
-            }
 
             int len = decimalMantissa.GetLength();
             Debug.Assert(len < 4);
@@ -234,7 +282,7 @@ namespace System
             public BigInteger* pScaledMarginHigh;
             public BigInteger optionalMarginHigh;
 
-            // Other state set by Dragon4GetScaleValueMargin that is used by the second half of the algorithm
+            // Other state set by Dragon4GetState that is used by the second half of the algorithm
             public int digitExponent;
             public bool isEven;
         }
@@ -264,7 +312,7 @@ namespace System
             // require that the DoubleToNumber handle zero itself.
             Debug.Assert(mantissa != 0);
 
-            Dragon4State state = Dragon4GetScaleValueMargin(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
+            Dragon4State state = Dragon4GetState(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
 
             // Compute the cutoff exponent (the exponent of the final digit to print).
             // Default to the maximum size of the output buffer.
@@ -510,7 +558,7 @@ namespace System
             return outputLen;
         }
 
-        private static unsafe Dragon4State Dragon4GetScaleValueMargin(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits)
+        private static unsafe Dragon4State Dragon4GetState(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits)
         {
             // Compute the initial state in integral form such that
             //      value     = scaledValue / scale
