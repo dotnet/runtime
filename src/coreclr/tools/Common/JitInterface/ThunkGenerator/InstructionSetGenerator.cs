@@ -622,7 +622,8 @@ namespace Internal.JitInterface
                 {
                     foreach (string arch in group.Archs.Split(' '))
                     {
-                        tr.WriteLine($"                {{ (\"{name}\", TargetArchitecture.{arch}), \"{group.Sets}\" }},");
+                        string key = $"\"{name}\",".PadRight(13, ' ') + $" TargetArchitecture.{arch}),".PadRight(27, ' ');
+                        tr.WriteLine($"                {{ ({key} \"{group.Sets}\" }},");
                     }
                 }
             }
