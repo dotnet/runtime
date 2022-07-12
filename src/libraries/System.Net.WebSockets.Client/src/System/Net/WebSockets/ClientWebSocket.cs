@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
@@ -47,6 +48,21 @@ namespace System.Net.WebSockets
                     default: // We only get here if disposed before connecting
                         Debug.Assert((InternalState)_state == InternalState.Disposed);
                         return WebSocketState.Closed;
+                }
+            }
+        }
+
+        public System.Net.HttpStatusCode HttpStatusCode => _innerWebSocket?.HttpStatusCode ?? 0;
+
+        // setter to clean up when not needed anymore
+        public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders
+        {
+            get => _innerWebSocket?.HttpResponseHeaders;
+            set
+            {
+                if (_innerWebSocket != null)
+                {
+                    _innerWebSocket.HttpResponseHeaders = value;
                 }
             }
         }

@@ -27,6 +27,9 @@ namespace System.Net.WebSockets
 
         public WebSocket? WebSocket { get; private set; }
         public WebSocketState State => WebSocket?.State ?? _state;
+        public HttpStatusCode HttpStatusCode { get; private set; }
+
+        public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders { get; set; }
 
         public static ClientWebSocketOptions CreateDefaultOptions() => new ClientWebSocketOptions() { Proxy = DefaultWebProxy.Instance };
 
@@ -47,6 +50,8 @@ namespace System.Net.WebSockets
             bool disposeHandler = false;
             invoker ??= new HttpMessageInvoker(SetupHandler(options, out disposeHandler));
             HttpResponseMessage? response = null;
+
+            bool disposeResponse = false;
 
             bool tryDowngrade = false;
             try
@@ -187,7 +192,7 @@ namespace System.Net.WebSockets
                 }
 
                 Abort();
-                response?.Dispose();
+                disposeResponse = true;
 
                 if (exc is WebSocketException ||
                     (exc is OperationCanceledException && cancellationToken.IsCancellationRequested))
@@ -199,6 +204,20 @@ namespace System.Net.WebSockets
             }
             finally
             {
+                if (response is not null)
+                {
+                    if (options.CollectHttpResponseDetails)
+                    {
+                        HttpStatusCode = response.StatusCode;
+                        HttpResponseHeaders = new HttpResponseHeadersReadOnlyCollection(response.Headers);
+                    }
+
+                    if (disposeResponse)
+                    {
+                        response.Dispose();
+                    }
+                }
+
                 // Disposing the handler will not affect any active stream wrapped in the WebSocket.
                 if (disposeHandler)
                 {
