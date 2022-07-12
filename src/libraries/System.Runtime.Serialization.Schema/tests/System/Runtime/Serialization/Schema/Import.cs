@@ -16,6 +16,7 @@ namespace System.Runtime.Serialization.Schema.Tests
     public class ImportTests
     {
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "ExpectedImportedTypeFile not available in browser.")]
         static void ImportXSD()
         {
             XsdDataContractExporter exporter = new XsdDataContractExporter();
