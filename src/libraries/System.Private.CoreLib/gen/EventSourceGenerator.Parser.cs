@@ -38,7 +38,7 @@ namespace Generators
                     }
                 }
 
-                if (attribute.AttributeClass.Name != "EventSourceAttribute" &&
+                if (attribute.AttributeClass.Name != "EventSourceAttribute" ||
                     attribute.AttributeClass.ToDisplayString() != EventSourceAttribute)
                 {
                     continue;
