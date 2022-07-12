@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
@@ -31,14 +32,19 @@ namespace Tracing.Tests
                     if (OperatingSystem.IsWindows())
                         DoOverlappedIO();
 
-                    // Wait for events.
-                    Thread.Sleep(1000);
-
                     // Generate some GC events.
                     GC.Collect(2, GCCollectionMode.Forced);
 
-                    // Wait for more events.
-                    Thread.Sleep(1000);
+                    Stopwatch sw = Stopwatch.StartNew();
+
+                    while (sw.Elapsed <= TimeSpan.FromMinutes(1))
+                    {
+                        Thread.Sleep(100);
+                        if (listener.SeenProvidersAndEvents.Contains("Microsoft-Windows-DotNETRuntime/EVENTID(65)"))
+                        {
+                            break;
+                        }
+                    }
 
                     // Ensure that we've seen some events.
                     foreach (string s in listener.SeenProvidersAndEvents)
