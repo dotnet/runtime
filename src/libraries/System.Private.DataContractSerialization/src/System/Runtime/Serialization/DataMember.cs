@@ -170,8 +170,10 @@ namespace System.Runtime.Serialization
                     {
                         if (MemberInfo is FieldInfo field)
                             _memberType = field.FieldType;
+                        else if (MemberInfo is PropertyInfo prop)
+                            _memberType = prop.PropertyType;
                         else
-                            _memberType = ((PropertyInfo)MemberInfo).PropertyType;
+                            _memberType = (Type)MemberInfo!;
                     }
 
                     return _memberType;

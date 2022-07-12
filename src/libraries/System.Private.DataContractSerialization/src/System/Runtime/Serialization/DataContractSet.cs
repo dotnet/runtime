@@ -247,26 +247,30 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContract GetMemberTypeDataContract(DataMember dataMember)
         {
-            Type dataMemberType = dataMember.MemberType;
-            if (dataMember.IsGetOnlyCollection)
+            if (dataMember.MemberInfo is not Type)
             {
-                if (_surrogateProvider != null)
+                Type dataMemberType = dataMember.MemberType;
+                if (dataMember.IsGetOnlyCollection)
                 {
-                    Type dcType = DataContractSurrogateCaller.GetDataContractType(_surrogateProvider, dataMemberType);
-                    if (dcType != dataMemberType)
+                    if (_surrogateProvider != null)
                     {
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupported,
-                            DataContract.GetClrTypeFullName(dataMemberType),
-                            (dataMember.MemberInfo.DeclaringType != null) ? DataContract.GetClrTypeFullName(dataMember.MemberInfo.DeclaringType) : dataMember.MemberInfo.DeclaringType,
-                            dataMember.MemberInfo.Name)));
+                        Type dcType = DataContractSurrogateCaller.GetDataContractType(_surrogateProvider, dataMemberType);
+                        if (dcType != dataMemberType)
+                        {
+                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupported,
+                                DataContract.GetClrTypeFullName(dataMemberType),
+                                (dataMember.MemberInfo.DeclaringType != null) ? DataContract.GetClrTypeFullName(dataMember.MemberInfo.DeclaringType) : dataMember.MemberInfo.DeclaringType,
+                                dataMember.MemberInfo.Name)));
+                        }
                     }
+                    return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(dataMemberType.TypeHandle), dataMemberType.TypeHandle, dataMemberType);
                 }
-                return DataContract.GetGetOnlyCollectionDataContract(DataContract.GetId(dataMemberType.TypeHandle), dataMemberType.TypeHandle, dataMemberType);
+                else
+                {
+                    return GetDataContract(dataMemberType);
+                }
             }
-            else
-            {
-                return GetDataContract(dataMemberType);
-            }
+            return dataMember.MemberTypeContract;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
