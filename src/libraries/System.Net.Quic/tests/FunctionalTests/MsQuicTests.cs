@@ -604,7 +604,7 @@ namespace System.Net.Quic.Tests
             else
             {
                 await serverConnection.CloseAsync(0);
-                await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
             }
 
             clientConnection.Dispose();
@@ -624,7 +624,7 @@ namespace System.Net.Quic.Tests
             };
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
-            await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
+            await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
             serverConnection.Dispose();
             clientConnection.Dispose();
         }
@@ -746,7 +746,7 @@ namespace System.Net.Quic.Tests
                 var acceptTask = serverConnection.AcceptStreamAsync();
                 await serverConnection.CloseAsync(errorCode: 0);
                 // make sure we throw
-                await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask.AsTask());
+                await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => acceptTask.AsTask());
             }
         }
 
@@ -966,8 +966,8 @@ namespace System.Net.Quic.Tests
                 await clientConnection.CloseAsync(ExpectedErrorCode);
 
                 byte[] buffer = new byte[100];
-                QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
-                Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => serverStream.ReadAsync(buffer).AsTask());
+                Assert.Equal(ExpectedErrorCode, ex.ApplicationErrorCode);
             }).WaitAsync(TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds));
         }
 
@@ -987,7 +987,7 @@ namespace System.Net.Quic.Tests
                 await serverConnection.CloseAsync(0);
 
                 byte[] buffer = new byte[100];
-                await Assert.ThrowsAsync<QuicOperationAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
+                await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => serverStream.ReadAsync(buffer).AsTask());
             }).WaitAsync(TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds));
         }
 

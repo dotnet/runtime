@@ -129,8 +129,11 @@
   <data name="net_quic_reading_notallowed" xml:space="preserve">
     <value>Reading is not allowed on stream.</value>
   </data>
-  <data name="net_quic_sending_aborted" xml:space="preserve">
-    <value>Sending has already been aborted on the stream</value>
+  <data name="net_quic_writing_aborted" xml:space="preserve">
+    <value>Writing has been aborted on the stream.</value>
+  </data>
+  <data name="net_quic_reading_aborted" xml:space="preserve">
+    <value>Reading has been aborted on the stream.</value>
   </data>
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
@@ -148,7 +151,7 @@
     <value>Timeout can only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
   </data>
   <data name="net_quic_timeout" xml:space="preserve">
-    <value>Connection timed out.</value>
+    <value>Connection timed out waiting for a response from the peer.</value>
   </data>
   <data name="net_quic_ssl_option" xml:space="preserve">
     <value>'{0}' is not supported by System.Net.Quic.</value>
@@ -162,6 +165,9 @@
   <data name="net_quic_not_connected" xml:space="preserve">
     <value>Connection is not connected.</value>
   </data>
+  <data name="net_quic_internal_error" xml:space="preserve">
+    <value>An internal error has occured. {0}</value>
+  </data>
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
   </data>
@@ -171,8 +177,39 @@
   <data name="net_quic_empty_cipher_suite" xml:space="preserve">
     <value>CipherSuitePolicy must specify at least one cipher supported by QUIC.</value>
   </data>
+  <data name="net_quic_address_in_use" xml:space="preserve">
+    <value>The local address is already in use.</value>
+  </data>
+  <data name="net_quic_host_unreachable" xml:space="preserve">
+    <value>The server is currnetly unreachable.</value>
+  </data>
+  <data name="net_quic_connection_refused" xml:space="preserve">
+    <value>The server refused the connection.</value>
+  </data>
+  <data name="net_quic_protocol_error" xml:space="preserve">
+    <value>A QUIC protocol error was encountered</value>
+  </data>
+  <data name="net_quic_ver_neg_error" xml:space="preserve">
+    <value>A version negotiation error was encountered.</value>
+  </data>
+  <data name="net_quic_alpn_neg_error" xml:space="preserve">
+    <value>Application layer protocol negotiation error was encountered.</value>
+  </data>
+  <data name="net_quic_connection_idle" xml:space="preserve">
+    <value>The connection timed out from inactivity.</value>
+  </data>
+  <data name="net_quic_invalid_address" xml:space="preserve">
+    <value>Binding to socket failed, likely caused by a family mismatch between local and remote address.</value>
+  </data>
+  <data name="net_quic_auth" xml:space="preserve">
+    <value>Authentication failed. {0}</value>
+  </data>
+  <!-- Same as in System.Net.Security -->
   <data name="net_io_invalidnestedcall" xml:space="preserve">
-    <value> This method may not be called when another {0} operation is pending.</value>
+    <value>This method may not be called when another {0} operation is pending.</value>
+  </data>
+  <data name="net_auth_tls_alert" xml:space="preserve">
+    <value>Authentication failed because the remote party sent a TLS alert: '{0}'.</value>
   </data>
   <!-- Referenced in shared IPEndPointExtensions.cs-->
   <data name="net_InvalidAddressFamily" xml:space="preserve">
