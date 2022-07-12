@@ -14,10 +14,10 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed class CustomNativeTypeMarshallingGenerator : IMarshallingGenerator
     {
-        private readonly ICustomTypeMarshallingStrategyBase _nativeTypeMarshaller;
+        private readonly ICustomTypeMarshallingStrategy _nativeTypeMarshaller;
         private readonly bool _enableByValueContentsMarshalling;
 
-        public CustomNativeTypeMarshallingGenerator(ICustomTypeMarshallingStrategyBase nativeTypeMarshaller, bool enableByValueContentsMarshalling)
+        public CustomNativeTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
         {
             _nativeTypeMarshaller = nativeTypeMarshaller;
             _enableByValueContentsMarshalling = enableByValueContentsMarshalling;
@@ -54,14 +54,7 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Marshal:
                     if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
-                        if (_nativeTypeMarshaller is ICustomNativeTypeMarshallingStrategy strategyWithConstructorArgs)
-                        {
-                            return strategyWithConstructorArgs.GenerateMarshalStatements(info, context, strategyWithConstructorArgs.GetNativeTypeConstructorArguments(info, context));
-                        }
-                        else if (_nativeTypeMarshaller is ICustomTypeMarshallingStrategy strategyWithNoConstructorArgs)
-                        {
-                            return strategyWithNoConstructorArgs.GenerateMarshalStatements(info, context);
-                        }
+                        return _nativeTypeMarshaller.GenerateMarshalStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.Pin:
