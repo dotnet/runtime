@@ -20,45 +20,28 @@ namespace Generators
             const string EventSourceAttribute = "System.Diagnostics.Tracing.EventSourceAttribute";
 
             var classDef = (ClassDeclarationSyntax)context.TargetNode;
+            NamespaceDeclarationSyntax? ns = classDef.Parent as NamespaceDeclarationSyntax;
+            if (ns is null)
+            {
+                if (classDef.Parent is not CompilationUnitSyntax)
+                {
+                    // since this generator doesn't know how to generate a nested type...
+                    return null;
+                }
+            }
 
             EventSourceClass? eventSourceClass = null;
+            string? nspace = null;
 
             foreach (AttributeData attribute in context.TargetSymbol.GetAttributes())
             {
-                if (attribute.AttributeClass is null)
-                    continue;
-
-                NamespaceDeclarationSyntax? ns = classDef.Parent as NamespaceDeclarationSyntax;
-                if (ns is null)
-                {
-                    if (classDef.Parent is not CompilationUnitSyntax)
-                    {
-                        // since this generator doesn't know how to generate a nested type...
-                        continue;
-                    }
-                }
-
-                if (attribute.AttributeClass.Name != "EventSourceAttribute" ||
+                if (attribute.AttributeClass?.Name != "EventSourceAttribute" ||
                     attribute.AttributeClass.ToDisplayString() != EventSourceAttribute)
                 {
                     continue;
                 }
 
-                string nspace = string.Empty;
-                if (ns is not null)
-                {
-                    nspace = ns.Name.ToString();
-                    while (true)
-                    {
-                        ns = ns.Parent as NamespaceDeclarationSyntax;
-                        if (ns == null)
-                        {
-                            break;
-                        }
-
-                        nspace = $"{ns.Name}.{nspace}";
-                    }
-                }
+                nspace ??= ConstructNamespace(ns);
 
                 string className = classDef.Identifier.ValueText;
                 string name = className;
@@ -91,6 +74,26 @@ namespace Generators
             }
 
             return eventSourceClass;
+        }
+
+        private static string? ConstructNamespace(NamespaceDeclarationSyntax? ns)
+        {
+            if (ns is null)
+                return string.Empty;
+
+            string nspace = ns.Name.ToString();
+            while (true)
+            {
+                ns = ns.Parent as NamespaceDeclarationSyntax;
+                if (ns == null)
+                {
+                    break;
+                }
+
+                nspace = $"{ns.Name}.{nspace}";
+            }
+
+            return nspace;
         }
 
         // From System.Private.CoreLib
