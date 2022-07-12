@@ -119,7 +119,7 @@
     </ItemGroup>
 
     <!-- Host files-->
-    <ItemGroup>
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <RuntimeFiles Include="$(DotNetHostBinDir)\*$(LibSuffix)" />
       <RuntimeFiles Include="$(DotNetHostBinDir)\*$(SymbolsSuffix)" />
       <RuntimeFiles Include="$(DotNetHostBinDir)\*.dll" />
