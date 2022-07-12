@@ -148,68 +148,6 @@ namespace System
                 1e80
             };
 
-            // Fast access for solving for x in: 2^x = 10^(-n) where n is 0-28
-            private static readonly int[] s_intDecimalScaleToIeeeBase2 = new int[] {
-                0,
-                -1,
-                -2,
-                -4,
-                -5,
-                -7,
-                -8,
-                -10,
-                -11,
-                -12,
-                -14,
-                -15,
-                -17,
-                -18,
-                -20,
-                -21,
-                -23,
-                -24,
-                -25,
-                -27,
-                -28,
-                -30,
-                -31,
-                -33,
-                -34,
-                -36,
-                -37,
-                -38,
-                -40
-/*                315,
-                312,
-                308,
-                305,
-                302,
-                298,
-                295,
-                292,
-                289,
-                285,
-                282,
-                279,
-                275,
-                272,
-                269,
-                265,
-                262,
-                259,
-                255,
-                252,
-                249,
-                245,
-                242,
-                239,
-                235,
-                232,
-                229,
-                225,
-                222*/
-            };
-
 #region Decimal Math Helpers
 
             private static unsafe uint GetExponent(float f)
@@ -1653,11 +1591,17 @@ ReturnZero:
             /// </summary>
             internal static double VarR8FromDec(in decimal value)
             {
-                // Value taken via reverse engineering the double that corresponds to 2^64. (oleaut32 has ds2to64 = DEFDS(0, 0, DBLBIAS + 65, 0))
-                const double ds2to64 = 1.8446744073709552e+019;
+                // Step 1: Isolate integral component as a double
+                decimal integral = Truncate(value);
+                UInt128 integralMantissa = new UInt128(integral.High, integral.Low64);
+                double integralDouble = (double)integralMantissa;
 
-                double dbl = ((double)value.Low64 +
-                    (double)value.High * ds2to64) / s_doublePowers10[value.Scale];
+                // Step 2: Isolate fractional component as a double
+                decimal fractional = value - integral;
+                UInt128 fractionalMantissa = new UInt128(fractional.High, fractional.Low64);
+                double fractionalDouble = (double)fractionalMantissa / s_doublePowers10[fractional.Scale];
+
+                double dbl = integralDouble + fractionalDouble;
 
                 if (decimal.IsNegative(value))
                     dbl = -dbl;
