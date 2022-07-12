@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -298,6 +299,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task CancelPendingRequest_DropsStalledConnectionAttempt()
         {
+            if (UseVersion >= HttpVersion30)
+            {
+                throw new SkipTestException("This test relies on ConnectCallback, and the scenario is not yet validated for HTTP/3.");
+            }
+
             const int AttemptCount = 3;
             const int FirstConnectionDelayMs = 10_000;
             const int RequestTimeoutMs = 1000;
