@@ -396,6 +396,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(KeyNameNullPolicy), "Key")]
         [InlineData(typeof(ValueNameNullPolicy), "Value")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task InvalidPropertyNameFail(Type policyType, string offendingProperty)
         {
             var options = new JsonSerializerOptions
