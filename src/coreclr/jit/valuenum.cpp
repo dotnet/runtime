@@ -2135,6 +2135,15 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 
     ValueNum resultVN = NoVN;
 
+    // When both operands are runtime types we can sometimes also fold.
+    // This is the VN analog of gtFoldTypeCompare
+    //
+    resultVN = VNEvalFoldTypeCompare(typ, func, arg0VN, arg1VN);
+    if (resultVN != NoVN)
+    {
+        return resultVN;
+    }
+
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
     if (VNFuncIsCommutative(func))
@@ -3649,6 +3658,57 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// VNEvalFoldTypeCompare:
+//
+// Arguments:
+//    type   - The result type
+//    func   - The function
+//    arg0VN - VN of the first argument
+//    arg1VN - VN of the second argument
+//
+// Return Value:
+//    NoVN if this is not a foldable type compare
+//    Simplified (perhaps constant) VN if it is foldable.
+//
+// Notes:
+//    Value number counterpart to gtFoldTypeCompare
+//    Doesn't handle all the cases (yet).
+//
+//    (EQ/NE (TypeHandleToRuntimeType x) (TypeHandleToRuntimeType y)) == (EQ/NE x y)
+//
+ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
+{
+    if (func >= VNF_Boundary)
+    {
+        return NoVN;
+    }
+
+    const genTreeOps oper = genTreeOps(func);
+    if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
+    {
+        return NoVN;
+    }
+
+    VNFuncApp  arg0Func;
+    const bool arg0IsFunc = GetVNFunc(arg0VN, &arg0Func);
+
+    if (!arg0IsFunc || (arg0Func.m_func != VNF_TypeHandleToRuntimeType))
+    {
+        return NoVN;
+    }
+
+    VNFuncApp  arg1Func;
+    const bool arg1IsFunc = GetVNFunc(arg1VN, &arg1Func);
+
+    if (!arg1IsFunc || (arg1Func.m_func != VNF_TypeHandleToRuntimeType))
+    {
+        return NoVN;
+    }
+
+    return VNForFunc(type, func, arg0Func.m_args[0], arg1Func.m_args[0]);
 }
 
 //------------------------------------------------------------------------
