@@ -247,7 +247,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 #if TARGET_WINDOWS
                 if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && (isServer ? MsQuicApi.Tls13ServerMayBeDisabled : MsQuicApi.Tls13ClientMayBeDisabled))
                 {
-                    throw new MsQuicException(status, SR.net_quic_tls_version_notsupported);
+                    throw new PlatformNotSupportedException(SR.net_quic_tls_version_notsupported);
                 }
 #endif
 

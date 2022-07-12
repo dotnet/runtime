@@ -166,7 +166,7 @@
     <value>Connection is not connected.</value>
   </data>
   <data name="net_quic_internal_error" xml:space="preserve">
-    <value>An internal error has occured, see inner exception for more details.</value>
+    <value>An internal error has occured. {0}</value>
   </data>
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
@@ -201,12 +201,12 @@
   <data name="net_quic_invalid_address" xml:space="preserve">
     <value>Binding to socket failed, likely caused by a family mismatch between local and remote address.</value>
   </data>
+  <data name="net_quic_auth" xml:space="preserve">
+    <value>Authentication failed. {0}</value>
+  </data>
   <!-- Same as in System.Net.Security -->
   <data name="net_io_invalidnestedcall" xml:space="preserve">
     <value>This method may not be called when another {0} operation is pending.</value>
-  </data>
-  <data name="net_auth_SSPI" xml:space="preserve">
-    <value>Authentication failed, see inner exception.</value>
   </data>
   <data name="net_auth_tls_alert" xml:space="preserve">
     <value>Authentication failed because the remote party sent a TLS alert: '{0}'.</value>

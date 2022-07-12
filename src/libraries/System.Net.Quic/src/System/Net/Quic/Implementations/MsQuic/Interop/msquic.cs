@@ -25,28 +25,6 @@ namespace Microsoft.Quic
 
     internal partial class MsQuic
     {
-        public static unsafe QUIC_API_TABLE* Open()
-        {
-            QUIC_API_TABLE* ApiTable;
-            int Status = MsQuicOpenVersion(2, (void**)&ApiTable);
-            ThrowIfFailure(Status);
-            return ApiTable;
-        }
-
-        public static unsafe void Close(QUIC_API_TABLE* ApiTable)
-        {
-            MsQuicClose(ApiTable);
-        }
-
-        public static void ThrowIfFailure(int status, string? message = null)
-        {
-            if (StatusFailed(status))
-            {
-                // TODO make custom exception, and maybe throw helpers
-                throw new MsQuicException(status, message);
-            }
-        }
-
         public static bool StatusSucceeded(int status)
         {
             if (OperatingSystem.IsWindows())

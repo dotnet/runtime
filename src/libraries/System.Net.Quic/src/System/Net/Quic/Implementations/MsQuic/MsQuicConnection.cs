@@ -536,7 +536,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 try
                 {
                     Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionStart(
+                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionStart(
                         _state.Handle.QuicHandle,
                         _configuration.QuicHandle,
                         af,

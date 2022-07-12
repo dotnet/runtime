@@ -1547,7 +1547,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!StatusSucceeded(status))
             {
-                Exception exception = new MsQuicException(status, "Could not start stream");
+                Exception exception = ThrowHelper.GetExceptionForMsQuicStatus(status, "Could not start stream");
                 _state.StartCompletionSource.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(exception));
                 throw exception;
             }

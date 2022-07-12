@@ -7,8 +7,8 @@ namespace System.Net.Quic
 {
     public sealed class QuicException : IOException
     {
-        public QuicException(QuicError error, long? applicationErrorCode, string message, Exception? innerException)
-            : base(message, innerException)
+        public QuicException(QuicError error, long? applicationErrorCode, string message)
+            : base(message)
         {
             QuicError = error;
             ApplicationErrorCode = applicationErrorCode;

@@ -109,7 +109,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         try
         {
             QUIC_HANDLE* handle;
-            ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerOpen(
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ListenerOpen(
                 MsQuicApi.Api.Registration.QuicHandle,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
@@ -138,7 +138,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Using the Unspecified family makes MsQuic handle connections from all IP addresses.
             address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
         }
-        ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerStart(
+        ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ListenerStart(
             _handle.QuicHandle,
             alpnBuffers.Buffers,
             (uint)alpnBuffers.Count,
