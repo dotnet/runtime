@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests;
 
-public class KeyMapperTests
+public class KeyParserTests
 {
     private static readonly TerminalData[] Terminals =
     {
@@ -55,7 +55,7 @@ public class KeyMapperTests
     {
         int startIndex = 0;
 
-        KeyMapper.MapNew(chars, terminalFormatStrings, 0, verase,
+        KeyParser.Parse(chars, terminalFormatStrings, 0, verase,
             out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length);
         //Assert.True(KeyMapper.MapBufferToConsoleKey(chars, terminalFormatStrings, 0, verase,
         //    out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length));
@@ -148,7 +148,7 @@ public class KeyMapperTests
 
     public static IEnumerable<object[]> ThreeCharactersKeysArguments
         => Terminals
-            .Where(t => t is not PuTTYData_putty) // different mappings (handled by KeysAreProperlyMapped test) 
+            .Where(t => t is not PuTTYData_putty) // different mappings (handled by KeysAreProperlyMapped test)
             .SelectMany(terminal => ThreeCharactersKeys.Select(tuple => new object[] { terminal, tuple.chars, tuple.key }));
 
     [Theory]
@@ -260,7 +260,7 @@ public class KeyMapperTests
             yield return ("\r", new[] { new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false) });
             // Ctrl+Enter
             yield return ("\n", new[] { new ConsoleKeyInfo('\n', ConsoleKey.Enter, false, false, true) });
-            // Enter using "^[OM" special sequence: they char 
+            // Enter using "^[OM" special sequence: they char
             yield return ("\u001BOM", new[] { new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false) });
 
             // Escape key pressed multiple times
@@ -380,7 +380,7 @@ public class KeyMapperTests
 
         foreach (ConsoleKeyInfo expectedKey in expectedKeys)
         {
-            KeyMapper.MapNew(chars, terminalData.TerminalDb, 0, terminalData.Verase,
+            KeyParser.Parse(chars, terminalData.TerminalDb, 0, terminalData.Verase,
                 out ConsoleKey consoleKey, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref startIndex, chars.Length);
 
             ConsoleKeyInfo parsed = new(ch, consoleKey, isShift, isAlt, isCtrl);

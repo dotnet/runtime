@@ -38,9 +38,10 @@
     <Compile Include="..\src\System\TermInfo.WellKnownNumbers.cs" Link="src\System\TermInfo.WellKnownNumbers.cs" />
     <Compile Include="..\src\System\TermInfo.Database.cs" Link="src\System\TermInfo.Database.cs" />
     <Compile Include="..\src\System\ConsolePal.TerminalFormatStrings.cs" Link="src\System\ConsolePal.TerminalFormatStrings.cs" />
-    <Compile Include="..\src\System\IO\KeyMapper.cs" Link="src\System\IO\KeyMapper.cs" />
+    <Compile Include="..\src\System\IO\KeyParser.cs" Link="src\System\IO\KeyParser.cs" />
+    <Compile Include="..\src\System\IO\Net6KeyParser.cs" Link="src\System\IO\Net6KeyParser.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs" Link="src\System\Text\ConsoleEncoding.cs" />
-    <Compile Include="KeyMapperTests.Unix.cs" />
+    <Compile Include="KeyParserTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)TestData\**\*"

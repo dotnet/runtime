@@ -360,7 +360,7 @@ namespace System.IO
                     }
                 }
 
-                KeyMapper.MapBufferToConsoleKey(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter,
+                Net6KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter,
                     out key, out ch, out isShift, out isAlt, out isCtrl, ref _startIndex, _endIndex);
 
                 // Replace the '\n' char for Enter by '\r' to match Windows behavior.

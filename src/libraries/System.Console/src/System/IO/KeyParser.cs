@@ -5,70 +5,26 @@ using System.Diagnostics;
 
 namespace System.IO;
 
-internal static class KeyMapper
+internal static class KeyParser
 {
     private const char Escape = '\u001B';
     private const char Delete = '\u007F';
-    private const char VTSeqenceEndTag = '~';
+    private const char VtSequenceEndTag = '~';
     private const char ModifierSeparator = ';';
     private const int MinimalSequenceLength = 3;
     private const int SequencePrefixLength = 2; // ^[[ ("^[" stands for Escape)
 
-    internal static bool MapBufferToConsoleKey(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
-        out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
-    {
-        // Try to get the special key match from the TermInfo static information.
-        if (TryGetSpecialConsoleKey(buffer, startIndex, endIndex, terminalFormatStrings, posixDisableValue, veraseCharacter, out ConsoleKeyInfo keyInfo, out int keyLength))
-        {
-            key = keyInfo.Key;
-            isShift = (keyInfo.Modifiers & ConsoleModifiers.Shift) != 0;
-            isAlt = (keyInfo.Modifiers & ConsoleModifiers.Alt) != 0;
-            isCtrl = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
-
-            ch = ((keyLength == 1) ? buffer[startIndex] : '\0'); // ignore keyInfo.KeyChar
-            startIndex += keyLength;
-            return true;
-        }
-
-        // Check if we can match Esc + combination and guess if alt was pressed.
-        if (buffer[startIndex] == (char)0x1B && // Alt is send as an escape character
-            endIndex - startIndex >= 2) // We have at least two characters to read
-        {
-            startIndex++;
-            if (MapBufferToConsoleKey(buffer, terminalFormatStrings, posixDisableValue, veraseCharacter, out key, out ch, out isShift, out _, out isCtrl, ref startIndex, endIndex))
-            {
-                isAlt = true;
-                return true;
-            }
-            else
-            {
-                // We could not find a matching key here so, Alt+ combination assumption is in-correct.
-                // The current key needs to be marked as Esc key.
-                // Also, we do not increment _startIndex as we already did it.
-                key = ConsoleKey.Escape;
-                ch = (char)0x1B;
-                isAlt = false;
-                return true;
-            }
-        }
-
-        // Try reading the first char in the buffer and interpret it as a key.
-        ch = buffer[startIndex++];
-        key = GetKeyFromCharValue(ch, out isShift, out isCtrl);
-        isAlt = false;
-        return key != default(ConsoleKey);
-    }
-
-    internal static void MapNew(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
+    internal static void Parse(char[] buffer, ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
         out ConsoleKey key, out char character, out bool isShift, out bool isAlt, out bool isCtrl, ref int startIndex, int endIndex)
     {
         int length = endIndex - startIndex;
+        Debug.Assert(length > 0);
 
-        // VERASE overrides anything from Terminfo
+        // VERASE overrides anything from Terminfo. Both settings can be different for Linux and macOS.
         if (buffer[startIndex] != posixDisableValue && buffer[startIndex] == veraseCharacter)
         {
             isShift = isAlt = isCtrl = false;
-            character = buffer[startIndex++];
+            character = buffer[startIndex++]; // the original char is preserved on purpose (backward compat + consistency)
             key = ConsoleKey.Backspace;
             return;
         }
@@ -82,10 +38,7 @@ internal static class KeyMapper
                 isAlt = true;
                 return;
             }
-            else
-            {
-                startIndex--;
-            }
+            startIndex--;
         }
         else if (length >= MinimalSequenceLength && TryParseTerminalInputSequence(buffer, terminalFormatStrings, out key, out character, out isShift, out isAlt, out isCtrl, ref startIndex, endIndex))
         {
@@ -94,13 +47,13 @@ internal static class KeyMapper
 
         if (length == 2 && buffer[startIndex] == Escape && buffer[startIndex + 1] != Escape)
         {
-            DecodeFromSingleChar(buffer[++startIndex], out key, out character, out isShift, out isCtrl);
+            ParseFromSingleChar(buffer[++startIndex], out key, out character, out isShift, out isCtrl);
             startIndex++;
             isAlt = key != default; // two char sequences starting with Escape are Alt+$Key
         }
         else
         {
-            DecodeFromSingleChar(buffer[startIndex], out key, out character, out isShift, out isCtrl);
+            ParseFromSingleChar(buffer[startIndex], out key, out character, out isShift, out isCtrl);
             startIndex++;
             isAlt = false;
         }
@@ -153,7 +106,7 @@ internal static class KeyMapper
             return false;
         }
 
-        if (input[SequencePrefixLength + digitCount] is VTSeqenceEndTag or '^' or '$' or '@') // it's a VT Sequence like ^[[11~
+        if (input[SequencePrefixLength + digitCount] is VtSequenceEndTag or '^' or '$' or '@') // it's a VT Sequence like ^[[11~ or rxvt like ^[[11^
         {
             int sequenceLength = SequencePrefixLength + digitCount + 1;
             if (!TryMapUsingTerminfoDb(buffer.AsMemory(startIndex, sequenceLength), terminalFormatStrings, ref key, ref isShift, ref isAlt, ref isCtrl))
@@ -176,18 +129,18 @@ internal static class KeyMapper
         }
 
         // If Sequence Number is not followed by the VT Seqence End Tag,
-        // it can be followed only by a Modifier Separator, Modifier (2-8) and Key ID or VT Seqence End Tag.
+        // it can be followed only by a Modifier Separator, Modifier (2-8) and Key ID or VT Sequence End Tag.
         if (input[SequencePrefixLength + digitCount] is not ModifierSeparator
             || SequencePrefixLength + digitCount + 2 >= input.Length
             || !char.IsBetween(input[SequencePrefixLength + digitCount + 1], '2', '8')
-            || (!char.IsAsciiLetterUpper(input[SequencePrefixLength + digitCount + 2]) && input[SequencePrefixLength + digitCount + 2] is not VTSeqenceEndTag))
+            || (!char.IsAsciiLetterUpper(input[SequencePrefixLength + digitCount + 2]) && input[SequencePrefixLength + digitCount + 2] is not VtSequenceEndTag))
         {
             return false;
         }
 
-        ConsoleModifiers modifiers = MapModifiers(input[SequencePrefixLength + digitCount + 1]);
+        ConsoleModifiers modifiers = MapXtermModifiers(input[SequencePrefixLength + digitCount + 1]);
 
-        key = input[SequencePrefixLength + digitCount + 2] is VTSeqenceEndTag
+        key = input[SequencePrefixLength + digitCount + 2] is VtSequenceEndTag
             ? MapEscapeSequenceNumber(byte.Parse(input.Slice(SequencePrefixLength, digitCount)))
             : MapKeyId(input[SequencePrefixLength + digitCount + 2]);
 
@@ -213,10 +166,10 @@ internal static class KeyMapper
             return false;
         }
 
-        // lowercase characters are used by rxvt
         static ConsoleKey MapKeyId(char single)
             => single switch
             {
+                // lowercase characters are used by rxvt
                 'A' or 'a' => ConsoleKey.UpArrow,
                 'B' or 'b' => ConsoleKey.DownArrow,
                 'C' or 'c' => ConsoleKey.RightArrow,
@@ -265,7 +218,7 @@ internal static class KeyMapper
                 _ => default
             };
 
-        static ConsoleModifiers MapModifiers(char modifier)
+        static ConsoleModifiers MapXtermModifiers(char modifier)
             => modifier switch
             {
                 '2' => ConsoleModifiers.Shift,
@@ -295,7 +248,7 @@ internal static class KeyMapper
         }
     }
 
-    private static void DecodeFromSingleChar(char single, out ConsoleKey key, out char ch, out bool isShift, out bool isCtrl)
+    private static void ParseFromSingleChar(char single, out ConsoleKey key, out char ch, out bool isShift, out bool isCtrl)
     {
         isShift = isCtrl = false;
         ch = single;
@@ -342,7 +295,7 @@ internal static class KeyMapper
         {
             // Ctrl+(a-z) characters are mapped to values from 1 to 26.
             // Ctrl+H is mapped to 8, which also maps to Ctrl+Backspace.
-            // Ctrl+I is mapped to 9, which also maps to Tab. Tab (9) is more likely to be pressed.
+            // Ctrl+I is mapped to 9, which also maps to Tab.
             // Ctrl+J is mapped to 10, which also maps to Ctrl+Enter ('\n').
             // Ctrl+M is mapped to 13, which also maps to Enter ('\r').
             // Limitation: Ctrl+H, Ctrl+I, Ctrl+J and Crl+M can't be mapped. More: https://unix.stackexchange.com/questions/563469/conflict-ctrl-i-with-tab-in-normal-mode
@@ -367,120 +320,5 @@ internal static class KeyMapper
                 _ => ConsoleKey.D4 + single - 28
             };
         }
-    }
-
-    private static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex,
-        ConsolePal.TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter,
-        out ConsoleKeyInfo key, out int keyLength)
-    {
-        int unprocessedCharCount = endIndex - startIndex;
-
-        // First process special control character codes.  These override anything from terminfo.
-        if (unprocessedCharCount > 0)
-        {
-            // Is this an erase / backspace?
-            char c = givenChars[startIndex];
-            if (c != posixDisableValue && c == veraseCharacter)
-            {
-                key = new ConsoleKeyInfo(c, ConsoleKey.Backspace, shift: false, alt: false, control: false);
-                keyLength = 1;
-                return true;
-            }
-        }
-
-        // Then process terminfo mappings.
-        int minRange = terminalFormatStrings.MinKeyFormatLength;
-        if (unprocessedCharCount >= minRange)
-        {
-            int maxRange = Math.Min(unprocessedCharCount, terminalFormatStrings.MaxKeyFormatLength);
-
-            for (int i = maxRange; i >= minRange; i--)
-            {
-                var currentString = new ReadOnlyMemory<char>(givenChars, startIndex, i);
-
-                // Check if the string prefix matches.
-                if (terminalFormatStrings.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
-                {
-                    keyLength = currentString.Length;
-                    return true;
-                }
-            }
-        }
-
-        // Otherwise, not a known special console key.
-        key = default(ConsoleKeyInfo);
-        keyLength = 0;
-        return false;
-    }
-
-    private static ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
-    {
-        isShift = false;
-        isCtrl = false;
-
-        switch (x)
-        {
-            case '\b':
-                return ConsoleKey.Backspace;
-
-            case '\t':
-                return ConsoleKey.Tab;
-
-            case '\n':
-            case '\r':
-                return ConsoleKey.Enter;
-
-            case (char)(0x1B):
-                return ConsoleKey.Escape;
-
-            case '*':
-                return ConsoleKey.Multiply;
-
-            case '+':
-                return ConsoleKey.Add;
-
-            case '-':
-                return ConsoleKey.Subtract;
-
-            case '/':
-                return ConsoleKey.Divide;
-
-            case (char)(0x7F):
-                return ConsoleKey.Delete;
-
-            case ' ':
-                return ConsoleKey.Spacebar;
-
-            default:
-                // 1. Ctrl A to Ctrl Z.
-                if (char.IsBetween(x, (char)1, (char)26))
-                {
-                    isCtrl = true;
-                    return ConsoleKey.A + x - 1;
-                }
-
-                // 2. Numbers from 0 to 9.
-                if (char.IsAsciiDigit(x))
-                {
-                    return ConsoleKey.D0 + x - '0';
-                }
-
-                //3. A to Z
-                if (char.IsAsciiLetterUpper(x))
-                {
-                    isShift = true;
-                    return ConsoleKey.A + (x - 'A');
-                }
-
-                // 4. a to z.
-                if (char.IsAsciiLetterLower(x))
-                {
-                    return ConsoleKey.A + (x - 'a');
-                }
-
-                break;
-        }
-
-        return default(ConsoleKey);
     }
 }
