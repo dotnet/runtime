@@ -367,7 +367,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultMaximumTimeout");
                 }
 
-                if(value < TimeSpan.Zero)
+                if (value < TimeSpan.Zero)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
@@ -375,7 +375,7 @@ namespace System.Transactions
                 s_cachedMaxTimeout = true;
                 s_maximumTimeout = value;
 
-                if(!s_defaultTimeoutValidated)
+                if (!s_defaultTimeoutValidated)
                 {
                     s_defaultTimeout = DefaultSettingsSection.Timeout;
                 }

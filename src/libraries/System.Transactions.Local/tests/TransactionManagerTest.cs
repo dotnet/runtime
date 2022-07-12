@@ -23,12 +23,8 @@ namespace System.Transactions.Tests
             TransactionManager.DefaultTimeout = ts;
             Assert.Equal(tsMax, TransactionManager.MaximumTimeout);
             Assert.Equal(TransactionManager.DefaultTimeout, TransactionManager.MaximumTimeout);
-        }
-       
-        [Fact]
-        public void DefaultTimeout_MaxTimeout_Set_Negative()
-        {
-            TimeSpan ts = TimeSpan.Parse("-00:01:00");
+
+            ts = TimeSpan.Parse("-00:01:00");
             Assert.Throws<ArgumentOutOfRangeException>(() => TransactionManager.DefaultTimeout = ts);
             Assert.Throws<ArgumentOutOfRangeException>(() => TransactionManager.MaximumTimeout = ts);
         }
