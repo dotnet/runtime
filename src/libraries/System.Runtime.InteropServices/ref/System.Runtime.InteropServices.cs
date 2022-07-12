@@ -2145,26 +2145,39 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { throw null; }
         }
     }
-    [System.CLSCompliantAttribute(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute.GenericPlaceholder[]),
-        System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public unsafe ref struct ArrayMarshaller<T>
+
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.ArrayMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.ArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
+    public static unsafe class ArrayMarshaller<T, TUnmanagedElement>
+        where TUnmanagedElement : unmanaged
     {
-        public ArrayMarshaller(int sizeOfNativeElement) { }
-        public ArrayMarshaller(T[]? array, int sizeOfNativeElement) { }
-        public ArrayMarshaller(T[]? array, System.Span<byte> buffer, int sizeOfNativeElement) { }
-        public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
-        public System.Span<T> GetManagedValuesDestination(int length) { throw null; }
-        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) { throw null; }
-        public System.Span<byte> GetNativeValuesDestination() { throw null; }
-        public ref byte GetPinnableReference() { throw null; }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
-        public T[]? ToManaged() { throw null; }
-        public void FreeNative() { }
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements) { throw null; }
+        public static System.ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) { throw null; }
+        public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static System.Span<T> GetManagedValuesDestination(T[]? managed) { throw null; }
+        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static void Free(TUnmanagedElement* unmanaged) { }
+
+        public unsafe ref struct ManagedToUnmanagedIn
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(T[]? array, System.Span<TUnmanagedElement> buffer) { }
+            public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
+            public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
+            public ref TUnmanagedElement GetPinnableReference() { throw null; }
+            public static ref T GetPinnableReference(T[]? array) { throw null; }
+            public TUnmanagedElement* ToUnmanaged() { throw null; }
+            public void Free() { }
+        }
     }
     [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
@@ -2187,6 +2200,12 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { throw null; }
         }
     }
+
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class)]
+    public sealed partial class ContiguousCollectionMarshallerAttribute : System.Attribute
+    {
+    }
+
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true)]
     public sealed partial class CustomMarshallerAttribute : System.Attribute
     {
@@ -2264,26 +2283,39 @@ namespace System.Runtime.InteropServices.Marshalling
         public NativeMarshallingAttribute(System.Type nativeType) { }
         public System.Type NativeType { get { throw null; } }
     }
-    [System.CLSCompliantAttribute(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
-        System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public unsafe ref struct PointerArrayMarshaller<T> where T : unmanaged
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
+    public static unsafe class PointerArrayMarshaller<T, TUnmanagedElement>
+        where T : unmanaged
+        where TUnmanagedElement : unmanaged
     {
-        public PointerArrayMarshaller(int sizeOfNativeElement) { }
-        public PointerArrayMarshaller(T*[]? array, int sizeOfNativeElement) { }
-        public PointerArrayMarshaller(T*[]? array, System.Span<byte> buffer, int sizeOfNativeElement) { }
-        public System.ReadOnlySpan<IntPtr> GetManagedValuesSource() { throw null; }
-        public System.Span<IntPtr> GetManagedValuesDestination(int length) { throw null; }
-        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) { throw null; }
-        public System.Span<byte> GetNativeValuesDestination() { throw null; }
-        public ref byte GetPinnableReference() { throw null; }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
-        public T*[]? ToManaged() { throw null; }
-        public void FreeNative() { }
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T*[]? managed, out int numElements) { throw null; }
+        public static System.ReadOnlySpan<IntPtr> GetManagedValuesSource(T*[]? managed) { throw null; }
+        public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static System.Span<IntPtr> GetManagedValuesDestination(T*[]? managed) { throw null; }
+        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static void Free(TUnmanagedElement* unmanaged) { }
+
+        public unsafe ref struct ManagedToUnmanagedIn
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(T*[]? array, System.Span<TUnmanagedElement> buffer) { }
+            public System.ReadOnlySpan<IntPtr> GetManagedValuesSource() { throw null; }
+            public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
+            public ref TUnmanagedElement GetPinnableReference() { throw null; }
+            public static ref byte GetPinnableReference(T*[]? array) { throw null; }
+            public TUnmanagedElement* ToUnmanaged() { throw null; }
+            public void Free() { }
+        }
     }
     [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),

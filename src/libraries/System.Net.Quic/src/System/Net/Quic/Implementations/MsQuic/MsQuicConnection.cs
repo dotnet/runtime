@@ -47,6 +47,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // These exists to prevent GC of the MsQuicConnection in the middle of an async op (Connect or Shutdown).
             public MsQuicConnection? Connection;
+            public bool ShutdownInProgress;
 
             public readonly ValueTaskSource ConnectTcs = new ValueTaskSource();
             // TODO: only allocate these when there is an outstanding shutdown.
@@ -172,7 +173,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 QUIC_HANDLE* handle;
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionOpen(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionOpen(
                     MsQuicApi.Api.Registration.QuicHandle,
                     &NativeCallback,
                     (void*)GCHandle.ToIntPtr(_state.StateGCHandle),
@@ -215,7 +216,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             //state.Connection._remoteEndPoint = MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
             state.Connection._localEndPoint = MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
             state.Connection._negotiatedAlpnProtocol = new SslApplicationProtocol(new Span<byte>(connectionEvent.CONNECTED.NegotiatedAlpn, connectionEvent.CONNECTED.NegotiatedAlpnLength).ToArray());
-            state.Connection = null;
+            if (!state.ShutdownInProgress)
+            {
+                state.Connection = null;
+            }
 
             state.ConnectTcs.TrySetResult();
 
@@ -227,9 +231,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (!state.ConnectTcs.IsCompleted)
             {
                 Debug.Assert(state.Connection != null);
-                state.Connection = null;
+                if (!state.ShutdownInProgress)
+                {
+                    state.Connection = null;
+                }
 
-                state.ConnectTcs.TrySetException(new MsQuicException(connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT.Status, "Connection has been shutdown by transport"));
+                state.ConnectTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT.Status, "Connection has been shutdown by transport"));
             }
 
             // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
@@ -254,6 +261,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             state.StateGCHandle.Free();
 
             state.Connection = null;
+            state.ShutdownInProgress = false;
 
             state.ShutdownTcs.SetResult(QUIC_STATUS_SUCCESS);
 
@@ -537,7 +545,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 try
                 {
                     Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionStart(
+                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionStart(
                         _state.Handle.QuicHandle,
                         _configuration.QuicHandle,
                         af,
@@ -576,7 +584,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _state.RevocationMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
                     _state.RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
                     _configuration = SafeMsQuicConfigurationHandle.Create(options, options.ServerAuthenticationOptions, targetHost);
-                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
+                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
                         _state.Handle.QuicHandle,
                         _configuration.QuicHandle));
                 }
@@ -595,7 +603,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             long ErrorCode)
         {
             // Store the connection into the GCHandle'd state to prevent GC if user calls ShutdownAsync and gets rid of all references to the MsQuicConnection.
-            Debug.Assert(_state.Connection == null);
+            _state.ShutdownInProgress = true;
             _state.Connection = this;
 
             try
@@ -608,6 +616,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch
             {
+                _state.ShutdownInProgress = false;
                 _state.Connection = null;
                 throw;
             }

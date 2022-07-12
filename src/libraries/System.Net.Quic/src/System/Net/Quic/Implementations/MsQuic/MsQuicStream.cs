@@ -182,7 +182,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     throw ThrowHelper.GetConnectionAbortedException(connectionState.AbortErrorCode);
                 }
 
-                ThrowIfFailure(status, "Failed to open stream to peer");
+                ThrowHelper.ThrowIfMsQuicError(status, "Failed to open stream to peer");
                 _state.Handle = new SafeMsQuicStreamHandle(handle);
             }
             catch
@@ -307,11 +307,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_state.SendErrorCode != -1)
                 {
                     // aborted by peer
-                    throw new QuicStreamAbortedException(_state.SendErrorCode);
+                    throw ThrowHelper.GetStreamAbortedException(_state.SendErrorCode);
                 }
 
                 // aborted locally
-                throw new QuicOperationAbortedException(SR.net_quic_sending_aborted);
+                throw ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted);
             }
 
             // if token was already cancelled, this would execute synchronously
@@ -345,11 +345,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                     if (_state.SendErrorCode != -1)
                     {
                         // aborted by peer
-                        throw new QuicStreamAbortedException(_state.SendErrorCode);
+                        throw ThrowHelper.GetStreamAbortedException(_state.SendErrorCode);
                     }
 
                     // aborted locally
-                    throw new QuicOperationAbortedException(SR.net_quic_sending_aborted);
+                    throw ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted);
                 }
                 if (_state.SendState == SendState.ConnectionClosed)
                 {
@@ -413,9 +413,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (status == QUIC_STATUS_ABORTED)
                 {
+                    if (_state.SendErrorCode != -1)
+                    {
+                        throw ThrowHelper.GetStreamAbortedException(_state.SendErrorCode);
+                    }
                     throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
                 }
-                ThrowIfFailure(status, "Could not send data to peer.");
+                ThrowHelper.ThrowIfMsQuicError(status, "Could not send data to peer.");
             }
 
             return _state.SendResettableCompletionSource.GetTypelessValueTask();
@@ -618,7 +622,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (shouldComplete)
             {
                 _state.ReceiveResettableCompletionSource.CompleteException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Read was aborted")));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException(SR.net_quic_reading_aborted)));
             }
 
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
@@ -659,13 +663,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (shouldComplete)
             {
                 _state.ShutdownWriteCompletionSource.SetException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Write was aborted.")));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted)));
             }
 
             if (shouldCompleteSends)
             {
                 _state.SendResettableCompletionSource.CompleteException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Write was aborted.")));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted)));
             }
 
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND, errorCode);
@@ -674,7 +678,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private unsafe void StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamShutdown(
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamShutdown(
                 _state.Handle.QuicHandle,
                 flags,
                 (uint)errorCode), "StreamShutdown failed");
@@ -897,7 +901,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (completeRead)
             {
                 _state.ReceiveResettableCompletionSource.CompleteException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Read was canceled")));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
             }
 
 
@@ -914,7 +918,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private unsafe void EnableReceive()
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamReceiveSetEnabled(_state.Handle.QuicHandle, 1), "StreamReceiveSetEnabled failed");
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamReceiveSetEnabled(_state.Handle.QuicHandle, 1), "StreamReceiveSetEnabled failed");
         }
 
         /// <summary>
@@ -1136,13 +1140,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (shouldSendComplete)
             {
                 state.SendResettableCompletionSource.CompleteException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicStreamAbortedException(state.SendErrorCode)));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetStreamAbortedException(state.SendErrorCode)));
             }
 
             if (shouldShutdownWriteComplete)
             {
                 state.ShutdownWriteCompletionSource.SetException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicStreamAbortedException(state.SendErrorCode)));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetStreamAbortedException(state.SendErrorCode)));
             }
 
             return QUIC_STATUS_SUCCESS;
@@ -1187,7 +1191,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // TODO: Should we throw QuicOperationAbortedException when status is InvalidState?
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
                     state.StartCompletionSource.TrySetException(
-                        ExceptionDispatchInfo.SetCurrentStackTrace(new MsQuicException(status, "StreamStart failed")));
+                        ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(status, "StreamStart failed")));
                 }
             }
 
@@ -1271,7 +1275,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 else
                 {
                     state.ReceiveResettableCompletionSource.CompleteException(
-                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException($"Stream start failed")));
+                        ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException($"Stream start failed")));
                 }
             }
 
@@ -1284,7 +1288,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 else
                 {
                     state.ShutdownWriteCompletionSource.SetException(
-                        ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException($"Stream start failed")));
+                        ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException($"Stream start failed")));
                 }
             }
 
@@ -1325,7 +1329,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (shouldComplete)
             {
                 state.ReceiveResettableCompletionSource.CompleteException(
-                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicStreamAbortedException(state.ReadErrorCode)));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetStreamAbortedException(state.ReadErrorCode)));
             }
 
             return QUIC_STATUS_SUCCESS;
@@ -1543,7 +1547,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (!StatusSucceeded(status))
             {
-                Exception exception = new MsQuicException(status, "Could not start stream");
+                Exception exception = ThrowHelper.GetExceptionForMsQuicStatus(status, "Could not start stream");
                 _state.StartCompletionSource.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(exception));
                 throw exception;
             }

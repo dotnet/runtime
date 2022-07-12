@@ -135,7 +135,7 @@
     <Message Text="Packages found in $(LibrariesShippingPackagesDir): @(_BuiltNuGets)" Importance="Low" />
 
     <InstallWorkloadFromArtifacts
-                     WorkloadId="@(WorkloadIdForTesting)"
+                     WorkloadIds="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
@@ -148,7 +148,7 @@
           Outputs="$(SdkWithNoWorkload_WorkloadStampPath)">
 
     <InstallWorkloadFromArtifacts
-                     WorkloadId="@(WorkloadIdForTesting)"
+                     WorkloadIds="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"

@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = jsonParameterInfo.ConverterBase.TryReadAsObject(ref reader, jsonParameterInfo.Options!, ref state, out object? arg);
 
-            if (success && !(arg == null && jsonParameterInfo.IgnoreDefaultValuesOnRead))
+            if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
                 ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.ClrInfo.Position] = arg!;
             }

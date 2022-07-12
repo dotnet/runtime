@@ -19,8 +19,8 @@
     <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices.JavaScript/gen/JSImportGenerator</PackageProjectUrl>
     <Description>JSImportGenerator</Description>
     <PackageTags>JSImportGenerator, analyzers</PackageTags>
-    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <DefineConstants>$(DefineConstants);JSIMPORTGENERATOR</DefineConstants>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <ItemGroup>
