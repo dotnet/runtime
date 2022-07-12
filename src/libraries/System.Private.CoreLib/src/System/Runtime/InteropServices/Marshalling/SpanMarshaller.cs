@@ -8,6 +8,16 @@ using System.Text;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    /// <summary>
+    /// The <see cref="SpanMarshaller{T, TUnmanagedElement}"/> type supports marshalling a <see cref="Span{T}"/> from managed value
+    /// to a contiguous native array of the unmanaged values of the elements.
+    /// </summary>
+    /// <typeparam name="T">The managed element type of the span.</typeparam>
+    /// <typeparam name="TUnmanagedElement">The unmanaged type for the elements of the span.</typeparam>
+    /// <remarks>
+    /// A <see cref="Span{T}"/> marshalled with this marshaller will match the semantics of <see cref="MemoryMarshal.GetReference{T}(Span{T})"/>.
+    /// In particular, this marshaller will pass a non-null value for a zero-length span if the span was constructed with a non-null value.
+    /// </remarks>
     [CLSCompliant(false)]
     [CustomMarshaller(typeof(Span<>), MarshalMode.Default, typeof(SpanMarshaller<,>))]
     [CustomMarshaller(typeof(Span<>), MarshalMode.ManagedToUnmanagedIn, typeof(SpanMarshaller<,>.ManagedToUnmanagedIn))]
@@ -15,6 +25,12 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class SpanMarshaller<T, TUnmanagedElement>
         where TUnmanagedElement : unmanaged
     {
+        /// <summary>
+        /// Allocate the space to store the unmanaged elements.
+        /// </summary>
+        /// <param name="managed">The managed span.</param>
+        /// <param name="numElements">The number of elements in the span.</param>
+        /// <returns>A pointer to the block of memory for the unmanaged elements.</returns>
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(Span<T> managed, out int numElements)
         {
             // Emulate the pinning behavior:
@@ -32,29 +48,64 @@ namespace System.Runtime.InteropServices.Marshalling
             return (TUnmanagedElement*)Marshal.AllocCoTaskMem(spaceToAllocate);
         }
 
+        /// <summary>
+        /// Get a span of the managed collection elements.
+        /// </summary>
+        /// <param name="managed">The managed collection.</param>
+        /// <returns>A span of the managed collection elements.</returns>
         public static ReadOnlySpan<T> GetManagedValuesSource(Span<T> managed)
             => managed;
 
+        /// <summary>
+        /// Get a span of the space where the unmanaged collection elements should be stored.
+        /// </summary>
+        /// <param name="unmanaged">The pointer to the block of memory for the unmanaged elements.</param>
+        /// <param name="numElements">The number of elements that will be copied into the memory block.</param>
+        /// <returns>A span over the unmanaged memory that can contain the specified number of elements.</returns>
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
             => new Span<TUnmanagedElement>(unmanaged, numElements);
 
-        public static Span<T> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int length)
+        /// <summary>
+        /// Allocate the space to store the managed elements.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged value.</param>
+        /// <param name="numElements">The number of elements in the unmanaged collection.</param>
+        /// <returns>A span over enough memory to contain <paramref name="numElements"/> elements.</returns>
+        public static Span<T> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
                 return null;
 
-            return new T[length];
+            return new T[numElements];
         }
 
+        /// <summary>
+        /// Get a span of the space where the managed collection elements should be stored.
+        /// </summary>
+        /// <param name="managed">A span over the space to store the managed elements</param>
+        /// <returns>A span over the managed memory that can contain the specified number of elements.</returns>
         public static Span<T> GetManagedValuesDestination(Span<T> managed)
             => managed;
 
-        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
-            => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+        /// <summary>
+        /// Get a span of the native collection elements.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged value.</param>
+        /// <param name="numElements">The number of elements in the unmanaged collection.</param>
+        /// <returns>A span over the native collection elements.</returns>
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
+            => new ReadOnlySpan<TUnmanagedElement>(unmanaged, numElements);
 
+        /// <summary>
+        /// Free the allocated unmanaged memory.
+        /// </summary>
+        /// <param name="unmanaged">Allocated unmanaged memory</param>
         public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
+        /// <summary>
+        /// The marshaller type that supports marshalling from managed into unmanaged in a call from managed code to unmanaged code.
+        /// </summary>
         public ref struct ManagedToUnmanagedIn
         {
             // We'll keep the buffer size at a maximum of 200 bytes to avoid overflowing the stack.
@@ -87,7 +138,6 @@ namespace System.Runtime.InteropServices.Marshalling
 
                 _managedArray = managed;
 
-                // Always allocate at least one byte when the span is zero-length.
                 if (managed.Length <= buffer.Length)
                 {
                     _span = buffer[0..managed.Length];
@@ -95,8 +145,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 else
                 {
                     int bufferSize = checked(managed.Length * sizeof(TUnmanagedElement));
-                    int spaceToAllocate = Math.Max(bufferSize, 1);
-                    _allocatedMemory = (TUnmanagedElement*)NativeMemory.Alloc((nuint)spaceToAllocate);
+                    _allocatedMemory = (TUnmanagedElement*)NativeMemory.Alloc((nuint)bufferSize);
                     _span = new Span<TUnmanagedElement>(_allocatedMemory, managed.Length);
                 }
             }

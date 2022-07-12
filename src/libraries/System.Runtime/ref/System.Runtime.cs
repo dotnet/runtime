@@ -13289,8 +13289,7 @@ namespace System.Runtime.InteropServices.Marshalling
     System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut,
     typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.UnmanagedToManagedOut))]
     [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
-    public static unsafe class ReadOnlySpanMarshaller<T, TUnmanagedElement>
-    where TUnmanagedElement : unmanaged
+    public static unsafe class ReadOnlySpanMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public ref struct ManagedToUnmanagedIn
         {
@@ -13320,15 +13319,14 @@ namespace System.Runtime.InteropServices.Marshalling
         System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
         typeof(System.Runtime.InteropServices.Marshalling.SpanMarshaller<,>.ManagedToUnmanagedIn))]
     [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
-    public static unsafe class SpanMarshaller<T, TUnmanagedElement>
-        where TUnmanagedElement : unmanaged
+    public static unsafe class SpanMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(System.Span<T> managed, out int numElements) { throw null; }
         public static System.ReadOnlySpan<T> GetManagedValuesSource(System.Span<T> managed) { throw null; }
         public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
-        public static System.Span<T> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int length) { throw null; }
+        public static System.Span<T> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         public static System.Span<T> GetManagedValuesDestination(System.Span<T> managed) { throw null; }
-        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         public static void Free(TUnmanagedElement* unmanaged) { throw null; }
         public ref struct ManagedToUnmanagedIn
         {

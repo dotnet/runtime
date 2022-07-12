@@ -127,7 +127,7 @@ namespace LibraryImportGenerator.UnitTests
                 + CodeSnippets.CustomStructMarshalling.NonBlittableUserDefinedType()
                 + CodeSnippets.CustomStructMarshalling.Stateless.Default };
             yield return new[] { ID(), CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out")
-                + CodeSnippets.CustomStructMarshalling.Stateless.Default
+                + CodeSnippets.CustomStructMarshalling.NonBlittableUserDefinedType()
                 + CodeSnippets.CustomStructMarshalling.Stateless.Default };
 
             // Enums
