@@ -499,7 +499,12 @@ namespace System.Net.Security
                 // SECURITY: selectedCert ref if not null is a safe object that does not depend on possible **user** inherited X509Certificate type.
                 //
                 byte[]? guessedThumbPrint = selectedCert?.GetCertHash();
-                SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
+                SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(
+                    guessedThumbPrint,
+                    _sslAuthenticationOptions.EnabledSslProtocols,
+                    _sslAuthenticationOptions.IsServer,
+                    _sslAuthenticationOptions.EncryptionPolicy,
+                    _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -657,8 +662,7 @@ namespace System.Net.Security
 
         private static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            SafeFreeCredentials cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols,
-                sslAuthenticationOptions.EncryptionPolicy, sslAuthenticationOptions.IsServer);
+            SafeFreeCredentials cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions);
 
             if (sslAuthenticationOptions.CertificateContext != null)
             {
@@ -819,7 +823,14 @@ namespace System.Net.Security
                     //
                     if (!cachedCreds && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
                     {
-                        SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy, sendTrustList);
+                        SslSessionsCache.CacheCredential(
+                            _credentialsHandle,
+                            thumbPrint,
+                            _sslAuthenticationOptions.EnabledSslProtocols,
+                            _sslAuthenticationOptions.IsServer,
+                            _sslAuthenticationOptions.EncryptionPolicy,
+                            _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
+                            sendTrustList);
                     }
                 }
             }
