@@ -80,6 +80,7 @@
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="TarEntry\TarEntry.ExtractToFile.Tests.Unix.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.Unix.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Unix.cs" />
     <Compile Include="TarReader\TarReader.TarEntry.ExtractToFileAsync.Tests.Unix.cs" />
