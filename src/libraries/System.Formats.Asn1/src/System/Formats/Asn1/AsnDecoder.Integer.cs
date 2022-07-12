@@ -115,7 +115,7 @@ namespace System.Formats.Asn1
                 new Span<byte>(tmp, contents.Length, tmp.Length - contents.Length).Fill(fill);
                 contents.CopyTo(tmp);
                 // Convert to Little-Endian.
-                AsnWriter.Reverse(new Span<byte>(tmp, 0, contents.Length));
+                new Span<byte>(tmp, 0, contents.Length).Reverse();
                 value = new BigInteger(tmp);
             }
             finally

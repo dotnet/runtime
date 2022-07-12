@@ -201,7 +201,7 @@ namespace System.Formats.Asn1
             }
             while (unencoded != BigInteger.Zero);
 
-            Reverse(dest.Slice(0, idx));
+            dest.Slice(0, idx).Reverse();
             return idx;
         }
     }
