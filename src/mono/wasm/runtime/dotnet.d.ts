@@ -392,7 +392,7 @@ declare class ManagedError extends Error implements IDisposable {
     get isDisposed(): boolean;
     toString(): string;
 }
-declare enum MemoryViewType {
+declare const enum MemoryViewType {
     Byte = 0,
     Int32 = 1,
     Double = 2

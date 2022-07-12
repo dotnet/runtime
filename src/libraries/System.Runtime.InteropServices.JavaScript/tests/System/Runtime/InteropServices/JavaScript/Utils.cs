@@ -11,6 +11,10 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static unsafe partial class Utils
     {
+        // replaces legacy Runtime.InvokeJS
+        [JSImport("globalThis.App.invoke_js")]
+        public static partial string InvokeJS(string code);
+
         [JSImport("INTERNAL.set_property")]
         public static partial void SetProperty(JSObject self, string propertyName,
             [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> value);

@@ -24,15 +24,6 @@ namespace System.Runtime.InteropServices.JavaScript
         #region legacy
 
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        public static string InvokeJS(string str)
-        {
-            string res = Interop.Runtime.InvokeJS(str, out int exception);
-            if (exception != 0)
-                throw new JSException(res);
-            return res;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static object GetGlobalObject(string? str = null)
         {
             int exception;

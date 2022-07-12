@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = converter.TryRead(ref reader, info.PropertyType, info.Options!, ref state, out TArg? value);
 
-            arg = value == null && jsonParameterInfo.IgnoreDefaultValuesOnRead
+            arg = value == null && jsonParameterInfo.IgnoreNullTokensOnRead
                 ? (TArg?)info.DefaultValue! // Use default value specified on parameter, if any.
                 : value!;
 
