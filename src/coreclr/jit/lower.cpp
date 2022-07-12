@@ -245,7 +245,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_CLE:
         case GT_CGE:
         case GT_CGT:
-            ContainCheckConditional(node->AsConditional());
+            ContainCheckSelect(node->AsConditional());
             break;
 
         case GT_JMP:
@@ -6842,7 +6842,7 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_CLE:
         case GT_CGE:
         case GT_CGT:
-            ContainCheckConditional(node->AsConditional());
+            ContainCheckSelect(node->AsConditional());
             break;
 
         case GT_ADD:
@@ -7036,25 +7036,72 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// ContainCheckConditional : determine whether the source of a conditional should be contained.
+// ContainCheckCompareChain : determine whether a chain of compares should be contained by the given parent.
+//
+// Work backwards through the chain until it is no longer valid or containable.
+//
+// Arguments:
+//    tree - the node. Either a compare or a tree of compares connected by ANDs.
+//    parent - the parent of the tree.
+//    earliest_valid - Returns the earliest valid compare node in the chain (if any).
+//
+// Return Value:
+//    True if the chain is valid
+//
+bool Lowering::ContainCheckCompareChain(GenTree* tree, GenTree* parent, GenTree** earliest_valid)
+{
+    if (tree->OperIs(GT_AND))
+    {
+        // To ensure ordering at code generation, Op1 and the parent can
+        // only be contained if Op2 is contained.
+        if (ContainCheckCompareChain(tree->AsOp()->gtGetOp2(), tree, earliest_valid))
+        {
+            ContainCheckCompareChain(tree->AsOp()->gtGetOp1(), tree, earliest_valid);
+            tree->SetContained();
+            return true;
+        }
+    }
+    else if (tree->OperIsCompare())
+    {
+        // Can the compare be contained.
+        if(IsSafeToContainMem(parent, tree))
+        {
+            tree->AsOp()->SetContained();
+
+            // Ensure the children of the compare are contained correctly.
+            tree->AsOp()->gtGetOp1()->ClearContained();
+            tree->AsOp()->gtGetOp2()->ClearContained();
+            ContainCheckCompare(tree->AsOp());
+            *earliest_valid = tree;
+            return true;
+        }
+    }
+
+    //Not a valid compare chain
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckSelect : determine whether the source of a select should be contained.
 //
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckConditional(GenTreeConditional* node)
+void Lowering::ContainCheckSelect(GenTreeConditional* node)
 {
     // Check if the compare does not need to be generated into a register.
-    GenTree* cmp = node->gtCond;
-    assert(cmp->OperIsCompare() || cmp->OperIsConditionalCompare());
-    if (IsSafeToContainMem(node, cmp))
-    {
-        cmp->SetContained();
-    }
+    GenTree* earliest_valid = nullptr;
+    ContainCheckCompareChain(node->gtCond, node, &earliest_valid);
 
-    // Check if an immediate can be contained.
-    if (node->gtOper != GT_SELECT)
+    if (earliest_valid != nullptr)
     {
-        CheckImmedAndMakeContained(node, node->gtOp2);
+        // The earliest node in the chain will be generated as a standard compare.
+        // Temporary set as uncontained in order to correct its children.
+        earliest_valid->AsOp()->ClearContained();
+        earliest_valid->AsOp()->gtGetOp1()->ClearContained();
+        earliest_valid->AsOp()->gtGetOp2()->ClearContained();
+        ContainCheckCompare(earliest_valid->AsOp());
+        earliest_valid->AsOp()->SetContained();
     }
 }
 

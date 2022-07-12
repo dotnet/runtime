@@ -3142,9 +3142,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL))
+    if (node->OperIs(GT_MUL) || node->OperIsCompare() || node->OperIs(GT_AND))
     {
-        // Can be contained for MultiplyAdd on arm64
+        // Can be contained for MultiplyAdd on arm64.
+        // Compare and And may be contained due to If Conversion.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
     if (node->OperIs(GT_NEG, GT_CAST, GT_LSH))
@@ -3153,14 +3154,9 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         // GT_CAST and GT_LSH for ADD with sign/zero extension
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
-    if (node->OperIsCompare())
-    {
-        // Compares may be contained by a conditional.
-        return BuildBinaryUses(node->AsOp(), candidates);
-    }
     if (node->OperIsConditionalCompare())
     {
-        // Conditional compares should always be contained.
+        // A conditional compare may be contained due to If Conversion.
         int uses = BuildOperandUses(node->AsConditional()->gtCond, candidates);
         uses += BuildOperandUses(node->AsConditional()->gtOp1, candidates);
         uses += BuildOperandUses(node->AsConditional()->gtOp2, candidates);

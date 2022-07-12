@@ -104,6 +104,12 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
+                if (parentNode->isContained())
+                {
+                    // Contained node will be generated as a ccmp.
+                    return emitter::emitIns_valid_imm_for_ccmp(immVal);
+                }
+                FALLTHROUGH;
             case GT_CMP:
             case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
@@ -112,6 +118,11 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XOR:
             case GT_TEST_EQ:
             case GT_TEST_NE:
+                if (parentNode->isContained())
+                {
+                    // Contained node will be generated as a ccmp.
+                    return emitter::emitIns_valid_imm_for_ccmp(immVal);
+                }
                 return emitter::emitIns_valid_imm_for_alu(immVal, size);
             case GT_JCMP:
                 assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
