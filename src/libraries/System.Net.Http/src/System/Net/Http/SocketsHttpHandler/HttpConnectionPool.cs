@@ -461,13 +461,11 @@ namespace System.Net.Http
             {
                 connection = await CreateHttp11ConnectionAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
-            {
-                connectionException = CreateConnectTimeoutException(oce);
-            }
             catch (Exception e)
             {
-                connectionException = e;
+                connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token ?
+                    CreateConnectTimeoutException(oce) :
+                    e;
             }
             finally
             {
@@ -690,13 +688,11 @@ namespace System.Net.Http
                     connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
                 }
             }
-            catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
-            {
-                connectionException = CreateConnectTimeoutException(oce);
-            }
             catch (Exception e)
             {
-                connectionException = e;
+                connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token ?
+                    CreateConnectTimeoutException(oce) :
+                    e;
             }
             finally
             {
