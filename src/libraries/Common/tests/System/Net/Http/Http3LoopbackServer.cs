@@ -37,6 +37,7 @@ namespace System.Net.Test.Common
                     var serverOptions = new QuicServerConnectionOptions()
                     {
                         DefaultStreamErrorCode = Http3LoopbackConnection.H3_REQUEST_CANCELLED,
+                        DefaultCloseErrorCode = Http3LoopbackConnection.H3_NO_ERROR,
                         MaxInboundBidirectionalStreams = options.MaxInboundBidirectionalStreams,
                         MaxInboundUnidirectionalStreams = options.MaxInboundUnidirectionalStreams,
                         ServerAuthenticationOptions = new SslServerAuthenticationOptions

@@ -116,6 +116,7 @@ namespace System.Net.Http
                     MaxInboundUnidirectionalStreams = 5, // Minimum is 3: https://www.rfc-editor.org/rfc/rfc9114.html#unidirectional-streams (1x control stream + 2x QPACK). Set to 100 if/when support for PUSH streams is added.
                     IdleTimeout = idleTimeout,
                     DefaultStreamErrorCode = (long)Http3ErrorCode.RequestCancelled,
+                    DefaultCloseErrorCode = (long)Http3ErrorCode.NoError,
                     RemoteEndPoint = endPoint,
                     ClientAuthenticationOptions = clientAuthenticationOptions
                 }, cancellationToken).ConfigureAwait(false);
