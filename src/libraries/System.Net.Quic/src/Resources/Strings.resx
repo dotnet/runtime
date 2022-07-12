@@ -129,11 +129,11 @@
   <data name="net_quic_reading_notallowed" xml:space="preserve">
     <value>Reading is not allowed on stream.</value>
   </data>
-  <data name="net_quic_sending_aborted" xml:space="preserve">
-    <value>Sending has been aborted on the stream</value>
+  <data name="net_quic_writing_aborted" xml:space="preserve">
+    <value>Writing has been aborted on the stream.</value>
   </data>
-  <data name="net_quic_receiving_aborted" xml:space="preserve">
-    <value>Receiving has been aborted on the stream</value>
+  <data name="net_quic_reading_aborted" xml:space="preserve">
+    <value>Reading has been aborted on the stream.</value>
   </data>
   <data name="net_quic_streamaborted" xml:space="preserve">
     <value>Stream aborted by peer ({0}).</value>
