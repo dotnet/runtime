@@ -81,8 +81,8 @@ namespace Microsoft.Interop
         public Stage CurrentStage { get; init; } = Stage.Invalid;
 
         /// <summary>
-        /// <c>CustomTypeMarshallerDirection.In</c> means method import like <c>[LibraryImport]</c>.
-        /// <c>CustomTypeMarshallerDirection.Out</c> means method export like in <c>[UnmanagedCallersOnly]</c> or in <c>[JSExport]</c>
+        /// <c>CustomTypeMarshallingDirection.In</c> means method import like <c>[LibraryImport]</c>.
+        /// <c>CustomTypeMarshallingDirection.Out</c> means method export like in <c>[UnmanagedCallersOnly]</c> or in <c>[JSExport]</c>
         /// </summary>
         public CustomTypeMarshallingDirection Direction { get; init; } = CustomTypeMarshallingDirection.In;
 

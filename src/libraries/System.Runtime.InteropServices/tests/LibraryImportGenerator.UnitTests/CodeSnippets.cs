@@ -384,12 +384,12 @@ partial class Test
         {
             string typeName = typeof(T).ToString();
             return BasicParametersAndModifiersWithStringMarshallingCustomType(typeName, "Native", DisableRuntimeMarshalling) + $@"
-[CustomTypeMarshaller(typeof({typeName}))]
-struct Native
+[CustomMarshaller(typeof({typeName}), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
 {{
-    public Native({typeName} s) {{ }}
+    public static IntPtr ConvertToUnmanaged({typeName} s) {{ }}
 
-    public {typeName} ToManaged() => default;
+    public static {typeName} ConvertToManaged(IntPtr i) => default;
 }}";
         }
 
@@ -1177,248 +1177,6 @@ public static class Marshaller
             }
         }
 
-        public static class CustomStructMarshalling_V1
-        {
-            public static string NonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $@"
-{(defineNativeMarshalling ? "[NativeMarshalling(typeof(Native))]" : string.Empty)}
-struct S
-{{
-#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-    public bool b;
-#pragma warning restore CS0649
-}}
-";
-            private static string NativeTypeIn = @"
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In)]
-struct Native
-{
-    private int i;
-    public Native(S s)
-    {
-        i = s.b ? 1 : 0;
-    }
-}
-";
-            private static string NativeTypeOut = @"
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out)]
-struct Native
-{
-#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-    private int i;
-#pragma warning restore CS0649
-    public S ToManaged() => new S { b = i != 0 };
-}
-";
-            public static string NativeTypeRef = @"
-[CustomTypeMarshaller(typeof(S))]
-struct Native
-{
-    private int i;
-    public Native(S s)
-    {
-        i = s.b ? 1 : 0;
-    }
-
-    public S ToManaged() => new S { b = i != 0 };
-}
-";
-            public static string ManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
-                + NonBlittableUserDefinedType()
-                + NativeTypeIn;
-
-            public static string NativeToManagedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
-                + NonBlittableUserDefinedType()
-                + NativeTypeOut;
-
-            public static string ManagedToNativeOnlyReturnValue => BasicReturnType("S")
-                + NonBlittableUserDefinedType()
-                + NativeTypeIn;
-
-            public static string NativeToManagedOnlyReturnValue => BasicReturnType("S")
-                + NonBlittableUserDefinedType()
-                + NativeTypeOut;
-
-            public static string NativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S")
-                + NonBlittableUserDefinedType()
-                + NativeTypeOut;
-
-            public static string ParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
-                + NonBlittableUserDefinedType(defineNativeMarshalling: true)
-                + NativeTypeRef;
-
-            public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Native")
-                + NonBlittableUserDefinedType(defineNativeMarshalling: false)
-                + NativeTypeRef;
-
-            public static string StackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
-                + NonBlittableUserDefinedType() + @"
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
-struct Native
-{
-    private int i;
-    public Native(S s, System.Span<byte> b)
-    {
-        i = s.b ? 1 : 0;
-    }
-
-    public S ToManaged() => new S { b = i != 0 };
-}
-";
-            public static string StackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S")
-                + NonBlittableUserDefinedType() + @"
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out, Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
-struct Native
-{
-    private int i;
-    public Native(S s, System.Span<byte> b)
-    {
-        i = s.b ? 1 : 0;
-    }
-
-    public S ToManaged() => new S { b = i != 0 };
-}
-";
-            public static string OptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
-                + NonBlittableUserDefinedType() + @"
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
-struct Native
-{
-    private int i;
-    public Native(S s, System.Span<byte> b)
-    {
-        i = s.b ? 1 : 0;
-    }
-    public Native(S s)
-    {
-        i = s.b ? 1 : 0;
-    }
-
-    public S ToManaged() => new S { b = i != 0 };
-}
-";
-            public static string StackallocTwoStageParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
-                + NonBlittableUserDefinedType() + @"
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
-struct Native
-{
-    public Native(S s, System.Span<byte> b) { }
-
-    public S ToManaged() => new S { b = true };
-
-    public int ToNativeValue() => throw null;
-    public void FromNativeValue(int value) { }
-}
-";
-            public static string TwoStageParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
-                + NonBlittableUserDefinedType() + @"
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-struct Native
-{
-    public Native(S s) { }
-
-    public S ToManaged() => new S { b = true };
-
-    public int ToNativeValue() => throw null;
-    public void FromNativeValue(int value) { }
-}
-";
-            public static string TwoStageRefReturn = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
-                + NonBlittableUserDefinedType() + @"
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-unsafe struct Native
-{
-    public Native(S s) { }
-
-    public ref byte ToNativeValue() => throw null;
-}
-";
-            public static string PinnableParametersAndModifiers = BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-class S
-{
-    public int i;
-
-    public ref int GetPinnableReference() => ref i;
-}
-
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-unsafe struct Native
-{
-    private int* ptr;
-    public Native(S s)
-    {
-        ptr = (int*)Marshal.AllocHGlobal(sizeof(int));
-        *ptr = s.i;
-    }
-
-    public S ToManaged() => new S { i = *ptr };
-
-    public nint ToNativeValue() => (nint)ptr;
-    public void FromNativeValue(nint value) => ptr = (int*)value;
-}
-";
-            public static string NativeTypePinnable(string nativeType, string pinnedType) => BasicParameterWithByRefModifier("in", "S")
-                + NonBlittableUserDefinedType() + @$"
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
-unsafe ref struct Native
-{{
-    public Native(S s) {{ }}
-    public Native(S s, System.Span<byte> buffer) {{ }}
-
-    public ref {pinnedType} GetPinnableReference() => throw null;
-
-    public S ToManaged() => new S {{ b = true }};
-
-    public {nativeType}* ToNativeValue() => throw null;
-    public void FromNativeValue({nativeType}* value) {{ }}
-
-    public void FreeNative() {{ }}
-}}
-";
-        }
-
-        public static string ArrayMarshallingWithCustomStructElementWithValueProperty => MarshalAsArrayParametersAndModifiers("IntStructWrapper", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(IntStructWrapperNative))]
-public struct IntStructWrapper
-{
-    public int Value;
-}
-
-[CustomTypeMarshaller(typeof(IntStructWrapper), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-public struct IntStructWrapperNative
-{
-    public IntStructWrapperNative(IntStructWrapper managed)
-    {
-    }
-
-    public int ToNativeValue() => throw null;
-    public void FromNativeValue(int value) => throw null;
-
-    public IntStructWrapper ToManaged() => new IntStructWrapper { Value = 1 };
-}
-";
-
-        public static string ArrayMarshallingWithCustomStructElement => MarshalAsArrayParametersAndModifiers("IntStructWrapper", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(IntStructWrapperNative))]
-public struct IntStructWrapper
-{
-    public int Value;
-}
-
-[CustomTypeMarshaller(typeof(IntStructWrapper))]
-public struct IntStructWrapperNative
-{
-    private int value;
-
-    public IntStructWrapperNative(IntStructWrapper managed)
-    {
-        value = managed.Value;
-    }
-
-    public IntStructWrapper ToManaged() => new IntStructWrapper { Value = value };
-}
-";
-
         public static string SafeHandleWithCustomDefaultConstructorAccessibility(bool privateCtor) => BasicParametersAndModifiers("MySafeHandle") + $@"
 class MySafeHandle : SafeHandle
 {{
@@ -1998,146 +1756,6 @@ partial class Test
             }
         }
 
-        public static class CustomCollectionMarshalling_V1
-        {
-            public static string ByValue(string elementType) => BasicParameterByValue($"TestCollection<{elementType}>", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Marshaller<>))]
-class TestCollection<T> {}
-
-[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-ref struct Marshaller<T>
-{
-    public Marshaller(int nativeElementSize) : this() {}
-    public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}
-    public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
-    public System.Span<T> GetManagedValuesDestination(int length) => throw null;
-    public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) => throw null;
-    public System.Span<byte> GetNativeValuesDestination() => throw null;
-    public System.IntPtr ToNativeValue() => throw null;
-    public void FromNativeValue(System.IntPtr value) => throw null;
-    public TestCollection<T> ToManaged() => throw null;
-}
-";
-
-            public static string ByValue<T>() => ByValue(typeof(T).ToString());
-
-            public static string CustomCollectionWithMarshaller(bool enableDefaultMarshalling)
-            {
-                string nativeMarshallingAttribute = enableDefaultMarshalling ? "[NativeMarshalling(typeof(Marshaller<>))]" : string.Empty;
-                return nativeMarshallingAttribute + @"class TestCollection<T> {}
-
-    [CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    ref struct Marshaller<T>
-    {
-        public Marshaller(int nativeElementSize) : this() {}
-        public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}
-        public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
-        public System.Span<T> GetManagedValuesDestination(int length) => throw null;
-        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) => throw null;
-        public System.Span<byte> GetNativeValuesDestination() => throw null;
-        public System.IntPtr ToNativeValue() => throw null;
-        public void FromNativeValue(System.IntPtr value) => throw null;
-        public TestCollection<T> ToManaged() => throw null;
-    }";
-            }
-
-            public static string DefaultMarshallerParametersAndModifiers(string elementType) => MarshalUsingCollectionCountInfoParametersAndModifiers($"TestCollection<{elementType}>") + CustomCollectionWithMarshaller(enableDefaultMarshalling: true);
-
-            public static string DefaultMarshallerParametersAndModifiers<T>() => DefaultMarshallerParametersAndModifiers(typeof(T).ToString());
-
-            public static string CustomMarshallerParametersAndModifiers(string elementType) => MarshalUsingCollectionParametersAndModifiers($"TestCollection<{elementType}>", $"Marshaller<{elementType}>") + CustomCollectionWithMarshaller(enableDefaultMarshalling: false);
-
-            public static string CustomMarshallerParametersAndModifiers<T>() => CustomMarshallerParametersAndModifiers(typeof(T).ToString());
-
-            public static string CustomMarshallerReturnValueLength(string elementType) => MarshalUsingCollectionReturnValueLength($"TestCollection<{elementType}>", $"Marshaller<{elementType}>") + CustomCollectionWithMarshaller(enableDefaultMarshalling: false);
-
-            public static string CustomMarshallerReturnValueLength<T>() => CustomMarshallerReturnValueLength(typeof(T).ToString());
-
-            public static string GenericCollectionMarshallingArityMismatch => BasicParameterByValue("TestCollection<int>", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Marshaller<,>))]
-class TestCollection<T> {}
-
-[CustomTypeMarshaller(typeof(TestCollection<>), CustomTypeMarshallerKind.LinearCollection, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-ref struct Marshaller<T, U>
-{
-    public Marshaller(TestCollection<T> managed, int nativeElementSize) : this() {}
-
-    public System.ReadOnlySpan<T> GetManagedValuesSource() => throw null;
-    public System.Span<T> GetManagedValuesDestination(int length) => throw null;
-    public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) => throw null;
-    public System.Span<byte> GetNativeValuesDestination() => throw null;
-    public System.IntPtr ToNativeValue() => throw null;
-    public void FromNativeValue(System.IntPtr value) => throw null;
-
-    public TestCollection<T> ToManaged() => throw null;
-}";
-
-            public static string GenericCollectionWithCustomElementMarshalling => $@"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-{DisableRuntimeMarshalling}
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    [return:MarshalUsing(ConstantElementCount=10)]
-    [return:MarshalUsing(typeof(IntWrapper), ElementIndirectionDepth = 1)]
-    public static partial TestCollection<int> Method(
-        [MarshalUsing(typeof(IntWrapper), ElementIndirectionDepth = 1)] TestCollection<int> p,
-        [MarshalUsing(typeof(IntWrapper), ElementIndirectionDepth = 1)] in TestCollection<int> pIn,
-        int pRefSize,
-        [MarshalUsing(CountElementName = ""pRefSize""), MarshalUsing(typeof(IntWrapper), ElementIndirectionDepth = 1)] ref TestCollection<int> pRef,
-        [MarshalUsing(CountElementName = ""pOutSize"")][MarshalUsing(typeof(IntWrapper), ElementIndirectionDepth = 1)] out TestCollection<int> pOut,
-        out int pOutSize
-        );
-}}
-
-struct IntWrapper
-{{
-    public IntWrapper(int i){{}}
-    public int ToManaged() => throw null;
-}}
-
-" + CustomCollectionWithMarshaller(enableDefaultMarshalling: true);
-
-            public static string GenericCollectionWithCustomElementMarshallingDuplicateElementIndirectionDepth => $@"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-{DisableRuntimeMarshalling}
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method(
-        [MarshalUsing(typeof(IntWrapper), ElementIndirectionDepth = 1)] [MarshalUsing(typeof(IntWrapper), ElementIndirectionDepth = 1)] TestCollection<int> p);
-}}
-
-struct IntWrapper
-{{
-    public IntWrapper(int i){{}}
-    public int ToManaged() => throw null;
-}}
-
-" + CustomCollectionWithMarshaller(enableDefaultMarshalling: true);
-
-            public static string GenericCollectionWithCustomElementMarshallingUnusedElementIndirectionDepth => $@"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-{DisableRuntimeMarshalling}
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method(
-        [MarshalUsing(typeof(IntWrapper), ElementIndirectionDepth = 2)] TestCollection<int> p);
-}}
-
-struct IntWrapper
-{{
-    public IntWrapper(int i){{}}
-    public int ToManaged() => throw null;
-}}
-
-" + CustomCollectionWithMarshaller(enableDefaultMarshalling: true);
-        }
-
         public static string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $@"
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -2417,20 +2035,27 @@ public struct S
     public string s;
 }}
 
-[CustomTypeMarshaller(typeof(S))]
-public struct Native
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+public static class Marshaller
 {{
-    private System.IntPtr p;
-    public Native(S s)
-    {{
-        p = System.IntPtr.Zero;
-    }}
+    public static Native ConvertToUnmanaged(S s) => new(s);
 
-    public S ToManaged() => new S {{ s = string.Empty }};
+    public static S ConvertToManaged(Native unmanaged) => unmanaged.ToManaged();
+
+    public struct Native
+    {{
+        private System.IntPtr p;
+        public Native(S s)
+        {{
+            p = System.IntPtr.Zero;
+        }}
+
+        public S ToManaged() => new S {{ s = string.Empty }};
+    }}
 }}
 ";
 
-            public static string TypeUsage(string attr) => MarshalUsingParametersAndModifiers("S", "Native", attr);
+            public static string TypeUsage(string attr) => MarshalUsingParametersAndModifiers("S", "Marshaller", attr);
         }
     }
 }

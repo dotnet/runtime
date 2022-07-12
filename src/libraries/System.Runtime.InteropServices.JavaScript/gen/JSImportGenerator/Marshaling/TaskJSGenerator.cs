@@ -45,14 +45,14 @@ namespace Microsoft.Interop.JavaScript
                 ? Argument(IdentifierName(context.GetIdentifiers(info).native))
                 : _inner.AsArgument(info, context);
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallerDirection.In && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo.FullTypeName == "void"
                     ? ToManagedMethodVoid(target, source)
                     : ToManagedMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == CustomTypeMarshallerDirection.Out && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == CustomTypeMarshallingDirection.Out && info.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo.FullTypeName == "void"
                     ? ToJSMethodVoid(target, source)
@@ -64,14 +64,14 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Invoke && context.Direction == CustomTypeMarshallerDirection.In && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Invoke && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo.FullTypeName == "void"
                     ? ToJSMethodVoid(target, source)
                     : ToJSMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallerDirection.Out && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.Out && !info.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo.FullTypeName == "void"
                     ? ToManagedMethodVoid(target, source)
