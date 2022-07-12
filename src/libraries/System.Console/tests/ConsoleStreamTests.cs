@@ -17,7 +17,7 @@ public class ConsoleStreamTests
         outStream.Write(new byte[] { }, 0, 0);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Helpers), nameof(Helpers.IsConsoleInSupported))]
     public void ReadAsyncRespectsCancellation()
     {
         Stream inStream = Console.OpenStandardInput();
@@ -32,7 +32,7 @@ public class ConsoleStreamTests
         Assert.True(valueTaskResult.IsCanceled);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Helpers), nameof(Helpers.IsConsoleInSupported))]
     public void ReadAsyncHandlesInvalidParams()
     {
         Stream inStream = Console.OpenStandardInput();
@@ -69,7 +69,7 @@ public class ConsoleStreamTests
         Assert.Throws<ArgumentOutOfRangeException>(() => { outStream.WriteAsync(bytes, 0, bytes.Length + 1); });
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Helpers), nameof(Helpers.IsConsoleInSupported))]
     public void InputCannotWriteAsync()
     {
         Stream inStream = Console.OpenStandardInput();
