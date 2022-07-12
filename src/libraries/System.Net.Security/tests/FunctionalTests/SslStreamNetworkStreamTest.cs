@@ -750,16 +750,16 @@ namespace System.Net.Security.Tests
             int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            clientOptions.ValidationPolicy = new X509ChainPolicy() { RevocationMode = X509RevocationMode.NoCheck,
+            clientOptions.CertificateChainPolicy = new X509ChainPolicy() { RevocationMode = X509RevocationMode.NoCheck,
                                                                      TrustMode = X509ChainTrustMode.CustomRootTrust };
-            clientOptions.ValidationPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
+            clientOptions.CertificateChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
             // Add only one CA to verify that peer did send intermediate CA cert.
             // In case of partial chain, we need to make missing certs available.
             if (usePartialChain)
             {
                 for (int i = split; i < certificates.serverChain.Count - 1; i++)
                 {
-                    clientOptions.ValidationPolicy.ExtraStore.Add(certificates.serverChain[i]);
+                    clientOptions.CertificateChainPolicy.ExtraStore.Add(certificates.serverChain[i]);
                 }
             }
 

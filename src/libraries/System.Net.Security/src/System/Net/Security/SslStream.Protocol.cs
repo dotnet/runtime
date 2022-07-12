@@ -925,7 +925,7 @@ namespace System.Net.Security
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.ValidationPolicy);
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
                 if (_remoteCertificate != null && certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
@@ -945,14 +945,9 @@ namespace System.Net.Security
                 {
                     chain ??= new X509Chain();
 
-                    if (_sslAuthenticationOptions.ValidationPolicy != null)
+                    if (_sslAuthenticationOptions.CertificateChainPolicy != null)
                     {
-                        chain.ChainPolicy = _sslAuthenticationOptions.ValidationPolicy;
-                        if (_sslAuthenticationOptions.ValidationPolicy.VerificationTimeIgnored)
-                        {
-                            // Update VerificationTime to 'Now' unless explicitly set for whatever reason.
-                            chain.ChainPolicy.VerificationTime = DateTime.Now;
-                        }
+                        chain.ChainPolicy = _sslAuthenticationOptions.CertificateChainPolicy;
                     }
                     else
                     {

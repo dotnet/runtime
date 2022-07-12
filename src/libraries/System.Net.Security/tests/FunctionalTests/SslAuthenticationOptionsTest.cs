@@ -67,7 +67,7 @@ namespace System.Net.Security.Tests
                         LocalCertificateSelectionCallback = clientLocalCallback,
                         RemoteCertificateValidationCallback = clientRemoteCallback,
                         TargetHost = clientHost,
-                        ValidationPolicy = policy
+                        CertificateChainPolicy = policy,
                     };
 
                     // Create server options
@@ -82,7 +82,7 @@ namespace System.Net.Security.Tests
                         RemoteCertificateValidationCallback = serverRemoteCallback,
                         ServerCertificate = serverCert,
                         ServerCertificateContext = certificateContext,
-                        ValidationPolicy = policy
+                        CertificateChainPolicy = policy,
                     };
 
                     // Authenticate
@@ -103,7 +103,7 @@ namespace System.Net.Security.Tests
                     Assert.Same(clientRemoteCallback, clientOptions.RemoteCertificateValidationCallback);
                     Assert.Same(clientHost, clientOptions.TargetHost);
                     Assert.Same(clientHost, clientOptions.TargetHost);
-                    Assert.Same(policy, clientOptions.ValidationPolicy);
+                    Assert.Same(policy, clientOptions.CertificateChainPolicy);
 
                     // Validate that server options are unchanged
                     Assert.Equal(serverAllowRenegotiation, serverOptions.AllowRenegotiation);
@@ -116,7 +116,7 @@ namespace System.Net.Security.Tests
                     Assert.Same(serverRemoteCallback, serverOptions.RemoteCertificateValidationCallback);
                     Assert.Same(serverCert, serverOptions.ServerCertificate);
                     Assert.Same(certificateContext, serverOptions.ServerCertificateContext);
-                    Assert.Same(policy, serverOptions.ValidationPolicy);
+                    Assert.Same(policy, serverOptions.CertificateChainPolicy);
                 }
             }
         }

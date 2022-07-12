@@ -80,6 +80,6 @@ namespace System.Net.Security
         /// <see cref="CertificateRevocationCheckMode"/> and <see cref="SslCertificateTrust"/>
         /// are ignored.
         /// </summary>
-        public X509ChainPolicy? ValidationPolicy { get; set; }
+        public X509ChainPolicy? CertificateChainPolicy { get; set; }
     }
 }

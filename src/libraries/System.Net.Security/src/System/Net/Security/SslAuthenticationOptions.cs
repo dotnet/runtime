@@ -57,9 +57,9 @@ namespace System.Net.Security
             ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
             CipherSuitesPolicy = sslClientAuthenticationOptions.CipherSuitesPolicy;
 
-            if (sslClientAuthenticationOptions.ValidationPolicy != null)
+            if (sslClientAuthenticationOptions.CertificateChainPolicy != null)
             {
-                ValidationPolicy = sslClientAuthenticationOptions.ValidationPolicy.Clone();
+                CertificateChainPolicy = sslClientAuthenticationOptions.CertificateChainPolicy.Clone();
             }
         }
 
@@ -141,9 +141,9 @@ namespace System.Net.Security
                 ServerCertSelectionDelegate = sslServerAuthenticationOptions.ServerCertificateSelectionCallback;
             }
 
-            if (sslServerAuthenticationOptions.ValidationPolicy != null)
+            if (sslServerAuthenticationOptions.CertificateChainPolicy != null)
             {
-                ValidationPolicy = sslServerAuthenticationOptions.ValidationPolicy.Clone();
+                CertificateChainPolicy = sslServerAuthenticationOptions.CertificateChainPolicy.Clone();
             }
         }
 
@@ -180,6 +180,6 @@ namespace System.Net.Security
         internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
-        internal X509ChainPolicy? ValidationPolicy { get; set; }
+        internal X509ChainPolicy? CertificateChainPolicy { get; set; }
     }
 }

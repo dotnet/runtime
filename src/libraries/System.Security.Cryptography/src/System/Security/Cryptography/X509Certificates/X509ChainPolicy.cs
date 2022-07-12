@@ -136,7 +136,45 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509ChainPolicy Clone()
         {
-            return (X509ChainPolicy)MemberwiseClone();
+            X509ChainPolicy clone = new X509ChainPolicy
+            {
+                DisableCertificateDownloads = DisableCertificateDownloads,
+                _revocationMode = _revocationMode,
+                _revocationFlag = _revocationFlag,
+                _verificationFlags = _verificationFlags,
+                _trustMode = _trustMode,
+                _verificationTime = _verificationTime,
+                VerificationTimeIgnored = VerificationTimeIgnored,
+                UrlRetrievalTimeout = UrlRetrievalTimeout,
+            };
+
+            if (_applicationPolicy?.Count > 0)
+            {
+                foreach (var item in _applicationPolicy)
+                {
+                    clone.ApplicationPolicy.Add(item);
+                }
+            }
+
+            if (_certificatePolicy?.Count > 0)
+            {
+                foreach (var item in _certificatePolicy)
+                {
+                    clone.CertificatePolicy.Add(item);
+                }
+            }
+
+            if (_customTrustStore?.Count > 0)
+            {
+               clone.CustomTrustStore.AddRange(_customTrustStore);
+            }
+
+            if (_extraStore?.Count > 0)
+            {
+               clone.ExtraStore.AddRange(_extraStore);
+            }
+
+            return clone;
         }
     }
 }
