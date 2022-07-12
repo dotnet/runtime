@@ -131,7 +131,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DefaultTypeInfoResolverNull()
+        public static void NewDefaultOptions_TypeInfoResolverIsNull()
         {
             var options = new JsonSerializerOptions();
             Assert.Null(options.TypeInfoResolver);
