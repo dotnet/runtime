@@ -329,7 +329,6 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
 bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 {
-
 #ifdef TARGET_AMD64
     MethodInfo pMethodInfo;
     FindMethodInfo(pvAddress, &pMethodInfo);
@@ -343,31 +342,42 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
         0
     );
 
+    // detect if the IP is in a location that VirtualUnwind will have problem with.
+
     if (decoder.GetStackBaseRegister() == NO_STACK_BASE_REGISTER)
     {
-        // TODO: can we detect not unwindable ranges in this case or we need extra info?.
+        // TODO: can we detect not unwindable ranges in RSP based code or we need extra info for epilogues?
         return false;
     }
     else
     {
+        // we are looking for prologue pattern like the following. If IP falls on these instructions, we cannot unwind.
+        //     push  rbp
+        //     push  ??
+        //     push  ??
+        //     . . .
+        //     sub   rsp, ??                // optional
+        //     lea   rbp, [rsp + 0x??]      // also could be "mov, rbp, rsp"
+
+
         uint8_t* start = (uint8_t*)pvAddress - codeOffset;
 
-        // method should start with "push rbp"
-        // TODO: how a method not startig with "push rpb" is still marked as rbp based?
-        //       maybe those are actually ok?
-        if (*start != 85)
+        // RBP based methods not starting with "push rbp".
+        //       assume these are not unwindable for now.
+        if (*start != 0x55)
             return false;
 
-        const int maxPushLength = 11; // pushing all callee saved takes 11 bytes.
+        const int maxPushLength = 11; // pushing all callee saved registers takes up to 11 bytes.
         int prologueSize;
         for (prologueSize = 1; prologueSize < maxPushLength + 1; prologueSize++)
         {
-            if (start[prologueSize] == 0x48)  // search for start of "lea    rbp, [rsp + 0x??]"
+            if ((start[prologueSize] & 0x48) == 0x48)  // REX.W means we are done with pushes
                 break;
         }
 
         ASSERT(prologueSize < maxPushLength + 1);
 
+        // skip optional sub rsp
         if (start[prologueSize + 1] == 0x83)
         {
             prologueSize += 4; // skip "sub    rsp, 0x??"  // B operand
@@ -377,8 +387,9 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
             prologueSize += 7; // skip "sub    rsp, 0x??"  // W operand
         }
 
-        ASSERT(start[prologueSize] == 0x48);
+        ASSERT((start[prologueSize] & 0x48) == 0x48);
 
+        // mov or lea rbp concludes the un-unwindable prologue.
         if(start[prologueSize + 1] == 0x8b)   // mov
         {
             ASSERT(start[prologueSize + 2] == 0xec); // mov, rbp, rsp
@@ -403,23 +414,35 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
             // in prologue
             return false;
         }
-        else if (((uint8_t*)pvAddress)[-1] == 0x5d)
+
+
+        // now check if we are in un-unwindable epilogue that looks like:
+        //      pop rbx
+        //      pop r12
+        //      . . .
+        //      pop rbp
+        //      ret            // can also be a jmp
+        //
+        if (((uint8_t*)pvAddress)[-1] == 0x5d)
         {
             // right after "pop   rbp". This could be "ret" or "jmp" 
             return false;
         }
-        else
+
+        // we see a bunch of push/pop instructions in finallies and VirtualUnwind cannot handle them.
+        // same issue with pops in epilogs
+        // just reject any kind of push or pop
+        //
         {
             uint8_t opcode = *(uint8_t*)pvAddress;
             if (opcode == 0x41)
                 opcode = ((uint8_t*)pvAddress)[1];
 
-            // pop rbx through pop r15 and some others, TODO: VS perhaps switch for nonvol?           
-            if (opcode >= 0x5b && opcode <= 0x5f)
-                return false; // on the "pop ??" part of "pop ??; pop ??; ret"
+            // pop rax through r15.
+            if (opcode >= 0x58 && opcode <= 0x5f)
+                return false;
 
-            // we see a bunch of push/pop instructions in finallies and VirtualUnwind cannot handle them.
-            // pops fit the epilogue pattern above, but we also need to reject pushes.
+            // push rax through r15.
             if (opcode >= 0x50 && opcode <= 0x57)
                 return false;
         }
