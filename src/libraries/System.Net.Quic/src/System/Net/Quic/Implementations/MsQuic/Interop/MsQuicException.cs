@@ -32,6 +32,7 @@ namespace Microsoft.Quic
             else if (status == MsQuic.QUIC_STATUS_HANDSHAKE_FAILURE) return "QUIC_STATUS_HANDSHAKE_FAILURE";
             else if (status == MsQuic.QUIC_STATUS_ABORTED) return "QUIC_STATUS_ABORTED";
             else if (status == MsQuic.QUIC_STATUS_ADDRESS_IN_USE) return "QUIC_STATUS_ADDRESS_IN_USE";
+            else if (status == MsQuic.QUIC_STATUS_INVALID_ADDRESS) return "QUIC_STATUS_INVALID_ADDRESS";
             else if (status == MsQuic.QUIC_STATUS_CONNECTION_TIMEOUT) return "QUIC_STATUS_CONNECTION_TIMEOUT";
             else if (status == MsQuic.QUIC_STATUS_CONNECTION_IDLE) return "QUIC_STATUS_CONNECTION_IDLE";
             else if (status == MsQuic.QUIC_STATUS_UNREACHABLE) return "QUIC_STATUS_UNREACHABLE";
@@ -49,8 +50,10 @@ namespace Microsoft.Quic
             else if (status == MsQuic.QUIC_STATUS_REVOKED_CERTIFICATE) return "QUIC_STATUS_REVOKED_CERTIFICATE";
             else if (status == MsQuic.QUIC_STATUS_EXPIRED_CERTIFICATE) return "QUIC_STATUS_EXPIRED_CERTIFICATE";
             else if (status == MsQuic.QUIC_STATUS_UNKNOWN_CERTIFICATE) return "QUIC_STATUS_UNKNOWN_CERTIFICATE";
+            else if (status == MsQuic.QUIC_STATUS_REQUIRED_CERTIFICATE) return "QUIC_STATUS_REQUIRED_CERTIFICATE";
             else if (status == MsQuic.QUIC_STATUS_CERT_EXPIRED) return "QUIC_STATUS_CERT_EXPIRED";
             else if (status == MsQuic.QUIC_STATUS_CERT_UNTRUSTED_ROOT) return "QUIC_STATUS_CERT_UNTRUSTED_ROOT";
+            else if (status == MsQuic.QUIC_STATUS_CERT_NO_CERT) return "QUIC_STATUS_CERT_NO_CERT";
             else return $"Unknown status '{status}'";
         }
 

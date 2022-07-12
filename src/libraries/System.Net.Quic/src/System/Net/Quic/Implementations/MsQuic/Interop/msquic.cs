@@ -7,7 +7,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Net.Quic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -84,6 +83,7 @@ namespace Microsoft.Quic
         public static int QUIC_STATUS_HANDSHAKE_FAILURE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_HANDSHAKE_FAILURE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_HANDSHAKE_FAILURE : MsQuic_Linux.QUIC_STATUS_HANDSHAKE_FAILURE;
         public static int QUIC_STATUS_ABORTED => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_ABORTED : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_ABORTED : MsQuic_Linux.QUIC_STATUS_ABORTED;
         public static int QUIC_STATUS_ADDRESS_IN_USE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_ADDRESS_IN_USE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_ADDRESS_IN_USE : MsQuic_Linux.QUIC_STATUS_ADDRESS_IN_USE;
+        public static int QUIC_STATUS_INVALID_ADDRESS => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_INVALID_ADDRESS : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_INVALID_ADDRESS : MsQuic_Linux.QUIC_STATUS_INVALID_ADDRESS;
         public static int QUIC_STATUS_CONNECTION_TIMEOUT => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CONNECTION_TIMEOUT : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CONNECTION_TIMEOUT : MsQuic_Linux.QUIC_STATUS_CONNECTION_TIMEOUT;
         public static int QUIC_STATUS_CONNECTION_IDLE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CONNECTION_IDLE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CONNECTION_IDLE : MsQuic_Linux.QUIC_STATUS_CONNECTION_IDLE;
         public static int QUIC_STATUS_UNREACHABLE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_UNREACHABLE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_UNREACHABLE : MsQuic_Linux.QUIC_STATUS_UNREACHABLE;
@@ -101,13 +101,14 @@ namespace Microsoft.Quic
         public static int QUIC_STATUS_REVOKED_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_REVOKED_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_REVOKED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_REVOKED_CERTIFICATE;
         public static int QUIC_STATUS_EXPIRED_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_EXPIRED_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_EXPIRED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_EXPIRED_CERTIFICATE;
         public static int QUIC_STATUS_UNKNOWN_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_UNKNOWN_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_UNKNOWN_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_UNKNOWN_CERTIFICATE;
+        public static int QUIC_STATUS_REQUIRED_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_REQUIRED_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_REQUIRED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_REQUIRED_CERTIFICATE;
         public static int QUIC_STATUS_CERT_EXPIRED => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CERT_EXPIRED : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CERT_EXPIRED : MsQuic_Linux.QUIC_STATUS_CERT_EXPIRED;
         public static int QUIC_STATUS_CERT_UNTRUSTED_ROOT => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CERT_UNTRUSTED_ROOT : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CERT_UNTRUSTED_ROOT : MsQuic_Linux.QUIC_STATUS_CERT_UNTRUSTED_ROOT;
+        public static int QUIC_STATUS_CERT_NO_CERT => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CERT_NO_CERT : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CERT_NO_CERT : MsQuic_Linux.QUIC_STATUS_CERT_NO_CERT;
 
         public static int QUIC_ADDRESS_FAMILY_UNSPEC => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_UNSPEC : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_UNSPEC : MsQuic_Linux.QUIC_ADDRESS_FAMILY_UNSPEC;
         public static int QUIC_ADDRESS_FAMILY_INET => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_INET : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET : MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET;
         public static int QUIC_ADDRESS_FAMILY_INET6 => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_INET6 : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET6 : MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET6;
-
     }
 
     /// <summary>Defines the type of a member as it was used in the native signature.</summary>

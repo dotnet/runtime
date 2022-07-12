@@ -51,17 +51,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (status == QUIC_STATUS_ADDRESS_IN_USE) return new QuicException(QuicError.AddressInUse, null, SR.net_quic_address_in_use, null);
                 if (status == QUIC_STATUS_UNREACHABLE) return new QuicException(QuicError.HostUnreachable, null, SR.net_quic_host_unreachable, null);
                 if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, SR.net_quic_connection_refused, null);
-                // TODO: Uncomment after updating to latest sources
-                // if (status == QUIC_STATUS_VERSION_NEGOTIATION_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, SR.net_quic_ver_neg_error, null);
-                // if (status == QUIC_STATUS_INVALID_ADDRESS) return new QuicException(QuicError.invalidAddress, null, SR.net_quic_invalid_address, null);
+                if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, SR.net_quic_ver_neg_error, null);
+                if (status == QUIC_STATUS_INVALID_ADDRESS) return new QuicException(QuicError.invalidAddress, null, SR.net_quic_invalid_address, null);
                 if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, SR.net_quic_connection_idle, null);
                 if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.ProtocolError, null, SR.net_quic_protocol_error, null);
 
                 if (status == QUIC_STATUS_TLS_ERROR ||
                     status == QUIC_STATUS_CERT_EXPIRED ||
-                    status == QUIC_STATUS_CERT_UNTRUSTED_ROOT// ||
-                                                             //status == QUIC_STATUS_CERT_NO_CERT
-                    )
+                    status == QUIC_STATUS_CERT_UNTRUSTED_ROOT ||
+                    status == QUIC_STATUS_CERT_NO_CERT)
                 {
                     return new AuthenticationException(SR.net_auth_SSPI, new MsQuicException(status, message));
                 }
