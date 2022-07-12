@@ -69,13 +69,19 @@ public class Program
         }
 
         [Fact]
-        public async Task NoDiagnosticForTopLevelStatements()
+        public async Task TopLevelStatements()
         {
             string test = @"using System.Text.RegularExpressions;
+Regex r = [|new Regex("""")|];";
+            string fixedCode = @"using System.Text.RegularExpressions;
+Regex r = MyRegex();
 
-Regex r = new Regex("""");";
-
-            await VerifyCS.VerifyAnalyzerAsync(test);
+partial class Program
+{
+    [RegexGenerator("""")]
+    private static partial Regex MyRegex();
+}";
+            await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
         }
 
         public static IEnumerable<object[]> StaticInvocationWithTimeoutTestData()
@@ -737,17 +743,26 @@ partial class Program
         }
 
         [Fact]
-        public async Task NoDiagnosticForTopLevelStatements_MultipleSourceFiles()
+        public async Task TopLevelStatements_MultipleSourceFiles()
         {
             await new VerifyCS.Test(references: null, usePreviewLanguageVersion: true, numberOfIterations: 1)
             {
                 TestState =
                 {
-                    Sources = { "public class C { }", @"var r = new System.Text.RegularExpressions.Regex("""");" },
+                    Sources = { "public class C { }", @"var r = [|new System.Text.RegularExpressions.Regex("""")|];" },
                 },
+                FixedState =
+                {
+                    Sources = { "public class C { }", @"var r = MyRegex();
+
+partial class Program
+{
+    [System.Text.RegularExpressions.RegexGenerator("""")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex();
+}" }
+                }
             }.RunAsync();
         }
-
         #region Test helpers
 
         private static string ConstructRegexInvocation(InvocationType invocationType, string pattern, string? options = null)
