@@ -62,6 +62,6 @@ namespace System.Net.WebSockets
             return false;
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => _headers.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

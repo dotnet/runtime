@@ -204,15 +204,18 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (options.CollectHttpResponseDetails && response != null)
+                if (response is not null)
                 {
-                    HttpStatusCode = response.StatusCode;
-                    HttpResponseHeaders = new HttpResponseHeadersReadOnlyCollection(response.Headers);
-                }
+                    if (options.CollectHttpResponseDetails)
+                    {
+                        HttpStatusCode = response.StatusCode;
+                        HttpResponseHeaders = new HttpResponseHeadersReadOnlyCollection(response.Headers);
+                    }
 
-                if (disposeResponse)
-                {
-                    response?.Dispose();
+                    if (disposeResponse)
+                    {
+                        response.Dispose();
+                    }
                 }
 
                 // Disposing the handler will not affect any active stream wrapped in the WebSocket.

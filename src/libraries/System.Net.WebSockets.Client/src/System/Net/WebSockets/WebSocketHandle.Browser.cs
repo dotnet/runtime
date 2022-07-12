@@ -11,7 +11,7 @@ namespace System.Net.WebSockets
     internal sealed class WebSocketHandle
     {
         private WebSocketState _state = WebSocketState.Connecting;
-        public HttpStatusCode HttpStatusCode { get; set; }
+        public HttpStatusCode HttpStatusCode => (HttpStatusCode)0;
 
         public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders { get; set; }
 
