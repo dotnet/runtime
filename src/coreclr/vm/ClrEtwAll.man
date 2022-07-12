@@ -680,6 +680,8 @@
                       <map value="0x0" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.NoneMapMessage)"/>
                       <map value="0x1" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage)"/>
                       <map value="0x2" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage)"/>
+                      <map value="0x3" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.TieredPGOMapMessage)"/>
+                      <map value="0x4" message="$(string.RuntimePublisher.TieredCompilationSettingsFlags.ReadyToRunMapMessage)"/>
                     </bitMap>
                 </maps>
 
@@ -4365,6 +4367,8 @@
                       <map value="0x0" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.NoneMapMessage)"/>
                       <map value="0x1" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.QuickJitMapMessage)"/>
                       <map value="0x2" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage)"/>
+                      <map value="0x3" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.TieredPGOMapMessage)"/>
+                      <map value="0x4" message="$(string.RundownPublisher.TieredCompilationSettingsFlags.ReadyToRunMapMessage)"/>
                     </bitMap>
                 </maps>
 
@@ -8865,6 +8869,8 @@
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.NoneMapMessage" value="None" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RuntimePublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
+                <string id="RuntimePublisher.TieredCompilationSettingsFlags.TieredPGOMapMessage" value="TieredPGO" />
+                <string id="RuntimePublisher.TieredCompilationSettingsFlags.ReadyToRunMapMessage" value="ReadyToRun" />
                 <string id="RuntimePublisher.KnownPathSource.ApplicationAssembliesMessage" value="ApplicationAssemblies" />
                 <string id="RuntimePublisher.KnownPathSource.UnusedMessage" value="Unused" />
                 <string id="RuntimePublisher.KnownPathSource.AppPathsMessage" value="AppPaths" />
@@ -8934,6 +8940,8 @@
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.NoneMapMessage" value="None" />
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.QuickJitMapMessage" value="QuickJit" />
                 <string id="RundownPublisher.TieredCompilationSettingsFlags.QuickJitForLoopsMapMessage" value="QuickJitForLoops" />
+                <string id="RundownPublisher.TieredCompilationSettingsFlags.TieredPGOMapMessage" value="TieredPGO" />
+                <string id="RundownPublisher.TieredCompilationSettingsFlags.ReadyToRunMapMessage" value="ReadyToRun" />
 
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.ModuleSection" value="ModuleSection"/>
                 <string id="PrivatePublisher.ModuleRangeSectionTypeMap.EETableSection" value="EETableSection"/>
