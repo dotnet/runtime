@@ -60,7 +60,7 @@ namespace System.Net.Security.Tests
 
             Assert.NotNull(e);
 
-            if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
+            if (PlatformDetection.IsAndroid)
             {
                 Assert.True(
                     e is AuthenticationException || e is System.IO.IOException,
