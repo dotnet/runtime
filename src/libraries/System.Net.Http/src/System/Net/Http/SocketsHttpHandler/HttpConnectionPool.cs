@@ -1147,6 +1147,7 @@ namespace System.Net.Http
                     pool.Trace($"Cancelling a pending connection attempt with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms");
 
                 if (GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion > 0)
+                    // This cancellation will not fire if the connection succeeds within the delay and the CTS becomes disposed.
                     waiter.ConnectionCancellationTokenSource.CancelAfter(GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion);
                 else
                     waiter.ConnectionCancellationTokenSource.Cancel(); // Cancel immediately by default
