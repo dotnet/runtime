@@ -59,7 +59,10 @@ namespace System.Tests
             Assert.Equal(value, new decimal(value));
         }
 
-        // We generated the expected bits via decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float))
+        // We generated the expected bits via:
+        // decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float) / 1.0000000000000000000000000000m)
+        // (the division is to remove trailing zeros from the result of decimal.Parse, but for values that end up as a decimal of 0,
+        // we don't remove the trailing zeros)
         public static IEnumerable<object[]> Ctor_Float_TestData()
         {
             yield return new object[] { 123456789.123456f, new int[] { 123456792, 0, 0, 0 } };
@@ -100,7 +103,12 @@ namespace System.Tests
         public void Validate_Ctor_Float_TestData(float value, int[] bits)
         {
             // Assert that the test data is correct
-            Assert.Equal(bits, decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float)));
+            decimal parsedDec = decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float);
+            if (parsedDec != 0)
+            {
+                parsedDec /= 1.0000000000000000000000000000m;
+            }
+            Assert.Equal(bits, decimal.GetBits(parsedDec));
         }
 
         [Theory]
@@ -212,7 +220,10 @@ namespace System.Tests
             Assert.Equal(value, new decimal(value));
         }
 
-        // We generated the expected bits via decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float))
+        // We generated the expected bits via:
+        // decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float) / 1.0000000000000000000000000000m)
+        // (the division is to remove trailing zeros from the result of decimal.Parse, but for values that end up as a decimal of 0,
+        // we don't remove the trailing zeros)
         public static IEnumerable<object[]> Ctor_Double_TestData()
         {
             yield return new object[] { 123456789.123456, new int[] { 320956445, -521069915, 669260594, 1310720 } };
@@ -223,13 +234,14 @@ namespace System.Tests
             yield return new object[] { 92371.57714, new int[] { -83052646, 238378239, 500747323, 1507328 } };
             yield return new object[] { 79228162514264328797450928128.0, new int[] { 0, -2048, -1, 0 } };
             yield return new object[] { 495176015714152.25, new int[] { 197862585, 11529215, 0, 131072 } };
+            yield return new object[] { 1.23, new int[] { 1798665462, -1684234825, 66678433, 1769472 } };
             yield return new object[] { 2.0123456789123456, new int[] { 984009685, 1865266894, 1090894778, 1835008 } };
             yield return new object[] { 2E-28, new int[] { 2, 0, 0, 1835008 } };
-            yield return new object[] { 2E-29, new int[] { 0, 0, 0, 1835008 } }; // TODO confirm and edge case this
+            yield return new object[] { 2E-29, new int[] { 0, 0, 0, 1835008 } };
             yield return new object[] { 2E28, new int[] { 0, 2085225472, 1084202172, 0 } };
             yield return new object[] { 1.5, new int[] { 15, 0, 0, 65536 } };
             yield return new object[] { 0, new int[] { 0, 0, 0, 0 } };
-            yield return new object[] { double.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, -2147483648 } }; // TODO confirm and edge case this
+            yield return new object[] { double.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, -2147483648 } };
 
             yield return new object[] { 100000000000000.1, new int[] { -1981274977, -1966660860, 0, 327680 } };
             yield return new object[] { 10000000000000.1, new int[] { -1204819169, 434162106, 542, 589824 } };
@@ -244,8 +256,8 @@ namespace System.Tests
             yield return new object[] { 10000.1, new int[] { -1165287547, 1089266688, 542106507, 1572864 } };
             yield return new object[] { 1000.1, new int[] { -1584991309, 1509150595, 542155296, 1638400 } };
             yield return new object[] { 100.1, new int[] { 11443904, 1413022501, 542643187, 1703936 } };
-            yield return new object[] { 10.1, new int[] { 1009591096, 451743457, 547522097, 1769472 } };
-            yield return new object[] { 1.1, new int[] { -1014028300, -571112596, 596311194, 1835008 } };
+            yield return new object[] { 10.1, new int[] { -328537620, -1243315844, 54752209, 1703936 } };
+            yield return new object[] { 1.1, new int[] { 1063601541, -220459491, 5963111, 1703936 } };
             yield return new object[] { 1, new int[] { 1, 0, 0, 0 } };
             yield return new object[] { 0.1, new int[] { -726076801, -1613725623, 54210108, 1835008 } };
             yield return new object[] { 0.01, new int[] { 1611906123, -590869293, 5421010, 1835008 } };
@@ -253,7 +265,7 @@ namespace System.Tests
             yield return new object[] { 0.0001, new int[] { -1545913784, 466537709, 54210, 1835008 } };
             yield return new object[] { 0.00001, new int[] { -151203247, 46653770, 5421, 1835008 } };
             yield return new object[] { 0.0000000000000000000000000001, new int[] { 1, 0, 0, 1835008 } };
-            yield return new object[] { 0.00000000000000000000000000001, new int[] { 0, 0, 0, 1835008 } }; // TODO confirm and edge case this
+            yield return new object[] { 0.00000000000000000000000000001, new int[] { 0, 0, 0, 1835008 } };
         }
 
         [Theory]
@@ -261,7 +273,12 @@ namespace System.Tests
         public void Validate_Ctor_Double_TestData(double value, int[] bits)
         {
             // Assert that the test data is correct
-            Assert.Equal(bits, decimal.GetBits(decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float)));
+            decimal parsedDec = decimal.Parse(value.ToString("G99"), System.Globalization.NumberStyles.Float);
+            if (parsedDec != 0)
+            {
+                parsedDec /= 1.0000000000000000000000000000m;
+            }
+            Assert.Equal(bits, decimal.GetBits(parsedDec));
         }
 
         [Theory]
@@ -279,7 +296,7 @@ namespace System.Tests
         {
 
             // Ignore data that is smaller or larger than what can fit in a decimal, we don't expect this to successfully RoundTrip
-            if (valueDouble < 10E-28 || valueDouble > 79228162514264337593543950335.0)
+            if (valueDouble < 1E-28 || valueDouble > 79228162514264337593543950335.0)
             {
                 return;
             }
