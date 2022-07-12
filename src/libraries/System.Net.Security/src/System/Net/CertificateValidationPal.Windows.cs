@@ -29,7 +29,10 @@ namespace System.Net
         //
 
         private static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext? securityContext, bool retrieveChainCertificates, ref X509Chain? chain)
+            SafeDeleteContext? securityContext,
+            bool retrieveChainCertificates,
+            ref X509Chain? chain,
+            X509ChainPolicy? chainPolicy)
         {
             if (securityContext == null)
             {
@@ -67,6 +70,10 @@ namespace System.Net
                     if (retrieveChainCertificates)
                     {
                         chain ??= new X509Chain();
+                        if (chainPolicy != null)
+                        {
+                            chain.ChainPolicy = chainPolicy;
+                        }
 
                         UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
                     }
