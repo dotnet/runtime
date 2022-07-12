@@ -6,7 +6,8 @@ namespace System.Numerics
     /// <summary>Defines support for hyperbolic functions.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface IHyperbolicFunctions<TSelf>
-        where TSelf : IHyperbolicFunctions<TSelf>, INumberBase<TSelf>
+        : IFloatingPointConstants<TSelf>
+        where TSelf : IHyperbolicFunctions<TSelf>
     {
         /// <summary>Computes the hyperbolic arc-cosine of a value.</summary>
         /// <param name="x">The value, in radians, whose hyperbolic arc-cosine is to be computed.</param>

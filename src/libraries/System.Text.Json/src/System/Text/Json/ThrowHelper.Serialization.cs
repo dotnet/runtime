@@ -120,7 +120,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_ResolverTypeNotCompatible(Type requestedType, Type actualType)
         {
-            throw new InvalidOperationException(SR.Format(SR.ResolverTypeNotCompatible, requestedType, actualType));
+            throw new InvalidOperationException(SR.Format(SR.ResolverTypeNotCompatible, actualType, requestedType));
         }
 
         [DoesNotReturn]
@@ -292,15 +292,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKindNone()
+        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(JsonTypeInfoKind kind)
         {
-            throw new InvalidOperationException(SR.JsonTypeInfoOperationNotPossibleForKindNone);
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_CollectionIsReadOnly()
-        {
-            throw new InvalidOperationException(SR.CollectionIsReadOnly);
+            throw new InvalidOperationException(SR.Format(SR.InvalidJsonTypeInfoOperationForKind, kind));
         }
 
         [DoesNotReturn]
@@ -674,14 +668,14 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.MetadataInitFuncsNull));
         }
 
-        public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(JsonSerializerContext? context, Type type)
+        public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
         {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, context?.GetType().FullName ?? "<null>", type));
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, resolver?.GetType().FullName ?? "<null>", type));
         }
 
-        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(JsonSerializerContext? context, Type type)
+        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(IJsonTypeInfoResolver? resolver, Type type)
         {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, context?.GetType().FullName ?? "<null>", type));
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, resolver?.GetType().FullName ?? "<null>", type));
         }
 
         public static void ThrowInvalidOperationException_NoDefaultOptionsForContext(JsonSerializerContext context, Type type)

@@ -106,17 +106,16 @@ namespace System
             _length = length;
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/67445: Make this public.
         /// <summary>Creates a new <see cref="ReadOnlySpan{T}"/> of length 1 around the specified reference.</summary>
         /// <param name="reference">A reference to data.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ReadOnlySpan(in T reference)
+        public ReadOnlySpan(in T reference)
         {
             _reference = ref Unsafe.AsRef(in reference);
             _length = 1;
         }
 
-        // Constructor for internal use only.
+        // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateReadOnlySpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan(ref T reference, int length)
         {

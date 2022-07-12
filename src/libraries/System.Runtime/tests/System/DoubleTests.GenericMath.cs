@@ -143,81 +143,81 @@ namespace System.Tests
         [Fact]
         public static void op_GreaterThanTest()
         {
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(double.NegativeInfinity, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(double.MinValue, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(-1.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(-MinNormal, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(-MaxSubnormal, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(-double.Epsilon, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(-0.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(double.NaN, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(0.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(double.Epsilon, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(MaxSubnormal, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(MinNormal, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThan(1.0, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_GreaterThan(double.MaxValue, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_GreaterThan(double.PositiveInfinity, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(double.NegativeInfinity, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(double.MinValue, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(-1.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(-MinNormal, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(-MaxSubnormal, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(-double.Epsilon, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(-0.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(double.NaN, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(0.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(double.Epsilon, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(MaxSubnormal, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(MinNormal, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(1.0, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(double.MaxValue, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThan(double.PositiveInfinity, 1.0));
         }
 
         [Fact]
         public static void op_GreaterThanOrEqualTest()
         {
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(double.NegativeInfinity, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(double.MinValue, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(-1.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(-MinNormal, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(-MaxSubnormal, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(-double.Epsilon, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(-0.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(double.NaN, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(0.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(double.Epsilon, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(MaxSubnormal, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(MinNormal, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(1.0, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(double.MaxValue, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_GreaterThanOrEqual(double.PositiveInfinity, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(double.NegativeInfinity, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(double.MinValue, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(-1.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(-MinNormal, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(-MaxSubnormal, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(-double.Epsilon, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(-0.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(double.NaN, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(0.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(double.Epsilon, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(MaxSubnormal, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(MinNormal, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(1.0, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(double.MaxValue, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_GreaterThanOrEqual(double.PositiveInfinity, 1.0));
         }
 
         [Fact]
         public static void op_LessThanTest()
         {
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(double.NegativeInfinity, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(double.MinValue, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(-1.0, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(-MinNormal, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(-MaxSubnormal, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(-double.Epsilon, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(-0.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_LessThan(double.NaN, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(0.0, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(double.Epsilon, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(MaxSubnormal, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThan(MinNormal, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_LessThan(1.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_LessThan(double.MaxValue, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_LessThan(double.PositiveInfinity, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(double.NegativeInfinity, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(double.MinValue, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(-1.0, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(-MinNormal, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(-MaxSubnormal, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(-double.Epsilon, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(-0.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(double.NaN, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(0.0, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(double.Epsilon, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(MaxSubnormal, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(MinNormal, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(1.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(double.MaxValue, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_LessThan(double.PositiveInfinity, 1.0));
         }
 
         [Fact]
         public static void op_LessThanOrEqualTest()
         {
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(double.NegativeInfinity, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(double.MinValue, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(-1.0, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(-MinNormal, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(-MaxSubnormal, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(-double.Epsilon, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(-0.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(double.NaN, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(0.0, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(double.Epsilon, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(MaxSubnormal, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(MinNormal, 1.0));
-            Assert.True(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(1.0, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(double.MaxValue, 1.0));
-            Assert.False(ComparisonOperatorsHelper<double, double>.op_LessThanOrEqual(double.PositiveInfinity, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(double.NegativeInfinity, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(double.MinValue, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(-1.0, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(-MinNormal, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(-MaxSubnormal, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(-double.Epsilon, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(-0.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(double.NaN, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(0.0, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(double.Epsilon, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(MaxSubnormal, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(MinNormal, 1.0));
+            Assert.True(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(1.0, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(double.MaxValue, 1.0));
+            Assert.False(ComparisonOperatorsHelper<double, double, bool>.op_LessThanOrEqual(double.PositiveInfinity, 1.0));
         }
 
         //
@@ -315,41 +315,41 @@ namespace System.Tests
         [Fact]
         public static void op_EqualityTest()
         {
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(double.NegativeInfinity, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(double.MinValue, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(-1.0, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(-MinNormal, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(-MaxSubnormal, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(-double.Epsilon, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(-0.0, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(double.NaN, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(0.0, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(double.Epsilon, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(MaxSubnormal, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(MinNormal, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Equality(1.0, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(double.MaxValue, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Equality(double.PositiveInfinity, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(double.NegativeInfinity, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(double.MinValue, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(-1.0, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(-MinNormal, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(-MaxSubnormal, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(-double.Epsilon, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(-0.0, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(double.NaN, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(0.0, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(double.Epsilon, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(MaxSubnormal, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(MinNormal, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Equality(1.0, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(double.MaxValue, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Equality(double.PositiveInfinity, 1.0));
         }
 
         [Fact]
         public static void op_InequalityTest()
         {
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(double.NegativeInfinity, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(double.MinValue, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(-1.0, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(-MinNormal, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(-MaxSubnormal, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(-double.Epsilon, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(-0.0, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(double.NaN, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(0.0, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(double.Epsilon, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(MaxSubnormal, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(MinNormal, 1.0));
-            Assert.False(EqualityOperatorsHelper<double, double>.op_Inequality(1.0, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(double.MaxValue, 1.0));
-            Assert.True(EqualityOperatorsHelper<double, double>.op_Inequality(double.PositiveInfinity, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(double.NegativeInfinity, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(double.MinValue, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(-1.0, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(-MinNormal, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(-MaxSubnormal, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(-double.Epsilon, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(-0.0, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(double.NaN, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(0.0, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(double.Epsilon, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(MaxSubnormal, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(MinNormal, 1.0));
+            Assert.False(EqualityOperatorsHelper<double, double, bool>.op_Inequality(1.0, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(double.MaxValue, 1.0));
+            Assert.True(EqualityOperatorsHelper<double, double, bool>.op_Inequality(double.PositiveInfinity, 1.0));
         }
 
         //

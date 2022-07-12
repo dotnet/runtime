@@ -79,8 +79,7 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadInput(object obj)
         {
-            if (_inputStream != null)
-                _inputStream.Close();
+            _inputStream?.Close();
             _inputStream = new MemoryStream();
             if (obj is Stream)
             {

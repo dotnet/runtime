@@ -7,6 +7,9 @@ using System.Text;
 using Test.Cryptography;
 using Xunit;
 
+// String factory methods are obsolete. Warning is disabled for the entire file as most tests exercise the obsolete methods
+#pragma warning disable SYSLIB0045
+
 namespace System.Security.Cryptography.Tests
 {
     public static class CryptoConfigTests

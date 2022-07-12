@@ -2261,8 +2261,7 @@ namespace System.Xml
             XmlElement parent;
 
             // make certain we weren't place somewhere else.
-            if (rowElement.ParentNode != null)
-                rowElement.ParentNode.RemoveChild(rowElement);
+            rowElement.ParentNode?.RemoveChild(rowElement);
 
             // Find the parent of RowNode to be inserted
             DataRow? parentRowInRelation = GetNestedParent(row);
@@ -2293,8 +2292,7 @@ namespace System.Xml
             // Should not insert after docElem node
             Debug.Assert(prevSibling != DocumentElement);
 
-            if (child.ParentNode != null)
-                child.ParentNode.RemoveChild(child);
+            child.ParentNode?.RemoveChild(child);
 
             Debug.Assert(child.ParentNode == null);
             prevSibling.ParentNode.InsertAfter(child, prevSibling);
@@ -2531,8 +2529,7 @@ namespace System.Xml
                 XmlBoundElement? be = e as XmlBoundElement;
                 if (be != null && be.Row != null)
                 {
-                    if (rowElemList != null)
-                        rowElemList.Add(e);
+                    rowElemList?.Add(e);
                     // Skip over sub-regions
                     fMore = iter.NextRight();
                     continue;

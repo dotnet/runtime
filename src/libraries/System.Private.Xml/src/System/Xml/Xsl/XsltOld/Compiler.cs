@@ -860,7 +860,7 @@ namespace System.Xml.Xsl.XsltOld
                             case '}':
                                 i++; // include '}'
                                 if (i == start + 2)
-                                { // empty XPathExpresion
+                                { // empty XPathExpression
                                     throw XsltException.Create(SR.Xslt_EmptyAvtExpr, avt);
                                 }
                                 lex.Append(avt, start + 1, i - start - 2); // avt without {}

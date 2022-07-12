@@ -984,9 +984,8 @@ GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
 	GList *vars = NULL;
-	int i;
 
-	for (i = 0; i < cfg->num_varinfo; i++) {
+	for (guint i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
 
@@ -1751,7 +1750,7 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 	gpointer storage;
 	ArgInfo *ainfo;
 
-	for (int i = 0; i < sig->param_count + sig->hasthis; i++) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
 		ainfo = &cinfo->args [i];
 		int temp_size = arg_need_temp (ainfo);
 
@@ -1848,7 +1847,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
-	int i;
 	CallInfo *cinfo;
 
 	if (cfg->arch.omit_fp_computed)
@@ -1886,7 +1884,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		cfg->arch.omit_fp = FALSE;
 	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)))
 		cfg->arch.omit_fp = FALSE;
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
 
 		if (ainfo->storage == RegTypeBase || ainfo->storage == RegTypeBaseGen || ainfo->storage == RegTypeStructByVal) {
@@ -1909,7 +1907,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 	MonoType *sig_ret;
-	int i, offset, size, align, curinst;
+	int offset, size, align, curinst;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	guint32 ualign;
@@ -2082,7 +2080,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cfg->locals_min_stack_offset = offset;
 
 	curinst = cfg->locals_start;
-	for (i = curinst; i < cfg->num_varinfo; ++i) {
+	for (guint i = curinst; i < cfg->num_varinfo; ++i) {
 		MonoType *t;
 		MonoInst *ins;
 
@@ -2147,7 +2145,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += size;
 	}
 
-	for (i = 0; i < sig->param_count; ++i) {
+	for (guint16 i = 0; i < sig->param_count; ++i) {
 		ainfo = cinfo->args + i;
 
 		MonoInst *ins;
@@ -2161,7 +2159,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			/* These arguments are saved to the stack in the prolog */
 			ins->inst_offset = offset;
 			if (cfg->verbose_level >= 2)
-				g_print ("arg %d allocated to %s+0x%0x.\n", i, mono_arch_regname (ins->inst_basereg), (int)ins->inst_offset);
+				g_print ("arg %hu allocated to %s+0x%0x.\n", i, mono_arch_regname (ins->inst_basereg), (int)ins->inst_offset);
 			// FIXME:
 			offset += 32;
 			break;
@@ -2398,7 +2396,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
 	MonoInst *in, *ins;
 	MonoMethodSignature *sig;
-	int i, n;
+	guint n;
 	CallInfo *cinfo;
 
 	sig = call->signature;
@@ -2442,7 +2440,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		break;
 	}
 
-	for (i = 0; i < n; ++i) {
+	for (guint i = 0; i < n; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		MonoType *t;
 
@@ -5037,7 +5035,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * the caller argument area, and pop the frame.
 			 */
 			if (call_ins->stack_usage) {
-				int i, prev_sp_offset = 0;
+				int prev_sp_offset = 0;
 
 				// When we get here, the parameters to the tailcall are already formed,
 				// in registers and at the bottom of the grow-down stack.
@@ -5065,7 +5063,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					prev_sp_offset = 2 * 4;
 				else
 					prev_sp_offset = 1 * 4;
-				for (i = 0; i < 16; ++i) {
+				for (guint i = 0; i < 16; ++i) {
 					if (cfg->used_int_regs & (1 << i))
 						prev_sp_offset += 4;
 				}
@@ -5081,7 +5079,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				// FIXME For most functions, with frames < 4K, we can use frame_reg directly here instead of IP.
 				// See https://github.com/mono/mono/pull/12079
 				// See https://github.com/mono/mono/pull/12079/commits/93e7007a9567b78fa8152ce404b372b26e735516
-				for (i = 0; i < call_ins->stack_usage; i += sizeof (target_mgreg_t)) {
+				for (guint i = 0; i < call_ins->stack_usage; i += sizeof (target_mgreg_t)) {
 					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, i + offset_sp);
 					ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, i + offset_ip);
 				}
@@ -6155,7 +6153,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, orig_alloc_size, pos, max_offset, i, rot_amount, part;
+	int alloc_size, orig_alloc_size, pos, max_offset, rot_amount, part;
 	guint8 *code;
 	CallInfo *cinfo;
 	int lmf_offset = 0;
@@ -6198,13 +6196,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ARM_PUSH (code, cfg->used_int_regs | (1 << ARMREG_LR));
 			prev_sp_offset += 4;
 		}
-		for (i = 0; i < 16; ++i) {
+		for (guint i = 0; i < 16; ++i) {
 			if (cfg->used_int_regs & (1 << i))
 				prev_sp_offset += 4;
 		}
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		reg_offset = 0;
-		for (i = 0; i < 16; ++i) {
+		for (guint i = 0; i < 16; ++i) {
 			if ((cfg->used_int_regs & (1 << i))) {
 				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
 				mini_gc_set_slot_type_from_cfa (cfg, (- prev_sp_offset) + reg_offset, SLOT_NOREF);
@@ -6219,7 +6217,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		prev_sp_offset += 4 * 10; /* all but r0-r3, sp and pc */
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
 		reg_offset = 0;
-		for (i = 0; i < 16; ++i) {
+		for (int i = 0; i < 16; ++i) {
 			if ((i > ARMREG_R3) && (i != ARMREG_SP) && (i != ARMREG_PC)) {
 				/* The original r7 is saved at the start */
 				if (!(iphone_abi && i == ARMREG_R7))
@@ -6243,8 +6241,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	alloc_size += ALIGN_TO (prev_sp_offset, MONO_ARCH_FRAME_ALIGNMENT) - prev_sp_offset;
 	cfg->stack_usage = alloc_size;
 	if (alloc_size) {
-		if ((i = mono_arm_is_rotated_imm8 (alloc_size, &rot_amount)) >= 0) {
-			ARM_SUB_REG_IMM (code, ARMREG_SP, ARMREG_SP, i, rot_amount);
+		int imm;
+		if ((imm = mono_arm_is_rotated_imm8 (alloc_size, &rot_amount)) >= 0) {
+			ARM_SUB_REG_IMM (code, ARMREG_SP, ARMREG_SP, imm, rot_amount);
 		} else {
 			code = mono_arm_emit_load_imm (code, ARMREG_IP, alloc_size);
 			ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
@@ -6258,7 +6257,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	//g_print ("prev_sp_offset: %d, alloc_size:%d\n", prev_sp_offset, alloc_size);
 	prev_sp_offset += alloc_size;
 
-	for (i = 0; i < alloc_size - orig_alloc_size; i += 4)
+	for (int i = 0; i < alloc_size - orig_alloc_size; i += 4)
 		mini_gc_set_slot_type_from_cfa (cfg, (- prev_sp_offset) + orig_alloc_size + i, SLOT_NOREF);
 
         /* compute max_offset in order to use short forward jumps
@@ -6333,7 +6332,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ARM_STR_IMM (code, ARMREG_IP, cfg->frame_reg, cfg->sig_cookie);
 	}
 
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		inst = cfg->args [i];
 

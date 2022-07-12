@@ -1,21 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
@@ -79,10 +74,10 @@ namespace System.Text.RegularExpressions.Generator
                     Dictionary<string, string[]> requiredHelpers = new();
                     var sw = new StringWriter();
                     var writer = new IndentedTextWriter(sw);
-                    writer.Indent += 3;
+                    writer.Indent += 2;
                     writer.WriteLine();
                     EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers);
-                    writer.Indent -= 3;
+                    writer.Indent -= 2;
                     return (regexMethod, sw.ToString(), requiredHelpers);
                 })
                 .Collect();
@@ -138,7 +133,6 @@ namespace System.Text.RegularExpressions.Generator
                 // used to name them.  The boilerplate code generation that happens here is minimal when compared to
                 // the work required to generate the actual matching code for the regex.
                 int id = 0;
-                string generatedClassName = $"__{ComputeStringHash(compilationDataAndResults.Right.AssemblyName ?? ""):x}";
 
                 // To minimize generated code in the event of duplicated regexes, we only emit one derived Regex type per unique
                 // expression/options/timeout.  A Dictionary<(expression, options, timeout), RegexMethod> is used to deduplicate, where the value of the
@@ -186,17 +180,13 @@ namespace System.Text.RegularExpressions.Generator
                             emittedExpressions.Add(key, regexMethod);
                         }
 
-                        EmitRegexPartialMethod(regexMethod, writer, generatedClassName);
+                        EmitRegexPartialMethod(regexMethod, writer);
                         writer.WriteLine();
                     }
                 }
 
                 // At this point we've emitted all the partial method definitions, but we still need to emit the actual regex-derived implementations.
                 // These are all emitted inside of our generated class.
-                // TODO https://github.com/dotnet/csharplang/issues/5529:
-                // When C# provides a mechanism for shielding generated code from the rest of the project, it should be employed
-                // here for the generated class.  At that point, the generated class wrapper can be removed, and all of the types
-                // generated inside of it (one for each regex as well as the helpers type) should be shielded.
 
                 writer.WriteLine($"namespace {GeneratedNamespace}");
                 writer.WriteLine($"{{");
@@ -213,17 +203,9 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"    using System.Text.RegularExpressions;");
                 writer.WriteLine($"    using System.Threading;");
                 writer.WriteLine($"");
-                if (compilationDataAndResults.Right.AllowUnsafe)
-                {
-                    writer.WriteLine($"    [SkipLocalsInit]");
-                }
-                writer.WriteLine($"    [{s_generatedCodeAttribute}]");
-                writer.WriteLine($"    [EditorBrowsable(EditorBrowsableState.Never)]");
-                writer.WriteLine($"    internal static class {generatedClassName}");
-                writer.WriteLine($"    {{");
 
                 // Emit each Regex-derived type.
-                writer.Indent += 2;
+                writer.Indent++;
                 foreach (object? result in results)
                 {
                     if (result is ValueTuple<RegexMethod, string, Diagnostic> limitedSupportResult)
@@ -238,19 +220,20 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         if (!regexImpl.Item1.IsDuplicate)
                         {
-                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2);
+                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2, compilationDataAndResults.Right.AllowUnsafe);
                             writer.WriteLine();
                         }
                     }
                 }
-                writer.Indent -= 2;
+                writer.Indent--;
 
                 // If any of the Regex-derived types asked for helper methods, emit those now.
                 if (requiredHelpers.Count != 0)
                 {
-                    writer.Indent += 2;
+                    writer.Indent++;
                     writer.WriteLine($"/// <summary>Helper methods used by generated <see cref=\"Regex\"/>-derived implementations.</summary>");
-                    writer.WriteLine($"private static class {HelpersTypeName}");
+                    writer.WriteLine($"[{s_generatedCodeAttribute}]");
+                    writer.WriteLine($"file static class {HelpersTypeName}");
                     writer.WriteLine($"{{");
                     writer.Indent++;
                     bool sawFirst = false;
@@ -269,10 +252,9 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.Indent--;
                     writer.WriteLine($"}}");
-                    writer.Indent -= 2;
+                    writer.Indent--;
                 }
 
-                writer.WriteLine($"    }}");
                 writer.WriteLine($"}}");
 
                 // Save out the source

@@ -19,7 +19,10 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_crashThread(crashThread),
     m_signal(signal),
     m_moduleInfos(&ModuleInfoCompare),
-    m_mainModule(nullptr)
+    m_mainModule(nullptr),
+    m_cbModuleMappings(0),
+    m_dataTargetPagesAdded(0),
+    m_enumMemoryPagesAdded(0)
 {
     g_crashInfo = this;
 #ifdef __APPLE__
@@ -115,7 +118,7 @@ CrashInfo::EnumMemoryRegion(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [in] */ ULONG32 size)
 {
-    InsertMemoryRegion((ULONG_PTR)address, size);
+    m_enumMemoryPagesAdded += InsertMemoryRegion((ULONG_PTR)address, size);
     return S_OK;
 }
 
@@ -145,7 +148,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
         return false;
     }
     // Gather all the module memory mappings (from /dev/$pid/maps)
-    if (!EnumerateModuleMappings())
+    if (!EnumerateMemoryRegions())
     {
         return false;
     }
@@ -155,9 +158,28 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
         return false;
     }
 #endif
+    // Load and initialize DAC interfaces
+    if (!InitializeDAC())
+    {
+        return false;
+    }
+    // Enumerate all the managed modules. On MacOS only the native modules have been added
+    // to the module mapping list at this point and adds the managed modules. This needs to
+    // be done before the other mappings is initialized.
+    if (!EnumerateManagedModules())
+    {
+        return false;
+    }
+#ifdef __APPLE__
+    InitializeOtherMappings();
+#endif
+    if (!UnwindAllThreads())
+    {
+        return false;
+    }
     if (g_diagnosticsVerbose)
     {
-        TRACE_VERBOSE("Module addresses:\n");
+        TRACE("Module addresses:\n");
         for (const MemoryRegion& region : m_moduleAddresses)
         {
             region.Trace();
@@ -168,14 +190,14 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     {
         for (const MemoryRegion& region : m_moduleMappings)
         {
-            InsertMemoryBackedRegion(region);
+            InsertMemoryRegion(region);
         }
         for (const MemoryRegion& region : m_otherMappings)
         {
             // Don't add uncommitted pages to the full dump
             if ((region.Permissions() & (PF_R | PF_W | PF_X)) != 0)
             {
-                InsertMemoryBackedRegion(region);
+                InsertMemoryRegion(region);
             }
         }
     }
@@ -188,9 +210,13 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
             for (const MemoryRegion& region : m_otherMappings)
             {
                 uint32_t permissions = region.Permissions();
+#ifdef __APPLE__
+                if (permissions == (PF_R | PF_W))
+#else
                 if (permissions == (PF_R | PF_W) || permissions == (PF_R | PF_W | PF_X))
+#endif
                 {
-                    InsertMemoryBackedRegion(region);
+                    InsertMemoryRegion(region);
                 }
             }
         }
@@ -201,21 +227,6 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
             thread->GetThreadStack();
         }
     }
-    // Load and initialize DAC interfaces
-    if (!InitializeDAC())
-    {
-        return false;
-    }
-    if (!EnumerateManagedModules())
-    {
-        return false;
-    }
-    if (!UnwindAllThreads())
-    {
-        return false;
-    }
-    // Join all adjacent memory regions
-    CombineMemoryRegions();
     return true;
 }
 
@@ -301,7 +312,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
 {
     if (m_pClrDataEnumRegions != nullptr && (minidumpType & MiniDumpWithFullMemory) == 0)
     {
-        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED\n");
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
         // Since on both Linux and MacOS all the RW regions will be added for heap
         // dumps by createdump, the only thing differentiating a MiniDumpNormal and
@@ -326,7 +337,7 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
             printf_error("EnumMemoryRegions FAILED %s (%08x)\n", GetHResultString(hr), hr);
             return false;
         }
-        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED\n");
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
     }
     return true;
 }
@@ -342,7 +353,7 @@ CrashInfo::EnumerateManagedModules()
 
     if (m_pClrDataProcess != nullptr)
     {
-        TRACE("EnumerateManagedModules: Module enumeration STARTED\n");
+        TRACE("EnumerateManagedModules: Module enumeration STARTED (%d)\n", m_dataTargetPagesAdded);
 
         if (FAILED(hr = m_pClrDataProcess->StartEnumModules(&enumModules))) {
             printf_error("StartEnumModules FAILED %s (%08x)\n", GetHResultString(hr), hr);
@@ -381,7 +392,7 @@ CrashInfo::EnumerateManagedModules()
                         std::string moduleName = FormatString("%S", wszUnicodeName.GetPtr());
 
                         // Change the module mapping name
-                        ReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
+                        AddOrReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
 
                         // Add managed module info
                         AddModuleInfo(true, moduleData.LoadedPEAddress, pClrDataModule, moduleName);
@@ -402,7 +413,7 @@ CrashInfo::EnumerateManagedModules()
         if (enumModules != 0) {
             m_pClrDataProcess->EndEnumModules(enumModules);
         }
-        TRACE("EnumerateManagedModules: Module enumeration FINISHED\n");
+        TRACE("EnumerateManagedModules: Module enumeration FINISHED (%d) ModuleMappings %06llx\n", m_dataTargetPagesAdded, m_cbModuleMappings / PAGE_SIZE);
     }
     return true;
 }
@@ -413,6 +424,7 @@ CrashInfo::EnumerateManagedModules()
 bool
 CrashInfo::UnwindAllThreads()
 {
+    TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
     ReleaseHolder<ISOSDacInterface> pSos = nullptr;
     if (m_pClrDataProcess != nullptr) {
         m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
@@ -424,6 +436,7 @@ CrashInfo::UnwindAllThreads()
             return false;
         }
     }
+    TRACE("UnwindAllThreads: FINISHED (%d)\n", m_dataTargetPagesAdded);
     return true;
 }
 
@@ -431,7 +444,7 @@ CrashInfo::UnwindAllThreads()
 // Replace an existing module mapping with one with a different name.
 //
 void
-CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& name)
+CrashInfo::AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& name)
 {
     // Round to page boundary (single-file managed assemblies are not page aligned)
     ULONG_PTR start = ((ULONG_PTR)baseAddress) & PAGE_MASK;
@@ -445,7 +458,7 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
 
     // Make sure that the page containing the PE header for the managed asseblies is in the dump
     // especially on MacOS where they are added artificially.
-    MemoryRegion header(flags | MEMORY_REGION_FLAG_MEMORY_BACKED, start, start + PAGE_SIZE);
+    MemoryRegion header(flags, start, start + PAGE_SIZE);
     InsertMemoryRegion(header);
 
     // Add or change the module mapping for this PE image. The managed assembly images may already
@@ -457,10 +470,10 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
         // On MacOS the assemblies are always added.
         MemoryRegion newRegion(flags, start, end, 0, name);
         m_moduleMappings.insert(newRegion);
+        m_cbModuleMappings += newRegion.Size();
 
         if (g_diagnostics) {
-            TRACE("MODULE: ADD ");
-            newRegion.Trace();
+            newRegion.Trace("MODULE: ADD ");
         }
     }
     else if (found->FileName().compare(name) != 0)
@@ -470,13 +483,14 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
 
         // Remove and cleanup the old one
         m_moduleMappings.erase(found);
+        m_cbModuleMappings -= found->Size();
 
-        // Add the new memory region
+        // Add the new memory region.
         m_moduleMappings.insert(newRegion);
+        m_cbModuleMappings += newRegion.Size();
 
         if (g_diagnostics) {
-            TRACE("MODULE: REPLACE ");
-            newRegion.Trace();
+            newRegion.Trace("MODULE: REPLACE ");
         }
     }
 }
@@ -615,15 +629,14 @@ CrashInfo::ReadMemory(void* address, void* buffer, size_t size)
         return false;
     }
     assert(read == size);
-    InsertMemoryRegion(reinterpret_cast<uint64_t>(address), size);
+    InsertMemoryRegion(reinterpret_cast<uint64_t>(address), read);
     return true;
 }
 
 //
-// Add this memory chunk to the list of regions to be
-// written to the core dump.
+// Add this memory chunk to the list of regions to be written to the core dump. Returns the number of pages actually added.
 //
-void
+int
 CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
 {
     assert(size < UINT_MAX);
@@ -636,22 +649,13 @@ CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
     uint64_t end = ((address + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
     assert(end > 0);
 
-    InsertMemoryRegion(MemoryRegion(GetMemoryRegionFlags(start) | MEMORY_REGION_FLAG_MEMORY_BACKED, start, end));
+    return InsertMemoryRegion(MemoryRegion(GetMemoryRegionFlags(start), start, end));
 }
 
 //
-// Adds a memory backed flagged copy of the memory region. The file name is not preserved.
+// Add a memory region to the list. Returns the number of pages actually added.
 //
-void
-CrashInfo::InsertMemoryBackedRegion(const MemoryRegion& region)
-{
-    InsertMemoryRegion(MemoryRegion(region, region.Flags() | MEMORY_REGION_FLAG_MEMORY_BACKED));
-}
-
-//
-// Add a memory region to the list
-//
-void
+int
 CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 {
     // First check if the full memory region can be added without conflicts and is fully valid.
@@ -659,17 +663,18 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
     if (found == m_memoryRegions.end())
     {
         // If the region is valid, add the full memory region
-        if (ValidRegion(region)) {
+        if (ValidRegion(region))
+        {
             m_memoryRegions.insert(region);
-            return;
+            return region.SizeInPages();
         }
     }
     else
     {
-        // If the memory region is wholly contained in region found and both have the
-        // same backed by memory state, we're done.
-        if (found->Contains(region) && (found->IsBackedByMemory() == region.IsBackedByMemory())) {
-            return;
+        // If the memory region is wholly contained in region found
+        if (found->Contains(region))
+        {
+            return 0;
         }
     }
     // Either part of the region was invalid, part of it hasn't been added or the backed
@@ -678,7 +683,8 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 
     // The region overlaps/conflicts with one already in the set so add one page at a
     // time to avoid the overlapping pages.
-    uint64_t numberPages = region.Size() / PAGE_SIZE;
+    uint64_t numberPages = region.SizeInPages();
+    int pagesAdded = 0;
 
     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
     {
@@ -688,14 +694,15 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
         if (found == m_memoryRegions.end())
         {
             // All the single pages added here will be combined in CombineMemoryRegions()
-            if (ValidRegion(memoryRegionPage)) {
+            if (ValidRegion(memoryRegionPage))
+            {
                 m_memoryRegions.insert(memoryRegionPage);
+                pagesAdded++;
             }
         }
-        else {
-            assert(found->IsBackedByMemory() || !region.IsBackedByMemory());
-        }
     }
+
+    return pagesAdded;
 }
 
 //
@@ -704,20 +711,16 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 bool
 CrashInfo::ValidRegion(const MemoryRegion& region)
 {
-    if (region.IsBackedByMemory())
+    uint64_t start = region.StartAddress();
+    uint64_t numberPages = region.SizeInPages();
+    for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
     {
-        uint64_t start = region.StartAddress();
+        BYTE buffer[1];
+        size_t read;
 
-        uint64_t numberPages = region.Size() / PAGE_SIZE;
-        for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
+        if (!ReadProcessMemory((void*)start, buffer, 1, &read))
         {
-            BYTE buffer[1];
-            size_t read;
-
-            if (!ReadProcessMemory((void*)start, buffer, 1, &read))
-            {
-                return false;
-            }
+            return false;
         }
     }
     return true;
@@ -735,7 +738,7 @@ CrashInfo::CombineMemoryRegions()
 
     // MEMORY_REGION_FLAG_SHARED and MEMORY_REGION_FLAG_PRIVATE are internal flags that
     // don't affect the core dump so ignore them when comparing the flags.
-    uint32_t flags = m_memoryRegions.begin()->Flags() & (MEMORY_REGION_FLAG_MEMORY_BACKED | MEMORY_REGION_FLAG_PERMISSIONS_MASK);
+    uint32_t flags = m_memoryRegions.begin()->Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
     uint64_t start = m_memoryRegions.begin()->StartAddress();
     uint64_t end = start;
 
@@ -743,7 +746,7 @@ CrashInfo::CombineMemoryRegions()
     {
         // To combine a region it needs to be contiguous, same permissions and memory backed flag.
         if ((end == region.StartAddress()) &&
-            (flags == (region.Flags() & (MEMORY_REGION_FLAG_MEMORY_BACKED | MEMORY_REGION_FLAG_PERMISSIONS_MASK))))
+            (flags == (region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK)))
         {
             end = region.EndAddress();
         }
@@ -753,7 +756,7 @@ CrashInfo::CombineMemoryRegions()
             assert(memoryRegionsNew.find(memoryRegion) == memoryRegionsNew.end());
             memoryRegionsNew.insert(memoryRegion);
 
-            flags = region.Flags() & (MEMORY_REGION_FLAG_MEMORY_BACKED | MEMORY_REGION_FLAG_PERMISSIONS_MASK);
+            flags = region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
             start = region.StartAddress();
             end = region.EndAddress();
         }
@@ -770,7 +773,7 @@ CrashInfo::CombineMemoryRegions()
 
     if (g_diagnosticsVerbose)
     {
-        TRACE("Memory Regions:\n");
+        TRACE("Final Memory Regions:\n");
         for (const MemoryRegion& region : m_memoryRegions)
         {
             region.Trace();

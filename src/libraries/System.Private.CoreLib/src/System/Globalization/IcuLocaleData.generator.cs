@@ -1226,12 +1226,10 @@ namespace System.Globalization
                 continue;
             }
 
-            Console.WriteLine("private static ReadOnlySpan<byte> CultureNames => new byte[]");
-            Console.WriteLine("{");
+            Console.WriteLine("private static ReadOnlySpan<byte> CultureNames =>");
 
             var indexes = new List<(int position, int length, string cultureName)>();
             int pos = 0;
-            var isFirst = true;
             for (int i = 0; i < list.Count; ++i)
             {
                 var row = list[i];
@@ -1242,22 +1240,9 @@ namespace System.Globalization
                     indexes.Add((pos, value.Length, value));
                 }
 
-                foreach (var ch in row.culture)
-                {
-                    if (isFirst)
-                    {
-                        isFirst = false;
-                        Console.Write("    ");
-                    }
-                    Console.Write($"(byte)'{ch}', ");
-                }
-                Console.WriteLine($" // {string.Join(", ", row.cultures)}");
-                isFirst = true;
-
+                Console.WriteLine($@"    ""{row.culture}""u8{(i == list.Count - 1 ? ';' : " +")}  // {string.Join(", ", row.cultures)}");
                 pos += row.culture.Length;
             }
-
-            Console.WriteLine("};");
 
             Console.WriteLine();
             Console.WriteLine($"private const int CulturesCount = {indexes.Count};");

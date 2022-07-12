@@ -111,17 +111,16 @@ namespace System
             _length = length;
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/67445: Make this public.
         /// <summary>Creates a new <see cref="Span{T}"/> of length 1 around the specified reference.</summary>
         /// <param name="reference">A reference to data.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Span(ref T reference)
+        public Span(ref T reference)
         {
             _reference = ref reference;
             _length = 1;
         }
 
-        // Constructor for internal use only.
+        // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateSpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Span(ref T reference, int length)
         {

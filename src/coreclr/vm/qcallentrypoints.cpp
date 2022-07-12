@@ -212,9 +212,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadPool_GetCompletedWorkItemCount)
     DllImportEntry(ThreadPool_RequestWorkerThread)
     DllImportEntry(ThreadPool_PerformGateActivities)
-    DllImportEntry(AppDomainTimer_Create)
-    DllImportEntry(AppDomainTimer_Change)
-    DllImportEntry(AppDomainTimer_Delete)
 #ifdef TARGET_UNIX
     DllImportEntry(WaitHandle_CorWaitOnePrioritizedNative)
 #endif

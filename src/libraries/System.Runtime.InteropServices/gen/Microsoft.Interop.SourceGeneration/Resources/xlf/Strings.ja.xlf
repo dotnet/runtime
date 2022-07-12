@@ -104,7 +104,7 @@
       </trans-unit>
       <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
         <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
-        <target state="new">The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</target>
+        <target state="translated">マネージド型 '{1}' のマーシャラー エントリ ポイント型 '{0}' には、マネージド型より 1 大きい引数が必要です。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStatic">

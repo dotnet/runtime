@@ -81,6 +81,12 @@ namespace Microsoft.Interop
         public Stage CurrentStage { get; init; } = Stage.Invalid;
 
         /// <summary>
+        /// <c>CustomTypeMarshallerDirection.In</c> means method import like <c>[LibraryImport]</c>.
+        /// <c>CustomTypeMarshallerDirection.Out</c> means method export like in <c>[UnmanagedCallersOnly]</c> or in <c>[JSExport]</c>
+        /// </summary>
+        public CustomTypeMarshallerDirection Direction { get; init; } = CustomTypeMarshallerDirection.In;
+
+        /// <summary>
         /// Gets the currently targeted framework and version for stub code generation.
         /// </summary>
         /// <returns>A framework value and version.</returns>

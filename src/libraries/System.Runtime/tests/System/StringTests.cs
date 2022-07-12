@@ -215,9 +215,9 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("Hello", 'E', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", 'H', StringComparison.OrdinalIgnoreCase, false)]
-        public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisionType, bool expected)
+        public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.Contains(value, comparisionType));
+            Assert.Equal(expected, s.Contains(value, comparisonType));
         }
 
         public static IEnumerable<object[]> Contains_String_StringComparison_TestData()
