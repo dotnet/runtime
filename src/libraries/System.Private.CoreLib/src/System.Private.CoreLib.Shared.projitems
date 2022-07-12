@@ -875,6 +875,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\AnsiStringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\ArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\BStrStringMarshaller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\ContiguousCollectionMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerDirection.cs" />
