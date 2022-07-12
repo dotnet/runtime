@@ -113,13 +113,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     private bool _canAccept;
     /// <summary>
-    /// From <see cref="QuicConnectionOptions.DefaultCloseErrorCode"/>, used to close connection in <see cref="DisposeAsync"/>.
-    /// </summary>
-    private long _defaultCloseErrorCode;
-    /// <summary>
     /// From <see cref="QuicConnectionOptions.DefaultStreamErrorCode"/>, passed to newly created <see cref="QuicStream"/>.
     /// </summary>
     private long _defaultStreamErrorCode;
+    /// <summary>
+    /// From <see cref="QuicConnectionOptions.DefaultCloseErrorCode"/>, used to close connection in <see cref="DisposeAsync"/>.
+    /// </summary>
+    private long _defaultCloseErrorCode;
 
     /// <summary>
     /// Set when CONNECTED is received or inside the constructor for an inbound connection from NEW_CONNECTION data.
@@ -229,8 +229,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
-            _defaultCloseErrorCode = options.DefaultCloseErrorCode;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
+            _defaultCloseErrorCode = options.DefaultCloseErrorCode;
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
@@ -318,8 +318,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
-            _defaultCloseErrorCode = options.DefaultCloseErrorCode;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
+            _defaultCloseErrorCode = options.DefaultCloseErrorCode;
 
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
