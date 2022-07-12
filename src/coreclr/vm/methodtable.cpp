@@ -8042,7 +8042,7 @@ MethodTable::ResolveVirtualStaticMethod(
 
                         if (allowVariantMatches)
                         {
-                            equivalentOrVariantCompatible = pItfInMap->CanCastTo(pInterfaceType, NULL);
+                            equivalentOrVariantCompatible = pItfInMap->CanCastToInterface(pInterfaceType, NULL);
                         }
                         else
                         {
