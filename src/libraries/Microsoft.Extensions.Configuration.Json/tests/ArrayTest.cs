@@ -261,10 +261,9 @@ namespace Microsoft.Extensions.Configuration.Json.Test
             var json = @"{
                 ""ip"": {
                     ""array"": [
-
                     ],
                     ""object"":{
-}
+                    }
                 }
             }";
 
@@ -285,11 +284,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
             Assert.Equal("object", ipSectionChildren[1].Key);
             Assert.Null(ipSectionChildren[1].Value);
             Assert.Equal(0, ipSectionChildren[0].GetChildren().Count());
-            Assert.Equal(0, ipSectionChildren[0].GetChildren().Count());
             Assert.Equal(0, ipSectionChildren[1].GetChildren().Count());
-            Assert.Equal(0, ipSectionChildren[1].GetChildren().Count());
-
-
         }
     }
 }
