@@ -13,33 +13,33 @@ namespace System.Net.Security.Kerberos;
 
 class FakeKdcServer
 {
-    private readonly KdcServer kdcServer;
-    private readonly TcpListener tcpListener;
-    private CancellationTokenSource? cancellationTokenSource;
-    private bool running;
-    private readonly object runningLock;
+    private readonly KdcServer _kdcServer;
+    private readonly TcpListener _tcpListener;
+    private CancellationTokenSource? _cancellationTokenSource;
+    private bool _running;
+    private readonly object _runningLock;
 
     public FakeKdcServer(KdcServerOptions serverOptions)
     {
-        kdcServer = new KdcServer(serverOptions);
-        tcpListener = new TcpListener(System.Net.IPAddress.Loopback, 0);
-        runningLock = new object();
+        _kdcServer = new KdcServer(serverOptions);
+        _tcpListener = new TcpListener(System.Net.IPAddress.Loopback, 0);
+        _runningLock = new object();
     }
 
     public Task<IPEndPoint> Start()
     {
-        cancellationTokenSource = new CancellationTokenSource();
-        running = true;
-        tcpListener.Start();
+        _cancellationTokenSource = new CancellationTokenSource();
+        _running = true;
+        _tcpListener.Start();
 
-        var cancellationToken = cancellationTokenSource.Token;
+        var cancellationToken = _cancellationTokenSource.Token;
         Task.Run(async () => {
             try
             {
                 byte[] sizeBuffer = new byte[4];
                 do
                 {
-                    using var socket = await tcpListener.AcceptSocketAsync(cancellationToken);
+                    using var socket = await _tcpListener.AcceptSocketAsync(cancellationToken);
                     using var socketStream = new NetworkStream(socket);
 
                     await socketStream.ReadExactlyAsync(sizeBuffer, cancellationToken);
@@ -47,7 +47,7 @@ class FakeKdcServer
                     var requestRented = ArrayPool<byte>.Shared.Rent(messageSize);
                     var request = requestRented.AsMemory(0, messageSize);
                     await socketStream.ReadExactlyAsync(request);                    
-                    var response = await kdcServer.ProcessMessage(request);
+                    var response = await _kdcServer.ProcessMessage(request);
                     ArrayPool<byte>.Shared.Return(requestRented);
                     var responseLength = response.Length + 4;
                     var responseRented = ArrayPool<byte>.Shared.Rent(responseLength);
@@ -60,29 +60,29 @@ class FakeKdcServer
             }
             finally
             {
-                lock (runningLock)
+                lock (_runningLock)
                 {
-                    running = false;
-                    Monitor.Pulse(runningLock);
+                    _running = false;
+                    Monitor.Pulse(_runningLock);
                 }
             }
         });
-        return Task.FromResult((IPEndPoint)tcpListener.LocalEndpoint);
+        return Task.FromResult((IPEndPoint)_tcpListener.LocalEndpoint);
     }
 
     public void Stop()
     {
-        if (running)
+        if (_running)
         {
-            cancellationTokenSource?.Cancel();
-            lock (runningLock)
+            _cancellationTokenSource?.Cancel();
+            lock (_runningLock)
             {
-                while (running)
+                while (_running)
                 {
-                    Monitor.Wait(runningLock);
+                    Monitor.Wait(_runningLock);
                 }
             }
-            tcpListener.Stop();
+            _tcpListener.Stop();
         }
     }
 }

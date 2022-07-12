@@ -5,6 +5,8 @@ using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Kerberos.NET.Configuration;
 using Kerberos.NET.Crypto;
@@ -17,17 +19,20 @@ namespace System.Net.Security.Kerberos;
 
 public class KerberosExecutor : IDisposable
 {
-    private ListenerOptions _options;
-    private string _realm;
-    private FakeKdcServer _kdcListener;
+    private readonly ListenerOptions _options;
+    private readonly string _realm;
+    private readonly FakePrincipalService _principalService;
+    private readonly FakeKdcServer _kdcListener;
     private RemoteInvokeHandle? _invokeHandle;
     private string? _krb5Path;
     private string? _keytabPath;
-    private List<string> _services;
+    private readonly List<FakeKerberosPrincipal> _servicePrincipals;
 
     public static bool IsSupported { get; } = OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
 
-    public static string FakePassword { get; } = "P@ssw0rd!";
+    public const string DefaultAdminPassword = "PLACEHOLDERadmin.";
+
+    public const string DefaultUserPassword = "PLACEHOLDERcorrect20";
 
     public KerberosExecutor(ITestOutputHelper testOutputHelper, string realm)
     {
@@ -39,18 +44,27 @@ public class KerberosExecutor : IDisposable
                 testOutputHelper.WriteLine($"[{level}] [{categoryName}] {log}")
         );
 
+        _principalService = new FakePrincipalService(realm);
+
+        byte[] krbtgtPassword = new byte[16];
+        //RandomNumberGenerator.Fill(krbtgtPassword);
+
+        var krbtgt = new FakeKerberosPrincipal(PrincipalType.Service, "krbtgt", realm, krbtgtPassword);
+        _principalService.Add("krbtgt", krbtgt);
+        _principalService.Add($"krbtgt/{realm}", krbtgt);
+
         _options = new ListenerOptions
         {
             Configuration = krb5Config,
             DefaultRealm = realm,
-            RealmLocator = realm => new FakeRealmService(realm, krb5Config),
+            RealmLocator = realm => new FakeRealmService(realm, krb5Config, _principalService),
             Log = logger,
             IsDebug = true,
         };
 
         _kdcListener = new FakeKdcServer(_options);
-        _services = new List<string>();
         _realm = realm;
+        _servicePrincipals = new List<FakeKerberosPrincipal>();
     }
 
     public void Dispose()
@@ -61,9 +75,18 @@ public class KerberosExecutor : IDisposable
         File.Delete(_keytabPath);
     }
 
-    public void AddService(string name)
+    public void AddService(string name, string password = DefaultAdminPassword)
     {
-        _services.Add(name);
+        var principal = new FakeKerberosPrincipal(PrincipalType.Service, name, _realm, Encoding.Unicode.GetBytes(password));
+        _principalService.Add(name, principal);
+        _servicePrincipals.Add(principal);
+    }
+ 
+    public void AddUser(string name, string password = DefaultUserPassword)
+    {
+        var principal = new FakeKerberosPrincipal(PrincipalType.User, name, _realm, Encoding.Unicode.GetBytes(password));
+        _principalService.Add(name, principal);
+        _principalService.Add($"{name}@{_realm}", principal);
     }
 
     public async Task Invoke(Action method)
@@ -95,23 +118,14 @@ public class KerberosExecutor : IDisposable
         var keyTable = new KeyTable();
 
         var etypes = _options.Configuration.Defaults.DefaultTgsEncTypes;
-        byte[] passwordBytes = FakeKerberosPrincipal.FakePassword;
+        //byte[] passwordBytes = FakeKerberosPrincipal.FakePassword;
 
-        foreach (string service in _services)
+        foreach (var servicePrincipal in _servicePrincipals)
         {
             foreach (var etype in etypes.Where(CryptoService.SupportsEType))
             {
-                var kerbKey = new KerberosKey(
-                    password: passwordBytes,
-                    etype: etype,
-                    principal: new PrincipalName(
-                       PrincipalNameType.NT_PRINCIPAL,
-                       _options.DefaultRealm,
-                       new [] { service }),
-                    saltType: SaltType.ActiveDirectoryUser
-               );
-
-               keyTable.Entries.Add(new KeyEntry(kerbKey));
+                var kerbKey = servicePrincipal.RetrieveLongTermCredential(etype);
+                keyTable.Entries.Add(new KeyEntry(kerbKey));
             }
         }
 

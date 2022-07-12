@@ -4,39 +4,23 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using Kerberos.NET.Crypto;
 using Kerberos.NET.Entities;
-using Kerberos.NET.Entities.Pac;
 using Kerberos.NET.Server;
 
 namespace System.Net.Security.Kerberos;
 
 class FakeKerberosPrincipal : IKerberosPrincipal
 {
-    private static readonly byte[] KrbTgtKey = new byte[]
+    private readonly byte[] _password;
+
+    public FakeKerberosPrincipal(PrincipalType type, string principalName, string realm, byte[] password)
     {
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0
-    };
-
-    private static readonly SecurityIdentifier DomainSid = new(
-        IdentifierAuthority.NTAuthority,
-        new uint[] { 123, 456, 789, 012, 321 },
-        0
-    );
-
-    private readonly SecurityIdentifier userSid = new(DomainSid, 888);
-
-    private readonly SecurityIdentifier groupSid = new(DomainSid, 513);
-
-    internal static readonly byte[] FakePassword = Encoding.Unicode.GetBytes("P@ssw0rd!");
-
-    public FakeKerberosPrincipal(string principalName, string realm)
-    {
+        this.Type = type;
         this.PrincipalName = principalName;
         this.Realm = realm;
         this.Expires = DateTimeOffset.UtcNow.AddMonths(9999);
+        this._password = password;
     }
 
     public SupportedEncryptionTypes SupportedEncryptionTypes { get; set; }
@@ -54,28 +38,7 @@ class FakeKerberosPrincipal : IKerberosPrincipal
         PaDataType.PA_PK_AS_REQ
     };
 
-    public PrincipalType Type
-    {
-        get
-        {
-            if (this.PrincipalName == "krbtgt" || this.PrincipalName.Equals($"krbtgt/{Realm}", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return PrincipalType.Service;
-            }
-
-            if (this.PrincipalName.StartsWith("krbtgt/", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return PrincipalType.TrustedDomain;
-            }
-
-            if (this.PrincipalName.Contains('/'))
-            {
-                return PrincipalType.Service;
-            }
-
-            return PrincipalType.User;
-        }
-    }
+    public PrincipalType Type { get; private set; }
 
     public string PrincipalName { get; private set; }
 
@@ -83,95 +46,25 @@ class FakeKerberosPrincipal : IKerberosPrincipal
 
     public DateTimeOffset? Expires { get; set; }
 
-    public PrivilegedAttributeCertificate GeneratePac()
-    {
-        var pac = new PrivilegedAttributeCertificate()
-        {
-            LogonInfo = new PacLogonInfo
-            {
-                DomainName = Realm,
-                UserName = PrincipalName,
-                UserDisplayName = PrincipalName,
-                BadPasswordCount = 12,
-                SubAuthStatus = 0,
-                DomainSid = DomainSid,
-                UserSid = userSid,
-                GroupSid = groupSid,
-                LogonTime = DateTimeOffset.UtcNow,
-                ServerName = "server",
-                UserAccountControl = UserAccountControlFlags.ADS_UF_NORMAL_ACCOUNT,
-                UserFlags = UserFlags.LOGON_WINLOGON,
-
-            }
-        };
-
-        return pac;
-    }
-
-    private KerberosKey? TgtKey { get; set; }
+    public PrivilegedAttributeCertificate? GeneratePac() => null;
 
     private static readonly ConcurrentDictionary<string, KerberosKey> KeyCache = new();
 
     public KerberosKey RetrieveLongTermCredential()
     {
-        EncryptionType etype = ExtractEType(this.PrincipalName);
-
-        return this.RetrieveLongTermCredential(etype);
+        return this.RetrieveLongTermCredential(EncryptionType.AES256_CTS_HMAC_SHA1_96);
     }
 
     public KerberosKey RetrieveLongTermCredential(EncryptionType etype)
     {
-        KerberosKey key;
-
-        if (this.PrincipalName.StartsWith("krbtgt", StringComparison.InvariantCultureIgnoreCase))
+        return KeyCache.GetOrAdd(etype + this.PrincipalName, pn =>
         {
-            key = this.TgtKey ?? (this.TgtKey = new(
-                password: KrbTgtKey,
-                principal: new PrincipalName(PrincipalNameType.NT_PRINCIPAL, Realm, new[] { "krbtgt" }),
-                etype: EncryptionType.AES256_CTS_HMAC_SHA1_96,
-                saltType: SaltType.ActiveDirectoryUser
-            ));
-        }
-        else
-        {
-            key = KeyCache.GetOrAdd(etype + this.PrincipalName, pn =>
-            {
-                return new KerberosKey(
-                    password: FakePassword,
-                    principal: new PrincipalName(PrincipalNameType.NT_PRINCIPAL, Realm, new[] { this.PrincipalName }),
-                    etype: etype,
-                    saltType: SaltType.ActiveDirectoryUser
-                );
-            });
-        }
-
-        return key;
-    }
-
-    private static EncryptionType ExtractEType(string principalName)
-    {
-        if (principalName.StartsWith("RC4", StringComparison.InvariantCultureIgnoreCase))
-        {
-            return EncryptionType.RC4_HMAC_NT;
-        }
-        else if (principalName.StartsWith("AES128SHA256", StringComparison.InvariantCultureIgnoreCase))
-        {
-            return EncryptionType.AES128_CTS_HMAC_SHA256_128;
-        }
-        else if (principalName.StartsWith("AES128", StringComparison.InvariantCultureIgnoreCase))
-        {
-            return EncryptionType.AES128_CTS_HMAC_SHA1_96;
-        }
-        else if (principalName.StartsWith("AES256SHA384", StringComparison.InvariantCultureIgnoreCase))
-        {
-            return EncryptionType.AES256_CTS_HMAC_SHA384_192;
-        }
-        else if (principalName.StartsWith("AES256", StringComparison.InvariantCultureIgnoreCase))
-        {
-            return EncryptionType.AES256_CTS_HMAC_SHA1_96;
-        }
-
-        return EncryptionType.AES256_CTS_HMAC_SHA1_96;
+            return new KerberosKey(
+                password: this._password,
+                principal: new PrincipalName(PrincipalNameType.NT_PRINCIPAL, Realm, new[] { this.PrincipalName }),
+                etype: etype,
+                saltType: SaltType.ActiveDirectoryUser);
+        });
     }
 
     public void Validate(X509Certificate2Collection certificates)

@@ -8,16 +8,16 @@ namespace System.Net.Security.Kerberos;
 
 class FakeTrustedRealms : ITrustedRealmService
 {
-    private readonly string currentRealm;
+    private readonly string _currentRealm;
 
     public FakeTrustedRealms(string name)
     {
-        this.currentRealm = name;
+        _currentRealm = name;
     }
 
     public IRealmReferral? ProposeTransit(KrbTgsReq tgsReq, PreAuthenticationContext context)
     {
-        if (!tgsReq.Body.SName.FullyQualifiedName.EndsWith(this.currentRealm, StringComparison.InvariantCultureIgnoreCase) &&
+        if (!tgsReq.Body.SName.FullyQualifiedName.EndsWith(_currentRealm, StringComparison.InvariantCultureIgnoreCase) &&
             !tgsReq.Body.SName.FullyQualifiedName.Contains("not.found"))
         {
             return new FakeRealmReferral(tgsReq.Body);

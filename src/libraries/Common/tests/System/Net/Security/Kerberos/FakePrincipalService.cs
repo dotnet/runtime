@@ -12,11 +12,18 @@ namespace System.Net.Security.Kerberos;
 
 class FakePrincipalService : IPrincipalService
 {
-    private readonly string realm;
+    private readonly string _realm;
+    private readonly Dictionary<string, IKerberosPrincipal> _principals;
 
     public FakePrincipalService(string realm)
     {
-        this.realm = realm;
+        _realm = realm;
+        _principals = new Dictionary<string, IKerberosPrincipal>(StringComparer.InvariantCultureIgnoreCase);
+    }
+
+    public void Add(string name, IKerberosPrincipal principal)
+    {
+        _principals.Add(name, principal);
     }
 
     public Task<IKerberosPrincipal?> FindAsync(KrbPrincipalName principalName, string? realm = null)
@@ -26,26 +33,12 @@ class FakePrincipalService : IPrincipalService
 
     public IKerberosPrincipal? Find(KrbPrincipalName principalName, string? realm = null)
     {
-        IKerberosPrincipal? principal = null;
-
-        bool fallback = false;
-
-        if (principalName.FullyQualifiedName.Contains("-fallback", StringComparison.OrdinalIgnoreCase) &&
-            principalName.Type == PrincipalNameType.NT_ENTERPRISE)
+        if (_principals.TryGetValue(principalName.FullyQualifiedName, out var principal))
         {
-            principal = null;
-            fallback = true;
+            return principal;
         }
 
-        if ((principalName.FullyQualifiedName.EndsWith(this.realm, StringComparison.InvariantCultureIgnoreCase) ||
-            principalName.FullyQualifiedName.StartsWith("krbtgt", StringComparison.InvariantCultureIgnoreCase) ||
-            principalName.Type == PrincipalNameType.NT_PRINCIPAL)
-            && !fallback)
-        {
-            principal = new FakeKerberosPrincipal(principalName.FullyQualifiedName, this.realm);
-        }
-
-        return principal;
+        return null;
     }
 
     public X509Certificate2 RetrieveKdcCertificate()

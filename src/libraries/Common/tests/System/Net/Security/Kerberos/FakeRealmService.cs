@@ -8,24 +8,26 @@ namespace System.Net.Security.Kerberos;
 
 class FakeRealmService : IRealmService
 {
-    private readonly KerberosCompatibilityFlags compatibilityFlags;
+    private readonly IPrincipalService _principalService;
+    private readonly KerberosCompatibilityFlags _compatibilityFlags;
 
-    public FakeRealmService(string realm, Krb5Config config, KerberosCompatibilityFlags compatibilityFlags = KerberosCompatibilityFlags.None)
+    public FakeRealmService(string realm, Krb5Config config, IPrincipalService principalService, KerberosCompatibilityFlags compatibilityFlags = KerberosCompatibilityFlags.None)
     {
-        this.Name = realm;
-        this.Configuration = config;
-        this.compatibilityFlags = compatibilityFlags;
+        Name = realm;
+        Configuration = config;
+        _principalService = principalService;
+        _compatibilityFlags = compatibilityFlags;
     }
 
-    public IRealmSettings Settings => new FakeRealmSettings(this.compatibilityFlags);
+    public IRealmSettings Settings => new FakeRealmSettings(_compatibilityFlags);
 
-    public IPrincipalService Principals => new FakePrincipalService(this.Name);
+    public IPrincipalService Principals => _principalService;
 
-    public string Name { get; }
+    public string Name { get; private set; }
 
     public DateTimeOffset Now() => DateTimeOffset.UtcNow;
 
     public ITrustedRealmService TrustedRealms => new FakeTrustedRealms(this.Name);
 
-    public Krb5Config Configuration { get; }
+    public Krb5Config Configuration { get; private set; }
 }

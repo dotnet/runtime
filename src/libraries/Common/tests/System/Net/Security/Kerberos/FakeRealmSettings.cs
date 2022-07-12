@@ -7,11 +7,11 @@ namespace System.Net.Security.Kerberos;
 
 class FakeRealmSettings : IRealmSettings
 {
-    private readonly KerberosCompatibilityFlags compatibilityFlags;
+    private readonly KerberosCompatibilityFlags _compatibilityFlags;
 
     public FakeRealmSettings(KerberosCompatibilityFlags compatibilityFlags)
     {
-        this.compatibilityFlags = compatibilityFlags;
+        _compatibilityFlags = compatibilityFlags;
     }
 
     public TimeSpan MaximumSkew => TimeSpan.FromMinutes(5);
@@ -20,5 +20,5 @@ class FakeRealmSettings : IRealmSettings
 
     public TimeSpan MaximumRenewalWindow => TimeSpan.FromDays(7);
 
-    public KerberosCompatibilityFlags Compatibility => this.compatibilityFlags;
+    public KerberosCompatibilityFlags Compatibility => _compatibilityFlags;
 }

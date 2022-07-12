@@ -8,20 +8,20 @@ namespace System.Net.Security.Kerberos;
 
 class FakeRealmReferral : IRealmReferral
 {
-    private readonly KrbKdcReqBody body;
+    private readonly KrbKdcReqBody _body;
 
     public FakeRealmReferral(KrbKdcReqBody body)
     {
-        this.body = body;
+        _body = body;
     }
 
     public IKerberosPrincipal Refer()
     {
-        var fqn = this.body.SName.FullyQualifiedName;
+        var fqn = _body.SName.FullyQualifiedName;
         var predictedRealm = fqn[(fqn.IndexOf('.') + 1)..];
 
         var krbName = KrbPrincipalName.FromString($"krbtgt/{predictedRealm}");
 
-        return new FakeKerberosPrincipal(krbName.FullyQualifiedName, predictedRealm);
+        return new FakeKerberosPrincipal(PrincipalType.Service, krbName.FullyQualifiedName, predictedRealm, new byte[16]);
     }
 }
