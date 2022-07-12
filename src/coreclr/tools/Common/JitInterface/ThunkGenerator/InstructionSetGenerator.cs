@@ -58,7 +58,7 @@ namespace Thunkerator
             }
         }
 
-        record InstructionSetGroup(string Name, string Arch, string Sets);
+        record InstructionSetGroup(string Names, string Archs, string Sets);
 
         class InstructionSetImplication
         {
@@ -613,21 +613,26 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
-        private record InstructionSetGroup(string Name, TargetArchitecture Arch, string Sets);
-
-        private static InstructionSetGroup[] AllInstructionSetGroups { get; } =
+        private static Dictionary<(string, TargetArchitecture), string> AllInstructionSetGroups { get; } = new()
             {
 ");
             foreach (InstructionSetGroup group in _instructionSetsGroups)
             {
-                tr.WriteLine($"                new (\"{group.Name}\", TargetArchitecture.{group.Arch}, \"{group.Sets}\"),");
+                foreach (string name in group.Names.Split(' '))
+                {
+                    foreach (string arch in group.Archs.Split(' '))
+                    {
+                        tr.WriteLine($"                {{ (\"{name}\", TargetArchitecture.{arch}), \"{group.Sets}\" }},");
+                    }
+                }
             }
             tr.Write(@"            };
 
-        public static IEnumerable<string> AllCpuNames => AllInstructionSetGroups.Select(x => x.Name).Distinct();
+        public static IEnumerable<string> AllCpuNames =>
+            AllInstructionSetGroups.Keys.Select(key => key.Item1).Distinct();
 
         public static IEnumerable<string> CpuNameToInstructionSets(string cpu, TargetArchitecture arch) =>
-            AllInstructionSetGroups.FirstOrDefault(g => g.Name == cpu && g.Arch == arch)?.Sets.Split(' ');
+            AllInstructionSetGroups.TryGetValue((cpu, arch), out string value) ? value.Split(' ') : null;
 
         public struct InstructionSetInfo
         {

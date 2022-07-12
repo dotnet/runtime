@@ -135,9 +135,21 @@ implication        ,ARM64 ,Sha256    ,ArmBase
 implication        ,ARM64 ,Vector64  ,AdvSimd
 implication        ,ARM64 ,Vector128 ,AdvSimd
 
-; Known CPUs (instruction groups)         ,lower baselines included by implication
-instructionsetgroup  ,sandybridge  ,X64   ,avx pclmul popcnt
-instructionsetgroup  ,sandybridge  ,X86   ,avx pclmul popcnt
-instructionsetgroup  ,haswell      ,X64   ,avx2 bmi fma lzcnt pclmul popcnt movbe
-instructionsetgroup  ,haswell      ,X86   ,avx2 bmi fma lzcnt pclmul popcnt movbe
-instructionsetgroup  ,apple-m1    ,ARM64  ,neon aes crc dotprod rdma sha1 sha2 lse rcpc
+
+;                    ,name and aliases           ,archs    ,lower baselines included by implication
+;
+instructionsetgroup  ,x86-x64                    ,X64 X86  ,sse2
+instructionsetgroup  ,x86-x64-v2                 ,X64 X86  ,sse4.2 popcnt aes
+instructionsetgroup  ,x86-x64-v3 skylake         ,X64 X86  ,avx2 popcnt aes bmi2 lznct pclmul movbe fma
+instructionsetgroup  ,x86-x64-v4                 ,X64 X86  ,avx2 popcnt aes bmi2 lznct pclmul movbe fma avxvnni serialize
+
+instructionsetgroup  ,armv8-a                    ,ARM64    ,neon sha1 sha2
+instructionsetgroup  ,armv8-1-a                  ,ARM64    ,neon sha1 sha2 lse crc rdma
+instructionsetgroup  ,armv8-2-a                  ,ARM64    ,neon sha1 sha2 lse crc rdma
+instructionsetgroup  ,armv8-3-a                  ,ARM64    ,neon sha1 sha2 lse crc rdma rcpc
+instructionsetgroup  ,armv8-4-a                  ,ARM64    ,neon sha1 sha2 lse crc rdma rcpc dotprod
+instructionsetgroup  ,armv8-5-a                  ,ARM64    ,neon sha1 sha2 lse crc rdma rcpc dotprod
+instructionsetgroup  ,armv8-6-a                  ,ARM64    ,neon sha1 sha2 lse crc rdma rcpc dotprod aes
+
+; apple-m1 is rather 8.4 but it additionally supports dotprod and aes
+instructionsetgroup  ,apple-m1                   ,ARM64    ,neon sha1 sha2 lse crc rdma rcpc dotprod aes

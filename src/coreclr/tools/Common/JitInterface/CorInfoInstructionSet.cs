@@ -752,21 +752,33 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
-        private record InstructionSetGroup(string Name, TargetArchitecture Arch, string Sets);
-
-        private static InstructionSetGroup[] AllInstructionSetGroups { get; } =
+        private static Dictionary<(string, TargetArchitecture), string> AllInstructionSetGroups { get; } = new()
             {
-                new ("sandybridge", TargetArchitecture.X64, "avx pclmul popcnt"),
-                new ("sandybridge", TargetArchitecture.X86, "avx pclmul popcnt"),
-                new ("haswell", TargetArchitecture.X64, "avx2 bmi fma lzcnt pclmul popcnt movbe"),
-                new ("haswell", TargetArchitecture.X86, "avx2 bmi fma lzcnt pclmul popcnt movbe"),
-                new ("apple-m1", TargetArchitecture.ARM64, "neon aes crc dotprod rdma sha1 sha2 lse rcpc"),
+                { ("x86-x64", TargetArchitecture.X64), "sse2" },
+                { ("x86-x64", TargetArchitecture.X86), "sse2" },
+                { ("x86-x64-v2", TargetArchitecture.X64), "sse4.2 popcnt aes" },
+                { ("x86-x64-v2", TargetArchitecture.X86), "sse4.2 popcnt aes" },
+                { ("x86-x64-v3", TargetArchitecture.X64), "avx2 popcnt aes bmi2 lznct pclmul movbe fma" },
+                { ("x86-x64-v3", TargetArchitecture.X86), "avx2 popcnt aes bmi2 lznct pclmul movbe fma" },
+                { ("skylake", TargetArchitecture.X64), "avx2 popcnt aes bmi2 lznct pclmul movbe fma" },
+                { ("skylake", TargetArchitecture.X86), "avx2 popcnt aes bmi2 lznct pclmul movbe fma" },
+                { ("x86-x64-v4", TargetArchitecture.X64), "avx2 popcnt aes bmi2 lznct pclmul movbe fma avxvnni serialize" },
+                { ("x86-x64-v4", TargetArchitecture.X86), "avx2 popcnt aes bmi2 lznct pclmul movbe fma avxvnni serialize" },
+                { ("armv8-a", TargetArchitecture.ARM64), "neon sha1 sha2" },
+                { ("armv8-1-a", TargetArchitecture.ARM64), "neon sha1 sha2 lse crc rdma" },
+                { ("armv8-2-a", TargetArchitecture.ARM64), "neon sha1 sha2 lse crc rdma" },
+                { ("armv8-3-a", TargetArchitecture.ARM64), "neon sha1 sha2 lse crc rdma rcpc" },
+                { ("armv8-4-a", TargetArchitecture.ARM64), "neon sha1 sha2 lse crc rdma rcpc dotprod" },
+                { ("armv8-5-a", TargetArchitecture.ARM64), "neon sha1 sha2 lse crc rdma rcpc dotprod" },
+                { ("armv8-6-a", TargetArchitecture.ARM64), "neon sha1 sha2 lse crc rdma rcpc dotprod aes" },
+                { ("apple-m1", TargetArchitecture.ARM64), "neon sha1 sha2 lse crc rdma rcpc dotprod aes" },
             };
 
-        public static IEnumerable<string> AllCpuNames => AllInstructionSetGroups.Select(x => x.Name).Distinct();
+        public static IEnumerable<string> AllCpuNames =>
+            AllInstructionSetGroups.Keys.Select(key => key.Item1).Distinct();
 
         public static IEnumerable<string> CpuNameToInstructionSets(string cpu, TargetArchitecture arch) =>
-            AllInstructionSetGroups.FirstOrDefault(g => g.Name == cpu && g.Arch == arch)?.Sets.Split(' ');
+            AllInstructionSetGroups.TryGetValue((cpu, arch), out string value) ? value.Split(' ') : null;
 
         public struct InstructionSetInfo
         {
