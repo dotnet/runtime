@@ -140,7 +140,7 @@ implication        ,ARM64 ,Vector128 ,AdvSimd
 ;
 instructionsetgroup  ,x86-x64                    ,X64 X86  ,sse2
 instructionsetgroup  ,x86-x64-v2                 ,X64 X86  ,sse4.2 popcnt
-instructionsetgroup  ,x86-x64-v3                 ,X64 X86  ,x86-x64-v2 avx2 bmi bmi2 lznct movbe fma
+instructionsetgroup  ,x86-x64-v3                 ,X64 X86  ,x86-x64-v2 avx2 bmi bmi2 lzcnt movbe fma
 instructionsetgroup  ,skylake                    ,X64 X86  ,x86-x64-v3
 
 instructionsetgroup  ,armv8-a                    ,ARM64    ,neon

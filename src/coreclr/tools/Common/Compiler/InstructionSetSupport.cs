@@ -198,7 +198,14 @@ namespace ILCompiler
                 foreach (string set in sets)
                 {
                     if (!s_instructionSetSupport[_architecture].ContainsKey(set))
+                    {
+                        // Groups can contain other groups
+                        if (AddSupportedInstructionSet(set))
+                        {
+                            continue;
+                        }
                         return false;
+                    }
                     _supportedInstructionSets.Add(set);
                     _unsupportedInstructionSets.Remove(set);
                 }
