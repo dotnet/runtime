@@ -345,25 +345,83 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 
     if (decoder.GetStackBaseRegister() == NO_STACK_BASE_REGISTER)
     {
-        // TODO: we can't tell in this case, we need more info.
+        // TODO: can we detect not unwindable ranges in this case or we need extra info?.
         return false;
     }
     else
     {
-        if (codeOffset < 10)
+        uint8_t* start = (uint8_t*)pvAddress - codeOffset;
+
+        // method should start with "push rbp"
+        // TODO: how a method not startig with "push rpb" is still marked as rbp based?
+        //       maybe those are actually ok?
+        if (*start != 85)
+            return false;
+
+        const int maxPushLength = 11; // pushing all callee saved takes 11 bytes.
+        int prologueSize;
+        for (prologueSize = 1; prologueSize < maxPushLength + 1; prologueSize++)
         {
-            // in rbx setup prologue  "push rbp; sub rsp,XX, lea rbp,[rsp + XX]"
+            if (start[prologueSize] == 0x48)  // search for start of "lea    rbp, [rsp + 0x??]"
+                break;
+        }
+
+        ASSERT(prologueSize < maxPushLength + 1);
+
+        if (start[prologueSize + 1] == 0x83)
+        {
+            prologueSize += 4; // skip "sub    rsp, 0x??"  // B operand
+        }
+        else if (start[prologueSize + 1] == 0x81)
+        {
+            prologueSize += 7; // skip "sub    rsp, 0x??"  // W operand
+        }
+
+        ASSERT(start[prologueSize] == 0x48);
+
+        if(start[prologueSize + 1] == 0x8b)   // mov
+        {
+            ASSERT(start[prologueSize + 2] == 0xec); // mov, rbp, rsp
+            prologueSize += 3;                       // skip 
+        }
+        else
+        {
+            ASSERT(start[prologueSize + 1] == 0x8d);  // lea
+
+            if (start[prologueSize + 2] == 0xac)
+            {
+                prologueSize += 8;     // skip "lea    rbp, [rsp + 0x??]"  W operand
+            }
+            else
+            {
+                prologueSize += 5;     // skip "lea    rbp, [rsp + 0x??]"  B operand
+            }
+        }
+
+        if (codeOffset < prologueSize)
+        {
+            // in prologue
             return false;
         }
-        else if (*(uint8_t*)pvAddress == 0x5d)
+        else if (((uint8_t*)pvAddress)[-1] == 0x5d)
         {
-            // on "pop rbp" part of rbp restore epilogue "add rsp,XX; pop rbp; retq"
+            // right after "pop   rbp". This could be "ret" or "jmp" 
             return false;
         }
-        else if (*(uint8_t*)pvAddress == 0xC3)
+        else
         {
-            // on "retq"    part of rbp restore epilogue "add rsp,XX; pop rbp; retq"
-            return false;
+            uint8_t opcode = *(uint8_t*)pvAddress;
+            if (opcode == 0x41)
+                opcode = ((uint8_t*)pvAddress)[1];
+
+            // pop rbx through pop r15 and some others, TODO: VS perhaps switch for nonvol?           
+            if (opcode >= 0x5b && opcode <= 0x5f)
+                return false; // on the "pop ??" part of "pop ??; pop ??; ret"
+
+            // we see a bunch of push/pop instructions in finallies and VirtualUnwind cannot handle them.
+            // pops fit the epilogue pattern above, but we also need to reject pushes.
+            if (opcode >= 0x50 && opcode <= 0x57)
+                return false;
         }
     }
 #endif
