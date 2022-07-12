@@ -52,6 +52,7 @@ namespace Internal.JitInterface
             AMD64 = 0x8664,
             ARM = 0x01c4,
             ARM64 = 0xaa64,
+            LoongArch64 = 0x6264,
         }
 
         internal const string JitLibrary = "clrjitilc";
@@ -3055,7 +3056,8 @@ namespace Internal.JitInterface
 
         private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
         {
-            throw new NotImplementedException("For LoongArch64, would be implemented later");
+            TypeDesc typeDesc = HandleToObject(cls);
+            return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
         }
 
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
@@ -3656,7 +3658,26 @@ namespace Internal.JitInterface
         private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
         {
             if (targetArchitecture != TargetArchitecture.ARM64)
-                return (RelocType)fRelocType;
+            {
+                if (targetArchitecture == TargetArchitecture.LoongArch64)
+                {
+                    const ushort IMAGE_REL_LOONGARCH64_PC = 3;
+                    const ushort IMAGE_REL_LOONGARCH64_JIR = 4;
+
+                    switch (fRelocType)
+                    {
+                        case IMAGE_REL_LOONGARCH64_PC:
+                            return RelocType.IMAGE_REL_BASED_LOONGARCH64_PC;
+                        case IMAGE_REL_LOONGARCH64_JIR:
+                            return RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR;
+                        default:
+                            Debug.Fail("Invalid RelocType: " + fRelocType);
+                            return 0;
+                    }
+                }
+                else
+                    return (RelocType)fRelocType;
+            }
 
             const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
             const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
@@ -3768,6 +3789,8 @@ namespace Internal.JitInterface
                     return (uint)ImageFileMachine.ARM;
                 case TargetArchitecture.ARM64:
                     return (uint)ImageFileMachine.ARM64;
+                case TargetArchitecture.LoongArch64:
+                    return (uint)ImageFileMachine.LoongArch64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }

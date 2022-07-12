@@ -610,6 +610,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     _pointerSize = 8;
                     break;
 
+                case Machine.LoongArch64:
+                    _architecture = Architecture.LoongArch64;
+                    _pointerSize = 8;
+                    break;
+
                 default:
                     throw new NotImplementedException(Machine.ToString());
             }
