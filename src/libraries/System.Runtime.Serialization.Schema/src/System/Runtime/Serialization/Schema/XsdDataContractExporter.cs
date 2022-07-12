@@ -132,7 +132,7 @@ namespace System.Runtime.Serialization.Schema
         }
 
         /// <summary>
-        /// Transforms the types contained in the ICollection<T> passed to this method.
+        /// Transforms the types contained in the <see cref="ICollection{T}"/> passed to this method.
         /// </summary>
         /// <param name="types">A <see cref="ICollection{T}"/> (of <see cref="Type"/>) that contains the types to export.</param>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
