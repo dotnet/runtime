@@ -32,14 +32,15 @@ namespace System.Security.Cryptography.X509Certificates
         public bool DisableCertificateDownloads { get; set; }
 
         /// <summary>
-        ///   Gets or sets a value that indicates if VerificationTime was set and should be used or if it defaults to DateTime.Now from object creation.
+        ///   Gets or sets a value that indicates whether the chain validation should use
+        ///   <see cref="VerificationTime" /> or the current system time when building
+        ///   an X.509 certificate chain.
         /// </summary>
         /// <value>
-        ///   <see langword="false" /> if VerificationTime was explicitly set and shall be used
-        ///   otherwise, <see langword="false" />.
+        ///   <see langword="true" /> to ignore <see cref="VerificationTime"/> and use the current system time; otherwise <see langword="false"/>.
         ///   The default is <see langword="true" />.
         /// </value>
-        public bool VerificationTimeIgnored { get; set; } = true;
+        public bool VerificationTimeIgnored { get; set; }
 
         public OidCollection ApplicationPolicy => _applicationPolicy ??= new OidCollection();
 
@@ -130,7 +131,6 @@ namespace System.Security.Cryptography.X509Certificates
             _trustMode = X509ChainTrustMode.System;
             _verificationTime = DateTime.Now;
             VerificationTimeIgnored = true;
-
             UrlRetrievalTimeout = TimeSpan.Zero; // default timeout
         }
 
