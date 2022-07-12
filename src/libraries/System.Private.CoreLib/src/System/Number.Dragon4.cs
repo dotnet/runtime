@@ -172,10 +172,11 @@ namespace System
             // Divide scaledValue by scale to get our final result, decimalMantissa
             BigInteger.DivRem(ref state.scaledValue, ref state.scale, out BigInteger decimalMantissa, out BigInteger rem);
 
-            // Check if we should round up
-            BigInteger.Multiply(ref rem, 2, out BigInteger rem2);
-            BigInteger.SetUInt32(out BigInteger one, 1);
+            // Check if we should round up by doubling the remainder and comparing it to the denominator
+            BigInteger rem2 = rem;
+            rem2.ShiftLeft(1);
 
+            BigInteger.SetUInt32(out BigInteger one, 1);
             if (BigInteger.Compare(ref rem2, ref state.scale) > 0)
             {
                 // Round up
@@ -187,7 +188,9 @@ namespace System
                 // Isolate the smallest digit of decimalMantissa, if it is odd, round up to even
                 BigInteger.SetUInt32(out BigInteger ten, 10);
                 BigInteger.DivRem(ref decimalMantissa, ref ten, out _, out BigInteger smallestDigit);
-                uint smallestDigitUint = smallestDigit.GetBlock(0);
+
+                Debug.Assert(smallestDigit.GetLength() < 2);
+                uint smallestDigitUint = (smallestDigit.GetLength() == 1) ? smallestDigit.GetBlock(0) : 0;
                 if (smallestDigitUint % 2 == 1)
                 {
                     // Round up
@@ -205,7 +208,8 @@ namespace System
                 decimalExponent--;
 
                 // Round up if needed
-                uint smallestDigitUint = smallestDigit.GetBlock(0);
+                Debug.Assert(smallestDigit.GetLength() < 2);
+                uint smallestDigitUint = (smallestDigit.GetLength() == 1) ? smallestDigit.GetBlock(0) : 0;
                 if (smallestDigitUint > 5)
                 {
                     // Round up
