@@ -33,8 +33,6 @@ namespace System.Text.Json
         ///
         /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
         /// </remarks>
-        [RequiresUnreferencedCode("Getting a metadata for a type may require reflection which depends on unreferenced code.")]
-        [RequiresDynamicCode("Getting a metadata for a type may require reflection which depends on runtime code generation.")]
         public JsonTypeInfo GetTypeInfo(Type type)
         {
             if (type is null)
@@ -46,8 +44,6 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
-
-            _typeInfoResolver ??= DefaultJsonTypeInfoResolver.RootDefaultInstance();
 
             JsonTypeInfo? typeInfo;
             if (IsLockedInstance)
@@ -62,7 +58,7 @@ namespace System.Text.Json
 
             if (typeInfo is null)
             {
-                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type);
+                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
             }
 
             return typeInfo;
@@ -82,7 +78,7 @@ namespace System.Text.Json
 
             if (typeInfo == null)
             {
-                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type);
+                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
                 return null;
             }
 

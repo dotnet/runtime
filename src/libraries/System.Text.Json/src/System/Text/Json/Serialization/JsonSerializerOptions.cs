@@ -32,7 +32,19 @@ namespace System.Text.Json
         /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
         /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
         /// </remarks>
-        public static JsonSerializerOptions Default { get; } = CreateDefaultImmutableInstance();
+        public static JsonSerializerOptions Default
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
+            {
+                JsonSerializerOptions defaultInstance = DefaultInstance;
+                defaultInstance._typeInfoResolver ??= DefaultJsonTypeInfoResolver.RootDefaultInstance();
+                return defaultInstance;
+            }
+        }
+
+        internal static JsonSerializerOptions DefaultInstance { get; } = new JsonSerializerOptions { IsLockedInstance = true };
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
         private IJsonTypeInfoResolver? _typeInfoResolver;
@@ -162,16 +174,15 @@ namespace System.Text.Json
         /// Gets or sets a <see cref="JsonTypeInfo"/> contract resolver.
         /// </summary>
         /// <remarks>
-        /// A <see langword="null"/> setting is equivalent to using the reflection-based <see cref="DefaultJsonTypeInfoResolver"/>.
+        /// When used with the reflection-based <see cref="JsonSerializer"/> APIs,
+        /// a <see langword="null"/> setting be equivalent to and replaced by the reflection-based
+        /// <see cref="DefaultJsonTypeInfoResolver"/>.
         /// </remarks>
-        [AllowNull]
-        public IJsonTypeInfoResolver TypeInfoResolver
+        public IJsonTypeInfoResolver? TypeInfoResolver
         {
-            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
-                return _typeInfoResolver ??= DefaultJsonTypeInfoResolver.RootDefaultInstance();
+                return _typeInfoResolver;
             }
             set
             {
@@ -179,9 +190,6 @@ namespace System.Text.Json
                 _typeInfoResolver = value;
             }
         }
-
-        // Needed since public property is RequiresUnreferencedCode.
-        internal IJsonTypeInfoResolver? TypeInfoResolverSafe => _typeInfoResolver;
 
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
@@ -728,12 +736,6 @@ namespace System.Text.Json
 
             protected override bool IsLockedInstance => _options.IsLockedInstance;
             protected override void VerifyMutable() => _options.VerifyMutable();
-        }
-
-        private static JsonSerializerOptions CreateDefaultImmutableInstance()
-        {
-            var options = new JsonSerializerOptions { IsLockedInstance = true };
-            return options;
         }
     }
 }

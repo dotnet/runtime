@@ -33,7 +33,7 @@ namespace System.Text.Json
             JsonTypeInfo? info = context.GetTypeInfo(type);
             if (info is null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type, context);
             }
 
             return info;
