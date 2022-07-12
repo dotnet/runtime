@@ -96,7 +96,7 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                options ??= JsonSerializerOptions.Default;
+                options ??= JsonSerializerOptions.DefaultInstance;
 
                 writer.WriteStartObject();
 
