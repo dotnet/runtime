@@ -140,16 +140,12 @@ implication        ,ARM64 ,Vector128 ,AdvSimd
 ;
 instructionsetgroup  ,x86-x64                    ,X64 X86  ,sse2
 instructionsetgroup  ,x86-x64-v2                 ,X64 X86  ,sse4.2 popcnt aes
-instructionsetgroup  ,x86-x64-v3 skylake         ,X64 X86  ,x86-x64-v2 avx2 bmi2 lznct pclmul movbe fma
-instructionsetgroup  ,x86-x64-v4                 ,X64 X86  ,x86-x64-v3 avxvnni serialize
+instructionsetgroup  ,x86-x64-v3 skylake         ,X64 X86  ,x86-x64-v2 avx2 bmi bmi2 lznct pclmul movbe fma
+instructionsetgroup  ,x86-x64-v4                 ,X64 X86  ,x86-x64-v3
 
-instructionsetgroup  ,armv8-a                    ,ARM64    ,neon sha1 sha2
-instructionsetgroup  ,armv8-1-a                  ,ARM64    ,armv8-a lse crc rdma
+instructionsetgroup  ,armv8-a                    ,ARM64    ,neon
+instructionsetgroup  ,armv8-1-a                  ,ARM64    ,armv8-a lse crc rdma sha1 sha2 aes
 instructionsetgroup  ,armv8-2-a                  ,ARM64    ,armv8-1-a
 instructionsetgroup  ,armv8-3-a                  ,ARM64    ,armv8-2-a rcpc
 instructionsetgroup  ,armv8-4-a                  ,ARM64    ,armv8-3-a dotprod
-instructionsetgroup  ,armv8-5-a                  ,ARM64    ,armv8-4-a
-instructionsetgroup  ,armv8-6-a                  ,ARM64    ,armv8-5-a aes
-
-; apple-m1 is 8.5 with aes
-instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8-5-a aes
+instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8-4-a
