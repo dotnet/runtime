@@ -57,19 +57,17 @@ namespace Microsoft.Extensions.Configuration.Json
 
         private void VisitArrayElement(JsonElement element)
         {
-            var isEmpty = true;
             int index = 0;
 
             foreach (JsonElement arrayElement in element.EnumerateArray())
             {
-                isEmpty = false;
                 EnterContext(index.ToString());
                 VisitValue(arrayElement);
                 ExitContext();
                 index++;
             }
 
-            SetNullIfElementIsEmpty(isEmpty);
+            SetNullIfElementIsEmpty(isEmpty: index == 0);
         }
 
         private void SetNullIfElementIsEmpty(bool isEmpty)
