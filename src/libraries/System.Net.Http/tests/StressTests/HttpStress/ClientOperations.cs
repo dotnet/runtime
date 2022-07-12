@@ -303,21 +303,16 @@ namespace HttpStress
                                 return;
                             }
 
-                            string? name = e.InnerException?.GetType().Name;
-                            switch (name)
+                            if (ctx.HttpVersion == HttpVersion.Version20 &&
+                                e is HttpProtocolException protocolException &&
+                                (protocolException.ErrorCode == 0x2 || // INTERNAL_ERROR, UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
+                                 protocolException.ErrorCode == 0x8))  // CANCEL, UseHttpSys
                             {
-                                case "Http2ProtocolException":
-                                case "Http2ConnectionException":
-                                case "Http2StreamException":
-                                    if ((e.InnerException?.Message?.Contains("INTERNAL_ERROR") ?? false) || // UseKestrel (https://github.com/dotnet/aspnetcore/issues/12256)
-                                        (e.InnerException?.Message?.Contains("CANCEL") ?? false)) // UseHttpSys
-                                    {
-                                        return;
-                                    }
-                                    break;
+                                return;
                             }
                         }
 
+                        // TODO: change when HttpProtocolException gets implemented for HTTP/3
                         if (ctx.HttpVersion == HttpVersion.Version30)
                         {
                             // HTTP/3 exception nesting:
