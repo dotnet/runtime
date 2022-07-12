@@ -60,26 +60,5 @@ namespace System.Net.Security.Tests
                 Assert.True(serverNegotiateAuthentication.IsAuthenticated);
             });
         }
-
-        [Fact]
-        public async Task Incorrect_Credentials()
-        {
-            using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
-            kerberosExecutor.AddUser("user");
-            await kerberosExecutor.Invoke(() =>
-            {
-                // Do a loopback authentication
-                NegotiateAuthenticationClientOptions clientOptions = new()
-                {
-                    Credential = new NetworkCredential("user", "PLACEHOLDERwrong", "LINUX.CONTOSO.COM"),
-                    TargetName = $"HTTP/linux.contoso.com",
-                    Package = "Kerberos",
-                };
-                NegotiateAuthentication clientNegotiateAuthentication = new(clientOptions);
-                byte[]? clientBlob = clientNegotiateAuthentication.GetOutgoingBlob((ReadOnlySpan<byte>)default, out NegotiateAuthenticationStatusCode statusCode);
-                Assert.True(statusCode >= NegotiateAuthenticationStatusCode.GenericFailure, $"Client authentication succeeded with {statusCode}");
-                Assert.Null(clientBlob);
-            });
-        }
     }
 }
