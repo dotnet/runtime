@@ -50,7 +50,6 @@ import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
     mono_wasm_get_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_get_object_property_ref,
-    mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_with_args_ref, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
@@ -380,7 +379,6 @@ export const __linker_exports: any = {
     schedule_background_exec,
 
     // also keep in sync with driver.c
-    mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,

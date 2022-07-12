@@ -539,6 +539,15 @@ const App = {
             args[arg_count + 4] = globalThis.App.EXPORTS;
             return userFunction(...args);
         };
+    },
+    invoke_js(js_code) {
+        const closedEval = function (Module, MONO, BINDING, INTERNAL, code) {
+            return eval(code);
+        };
+        const res = closedEval(globalThis.App.Module, globalThis.App.MONO, globalThis.App.BINDING, globalThis.App.INTERNAL, js_code);
+        return (res === undefined || res === null || typeof res === "string")
+            ? null
+            : res.toString();
     }
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly

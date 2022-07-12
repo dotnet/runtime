@@ -253,7 +253,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { new object[] { 1.1d, new DateTime(2022, 5, 8, 14, 55, 01, DateTimeKind.Utc), false, true } };
             yield return new object[] { new object[] { new double?(1.1d), new DateTime?(new DateTime(2022, 5, 8, 14, 55, 01, DateTimeKind.Utc)), new bool?(false), new bool?(true) } };
             yield return new object[] { new object[] { null, new object(), new SomethingRef(), new SomethingStruct(), new Exception("test") } };
-            yield return new object[] { new object[] { JavaScriptTestHelper.createData("test"), JavaScriptTestHelper.createException("test") } };
+            yield return new object[] { new object[] { "JSData" } }; // special cased, so we call createData in the test itself
             yield return new object[] { new object[] { new byte[] { }, new int[] { }, new double[] { }, new string[] { }, new object[] { } } };
             yield return new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" }, new object[] { } } };
             yield return new object[] { new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" } , new object(), new SomethingRef(), new SomethingStruct(), new Exception("test") } } };
@@ -265,15 +265,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalObjectArrayCases))]
         public unsafe void JsImportObjectArray(object[]? expected)
         {
+            if (expected?.Length == 1 && expected[0] is string s && s == "JSData")
+            {
+                expected = new object[] { new object[] { JavaScriptTestHelper.createData("test"), JavaScriptTestHelper.createException("test") } };
+            }
             var actual = JavaScriptTestHelper.echo1_ObjectArray(expected);
             Assert.Equal(expected, actual);
-            
 
             if (expected != null) for (int i = 0; i < expected.Length; i++)
-                {
-                    var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
-                    Assert.Equal(expected[i], actualI);
-                }
+            {
+                var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
+                Assert.Equal(expected[i], actualI);
+            }
         }
 
         public static IEnumerable<object[]> MarshalObjectArrayCasesToDouble()

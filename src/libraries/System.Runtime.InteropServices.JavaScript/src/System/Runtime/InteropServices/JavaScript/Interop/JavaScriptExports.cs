@@ -32,6 +32,18 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        public static IntPtr GetCSOwnedObjectJSHandleRef(in JSObject jsObject, int shouldAddInflight)
+        {
+            jsObject.AssertNotDisposed();
+
+            if (shouldAddInflight != 0)
+            {
+                jsObject.AddInFlight();
+            }
+            return jsObject.JSHandle;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr TryGetCSOwnedObjectJSHandleRef(in object rawObj, int shouldAddInflight)
         {
             JSObject? jsObject = rawObj as JSObject;

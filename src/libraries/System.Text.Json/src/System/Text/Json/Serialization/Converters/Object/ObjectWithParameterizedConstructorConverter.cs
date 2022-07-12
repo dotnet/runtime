@@ -287,7 +287,7 @@ namespace System.Text.Json.Serialization.Converters
                         out _,
                         createExtensionProperty: false);
 
-                    if (jsonPropertyInfo.CanDeserialize)
+                    if (jsonPropertyInfo.HasSetter)
                     {
                         ArgumentState argumentState = state.Current.CtorArgumentState!;
 
@@ -452,7 +452,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
             {
-                if (!jsonPropertyInfo.CanDeserialize)
+                if (!jsonPropertyInfo.HasSetter)
                 {
                     if (!reader.TrySkip())
                     {
@@ -486,7 +486,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            Debug.Assert(jsonPropertyInfo.CanDeserialize);
+            Debug.Assert(jsonPropertyInfo.HasSetter);
 
             // Ensure that the cache has enough capacity to add this property.
 
