@@ -76,7 +76,9 @@ namespace System.Net.Security
 
         /// <summary>
         /// Specifies X509ChainPolicy to use for remote certificate
-        /// validation. If set, CertificateRevocationCheckMode and SslCertificateTrust is ignored.
+        /// validation. If not <see langword="null"/>,
+        /// <see cref="CertificateRevocationCheckMode"/> and <see cref="SslCertificateTrust"/>
+        /// are ignored.
         /// </summary>
         public X509ChainPolicy? ValidationPolicy { get; set; }
     }
