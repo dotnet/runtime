@@ -40,13 +40,6 @@ typedef enum
     PAL_GSS_C_DELEG_POLICY_FLAG = 0x8000
 } PAL_GssFlags;
 
-typedef enum
-{
-    PAL_GSS_NEGOTIATE = 0,
-    PAL_GSS_NTLM = 1,
-    PAL_GSS_KERBEROS = 2,
-} PAL_GssPackageType;
-
 /*
 Issue: #7342
 Disable padded warning which occurs in case of 32-bit builds
@@ -118,7 +111,7 @@ Shims the gss_init_sec_context method with SPNEGO oids.
 PALEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                     GssCredId* claimantCredHandle,
                                                     GssCtxId** contextHandle,
-                                                    uint32_t packageType,
+                                                    uint32_t isNtlm,
                                                     GssName* targetName,
                                                     uint32_t reqFlags,
                                                     uint8_t* inputBytes,
@@ -130,7 +123,7 @@ PALEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
 PALEXPORT uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
                                                       GssCredId* claimantCredHandle,
                                                       GssCtxId** contextHandle,
-                                                      uint32_t packageType,
+                                                      uint32_t isNtlm,
                                                       void* cbt,
                                                       int32_t cbtSize,
                                                       GssName* targetName,
@@ -202,7 +195,7 @@ PALEXPORT uint32_t NetSecurityNative_VerifyMic(uint32_t* minorStatus,
 Shims the gss_acquire_cred_with_password method with GSS_C_INITIATE.
 */
 PALEXPORT uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
-                                                              int32_t packageType,
+                                                              int32_t isNtlm,
                                                               GssName* desiredName,
                                                               char* password,
                                                               uint32_t passwdLen,

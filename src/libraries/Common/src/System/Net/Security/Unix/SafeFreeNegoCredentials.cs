@@ -12,7 +12,7 @@ namespace System.Net.Security
     internal sealed class SafeFreeNegoCredentials : SafeFreeCredentials
     {
         private SafeGssCredHandle _credential;
-        private readonly Interop.NetSecurityNative.PackageType _packageType;
+        private readonly bool _isNtlmOnly;
         private readonly string _userName;
         private readonly bool _isDefault;
 
@@ -21,10 +21,10 @@ namespace System.Net.Security
             get { return _credential; }
         }
 
-        // Property represents which protocol is specfied (Negotiate, Ntlm or Kerberos).
-        public Interop.NetSecurityNative.PackageType PackageType
+        // Property represents if Ntlm Protocol is specfied or not.
+        public bool IsNtlmOnly
         {
-            get { return _packageType; }
+            get { return _isNtlmOnly; }
         }
 
         public string UserName
@@ -37,7 +37,7 @@ namespace System.Net.Security
             get { return _isDefault; }
         }
 
-        public SafeFreeNegoCredentials(Interop.NetSecurityNative.PackageType packageType, string username, string password, string domain)
+        public SafeFreeNegoCredentials(bool isNtlmOnly, string username, string password, string domain)
             : base(IntPtr.Zero, true)
         {
             Debug.Assert(username != null && password != null, "Username and Password can not be null");
@@ -66,10 +66,10 @@ namespace System.Net.Security
             }
 
             bool ignore = false;
-            _packageType = packageType;
+            _isNtlmOnly = isNtlmOnly;
             _userName = username;
             _isDefault = string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password);
-            _credential = SafeGssCredHandle.Create(username, password, packageType);
+            _credential = SafeGssCredHandle.Create(username, password, isNtlmOnly);
             _credential.DangerousAddRef(ref ignore);
         }
 
