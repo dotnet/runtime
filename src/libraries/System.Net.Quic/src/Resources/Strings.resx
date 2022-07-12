@@ -141,6 +141,21 @@
   <data name="net_quic_writing_notallowed" xml:space="preserve">
     <value>Writing is not allowed on stream.</value>
   </data>
+  <data name="net_quic_in_range" xml:space="preserve">
+    <value>'{0}'' should be within [0, {1}) range.</value>
+  </data>
+  <data name="net_quic_not_null_listener" xml:space="preserve">
+    <value>'{0}' must be specified to start the listener.</value>
+  </data>
+  <data name="net_quic_not_null_not_empty_listener" xml:space="preserve">
+    <value>'{0}' must be specified and contain at least one item to start the listener.</value>
+  </data>
+  <data name="net_quic_not_null_open_connection" xml:space="preserve">
+    <value>'{0}' must be specified to open the connection.</value>
+  </data>
+  <data name="net_quic_not_null_accept_connection" xml:space="preserve">
+    <value>'{0}' must be specified to accept the connection.</value>
+  </data>
   <data name="net_quic_timeout_use_gt_zero" xml:space="preserve">
     <value>Timeout can only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
   </data>

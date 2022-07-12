@@ -56,13 +56,13 @@ public abstract class QuicConnectionOptions
     /// <param name="argumentName">Name of the from the caller.</param>
     internal virtual void Validate(string argumentName)
     {
-        if (MaxInboundUnidirectionalStreams < 0 || MaxInboundBidirectionalStreams > ushort.MaxValue)
+        if (MaxInboundBidirectionalStreams < 0 || MaxInboundBidirectionalStreams > ushort.MaxValue)
         {
-            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.MaxInboundBidirectionalStreams)} should be within [0, {ushort.Max}) range.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_in_range, nameof(QuicConnectionOptions.MaxInboundBidirectionalStreams), ushort.MaxValue), argumentName);
         }
         if (MaxInboundUnidirectionalStreams < 0 || MaxInboundUnidirectionalStreams > ushort.MaxValue)
         {
-            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.MaxInboundUnidirectionalStreams)} should be within [0, {ushort.Max}) range.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_in_range, nameof(QuicConnectionOptions.MaxInboundUnidirectionalStreams), ushort.MaxValue), argumentName);
         }
         if (IdleTimeout < TimeSpan.Zero && IdleTimeout != Timeout.InfiniteTimeSpan)
         {
@@ -70,11 +70,11 @@ public abstract class QuicConnectionOptions
         }
         if (DefaultStreamErrorCode < 0 || DefaultStreamErrorCode > QuicDefaults.MaxErrorCodeValue)
         {
-            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.DefaultStreamErrorCode)} should be within [0, {QuicDefaults.MaxErrorCodeValue}) range.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_in_range, nameof(QuicConnectionOptions.DefaultStreamErrorCode), QuicDefaults.MaxErrorCodeValue), argumentName);
         }
         if (DefaultCloseErrorCode < 0 || DefaultCloseErrorCode > QuicDefaults.MaxErrorCodeValue)
         {
-            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.DefaultCloseErrorCode)} should be within [0, {QuicDefaults.MaxErrorCodeValue}) range.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_in_range, nameof(QuicConnectionOptions.DefaultCloseErrorCode), QuicDefaults.MaxErrorCodeValue), argumentName);
         }
     }
 }
@@ -90,7 +90,7 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
     public QuicClientConnectionOptions()
     {
         MaxInboundBidirectionalStreams = QuicDefaults.DefaultClientMaxInboundBidirectionalStreams;
-        MaxInboundUnidirectionalStreams = QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams;
+        MaxInboundUnidirectionalStreams = QuicDefaults.DefaultClientMaxInboundUnidirectionalStreams;
     }
 
     /// <summary>
@@ -119,11 +119,11 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
         // The content of ClientAuthenticationOptions gets validate in MsQuicConfiguration.Create.
         if (ClientAuthenticationOptions is null)
         {
-            throw new ArgumentNullException($"'{nameof(QuicClientConnectionOptions.ClientAuthenticationOptions)}' must be specified to open the connection.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_open_connection, nameof(QuicClientConnectionOptions.ClientAuthenticationOptions)), argumentName);
         }
         if (RemoteEndPoint is null)
         {
-            throw new ArgumentNullException($"'{nameof(QuicClientConnectionOptions.RemoteEndPoint)}' must be specified to open the connection.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_open_connection, nameof(QuicClientConnectionOptions.RemoteEndPoint)), argumentName);
         }
     }
 }
@@ -158,7 +158,7 @@ public sealed class QuicServerConnectionOptions : QuicConnectionOptions
         // The content of ServerAuthenticationOptions gets validate in MsQuicConfiguration.Create.
         if (ServerAuthenticationOptions is null)
         {
-            throw new ArgumentNullException($"'{nameof(QuicServerConnectionOptions.ServerAuthenticationOptions)}' must be specified to accept the connection.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_accept_connection, nameof(QuicServerConnectionOptions.ServerAuthenticationOptions)), argumentName);
         }
     }
 }

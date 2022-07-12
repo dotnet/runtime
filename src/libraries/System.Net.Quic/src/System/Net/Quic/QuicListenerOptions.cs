@@ -41,11 +41,11 @@ public sealed class QuicListenerOptions
     {
         if (ListenEndPoint is null)
         {
-            throw new ArgumentNullException($"'{nameof(QuicListenerOptions.ListenEndPoint)}' must be specified to start the listener.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_listener, nameof(QuicListenerOptions.ListenEndPoint)), argumentName);
         }
         if (ApplicationProtocols is null || ApplicationProtocols.Count <= 0)
         {
-            throw new ArgumentException($"'{nameof(QuicListenerOptions.ApplicationProtocols)}' must be specified and contain at least one item to start the listener.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_not_empty_listener, nameof(QuicListenerOptions.ApplicationProtocols)), argumentName);
         }
         if (ListenBacklog == 0)
         {
@@ -53,7 +53,7 @@ public sealed class QuicListenerOptions
         }
         if (ConnectionOptionsCallback is null)
         {
-            throw new ArgumentNullException($"'{nameof(QuicListenerOptions.ConnectionOptionsCallback)}' must be specified to start the listener.", argumentName);
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_listener, nameof(QuicListenerOptions.ConnectionOptionsCallback)), argumentName);
         }
     }
 }

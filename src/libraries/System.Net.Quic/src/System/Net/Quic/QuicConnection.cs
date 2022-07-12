@@ -402,7 +402,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     /// <remarks>
     /// Connection close is not graceful in regards to its streams, i.e.: calling <see cref="CloseAsync(long, CancellationToken)"/> will immediately abort all streams associated with this connection.
-    /// Please make sure, that all streams have been closed and all their data consumed before calling this method;
+    /// Make sure, that all streams have been closed and all their data consumed before calling this method;
     /// otherwise, all the data that were received but not consumed yet, will be lost.
     ///
     /// If <see cref="CloseAsync(long, CancellationToken)"/> is not called before <see cref="DisposeAsync">disposing</see> the connection,
