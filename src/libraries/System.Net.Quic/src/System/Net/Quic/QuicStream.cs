@@ -104,7 +104,7 @@ public sealed partial class QuicStream
         try
         {
             QUIC_HANDLE* handle;
-            ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamOpen(
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamOpen(
                 connectionHandle.QuicHandle,
                 type == QuicStreamType.Unidirectional ? QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL : QUIC_STREAM_OPEN_FLAGS.NONE,
                 &NativeCallback,
@@ -181,7 +181,7 @@ public sealed partial class QuicStream
                 if (StatusFailed(status))
                 {
                     // TODO: aborted and the exception type
-                    _startedTcs.TrySetException(new MsQuicException(status));
+                    _startedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(status));
                 }
             }
         }
@@ -250,7 +250,7 @@ public sealed partial class QuicStream
         {
             unsafe
             {
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamReceiveSetEnabled(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamReceiveSetEnabled(
                     _handle.QuicHandle,
                     1));
             }
@@ -311,7 +311,7 @@ public sealed partial class QuicStream
             _sendBuffers.Initialize(buffer);
             unsafe
             {
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamSend(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamSend(
                     _handle.QuicHandle,
                     _sendBuffers.Buffers,
                     (uint)_sendBuffers.Count,
@@ -341,14 +341,14 @@ public sealed partial class QuicStream
         if (abortDirection.HasFlag(QuicAbortDirection.Read))
         {
             flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE;
-            if (_receiveTcs.TrySetException(new QuicOperationAbortedException("Read was aborted"), final: true))
+            if (_receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException("Read was aborted"), final: true))
             {
                 flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE;
             }
         }
         if (abortDirection.HasFlag(QuicAbortDirection.Write))
         {
-            if (_sendTcs.TrySetException(new QuicOperationAbortedException("Write was aborted"), final: true))
+            if (_sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException("Write was aborted"), final: true))
             {
                 flags |= QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_SEND;
             }
@@ -361,7 +361,7 @@ public sealed partial class QuicStream
 
         unsafe
         {
-            ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamShutdown(
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamShutdown(
                 _handle.QuicHandle,
                 flags,
                 (ulong)errorCode));
@@ -376,7 +376,7 @@ public sealed partial class QuicStream
         {
             unsafe
             {
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->StreamShutdown(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamShutdown(
                     _handle.QuicHandle,
                     QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL,
                     default));
@@ -397,7 +397,7 @@ public sealed partial class QuicStream
         }
         else
         {
-            _startedTcs.TrySetException(new MsQuicException(data.Status));
+            _startedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
             // TODO: aborted and exception type
         }
 
@@ -445,12 +445,12 @@ public sealed partial class QuicStream
     private unsafe int HandleEventPeerSendAborted(ref PEER_SEND_ABORTED data)
     {
         _receiveBuffers.SetFinal();
-        _receiveTcs.TrySetException(new QuicStreamAbortedException((long)data.ErrorCode), final: true);
+        _receiveTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerReceiveAborted(ref PEER_RECEIVE_ABORTED data)
     {
-        _sendTcs.TrySetException(new QuicStreamAbortedException((long)data.ErrorCode), final: true);
+        _sendTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode), final: true);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventSendShutdownComplete(ref SEND_SHUTDOWN_COMPLETE data)
@@ -466,7 +466,7 @@ public sealed partial class QuicStream
     {
         if (data.ConnectionShutdown != 0)
         {
-            Exception exception = data.ConnectionShutdownByApp != 0 && data.ConnectionClosedRemotely == 0 ? new QuicOperationAbortedException() :  new QuicConnectionAbortedException((long)data.ConnectionErrorCode);
+            Exception exception = data.ConnectionShutdownByApp != 0 && data.ConnectionClosedRemotely == 0 ? ThrowHelper.GetOperationAbortedException() : ThrowHelper.GetConnectionAbortedException((long)data.ConnectionErrorCode);
             _startedTcs.TrySetException(exception);
             _receiveTcs.TrySetException(exception, final: true);
             _sendTcs.TrySetException(exception, final: true);
@@ -559,7 +559,7 @@ public sealed partial class QuicStream
         else
         {
             // Abort the read side of the stream if it hasn't been fully consumed.
-            if (_receiveTcs.TrySetException(new QuicOperationAbortedException(), final: true))
+            if (_receiveTcs.TrySetException(ThrowHelper.GetOperationAbortedException(), final: true))
             {
                 StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, _defaultErrorCode);
             }
@@ -586,7 +586,7 @@ public sealed partial class QuicStream
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(this, $"{this} StreamShutdown({flags}) failed: {MsQuicException.GetErrorCodeForStatus(status)}.");
+                    NetEventSource.Error(this, $"{this} StreamShutdown({flags}) failed: {ThrowHelper.GetErrorMessageForStatus(status)}.");
                 }
             }
         }

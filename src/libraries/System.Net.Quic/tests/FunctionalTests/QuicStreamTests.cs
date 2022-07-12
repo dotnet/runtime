@@ -553,9 +553,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WritePreCanceled_Throws()
         {
-            // Corresponds to default error code in client connection settings.
-            const long expectedErrorCode = 123456;
-
             await RunClientServer(
                 clientFunction: async connection =>
                 {
@@ -584,9 +581,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteCanceled_NextWriteThrows()
         {
-            // Corresponds to default error code in client connection settings.
-            const long expectedErrorCode = 123456;
-
             await RunClientServer(
                 clientFunction: async connection =>
                 {
