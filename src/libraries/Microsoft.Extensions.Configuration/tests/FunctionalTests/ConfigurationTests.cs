@@ -100,7 +100,7 @@ CommonKey3:CommonKey4=IniValue6";
 
             Assert.Throws<FileNotFoundException>(() => configurationBuilder.Build());
         }
-        
+
         [Fact]
         public void CanHandleExceptionIfFileNotFound()
         {
@@ -689,7 +689,7 @@ IniKey1=IniValue2");
             Assert.Equal("IniValue1", config["Key"]);
             Assert.True(token.HasChanged);
         }
-        
+
         [Theory]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/33992")]
         [InlineData(false)]
@@ -985,6 +985,41 @@ IniKey1=IniValue2");
                     Assert.Equal("XmlValue1", options.XmlKey1);
                 }
             }
+        }
+
+        [Fact]
+        public async Task ReloadingFileFiresOnChangeEvent()
+        {
+            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
+            _fileSystem.WriteFile("reload2.json", @"{""JsonKey2"": ""JsonValue2""}");
+
+            var config = CreateBuilder()
+                .AddJsonFile("./reload.json", optional: false, reloadOnChange: true)
+                .Build();
+
+            var config2 = CreateBuilder()
+                .AddJsonFile("reload2.json", optional: false, reloadOnChange: true)
+                .Build();
+
+            Assert.Equal("JsonValue1", config["JsonKey1"]);
+            Assert.Equal("JsonValue2", config2["JsonKey2"]);
+
+            var token = config.GetReloadToken();
+            var token2 = config2.GetReloadToken();
+
+            // Update files
+            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue3""}");
+            _fileSystem.WriteFile("reload2.json", @"{""JsonKey2"": ""JsonValue4""}");
+
+            await WaitForChange(
+                () => config["JsonKey1"] == "JsonValue3"
+                   && config2["JsonKey2"] == "JsonValue4",
+                "Reload failed after touching files.");
+
+            Assert.Equal("JsonValue3", config["JsonKey1"]);
+            Assert.Equal("JsonValue4", config2["JsonKey2"]);
+            Assert.True(token.HasChanged);
+            Assert.True(token2.HasChanged);
         }
 
         public void Dispose()

@@ -144,7 +144,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = GetOrAddChangeToken(filter);
-// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+            // We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
 #pragma warning disable CA1416 // Validate platform compatibility
             TryEnableFileSystemWatcher();
 #pragma warning restore CA1416 // Validate platform compatibility
@@ -175,6 +175,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {
+#if NET5_0_OR_GREATER
+            var absolutePath = Path.GetFullPath(filePath, _root);
+            filePath = absolutePath.Substring(_root.Length);
+#endif
             if (!_filePathTokenLookup.TryGetValue(filePath, out ChangeTokenInfo tokenInfo))
             {
                 var cancellationTokenSource = new CancellationTokenSource();
