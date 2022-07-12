@@ -104,6 +104,13 @@ namespace System.Net.Sockets
         /// <returns>Returns whether operations were canceled.</returns>
         private bool OnHandleClose()
         {
+            // If the handle is owned, on-going async operations will be aborted when the handle is closed.
+            // If we don't own the handle, cancel them explicitly.
+            if (!OwnsHandle)
+            {
+                Interop.Kernel32.CancelIoEx(handle, null);
+            }
+
             // Keep m_IocpBoundHandle around after disposing it to allow freeing NativeOverlapped.
             // ThreadPoolBoundHandle allows FreeNativeOverlapped even after it has been disposed.
             if (_iocpBoundHandle != null)
