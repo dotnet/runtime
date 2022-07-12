@@ -21,6 +21,7 @@
     <PackageTags>JSImportGenerator, analyzers</PackageTags>
     <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <DefineConstants>$(DefineConstants);JSIMPORTGENERATOR</DefineConstants>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <ItemGroup>
