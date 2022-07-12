@@ -383,13 +383,13 @@ partial class Test
         public static string CustomStringMarshallingParametersAndModifiers<T>()
         {
             string typeName = typeof(T).ToString();
-            return BasicParametersAndModifiersWithStringMarshallingCustomType(typeName, "Native", DisableRuntimeMarshalling) + $@"
+            return BasicParametersAndModifiersWithStringMarshallingCustomType(typeName, "Marshaller", DisableRuntimeMarshalling) + $@"
 [CustomMarshaller(typeof({typeName}), MarshalMode.Default, typeof(Marshaller))]
 static class Marshaller
 {{
-    public static IntPtr ConvertToUnmanaged({typeName} s) {{ }}
+    public static nint ConvertToUnmanaged({typeName} s) => default;
 
-    public static {typeName} ConvertToManaged(IntPtr i) => default;
+    public static {typeName} ConvertToManaged(nint i) => default;
 }}";
         }
 
