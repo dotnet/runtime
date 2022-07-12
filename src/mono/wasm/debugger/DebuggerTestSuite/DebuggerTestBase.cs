@@ -458,7 +458,7 @@ namespace DebuggerTests
             // This will run all the tests until it hits the bp
             await Evaluate("window.setTimeout(function() { invoke_run_all (); }, 1);");
             var wait_res = await WaitFor(Inspector.PAUSE);
-            AssertLocation(wait_res, "locals_inner");
+            AssertLocation(wait_res, "DebuggerTest.locals_inner");
             return wait_res;
         }
 

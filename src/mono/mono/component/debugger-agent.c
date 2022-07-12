@@ -8881,6 +8881,69 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			buffer_add_byte(buf, FALSE);
 		break;
 	}
+	case MDBGPROT_CMD_METHOD_GET_PRETTY_NAME: {
+		MonoType *type = (&method->klass->_byval_arg);
+		buffer_add_int (buf, type->type);
+		if (type->type == MONO_TYPE_GENERICINST)
+		{
+			MonoGenericContext *context;
+			GString *res;
+			res = g_string_new ("");
+			mono_type_get_desc (res, &type->data.generic_class->container_class->_byval_arg, TRUE);
+			buffer_add_string (buf, (g_string_free (res, FALSE)));
+			context = &type->data.generic_class->context;
+			if (context->class_inst) {
+				buffer_add_int (buf, context->class_inst->type_argc);
+				for (guint i = 0; i < context->class_inst->type_argc; ++i) {
+					res = g_string_new ("");
+					mono_type_get_desc (res, context->class_inst->type_argv [i], FALSE);
+					buffer_add_string (buf, (g_string_free (res, FALSE)));
+				}
+			}
+			else
+				buffer_add_int (buf, 0);
+			if (context->method_inst) {
+				buffer_add_int (buf, context->method_inst->type_argc);
+				for (guint i = 0; i < context->method_inst->type_argc; ++i) {
+					res = g_string_new ("");
+					mono_type_get_desc (res, context->method_inst->type_argv [i], FALSE);
+					buffer_add_string (buf, (g_string_free (res, FALSE)));
+				}
+			}
+			else
+				buffer_add_int (buf, 0);
+		}
+		else if (type->type == MONO_TYPE_CLASS)
+		{
+			GString *res;
+			MonoClass *klass = method->klass;
+			int i = -1;
+			while (klass)
+			{
+				klass = klass->nested_in;
+				i++;
+			}
+			buffer_add_int (buf, i);
+			klass = method->klass;
+			while (klass)
+			{
+				res = g_string_new ("");
+				if (*(klass->name_space)) {
+					g_string_append (res, klass->name_space);
+					g_string_append_c (res, '.');
+				}
+				g_string_append (res, klass->name);
+				buffer_add_string (buf, (g_string_free (res, FALSE)));
+				klass = klass->nested_in;
+			}
+			buffer_add_string (buf, method->name);
+		}
+		else
+		{
+			buffer_add_string (buf, mono_method_full_name (method, TRUE));
+		}
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
