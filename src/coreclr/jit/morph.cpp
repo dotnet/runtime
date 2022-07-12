@@ -548,6 +548,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
             if (canPushCast)
             {
+                GenTree* op1 = oper->gtGetOp1();
+                GenTree* op2 = oper->gtGetOp2IfPresent();
+
+                canPushCast = !varTypeIsGC(op1) && ((op2 == nullptr) || !varTypeIsGC(op2));
+            }
+
+            if (canPushCast)
+            {
                 DEBUG_DESTROY_NODE(tree);
 
                 // Insert narrowing casts for op1 and op2.
