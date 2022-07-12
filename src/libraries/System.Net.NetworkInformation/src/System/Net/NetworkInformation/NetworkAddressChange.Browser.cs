@@ -43,8 +43,8 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("solaris")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
-            add => throw new PlatformNotSupportedException();
-            remove => throw new PlatformNotSupportedException();
+            add => throw new System.PlatformNotSupportedException(System.SR.SystemNetNetworkInformation_PlatformNotSupported);
+            remove => throw new System.PlatformNotSupportedException(System.SR.SystemNetNetworkInformation_PlatformNotSupported);
         }
 
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
