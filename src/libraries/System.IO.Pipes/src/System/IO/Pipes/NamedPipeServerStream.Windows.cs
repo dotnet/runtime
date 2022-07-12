@@ -141,8 +141,9 @@ namespace System.IO.Pipes
 
                 if (handle.IsInvalid)
                 {
+                    Exception e = Win32Marshal.GetExceptionForLastWin32Error();
                     handle.Dispose();
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
+                    throw e;
                 }
 
                 InitializeHandle(handle, false, (options & PipeOptions.Asynchronous) != 0);

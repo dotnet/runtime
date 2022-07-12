@@ -67,9 +67,12 @@ namespace System.IO.Pipes
 
             if (!bSuccess)
             {
+                Exception e = Win32Marshal.GetExceptionForLastWin32Error();
+
                 serverHandle.Dispose();
                 clientHandle.Dispose();
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+
+                throw e;
             }
 
             // Duplicate the server handle to make it not inheritable.  Note: We need to do this so that the child

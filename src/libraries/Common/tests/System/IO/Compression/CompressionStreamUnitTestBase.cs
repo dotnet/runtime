@@ -241,13 +241,11 @@ namespace System.IO.Compression
             }
         }
 
-        [Theory]
-        [InlineData(CompressionMode.Compress)]
-        [InlineData(CompressionMode.Decompress)]
-        public void CanDisposeBaseStream(CompressionMode mode)
+        [Fact]
+        public void CanDisposeBaseStream()
         {
             var ms = new MemoryStream();
-            using var compressor = CreateStream(ms, mode);
+            using var compressor = CreateStream(ms, CompressionMode.Decompress);
             ms.Dispose(); // This would throw if this was invalid
         }
 

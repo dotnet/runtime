@@ -60,8 +60,9 @@ namespace Internal.Cryptography.Pal.Windows
             SafeHandle pvData = SafeHeapAllocHandle.Alloc(cbData);
             if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, pvData.DangerousGetHandle(), ref cbData))
             {
+                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                 pvData.Dispose();
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw e;
             }
 
             return pvData;
