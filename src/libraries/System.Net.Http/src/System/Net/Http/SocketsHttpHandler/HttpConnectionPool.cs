@@ -772,8 +772,6 @@ namespace System.Net.Http
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
 
             // Look for a usable connection.
-            waiter = null;
-            connection = null;
             while (true)
             {
                 lock (SyncObj)
@@ -782,6 +780,8 @@ namespace System.Net.Http
 
                     if (!_http2Enabled)
                     {
+                        waiter = null;
+                        connection = null;
                         return false;
                     }
 
@@ -801,6 +801,7 @@ namespace System.Net.Http
 
                         // There were no available connections. This request has been added to the request queue.
                         if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/2 connections; request queued.");
+                        connection = null;
                         return false;
                     }
                 }
@@ -837,6 +838,7 @@ namespace System.Net.Http
                 }
 
                 if (NetEventSource.Log.IsEnabled()) connection.Trace("Found usable HTTP/2 connection in pool.");
+                waiter = null;
                 return true;
             }
         }
