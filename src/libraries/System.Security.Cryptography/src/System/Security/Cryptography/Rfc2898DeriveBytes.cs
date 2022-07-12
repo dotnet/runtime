@@ -12,7 +12,6 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [UnsupportedOSPlatform("browser")]
     public partial class Rfc2898DeriveBytes : DeriveBytes
     {
         private byte[] _salt;

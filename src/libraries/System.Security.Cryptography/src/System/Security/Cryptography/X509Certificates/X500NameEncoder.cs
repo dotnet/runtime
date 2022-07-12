@@ -501,17 +501,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[] ParseRdn(ReadOnlySpan<char> tagOid, ReadOnlySpan<char> chars, bool hadEscapedQuote)
         {
-            ReadOnlySpan<char> data = stackalloc char[0];
+            scoped ReadOnlySpan<char> data;
 
             if (hadEscapedQuote)
             {
                 const int MaxStackAllocSize = 256;
-                Span<char> destination = stackalloc char[MaxStackAllocSize];
-
-                if (chars.Length > MaxStackAllocSize)
-                {
-                    destination = new char[chars.Length];
-                }
+                Span<char> destination = chars.Length > MaxStackAllocSize ?
+                    new char[chars.Length] :
+                    stackalloc char[MaxStackAllocSize];
 
                 int written = ExtractValue(chars, destination);
                 data = destination.Slice(0, written);

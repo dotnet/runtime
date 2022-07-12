@@ -356,10 +356,7 @@ namespace System.Data.OleDb
                 }
                 finally
                 {
-                    if (null != dataReader)
-                    {
-                        dataReader.Close();
-                    }
+                    dataReader?.Close();
                 }
             }
             return 0;
@@ -406,10 +403,7 @@ namespace System.Data.OleDb
                 }
                 finally
                 {
-                    if (null != dataReader)
-                    {
-                        dataReader.Close();
-                    }
+                    dataReader?.Close();
                 }
             }
             return 0;

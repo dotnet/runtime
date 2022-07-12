@@ -114,6 +114,8 @@ function set_exit_code(exit_code, reason) {
 
     } else if (App && App.INTERNAL) {
         if (is_node) {
+            // NodeJS is lazy with flushing of console stream. 
+            // We need all of the output, so we force it to flush.
             let _flush = function (_stream) {
                 return new Promise((resolve, reject) => {
                     setTimeout(() => { reject(new Error("timed out waiting for stdout/stderr streams to flush")) }, 30000);

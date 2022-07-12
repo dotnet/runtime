@@ -163,21 +163,6 @@ Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* 
     Compiler*        comp      = walkData->compiler;
     optCSE_MaskData* pUserData = (optCSE_MaskData*)(walkData->pCallbackData);
 
-    if (IS_CSE_INDEX(tree->gtCSEnum))
-    {
-        unsigned cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
-        // Note that we DO NOT use getCSEAvailBit() here, for the CSE_defMask/CSE_useMask
-        unsigned cseBit = genCSEnum2bit(cseIndex);
-        if (IS_CSE_DEF(tree->gtCSEnum))
-        {
-            BitVecOps::AddElemD(comp->cseMaskTraits, pUserData->CSE_defMask, cseBit);
-        }
-        else
-        {
-            BitVecOps::AddElemD(comp->cseMaskTraits, pUserData->CSE_useMask, cseBit);
-        }
-    }
-
     return WALK_CONTINUE;
 }
 
@@ -186,9 +171,45 @@ Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* 
 //
 void Compiler::optCSE_GetMaskData(GenTree* tree, optCSE_MaskData* pMaskData)
 {
+    class MaskDataWalker : public GenTreeVisitor<MaskDataWalker>
+    {
+        optCSE_MaskData* m_maskData;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        MaskDataWalker(Compiler* comp, optCSE_MaskData* maskData) : GenTreeVisitor(comp), m_maskData(maskData)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+            if (IS_CSE_INDEX(tree->gtCSEnum))
+            {
+                unsigned cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
+                // Note that we DO NOT use getCSEAvailBit() here, for the CSE_defMask/CSE_useMask
+                unsigned cseBit = genCSEnum2bit(cseIndex);
+                if (IS_CSE_DEF(tree->gtCSEnum))
+                {
+                    BitVecOps::AddElemD(m_compiler->cseMaskTraits, m_maskData->CSE_defMask, cseBit);
+                }
+                else
+                {
+                    BitVecOps::AddElemD(m_compiler->cseMaskTraits, m_maskData->CSE_useMask, cseBit);
+                }
+            }
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
     pMaskData->CSE_defMask = BitVecOps::MakeEmpty(cseMaskTraits);
     pMaskData->CSE_useMask = BitVecOps::MakeEmpty(cseMaskTraits);
-    fgWalkTreePre(&tree, optCSE_MaskHelper, (void*)pMaskData);
+    MaskDataWalker walker(this, pMaskData);
+    walker.WalkTree(&tree, nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -2991,12 +3012,8 @@ public:
             // This will contain the replacement tree for exp
             // It will either be the CSE def or CSE ref
             //
-            GenTree*      cse = nullptr;
-            bool          isDef;
-            FieldSeqNode* fldSeq               = nullptr;
-            bool          commaOnly            = true;
-            GenTree*      effectiveExp         = exp->gtEffectiveVal(commaOnly);
-            const bool    hasZeroMapAnnotation = m_pCompiler->GetZeroOffsetFieldMap()->Lookup(effectiveExp, &fldSeq);
+            GenTree* cse = nullptr;
+            bool     isDef;
 
             if (IS_CSE_USE(exp->gtCSEnum))
             {
@@ -3299,12 +3316,6 @@ public:
             // Mutate this link, thus replacing the old exp with the new CSE representation
             //
             *link = cse;
-
-            // If it has a zero-offset field seq, copy annotation.
-            if (hasZeroMapAnnotation)
-            {
-                m_pCompiler->fgAddFieldSeqForZeroOffset(cse, fldSeq);
-            }
 
             assert(m_pCompiler->fgRemoveRestOfBlock == false);
 
