@@ -157,18 +157,6 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void ManagedTypeGetPinnableReferenceMarshalling()
-        {
-            int originalValue = 42;
-            var wrapper = new IntWrapper { i = originalValue };
-
-            var retVal = NativeExportsNE.Stateless.DoubleIntRef(wrapper);
-
-            Assert.Equal(originalValue * 2, wrapper.i);
-            Assert.Equal(originalValue * 2, retVal.i);
-        }
-
-        [Fact]
         public void MarshallerStaticGetPinnableReferenceMarshalling()
         {
             int originalValue = 42;
