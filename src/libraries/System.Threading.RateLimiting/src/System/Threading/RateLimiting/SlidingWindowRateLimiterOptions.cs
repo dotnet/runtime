@@ -13,7 +13,7 @@ namespace System.Threading.RateLimiting
         /// </summary>
         /// <param name="permitLimit">Maximum number of request counters that can be served in a window.</param>
         /// <param name="queueProcessingOrder"></param>
-        /// <param name="queueLimit">Maximum number of unprocessed request counters waiting via <see cref="RateLimiter.WaitAsync(int, CancellationToken)"/>.</param>
+        /// <param name="queueLimit">Maximum number of unprocessed request counters waiting via <see cref="RateLimiter.WaitAndAcquireAsync(int, CancellationToken)"/>.</param>
         /// <param name="window">
         /// Specifies how often requests can be replenished. Replenishing is triggered either by an internal timer if <paramref name="autoReplenishment"/> is true, or by calling <see cref="SlidingWindowRateLimiter.TryReplenish"/>.
         /// </param>
@@ -73,7 +73,7 @@ namespace System.Threading.RateLimiting
         public int PermitLimit { get; }
 
         /// <summary>
-        /// Determines the behaviour of <see cref="RateLimiter.WaitAsync"/> when not enough resources can be leased.
+        /// Determines the behaviour of <see cref="RateLimiter.WaitAndAcquireAsync"/> when not enough resources can be leased.
         /// </summary>
         /// <value>
         /// <see cref="QueueProcessingOrder.OldestFirst"/> by default.
