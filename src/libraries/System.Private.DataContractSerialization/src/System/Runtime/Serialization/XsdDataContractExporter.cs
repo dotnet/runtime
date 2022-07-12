@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete("Schema handling abilities has moved to System.Runtime.Serialization.Schema. Please use the classes there.")]
     public class XsdDataContractExporter
     {
         private ExportOptions? _options;

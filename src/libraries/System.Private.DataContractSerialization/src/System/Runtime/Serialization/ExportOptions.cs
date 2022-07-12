@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete("Schema handling abilities has moved to System.Runtime.Serialization.Schema. Please use the classes there.")]
     public class ExportOptions
     {
         private Collection<Type>? _knownTypes;
