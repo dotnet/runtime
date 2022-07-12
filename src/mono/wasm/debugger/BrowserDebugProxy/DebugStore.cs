@@ -769,7 +769,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                 var attributeName = assembly.EnCGetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                if (attributeName == "CompilerGeneratedAttribute")
+                if (attributeName == nameof(CompilerGeneratedAttribute))
                     IsCompilerGenerated = true;
             }
 
