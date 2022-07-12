@@ -118,7 +118,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal static DefaultJsonTypeInfoResolver? DefaultInstance => s_defaultInstance;
+        internal static bool IsDefaultInstanceRooted => s_defaultInstance is not null;
         private static DefaultJsonTypeInfoResolver? s_defaultInstance;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

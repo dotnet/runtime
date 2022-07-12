@@ -165,7 +165,7 @@ namespace System.Text.Json.Nodes
                 CreateNodes();
                 Debug.Assert(_list != null);
 
-                options ??= JsonSerializerOptions.DefaultInstance;
+                options ??= s_defaultOptions;
 
                 writer.WriteStartArray();
 

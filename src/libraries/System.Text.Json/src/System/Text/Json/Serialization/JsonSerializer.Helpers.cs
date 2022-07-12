@@ -20,7 +20,11 @@ namespace System.Text.Json
             Debug.Assert(runtimeType != null);
 
             options ??= JsonSerializerOptions.Default;
-            options.InitializeForReflectionSerializer();
+
+            if (!options.IsLockedInstance || !DefaultJsonTypeInfoResolver.IsDefaultInstanceRooted)
+            {
+                options.InitializeForReflectionSerializer();
+            }
 
             return options.GetTypeInfoForRootType(runtimeType);
         }
