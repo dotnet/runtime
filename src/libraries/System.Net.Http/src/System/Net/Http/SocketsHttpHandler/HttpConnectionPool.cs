@@ -471,9 +471,9 @@ namespace System.Net.Http
             }
             finally
             {
-                waiter.ConnectionCancellationTokenSource = null;
                 lock (waiter)
                 {
+                    waiter.ConnectionCancellationTokenSource = null;
                     cts.Dispose();
                 }
             }
@@ -700,9 +700,9 @@ namespace System.Net.Http
             }
             finally
             {
-                waiter.ConnectionCancellationTokenSource = null;
                 lock (waiter)
                 {
+                    waiter.ConnectionCancellationTokenSource = null;
                     cts.Dispose();
                 }
             }
@@ -1129,28 +1129,42 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    CancelWithGlobalTimeout(this, http11ConnectionWaiter);
-                    CancelWithGlobalTimeout(this, http2ConnectionWaiter);
+                    // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,
+                    // but in that case http2ConnectionWaiter.ConnectionCancellationTokenSource shall be null.
+                    Debug.Assert(http11ConnectionWaiter is null || http2ConnectionWaiter?.ConnectionCancellationTokenSource is null);
+                    CancelIfNecessary(http11ConnectionWaiter);
+                    CancelIfNecessary(http2ConnectionWaiter);
                 }
             }
         }
 
-        private static void CancelWithGlobalTimeout<T>(HttpConnectionPool pool, HttpConnectionWaiter<T>? waiter)
+        private void CancelIfNecessary<T>(HttpConnectionWaiter<T>? waiter)
         {
             if (waiter == null || waiter.ConnectionCancellationTokenSource == null) return;
 
             lock (waiter)
             {
-                if (waiter.ConnectionCancellationTokenSource == null) return;
+                if (waiter.ConnectionCancellationTokenSource is null)
+                {
+                    return;
+                }
 
                 if (NetEventSource.Log.IsEnabled())
-                    pool.Trace($"Cancelling a pending connection attempt with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms");
+                {
+                    Trace($"Cancelling a pending connection attempt with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms");
+                }
 
                 if (GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion > 0)
-                    // This cancellation will not fire if the connection succeeds within the delay and the CTS becomes disposed.
+                {
+                    // Cancel after the specified timeout. This cancellation will not fire if the connection
+                    // succeeds within the delay and the CTS becomes disposed.
                     waiter.ConnectionCancellationTokenSource.CancelAfter(GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion);
+                }
                 else
-                    waiter.ConnectionCancellationTokenSource.Cancel(); // Cancel immediately by default
+                {
+                    // Cancel immediately by default
+                    waiter.ConnectionCancellationTokenSource.Cancel();
+                }
             }
         }
 
@@ -2486,7 +2500,7 @@ namespace System.Net.Http
         {
             // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled
             // or completes on a different connection.
-            public volatile CancellationTokenSource? ConnectionCancellationTokenSource;
+            public CancellationTokenSource? ConnectionCancellationTokenSource;
 
             public async ValueTask<T> WaitForConnectionAsync(bool async, CancellationToken requestCancellationToken)
             {
