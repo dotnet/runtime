@@ -437,7 +437,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "DebuggerStepperBoundaryAttribute":
                                 DebuggerAttrInfo.HasStepperBoundary = true;
                                 break;
-                            case "CompilerGeneratedAttribute":
+                            case nameof(CompilerGeneratedAttribute):
                                 IsCompilerGenerated = true;
                                 break;
                         }
