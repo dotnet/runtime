@@ -118,7 +118,7 @@
       <MonoIncludeFiles Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
-    <!-- Host files-->
+    <!-- Host files. Mobile uses a different hosting model, so we don't include the .NET host components there. -->
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
       <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostpolicy$(LibSuffix)" />
       <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)" />
