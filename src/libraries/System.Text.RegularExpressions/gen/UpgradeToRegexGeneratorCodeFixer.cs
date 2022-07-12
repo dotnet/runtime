@@ -112,12 +112,11 @@ namespace System.Text.RegularExpressions.Generator
 
             // Calculate what name should be used for the generated static partial method
             string methodName = DefaultRegexMethodName;
-            INamedTypeSymbol? typeSymbol = typeDeclarationOrCompilationUnit switch
-            {
-                TypeDeclarationSyntax typeDeclaration => semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken),
-                CompilationUnitSyntax compilationUnit => semanticModel.GetDeclaredSymbol(compilationUnit, cancellationToken)?.ContainingType,
-                _ => throw new InvalidOperationException("This is unreachable."),
-            };
+
+            INamedTypeSymbol? typeSymbol = typeDeclarationOrCompilationUnit is TypeDeclarationSyntax typeDeclaration ?
+                semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) :
+                semanticModel.GetDeclaredSymbol((CompilationUnitSyntax)typeDeclarationOrCompilationUnit, cancellationToken)?.ContainingType;
+
             if (typeSymbol is not null)
             {
                 IEnumerable<ISymbol> members = GetAllMembers(typeSymbol);
@@ -152,12 +151,10 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // We need to find the typeDeclaration again, but now using the new root.
-            typeDeclarationOrCompilationUnit = typeDeclarationOrCompilationUnit switch
-            {
-                TypeDeclarationSyntax => nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault(),
-                CompilationUnitSyntax => await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false),
-                _ => throw new InvalidOperationException("This is unreachable."),
-            };
+            typeDeclarationOrCompilationUnit = typeDeclarationOrCompilationUnit is TypeDeclarationSyntax ?
+                nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() :
+                await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+
             Debug.Assert(typeDeclarationOrCompilationUnit is not null);
             SyntaxNode newTypeDeclarationOrCompilationUnit = typeDeclarationOrCompilationUnit;
 
@@ -233,12 +230,9 @@ namespace System.Text.RegularExpressions.Generator
             newMethod = (MethodDeclarationSyntax)generator.AddAttributes(newMethod, attributes);
 
             // Add the method to the type.
-            newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit switch
-            {
-                TypeDeclarationSyntax newTypeDeclaration => newTypeDeclaration.AddMembers(newMethod),
-                CompilationUnitSyntax newCompilationUnit => newCompilationUnit.AddMembers((ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod })),
-                _ => throw new InvalidOperationException("This is unreachable."),
-            };
+            newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit is TypeDeclarationSyntax newTypeDeclaration ?
+                newTypeDeclaration.AddMembers(newMethod) :
+                ((CompilationUnitSyntax)newTypeDeclarationOrCompilationUnit).AddMembers((ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod }));
 
             // Replace the old type declaration with the new modified one, and return the document.
             return document.WithSyntaxRoot(root.ReplaceNode(typeDeclarationOrCompilationUnit, newTypeDeclarationOrCompilationUnit));
