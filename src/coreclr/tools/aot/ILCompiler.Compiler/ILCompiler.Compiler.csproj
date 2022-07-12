@@ -406,6 +406,7 @@
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
+    <Compile Include="Compiler\DescriptorMarker.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlockReflectionTypeMapNode.cs" />
