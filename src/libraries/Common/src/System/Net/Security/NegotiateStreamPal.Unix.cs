@@ -134,7 +134,7 @@ namespace System.Net.Security
           out byte[]? resultBuffer,
           ref ContextFlagsPal outFlags)
         {
-            bool isNtlmOnly = credential.IsNtlmOnly;
+            Interop.NetSecurityNative.PackageType packageType = credential.PackageType;
 
             resultBuffer = null;
 
@@ -142,7 +142,11 @@ namespace System.Net.Security
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    string protocol = isNtlmOnly ? "NTLM" : "SPNEGO";
+                    string protocol = packageType switch {
+                        Interop.NetSecurityNative.PackageType.NTLM => "NTLM",
+                        Interop.NetSecurityNative.PackageType.Kerberos => "Kerberos",
+                        _ => "SPNEGO"
+                    };
                     NetEventSource.Info(context, $"requested protocol = {protocol}, target = {targetName}");
                 }
 
@@ -172,7 +176,7 @@ namespace System.Net.Security
                     status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
                                                                       credential.GssCredential,
                                                                       ref contextHandle,
-                                                                      isNtlmOnly,
+                                                                      packageType,
                                                                       cbtAppData,
                                                                       cbtAppDataSize,
                                                                       negoContext.TargetName,
@@ -187,7 +191,7 @@ namespace System.Net.Security
                     status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
                                                                       credential.GssCredential,
                                                                       ref contextHandle,
-                                                                      isNtlmOnly,
+                                                                      packageType,
                                                                       negoContext.TargetName,
                                                                       (uint)inputFlags,
                                                                       incomingBlob,
@@ -216,7 +220,11 @@ namespace System.Net.Security
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        string protocol = isNtlmOnly ? "NTLM" : isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos";
+                        string protocol = packageType switch {
+                            Interop.NetSecurityNative.PackageType.NTLM => "NTLM",
+                            Interop.NetSecurityNative.PackageType.Kerberos => "Kerberos",
+                            _ => isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos"
+                        };
                         NetEventSource.Info(context, $"actual protocol = {protocol}");
                     }
 
@@ -441,24 +449,36 @@ namespace System.Net.Security
         {
             bool isEmptyCredential = string.IsNullOrWhiteSpace(credential.UserName) ||
                                      string.IsNullOrWhiteSpace(credential.Password);
-            bool ntlmOnly = string.Equals(package, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase);
-            if (ntlmOnly && isEmptyCredential && !isServer)
-            {
-                // NTLM authentication is not possible with default credentials which are no-op
-                throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
-            }
+            Interop.NetSecurityNative.PackageType packageType;
 
-            if (!ntlmOnly && !string.Equals(package, NegotiationInfoClass.Negotiate))
+            if (string.Equals(package, NegotiationInfoClass.Negotiate, StringComparison.OrdinalIgnoreCase))
             {
-                // Native shim currently supports only NTLM and Negotiate
+                packageType = Interop.NetSecurityNative.PackageType.Negotiate;
+            }
+            else if (string.Equals(package, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
+            {
+                packageType = Interop.NetSecurityNative.PackageType.NTLM;
+                if (isEmptyCredential && !isServer)
+                {
+                    // NTLM authentication is not possible with default credentials which are no-op
+                    throw new PlatformNotSupportedException(SR.net_ntlm_not_possible_default_cred);
+                }
+            }
+            else if (string.Equals(package, NegotiationInfoClass.Kerberos, StringComparison.OrdinalIgnoreCase))
+            {
+                packageType = Interop.NetSecurityNative.PackageType.Kerberos;
+            }
+            else
+            {
+                // Native shim currently supports only NTLM, Negotiate and Kerberos
                 throw new PlatformNotSupportedException(SR.net_securitypackagesupport);
             }
 
             try
             {
                 return isEmptyCredential ?
-                    new SafeFreeNegoCredentials(ntlmOnly, string.Empty, string.Empty, string.Empty) :
-                    new SafeFreeNegoCredentials(ntlmOnly, credential.UserName, credential.Password, credential.Domain);
+                    new SafeFreeNegoCredentials(packageType, string.Empty, string.Empty, string.Empty) :
+                    new SafeFreeNegoCredentials(packageType, credential.UserName, credential.Password, credential.Domain);
             }
             catch (Exception ex)
             {
