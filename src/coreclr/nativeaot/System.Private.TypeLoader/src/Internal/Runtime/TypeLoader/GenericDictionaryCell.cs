@@ -313,6 +313,24 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        private class ThreadStaticIndexCell : GenericDictionaryCell
+        {
+            internal TypeDesc Type;
+
+            internal override void Prepare(TypeBuilder builder)
+            {
+                if (Type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    Environment.FailFast("Unable to compute static field locations for a canonical type.");
+
+                builder.RegisterForPreparation(Type);
+            }
+
+            internal override unsafe IntPtr Create(TypeBuilder builder)
+            {
+                return TypeLoaderEnvironment.Instance.TryGetThreadStaticFieldData(builder.GetRuntimeTypeHandle(Type));
+            }
+        }
+
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
         public static GenericDictionaryCell CreateMethodDictionaryCell(InstantiatedMethod method)
         {
@@ -1843,8 +1861,16 @@ namespace Internal.Runtime.TypeLoader
                     break;
 #endif
 
-                case FixupSignatureKind.NotYetSupported:
                 case FixupSignatureKind.ThreadStaticIndex:
+                    {
+                        var type = nativeLayoutInfoLoadContext.GetType(ref parser);
+                        TypeLoaderLogger.WriteLine("ThreadStaticIndex on: " + type.ToString());
+
+                        cell = new ThreadStaticIndexCell { Type = type };
+                    }
+                    break;
+
+                case FixupSignatureKind.NotYetSupported:
                 case FixupSignatureKind.GenericStaticConstrainedMethod:
                     TypeLoaderLogger.WriteLine("Valid dictionary entry, but not yet supported by the TypeLoader!");
                     throw new TypeBuilder.MissingTemplateException();

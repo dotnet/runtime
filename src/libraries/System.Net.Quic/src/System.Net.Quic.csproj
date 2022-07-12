@@ -11,21 +11,12 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
   </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
+  </ItemGroup>
   <!-- Source files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="System\Net\Quic\NetEventSource.Quic.cs" />
-    <Compile Include="System\Net\Quic\QuicClientConnectionOptions.cs" />
-    <Compile Include="System\Net\Quic\QuicConnection.cs" />
-    <Compile Include="System\Net\Quic\QuicError.cs" />
-    <Compile Include="System\Net\Quic\QuicException.cs" />
-    <Compile Include="System\Net\Quic\QuicListener.cs" />
-    <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
-    <Compile Include="System\Net\Quic\QuicOptions.cs" />
-    <Compile Include="System\Net\Quic\QuicStream.cs" />
-    <Compile Include="System\Net\Quic\Implementations\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\*.cs" />
+    <Compile Include="System\Net\Quic\**\*.cs" Exclude="System\Net\Quic\*.Unsupported.cs"/>
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
@@ -39,8 +30,10 @@
   </ItemGroup>
   <!-- Unsupported platforms -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
-    <Compile Include="System\Net\Quic\QuicListener.Unsupported.cs" />
-    <Compile Include="System\Net\Quic\QuicConnection.Unsupported.cs" />
+    <Compile Include="System\Net\Quic\*.Unsupported.cs" />
+    <!-- [ActiveIssue("https://github.com/dotnet/runtime/issues/71559")]: PNSE generator cannot handle required keyword, so excluding affected classes in ExcludeApiList.PNSE.txt and including real code for now. -->
+    <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicConnectionOptions.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -117,6 +110,7 @@
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />

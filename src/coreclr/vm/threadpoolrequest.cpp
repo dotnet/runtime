@@ -385,8 +385,7 @@ void UnManagedPerAppDomainTPCount::QueueUnmanagedWorkRequest(LPTHREAD_START_ROUT
     _ASSERTE(pWorkRequest != NULL);
     PREFIX_ASSUME(pWorkRequest != NULL);
 
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolEnqueue) &&
-        !ThreadpoolMgr::AreEtwQueueEventsSpeciallyHandled(function))
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolEnqueue))
         FireEtwThreadPoolEnqueue(pWorkRequest, GetClrInstanceId());
 
     m_lock.Init(LOCK_TYPE_DEFAULT);
@@ -493,8 +492,7 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
         wrFunction = pWorkRequest->Function;
         wrContext  = pWorkRequest->Context;
 
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolDequeue) &&
-            !ThreadpoolMgr::AreEtwQueueEventsSpeciallyHandled(wrFunction))
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolDequeue))
             FireEtwThreadPoolDequeue(pWorkRequest, GetClrInstanceId());
 
         ThreadpoolMgr::FreeWorkRequest(pWorkRequest);

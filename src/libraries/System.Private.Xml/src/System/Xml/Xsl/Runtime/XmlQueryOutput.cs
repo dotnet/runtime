@@ -445,7 +445,7 @@ namespace System.Xml.Xsl.Runtime
         public void WriteStartElementUnchecked(string prefix, string localName, string ns)
         {
             Debug.Assert(_xstate == XmlState.WithinContent, $"WriteStartElement cannot be called in the {_xstate} state.");
-            if (_nsmgr != null) _nsmgr.PushScope();
+            _nsmgr?.PushScope();
             Writer.WriteStartElement(prefix, localName, ns);
             //reset when enter element
             _usedPrefixes.Clear();
@@ -486,7 +486,7 @@ namespace System.Xml.Xsl.Runtime
             Writer.WriteEndElement(prefix, localName, ns);
             _xstate = XmlState.WithinContent;
             _depth--;
-            if (_nsmgr != null) _nsmgr.PopScope();
+            _nsmgr?.PopScope();
         }
 
         /// <summary>

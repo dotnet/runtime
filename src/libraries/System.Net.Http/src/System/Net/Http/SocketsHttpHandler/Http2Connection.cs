@@ -174,7 +174,7 @@ namespace System.Net.Http
 
         private object SyncObject => _httpStreams;
 
-        public async ValueTask SetupAsync()
+        public async ValueTask SetupAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -208,7 +208,7 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
-                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
@@ -217,6 +217,13 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 Dispose();
+
+                if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
+                {
+                    // Note, AddHttp2ConnectionAsync handles this OCE separately so don't wrap it.
+                    throw;
+                }
+
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
@@ -229,11 +236,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_shutdown)
                 {
@@ -279,11 +283,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (_shutdown)
                 {
@@ -337,11 +338,8 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_disposed)
-                {
-                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
-                    throw new ObjectDisposedException(nameof(Http2Connection));
-                }
+                Debug.Assert(!_disposed, "As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 Debug.Assert(_availableStreamsWaiter is null, "As used currently, shouldn't already have a waiter");
 
@@ -472,7 +470,15 @@ namespace System.Net.Http
                     frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
                     if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
                     {
-                        ThrowProtocolError();
+                        if (frameHeader.Type == FrameType.GoAway)
+                        {
+                            var (_, errorCode) = ReadGoAwayFrame(frameHeader);
+                            ThrowProtocolError(errorCode);
+                        }
+                        else
+                        {
+                            ThrowProtocolError();
+                        }
                     }
 
                     if (NetEventSource.Log.IsEnabled()) Trace($"Frame 0: {frameHeader}.");
@@ -993,38 +999,16 @@ namespace System.Net.Http
 
             _incomingBuffer.Discard(frameHeader.PayloadLength);
 
-            if (protocolError == Http2ProtocolErrorCode.RefusedStream)
-            {
-                http2Stream.OnReset(new Http2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: true);
-            }
-            else
-            {
-                http2Stream.OnReset(new Http2StreamException(protocolError), resetStreamErrorCode: protocolError);
-            }
+            bool canRetry = protocolError == Http2ProtocolErrorCode.RefusedStream;
+            http2Stream.OnReset(HttpProtocolException.CreateHttp2StreamException(protocolError), resetStreamErrorCode: protocolError, canRetry: canRetry);
         }
 
         private void ProcessGoAwayFrame(FrameHeader frameHeader)
         {
-            Debug.Assert(frameHeader.Type == FrameType.GoAway);
-
-            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
-            {
-                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
-            }
-
-            if (frameHeader.StreamId != 0)
-            {
-                ThrowProtocolError();
-            }
-
-            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
-            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
-            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
-
-            _incomingBuffer.Discard(frameHeader.PayloadLength);
+            var (lastStreamId, errorCode) = ReadGoAwayFrame(frameHeader);
 
             Debug.Assert(lastStreamId >= 0);
-            Exception resetException = new Http2ConnectionException(errorCode);
+            Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode);
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();
@@ -1051,6 +1035,29 @@ namespace System.Net.Http
             {
                 s.OnReset(resetException, canRetry: true);
             }
+        }
+
+        private (int lastStreamId, Http2ProtocolErrorCode errorCode) ReadGoAwayFrame(FrameHeader frameHeader)
+        {
+            Debug.Assert(frameHeader.Type == FrameType.GoAway);
+
+            if (frameHeader.PayloadLength < FrameHeader.GoAwayMinLength)
+            {
+                ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
+            }
+
+            if (frameHeader.StreamId != 0)
+            {
+                ThrowProtocolError();
+            }
+
+            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
+            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
+            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
+
+            _incomingBuffer.Discard(frameHeader.PayloadLength);
+
+            return (lastStreamId, errorCode);
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>
@@ -1964,7 +1971,7 @@ namespace System.Net.Http
             {
                 if (e is IOException ||
                     e is ObjectDisposedException ||
-                    e is Http2ProtocolException ||
+                    e is HttpProtocolException ||
                     e is InvalidOperationException)
                 {
                     throw new HttpRequestException(SR.net_http_client_execution_error, e);
@@ -2070,7 +2077,7 @@ namespace System.Net.Http
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpProtocolException ?? new IOException(SR.net_http_request_aborted, innerException);
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>
@@ -2082,6 +2089,6 @@ namespace System.Net.Http
 
         [DoesNotReturn]
         private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode) =>
-            throw new Http2ConnectionException(errorCode);
+            throw HttpProtocolException.CreateHttp2ConnectionException(errorCode);
     }
 }

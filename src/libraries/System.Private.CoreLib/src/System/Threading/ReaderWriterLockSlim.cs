@@ -1438,9 +1438,8 @@ namespace System.Threading
 
             // The variables controlling spinning behavior of this spin lock
             private const int LockSpinCycles = 20;
-            private const int LockSpinCount = 10;
-            private const int LockSleep0Count = 5;
-            private const int DeprioritizedLockSleep1Count = 5;
+            private const int LockSleep0SpinThreshold = 10;
+            private const int ReprioritizeLockSpinThreshold = LockSleep0SpinThreshold + 60;
 
             private static int GetEnterDeprioritizationStateChange(EnterSpinLockReason reason)
             {
@@ -1559,20 +1558,24 @@ namespace System.Threading
                     Interlocked.Add(ref _enterDeprioritizationState, deprioritizationStateChange);
                 }
 
-                int processorCount = Environment.ProcessorCount;
-                for (int spinIndex = 0; ; spinIndex++)
+                for (uint spinIndex = 0; ; spinIndex++)
                 {
-                    if (spinIndex < LockSpinCount && processorCount > 1)
+                    // - Spin-wait until the Sleep(0) threshold
+                    // - Beyond the Sleep(0) threshold, alternate between sleeping and spinning. Avoid using only Sleep(0), as
+                    //   it may be ineffective when there are no other threads waiting to run. Thread.SpinWait() is not used
+                    //   where there is a single processor since it would be unlikely for a meaningful change in state to occur
+                    //   during that.
+                    // - Don't Sleep(1) here, as it can lead to long latencies in the reader/writer lock operations
+                    if ((spinIndex < LockSleep0SpinThreshold || (spinIndex - LockSleep0SpinThreshold) % 2 != 0) &&
+                        !Environment.IsSingleProcessor)
                     {
-                        Thread.SpinWait(LockSpinCycles * (spinIndex + 1)); // Wait a few dozen instructions to let another processor release lock.
-                    }
-                    else if (spinIndex < (LockSpinCount + LockSleep0Count))
-                    {
-                        Thread.Sleep(0);   // Give up my quantum.
+                        Thread.SpinWait(
+                            LockSpinCycles *
+                            (spinIndex < LockSleep0SpinThreshold ? (int)spinIndex + 1 : LockSleep0SpinThreshold));
                     }
                     else
                     {
-                        Thread.Sleep(1);   // Give up my quantum.
+                        Thread.Sleep(0);
                     }
 
                     if (!IsEnterDeprioritized(reason))
@@ -1589,17 +1592,17 @@ namespace System.Threading
                     }
 
                     // It's possible for an Enter thread to be deprioritized for an extended duration. It's undesirable for a
-                    // deprioritized thread to keep waking up to spin despite a Sleep(1) when a large number of such threads are
-                    // involved. After a threshold of Sleep(1)s, ignore the deprioritization and enter this lock to allow this
-                    // thread to stop spinning and hopefully enter a proper wait state.
+                    // deprioritized thread to keep spin-waiting for the lock when a large number of such threads are involved.
+                    // After a threshold, ignore the deprioritization and enter this lock to allow this thread to stop spinning
+                    // and hopefully enter a proper wait state.
                     Debug.Assert(
                         reason == EnterSpinLockReason.EnterAnyRead ||
                         reason == EnterSpinLockReason.EnterWrite ||
                         reason == EnterSpinLockReason.UpgradeToWrite);
-                    if (spinIndex >= (LockSpinCount + LockSleep0Count + DeprioritizedLockSleep1Count))
+                    if (spinIndex >= ReprioritizeLockSpinThreshold)
                     {
                         reason |= EnterSpinLockReason.Wait;
-                        spinIndex = -1;
+                        spinIndex = uint.MaxValue;
                     }
                 }
             }

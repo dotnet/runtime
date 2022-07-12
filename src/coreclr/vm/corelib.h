@@ -74,6 +74,8 @@
 // See usage in this file itself and on the link (the assembly name for feature switch in this file will be System.Private.CoreLib),
 // https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md#generate-the-right-input-for-the-linker-in-sdk
 //
+// The FOR_ILLINK define is set when this file is being processed for the IL linker.
+//
 #ifndef BEGIN_ILLINK_FEATURE_SWITCH
 #define BEGIN_ILLINK_FEATURE_SWITCH(featureName, featureValue, featureDefault)
 #endif
@@ -575,9 +577,9 @@ DEFINE_FIELD(NULL,                  VALUE,          Value)
 
 DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
-DEFINE_CLASS(BYREFERENCE,           System,                 ByReference`1)
+DEFINE_CLASS(BYREFERENCE,           System,                 ByReference)
 DEFINE_METHOD(BYREFERENCE,          CTOR,                   .ctor, NoSig)
-DEFINE_METHOD(BYREFERENCE,          GET_VALUE,              get_Value, NoSig)
+DEFINE_FIELD(BYREFERENCE,           VALUE,                  Value)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
 DEFINE_METHOD(SPAN,                 CTOR_PTR_INT,           .ctor, IM_VoidPtr_Int_RetVoid)
 DEFINE_METHOD(SPAN,                 GET_ITEM,               get_Item, IM_Int_RetRefT)
@@ -906,9 +908,6 @@ DEFINE_METHOD(TPWAITORTIMER_HELPER,             PERFORM_WAITORTIMER_CALLBACK,   
 DEFINE_CLASS(TP_WAIT_CALLBACK,         Threading,              _ThreadPoolWaitCallback)
 DEFINE_METHOD(TP_WAIT_CALLBACK,        PERFORM_WAIT_CALLBACK,               PerformWaitCallback,                   SM_RetBool)
 
-DEFINE_CLASS(TIMER_QUEUE,           Threading,                TimerQueue)
-DEFINE_METHOD(TIMER_QUEUE,          APPDOMAIN_TIMER_CALLBACK, AppDomainTimerCallback,   SM_Int_RetVoid)
-
 DEFINE_CLASS(THREAD_POOL,           Threading,                          ThreadPool)
 DEFINE_METHOD(THREAD_POOL,          ENSURE_GATE_THREAD_RUNNING,         EnsureGateThreadRunning,        SM_RetVoid)
 DEFINE_METHOD(THREAD_POOL,          UNSAFE_QUEUE_UNMANAGED_WORK_ITEM,   UnsafeQueueUnmanagedWorkItem,   SM_IntPtr_IntPtr_RetVoid)
@@ -1188,12 +1187,19 @@ DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICast
 #endif // FEATURE_ICASTABLE
 
 DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, CTOR, .ctor, IM_Str_RetVoid)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, CTOR_SPAN, .ctor, IM_Str_SpanOfByte_RetVoid)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, TO_NATIVE_VALUE, ToNativeValue, IM_RetPtrByte)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, FROM_NATIVE_VALUE, FromNativeValue, IM_PtrByte_RetVoid)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, TO_MANAGED, ToManaged, IM_RetStr)
-DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE_NATIVE, FreeNative, IM_RetVoid)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_PtrByte_RetStr)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_UNMANAGED, ConvertToUnmanaged, SM_Str_RetPtrByte)
+DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE, Free, SM_PtrByte_RetVoid)
+
+// The generator for the linker XML doesn't understand inner classes so generation
+// needs to skip the following type.
+// See https://github.com/dotnet/runtime/issues/71847
+#ifndef FOR_ILLINK
+DEFINE_CLASS(UTF8STRINGMARSHALLER_IN, Marshalling, Utf8StringMarshaller+ManagedToUnmanagedIn)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FROM_MANAGED, FromManaged, IM_Str_SpanOfByte_RetVoid)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, TO_UNMANAGED, ToUnmanaged, IM_RetPtrByte)
+DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FREE, Free, IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_NATIVE, ConvertToNative, NoSig)
@@ -1226,8 +1232,8 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_Ptr
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
-DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_Int_Obj_RetVoid)
-DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_Int_PtrVoid_RetRefObj)
+DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_IntPtr_Obj_RetVoid)
+DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_IntPtr_PtrVoid_RetRefObj)
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)

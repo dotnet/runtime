@@ -1347,11 +1347,7 @@ namespace System.Net.Http
             public override int Read(Span<byte> buffer)
             {
                 Http3RequestStream? stream = _stream;
-
-                if (stream is null)
-                {
-                    throw new ObjectDisposedException(nameof(Http3RequestStream));
-                }
+                ObjectDisposedException.ThrowIf(stream is null, this);
 
                 Debug.Assert(_response != null);
                 return stream.ReadResponseContent(_response, buffer);

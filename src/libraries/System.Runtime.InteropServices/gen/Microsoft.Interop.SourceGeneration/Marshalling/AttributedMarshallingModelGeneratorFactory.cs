@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -12,7 +13,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled);
+    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled, MarshalMode InMode, MarshalMode RefMode, MarshalMode OutMode);
 
     public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
     {
@@ -102,7 +103,7 @@ namespace Microsoft.Interop
             return _innerMarshallingGenerator.Create(info, context);
         }
 
-        private static ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context)
+        private ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context)
         {
             return count switch
             {
@@ -134,10 +135,16 @@ namespace Microsoft.Interop
 
                 for (int i = 0; i < numIndirectionLevels; i++)
                 {
-                    if (marshallingInfo is NativeLinearCollectionMarshallingInfo_V1 collectionInfo)
+                    if (marshallingInfo is NativeLinearCollectionMarshallingInfo collectionInfo)
                     {
-                        type = collectionInfo.ElementType;
-                        marshallingInfo = collectionInfo.ElementMarshallingInfo;
+                        CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(collectionInfo.Marshallers, info);
+                        type = marshallerData.CollectionElementType;
+                        marshallingInfo = marshallerData.CollectionElementMarshallingInfo;
+                    }
+                    else if (marshallingInfo is NativeLinearCollectionMarshallingInfo_V1 collectionInfoV1)
+                    {
+                        type = collectionInfoV1.ElementType;
+                        marshallingInfo = collectionInfoV1.ElementMarshallingInfo;
                     }
                     else
                     {
@@ -206,26 +213,25 @@ namespace Microsoft.Interop
             return false;
         }
 
+        private CustomTypeMarshallerData GetMarshallerDataForTypePositionInfo(CustomTypeMarshallers marshallers, TypePositionInfo info)
+        {
+            if (info.IsManagedReturnPosition)
+                return marshallers.GetModeOrDefault(Options.OutMode);
+
+            return info.RefKind switch
+            {
+                RefKind.None or RefKind.In => marshallers.GetModeOrDefault(Options.InMode),
+                RefKind.Ref => marshallers.GetModeOrDefault(Options.RefMode),
+                RefKind.Out => marshallers.GetModeOrDefault(Options.OutMode),
+                _ => throw new UnreachableException()
+            };
+        }
+
         private IMarshallingGenerator CreateCustomNativeTypeMarshaller(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
             ValidateCustomNativeTypeMarshallingSupported(info, context, marshalInfo);
 
-            CustomTypeMarshallerData marshallerData;
-            if (info.IsManagedReturnPosition)
-            {
-                marshallerData = marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedOut);
-            }
-            else
-            {
-                marshallerData = info.RefKind switch
-                {
-                    RefKind.None or RefKind.In => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedIn),
-                    RefKind.Ref => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedRef),
-                    RefKind.Out => marshalInfo.Marshallers.GetScenarioOrDefault(Scenario.ManagedToUnmanagedOut),
-                    _ => throw new MarshallingNotSupportedException(info, context)
-                };
-            }
-
+            CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(marshalInfo.Marshallers, info);
             if (!ValidateRuntimeMarshallingOptions(marshallerData))
             {
                 throw new MarshallingNotSupportedException(info, context)
@@ -235,22 +241,145 @@ namespace Microsoft.Interop
                 };
             }
 
-            ICustomTypeMarshallingStrategy marshallingStrategy = new StatelessValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
-            if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
-                marshallingStrategy = new CallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+            // Collections have extra configuration, so handle them separately.
+            if (marshalInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo)
+                return CreateNativeCollectionMarshaller(info, context, marshallerData, collectionMarshallingInfo);
+
+            ICustomTypeMarshallingStrategy marshallingStrategy;
+            if (marshallerData.HasState)
+            {
+                marshallingStrategy = new StatefulValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
+                if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+                    marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+            }
+            else
+            {
+                marshallingStrategy = new StatelessValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
+                if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+
+                if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
+                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+            }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
+
+            if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
+            {
+                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerData.MarshallerType.Syntax);
+            }
 
             return marshalInfo.IsPinnableManagedType
                 ? new PinnableManagedValueMarshaller(marshallingGenerator)
                 : marshallingGenerator;
         }
 
-        private static void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
+        private IMarshallingGenerator CreateNativeCollectionMarshaller(
+            TypePositionInfo info,
+            StubCodeContext context,
+            CustomTypeMarshallerData marshallerData,
+            NativeLinearCollectionMarshallingInfo marshalInfo)
+        {
+            var elementInfo = new TypePositionInfo(marshallerData.CollectionElementType, marshallerData.CollectionElementMarshallingInfo)
+            {
+                ManagedIndex = info.ManagedIndex,
+                RefKind = CreateElementRefKind(info.RefKind, info.ByValueContentsMarshalKind)
+            };
+            IMarshallingGenerator elementMarshaller = _elementMarshallingGenerator.Create(
+                elementInfo,
+                new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, string.Empty, context));
+
+            ExpressionSyntax numElementsExpression = LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0));
+            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+            {
+                // In this case, we need a numElementsExpression supplied from metadata, so we'll calculate it here.
+                numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, marshalInfo.ElementCountInfo, context);
+            }
+
+            // Insert the unmanaged element type into the marshaller type
+            TypeSyntax unmanagedElementType = elementMarshaller.AsNativeType(elementInfo).GetCompatibleGenericTypeParameterSyntax();
+            TypeSyntax marshallerTypeSyntax = marshallerData.MarshallerType.Syntax;
+            marshallerTypeSyntax = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerTypeSyntax, marshalInfo, unmanagedElementType);
+            TypeSyntax nativeTypeSyntax = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerData.NativeType.Syntax, marshalInfo, unmanagedElementType);
+
+            ICustomTypeMarshallingStrategy marshallingStrategy;
+            bool elementIsBlittable = elementMarshaller is BlittableMarshaller;
+
+            if (marshallerData.HasState)
+            {
+                marshallingStrategy = new StatefulValueMarshalling(marshallerTypeSyntax, nativeTypeSyntax, marshallerData.Shape);
+                if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+                {
+                    // Check if the buffer element type is actually the unmanaged element type
+                    TypeSyntax bufferElementTypeSyntax = marshallerData.BufferElementType.Syntax.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)
+                        ? unmanagedElementType
+                        : marshallerData.BufferElementType.Syntax;
+                    marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax);
+                }
+
+                if (elementIsBlittable)
+                {
+                    marshallingStrategy = new StatefulLinearCollectionBlittableElementsMarshalling(marshallingStrategy, marshallerData.Shape, marshallerData.CollectionElementType.Syntax, unmanagedElementType, numElementsExpression);
+                }
+                else
+                {
+                    marshallingStrategy = new StatefulLinearCollectionNonBlittableElementsMarshalling(marshallingStrategy, marshallerData.Shape, unmanagedElementType, elementMarshaller, elementInfo, numElementsExpression);
+                }
+            }
+            else
+            {
+                if (elementIsBlittable)
+                {
+                    marshallingStrategy = new StatelessLinearCollectionBlittableElementsMarshalling(marshallerTypeSyntax, nativeTypeSyntax, marshallerData.Shape, marshallerData.CollectionElementType.Syntax, unmanagedElementType, numElementsExpression);
+                }
+                else
+                {
+                    marshallingStrategy = new StatelessLinearCollectionNonBlittableElementsMarshalling(marshallerTypeSyntax, nativeTypeSyntax, marshallerData.Shape, unmanagedElementType, elementMarshaller, elementInfo, numElementsExpression);
+                }
+
+                if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
+                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
+            }
+
+            IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(
+                marshallingStrategy,
+                enableByValueContentsMarshalling: info.ManagedType is SzArrayType && (!elementIsBlittable || ElementTypeIsSometimesNonBlittable(elementInfo)));
+
+            // Elements in the collection must be blittable to use the pinnable marshaller.
+            if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference) && elementIsBlittable)
+            {
+                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeSyntax);
+            }
+
+            return marshalInfo.IsPinnableManagedType && elementIsBlittable
+                ? new PinnableManagedValueMarshaller(marshallingGenerator)
+                : marshallingGenerator;
+        }
+
+        private static bool ElementTypeIsSometimesNonBlittable(TypePositionInfo elementInfo)
+        {
+            if (elementInfo.MarshallingAttributeInfo is NoMarshallingInfo
+                || elementInfo.MarshallingAttributeInfo is UnmanagedBlittableMarshallingInfo { IsStrictlyBlittable: true }
+                || elementInfo.MarshallingAttributeInfo is NativeMarshallingAttributeInfo_V1 { IsStrictlyBlittable: true })
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private static TypeSyntax ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(
+            TypeSyntax originalTypeSyntax,
+            NativeLinearCollectionMarshallingInfo marshalInfo,
+            TypeSyntax unmanagedElementType)
+            => originalTypeSyntax.ReplaceNodes(
+                        originalTypeSyntax.DescendantNodesAndSelf().OfType<TypeSyntax>().Where(t => t.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)),
+                        (_, _) => unmanagedElementType);
+
+        private void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
             // Marshalling out or return parameter, but no out marshaller is specified
             if ((info.RefKind == RefKind.Out || info.IsManagedReturnPosition)
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedOut))
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.OutMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -259,7 +388,7 @@ namespace Microsoft.Interop
             }
 
             // Marshalling ref parameter, but no ref marshaller is specified
-            if (info.RefKind == RefKind.Ref && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedRef))
+            if (info.RefKind == RefKind.Ref && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.RefMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -269,7 +398,7 @@ namespace Microsoft.Interop
 
             // Marshalling in parameter, but no in marshaller is specified
             if (info.RefKind == RefKind.In
-                && !marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedIn))
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -281,7 +410,7 @@ namespace Microsoft.Interop
             if (!info.IsByRef
                 && !info.IsManagedReturnPosition
                 && context.SingleFrameSpansNativeContext
-                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Scenario.ManagedToUnmanagedIn)))
+                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode)))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {
@@ -313,7 +442,7 @@ namespace Microsoft.Interop
             // Collections have extra configuration, so handle them here.
             if (marshalInfo is NativeLinearCollectionMarshallingInfo_V1 collectionMarshallingInfo)
             {
-                return CreateNativeCollectionMarshaller(info, context, collectionMarshallingInfo, marshallingStrategy);
+                return CreateNativeCollectionMarshaller_V1(info, context, collectionMarshallingInfo, marshallingStrategy);
             }
             else if (marshalInfo.NativeValueType is not null)
             {
@@ -389,13 +518,17 @@ namespace Microsoft.Interop
             }
         }
 
-        private IMarshallingGenerator CreateNativeCollectionMarshaller(
+        private IMarshallingGenerator CreateNativeCollectionMarshaller_V1(
             TypePositionInfo info,
             StubCodeContext context,
             NativeLinearCollectionMarshallingInfo_V1 collectionInfo,
             ICustomNativeTypeMarshallingStrategy marshallingStrategy)
         {
-            var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
+            var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo)
+            {
+                ManagedIndex = info.ManagedIndex,
+                RefKind = CreateElementRefKind(info.RefKind, info.ByValueContentsMarshalKind)
+            };
             IMarshallingGenerator elementMarshaller = _elementMarshallingGenerator.Create(
                 elementInfo,
                 new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, string.Empty, context));
@@ -428,14 +561,6 @@ namespace Microsoft.Interop
                 marshallingStrategy,
                 SizeOfExpression(nativeElementType));
 
-            if (collectionInfo.UseDefaultMarshalling && info.ManagedType is SzArrayType)
-            {
-                return new ArrayMarshaller(
-                    new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: true),
-                    elementInfo,
-                    elementIsBlittable);
-            }
-
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
             // Elements in the collection must be blittable to use the pinnable marshaller.
@@ -445,6 +570,15 @@ namespace Microsoft.Interop
             }
 
             return marshallingGenerator;
+        }
+
+        private static RefKind CreateElementRefKind(RefKind refKind, ByValueContentsMarshalKind byValueContentsMarshalKind)
+        {
+            if (refKind == RefKind.None)
+            {
+                return byValueContentsMarshalKind.GetRefKindForByValueContentsKind();
+            }
+            return refKind;
         }
     }
 }

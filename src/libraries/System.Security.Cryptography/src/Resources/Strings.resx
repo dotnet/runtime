@@ -753,4 +753,10 @@
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
   </data>
+  <data name="Unknown_SubtleCrypto_Error" xml:space="preserve">
+    <value>SubtleCrypto returned an unknown error: '{0}'.</value>
+  </data>
+  <data name="PlatformNotSupported_CipherModeBrowser" xml:space="preserve">
+    <value>Only CipherMode.CBC is supported on this platform.</value>
+  </data>
 </root>

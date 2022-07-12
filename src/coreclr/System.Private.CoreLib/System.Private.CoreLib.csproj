@@ -20,6 +20,7 @@
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
 
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+    <FeaturePortableTimer>true</FeaturePortableTimer>
   </PropertyGroup>
 
   <ItemGroup>
@@ -236,7 +237,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ProcessorIdCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypedReference.CoreCLR.cs" />

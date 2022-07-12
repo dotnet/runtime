@@ -157,10 +157,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal LocalVariable AddClosureVariable(ParameterExpression variable)
         {
-            if (_closureVariables == null)
-            {
-                _closureVariables = new Dictionary<ParameterExpression, LocalVariable>();
-            }
+            _closureVariables ??= new Dictionary<ParameterExpression, LocalVariable>();
             LocalVariable result = new LocalVariable(_closureVariables.Count, true);
             _closureVariables.Add(variable, result);
             return result;

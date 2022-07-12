@@ -34,6 +34,12 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace Internal.JitInterface
 {
+    enum CompilationResult
+    {
+        CompilationComplete,
+        CompilationRetryRequested
+    }
+
     internal sealed unsafe partial class CorInfoImpl
     {
         //
@@ -320,7 +326,7 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
+        private CompilationResult CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             // methodIL must not be null
             if (methodIL == null)
@@ -420,9 +426,19 @@ namespace Internal.JitInterface
                     Array.Resize(ref _code, (int)codeSize);
                 }
             }
+
+            CompilationResult compilationCompleteBehavior = CompilationResult.CompilationComplete;
+            DetermineIfCompilationShouldBeRetried(ref compilationCompleteBehavior);
+            if (compilationCompleteBehavior == CompilationResult.CompilationRetryRequested)
+                return compilationCompleteBehavior;
+
             PublishCode();
             PublishROData();
+
+            return CompilationResult.CompilationComplete;
         }
+
+        partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result);
 
         private void PublishCode()
         {
@@ -631,6 +647,7 @@ namespace Internal.JitInterface
             _precodeFixups = null;
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
+            _ilBodiesNeeded = null;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
@@ -1240,6 +1257,13 @@ namespace Internal.JitInterface
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
         {
             MethodDesc method = HandleToObject(ftn);
+#if READYTORUN
+            // Add an early CanInline check to see if referring to the IL of the target methods is
+            // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
+            // later.
+            if (!_compilation.CanInline(MethodBeingCompiled, method))
+                return false;
+#endif
             MethodIL methodIL = _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
@@ -1378,7 +1402,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                ModuleToken declToken = resolver.GetModuleTokenForMethod(decl.GetTypicalMethodDefinition(), throwIfNotFound: false);
+                ModuleToken declToken = resolver.GetModuleTokenForMethod(decl.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: false);
                 if (declToken.IsNull)
                 {
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE;
@@ -1416,7 +1440,7 @@ namespace Internal.JitInterface
             else
             {
 #if READYTORUN
-                methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition()), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
+                methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: true), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
 #endif
 
                 info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, impl
@@ -1791,7 +1815,15 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
-            bool recordToken = _compilation.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
+            bool recordToken;
+            if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodIL.OwningMethod.GetTypicalMethodDefinition()))
+            {
+                recordToken = (methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation) && owningType is EcmaType;
+            }
+            else
+            {
+                recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
+            }
 #endif
 
             if (result is MethodDesc method)
@@ -2297,11 +2329,6 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
-
-            if (type.IsByReferenceOfT)
-            {
-                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
-            }
 
             foreach (var field in type.GetFields())
             {
@@ -2920,15 +2947,6 @@ namespace Internal.JitInterface
                 type = asCorInfoType(fieldType);
             }
 
-            Debug.Assert(!fieldDesc.OwningType.IsByReferenceOfT ||
-                fieldDesc.OwningType.GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
-            if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
-            {
-                Debug.Assert(structType == null || *structType == null);
-                Debug.Assert(fieldDesc.Offset.AsInt == 0);
-                type = CorInfoType.CORINFO_TYPE_BYREF;
-            }
-
             return type;
         }
 
@@ -2987,6 +3005,12 @@ namespace Internal.JitInterface
 
             // Just tell the JIT to extend everything.
             extendOthers = true;
+        }
+
+        private void reportRichMappings(InlineTreeNode* inlineTree, uint numInlineTree, RichOffsetMapping* mappings, uint numMappings)
+        {
+            Marshal.FreeHGlobal((IntPtr)inlineTree);
+            Marshal.FreeHGlobal((IntPtr)mappings);
         }
 
         private void* allocateArray(UIntPtr cBytes)

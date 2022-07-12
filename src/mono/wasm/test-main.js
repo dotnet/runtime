@@ -6,6 +6,15 @@
 //
 "use strict";
 
+
+/*****************************************************************************
+ * Please don't use this as template for startup code.
+ * There are simpler and better samples like src\mono\sample\wasm\browser\main.js
+ * This one is not ES6 nor CJS, doesn't use top level await and has edge case polyfills. 
+ * It handles strange things which happen with XHarness.
+ ****************************************************************************/
+
+
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 const is_browser = typeof window != "undefined";
 const is_node = !is_browser && typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
@@ -105,14 +114,13 @@ function set_exit_code(exit_code, reason) {
 
     } else if (App && App.INTERNAL) {
         if (is_node) {
+            // NodeJS is lazy with flushing of console stream. 
+            // We need all of the output, so we force it to flush.
             let _flush = function (_stream) {
                 return new Promise((resolve, reject) => {
-                    if (!_stream.write('')) {
-                        _stream.on('drain', () => resolve());
-                        setTimeout(reject, 3000);
-                    } else {
-                        resolve();
-                    }
+                    setTimeout(() => { reject(new Error("timed out waiting for stdout/stderr streams to flush")) }, 30000);
+                    _stream.on('error', (error) => reject(error));
+                    _stream.write('', function () { resolve() });
                 });
             };
             let stderrFlushed = _flush(process.stderr);
@@ -123,7 +131,7 @@ function set_exit_code(exit_code, reason) {
                     () => App.INTERNAL.mono_wasm_exit(exit_code),
                     reason => {
                         console.error(`flushing std* streams failed: ${reason}`);
-                        App.INTERNAL.mono_wasm_exit(123);
+                        App.INTERNAL.mono_wasm_exit(123456);
                     });
         } else {
             App.INTERNAL.mono_wasm_exit(exit_code);
@@ -358,7 +366,7 @@ if (is_browser) {
 Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
     applyArguments();
 
-    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
+    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
@@ -380,16 +388,18 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 
                 config.wait_for_debugger = -1;
             }
-    
+
             if (is_node) {
+                // we may have dependencies on NPM packages, depending on the test case
+                // some of them polyfill for browser built-in stuff
                 const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
                 if (modulesToLoad) {
                     modulesToLoad.split(',').forEach(module => {
                         const { 0: moduleName, 1: globalAlias } = module.split(':');
-        
+
                         let message = `Loading npm '${moduleName}'`;
                         let moduleExport = INTERNAL.require(moduleName);
-        
+
                         if (globalAlias) {
                             message += ` and attaching to global as '${globalAlias}'`;
                             globalThis[globalAlias] = moduleExport;
@@ -403,7 +413,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
                             message += ' and attaching to global';
                             globalThis.AbortController = moduleExport.AbortController;
                         }
-        
+
                         console.log(message);
                     });
                 }
@@ -426,7 +436,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 
             Module.FS.chdir(runArgs.workingDirectory);
 
-            App.init({ MONO, INTERNAL, BINDING, Module, runArgs });
+            App.init({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
         },
         onAbort: (error) => {
             set_exit_code(1, stringify_as_error_with_stack(new Error()));
@@ -437,8 +447,8 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 });
 
 const App = {
-    init: async function ({ MONO, INTERNAL, BINDING, Module, runArgs }) {
-        Object.assign(App, { MONO, INTERNAL, BINDING, Module, runArgs });
+    init: async function ({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs }) {
+        Object.assign(App, { MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
         console.info("Initializing.....");
 
         for (let i = 0; i < runArgs.profilers.length; ++i) {
@@ -509,6 +519,35 @@ const App = {
             console.error("exception thrown in", fqn);
             throw exc;
         }
+    },
+
+    create_function(...args) {
+        const code = args.pop();
+        const arg_count = args.length;
+        args.push("MONO");
+        args.push("BINDING");
+        args.push("INTERNAL");
+        args.push("IMPORTS");
+        args.push("EXPORTS");
+
+        const userFunction = new Function(...args, code);
+        return function (...args) {
+            args[arg_count + 0] = globalThis.App.MONO;
+            args[arg_count + 1] = globalThis.App.BINDING;
+            args[arg_count + 2] = globalThis.App.INTERNAL;
+            args[arg_count + 3] = globalThis.App.IMPORTS;
+            args[arg_count + 4] = globalThis.App.EXPORTS;
+            return userFunction(...args);
+        };
+    },
+    invoke_js(js_code) {
+        const closedEval = function (Module, MONO, BINDING, INTERNAL, code) {
+            return eval(code);
+        };
+        const res = closedEval(globalThis.App.Module, globalThis.App.MONO, globalThis.App.BINDING, globalThis.App.INTERNAL, js_code);
+        return (res === undefined || res === null || typeof res === "string")
+            ? null
+            : res.toString();
     }
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly

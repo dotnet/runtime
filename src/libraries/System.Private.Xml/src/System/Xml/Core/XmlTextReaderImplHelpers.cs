@@ -92,9 +92,9 @@ namespace System.Xml
                     {
                         stream.Dispose();
                     }
-                    else if (textReader != null)
+                    else
                     {
-                        textReader.Dispose();
+                        textReader?.Dispose();
                     }
                 }
             }
@@ -336,18 +336,9 @@ namespace System.Xml
             private static volatile NodeData? s_None;
 
             // NOTE: Do not use this property for reference comparison. It may not be unique.
-            internal static NodeData None
-            {
-                get
-                {
-                    if (s_None == null)
-                    {
-                        // no locking; s_None is immutable so it's not a problem that it may get initialized more than once
-                        s_None = new NodeData();
-                    }
-                    return s_None;
-                }
-            }
+            internal static NodeData None =>
+                // no locking; s_None is immutable so it's not a problem that it may get initialized more than once
+                s_None ??= new NodeData();
 
             // type
             internal XmlNodeType type;

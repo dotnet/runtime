@@ -1774,8 +1774,6 @@ private:
     void DoStringLength();
     void DoStringGetChar();
     void DoGetTypeFromHandle();
-    void DoByReferenceCtor();
-    void DoByReferenceValue();
     void DoSIMDHwAccelerated();
     void DoGetIsSupported();
 

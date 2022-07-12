@@ -194,14 +194,9 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (domainsHandle != null)
-                    domainsHandle.Dispose();
-
-                if (namesHandle != null)
-                    namesHandle.Dispose();
-
-                if (policyHandle != null)
-                    policyHandle.Dispose();
+                domainsHandle?.Dispose();
+                namesHandle?.Dispose();
+                policyHandle?.Dispose();
             }
         }
 

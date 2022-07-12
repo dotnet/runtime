@@ -37,10 +37,7 @@ namespace Internal.Win32
 
         void IDisposable.Dispose()
         {
-            if (_hkey != null)
-            {
-                _hkey.Dispose();
-            }
+            _hkey?.Dispose();
         }
 
         public void DeleteValue(string name, bool throwOnMissingValue)

@@ -146,10 +146,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _fullDeserialization = true;
             _stack = new SerStack("ObjectReader Object Stack");
             _objectManager = new ObjectManager(_surrogates, _context);
-            if (_formatterConverter == null)
-            {
-                _formatterConverter = new FormatterConverter();
-            }
+            _formatterConverter ??= new FormatterConverter();
         }
 
         internal object CrossAppDomainArray(int index)
@@ -296,10 +293,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 TopObject = pr._newObj;
             }
 
-            if (pr._objectInfo == null)
-            {
-                pr._objectInfo = ReadObjectInfo.Create(pr._dtType, _surrogates, _context, _objectManager, _serObjectInfoInit, _formatterConverter, _isSimpleAssembly);
-            }
+            pr._objectInfo ??= ReadObjectInfo.Create(pr._dtType, _surrogates, _context, _objectManager, _serObjectInfoInit, _formatterConverter, _isSimpleAssembly);
         }
 
         // End of object encountered in stream
@@ -926,10 +920,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 // Alarm bells. This is an old format. Deal with it.
                 _oldFormatDetected = true;
-                if (_valTypeObjectIdTable == null)
-                {
-                    _valTypeObjectIdTable = new IntSizedArray();
-                }
+                _valTypeObjectIdTable ??= new IntSizedArray();
 
                 long tempObjId;
                 if ((tempObjId = _valTypeObjectIdTable[(int)objectId]) == 0)

@@ -185,7 +185,7 @@ namespace System.IO.Enumeration
             char nameChar = '\0';
             char expressionChar;
 
-            Span<int> temp = stackalloc int[0];
+            scoped Span<int> temp = default;
             Span<int> currentMatches = stackalloc int[16];
             Span<int> priorMatches = stackalloc int[16];
             priorMatches[0] = 0;

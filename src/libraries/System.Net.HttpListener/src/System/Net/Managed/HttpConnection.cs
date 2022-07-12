@@ -101,9 +101,7 @@ namespace System.Net
             }
 
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
-            if (_sslStream != null) {
-                _sslStream.AuthenticateAsServer (_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
-            }
+            _sslStream?.AuthenticateAsServer(_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
             Init();
         }
 
@@ -496,9 +494,7 @@ namespace System.Net
         {
             if (_socket != null)
             {
-                Stream st = GetResponseStream();
-                if (st != null)
-                    st.Close();
+                GetResponseStream()?.Close();
 
                 _responseStream = null;
             }
@@ -532,16 +528,14 @@ namespace System.Net
                 _socket = null;
                 try
                 {
-                    if (s != null)
-                        s.Shutdown(SocketShutdown.Both);
+                    s?.Shutdown(SocketShutdown.Both);
                 }
                 catch
                 {
                 }
                 finally
                 {
-                    if (s != null)
-                        s.Close();
+                    s?.Close();
                 }
                 Unbind();
                 RemoveConnection();
