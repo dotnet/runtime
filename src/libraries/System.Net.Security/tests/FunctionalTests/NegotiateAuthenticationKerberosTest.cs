@@ -60,5 +60,25 @@ namespace System.Net.Security.Tests
                 Assert.True(serverNegotiateAuthentication.IsAuthenticated);
             });
         }
+
+        [Fact]
+        public async void Invalid_Token()
+        {
+            using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
+            // Force a non-empty keytab to make macOS happy
+            kerberosExecutor.AddService("HTTP/linux.contoso.com");
+            await kerberosExecutor.Invoke(() =>
+            {
+                NegotiateAuthentication ntAuth = new NegotiateAuthentication(new NegotiateAuthenticationServerOptions { });
+                // Ask for NegHints
+                byte[] blob = ntAuth.GetOutgoingBlob((ReadOnlySpan<byte>)default, out NegotiateAuthenticationStatusCode statusCode);
+                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+                Assert.NotNull(blob);
+                // Send garbage token
+                blob = ntAuth.GetOutgoingBlob(new byte[3], out statusCode);
+                Assert.True(statusCode >= NegotiateAuthenticationStatusCode.GenericFailure);
+                Assert.Null(blob);
+            });
+        }
     }
 }
