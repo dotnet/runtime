@@ -68,13 +68,15 @@ public class Program
             await VerifyCS.VerifyAnalyzerAsync(test);
         }
 
-        [Fact]
-        public async Task TopLevelStatements()
+        [Theory]
+        [MemberData(nameof(InvocationTypes))]
+        public async Task TopLevelStatements(InvocationType invocationType)
         {
+            string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
             string test = @"using System.Text.RegularExpressions;
-Regex r = [|new Regex("""")|];";
+var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern: "\"\"") + @"|]" + isMatchInvocation + ";";
             string fixedCode = @"using System.Text.RegularExpressions;
-Regex r = MyRegex();
+var isMatch = MyRegex().IsMatch("""");
 
 partial class Program
 {
