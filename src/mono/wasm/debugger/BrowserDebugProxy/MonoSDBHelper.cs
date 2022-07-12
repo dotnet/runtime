@@ -864,7 +864,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 //get information from runtime
                 method = await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
             }
-            string methodName = await GetMethodName(methodId, token);
             var type = await GetTypeFromMethodId(methodId, token);
             var typeInfo = await GetTypeInfo(type, token);
             try {
