@@ -985,7 +985,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[s_data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
 
-                    Assert.True(stream.ReadsClosed.IsCompleted);
+                    Assert.True(stream.ReadsClosed.IsCompletedSuccessfully);
                     Assert.Equal(s_data.Length, bytesRead);
                     Assert.Equal(s_data, buffer);
 
@@ -1001,7 +1001,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[s_data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
 
-                    Assert.True(stream.ReadsClosed.IsCompleted);
+                    Assert.True(stream.ReadsClosed.IsCompletedSuccessfully);
                     Assert.Equal(s_data.Length, bytesRead);
                     Assert.Equal(s_data, buffer);
                 }
@@ -1022,14 +1022,14 @@ namespace System.Net.Quic.Tests
 
                     var received = await serverStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
-                    Assert.True(serverStream.ReadsClosed.IsCompleted);
+                    Assert.True(serverStream.ReadsClosed.IsCompletedSuccessfully);
 
                     var task = serverStream.ReadAsync(new byte[1]);
                     Assert.True(task.IsCompleted);
 
                     received = await task;
                     Assert.Equal(0, received);
-                    Assert.True(serverStream.ReadsClosed.IsCompleted);
+                    Assert.True(serverStream.ReadsClosed.IsCompletedSuccessfully);
                 });
         }
     }
