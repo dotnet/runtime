@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static new KeyedHashAlgorithm? Create(string algName) =>
-            (KeyedHashAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);
+            CryptoConfigForwarder.CreateFromName<KeyedHashAlgorithm>(algName);
 
         public virtual byte[] Key
         {

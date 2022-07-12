@@ -21,7 +21,18 @@ namespace System.IO.Tests
             => new FileStream(File.OpenHandle(path, mode, access), access);
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new FileStream(File.OpenHandle(path, mode, access, share, options), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+        {
+            SafeFileHandle handle = File.OpenHandle(path, mode, access, share, options);
+            try
+            {
+                return new FileStream(handle, access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
+        }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
             => new FileStream(File.OpenHandle(path, mode, access, share, options, preallocationSize), access, bufferSize, (options & FileOptions.Asynchronous) != 0);

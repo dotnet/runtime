@@ -94,7 +94,9 @@ internal static partial class Interop
         {
             if (handle == null || handle.IsInvalid)
             {
-                throw CreateOpenSslCryptographicException();
+                Exception e = CreateOpenSslCryptographicException();
+                handle?.Dispose();
+                throw e;
             }
         }
 

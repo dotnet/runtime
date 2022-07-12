@@ -221,6 +221,7 @@ namespace System.IO
                 if (!asDirectory && errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Equals(Directory.GetDirectoryRoot(fullPath)))
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
 
+                handle.Dispose();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 

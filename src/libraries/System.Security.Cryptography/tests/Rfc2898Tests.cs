@@ -188,7 +188,7 @@ namespace System.Security.Cryptography
         [Fact]
         public static void GetBytes_NegativeLength()
         {
-            Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1);
+            using Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1);
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(int.MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(int.MinValue / 2));

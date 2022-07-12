@@ -24,7 +24,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(handle);
             if (safeCertContextHandle.IsInvalid)
-                throw ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
+            {
+                Exception e = ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
+                safeCertContextHandle.Dispose();
+                throw e;
+            }
 
             int cbData = 0;
             bool deleteKeyContainer = Interop.Crypt32.CertGetCertificateContextProperty(safeCertContextHandle, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out Interop.Crypt32.DATA_BLOB _, ref cbData);

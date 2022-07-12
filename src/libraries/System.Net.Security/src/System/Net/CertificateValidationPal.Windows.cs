@@ -62,13 +62,16 @@ namespace System.Net
             }
             finally
             {
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext != null)
                 {
-                    if (retrieveChainCertificates)
+                    if (!remoteContext.IsInvalid)
                     {
-                        chain ??= new X509Chain();
+                        if (retrieveChainCertificates)
+                        {
+                            chain ??= new X509Chain();
 
-                        UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
+                            UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
+                        }
                     }
 
                     remoteContext.Dispose();
@@ -128,7 +131,8 @@ namespace System.Net
             // For app-compat We want to ensure the store is opened under the **process** account.
             try
             {
-                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
+                using SafeAccessTokenHandle invalidHandle = SafeAccessTokenHandle.InvalidHandle;
+                WindowsIdentity.RunImpersonated(invalidHandle, () =>
                 {
                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                 });

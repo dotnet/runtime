@@ -139,7 +139,7 @@ namespace System.IO.Compression
 
             using (var readStream = await ManualSyncMemoryStream.GetStreamFromFileAsync(compressedPath, false))
             {
-                var decompressor = CreateStream(readStream, CompressionMode.Decompress, true);
+                using var decompressor = CreateStream(readStream, CompressionMode.Decompress, true);
                 Task task = decompressor.ReadAsync(uncompressedBytes, 0, uncompressedBytes.Length);
                 decompressor.Dispose();
                 readStream.manualResetEvent.Set();
@@ -154,7 +154,7 @@ namespace System.IO.Compression
         {
             var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
             var compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(testFile));
-            var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
+            using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
             var decompressorOutput = new MemoryStream();
 
             int _bufferSize = 1024;
@@ -198,7 +198,7 @@ namespace System.IO.Compression
             compressedStream.Write(bytes, 0, _bufferSize);
             compressedStream.Write(bytes, 0, _bufferSize);
             compressedStream.Position = 0;
-            var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
+            using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
 
             while (decompressor.Read(bytes, 0, _bufferSize) > 0);
             Assert.Equal(((compressedEndPosition / BufferSize) + 1) * BufferSize, compressedStream.Position);
@@ -211,7 +211,7 @@ namespace System.IO.Compression
             string testFile = UncompressedTestFile();
             var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
             var compressedStream = new BadWrappedStream(BadWrappedStream.Mode.ReadSlowly, File.ReadAllBytes(CompressedTestFile(testFile)));
-            var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
+            using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
             var decompressorOutput = new MemoryStream();
 
             int _bufferSize = 1024;
@@ -247,7 +247,7 @@ namespace System.IO.Compression
         public void CanDisposeBaseStream(CompressionMode mode)
         {
             var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
+            using var compressor = CreateStream(ms, mode);
             ms.Dispose(); // This would throw if this was invalid
         }
 
@@ -307,7 +307,8 @@ namespace System.IO.Compression
                 int _bufferSize = 1024;
                 var bytes = new byte[_bufferSize];
                 var baseStream = new MemoryStream(bytes, writable: true);
-                Stream compressor = create(baseStream);
+
+                using Stream compressor = create(baseStream);
 
                 //Write some data and Close the stream
                 string strData = "Test Data";
@@ -321,7 +322,7 @@ namespace System.IO.Compression
                 //Read the data
                 byte[] data2 = new byte[_bufferSize];
                 baseStream = new MemoryStream(bytes, writable: false);
-                var decompressor = CreateStream(baseStream, CompressionMode.Decompress);
+                using var decompressor = CreateStream(baseStream, CompressionMode.Decompress);
                 int size = decompressor.Read(data2, 0, _bufferSize - 5);
 
                 //Verify the data roundtripped
@@ -436,7 +437,7 @@ namespace System.IO.Compression
         public void BaseStream_NullAfterDisposeWithFalseLeaveOpen(CompressionMode mode)
         {
             var ms = new MemoryStream();
-            var compressor = CreateStream(ms, mode);
+            using var compressor = CreateStream(ms, mode);
             compressor.Dispose();
 
             Assert.Null(BaseStream(compressor));
@@ -451,7 +452,7 @@ namespace System.IO.Compression
         public async Task BaseStream_ValidAfterDisposeWithTrueLeaveOpen(CompressionMode mode)
         {
             var ms = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
-            var decompressor = CreateStream(ms, mode, leaveOpen: true);
+            using var decompressor = CreateStream(ms, mode, leaveOpen: true);
             var baseStream = BaseStream(decompressor);
             Assert.Same(ms, baseStream);
             decompressor.Dispose();
