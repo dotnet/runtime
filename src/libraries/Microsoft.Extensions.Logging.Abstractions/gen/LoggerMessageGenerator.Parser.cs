@@ -538,10 +538,16 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
 
+                bool onMostDerivedType = true;
+
                 while (classType is { SpecialType: not SpecialType.System_Object })
                 {
                     foreach (IFieldSymbol fs in classType.GetMembers().OfType<IFieldSymbol>())
                     {
+                        if (!onMostDerivedType && fs.DeclaredAccessibility == Accessibility.Private)
+                        {
+                            continue;
+                        }
                         if (IsBaseOrIdentity(fs.Type, loggerSymbol))
                         {
                             if (loggerField == null)
@@ -555,6 +561,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         }
                     }
 
+                    onMostDerivedType = false;
                     classType = classType.BaseType;
                 }
 

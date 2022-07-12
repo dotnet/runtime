@@ -3,6 +3,32 @@
 
 using Microsoft.Extensions.Logging;
 
+// No explicit tests use the following two types, but the fact
+// that they are here means we exercise a constraint that we
+// exclude private fields of base types.
+// If that logic ever changes, then just by having these two classes
+// will mean that compilation fails with:
+// error SYSLIB1020: Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class DerivedClass_with_private_logger
+public class BaseClass_with_private_logger
+{
+    private ILogger _logger;
+
+    public BaseClass_with_private_logger(ILogger logger) => _logger = logger;
+}
+
+public partial class DerivedClass_with_private_logger : BaseClass_with_private_logger
+{
+    private ILogger _logger;
+
+    public DerivedClass_with_private_logger(ILogger logger) : base(logger)
+    {
+        _logger = logger;
+    }
+
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    public partial void Test();
+}
+
 public class BaseClass
 {
     protected ILogger _logger;
