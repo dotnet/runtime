@@ -18,7 +18,7 @@ namespace System.Net.WebSockets.Client.Tests
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "WebSocket over HTTP/2 is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Browser)]
         public async Task ConnectAsync_VersionNotSupported_Throws()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -44,19 +44,19 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "WebSocket over HTTP/2 is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Browser)]
         public async Task ConnectAsync_VersionSupported_Success()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                using (var clientSocket = new ClientWebSocket())
+                using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    clientSocket.Options.HttpVersion = HttpVersion.Version20;
-                    clientSocket.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
+                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
                     using var handler = new SocketsHttpHandler();
                     handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
-                    await clientSocket.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
+                    await cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
                 }
             },
             async server =>

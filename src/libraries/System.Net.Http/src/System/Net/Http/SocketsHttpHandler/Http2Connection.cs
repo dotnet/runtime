@@ -850,6 +850,13 @@ namespace System.Net.Http
                             {
                                 IsConnectEnabled = true;
                             }
+                            else if (settingValue == 0 && IsConnectEnabled)
+                            {
+                                // Accroding to RFC: a sender MUST NOT send a SETTINGS_ENABLE_CONNECT_PROTOCOL parameter
+                                // with the value of 0 after previously sending a value of 1.
+                                // https://datatracker.ietf.org/doc/html/rfc8441#section-3
+                                ThrowProtocolError();
+                            }
                             break;
 
                         default:
@@ -871,6 +878,7 @@ namespace System.Net.Http
                     {
                         Interlocked.CompareExchange(ref _initialSettingsReceived, s_settingsReceivedSingleton, null);
                     }
+                    // Set result in case if CompareExchange lost the race
                     InitialSettingsReceived.TrySetResult(true);
                 }
 

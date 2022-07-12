@@ -1087,7 +1087,12 @@ namespace System.Net.Http
                     // Throw if fallback is not allowed by the version policy.
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                        HttpRequestException exception = new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                        if (request.IsWebSocketH2Request())
+                        {
+                            exception.Data["HTTP2_ENABLED"] = false;
+                        }
+                        throw exception;
                     }
 
                     if (NetEventSource.Log.IsEnabled())

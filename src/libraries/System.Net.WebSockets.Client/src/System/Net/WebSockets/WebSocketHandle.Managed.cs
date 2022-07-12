@@ -57,9 +57,13 @@ namespace System.Net.WebSockets
                     try
                     {
                         HttpRequestMessage request;
-                        if (!tryDowngrade && options.HttpVersion == HttpVersion.Version20
+                        if (!tryDowngrade && options.HttpVersion >= HttpVersion.Version20
                             || (options.HttpVersion == HttpVersion.Version11 && options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
                         {
+                            if (options.HttpVersion > HttpVersion.Version20 && options.HttpVersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                            {
+                                throw new WebSocketException(WebSocketError.UnsupportedProtocol);
+                            }
                             request = new HttpRequestMessage(HttpMethod.Connect, uri) { Version = HttpVersion.Version20 };
                             tryDowngrade = true;
                         }
@@ -108,9 +112,8 @@ namespace System.Net.WebSockets
                         break;
                     }
                     catch (HttpRequestException ex) when
-                        (ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") &&
-                         tryDowngrade &&
-                         (options.HttpVersion == HttpVersion.Version11 || options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrLower))
+                        ((ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") || ex.Data.Contains("HTTP2_ENABLED") || tryDowngrade)
+                        && (options.HttpVersion == HttpVersion.Version11 || options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrLower))
                     {
                     }
 
