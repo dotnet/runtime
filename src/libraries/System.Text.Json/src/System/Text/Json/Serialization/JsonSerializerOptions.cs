@@ -10,6 +10,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -38,13 +39,16 @@ namespace System.Text.Json
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
-                JsonSerializerOptions defaultInstance = DefaultInstance;
-                defaultInstance._typeInfoResolver ??= DefaultJsonTypeInfoResolver.RootDefaultInstance();
-                return defaultInstance;
+                if (s_defaultOptions is not JsonSerializerOptions options)
+                {
+                    options = GetOrCreateDefaultOptionsInstance();
+                }
+
+                return options;
             }
         }
 
-        internal static JsonSerializerOptions DefaultInstance { get; } = new JsonSerializerOptions { IsLockedInstance = true };
+        private static JsonSerializerOptions? s_defaultOptions;
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
         private IJsonTypeInfoResolver? _typeInfoResolver;
@@ -606,6 +610,7 @@ namespace System.Text.Json
             set
             {
                 Debug.Assert(value, "cannot unlock options instances");
+                Debug.Assert(_typeInfoResolver != null, "cannot lock without a resolver.");
                 _isLockedInstance = true;
             }
         }
@@ -617,43 +622,22 @@ namespace System.Text.Json
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal void InitializeForReflectionSerializer()
         {
-            if (!_isInitializedForReflectionSerializer)
-            {
-                DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
-                _typeInfoResolver ??= defaultResolver;
-                IsLockedInstance = true;
-
-                CachingContext? context = GetCachingContext();
-                Debug.Assert(context != null);
-
-                if (context.Options != this)
-                {
-                    // We're using a shared caching context deriving from a different options instance;
-                    // for coherence ensure that it has been opted in for reflection-based serialization as well.
-                    context.Options.InitializeForReflectionSerializer();
-                }
-
-                _isInitializedForReflectionSerializer = true;
-            }
+            // Even if a resolver has already been specified, we need to root
+            // the default resolver to gain access to the default converters.
+            DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
+            _typeInfoResolver ??= defaultResolver;
+            IsLockedInstance = true;
         }
-
-        private volatile bool _isInitializedForReflectionSerializer;
 
         internal void InitializeForMetadataGeneration()
         {
-            if (!_isInitializedForMetadataGeneration)
+            if (_typeInfoResolver is null)
             {
-                if (_typeInfoResolver is null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet();
-                }
-
-                IsLockedInstance = true;
-                _isInitializedForMetadataGeneration = true;
+                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet();
             }
-        }
 
-        private volatile bool _isInitializedForMetadataGeneration;
+            IsLockedInstance = true;
+        }
 
         private JsonTypeInfo? GetTypeInfoNoCaching(Type type)
         {
@@ -736,6 +720,19 @@ namespace System.Text.Json
 
             protected override bool IsLockedInstance => _options.IsLockedInstance;
             protected override void VerifyMutable() => _options.VerifyMutable();
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static JsonSerializerOptions GetOrCreateDefaultOptionsInstance()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance(),
+                IsLockedInstance = true
+            };
+
+            return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
         }
     }
 }
