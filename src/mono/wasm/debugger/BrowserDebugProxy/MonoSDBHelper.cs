@@ -1211,8 +1211,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.GenericInst:
                 {
                     var ret = retDebuggerCmdReader.ReadString();
-                    int index;
-                    if ((index = ret.IndexOf(':')) > 0)
+                    if (methodName.IndexOf(':') is int index && index > 0)
                         ret = ret.Substring(0, index);
                     ret = regexForAsyncMethodName.Replace(ret, "$1");
                     var lenClassInstTypeArgc = retDebuggerCmdReader.ReadInt32();
