@@ -24,6 +24,8 @@ namespace System.Collections.Generic
             Debug.Assert(bitPosition >= 0);
 
             uint bitArrayIndex = (uint)bitPosition / IntSize;
+
+            // Workaround for https://github.com/dotnet/runtime/issues/72004
             Span<int> span = _span;
             if (bitArrayIndex < (uint)span.Length)
             {
@@ -36,6 +38,8 @@ namespace System.Collections.Generic
             Debug.Assert(bitPosition >= 0);
 
             uint bitArrayIndex = (uint)bitPosition / IntSize;
+
+            // Workaround for https://github.com/dotnet/runtime/issues/72004
             Span<int> span = _span;
             return
                 bitArrayIndex < (uint)span.Length &&
