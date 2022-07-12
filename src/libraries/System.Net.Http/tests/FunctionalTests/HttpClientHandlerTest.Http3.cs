@@ -880,8 +880,7 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
-                AuthenticationException authEx = Assert.IsType<AuthenticationException>(ex.InnerException);
-                Assert.Contains("Application layer protocol negotiation", authEx.Message);
+                Assert.IsType<AuthenticationException>(ex.InnerException);
 
                 clientDone.Release();
             });
