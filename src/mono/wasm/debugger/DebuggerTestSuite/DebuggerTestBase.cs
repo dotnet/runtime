@@ -1421,8 +1421,10 @@ namespace DebuggerTests
         {
             foreach (var arg in args)
             {
-                (_, Result _res) = await EvaluateOnCallFrame(id, arg.expression, expect_ok: false).ConfigureAwait(false);;
-                AssertEqual(arg.message, _res.Error["result"]?["description"]?.Value<string>(), $"Expression '{arg.expression}' - wrong error message");
+                (_, Result _res) = await EvaluateOnCallFrame(id, arg.expression, expect_ok: false).ConfigureAwait(false);
+                // different response structure for Chrome and Firefox:
+                string errorMessage = _res.Error["preview"] == null ? _res.Error["result"]?["description"]?.Value<string>() : _res.Error["preview"]?["message"]?.Value<string>();
+                AssertEqual(arg.message, errorMessage, $"Expression '{arg.expression}' - wrong error message");
             }
         }
     }

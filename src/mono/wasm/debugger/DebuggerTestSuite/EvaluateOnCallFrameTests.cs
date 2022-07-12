@@ -825,7 +825,7 @@ namespace DebuggerTests
                    ("NoNamespaceClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 30")));
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateStaticClassesNestedWithSameNames() => await CheckInspectLocalsAtBreakpointSite(
             "NestedWithSameNames.B.NestedWithSameNames.B", "Run", 1, "Run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] NestedWithSameNames:Evaluate'); })",
@@ -1281,7 +1281,7 @@ namespace DebuggerTests
                    ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));
             });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateNullObjectPropertiesNegative() => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 6, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateNullableProperties:Evaluate'); 1 }})",
@@ -1292,7 +1292,7 @@ namespace DebuggerTests
                     ("list.Count.x", "Cannot find member 'x' on a primitive type"),
                     ("listNull.Count", GetNullReferenceErrorOn("\"Count\"")),
                     ("listNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
-                    ( "tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\"")),
+                    ("tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\"")),
                     ("tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
                     ("tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
                     ("listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\"")),
