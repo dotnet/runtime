@@ -102,7 +102,7 @@ namespace System.Net.Sockets
         }
 
         /// <returns>Returns whether operations were canceled.</returns>
-        private bool OnHandleClose()
+        private unsafe bool OnHandleClose()
         {
             // If the handle is owned, on-going async operations will be aborted when the handle is closed.
             // If we don't own the handle, cancel them explicitly.
