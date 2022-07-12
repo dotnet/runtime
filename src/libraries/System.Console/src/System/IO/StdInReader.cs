@@ -360,14 +360,8 @@ namespace System.IO
                     }
                 }
 
-                Net6KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter,
+                KeyParser.Parse(_unprocessedBufferToBeRead, ConsolePal.TerminalFormatStringsInstance, ConsolePal.s_posixDisableValue, ConsolePal.s_veraseCharacter,
                     out key, out ch, out isShift, out isAlt, out isCtrl, ref _startIndex, _endIndex);
-
-                // Replace the '\n' char for Enter by '\r' to match Windows behavior.
-                if (key == ConsoleKey.Enter && ch == '\n')
-                {
-                    ch = '\r';
-                }
 
                 return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
             }
