@@ -1923,7 +1923,7 @@ static guint
 mono_generic_class_hash (gconstpointer data)
 {
 	const MonoGenericClass *gclass = (const MonoGenericClass *) data;
-	guint hash = mono_metadata_type_hash (m_class_get_byval_arg (gclass->container_class));
+	guint hash = mono_metadata_str_hash (m_class_get_name (gclass->container_class));
 
 	hash *= 13;
 	hash += gclass->is_tb_open;
