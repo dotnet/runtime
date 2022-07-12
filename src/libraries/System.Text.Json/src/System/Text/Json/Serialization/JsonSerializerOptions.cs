@@ -180,6 +180,9 @@ namespace System.Text.Json
             }
         }
 
+        // Needed since public property is RequiresUnreferencedCode.
+        internal IJsonTypeInfoResolver? TypeInfoResolverSafe => _typeInfoResolver;
+
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
         /// is allowed (and ignored) within the JSON payload being deserialized.

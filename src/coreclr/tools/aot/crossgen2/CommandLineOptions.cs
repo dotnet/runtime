@@ -16,6 +16,7 @@ namespace ILCompiler
 
         public bool Help;
         public string HelpText;
+        public bool Version;
 
         public IReadOnlyList<string> InputFilePaths;
         public IReadOnlyList<string> InputBubbleReferenceFilePaths;
@@ -183,6 +184,7 @@ namespace ILCompiler
                 syntax.DefineOption("make-repro-path", ref MakeReproPath, SR.MakeReproPathHelp);
 
                 syntax.DefineOption("h|help", ref Help, SR.HelpOption);
+                syntax.DefineOption("v|version", ref Version, SR.VersionOption);
 
                 syntax.DefineParameterList("in", ref InputFilePaths, SR.InputFilesToCompile);
             });

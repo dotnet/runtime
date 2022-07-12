@@ -575,7 +575,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_shape.HasFlag(MarshallerShape.ToUnmanaged))
+            if (!_shape.HasFlag(MarshallerShape.ToUnmanaged) && !_shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 yield break;
 
             foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context))
@@ -602,9 +602,6 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_shape.HasFlag(MarshallerShape.ToManaged))
-                yield break;
-
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
 
             if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
@@ -621,6 +618,11 @@ namespace Microsoft.Interop
                                         GetManagedValuesSource(info, context),
                                         IdentifierName("Length")))))));
                 yield return GenerateByValueOutUnmarshalStatement(info, context);
+            }
+
+            if (!_shape.HasFlag(MarshallerShape.ToManaged))
+            {
+                yield break;
             }
             else
             {

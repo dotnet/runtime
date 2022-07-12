@@ -1019,17 +1019,19 @@ namespace System.Text.Json.Serialization.Tests
 
             static void TestJsonIgnoreConditionDelegate(JsonIgnoreCondition defaultIgnoreCondition, JsonIgnoreCondition? ignoreConditionOnProperty, JsonPropertyInfo property, ModifyJsonIgnore modify)
             {
-                // defaultIgnoreCondition is not taken into accound, we might expect null if defaultIgnoreCondition == ignoreConditionOnProperty
+                // defaultIgnoreCondition is not taken into account, we might expect null if defaultIgnoreCondition == ignoreConditionOnProperty
                 switch (ignoreConditionOnProperty)
                 {
                     case null:
                         Assert.Null(property.ShouldSerialize);
                         break;
+
                     case JsonIgnoreCondition.Always:
                         Assert.NotNull(property.ShouldSerialize);
                         Assert.False(property.ShouldSerialize(null, null));
                         Assert.False(property.ShouldSerialize(null, ""));
                         Assert.False(property.ShouldSerialize(null, "asd"));
+                        Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
 
                         Assert.Null(property.Get);
                         Assert.Null(property.Set);
@@ -1039,18 +1041,22 @@ namespace System.Text.Json.Serialization.Tests
                         Assert.False(property.ShouldSerialize(null, 0));
                         Assert.True(property.ShouldSerialize(null, 1));
                         Assert.True(property.ShouldSerialize(null, -1));
+                        Assert.Throws<NullReferenceException>(() => property.ShouldSerialize(null, null));
+                        Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, "string"));
                         break;
                     case JsonIgnoreCondition.WhenWritingNull:
                         Assert.NotNull(property.ShouldSerialize);
                         Assert.False(property.ShouldSerialize(null, null));
                         Assert.True(property.ShouldSerialize(null, ""));
                         Assert.True(property.ShouldSerialize(null, "asd"));
+                        Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
                         break;
                     case JsonIgnoreCondition.Never:
                         Assert.NotNull(property.ShouldSerialize);
                         Assert.True(property.ShouldSerialize(null, null));
                         Assert.True(property.ShouldSerialize(null, ""));
                         Assert.True(property.ShouldSerialize(null, "asd"));
+                        Assert.Throws<InvalidCastException>(() => property.ShouldSerialize(null, 0));
                         break;
                 }
 
@@ -1443,6 +1449,249 @@ namespace System.Text.Json.Serialization.Tests
             [JsonInclude]
             public string Field;
             public int Property { get; set; }
+        }
+
+        [Fact]
+        public static void CanEnableDeserializationOnAlwaysIgnoreProperty()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        jsonTypeInfo =>
+                        {
+                            if (jsonTypeInfo.Type != typeof(ClassWithJsonIgnoreAlwaysProperty))
+                            {
+                                return;
+                            }
+
+                            Assert.Equal(1, jsonTypeInfo.Properties.Count);
+                            JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.Properties[0];
+
+                            Assert.NotNull(jsonPropertyInfo.ShouldSerialize);
+                            Assert.Null(jsonPropertyInfo.Get);
+                            Assert.Null(jsonPropertyInfo.Set);
+
+                            jsonPropertyInfo.Set = (obj, value) => ((ClassWithJsonIgnoreAlwaysProperty)obj).Value = (int)value;
+                        }
+                    }
+                }
+            };
+
+            ClassWithJsonIgnoreAlwaysProperty value = JsonSerializer.Deserialize<ClassWithJsonIgnoreAlwaysProperty>("""{"Value":42}""", options);
+            Assert.Equal(42, value.Value);
+        }
+
+        public class ClassWithJsonIgnoreAlwaysProperty
+        {
+            [JsonIgnore]
+            public int Value { get; set; }
+        }
+
+        [Theory]
+        [MemberData(nameof(ClassWithSetterOnlyCollectionProperty_SupportedWhenSetManually_MemberData))]
+        public static void ClassWithSetterOnlyCollectionProperty_SupportedWhenSetManually<T>(T value, string json)
+        {
+            _ = value; // parameter not used
+
+            string fullJson = $@"{{""Value"":{json}}}";
+
+            // sanity check: deserialization is not supported using the default contract
+            ClassWithSetterOnlyProperty<T> result = JsonSerializer.Deserialize<ClassWithSetterOnlyProperty<T>>(fullJson);
+            Assert.Null(result.GetValue());
+
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        jsonTypeInfo =>
+                        {
+                            if (jsonTypeInfo.Type != typeof(ClassWithSetterOnlyProperty<T>))
+                            {
+                                return;
+                            }
+
+                            Assert.Equal(1, jsonTypeInfo.Properties.Count);
+
+                            JsonPropertyInfo jpi = jsonTypeInfo.Properties[0];
+                            Assert.Null(jpi.Set);
+                            jpi.Set = (obj, value) => ((ClassWithSetterOnlyProperty<T>)obj)._value = (T)value;
+                        }
+                    }
+                }
+            };
+
+            result = JsonSerializer.Deserialize<ClassWithSetterOnlyProperty<T>>(fullJson, options);
+            Assert.NotNull(result.GetValue());
+        }
+
+        public static IEnumerable<object[]> ClassWithSetterOnlyCollectionProperty_SupportedWhenSetManually_MemberData()
+        {
+            yield return Wrap(new List<int>(), "[1,2,3]");
+            yield return Wrap(new Dictionary<string, string>(), """{"key":"value"}""");
+
+            static object[] Wrap<T>(T value, string json) => new object[] { value, json };
+        }
+
+        public class ClassWithSetterOnlyProperty<T>
+        {
+            internal T _value;
+            public T Value { set => _value = value; }
+            public T GetValue() => _value;
+        }
+
+        [Fact]
+        public static void ClassWithReadOnlyMembers_SupportedWhenSetManually()
+        {
+            var value = new ClassWithReadOnlyMembers();
+
+            // Sanity check -- default contract does not support serialization
+            var options = new JsonSerializerOptions { IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true };
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("{}", json);
+
+            // Use a constract resolver that updates getters manually
+            options = new JsonSerializerOptions
+            {
+                IgnoreReadOnlyFields = true,
+                IgnoreReadOnlyProperties = true,
+
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        jsonTypeInfo =>
+                        {
+                            if (jsonTypeInfo.Type != typeof(ClassWithReadOnlyMembers))
+                            {
+                                return;
+                            }
+
+                            Assert.Equal(2, jsonTypeInfo.Properties.Count);
+
+                            JsonPropertyInfo jpi = jsonTypeInfo.Properties[0];
+                            Assert.Equal("Field", jpi.Name); // JsonPropertyOrder should ensure correct ordering of properties.
+                            Assert.Null(jpi.Get);
+                            jpi.Get = obj => ((ClassWithReadOnlyMembers)obj).Field;
+
+                            jpi = jsonTypeInfo.Properties[1];
+                            Assert.Equal("Property", jpi.Name); // JsonPropertyOrder should ensure correct ordering of properties.
+                            Assert.Null(jpi.Get);
+                            jpi.Get = obj => ((ClassWithReadOnlyMembers)obj).Property;
+                        }
+                    }
+                }
+            };
+
+            json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{"Field":1,"Property":2}""", json);
+        }
+
+        public class ClassWithReadOnlyMembers
+        {
+            [JsonInclude, JsonPropertyOrder(0)]
+            public readonly int Field = 1;
+            [JsonPropertyOrder(1)]
+            public int Property => 2;
+        }
+
+        [Fact]
+        public static void IgnoreNullValues_Serialization_CanBeInvalidatedByCustomContracts()
+        {
+            var value = new ClassWithNullableProperty();
+
+            // Sanity check -- property is ignored using default contract
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("{}", json);
+
+            // Property can be re-enabled using a custom contract
+            options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        jsonTypeInfo =>
+                        {
+                            if (jsonTypeInfo.Type != typeof(ClassWithNullableProperty))
+                            {
+                                return;
+                            }
+
+                            Assert.Equal(1, jsonTypeInfo.Properties.Count);
+
+                            JsonPropertyInfo jpi = jsonTypeInfo.Properties[0];
+                            Assert.Null(jpi.ShouldSerialize);
+                            Assert.NotNull(jpi.Get);
+
+                            // Because null `ShouldSerialize` gets overridden by
+                            // `DefaultIgnoreCondition`/`IgnoreNullValues` post-configuration,
+                            // we need to explicitly set a delegate that always returns true.
+                            // This is a design quirk we might want to consider changing.
+                            jpi.ShouldSerialize = (_,value) => true;
+                        }
+                    }
+                }
+            };
+
+            json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("""{"Value":null}""", json);
+        }
+
+        [Fact]
+        public static void IgnoreNullValues_Deserialization_CanBeInvalidatedByCustomContracts()
+        {
+            string json = """{"Value":null}""";
+
+            // Sanity check -- property is ignored using default contract
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+            ClassWithNullableProperty value = JsonSerializer.Deserialize<ClassWithNullableProperty>(json, options);
+            Assert.Null(value.Value);
+
+            // Property can be re-enabled using a custom contract
+            options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true,
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        jsonTypeInfo =>
+                        {
+                            if (jsonTypeInfo.Type != typeof(ClassWithNullableProperty))
+                            {
+                                return;
+                            }
+
+                            Assert.Equal(1, jsonTypeInfo.Properties.Count);
+
+                            JsonPropertyInfo jpi = jsonTypeInfo.Properties[0];
+                            Assert.NotNull(jpi.Set);
+                            jpi.Set = (obj, value) => ((ClassWithNullableProperty)obj).Value = (string)value;
+                        }
+                    }
+                }
+            };
+
+            value = JsonSerializer.Deserialize<ClassWithNullableProperty>(json, options);
+            Assert.Equal("NULL", value.Value);
+        }
+
+        public class ClassWithNullableProperty
+        {
+            private string? _value;
+
+            public string? Value
+            {
+                get => _value;
+                set => _value = value ?? "NULL";
+            }
         }
     }
 }

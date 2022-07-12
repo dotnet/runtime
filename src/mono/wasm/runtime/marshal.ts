@@ -364,10 +364,10 @@ export function array_element_size(element_type: MarshalerType): number {
                                 : -1;
 }
 
-export enum MemoryViewType {
-    Byte,
-    Int32,
-    Double,
+export const enum MemoryViewType {
+    Byte = 0,
+    Int32 = 1,
+    Double = 2,
 }
 
 abstract class MemoryView implements IMemoryView, IDisposable {
