@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -344,6 +345,9 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var clientWebSocket = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
+                    List<string> value1 = new List<string>(){ "Value1" };
+                    List<string> value2 = new List<string>() { "Value2" };
+
                     clientWebSocket.Options.CollectHttpResponseDetails = true;
                     Task t = clientWebSocket.ConnectAsync(uri, cts.Token);
                     await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
@@ -351,8 +355,11 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(HttpStatusCode.Unauthorized, clientWebSocket.HttpStatusCode);
                     Assert.NotEmpty(clientWebSocket.HttpResponseHeaders);
                     Assert.Contains("X-CustomHeader1", clientWebSocket.HttpResponseHeaders);
+                    Assert.Contains("X-CustomHeader2", clientWebSocket.HttpResponseHeaders);
+                    Assert.True(clientWebSocket.HttpResponseHeaders.Values.Contains(value1));
+                    Assert.True(clientWebSocket.HttpResponseHeaders.Values.Contains(value2));
                 }
-            }, server => server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, "X-CustomHeader1:Value1"), new LoopbackServer.Options { WebSocketEndpoint = true });
+            }, server => server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, "X-CustomHeader1: Value1\r\nX-CustomHeader2: Value2\r\n"), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
