@@ -120,9 +120,8 @@
 
     <!-- Host files-->
     <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
-      <RuntimeFiles Include="$(DotNetHostBinDir)\*$(LibSuffix)" />
-      <RuntimeFiles Include="$(DotNetHostBinDir)\*$(SymbolsSuffix)" />
-      <RuntimeFiles Include="$(DotNetHostBinDir)\*.dll" />
+      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostpolicy$(LibSuffix)" />
+      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)" />
     </ItemGroup>
 
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
