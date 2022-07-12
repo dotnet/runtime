@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    internal static unsafe partial class JSHostImplementation
+    internal static partial class JSHostImplementation
     {
         private const string TaskGetResultName = "get_Result";
         private static readonly MethodInfo s_taskGetResultMethodInfo = typeof(Task<>).GetMethod(TaskGetResultName)!;
@@ -17,6 +19,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // we use this to maintain identity of GCHandle for a managed object
         public static Dictionary<object, IntPtr> s_gcHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RegisterCSOwnedObject(JSObject proxy)
         {
             lock (s_csOwnedObjects)
@@ -25,6 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReleaseCSOwnedObject(IntPtr jsHandle)
         {
             if (jsHandle != IntPtr.Zero)
@@ -37,6 +41,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static object? GetTaskResult(Task task)
         {
             MethodInfo method = GetTaskResultMethodInfo(task.GetType());
@@ -47,6 +52,7 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReleaseInFlight(object obj)
         {
             JSObject? jsObj = obj as JSObject;
@@ -78,6 +84,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
         {
             var temp = new IntPtrAndHandle { ptr = ptr };
@@ -238,9 +245,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (taskType != null)
             {
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                MethodInfo result = taskType.GetMethod(TaskGetResultName);
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+                MethodInfo? result = taskType.GetMethod(TaskGetResultName);
                 if (result != null && result.HasSameMetadataDefinitionAs(s_taskGetResultMethodInfo))
                 {
                     return result;
@@ -248,6 +253,67 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             throw new InvalidOperationException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowException(ref JSMarshalerArgument arg)
+        {
+            arg.ToManaged(out Exception? ex);
+
+            if (ex != null)
+            {
+                throw ex;
+            }
+            throw new InvalidProgramException();
+        }
+
+        public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken )
+        {
+            Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
+            var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
+            await Task.Yield();// this helps to finish the import before we bind the module in [JSImport]
+            return await wrappedTask.ConfigureAwait(true);
+        }
+
+        private static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
+        {
+            if (jsTask.IsCompletedSuccessfully)
+            {
+                return jsTask.Result;
+            }
+            using (var receiveRegistration = cancellationToken.Register(() =>
+            {
+                CancelablePromise.CancelPromise(jsTask);
+            }))
+            {
+                return await jsTask.ConfigureAwait(true);
+            }
+        }
+
+        // res type is first argument
+        internal static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types)
+        {
+            int argsCount = types.Length - 1;
+            int size = JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + ((argsCount + 2) * sizeof(JSFunctionBinding.JSBindingType));
+            // this is never unallocated
+            IntPtr buffer = Marshal.AllocHGlobal(size);
+
+            var signature = new JSFunctionBinding
+            {
+                Header = (JSFunctionBinding.JSBindingHeader*)buffer,
+                Sigs = (JSFunctionBinding.JSBindingType*)(buffer + JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + (2 * sizeof(JSFunctionBinding.JSBindingType))),
+            };
+
+            signature.Version = 1;
+            signature.ArgumentCount = argsCount;
+            signature.Exception = JSMarshalerType.Exception._signatureType;
+            signature.Result = types[0]._signatureType;
+            for (int i = 0; i < argsCount; i++)
+            {
+                signature.Sigs[i] = types[i + 1]._signatureType;
+            }
+
+            return signature;
         }
     }
 }

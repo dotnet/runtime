@@ -1165,36 +1165,33 @@ namespace System.Xml
 
         private static void CreateAllDateTimeFormats()
         {
-            if (s_allDateTimeFormats == null)
-            {
-                // no locking; the array is immutable so it's not a problem that it may get initialized more than once
-                s_allDateTimeFormats = new string[] {
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFF",                  //time
-                    "HH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFFzzzzzz",
-                    "yyyy-MM-dd",                   // date
-                    "yyyy-MM-ddZ",
-                    "yyyy-MM-ddzzzzzz",
-                    "yyyy-MM",                      // yearMonth
-                    "yyyy-MMZ",
-                    "yyyy-MMzzzzzz",
-                    "yyyy",                         // year
-                    "yyyyZ",
-                    "yyyyzzzzzz",
-                    "--MM-dd",                      // monthDay
-                    "--MM-ddZ",
-                    "--MM-ddzzzzzz",
-                    "---dd",                        // day
-                    "---ddZ",
-                    "---ddzzzzzz",
-                    "--MM--",                       // month
-                    "--MM--Z",
-                    "--MM--zzzzzz",
-                };
-            }
+            // no locking; the array is immutable so it's not a problem that it may get initialized more than once
+            s_allDateTimeFormats ??= new string[] {
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFF",                  //time
+                "HH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFFzzzzzz",
+                "yyyy-MM-dd",                   // date
+                "yyyy-MM-ddZ",
+                "yyyy-MM-ddzzzzzz",
+                "yyyy-MM",                      // yearMonth
+                "yyyy-MMZ",
+                "yyyy-MMzzzzzz",
+                "yyyy",                         // year
+                "yyyyZ",
+                "yyyyzzzzzz",
+                "--MM-dd",                      // monthDay
+                "--MM-ddZ",
+                "--MM-ddzzzzzz",
+                "---dd",                        // day
+                "---ddZ",
+                "---ddzzzzzz",
+                "--MM--",                       // month
+                "--MM--Z",
+                "--MM--zzzzzz",
+            };
         }
 
         [Obsolete("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]

@@ -5,10 +5,10 @@ import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roo
 import {
     JSHandle, MonoArray, MonoMethod, MonoObject,
     MonoObjectNull, MonoString, coerceNull as coerceNull,
-    VoidPtrNull, MonoStringNull, MonoObjectRef,
+    VoidPtrNull, MonoObjectRef,
     MonoStringRef, is_nullish
 } from "./types";
-import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./imports";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -20,11 +20,11 @@ import {
     _decide_if_result_is_marshaled, find_method,
     BoundMethodToken
 } from "./method-binding";
-import { conv_string, conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root } from "./strings";
+import { conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root } from "./strings";
 import cwraps from "./cwraps";
 import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
-import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
+import { VoidPtr, Int32Ptr } from "./types/emscripten";
 import { assembly_load } from "./class-loader";
 
 function _verify_args_for_method_call(args_marshal: string/*ArgsMarshalString*/, args: any) {
@@ -481,11 +481,11 @@ export function parseFQN(fqn: string)
     }
 
     if (!assembly.trim())
-        throw new Error("No assembly name specified");
+        throw new Error("No assembly name specified " + fqn);
     if (!classname.trim())
-        throw new Error("No class name specified");
+        throw new Error("No class name specified " + fqn);
     if (!methodname.trim())
-        throw new Error("No method name specified");
+        throw new Error("No method name specified " + fqn);
     return { assembly, namespace, classname, methodname };
 }
 
@@ -523,27 +523,5 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
         exceptionRoot.copy_to_address(<any>exceptionMessage);
         exceptionRoot.release();
         return 0;
-    }
-}
-
-// code like `App.call_test_method();`
-export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): MonoString | null {
-    if (code === MonoStringNull)
-        return MonoStringNull;
-
-    const js_code = conv_string(code)!;
-
-    try {
-        const closedEval = function (Module: EmscriptenModule, MONO: any, BINDING: any, INTERNAL: any, code: string) {
-            return eval(code);
-        };
-        const res = closedEval(Module, MONO, BINDING, INTERNAL, js_code);
-        Module.setValue(is_exception, 0, "i32");
-        if (typeof res === "undefined" || res === null)
-            return MonoStringNull;
-
-        return js_string_to_mono_string(res.toString());
-    } catch (ex) {
-        return wrap_error(is_exception, ex);
     }
 }

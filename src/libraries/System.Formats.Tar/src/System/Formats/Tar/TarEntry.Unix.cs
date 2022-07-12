@@ -39,23 +39,5 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
             Interop.CheckIo(Interop.Sys.Link(targetFilePath, hardLinkFilePath), hardLinkFilePath);
         }
-
-        // Unix specific implementation of the method that specifies the file permissions of the extracted file.
-        private void SetModeOnFile(SafeFileHandle handle)
-        {
-            // Only extract USR, GRP, and OTH file permissions, and ignore
-            // S_ISUID, S_ISGID, and S_ISVTX bits.
-            // It is off by default because it's possible that a file in an archive could have
-            // one of these bits set and, unknown to the person extracting, could allow others to
-            // execute the file as the user or group.
-            const int ExtractPermissionMask = 0x1FF;
-            int permissions = (int)Mode & ExtractPermissionMask;
-
-            // If the permissions weren't set at all, don't write the file's permissions.
-            if (permissions != 0)
-            {
-                File.SetUnixFileMode(handle, (UnixFileMode)permissions);
-            }
-        }
     }
 }

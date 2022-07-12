@@ -6,7 +6,8 @@ namespace System.Numerics
     /// <summary>Defines support for root functions.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface IRootFunctions<TSelf>
-        where TSelf : IRootFunctions<TSelf>, INumberBase<TSelf>
+        : IFloatingPointConstants<TSelf>
+        where TSelf : IRootFunctions<TSelf>
     {
         /// <summary>Computes the cube-root of a value.</summary>
         /// <param name="x">The value whose cube-root is to be computed.</param>
@@ -23,7 +24,7 @@ namespace System.Numerics
         /// <param name="x">The value whose <paramref name="n" />-th root is to be computed.</param>
         /// <param name="n">The degree of the root to be computed.</param>
         /// <returns>The <paramref name="n" />-th root of <paramref name="x" />.</returns>
-        static abstract TSelf Root(TSelf x, int n);
+        static abstract TSelf RootN(TSelf x, int n);
 
         /// <summary>Computes the square-root of a value.</summary>
         /// <param name="x">The value whose square-root is to be computed.</param>

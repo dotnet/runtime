@@ -168,8 +168,8 @@ export function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoA
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
     //  is an object representing a chunk of data; it has no format to speak of, and offers no
     // mechanism for accessing its contents. In order to access the memory contained in a buffer,
-    // you need to use a view. A view provides a context — that is, a data type, starting offset,
-    // and number of elements — that turns the data into an actual typed array.
+    // you need to use a view. A view provides a context - that is, a data type, starting offset,
+    // and number of elements - that turns the data into an actual typed array.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
     if (has_backing_array_buffer(js_obj) && js_obj.BYTES_PER_ELEMENT) {
         const arrayType = js_obj[wasm_type_symbol];

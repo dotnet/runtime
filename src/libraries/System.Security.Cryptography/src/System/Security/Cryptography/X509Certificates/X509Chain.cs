@@ -182,9 +182,11 @@ namespace System.Security.Cryptography.X509Certificates
             _useMachineContext = false;
 
             IChainPal? pal = _pal;
-            _pal = null;
             if (pal != null)
+            {
+                _pal = null;
                 pal.Dispose();
+            }
         }
     }
 }

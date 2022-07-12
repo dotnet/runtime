@@ -3,6 +3,10 @@
 
 #include "createdump.h"
 
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+long g_pageSize = 0;
+#endif
+
 //
 // The Linux/MacOS create dump code
 //
@@ -13,6 +17,12 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     DumpWriter dumpWriter(*crashInfo);
     std::string dumpPath;
     bool result = false;
+
+    // Initialize PAGE_SIZE
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+    g_pageSize = sysconf(_SC_PAGESIZE);
+#endif
+    TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
 
     // Initialize the crash info 
     if (!crashInfo->Initialize())
@@ -52,6 +62,9 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     {
         goto exit;
     }
+    // Join all adjacent memory regions
+    crashInfo->CombineMemoryRegions();
+
     printf_status("Writing %s to file %s\n", dumpType, dumpPath.c_str());
 
     // Write the actual dump file
@@ -61,7 +74,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     if (!dumpWriter.WriteDump())
     {
-        printf_error( "Writing dump FAILED\n");
+        printf_error("Writing dump FAILED\n");
 
         // Delete the partial dump file on error
         remove(dumpPath.c_str());
@@ -69,6 +82,22 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     result = true;
 exit:
+    if (kill(pid, 0) == 0)
+    {
+        printf_status("Target process is alive\n");
+    }
+    else
+    {
+        int err = errno;
+        if (err == ESRCH)
+        {
+            printf_error("Target process terminated\n");
+        }
+        else
+        {
+            printf_error("kill(%d, 0) FAILED %s (%d)\n", pid, strerror(err), err);
+        }
+    }
     crashInfo->CleanupAndResumeProcess();
     return result;
 }
