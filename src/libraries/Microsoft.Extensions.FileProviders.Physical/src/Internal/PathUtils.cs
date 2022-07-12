@@ -67,6 +67,5 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
 
             return false;
         }
-
     }
 }
