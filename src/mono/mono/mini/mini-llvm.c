@@ -465,6 +465,10 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	case 8: ret |= INTRIN_vector64; break;
 	case 16: ret |= INTRIN_vector128; break;
 	}
+
+	if (!strcmp ("Vector4", m_class_get_name (klass)) || !strcmp ("Vector2", m_class_get_name (klass)))
+		return ret | INTRIN_float32;
+
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	switch (etype->type) {
 	case MONO_TYPE_I1: case MONO_TYPE_U1: ret |= INTRIN_int8; break;
@@ -4092,6 +4096,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			// FIXME: Enabling this fails on windows
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
+		case LLVMArgAsFpArgs:
 		{
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
 				/* Treat these as normal values */

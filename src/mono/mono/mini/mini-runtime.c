@@ -4351,7 +4351,6 @@ init_class (MonoClass *klass)
 
 	const char *name = m_class_get_name (klass);
 
-#ifdef TARGET_AMD64
 	/*
 	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
 	 * The JIT can't handle SIMD types with != 16 size yet.
@@ -4361,7 +4360,6 @@ init_class (MonoClass *klass)
 		if (!strcmp (name, "Vector4"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
-#endif
 
 	if (m_class_is_ginst (klass)) {
 		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1")) {

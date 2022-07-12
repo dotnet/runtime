@@ -1547,10 +1547,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	return NULL;
 }
 
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
-#ifdef TARGET_AMD64
-
 // System.Numerics.Vector2/Vector3/Vector4
 static guint16 vector2_methods[] = {
 	SN_ctor,
@@ -1721,34 +1717,40 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Min:
 		if (!(!fsig->hasthis && fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
-		ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
-		ins->inst_c1 = etype->type;
+		// ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
+		// ins->inst_c1 = etype->type;
 
-		switch (id) {
-		case SN_op_Addition:
-			ins->inst_c0 = OP_FADD;
-			break;
-		case SN_op_Division:
-			ins->inst_c0 = OP_FDIV;
-			break;
-		case SN_op_Multiply:
-			ins->inst_c0 = OP_FMUL;
-			break;
-		case SN_op_Subtraction:
-			ins->inst_c0 = OP_FSUB;
-			break;
-		case SN_Max:
-			ins->inst_c0 = OP_FMAX;
-			break;
-		case SN_Min:
-			ins->inst_c0 = OP_FMIN;
-			break;
-		default:
-			g_assert_not_reached ();
-			break;
-		}
-		return ins;
+		// switch (id) {
+		// case SN_op_Addition:
+		// 	ins->inst_c0 = OP_FADD;
+		// 	break;
+		// case SN_op_Division:
+		// 	ins->inst_c0 = OP_FDIV;
+		// 	break;
+		// case SN_op_Multiply:
+		// 	ins->inst_c0 = OP_FMUL;
+		// 	break;
+		// case SN_op_Subtraction:
+		// 	ins->inst_c0 = OP_FSUB;
+		// 	break;
+		// case SN_Max:
+		// 	ins->inst_c0 = OP_FMAX;
+		// 	break;
+		// case SN_Min:
+		// 	ins->inst_c0 = OP_FMIN;
+		// 	break;
+		// default:
+		// 	g_assert_not_reached ();
+		// 	break;
+		// }
+		// return ins;
+		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	case SN_Dot: {
+#ifdef TARGET_ARM64
+		int instc0 = OP_FMUL;
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, MONO_TYPE_R4, fsig, args);
+		return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, pairwise_multiply);
+#else
 		if (!(mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41))
 			return NULL;
 
@@ -1764,6 +1766,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c1 = MONO_TYPE_R4;
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
+#endif
 	}
 	case SN_Abs: {
 		// MAX(x,0-x)
@@ -1791,9 +1794,13 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return ins;
 	}
 	case SN_SquareRoot: {
+#ifdef TARGET_ARM64
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, MONO_TYPE_R4, fsig, args);
+#else
 		ins = emit_simd_ins (cfg, klass, OP_XOP_X_X, args [0]->dreg, -1);
 		ins->inst_c0 = (IntrinsicId)INTRINS_SSE_SQRT_PS;
 		return ins;
+#endif
 	}
 	case SN_CopyTo:
 		// FIXME:
@@ -1805,9 +1812,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	return NULL;
 }
 
-#endif /* TARGET_AMD64 */
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-#if defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
 
 static guint16 vector_methods [] = {
 	SN_ConvertToDouble,
@@ -4025,6 +4032,12 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 
 	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector`1")){
 		return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Numerics")) {
+		//if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Vector3", class_name))
+		if (!strcmp ("Vector4", class_name))
+			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
 	}
 
 	return NULL;
