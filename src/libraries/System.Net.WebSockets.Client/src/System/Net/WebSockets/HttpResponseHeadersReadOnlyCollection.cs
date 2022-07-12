@@ -10,13 +10,22 @@ namespace System.Net.WebSockets
 {
     internal sealed class HttpResponseHeadersReadOnlyCollection : IReadOnlyDictionary<string, IEnumerable<string>>
     {
-        private readonly IReadOnlyDictionary<string, HeaderStringValues> _headers;
+        private readonly HttpHeadersNonValidated _headers;
 
         public HttpResponseHeadersReadOnlyCollection(HttpResponseHeaders headers) => _headers = headers.NonValidated;
 
         public IEnumerable<string> this[string key] => _headers[key];
 
-        public IEnumerable<string> Keys => _headers.Keys;
+        public IEnumerable<string> Keys
+        {
+            get
+            {
+                foreach (KeyValuePair<string, HeaderStringValues> header in _headers)
+                {
+                    yield return header.Key;
+                }
+            }
+        }
 
         public IEnumerable<IEnumerable<string>> Values
         {
@@ -31,7 +40,8 @@ namespace System.Net.WebSockets
 
         public int Count => _headers.Count;
 
-        public bool ContainsKey(string key) => _headers.ContainsKey(key);
+        public bool ContainsKey(string key) => _headers.Contains(key);
+
         public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator()
         {
             foreach (KeyValuePair<string, HeaderStringValues> header in _headers)
@@ -39,11 +49,17 @@ namespace System.Net.WebSockets
                 yield return new KeyValuePair<string, IEnumerable<string>>(header.Key, header.Value);
             }
         }
+
         public bool TryGetValue(string key, [MaybeNullWhen(false)] out IEnumerable<string> value)
         {
-            bool res = _headers.TryGetValue(key, out HeaderStringValues headerStringValues);
-            value = headerStringValues;
-            return res;
+            if (_headers.TryGetValues(key, out HeaderStringValues values))
+            {
+                value = values;
+                return true;
+            }
+
+            value = null;
+            return false;
         }
 
         IEnumerator IEnumerable.GetEnumerator() => _headers.GetEnumerator();
