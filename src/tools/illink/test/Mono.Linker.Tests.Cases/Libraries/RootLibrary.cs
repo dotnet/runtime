@@ -214,11 +214,13 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			[Kept]
 			public void InternalInterfaceMethod () { }
 
+			[Kept]
 			void IInternalInterface.ExplicitImplementationInternalInterfaceMethod () { }
 
 			[Kept]
 			public static void InternalStaticInterfaceMethod () { }
 
+			[Kept]
 			static void IInternalStaticInterface.ExplicitImplementationInternalStaticInterfaceMethod () { }
 
 			[Kept]
@@ -253,6 +255,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			[Kept]
 			public void InternalInterfaceMethod () { }
 
+			[Kept]
 			void IInternalInterface.ExplicitImplementationInternalInterfaceMethod () { }
 
 			[Kept]
@@ -297,11 +300,13 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			[Kept]
 			public void InternalInterfaceMethod () { }
 
+			[Kept]
 			void IInternalInterface.ExplicitImplementationInternalInterfaceMethod () { }
 
 			[Kept]
 			public static void InternalStaticInterfaceMethod () { }
 
+			[Kept]
 			static void IInternalStaticInterface.ExplicitImplementationInternalStaticInterfaceMethod () { }
 
 			[Kept]
@@ -332,6 +337,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		{
 			internal UninstantiatedPublicClassWithPrivateInterface () { }
 
+			[Kept]
 			void IPrivateInterface.PrivateInterfaceMethod () { }
 		}
 
@@ -358,8 +364,10 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		[Kept]
 		internal interface IInternalInterface
 		{
+			[Kept]
 			void InternalInterfaceMethod ();
 
+			[Kept]
 			void ExplicitImplementationInternalInterfaceMethod ();
 		}
 
@@ -369,12 +377,14 @@ namespace Mono.Linker.Tests.Cases.Libraries
 			[Kept] // https://github.com/dotnet/linker/issues/2733
 			static abstract void InternalStaticInterfaceMethod ();
 
+			[Kept]
 			static abstract void ExplicitImplementationInternalStaticInterfaceMethod ();
 		}
 
 		[Kept]
 		private interface IPrivateInterface
 		{
+			[Kept]
 			void PrivateInterfaceMethod ();
 		}
 	}

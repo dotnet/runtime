@@ -143,6 +143,12 @@ namespace Mono.Linker.Steps
 			if ((preserve & TypePreserveMembers.Internal) != 0 && IsTypePrivate (type))
 				preserve_anything &= ~TypePreserveMembers.Internal;
 
+			// Keep all interfaces and interface members in library mode
+			if ((preserve & TypePreserveMembers.Library) != 0 && type.IsInterface) {
+				Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly), new MessageOrigin (type.Module.Assembly));
+				Annotations.SetPreserve (type, TypePreserve.All);
+			}
+
 			switch (preserve_anything) {
 			case 0:
 				return;
