@@ -12,6 +12,19 @@ using ExceptionUtil = System.Runtime.Serialization.Schema.DiagnosticUtility.Exce
 
 namespace System.Runtime.Serialization.Schema
 {
+    /// <summary>
+    /// Allows the transformation of a set of XML schema files (.xsd) into common language runtime (CLR) types.
+    /// </summary>
+    /// <remarks>
+    /// Use the <see cref="XsdDataContractImporter"/> if you are creating a Web service that must interoperate with an existing
+    /// Web service, or to create data contract types from XML schemas. <see cref="XsdDataContractImporter"/> will transform a
+    /// set of XML schemas and create the .NET Framework types that represent the data contract in a selected programming language.
+    /// To create the code, use the classes in the <see cref="System.CodeDom"/> namespace.
+    ///
+    /// Conversely, use the <see cref="XsdDataContractExporter"/> class when you have created a Web service that incorporates
+    /// data represented by CLR types and when you need to export XML schemas for each data type to be consumed by other Web
+    /// services.That is, <see cref="XsdDataContractExporter"/> transforms a set of CLR types into a set of XML schemas.
+    /// </remarks>
     public sealed class XsdDataContractImporter
     {
         private CodeCompileUnit _codeCompileUnit = null!;   // Not directly referenced. Always lazy initialized by property getter.
@@ -22,17 +35,30 @@ namespace System.Runtime.Serialization.Schema
         private XmlQualifiedName[] _singleTypeNameArray = null!;   // Not directly referenced. Always lazy initialized by property getter.
         private XmlSchemaElement[] _singleElementArray = null!;   // Not directly referenced. Always lazy initialized by property getter.
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XsdDataContractImporter"/> class.
+        /// </summary>
         public XsdDataContractImporter()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XsdDataContractImporter"/> class with the <see cref="System.CodeDom.CodeCompileUnit"/> that will be used to generate CLR code.
+        /// </summary>
+        /// <param name="codeCompileUnit">The <see cref="System.CodeDom.CodeCompileUnit"/> that will be used to store the code.</param>
         public XsdDataContractImporter(CodeCompileUnit codeCompileUnit)
         {
             _codeCompileUnit = codeCompileUnit;
         }
 
+        /// <summary>
+        /// Gets or sets an <see cref="ImportOptions"/> that contains settable options for the import operation.
+        /// </summary>
         public ImportOptions? Options { get; set; }
 
+        /// <summary>
+        /// Gets a <see cref="System.CodeDom.CodeCompileUnit"/> used for storing the CLR types generated.
+        /// </summary>
         public CodeCompileUnit CodeCompileUnit => _codeCompileUnit ??= new CodeCompileUnit();
 
         private DataContractSet DataContractSet
@@ -48,6 +74,10 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
+        /// <summary>
+        /// Transforms the specified set of XML schemas contained in an <see cref="XmlSchemaSet"/> into a <see cref="System.CodeDom.CodeCompileUnit"/>.
+        /// </summary>
+        /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations to generate CLR types for.</param>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas)
         {
@@ -57,6 +87,11 @@ namespace System.Runtime.Serialization.Schema
             InternalImport(schemas, null, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
+        /// <summary>
+        /// Transforms the specified set of schema types contained in an <see cref="XmlSchemaSet"/> into CLR types generated into a <see cref="System.CodeDom.CodeCompileUnit"/>.
+        /// </summary>
+        /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations.</param>
+        /// <param name="typeNames">A <see cref="ICollection{T}"/> (of <see cref="XmlQualifiedName"/>) that represents the set of schema types to import.</param>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas, ICollection<XmlQualifiedName> typeNames)
         {
@@ -69,6 +104,11 @@ namespace System.Runtime.Serialization.Schema
             InternalImport(schemas, typeNames, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
+        /// <summary>
+        /// Transforms the specified XML schema type contained in an <see cref="XmlSchemaSet"/> into a <see cref="System.CodeDom.CodeCompileUnit"/>.
+        /// </summary>
+        /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations.</param>
+        /// <param name="typeName">A <see cref="XmlQualifiedName"/> that represents a specific schema type to import.</param>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas, XmlQualifiedName typeName)
         {
@@ -82,6 +122,13 @@ namespace System.Runtime.Serialization.Schema
             InternalImport(schemas, SingleTypeNameArray, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
+        /// <summary>
+        /// Transforms the specified schema element in the set of specified XML schemas into a <see cref="System.CodeDom.CodeCompileUnit"/> and
+        /// returns an <see cref="XmlQualifiedName"/> that represents the data contract name for the specified element.
+        /// </summary>
+        /// <param name="schemas">An <see cref="XmlSchemaSet"/> that contains the schemas to transform.</param>
+        /// <param name="element">An <see cref="XmlSchemaElement"/> that represents the specific schema element to transform.</param>
+        /// <returns>An <see cref="XmlQualifiedName"/> that represents the specified element.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public XmlQualifiedName? Import(XmlSchemaSet schemas, XmlSchemaElement element)
         {
@@ -96,6 +143,11 @@ namespace System.Runtime.Serialization.Schema
             return SingleTypeNameArray[0];
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the schemas contained in an <see cref="XmlSchemaSet"/> can be transformed into a <see cref="System.CodeDom.CodeCompileUnit"/>.
+        /// </summary>
+        /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schemas to transform.</param>
+        /// <returns>true if the schemas can be transformed to data contract types; otherwise, false.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas)
         {
@@ -105,6 +157,12 @@ namespace System.Runtime.Serialization.Schema
             return InternalCanImport(schemas, null, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the specified set of types contained in an <see cref="XmlSchemaSet"/> can be transformed into CLR types generated into a <see cref="System.CodeDom.CodeCompileUnit"/>.
+        /// </summary>
+        /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schemas to transform.</param>
+        /// <param name="typeNames">An <see cref="ICollection{T}"/> of <see cref="XmlQualifiedName"/> that represents the set of schema types to import.</param>
+        /// <returns>true if the schemas can be transformed; otherwise, false.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName> typeNames)
         {
@@ -117,6 +175,12 @@ namespace System.Runtime.Serialization.Schema
             return InternalCanImport(schemas, typeNames, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the schemas contained in an <see cref="XmlSchemaSet"/> can be transformed into a <see cref="System.CodeDom.CodeCompileUnit"/>.
+        /// </summary>
+        /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations.</param>
+        /// <param name="typeName">An <see cref="XmlQualifiedName"/> that specifies the names of the schema types that need to be imported from the <see cref="XmlSchemaSet"/>.</param>
+        /// <returns>true if the schemas can be transformed to data contract types; otherwise, false.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, XmlQualifiedName typeName)
         {
@@ -129,6 +193,12 @@ namespace System.Runtime.Serialization.Schema
             return InternalCanImport(schemas, new XmlQualifiedName[] { typeName }, s_emptyElementArray, s_emptyTypeNameArray);
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether a specific schema element contained in an <see cref="XmlSchemaSet"/> can be imported.
+        /// </summary>
+        /// <param name="schemas">An <see cref="XmlSchemaSet"/> to import.</param>
+        /// <param name="element">A specific <see cref="XmlSchemaElement"/> to check in the set of schemas.</param>
+        /// <returns>true if the element can be imported; otherwise, false.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, XmlSchemaElement element)
         {
@@ -142,6 +212,11 @@ namespace System.Runtime.Serialization.Schema
             return InternalCanImport(schemas, s_emptyTypeNameArray, SingleElementArray, SingleTypeNameArray);
         }
 
+        /// <summary>
+        /// Returns a <see cref="CodeTypeReference"/> to the CLR type generated for the schema type with the specified <see cref="XmlQualifiedName"/>.
+        /// </summary>
+        /// <param name="typeName">The <see cref="XmlQualifiedName"/> that specifies the schema type to look up.</param>
+        /// <returns>A <see cref="CodeTypeReference"/> reference to the CLR type generated for the schema type with the typeName specified.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public CodeTypeReference GetCodeTypeReference(XmlQualifiedName typeName)
         {
@@ -150,6 +225,12 @@ namespace System.Runtime.Serialization.Schema
             return codeExporter.GetCodeTypeReference(dataContract);
         }
 
+        /// <summary>
+        /// Returns a <see cref="CodeTypeReference"/> for the specified XML qualified element and schema element.
+        /// </summary>
+        /// <param name="typeName">An <see cref="XmlQualifiedName"/> that specifies the XML qualified name of the schema type to look up.</param>
+        /// <param name="element">An <see cref="XmlSchemaElement"/> that specifies an element in an XML schema.</param>
+        /// <returns>A <see cref="CodeTypeReference"/> that represents the type that was generated for the specified schema type.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public CodeTypeReference GetCodeTypeReference(XmlQualifiedName typeName, XmlSchemaElement element)
         {
@@ -178,6 +259,11 @@ namespace System.Runtime.Serialization.Schema
             return dataContract;
         }
 
+        /// <summary>
+        /// Returns a list of <see cref="CodeTypeReference"/> objects that represents the known types generated when generating code for the specified schema type.
+        /// </summary>
+        /// <param name="typeName">An <see cref="XmlQualifiedName"/> that represents the schema type to look up known types for.</param>
+        /// <returns>A collection of type <see cref="CodeTypeReference"/>.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public ICollection<CodeTypeReference>? GetKnownTypeReferences(XmlQualifiedName typeName)
         {

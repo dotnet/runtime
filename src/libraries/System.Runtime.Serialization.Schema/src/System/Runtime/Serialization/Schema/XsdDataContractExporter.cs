@@ -13,27 +13,55 @@ using ExceptionUtil = System.Runtime.Serialization.Schema.DiagnosticUtility.Exce
 
 namespace System.Runtime.Serialization.Schema
 {
+    /// <summary>
+    /// Allows the transformation of a set of .NET types that are used in data contracts into an XML schema file (.xsd).
+    /// </summary>
+    /// <remarks>
+    /// Use the <see cref="XsdDataContractExporter"/> class when you have created a Web service that incorporates data represented by
+    /// common language runtime (CLR) types and when you need to export XML schemas for each type to be consumed by other Web services.
+    /// That is, <see cref="XsdDataContractExporter"/> transforms a set of CLR types into XML schemas. The schemas can then be exposed
+    /// through a Web Services Description Language (WSDL) document for use by others who need to interoperate with your service.
+    ///
+    /// Conversely, if you are creating a Web service that must interoperate with an existing Web service, use the <see cref="XsdDataContractImporter"/>
+    /// to transform XML schemas and create the CLR types that represent the data in a selected programming language.
+    ///
+    /// The <see cref="XsdDataContractExporter"/> generates an <see cref="XmlSchemaSet"/> object that contains the collection of schemas.
+    /// Access the set of schemas through the <see cref="Schemas"/> property.
+    /// </remarks>
     public sealed class XsdDataContractExporter
     {
         private ExportOptions? _options;
         private XmlSchemaSet? _schemas;
         private DataContractSet? _dataContractSet;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XsdDataContractExporter"/> class.
+        /// </summary>
         public XsdDataContractExporter()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XsdDataContractExporter"/> class with the specified set of schemas.
+        /// </summary>
+        /// <param name="schemas">An <see cref="XmlSchemaSet"/> that contains the schemas to be exported.</param>
         public XsdDataContractExporter(XmlSchemaSet? schemas)
         {
             this._schemas = schemas;
         }
 
+        /// <summary>
+        /// Gets or sets an <see cref="ExportOptions"/> that contains options that can be set for the export operation.
+        /// </summary>
         public ExportOptions? Options
         {
             get { return _options; }
             set { _options = value; }
         }
 
+        /// <summary>
+        /// Gets the collection of exported XML schemas.
+        /// </summary>
         public XmlSchemaSet Schemas
         {
             get
@@ -72,6 +100,10 @@ namespace System.Runtime.Serialization.Schema
                 throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericTypeNotExportable, type)));
         }
 
+        /// <summary>
+        /// Transforms the types contained in the specified collection of assemblies.
+        /// </summary>
+        /// <param name="assemblies">A <see cref="ICollection{T}"/> (of <see cref="Assembly"/>) that contains the types to export.</param>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Export(ICollection<Assembly> assemblies)
         {
@@ -99,6 +131,10 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
+        /// <summary>
+        /// Transforms the types contained in the ICollection<T> passed to this method.
+        /// </summary>
+        /// <param name="types">A <see cref="ICollection{T}"/> (of <see cref="Type"/>) that contains the types to export.</param>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Export(ICollection<Type> types)
         {
@@ -123,6 +159,10 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
+        /// <summary>
+        /// Transforms the specified .NET Framework type into an XML schema definition language (XSD) schema.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to transform into an XML schema.</param>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public void Export(Type type)
         {
@@ -141,6 +181,11 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
+        /// <summary>
+        /// Returns the contract name and contract namespace for the <see cref="Type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> that was exported.</param>
+        /// <returns>An <see cref="XmlQualifiedName"/> that represents the contract name of the type and its namespace.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public XmlQualifiedName GetSchemaTypeName(Type type)
         {
@@ -154,6 +199,11 @@ namespace System.Runtime.Serialization.Schema
             return dataContract.StableName;
         }
 
+        /// <summary>
+        /// Returns the XML schema type for the specified type.
+        /// </summary>
+        /// <param name="type">The type to return a schema for.</param>
+        /// <returns>An <see cref="XmlSchemaType"/> that contains the XML schema.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public XmlSchemaType? GetSchemaType(Type type)
         {
@@ -167,6 +217,11 @@ namespace System.Runtime.Serialization.Schema
             return null;
         }
 
+        /// <summary>
+        /// Returns the top-level name and namespace for the <see cref="Type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to query.</param>
+        /// <returns>The <see cref="XmlQualifiedName"/> that represents the top-level name and namespace for this Type, which is written to the stream when writing this object.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public XmlQualifiedName? GetRootElementName(Type type)
         {
@@ -235,6 +290,11 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the set of .common language runtime (CLR) types contained in a set of assemblies can be exported.
+        /// </summary>
+        /// <param name="assemblies">A <see cref="ICollection{T}"/> of <see cref="Assembly"/> that contains the assemblies with the types to export.</param>
+        /// <returns>true if the types can be exported; otherwise, false.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanExport(ICollection<Assembly> assemblies)
         {
@@ -267,6 +327,11 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the set of .common language runtime (CLR) types contained in a <see cref="ICollection{T}"/> can be exported.
+        /// </summary>
+        /// <param name="types">A <see cref="ICollection{T}"/> that contains the specified types to export.</param>
+        /// <returns>true if the types can be exported; otherwise, false.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanExport(ICollection<Type> types)
         {
@@ -296,6 +361,11 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the specified common language runtime (CLR) type can be exported.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to export.</param>
+        /// <returns>true if the type can be exported; otherwise, false.</returns>
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         public bool CanExport(Type type)
         {
