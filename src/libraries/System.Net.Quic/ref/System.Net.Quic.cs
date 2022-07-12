@@ -32,6 +32,13 @@ namespace System.Net.Quic
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenBidirectionalStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> OpenUnidirectionalStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
+    public abstract partial class QuicConnectionOptions
+    {
+        internal QuicConnectionOptions() { }
+        public System.TimeSpan IdleTimeout { get { throw null; } set { } }
+        public int MaxBidirectionalStreams { get { throw null; } set { } }
+        public int MaxUnidirectionalStreams { get { throw null; } set { } }
+    }
     public enum QuicError
     {
         Success = 0,
@@ -48,14 +55,7 @@ namespace System.Net.Quic
         ProtocolError = 11,
         OperationAborted = 12,
     }
-    public abstract partial class QuicConnectionOptions
-    {
-        internal QuicConnectionOptions() { }
-        public System.TimeSpan IdleTimeout { get { throw null; } set { } }
-        public int MaxBidirectionalStreams { get { throw null; } set { } }
-        public int MaxUnidirectionalStreams { get { throw null; } set { } }
-    }
-    public partial class QuicException : System.Exception
+    public sealed partial class QuicException : System.IO.IOException
     {
         public QuicException(System.Net.Quic.QuicError error, long? applicationErrorCode, string message, System.Exception? innerException) { }
         public long? ApplicationErrorCode { get { throw null; } }
