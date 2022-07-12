@@ -880,9 +880,8 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
-                Assert.IsType<AuthenticationException>(ex.InnerException);
-                // TODO: check that the exception was caused by ALPN mismatch
-                // Assert.Contains("ALPN_NEG_FAILURE", authEx.InnerException?.Message);
+                AuthenticationException authEx = Assert.IsType<AuthenticationException>(ex.InnerException);
+                Assert.Contains("Application layer protocol negotiation", authEx.Message);
 
                 clientDone.Release();
             });
