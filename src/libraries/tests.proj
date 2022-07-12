@@ -438,6 +438,8 @@
                       Condition="'$(TargetOS)' == 'linux'" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj"
                       Condition="'$(TargetOS)' == 'linux'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution\tests\FunctionalTests\System.Net.NameResolution.Functional.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'windows'"/>
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory.Data\tests\System.Memory.Data.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http.Json\tests\FunctionalTests\System.Net.Http.Json.Functional.Tests.csproj" />
