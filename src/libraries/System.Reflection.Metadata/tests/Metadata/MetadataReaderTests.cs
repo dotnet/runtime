@@ -3070,5 +3070,26 @@ namespace System.Reflection.Metadata.Tests
 
             return obfuscated;
         }
+
+        [Fact]
+        public void GetAssemblyName()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => MetadataReader.GetAssemblyName(null));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => MetadataReader.GetAssemblyName(string.Empty));
+            Assert.Throws<FileNotFoundException>(() => MetadataReader.GetAssemblyName("IDontExist"));
+
+            using (var tempFile = new TempFile(Path.GetTempFileName(), 0)) // Zero-size file
+            {
+                Assert.Throws<BadImageFormatException>(() => MetadataReader.GetAssemblyName(tempFile.Path));
+            }
+
+            using (var tempFile = new TempFile(Path.GetTempFileName(), 42))
+            {
+                Assert.Throws<BadImageFormatException>(() => MetadataReader.GetAssemblyName(tempFile.Path));
+            }
+
+            Assembly a = typeof(MetadataReaderTests).Assembly;
+            Assert.Equal(new AssemblyName(a.FullName).ToString(), MetadataReader.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
+        }
     }
 }

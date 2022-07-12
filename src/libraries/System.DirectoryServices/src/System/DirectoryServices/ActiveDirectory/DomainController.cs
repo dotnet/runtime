@@ -429,10 +429,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (roleObjectEntry != null)
-                {
-                    roleObjectEntry.Dispose();
-                }
+                roleObjectEntry?.Dispose();
             }
 
             // invalidate the role collection so that it gets loaded again next time

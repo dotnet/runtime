@@ -10,151 +10,138 @@ namespace System.Runtime.InteropServices.Marshalling
     /// Marshaller for arrays of pointers
     /// </summary>
     /// <typeparam name="T">Array element pointer type</typeparam>
+    /// <typeparam name="TUnmanagedElement">The unmanaged type for the element pointer type</typeparam>
     [CLSCompliant(false)]
-    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
-        CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
-        Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public unsafe ref struct PointerArrayMarshaller<T> where T : unmanaged
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        MarshalMode.Default,
+        typeof(PointerArrayMarshaller<,>))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        MarshalMode.ManagedToUnmanagedIn,
+        typeof(PointerArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [ContiguousCollectionMarshaller]
+    public static unsafe class PointerArrayMarshaller<T, TUnmanagedElement>
+        where T : unmanaged
+        where TUnmanagedElement : unmanaged
     {
-        private readonly int _sizeOfNativeElement;
-
-        private T*[]? _managedArray;
-        private IntPtr _allocatedMemory;
-        private Span<byte> _span;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
-        /// </summary>
-        /// <param name="sizeOfNativeElement">Size of the native element in bytes.</param>
-        public PointerArrayMarshaller(int sizeOfNativeElement)
-            : this()
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T*[]? managed, out int numElements)
         {
-            _sizeOfNativeElement = sizeOfNativeElement;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
-        /// </summary>
-        /// <param name="array">Array to be marshalled.</param>
-        /// <param name="sizeOfNativeElement">Size of the native element in bytes.</param>
-        public PointerArrayMarshaller(T*[]? array, int sizeOfNativeElement)
-            : this(array, Span<byte>.Empty, sizeOfNativeElement)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
-        /// </summary>
-        /// <param name="array">Array to be marshalled.</param>
-        /// <param name="buffer">Buffer that may be used for marshalling.</param>
-        /// <param name="sizeOfNativeElement">Size of the native element in bytes.</param>
-        /// <remarks>
-        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
-        /// on the managed heap or it should be pinned.
-        /// </remarks>
-        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
-        public PointerArrayMarshaller(T*[]? array, Span<byte> buffer, int sizeOfNativeElement)
-        {
-            _allocatedMemory = default;
-            _sizeOfNativeElement = sizeOfNativeElement;
-            if (array is null)
+            if (managed is null)
             {
-                _managedArray = null;
-                _span = default;
-                return;
+                numElements = 0;
+                return null;
             }
 
-            _managedArray = array;
+            numElements = managed.Length;
 
             // Always allocate at least one byte when the array is zero-length.
-            int bufferSize = checked(array.Length * _sizeOfNativeElement);
-            int spaceToAllocate = Math.Max(bufferSize, 1);
-            if (spaceToAllocate <= buffer.Length)
-            {
-                _span = buffer[0..spaceToAllocate];
-            }
-            else
-            {
-                _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-                _span = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
-            }
+            int spaceToAllocate = Math.Max(checked(sizeof(TUnmanagedElement) * numElements), 1);
+            return (TUnmanagedElement*)Marshal.AllocCoTaskMem(spaceToAllocate);
         }
 
-        /// <summary>
-        /// Gets a span that points to the memory where the managed values of the array are stored.
-        /// </summary>
-        /// <returns>Span over managed values of the array.</returns>
-        /// <seealso cref="CustomTypeMarshallerDirection.In"/>
-        public ReadOnlySpan<IntPtr> GetManagedValuesSource() => Unsafe.As<IntPtr[]>(_managedArray);
+        public static ReadOnlySpan<IntPtr> GetManagedValuesSource(T*[]? managed)
+            => Unsafe.As<IntPtr[]>(managed);
 
-        /// <summary>
-        /// Gets a span that points to the memory where the unmarshalled managed values of the array should be stored.
-        /// </summary>
-        /// <param name="length">Length of the array.</param>
-        /// <returns>Span where managed values of the array should be stored.</returns>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        public Span<IntPtr> GetManagedValuesDestination(int length)
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+            => new Span<TUnmanagedElement>(unmanaged, numElements);
+
+        public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
-            if (_allocatedMemory == IntPtr.Zero)
+            if (unmanaged is null)
                 return null;
 
-            _managedArray = new T*[length];
-            return Unsafe.As<IntPtr[]>(_managedArray);
+            return new T*[numElements];
         }
 
-        /// <summary>
-        /// Returns a span that points to the memory where the native values of the array are stored after the native call.
-        /// </summary>
-        /// <param name="length">Length of the array.</param>
-        /// <returns>Span over the native values of the array.</returns>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        public ReadOnlySpan<byte> GetNativeValuesSource(int length)
+        public static Span<IntPtr> GetManagedValuesDestination(T*[]? managed)
+            => Unsafe.As<IntPtr[]>(managed);
+
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
+            => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+
+        public static void Free(TUnmanagedElement* unmanaged)
+            => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
+
+        public ref struct ManagedToUnmanagedIn
         {
-            if (_allocatedMemory == IntPtr.Zero)
-                return default;
+            public static int BufferSize => 0x200 / sizeof(TUnmanagedElement);
 
-            int allocatedSize = checked(length * _sizeOfNativeElement);
-            _span = new Span<byte>((void*)_allocatedMemory, allocatedSize);
-            return _span;
-        }
+            private T*[]? _managedArray;
+            private TUnmanagedElement* _allocatedMemory;
+            private Span<TUnmanagedElement> _span;
 
-        /// <summary>
-        /// Returns a span that points to the memory where the native values of the array should be stored.
-        /// </summary>
-        /// <returns>Span where native values of the array should be stored.</returns>
-        /// <seealso cref="CustomTypeMarshallerDirection.In"/>
-        public Span<byte> GetNativeValuesDestination() => _span;
+            /// <summary>
+            /// Initializes the <see cref="PointerArrayMarshaller{T, TUnmanagedElement}.ManagedToUnmanagedIn"/> marshaller.
+            /// </summary>
+            /// <param name="array">Array to be marshalled.</param>
+            /// <param name="buffer">Buffer that may be used for marshalling.</param>
+            /// <remarks>
+            /// The <paramref name="buffer"/> must not be movable - that is, it should not be
+            /// on the managed heap or it should be pinned.
+            /// </remarks>
+            public void FromManaged(T*[]? array, Span<TUnmanagedElement> buffer)
+            {
+                _allocatedMemory = null;
+                if (array is null)
+                {
+                    _managedArray = null;
+                    _span = default;
+                    return;
+                }
 
-        /// <summary>
-        /// Returns a reference to the marshalled array.
-        /// </summary>
-        public ref byte GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
+                _managedArray = array;
 
-        /// <summary>
-        /// Returns the native value representing the array.
-        /// </summary>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        public byte* ToNativeValue() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
+                // Always allocate at least one byte when the array is zero-length.
+                if (array.Length <= buffer.Length)
+                {
+                    _span = buffer[0..array.Length];
+                }
+                else
+                {
+                    int bufferSize = checked(array.Length * sizeof(TUnmanagedElement));
+                    int spaceToAllocate = Math.Max(bufferSize, 1);
+                    _allocatedMemory = (TUnmanagedElement*)NativeMemory.Alloc((nuint)spaceToAllocate);
+                    _span = new Span<TUnmanagedElement>(_allocatedMemory, array.Length);
+                }
+            }
 
-        /// <summary>
-        /// Sets the native value representing the array.
-        /// </summary>
-        /// <param name="value">The native value.</param>
-        /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
-        public void FromNativeValue(byte* value) => _allocatedMemory = (IntPtr)value;
+            /// <summary>
+            /// Gets a span that points to the memory where the managed values of the array are stored.
+            /// </summary>
+            /// <returns>Span over managed values of the array.</returns>
+            public ReadOnlySpan<IntPtr> GetManagedValuesSource() => Unsafe.As<IntPtr[]>(_managedArray);
 
-        /// <summary>
-        /// Returns the managed array.
-        /// </summary>
-        /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
-        public T*[]? ToManaged() => _managedArray;
+            /// <summary>
+            /// Returns a span that points to the memory where the unmanaged values of the array should be stored.
+            /// </summary>
+            /// <returns>Span where unmanaged values of the array should be stored.</returns>
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => _span;
 
-        /// <summary>
-        /// Frees native resources.
-        /// </summary>
-        /// <seealso cref="CustomTypeMarshallerFeatures.UnmanagedResources"/>
-        public void FreeNative()
-        {
-            Marshal.FreeCoTaskMem(_allocatedMemory);
+            /// <summary>
+            /// Returns a reference to the marshalled array.
+            /// </summary>
+            public ref TUnmanagedElement GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
+
+            /// <summary>
+            /// Returns the unmanaged value representing the array.
+            /// </summary>
+            public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+
+            /// <summary>
+            /// Frees resources.
+            /// </summary>
+            public void Free()
+            {
+                NativeMemory.Free(_allocatedMemory);
+            }
+
+            public static ref byte GetPinnableReference(T*[]? array)
+            {
+                if (array is null)
+                {
+                    return ref Unsafe.NullRef<byte>();
+                }
+                return ref MemoryMarshal.GetArrayDataReference(array);
+            }
         }
     }
 }

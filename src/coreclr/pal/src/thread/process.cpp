@@ -2459,7 +2459,7 @@ PROCCreateCrashDump(
         int result = waitpid(childpid, &wstatus, 0);
         if (result != childpid)
         {
-            ERROR("PROCCreateCrashDump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
+            fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
                 result, wstatus, strerror(errno), errno);
             return false;
         }

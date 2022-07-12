@@ -3,6 +3,10 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketDeflateConstants.cs" />
@@ -17,8 +21,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Browser.cs" />
+    <Compile Include="System\Net\WebSockets\BrowserWebSockets\BrowserInterop.cs" />
     <Compile Include="System\Net\WebSockets\BrowserWebSockets\BrowserWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\BrowserWebSockets\ClientWebSocketOptions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" Link="InteropServices\JavaScript\CancelablePromise.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
@@ -38,6 +44,7 @@
     <Reference Include="System.Memory" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <Reference Include="System.Runtime.InteropServices.JavaScript" />
   </ItemGroup>
 </Project>

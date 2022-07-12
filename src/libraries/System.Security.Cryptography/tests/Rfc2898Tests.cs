@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class Rfc2898Tests
     {
         private static readonly byte[] s_testSalt = new byte[] { 9, 5, 5, 5, 1, 2, 1, 2 };

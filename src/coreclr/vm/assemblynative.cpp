@@ -355,9 +355,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly
 
     BEGIN_QCALL;
 
-    if (!wszName)
-        COMPlusThrowArgumentNull(W("name"), W("ArgumentNull_String"));
-
     BOOL prohibitAsmQualifiedName = TRUE;
 
     AssemblyBinder * pBinder = NULL;

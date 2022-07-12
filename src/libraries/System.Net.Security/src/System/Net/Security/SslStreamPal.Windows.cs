@@ -136,16 +136,21 @@ namespace System.Net.Security
             return status;
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
             try
             {
+                EncryptionPolicy policy = sslAuthenticationOptions.EncryptionPolicy;
+
                 // New crypto API supports TLS1.3 but it does not allow to force NULL encryption.
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 SafeFreeCredentials cred = !UseNewCryptoApi || policy == EncryptionPolicy.NoEncryption ?
-                            AcquireCredentialsHandleSchannelCred(certificateContext, protocols, policy, isServer) :
-                            AcquireCredentialsHandleSchCredentials(certificateContext, protocols, policy, isServer);
+                    AcquireCredentialsHandleSchannelCred(sslAuthenticationOptions) :
+                    AcquireCredentialsHandleSchCredentials(sslAuthenticationOptions);
 #pragma warning restore SYSLIB0040
+
+                SslStreamCertificateContext? certificateContext = sslAuthenticationOptions.CertificateContext;
+
                 if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
                 {
                     AttachCertificateStore(cred, certificateContext.Trust._store!);
@@ -182,10 +187,11 @@ namespace System.Net.Security
 
         // This is legacy crypto API used on .NET Framework and older Windows versions.
         // It only supports TLS up to 1.2
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions)
         {
-            X509Certificate2? certificate = certificateContext?.Certificate;
-            int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
+            X509Certificate2? certificate = authOptions.CertificateContext?.Certificate;
+            bool isServer = authOptions.IsServer;
+            int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
             Interop.SspiCli.CredentialUse direction;
 
@@ -196,16 +202,28 @@ namespace System.Net.Security
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
+
+                // Request OCSP Stapling from the server
+                if (authOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck)
+                {
+                    flags |=
+                        Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_REVOCATION_CHECK_END_CERT |
+                        Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_IGNORE_NO_REVOCATION_CHECK |
+                        Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_IGNORE_REVOCATION_OFFLINE;
+                }
             }
             else
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
                 flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
-                if (certificateContext?.Trust?._sendTrustInHandshake == true)
+
+                if (authOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
                 {
                     flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 }
             }
+
+            EncryptionPolicy policy = authOptions.EncryptionPolicy;
 
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             // Always opt-in SCH_USE_STRONG_CRYPTO for TLS.
@@ -234,17 +252,19 @@ namespace System.Net.Security
         }
 
         // This function uses new crypto API to support TLS 1.3 and beyond.
-        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslAuthenticationOptions authOptions)
         {
-            X509Certificate2? certificate = certificateContext?.Certificate;
-            int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
+            X509Certificate2? certificate = authOptions.CertificateContext?.Certificate;
+            bool isServer = authOptions.IsServer;
+            int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
             Interop.SspiCli.CredentialUse direction;
+
             if (isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
                 flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
-                if (certificateContext?.Trust?._sendTrustInHandshake == true)
+                if (authOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
                 {
                     flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 }
@@ -256,7 +276,18 @@ namespace System.Net.Security
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
+
+                // Request OCSP Stapling from the server
+                if (authOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck)
+                {
+                    flags |=
+                        Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_REVOCATION_CHECK_END_CERT |
+                        Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_IGNORE_NO_REVOCATION_CHECK |
+                        Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_IGNORE_REVOCATION_OFFLINE;
+                }
             }
+
+            EncryptionPolicy policy = authOptions.EncryptionPolicy;
 
             if (policy == EncryptionPolicy.RequireEncryption)
             {
@@ -420,7 +451,7 @@ namespace System.Net.Security
                 dwAlertType = (uint)alertType,
                 dwAlertNumber = (uint)alertMessage
             };
-            byte[] buffer = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref alertToken, 1)).ToArray();
+            byte[] buffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_ALERT_TOKEN>(in alertToken)).ToArray();
             var securityBuffer = new SecurityBuffer(buffer, SecurityBufferType.SECBUFFER_TOKEN);
 
             var errorCode = (Interop.SECURITY_STATUS)SSPIWrapper.ApplyControlToken(

@@ -951,10 +951,7 @@ namespace System.Xml
             SchemaNotation? notation = null;
             if (!_schemaInfo.Notations.ContainsKey(notationName.Name))
             {
-                if (_undeclaredNotations != null)
-                {
-                    _undeclaredNotations.Remove(notationName.Name);
-                }
+                _undeclaredNotations?.Remove(notationName.Name);
 
                 notation = new SchemaNotation(notationName);
                 _schemaInfo.Notations.Add(notation.Name.Name, notation);

@@ -197,6 +197,7 @@ namespace System.Text.Json.Serialization.Tests
                 // since it can't resolve reflection-based metadata.
                 Assert.Throws<NotSupportedException>(() => converter.Write(writer, value, options));
                 Assert.Equal(0, writer.BytesCommitted + writer.BytesPending);
+                options.IncludeFields = false; // options should still be mutable
 
                 JsonSerializer.Serialize(42, options);
 
@@ -204,6 +205,8 @@ namespace System.Text.Json.Serialization.Tests
                 converter.Write(writer, value, options);
                 Assert.NotEqual(0, writer.BytesCommitted + writer.BytesPending);
                 writer.Reset();
+
+                Assert.Throws<InvalidOperationException>(() => options.IncludeFields = false);
 
                 // State change should not leak into unrelated options instances.
                 var options2 = new JsonSerializerOptions();

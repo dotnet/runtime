@@ -6,6 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Buffers;
+using System.Buffers.Text;
+using System.Text;
 
 namespace System
 {
@@ -2336,7 +2339,30 @@ namespace System
             }
 
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
-            string result = string.FastAllocateString(ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks));
+            int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
+
+            if (!insertLineBreaks && bytes.Length >= 64)
+            {
+                // For large inputs it's faster to allocate a temp buffer and call UTF8 version
+                // which is then extended to UTF8 via Latin1.GetString (base64 is always ASCI)
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static string ToBase64StringLargeInputs(ReadOnlySpan<byte> data, int outputLen)
+                {
+                    byte[]? rentedBytes = null;
+                    Span<byte> utf8buffer = outputLen <= 256 ? stackalloc byte[256] : (rentedBytes = ArrayPool<byte>.Shared.Rent(outputLen));
+                    OperationStatus status = Base64.EncodeToUtf8(data, utf8buffer, out int _, out int bytesWritten);
+                    Debug.Assert(status == OperationStatus.Done && bytesWritten == outputLen);
+                    string result = Encoding.Latin1.GetString(utf8buffer.Slice(0, outputLen));
+                    if (rentedBytes != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(rentedBytes);
+                    }
+                    return result;
+                }
+                return ToBase64StringLargeInputs(bytes, outputLength);
+            }
+
+            string result = string.FastAllocateString(outputLength);
 
             unsafe
             {

@@ -198,8 +198,7 @@ namespace System.Security.Principal
                             if (subStatus < 0) // non-negative numbers indicate success
                                 throw GetExceptionFromNtStatus(subStatus);
 
-                            if (profileBuffer != null)
-                                profileBuffer.Dispose();
+                            profileBuffer?.Dispose();
 
                             _safeTokenHandle = accessTokenHandle;
                         }

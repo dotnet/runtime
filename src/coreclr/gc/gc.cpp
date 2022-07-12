@@ -13117,7 +13117,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     }
 
     GCConfig::SetConcurrentGC(gc_can_use_concurrent);
-#else //BACKGROUND_GC 
+#else //BACKGROUND_GC
     GCConfig::SetConcurrentGC(false);
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
@@ -18228,7 +18228,7 @@ BOOL gc_heap::should_set_bgc_mark_bit (uint8_t* o)
         return FALSE;
     }
 
-    // This is cheaper so I am doing this comparision first before having to get the seg for o.
+    // This is cheaper so I am doing this comparison first before having to get the seg for o.
     if (in_range_for_segment (o, current_sweep_seg))
     {
         // The current sweep seg could have free spaces beyond its background_allocated so we need
@@ -44255,7 +44255,7 @@ HRESULT GCHeap::Initialize()
     GCConfig::SetGCCpuGroup(can_use_cpu_groups);
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
-    cpu_group_enabled_p = can_use_cpu_groups; 
+    cpu_group_enabled_p = can_use_cpu_groups;
 
     if (!GCToOSInterface::GetNumaInfo (&total_numa_nodes_on_machine, &procs_per_numa_node))
     {
@@ -44566,13 +44566,13 @@ Object * GCHeap::NextObj (Object * object)
 
     // We still want to verify nextobj that lands between heap_segment_allocated and alloc_allocated
     // on the ephemeral segment. In regions these 2 could be changed by another thread so we need
-    // to make sure they are still in sync by the time we check. If they are not in sync, we just 
+    // to make sure they are still in sync by the time we check. If they are not in sync, we just
     // bail which means we don't validate the next object during that small window and that's fine.
     //
-    // We also miss validating nextobj if it's in the segment that just turned into the new ephemeral 
+    // We also miss validating nextobj if it's in the segment that just turned into the new ephemeral
     // segment since we saved which is also a very small window and again that's fine.
-    if ((nextobj >= heap_segment_allocated (hs)) && 
-        ((hs != saved_ephemeral_heap_segment) || 
+    if ((nextobj >= heap_segment_allocated (hs)) &&
+        ((hs != saved_ephemeral_heap_segment) ||
          !in_range_for_segment(saved_alloc_allocated, saved_ephemeral_heap_segment) ||
          (nextobj >= saved_alloc_allocated)))
     {

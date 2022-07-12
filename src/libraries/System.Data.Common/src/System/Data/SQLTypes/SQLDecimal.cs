@@ -2762,7 +2762,7 @@ namespace System.Data.SqlTypes
             int Sign1;
             int Sign2;
 
-            int iFinalResult;   //Final result of comparision: positive = greater
+            int iFinalResult;   //Final result of comparison: positive = greater
                                 //than, 0 = equal, negative = less than
 
             //Initialize the sign values to be 1(positive) or -1(negative)
