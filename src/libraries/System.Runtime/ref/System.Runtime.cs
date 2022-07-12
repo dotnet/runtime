@@ -4501,6 +4501,7 @@ namespace System
         public override string ToString() { throw null; }
         public bool TryCopyTo(System.Memory<T> destination) { throw null; }
     }
+    [System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute(typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>))]
     public readonly ref partial struct ReadOnlySpan<T>
     {
         private readonly object _dummy;
@@ -4926,6 +4927,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out float result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out float result) { throw null; }
     }
+    [System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute(typeof(System.Runtime.InteropServices.Marshalling.SpanMarshaller<,>))]
     public readonly ref partial struct Span<T>
     {
         private readonly object _dummy;
@@ -13240,6 +13242,107 @@ namespace System.Runtime.InteropServices
         IInspectable = 46,
         HString = 47,
         LPUTF8Str = 48,
+    }
+}
+namespace System.Runtime.InteropServices.Marshalling
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class)]
+    public sealed partial class ContiguousCollectionMarshallerAttribute : System.Attribute
+    {
+    }
+
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true)]
+    public sealed partial class CustomMarshallerAttribute : System.Attribute
+    {
+        public CustomMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.MarshalMode marshalMode, System.Type marshallerType) { }
+        public System.Type ManagedType { get { throw null; } }
+        public System.Runtime.InteropServices.Marshalling.MarshalMode MarshalMode { get { throw null; } }
+        public System.Type MarshallerType { get { throw null; } }
+        public struct GenericPlaceholder
+        {
+        }
+    }
+    public enum MarshalMode
+    {
+        Default = 0,
+        ManagedToUnmanagedIn = 1,
+        ManagedToUnmanagedRef = 2,
+        ManagedToUnmanagedOut = 3,
+        UnmanagedToManagedIn = 4,
+        UnmanagedToManagedRef = 5,
+        UnmanagedToManagedOut = 6,
+        ElementIn = 7,
+        ElementRef = 8,
+        ElementOut = 9
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
+    public sealed partial class NativeMarshallingAttribute : System.Attribute
+    {
+        public NativeMarshallingAttribute(System.Type nativeType) { }
+        public System.Type NativeType { get { throw null; } }
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+    typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut,
+    typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.UnmanagedToManagedOut))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
+    public static unsafe class ReadOnlySpanMarshaller<T, TUnmanagedElement>
+    where TUnmanagedElement : unmanaged
+    {
+        public ref struct ManagedToUnmanagedIn
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(System.ReadOnlySpan<T> managed, System.Span<TUnmanagedElement> buffer) { }
+            public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
+            public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
+            public ref TUnmanagedElement GetPinnableReference() { throw null; }
+            public TUnmanagedElement* ToUnmanaged() { throw null; }
+            public void Free() { }
+            public static ref T GetPinnableReference(System.ReadOnlySpan<T> managed) { throw null; }
+        }
+        public static class UnmanagedToManagedOut
+        {
+            public static TUnmanagedElement* AllocateContainerForUnmanagedElements(System.ReadOnlySpan<T> managed, out int numElements) { throw null; }
+            public static System.ReadOnlySpan<T> GetManagedValuesSource(System.ReadOnlySpan<T> managed) { throw null; }
+            public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        }
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Span<>),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.SpanMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Span<>),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.SpanMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
+    public static unsafe class SpanMarshaller<T, TUnmanagedElement>
+        where TUnmanagedElement : unmanaged
+    {
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(System.Span<T> managed, out int numElements) { throw null; }
+        public static System.ReadOnlySpan<T> GetManagedValuesSource(System.Span<T> managed) { throw null; }
+        public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static System.Span<T> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int length) { throw null; }
+        public static System.Span<T> GetManagedValuesDestination(System.Span<T> managed) { throw null; }
+        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static void Free(TUnmanagedElement* unmanaged) { throw null; }
+        public ref struct ManagedToUnmanagedIn
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(System.Span<T> managed, System.Span<TUnmanagedElement> buffer) { }
+            public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
+            public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
+            public ref TUnmanagedElement GetPinnableReference() { throw null; }
+            public TUnmanagedElement* ToUnmanaged() { throw null; }
+            public void Free() { }
+            public static ref T GetPinnableReference(System.Span<T> managed) { throw null; }
+        }
     }
 }
 namespace System.Runtime.Remoting
