@@ -31,13 +31,6 @@ public class ReadAndWrite
     }
 
     [Fact]
-    public static void WriteToOutputStream_EmptyArray()
-    {
-        Stream outStream = Console.OpenStandardOutput();
-        outStream.Write(new byte[] { }, 0, 0);
-    }
-
-    [Fact]
     [OuterLoop]
     public static void WriteOverloadsToRealConsole()
     {
