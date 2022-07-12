@@ -11,7 +11,9 @@ namespace System.Net.WebSockets
     internal sealed class WebSocketHandle
     {
         private WebSocketState _state = WebSocketState.Connecting;
+#pragma warning disable CA1822 // Mark members as static
         public HttpStatusCode HttpStatusCode => (HttpStatusCode)0;
+#pragma warning restore CA1822 // Mark members as static
 
         public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders { get; set; }
 
