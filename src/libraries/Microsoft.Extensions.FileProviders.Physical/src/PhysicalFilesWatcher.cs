@@ -144,7 +144,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = GetOrAddChangeToken(filter);
-            // We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
 #pragma warning disable CA1416 // Validate platform compatibility
             TryEnableFileSystemWatcher();
 #pragma warning restore CA1416 // Validate platform compatibility
