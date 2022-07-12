@@ -1189,21 +1189,13 @@ namespace System.Net.Http
         {
             switch (ex)
             {
-                case QuicException e:
-                    switch (e.QuicError)
-                    {
-                        // Peer aborted the stream
-                        case QuicError.StreamAborted:
-                        // User aborted the stream
-                        case QuicError.OperationAborted:
-                            throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
-
-                        case QuicError.ConnectionAborted:
-                            // Our connection was reset. Start aborting the connection.
-                            Exception abortException = _connection.Abort(ex);
-                            throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, abortException));
-                    }
-                    break;
+                case QuicException e when (e.QuicError == QuicError.StreamAborted || e.QuicError == QuicError.OperationAborted):
+                    // Peer or user aborted the stream
+                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+                case QuicException e when (e.QuicError == QuicError.ConnectionAborted):
+                    // Our connection was reset. Start aborting the connection.
+                    Exception abortException = _connection.Abort(ex);
+                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, abortException));
                 case Http3ConnectionException:
                     // A connection-level protocol error has occurred on our stream.
                     _connection.Abort(ex);
