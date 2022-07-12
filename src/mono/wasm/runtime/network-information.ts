@@ -6,6 +6,8 @@ export function network_wasm_online(): boolean {
 }
 
 export function network_wasm_add_change_listener(listener: (onLine: boolean) => void): void {
-    window.addEventListener("offline", () => listener(network_wasm_online()));
-    window.addEventListener("online", () => listener(network_wasm_online()));
+    if (window) {
+        window.addEventListener("offline", () => listener(network_wasm_online()));
+        window.addEventListener("online", () => listener(network_wasm_online()));
+    }
 }

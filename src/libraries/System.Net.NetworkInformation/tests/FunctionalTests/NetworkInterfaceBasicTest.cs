@@ -272,7 +272,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupported))]
         public void BasicTest_GetIsNetworkAvailable_Success()
         {
             Assert.True(NetworkInterface.GetIsNetworkAvailable());
