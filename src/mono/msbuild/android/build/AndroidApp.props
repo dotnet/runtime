@@ -9,6 +9,7 @@
         _InitializeCommonProperties;
         _BeforeAndroidBuildApp;
         _AndroidResolveReferences;
+        _AndroidPrepareProfiledAot;
         _AndroidAotCompileApp;
         _AndroidGenerateAppBundle;
         _AfterAndroidBuildApp

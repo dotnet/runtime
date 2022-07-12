@@ -1,6 +1,8 @@
 <Project>
   <UsingTask TaskName="AndroidAppBuilderTask" 
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="NetTraceToMibcConverter" 
+             AssemblyFile="$(NetTraceToMibcConverterTasksAssemblyPath)" />
 
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
 
@@ -37,6 +39,7 @@
     <PropertyGroup>
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
+      <_AOTMode Condition="'$(RunProfileAOT)' == 'true'">Normal</_AOTMode>
     </PropertyGroup>
 
     <ItemGroup>
@@ -97,6 +100,7 @@
         Assemblies="@(_AotInputAssemblies)"
         AotModulesTablePath="$(AndroidAppBundleDir)\modules.c"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
+        MibcProfilePath="$(_MibcProfilePath)"
         UseLLVM="$(MonoEnableLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AndroidAssembliesInternal" />
@@ -107,23 +111,19 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_AndroidProfileAotApp"
+  <Target Name="_AndroidPrepareProfiledAot"
           Condition="'$(RunProfileAOT)' == 'true'"
           DependsOnTargets="_AndroidBeforeAotCompileApp">
 
-    <MonoAOTCompiler
-      CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
-      OutputDir="$(_MobileIntermediateOutputPath)"
-      OutputType="AsmOnly"
+    <NetTraceToMibcConverter
+      MibcConverterBinaryPath="$(DotnetPgoToolPath)"
       Assemblies="@(_AotInputAssemblies)"
-      IntermediateOutputPath="$(IntermediateOutputPath)"
-      CacheFilePath="$(IntermediateOutputPath)aot_compiler_cache.json"
       NetTracePath="$(NetTracePath)"
-      PgoBinaryPath="$(PgoBinaryPath)"
-      ReferenceAssembliesForPGO="@(_AotInputAssemblies)"
-      MibcProfilePath="$(MibcProfilePath)">
-      <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
-    </MonoAOTCompiler>
+      CacheFilePath="$(IntermediateOutputPath)netrace_to_mibc_converter_cache.json"
+      OutputDir="$(_MobileIntermediateOutputPath)">
+      <Output TaskParameter="MibcProfilePath" PropertyName="_MibcProfilePath" />
+    </NetTraceToMibcConverter>
+
   </Target>
 
   <Target Name="_AndroidGenerateAppBundle" DependsOnTargets="_AndroidGenerateRuntimeConfig">
@@ -138,6 +138,8 @@
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
         StripDebugSymbols="False"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         OutputDir="$(AndroidAppBundleDir)"
         AppDir="$(AndroidAppDir)">
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />

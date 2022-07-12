@@ -44,6 +44,10 @@
     <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DiagnosticPorts Condition="'$(DiagnosticStartup)' != ''">$(DiagnosticPorts),$(DiagnosticStartup)</DiagnosticPorts>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
     <!-- The -arg flag for xharness passes the arguments along to the instrumentation app -->
     <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) --arg=-m=$(XUnitMethodName)</AdditionalXHarnessArguments>
