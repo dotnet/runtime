@@ -429,6 +429,7 @@ public class ReadAndWrite
     }
 
     [Fact]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static async Task FlushOnStreams_Nop()
     {
         using Stream input = Console.OpenStandardInput();
