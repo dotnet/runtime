@@ -379,7 +379,7 @@ namespace System.Net.Test.Common
                         }
                     }
                 }
-                catch (QuicStreamAbortedException ex) when (ex.ErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
                 {
                     readCanceled = true;
                 }
@@ -391,7 +391,7 @@ namespace System.Net.Test.Common
                 {
                     await _stream.WaitForWriteCompletionAsync();
                 }
-                catch (QuicStreamAbortedException ex) when (ex.ErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
                 {
                     writeCanceled = true;
                 }

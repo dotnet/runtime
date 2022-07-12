@@ -22,6 +22,12 @@ namespace Microsoft.Quic
     {
     }
 
+    internal enum QUIC_TLS_PROVIDER
+    {
+        SCHANNEL = 0x0000,
+        OPENSSL = 0x0001,
+    }
+
     internal enum QUIC_EXECUTION_PROFILE
     {
         LOW_LATENCY,
@@ -816,13 +822,13 @@ namespace Microsoft.Quic
 
     internal unsafe partial struct QUIC_VERSION_SETTINGS
     {
-        [NativeTypeName("uint32_t *")]
+        [NativeTypeName("const uint32_t *")]
         internal uint* AcceptableVersions;
 
-        [NativeTypeName("uint32_t *")]
+        [NativeTypeName("const uint32_t *")]
         internal uint* OfferedVersions;
 
-        [NativeTypeName("uint32_t *")]
+        [NativeTypeName("const uint32_t *")]
         internal uint* FullyDeployedVersions;
 
         [NativeTypeName("uint32_t")]
@@ -2029,6 +2035,9 @@ namespace Microsoft.Quic
             {
                 [NativeTypeName("HRESULT")]
                 internal int Status;
+
+                [NativeTypeName("QUIC_UINT62")]
+                internal ulong ErrorCode;
             }
 
             internal partial struct _SHUTDOWN_INITIATED_BY_PEER_e__Struct
@@ -2401,19 +2410,36 @@ namespace Microsoft.Quic
                     }
                 }
 
-                [NativeTypeName("BOOLEAN : 7")]
-                internal byte RESERVED
+                [NativeTypeName("BOOLEAN : 1")]
+                internal byte ConnectionShutdownByPeer
                 {
                     get
                     {
-                        return (byte)((_bitfield >> 1) & 0x7Fu);
+                        return (byte)((_bitfield >> 1) & 0x1u);
                     }
 
                     set
                     {
-                        _bitfield = (byte)((_bitfield & ~(0x7Fu << 1)) | ((value & 0x7Fu) << 1));
+                        _bitfield = (byte)((_bitfield & ~(0x1u << 1)) | ((value & 0x1u) << 1));
                     }
                 }
+
+                [NativeTypeName("BOOLEAN : 6")]
+                internal byte RESERVED
+                {
+                    get
+                    {
+                        return (byte)((_bitfield >> 2) & 0x3Fu);
+                    }
+
+                    set
+                    {
+                        _bitfield = (byte)((_bitfield & ~(0x3Fu << 2)) | ((value & 0x3Fu) << 2));
+                    }
+                }
+
+                [NativeTypeName("QUIC_UINT62")]
+                internal ulong ConnectionErrorCode;
             }
 
             internal partial struct _IDEAL_SEND_BUFFER_SIZE_e__Struct
@@ -2591,6 +2617,9 @@ namespace Microsoft.Quic
 
         [NativeTypeName("#define QUIC_PARAM_GLOBAL_DATAPATH_PROCESSORS 0x01000009")]
         internal const uint QUIC_PARAM_GLOBAL_DATAPATH_PROCESSORS = 0x01000009;
+
+        [NativeTypeName("#define QUIC_PARAM_GLOBAL_TLS_PROVIDER 0x0100000A")]
+        internal const uint QUIC_PARAM_GLOBAL_TLS_PROVIDER = 0x0100000A;
 
         [NativeTypeName("#define QUIC_PARAM_CONFIGURATION_SETTINGS 0x03000000")]
         internal const uint QUIC_PARAM_CONFIGURATION_SETTINGS = 0x03000000;

@@ -189,7 +189,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         try
         {
             QUIC_HANDLE* handle;
-            ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionOpen(
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionOpen(
                 MsQuicApi.Api.Registration.QuicHandle,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
@@ -301,7 +301,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 unsafe
                 {
-                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionStart(
+                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionStart(
                         _handle.QuicHandle,
                         _configuration.QuicHandle,
                         (ushort)addressFamily,
@@ -338,7 +338,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             unsafe
             {
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
                     _handle.QuicHandle,
                     _configuration.QuicHandle));
             }
@@ -449,27 +449,27 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
-        _connectedTcs.TrySetException(new MsQuicException(data.Status));
+        _connectedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
         // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
         // it wasn't our side who shutdown the connection.
         // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
         // See: https://github.com/dotnet/runtime/issues/60133
         _abortErrorCode = 0;
         _state.AbortErrorCode = _abortErrorCode;
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicConnectionAbortedException($"Connection shutdown by transport {MsQuicException.GetErrorCodeForStatus(data.Status)}", _abortErrorCode)));
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(_abortErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
         _abortErrorCode = (long)data.ErrorCode;
         _state.AbortErrorCode = _abortErrorCode;
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicConnectionAbortedException($"Connection shutdown by peer", _abortErrorCode)));
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(_abortErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE_DATA data)
     {
         _shutdownTcs.TrySetResult();
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventLocalAddressChanged(ref LOCAL_ADDRESS_CHANGED_DATA data)
@@ -595,7 +595,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
 
         // Flush the queue and dispose all remaining streams.
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
         while (_acceptQueue.Reader.TryRead(out QuicStream? stream))
         {
             await stream.DisposeAsync().ConfigureAwait(false);

@@ -117,7 +117,7 @@ internal static class MsQuicConfiguration
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
         msquicBuffers.Initialize(alpnProtocols, alpnProtocol => alpnProtocol.Protocol);
-        ThrowIfFailure(MsQuicApi.Api.ApiTable->ConfigurationOpen(
+        ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConfigurationOpen(
             MsQuicApi.Api.Registration.QuicHandle,
             msquicBuffers.Buffers,
             (uint)alpnProtocols.Count,
@@ -185,11 +185,11 @@ internal static class MsQuicConfiguration
             if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch &&
                ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0 ? MsQuicApi.Tls13ServerMayBeDisabled : MsQuicApi.Tls13ClientMayBeDisabled))
             {
-                throw new MsQuicException(status, SR.net_quic_tls_version_notsupported);
+                ThrowHelper.ThrowIfMsQuicError(status, SR.net_quic_tls_version_notsupported);
             }
 #endif
 
-            ThrowIfFailure(status, "ConfigurationLoadCredential failed");
+            ThrowHelper.ThrowIfMsQuicError(status, "ConfigurationLoadCredential failed");
         }
         catch
         {

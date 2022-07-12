@@ -251,7 +251,7 @@ namespace System.Net.Test.Common
                 long firstInvalidStreamId = failCurrentRequest ? _currentStreamId : _currentStreamId + 4;
                 await _outboundControlStream.SendGoAwayFrameAsync(firstInvalidStreamId);
             }
-            catch (QuicConnectionAbortedException abortException) when (abortException.ErrorCode == H3_NO_ERROR)
+            catch (QuicException abortException) when (abortException.QuicError == QuicError.ConnectionAborted && abortException.ApplicationErrorCode == H3_NO_ERROR)
             {
                 // Client must have closed the connection already because the HttpClientHandler instance was disposed.
                 // So nothing to do.
@@ -288,7 +288,7 @@ namespace System.Net.Test.Common
                         throw new Exception("Unexpected request stream received while waiting for client disconnect");
                     }
                 }
-                catch (QuicConnectionAbortedException abortException) when (abortException.ErrorCode == H3_NO_ERROR)
+                catch (QuicException abortException) when (abortException.QuicError == QuicError.ConnectionAborted && abortException.ApplicationErrorCode == H3_NO_ERROR)
                 {
                     break;
                 }
@@ -301,7 +301,8 @@ namespace System.Net.Test.Common
 
             // The client's control stream should throw QuicConnectionAbortedException, indicating that it was
             // aborted because the connection was closed (and was not explicitly closed or aborted prior to the connection being closed)
-            await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await _inboundControlStream.ReadFrameAsync());
+            QuicException ex = await Assert.ThrowsAsync<QuicException>(async () => await _inboundControlStream.ReadFrameAsync());
+            Assert.Equal(QuicError.ConnectionAborted, ex.QuicError);
 
             await CloseAsync(H3_NO_ERROR);
         }

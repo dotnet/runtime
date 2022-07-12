@@ -55,13 +55,12 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(
-            SslStreamCertificateContext? certificateContext,
-            SslProtocols protocols,
-            EncryptionPolicy policy,
-            bool isServer)
+        public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return new SafeFreeSslCredentials(certificateContext, protocols, policy);
+            return new SafeFreeSslCredentials(
+                sslAuthenticationOptions.CertificateContext,
+                sslAuthenticationOptions.EnabledSslProtocols,
+                sslAuthenticationOptions.EncryptionPolicy);
         }
 
         public static SecurityStatusPal EncryptMessage(

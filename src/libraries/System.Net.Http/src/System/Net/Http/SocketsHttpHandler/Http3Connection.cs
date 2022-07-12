@@ -196,7 +196,7 @@ namespace System.Net.Http
                 // Swallow any exceptions caused by the connection being closed locally or even disposed due to a race.
                 // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
                 catch (ObjectDisposedException) { }
-                catch (QuicException e) when (!(e is QuicConnectionAbortedException)) { }
+                catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
                 finally
                 {
                     if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
@@ -232,11 +232,13 @@ namespace System.Net.Http
 
                 return await responseTask.ConfigureAwait(false);
             }
-            catch (QuicConnectionAbortedException ex)
+            catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
             {
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+
                 // This will happen if we aborted _connection somewhere.
                 Abort(ex);
-                throw new HttpRequestException(SR.Format(SR.net_http_http3_connection_error, ex.ErrorCode), ex, RequestRetryType.RetryOnConnectionFailure);
+                throw new HttpRequestException(SR.Format(SR.net_http_http3_connection_error, ex.ApplicationErrorCode.Value), ex, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
             {
@@ -417,7 +419,7 @@ namespace System.Net.Http
                     _ = ProcessServerStreamAsync(stream);
                 }
             }
-            catch (QuicOperationAbortedException)
+            catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
             {
                 // Shutdown initiated by us, no need to abort.
             }
@@ -452,7 +454,7 @@ namespace System.Net.Http
                     {
                         bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);
                     }
-                    catch (QuicStreamAbortedException)
+                    catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
                     {
                         // Treat identical to receiving 0. See below comment.
                         bytesRead = 0;
