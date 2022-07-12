@@ -1211,7 +1211,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case ElementType.GenericInst:
                 {
                     var ret = retDebuggerCmdReader.ReadString();
-                    Console.WriteLine("ret - " + ret);
                     if (ret.IndexOf(':') is int index && index > 0)
                         ret = ret.Substring(0, index);
                     ret = regexForAsyncMethodName.Replace(ret, "$1");
@@ -1222,7 +1221,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     for (int i = 0; i < numTotalGenericArgs; i++)
                     {
                         var typeArgC = retDebuggerCmdReader.ReadString();
-                        Console.WriteLine("typeArgC - " + typeArgC);
                         typeArgC = regexForGenericArgs.Replace(typeArgC, "");
                         genericArgs.Add(typeArgC);
                     }
@@ -1246,7 +1244,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     for (int i = 0 ; i <= countNested; i++)
                     {
                         var klassName = retDebuggerCmdReader.ReadString();
-                        Console.WriteLine("klassName - " + klassName);
                         if (klassName.Contains("<>"))
                         {
                             if (anonymousMethodId.LastIndexOf('_') >= 0)
@@ -1263,7 +1260,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                     var methodName = retDebuggerCmdReader.ReadString();
-                    Console.WriteLine("methodName - " + methodName);
                     var matchOnMethodName = regexForNestedLeftRightAngleBrackets.Match(methodName);
                     if (matchOnMethodName.Success && matchOnMethodName.Groups[5].Captures.Count > 0)
                     {
