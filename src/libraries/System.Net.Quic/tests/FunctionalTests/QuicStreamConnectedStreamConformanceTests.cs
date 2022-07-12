@@ -57,7 +57,8 @@ namespace System.Net.Quic.Tests
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
                 ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(new QuicServerConnectionOptions()
                 {
-                    DefaultStreamErrorCode = 654321,
+                    DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeServer,
+                    DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeServer,
                     ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
                 })
             });
@@ -78,7 +79,8 @@ namespace System.Net.Quic.Tests
                     {
                         connection2 = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
                         {
-                            DefaultStreamErrorCode = 123456,
+                            DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeClient,
+                            DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeClient,
                             RemoteEndPoint = listener.LocalEndPoint,
                             ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
                         });

@@ -11,7 +11,6 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Quic;
 using static System.Net.Quic.MsQuicHelpers;
-using static System.Net.Quic.QuicDefaults;
 using static Microsoft.Quic.MsQuic;
 
 using NEW_CONNECTION_DATA = Microsoft.Quic.QUIC_LISTENER_EVENT._Anonymous_e__Union._NEW_CONNECTION_e__Struct;
@@ -52,14 +51,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
 
         // Validate and fill in defaults for the options.
-        if (options.ApplicationProtocols.Count <= 0)
-        {
-            throw new ArgumentException($"Expected at least one item in '{nameof(QuicListenerOptions.ApplicationProtocols)}' to start the listener.", nameof(options));
-        }
-        if (options.ListenBacklog == 0)
-        {
-            options.ListenBacklog = DefaultListenBacklog;
-        }
+        options.Validate(nameof(options));
 
         QuicListener listener = new QuicListener(options);
 

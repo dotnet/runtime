@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -103,19 +102,6 @@ internal static class MsQuicConfiguration
         }
 #pragma warning restore SYSLIB0040
 
-        if (options.MaxInboundUnidirectionalStreams < 0 || options.MaxInboundBidirectionalStreams > ushort.MaxValue)
-        {
-            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.MaxInboundBidirectionalStreams)} should be within [0, {ushort.Max}) range.", nameof(options));
-        }
-        if (options.MaxInboundUnidirectionalStreams < 0 || options.MaxInboundUnidirectionalStreams > ushort.MaxValue)
-        {
-            throw new ArgumentOutOfRangeException($"{nameof(QuicConnectionOptions.MaxInboundUnidirectionalStreams)} should be within [0, {ushort.Max}) range.", nameof(options));
-        }
-        if (options.IdleTimeout < TimeSpan.Zero && options.IdleTimeout != Timeout.InfiniteTimeSpan)
-        {
-            throw new ArgumentOutOfRangeException(nameof(QuicConnectionOptions.IdleTimeout), SR.net_quic_timeout_use_gt_zero);
-        }
-
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
         settings.IsSet.PeerUnidiStreamCount = 1;
         settings.PeerUnidiStreamCount = (ushort)options.MaxInboundUnidirectionalStreams;
@@ -140,7 +126,6 @@ internal static class MsQuicConfiguration
             (void*)IntPtr.Zero,
             &handle), "ConfigurationOpen failed");
         MsQuicSafeHandle configurationHandle = new MsQuicSafeHandle(handle, MsQuicApi.Api.ApiTable->ConfigurationClose, SafeHandleType.Configuration);
-
 
         try
         {

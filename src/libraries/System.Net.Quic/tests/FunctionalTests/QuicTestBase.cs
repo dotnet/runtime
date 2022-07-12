@@ -18,6 +18,11 @@ namespace System.Net.Quic.Tests
 {
     public abstract class QuicTestBase
     {
+        public const long DefaultStreamErrorCodeClient = 123456;
+        public const long DefaultStreamErrorCodeServer = 654321;
+        public const long DefaultCloseErrorCodeClient = 789;
+        public const long DefaultCloseErrorCodeServer = 987;
+
         private static readonly byte[] s_ping = "PING"u8.ToArray();
         private static readonly byte[] s_pong = "PONG"u8.ToArray();
 
@@ -46,7 +51,8 @@ namespace System.Net.Quic.Tests
         {
             return new QuicServerConnectionOptions()
             {
-                DefaultStreamErrorCode = 654321,
+                DefaultStreamErrorCode = DefaultStreamErrorCodeServer,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeServer,
                 ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
             };
         }
@@ -74,7 +80,8 @@ namespace System.Net.Quic.Tests
         {
             return new QuicClientConnectionOptions()
             {
-                DefaultStreamErrorCode = 123456,
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
                 RemoteEndPoint = endpoint,
                 ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
             };
@@ -125,12 +132,7 @@ namespace System.Net.Quic.Tests
         {
             await using (QuicListener listener = await CreateQuicListener(listenerOptions))
             {
-                clientOptions ??= new QuicClientConnectionOptions()
-                {
-                    DefaultStreamErrorCode = 123456,
-                    RemoteEndPoint = listener.LocalEndPoint,
-                    ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
-                };
+                clientOptions ??= CreateQuicClientOptions(listener.LocalEndPoint);
                 if (clientOptions.RemoteEndPoint is IPEndPoint iPEndPoint && !iPEndPoint.Equals(listener.LocalEndPoint))
                 {
                     clientOptions.RemoteEndPoint = listener.LocalEndPoint;

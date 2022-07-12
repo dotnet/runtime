@@ -9,9 +9,9 @@ namespace System.Net.Quic
     public sealed partial class QuicClientConnectionOptions : System.Net.Quic.QuicConnectionOptions
     {
         public QuicClientConnectionOptions() { }
-        public required System.Net.Security.SslClientAuthenticationOptions ClientAuthenticationOptions { get { throw null; } set { } }
+        public System.Net.Security.SslClientAuthenticationOptions ClientAuthenticationOptions { get { throw null; } set { } }
         public System.Net.IPEndPoint? LocalEndPoint { get { throw null; } set { } }
-        public required System.Net.EndPoint RemoteEndPoint { get { throw null; } set { } }
+        public System.Net.EndPoint RemoteEndPoint { get { throw null; } set { } }
     }
     public sealed partial class QuicConnection : System.IAsyncDisposable
     {
@@ -36,7 +36,8 @@ namespace System.Net.Quic
     public abstract partial class QuicConnectionOptions
     {
         internal QuicConnectionOptions() { }
-        public required long DefaultStreamErrorCode { get { throw null; } set { } }
+        public long DefaultCloseErrorCode { get { throw null; } set { } }
+        public long DefaultStreamErrorCode { get { throw null; } set { } }
         public System.TimeSpan IdleTimeout { get { throw null; } set { } }
         public int MaxInboundBidirectionalStreams { get { throw null; } set { } }
         public int MaxInboundUnidirectionalStreams { get { throw null; } set { } }
@@ -60,10 +61,10 @@ namespace System.Net.Quic
     public sealed partial class QuicListenerOptions
     {
         public QuicListenerOptions() { }
-        public required System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol> ApplicationProtocols { get { throw null; } set { } }
-        public required System.Func<System.Net.Quic.QuicConnection, System.Net.Security.SslClientHelloInfo, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.Net.Quic.QuicServerConnectionOptions>> ConnectionOptionsCallback { get { throw null; } set { } }
+        public System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol> ApplicationProtocols { get { throw null; } set { } }
+        public System.Func<System.Net.Quic.QuicConnection, System.Net.Security.SslClientHelloInfo, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.Net.Quic.QuicServerConnectionOptions>> ConnectionOptionsCallback { get { throw null; } set { } }
         public int ListenBacklog { get { throw null; } set { } }
-        public required System.Net.IPEndPoint ListenEndPoint { get { throw null; } set { } }
+        public System.Net.IPEndPoint ListenEndPoint { get { throw null; } set { } }
     }
     public partial class QuicOperationAbortedException : System.Net.Quic.QuicException
     {
@@ -72,7 +73,7 @@ namespace System.Net.Quic
     public sealed partial class QuicServerConnectionOptions : System.Net.Quic.QuicConnectionOptions
     {
         public QuicServerConnectionOptions() { }
-        public required System.Net.Security.SslServerAuthenticationOptions ServerAuthenticationOptions { get { throw null; } set { } }
+        public System.Net.Security.SslServerAuthenticationOptions ServerAuthenticationOptions { get { throw null; } set { } }
     }
     public sealed partial class QuicStream : System.IO.Stream
     {

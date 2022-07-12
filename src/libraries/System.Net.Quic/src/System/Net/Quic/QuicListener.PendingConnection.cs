@@ -57,6 +57,7 @@ public sealed partial class QuicListener
             {
                 _cancellationTokenSource.CancelAfter(s_handshakeTimeout);
                 QuicServerConnectionOptions options = await connectionOptionsCallback(connection, clientHello, _cancellationTokenSource.Token).ConfigureAwait(false);
+                options.Validate(nameof(options)); // Validate and fill in defaults for the options.
                 await connection.FinishHandshakeAsync(options, clientHello.ServerName, _cancellationTokenSource.Token).ConfigureAwait(false);
                 _finishHandshakeTask.SetResult(connection);
             }

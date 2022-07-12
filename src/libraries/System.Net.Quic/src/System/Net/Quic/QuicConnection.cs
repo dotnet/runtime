@@ -6,13 +6,11 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Quic;
-using static System.Net.Quic.MsQuicHelpers;
 using static Microsoft.Quic.MsQuic;
 
 using CONNECTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._CONNECTED_e__Struct;
@@ -63,6 +61,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
         }
+
+        // Validate and fill in defaults for the options.
+        options.Validate(nameof(options));
 
         QuicConnection connection = new QuicConnection();
         try
@@ -116,6 +117,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <c>true</c> when at least one of <see cref="QuicConnectionOptions.MaxInboundBidirectionalStreams" /> or <see cref="QuicConnectionOptions.MaxInboundUnidirectionalStreams" /> is greater than <c>0</c>.
     /// </summary>
     private bool _canAccept;
+    /// <summary>
+    /// From <see cref="QuicConnectionOptions.DefaultCloseErrorCode"/>, used to close connection in <see cref="DisposeAsync"/>.
+    /// </summary>
+    private long _defaultCloseErrorCode;
 
     // TODO: remove once/if https://github.com/microsoft/msquic/pull/2883 is merged
     internal sealed class State
@@ -232,6 +237,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
+            _defaultCloseErrorCode = options.DefaultCloseErrorCode;
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
@@ -244,7 +250,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             if (address is not null)
             {
                 QuicAddr quicAddress = new IPEndPoint(address, port).ToQuicAddr();
-                SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress);
+                MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress);
             }
             // RemoteEndPoint is DnsEndPoint containing hostname that is different from requested SNI.
             // --> Resolve the hostname and set the IP directly, use requested SNI in ConnectionStart.
@@ -259,7 +265,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 }
 
                 QuicAddr quicAddress = new IPEndPoint(addresses[0], port).ToQuicAddr();
-                SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress);
+                MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS, quicAddress);
             }
             // RemoteEndPoint is DnsEndPoint containing hostname that is the same as the requested SNI.
             // --> Let MsQuic resolve the hostname/SNI, give address family hint is specified in DnsEndPoint.
@@ -278,7 +284,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             if (options.LocalEndPoint is not null)
             {
                 QuicAddr quicAddress = options.LocalEndPoint.ToQuicAddr();
-                SetMsQuicParameter(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS, quicAddress);
+                MsQuicHelpers.SetMsQuicParameter(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS, quicAddress);
             }
 
             _sslConnectionOptions = new SslConnectionOptions(
@@ -319,6 +325,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
+            _defaultCloseErrorCode = options.DefaultCloseErrorCode;
 
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
@@ -398,8 +405,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Please make sure, that all streams have been closed and all their data consumed before calling this method;
     /// otherwise, all the data that were received but not consumed yet, will be lost.
     ///
-    /// If <see cref="CloseAsync(long, CancellationToken)"/> is not called before <see cref="DisposeAsync">disposing</see> the connection, the connection will be closed silently.
-    /// Meaning that the peer will not be informed about it and will eventually get its connection closed by idle timeout.
+    /// If <see cref="CloseAsync(long, CancellationToken)"/> is not called before <see cref="DisposeAsync">disposing</see> the connection,
+    /// the <see cref="QuicConnectionOptions.DefaultCloseErrorCode"/> will be used by <see cref="DisposeAsync"/> to close the connection.
     /// </remarks>
     /// <param name="errorCode">Application provided code with the reason for closure.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
@@ -426,10 +433,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
 
-        QuicAddr remoteAddress = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
+        QuicAddr remoteAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
         _remoteEndPoint = remoteAddress.ToIPEndPoint();
 
-        QuicAddr localAddress = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
+        QuicAddr localAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
         _localEndPoint = localAddress.ToIPEndPoint();
 
         _connectedTcs.TrySetResult();
@@ -571,8 +578,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 MsQuicApi.Api.ApiTable->ConnectionShutdown(
                     _handle.QuicHandle,
-                    QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
-                    default);
+                    QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE,
+                    (ulong)_defaultCloseErrorCode);
             }
         }
 

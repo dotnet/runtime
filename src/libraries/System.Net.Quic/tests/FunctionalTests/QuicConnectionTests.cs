@@ -216,6 +216,45 @@ namespace System.Net.Quic.Tests
                 });
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        public async Task Dispose_WithoutClose_ConnectionClosesWithDefault(int writesBeforeClose)
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    await DoWrites(clientStream, writesBeforeClose);
+
+                    // Wait for peer to receive data
+                    await sync.WaitAsync();
+
+                    await clientConnection.DisposeAsync();
+
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.ReadAsync(new byte[1]));
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.WriteAsync(new byte[1]));
+                },
+                async serverConnection =>
+                {
+                    using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
+                    await DoReads(serverStream, writesBeforeClose);
+
+                    sync.Release();
+
+                    // Since the peer did the abort, we should receive the abort error code in the exception.
+                    QuicConnectionAbortedException ex;
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverStream.ReadAsync(new byte[1]));
+                    Assert.Equal(DefaultCloseErrorCodeClient, ex.ErrorCode);
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverStream.WriteAsync(new byte[1]));
+                    Assert.Equal(DefaultCloseErrorCodeClient, ex.ErrorCode);
+                }, listenerOptions: listenerOptions);
+        }
+
         [OuterLoop("Depends on IdleTimeout")]
         [Theory]
         [InlineData(1)]
