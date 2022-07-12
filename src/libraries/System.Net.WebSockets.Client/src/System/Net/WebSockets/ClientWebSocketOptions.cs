@@ -29,6 +29,10 @@ namespace System.Net.WebSockets
         private Version _version = Net.HttpVersion.Version11;
         private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 
+        internal ClientWebSocketOptions() { } // prevent external instantiation
+
+        #region HTTP Settings
+
         public Version HttpVersion
         {
             get => _version;
@@ -51,10 +55,6 @@ namespace System.Net.WebSockets
                 _versionPolicy = value;
             }
         }
-
-        internal ClientWebSocketOptions() { } // prevent external instantiation
-
-        #region HTTP Settings
 
         [UnsupportedOSPlatform("browser")]
         // Note that some headers are restricted like Host.
