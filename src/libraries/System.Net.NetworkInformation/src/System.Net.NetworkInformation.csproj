@@ -159,7 +159,7 @@
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Android.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidNetworkInterface.cs" />
   </ItemGroup>
-  <!-- Android -->
+  <!-- Browser -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Browser.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Browser.cs" />
