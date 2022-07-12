@@ -3012,12 +3012,8 @@ public:
             // This will contain the replacement tree for exp
             // It will either be the CSE def or CSE ref
             //
-            GenTree*      cse = nullptr;
-            bool          isDef;
-            FieldSeqNode* fldSeq               = nullptr;
-            bool          commaOnly            = true;
-            GenTree*      effectiveExp         = exp->gtEffectiveVal(commaOnly);
-            const bool    hasZeroMapAnnotation = m_pCompiler->GetZeroOffsetFieldMap()->Lookup(effectiveExp, &fldSeq);
+            GenTree* cse = nullptr;
+            bool     isDef;
 
             if (IS_CSE_USE(exp->gtCSEnum))
             {
@@ -3320,12 +3316,6 @@ public:
             // Mutate this link, thus replacing the old exp with the new CSE representation
             //
             *link = cse;
-
-            // If it has a zero-offset field seq, copy annotation.
-            if (hasZeroMapAnnotation)
-            {
-                m_pCompiler->fgAddFieldSeqForZeroOffset(cse, fldSeq);
-            }
 
             assert(m_pCompiler->fgRemoveRestOfBlock == false);
 

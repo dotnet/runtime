@@ -6,6 +6,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
     <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
   </PropertyGroup>
@@ -36,6 +37,8 @@
     <NodeNpmModule Include="ws" Alias="WebSocket" />
     <NodeNpmModule Include="node-fetch" />
     <NodeNpmModule Include="node-abort-controller" />
+
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>
 
   <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />

@@ -1194,13 +1194,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static bool IsTypeSerializable(Type type)
-        {
-            return IsTypeSerializable(type, new HashSet<Type>());
-        }
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool IsTypeSerializable(Type type, HashSet<Type> previousCollectionTypes)
+        internal static bool IsTypeSerializable(Type type, HashSet<Type>? previousCollectionTypes = null)
         {
             Type? itemType;
 
@@ -1217,6 +1211,7 @@ namespace System.Runtime.Serialization
             }
             if (CollectionDataContract.IsCollection(type, out itemType))
             {
+                previousCollectionTypes ??= new HashSet<Type>();
                 ValidatePreviousCollectionTypes(type, itemType, previousCollectionTypes);
                 if (IsTypeSerializable(itemType, previousCollectionTypes))
                 {
@@ -1580,8 +1575,7 @@ namespace System.Runtime.Serialization
                 endIndex = typeName.IndexOf('`', startIndex);
                 if (endIndex < 0)
                 {
-                    if (localName != null)
-                        localName.Append(typeName.AsSpan(startIndex));
+                    localName?.Append(typeName.AsSpan(startIndex));
                     nestedParamCounts.Add(0);
                     break;
                 }
@@ -1601,8 +1595,7 @@ namespace System.Runtime.Serialization
                 else
                     nestedParamCounts.Add(int.Parse(typeName.AsSpan(endIndex + 1, startIndex - endIndex - 1), provider: CultureInfo.InvariantCulture));
             }
-            if (localName != null)
-                localName.Append("Of");
+            localName?.Append("Of");
             return nestedParamCounts;
         }
 

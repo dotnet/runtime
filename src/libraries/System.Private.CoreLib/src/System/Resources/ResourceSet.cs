@@ -83,8 +83,7 @@ namespace System.Resources
                 // Close the Reader in a thread-safe way.
                 IResourceReader? copyOfReader = Reader;
                 Reader = null!;
-                if (copyOfReader != null)
-                    copyOfReader.Close();
+                copyOfReader?.Close();
             }
             Reader = null!;
             _caseInsensitiveTable = null;

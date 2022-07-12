@@ -84,8 +84,7 @@ internal static partial class Interop
 
             if (key == null || key.IsInvalid)
             {
-                if (key != null)
-                    key.Dispose();
+                key?.Dispose();
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 

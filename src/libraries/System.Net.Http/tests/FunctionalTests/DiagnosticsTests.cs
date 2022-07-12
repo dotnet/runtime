@@ -31,6 +31,7 @@ namespace System.Net.Http.Functional.Tests
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71877", TestPlatforms.Browser)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);

@@ -1566,7 +1566,7 @@ public:
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
-    // an NGEN image then then other will be, and if one is "used" at runtime then
+    // an NGEN image then the other will be, and if one is "used" at runtime then
     // the other will be too.
     BOOL IsTightlyBoundToMethodTable();
 

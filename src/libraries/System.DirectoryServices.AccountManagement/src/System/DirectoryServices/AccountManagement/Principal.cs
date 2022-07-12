@@ -766,8 +766,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 // Verify that the passed context is not disposed.
-                if (value != null)
-                    value.CheckDisposed();
+                value?.CheckDisposed();
                 _ctx = value;
             }
         }

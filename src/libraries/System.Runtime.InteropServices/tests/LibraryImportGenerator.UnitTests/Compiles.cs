@@ -481,7 +481,7 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToValidateFallbackForwarder()
         {
-            yield return new object[] { CodeSnippets.UserDefinedEntryPoint, TestTargetFramework.Net, true };
+            yield return new object[] { ID(), CodeSnippets.UserDefinedEntryPoint, TestTargetFramework.Net, true };
 
             // Confirm that all unsupported target frameworks can be generated.
             {

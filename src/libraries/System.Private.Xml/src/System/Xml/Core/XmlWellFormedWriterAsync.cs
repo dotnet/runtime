@@ -761,10 +761,7 @@ namespace System.Xml
         {
             try
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 await AdvanceStateAsync(Token.CData).ConfigureAwait(false);
                 await _writer.WriteCDataAsync(text).ConfigureAwait(false);
@@ -804,10 +801,7 @@ namespace System.Xml
                 CheckNCName(name);
 
                 // check text
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 // xml declaration is a special case (not a processing instruction, but we allow WriteProcessingInstruction as a convenience)
                 if (name.Length == 3 && string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase))
@@ -928,10 +922,7 @@ namespace System.Xml
         {
             try
             {
-                if (ws == null)
-                {
-                    ws = string.Empty;
-                }
+                ws ??= string.Empty;
 
                 if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
@@ -1439,10 +1430,7 @@ namespace System.Xml
                 }
             }
 
-            if (_rawWriter != null)
-            {
-                _rawWriter.StartElementContent();
-            }
+            _rawWriter?.StartElementContent();
         }
 
         private Task StartElementContentAsync()
@@ -1452,10 +1440,7 @@ namespace System.Xml
                 return StartElementContentAsync_WithNS();
             }
 
-            if (_rawWriter != null)
-            {
-                _rawWriter.StartElementContent();
-            }
+            _rawWriter?.StartElementContent();
 
             return Task.CompletedTask;
         }

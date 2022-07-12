@@ -1933,11 +1933,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeTestData      = nullptr;
     m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
 #endif
-    m_switchDescMap      = nullptr;
-    m_blockToEHPreds     = nullptr;
-    m_fieldSeqStore      = nullptr;
-    m_zeroOffsetFieldMap = nullptr;
-    m_refAnyClass        = nullptr;
+    m_switchDescMap  = nullptr;
+    m_blockToEHPreds = nullptr;
+    m_fieldSeqStore  = nullptr;
+    m_refAnyClass    = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {
         m_memorySsaMap[memoryKind] = nullptr;
@@ -9624,11 +9623,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_STATIC_BOX_PTR:
 
                         chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
-                        break;
-
-                    case GTF_ICON_FIELD_OFF:
-
-                        chars += printf("[ICON_FIELD_OFF]");
                         break;
 
                     default:

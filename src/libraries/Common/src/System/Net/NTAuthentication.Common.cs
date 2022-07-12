@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -148,14 +149,19 @@ namespace System.Net
             _isCompleted = false;
         }
 
-        internal int Wrap(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, bool isConfidential)
+        internal NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted)
         {
-            return NegotiateStreamPal.Wrap(_securityContext!, buffer, ref output, isConfidential);
+            return NegotiateStreamPal.Wrap(_securityContext!, input, outputWriter, requestEncryption, out isEncrypted);
         }
 
-        internal int Unwrap(Span<byte> buffer, out int newOffset, out bool wasConfidential)
+        internal NegotiateAuthenticationStatusCode Unwrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, out bool wasEncrypted)
         {
-            return NegotiateStreamPal.Unwrap(_securityContext!, buffer, out newOffset, out wasConfidential);
+            return NegotiateStreamPal.Unwrap(_securityContext!, input, outputWriter, out wasEncrypted);
+        }
+
+        internal NegotiateAuthenticationStatusCode UnwrapInPlace(Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted)
+        {
+            return NegotiateStreamPal.UnwrapInPlace(_securityContext!, input, out unwrappedOffset, out unwrappedLength, out wasEncrypted);
         }
 
         internal string? GetOutgoingBlob(string? incomingBlob)
