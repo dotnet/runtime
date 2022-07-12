@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 
@@ -254,9 +255,8 @@ namespace System.Formats.Asn1
             }
 
             // T-REC-X.690-201508 sec 8.3.2
-            if (value.Length > 1)
+            if (BinaryPrimitives.TryReadUInt16BigEndian(value, out ushort bigEndianValue))
             {
-                ushort bigEndianValue = (ushort)(value[0] << 8 | value[1]);
                 const ushort RedundancyMask = 0b1111_1111_1000_0000;
                 ushort masked = (ushort)(bigEndianValue & RedundancyMask);
 
