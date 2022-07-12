@@ -477,6 +477,23 @@ namespace System.Net.Sockets.Tests
                 return Assert.Throws<TException>(() => { _ = testCode(); });
             }
         }
+
+        // When owning is false, replaces the socket argument with another Socket that
+        // doesn't own the handle, and return a new owning handle.
+        protected static SafeSocketHandle? ReplaceWithNonOwning(ref Socket socket, bool owning)
+        {
+            if (owning)
+            {
+                return null;
+            }
+
+            IntPtr handle = socket.SafeHandle.DangerousGetHandle();
+            socket.SafeHandle.SetHandleAsInvalid();
+
+            socket = new Socket(new SafeSocketHandle(handle, ownsHandle: false));
+
+            return new SafeSocketHandle(handle, ownsHandle: true);
+        }
     }
 
     // This class elides the SocketFlags argument in calls where possible.

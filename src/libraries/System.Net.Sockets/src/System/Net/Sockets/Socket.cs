@@ -3136,8 +3136,7 @@ namespace System.Net.Sockets
             SetToDisconnected();
 
             SafeSocketHandle? handle = _handle;
-            // Avoid side effects when we don't own the handle.
-            if (handle?.OwnsHandle == true)
+            if (handle is not null)
             {
                 if (!disposing)
                 {
@@ -3146,6 +3145,11 @@ namespace System.Net.Sockets
                     // to abort on-going operations. We directly dispose the SafeHandle.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.Dispose()");
                     handle.Dispose();
+                }
+                else if (!handle.OwnsHandle)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
+                    handle.CloseAsIs(abortive: false);
                 }
                 else
                 {

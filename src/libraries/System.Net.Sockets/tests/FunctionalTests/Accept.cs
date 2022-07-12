@@ -290,23 +290,34 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static readonly TheoryData<IPAddress> AcceptGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        public static readonly TheoryData<IPAddress, bool> AcceptGetsCanceledByDispose_Data = new TheoryData<IPAddress, bool>
         {
-            { IPAddress.Loopback },
-            { IPAddress.IPv6Loopback },
-            { IPAddress.Loopback.MapToIPv6() }
+            { IPAddress.Loopback, true },
+            { IPAddress.IPv6Loopback, true },
+            { IPAddress.Loopback.MapToIPv6(), true },
+            { IPAddress.Loopback, false },
+            { IPAddress.IPv6Loopback, false },
+            { IPAddress.Loopback.MapToIPv6(), false }
         };
 
         [Theory]
         [MemberData(nameof(AcceptGetsCanceledByDispose_Data))]
-        public async Task AcceptGetsCanceledByDispose(IPAddress loopback)
+        public async Task AcceptGetsCanceledByDispose(IPAddress loopback, bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
                 var listener = new Socket(loopback.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref listener, owning);
+
                 if (loopback.IsIPv4MappedToIPv6) listener.DualMode = true;
                 listener.Bind(new IPEndPoint(loopback, 0));
                 listener.Listen(1);

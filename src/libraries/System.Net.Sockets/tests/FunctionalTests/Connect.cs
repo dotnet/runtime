@@ -125,12 +125,22 @@ namespace System.Net.Sockets.Tests
         [OuterLoop("Connects to external server")]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on BSD like OSes.")]
         [Theory]
-        [InlineData("1.1.1.1", false)]
-        [InlineData("1.1.1.1", true)]
-        [InlineData("[::ffff:1.1.1.1]", false)]
-        [InlineData("[::ffff:1.1.1.1]", true)]
-        public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns)
+        [InlineData("1.1.1.1", false, true)]
+        [InlineData("1.1.1.1", true, true)]
+        [InlineData("[::ffff:1.1.1.1]", false, true)]
+        [InlineData("[::ffff:1.1.1.1]", true, true)]
+        [InlineData("1.1.1.1", false, false)]
+        [InlineData("1.1.1.1", true, false)]
+        [InlineData("[::ffff:1.1.1.1]", false, false)]
+        [InlineData("[::ffff:1.1.1.1]", true, false)]
+        public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns, bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             IPAddress address = IPAddress.Parse(addressString);
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
@@ -139,6 +149,8 @@ namespace System.Net.Sockets.Tests
             await RetryHelper.ExecuteAsync(async () =>
             {
                 var client = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref client, owning);
+
                 if (address.IsIPv4MappedToIPv6) client.DualMode = true;
 
                 Task connectTask = ConnectAsync(client, useDns ?

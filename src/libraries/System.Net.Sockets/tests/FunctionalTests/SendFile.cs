@@ -235,9 +235,17 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task SendFileGetsCanceledByDispose()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SendFileGetsCanceledByDispose(bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
@@ -245,6 +253,8 @@ namespace System.Net.Sockets.Tests
             await RetryHelper.ExecuteAsync(async () =>
             {
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref socket1, owning);
+
                 using (socket2)
                 {
                     Task socketOperation = Task.Run(async () =>
@@ -295,6 +305,8 @@ namespace System.Net.Sockets.Tests
                     {
                         Assert.Equal(SocketError.OperationAborted, localSocketError);
                     }
+
+                    owner?.Dispose();
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.
