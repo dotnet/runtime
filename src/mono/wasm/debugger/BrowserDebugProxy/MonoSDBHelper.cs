@@ -766,10 +766,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         private SessionId sessionId;
 
         private readonly ILogger logger;
-        private static Regex regexForAsyncLocals = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
-        private static Regex regexForAsyncMethodName = new Regex(@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
-        private static Regex regexForGenericArgs = new Regex(@"[`][0-9]+", RegexOptions.Compiled);
-        private static Regex regexForNestedLeftRightAngleBrackets = new Regex("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled);
+        private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>", RegexOptions.Singleline);
+        private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
+        private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
+        private static readonly Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled);
         public JObjectValueCreator ValueCreator { get; init; }
 
         public static int GetNewId() { return cmdId++; }
