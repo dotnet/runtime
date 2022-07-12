@@ -269,9 +269,7 @@ namespace Microsoft.Interop
                 marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerData.MarshallerType.Syntax);
             }
 
-            return marshalInfo.IsPinnableManagedType
-                ? new PinnableManagedValueMarshaller(marshallingGenerator)
-                : marshallingGenerator;
+            return marshallingGenerator;
         }
 
         private IMarshallingGenerator CreateNativeCollectionMarshaller(
@@ -351,9 +349,7 @@ namespace Microsoft.Interop
                 marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeSyntax);
             }
 
-            return marshalInfo.IsPinnableManagedType && elementIsBlittable
-                ? new PinnableManagedValueMarshaller(marshallingGenerator)
-                : marshallingGenerator;
+            return marshallingGenerator;
         }
 
         private static bool ElementTypeIsSometimesNonBlittable(TypePositionInfo elementInfo)
