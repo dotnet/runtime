@@ -214,7 +214,7 @@ namespace System.IO
 
 
         /// <summary>
-        /// Sets the date and time, in coordinated universal time (UTC), that the file was created.
+        /// Sets the date and time, in coordinated universal time (UTC), that the file or directory was created.
         /// </summary>
         /// <param name="fileHandle">
         /// A <see cref="SafeFileHandle" /> to the file or directory for which to set the creation date and time information.
