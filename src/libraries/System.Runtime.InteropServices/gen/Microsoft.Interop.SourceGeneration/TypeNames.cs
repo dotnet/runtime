@@ -58,9 +58,13 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_MemoryMarshal = "System.Runtime.InteropServices.MemoryMarshal";
 
-        public const string System_Runtime_InteropServices_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ArrayMarshaller`1";
+        public const string System_Runtime_InteropServices_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ArrayMarshaller`2";
 
-        public const string System_Runtime_InteropServices_PointerArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller`1";
+        public const string System_Runtime_InteropServices_PointerArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller`2";
+
+        public const string System_Runtime_InteropServices_ArrayMarshaller = "System.Runtime.InteropServices.Marshalling.ArrayMarshaller";
+
+        public const string System_Runtime_InteropServices_PointerArrayMarshaller = "System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller";
 
         public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
 

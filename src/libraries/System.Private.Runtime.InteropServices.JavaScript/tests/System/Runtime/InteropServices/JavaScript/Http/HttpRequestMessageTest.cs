@@ -374,7 +374,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupported))]
         public async Task BlobUri_Marshal_CorrectValues_Browser()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 function typedArrayToURL(typedArray, mimeType) {
                     return URL.createObjectURL(new Blob([typedArray.buffer], {type: mimeType}))
                 }
@@ -400,7 +400,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         [Fact]
         public void BlobStringUri_Marshal_CorrectValues()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 function typedArrayToURL(typedArray, mimeType) {
                     // URL.createObjectURL does not work outside of browser but since this was actual
                     // test code from https://developer.mozilla.org/en-US/docs/Web/API/Blob
@@ -429,7 +429,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         [Fact]
         public void BlobUri_Marshal_CorrectValues()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 function typedArrayToURL(typedArray, mimeType) {
                     // URL.createObjectURL does not work outside of browser but since this was actual
                     // test code from https://developer.mozilla.org/en-US/docs/Web/API/Blob

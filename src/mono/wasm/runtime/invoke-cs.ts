@@ -59,7 +59,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
             mono_wasm_new_root, init_void, init_result, /*init_argument,*/ marshal_exception_to_js, is_args_exception,
             mono_wasm_invoke_method_bound: wrap_c_function("mono_wasm_invoke_method_bound"),
         };
-        const bound_js_function_name = "_bound_cs_" + `${namespace}_${classname}_${methodname}`.replace(/\./g, "_");
+        const bound_js_function_name = "_bound_cs_" + `${namespace}_${classname}_${methodname}`.replace(/\./g, "_").replace(/\//g, "_");
         let body = `//# sourceURL=https://mono-wasm.invalid/${bound_js_function_name} \n`;
         let bodyToCs = "";
         let converter_names = "";
@@ -122,7 +122,8 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         exportedMethods.set(js_fqn, bound_fn);
         _walk_exports_to_set_function(assembly, namespace, classname, methodname, signature_hash, bound_fn);
     }
-    catch (ex) {
+    catch (ex: any) {
+        Module.printErr(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
         resultRoot.release();
@@ -152,7 +153,7 @@ export const exportsByAssembly: Map<string, any> = new Map();
 
 function _walk_exports_to_set_function(assembly: string, namespace: string, classname: string, methodname: string, signature_hash: number, fn: Function): void {
     let scope: any = EXPORTS;
-    let parts = `${namespace}.${classname}`.split(".");
+    const parts = `${namespace}.${classname}`.replace(/\//g, ".").split(".");
 
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
@@ -178,7 +179,6 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
         exportsByAssembly.set(assembly + ".dll", assemblyScope);
     }
     scope = assemblyScope;
-    parts = `${namespace}.${classname}`.split(".");
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
         let newscope = scope[part];

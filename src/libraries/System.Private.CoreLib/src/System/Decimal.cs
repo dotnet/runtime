@@ -602,7 +602,7 @@ namespace System
         /// <exception cref="ArgumentException">The destination span was not long enough to store the binary representation.</exception>
         public static int GetBits(decimal d, Span<int> destination)
         {
-            if ((uint)destination.Length <= 3)
+            if (destination.Length <= 3)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -623,7 +623,7 @@ namespace System
         /// <returns>true if the decimal's binary representation was written to the destination; false if the destination wasn't long enough.</returns>
         public static bool TryGetBits(decimal d, Span<int> destination, out int valuesWritten)
         {
-            if ((uint)destination.Length <= 3)
+            if (destination.Length <= 3)
             {
                 valuesWritten = 0;
                 return false;

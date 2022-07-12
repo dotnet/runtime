@@ -548,6 +548,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
             if (canPushCast)
             {
+                GenTree* op1 = oper->gtGetOp1();
+                GenTree* op2 = oper->gtGetOp2IfPresent();
+
+                canPushCast = !varTypeIsGC(op1) && ((op2 == nullptr) || !varTypeIsGC(op2));
+            }
+
+            if (canPushCast)
+            {
                 DEBUG_DESTROY_NODE(tree);
 
                 // Insert narrowing casts for op1 and op2.
@@ -820,9 +828,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 if (prevArg.AbiInfo.GetRegNum() == REG_STK)
                 {
                     // All stack args are already evaluated and placed in order
-                    // in this case; we only need to check this for register
-                    // args.
-                    break;
+                    // in this case.
+                    continue;
                 }
 #endif
 
@@ -902,7 +909,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 {
                     // All stack args are already evaluated and placed in order
                     // in this case.
-                    break;
+                    continue;
                 }
 #endif
 
@@ -965,7 +972,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                         {
                             // All stack args are already evaluated and placed in order
                             // in this case.
-                            break;
+                            continue;
                         }
 #endif
                         // Invariant here is that all nodes that were not
@@ -3643,7 +3650,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             if (location->OperIsLocalRead())
             {
-                if (!location->OperIs(GT_LCL_VAR) ||
+                if (!location->OperIs(GT_LCL_VAR) || (location->TypeGet() != argObj->TypeGet()) ||
                     !ClassLayout::AreCompatible(lvaGetDesc(location->AsLclVarCommon())->GetLayout(), layout))
                 {
                     unsigned lclOffset = location->AsLclVarCommon()->GetLclOffs();
