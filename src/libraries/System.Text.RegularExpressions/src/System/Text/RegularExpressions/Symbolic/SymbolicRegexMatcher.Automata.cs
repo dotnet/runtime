@@ -50,6 +50,7 @@ namespace System.Text.RegularExpressions.Symbolic
             IsDeadend = 2,
             IsNullable = 4,
             CanBeNullable = 8,
+            SimulatesBacktracking = 16,
         }
 
         /// <summary>
@@ -154,7 +155,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Get context-independent information for the given state.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable) GetStateInfo(int stateId)
+        private (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable, bool SimulatesBacktracking) GetStateInfo(int stateId)
         {
             Debug.Assert(stateId > 0);
 
@@ -162,7 +163,8 @@ namespace System.Text.RegularExpressions.Symbolic
             return ((info & ContextIndependentState.IsInitial) != 0,
                     (info & ContextIndependentState.IsDeadend) != 0,
                     (info & ContextIndependentState.IsNullable) != 0,
-                    (info & ContextIndependentState.CanBeNullable) != 0);
+                    (info & ContextIndependentState.CanBeNullable) != 0,
+                    (info & ContextIndependentState.SimulatesBacktracking) != 0);
         }
 
         /// <summary>
@@ -205,13 +207,18 @@ namespace System.Text.RegularExpressions.Symbolic
                     ArrayResizeAndVolatilePublish(ref _stateInfo, newsize);
                 }
                 _stateArray[state.Id] = state;
-                _stateInfo[state.Id] = BuildStateInfo(state.Id, isInitialState, state.IsDeadend(Solver), state.Node.IsNullable, state.Node.CanBeNullable);
+                _stateInfo[state.Id] = BuildStateInfo(state.Id,
+                    isInitialState,
+                    state.IsDeadend(Solver),
+                    state.Node.IsNullable,
+                    state.Node.CanBeNullable,
+                    state.Node.Kind != SymbolicRegexNodeKind.DisableBacktrackingSimulation);
             }
 
             return state;
 
             // Assign the context-independent information for the given state
-            static ContextIndependentState BuildStateInfo(int stateId, bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable)
+            static ContextIndependentState BuildStateInfo(int stateId, bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable, bool simulatesBacktracking)
             {
                 Debug.Assert(stateId > 0);
                 Debug.Assert(!isNullable || canBeNullable);
@@ -235,6 +242,11 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         info |= ContextIndependentState.IsNullable;
                     }
+                }
+
+                if (simulatesBacktracking)
+                {
+                    info |= ContextIndependentState.SimulatesBacktracking;
                 }
 
                 return info;
