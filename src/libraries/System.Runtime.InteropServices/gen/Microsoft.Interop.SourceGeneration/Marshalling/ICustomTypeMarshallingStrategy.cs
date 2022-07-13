@@ -13,7 +13,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// The base interface for implementing various aspects of the custom native type and collection marshalling specs.
     /// </summary>
-    internal interface ICustomTypeMarshallingStrategyBase
+    internal interface ICustomTypeMarshallingStrategy
     {
         TypeSyntax AsNativeType(TypePositionInfo info);
 
@@ -30,10 +30,7 @@ namespace Microsoft.Interop
         IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context);
 
         bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
-    }
 
-    internal interface ICustomTypeMarshallingStrategy : ICustomTypeMarshallingStrategyBase
-    {
         IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context);
         IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context);
         IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context);

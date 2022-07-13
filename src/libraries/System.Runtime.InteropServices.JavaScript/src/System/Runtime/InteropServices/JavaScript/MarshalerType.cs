@@ -35,8 +35,6 @@ namespace System.Runtime.InteropServices.JavaScript
         Action,
         Function,
 
-        // FUTURE NativeMarshalling,
-
 #if !JSIMPORTGENERATOR
         // only on runtime
         JSException,

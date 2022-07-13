@@ -24,9 +24,7 @@ namespace System.Threading
 
         private static Waiter GetWaiterForCurrentThread()
         {
-            Waiter waiter = t_waiterForCurrentThread;
-            if (waiter == null)
-                waiter = t_waiterForCurrentThread = new Waiter();
+            Waiter waiter = t_waiterForCurrentThread ??= new Waiter();
             waiter.signalled = false;
             return waiter;
         }
@@ -68,8 +66,7 @@ namespace System.Threading
 
             _waitersTail = waiter;
 
-            if (_waitersHead == null)
-                _waitersHead = waiter;
+            _waitersHead ??= waiter;
         }
 
         private unsafe void RemoveWaiter(Waiter waiter)

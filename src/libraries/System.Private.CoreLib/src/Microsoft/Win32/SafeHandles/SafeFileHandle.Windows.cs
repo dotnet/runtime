@@ -109,6 +109,7 @@ namespace Microsoft.Win32.SafeHandles
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
                 }
 
+                fileHandle.Dispose();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 

@@ -72,10 +72,6 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_values")]
             public static partial void DoubleValues([In, Out] IntStructWrapper[] array, int length);
 
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
-            [return:MarshalAs(UnmanagedType.U1)]
-            public static partial bool AndAllMembers(BoolStruct_V1[] pArray, int length);
-
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
             [return: MarshalAs(UnmanagedType.U1)]
             public static partial bool AndAllMembers(BoolStruct[] pArray, int length);

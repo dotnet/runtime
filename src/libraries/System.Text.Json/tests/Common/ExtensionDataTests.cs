@@ -324,6 +324,7 @@ namespace System.Text.Json.Serialization.Tests
 #if BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task InvalidExtensionPropertyFail()
         {
             // Baseline
@@ -798,7 +799,7 @@ namespace System.Text.Json.Serialization.Tests
 #if BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif
-
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task DeserializeIntoSystemObjectProperty()
         {
             string json = @"{""MyDict"":{""Property1"":1}}";
@@ -1088,6 +1089,7 @@ namespace System.Text.Json.Serialization.Tests
 #if BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task ExtensionProperty_InvalidDictionary()
         {
             var obj1 = new ClassWithInvalidExtensionPropertyStringString();
@@ -1147,6 +1149,7 @@ namespace System.Text.Json.Serialization.Tests
 #if BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task DeserializeIntoImmutableDictionaryProperty()
         {
             // baseline

@@ -58,7 +58,11 @@ namespace System.Diagnostics.Eventing.Reader
             EventLogHandle handle = UnsafeNativeMethods.EvtQuery(session, path, query, flags);
             int win32Error = Marshal.GetLastWin32Error();
             if (handle.IsInvalid)
+            {
+                handle.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return handle;
         }
 
@@ -122,7 +126,11 @@ namespace System.Diagnostics.Eventing.Reader
 
             int win32Error = Marshal.GetLastWin32Error();
             if (handle.IsInvalid)
+            {
+                handle.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return handle;
         }
 
@@ -141,7 +149,11 @@ namespace System.Diagnostics.Eventing.Reader
             EventLogHandle emEnumHandle = UnsafeNativeMethods.EvtOpenEventMetadataEnum(ProviderMetadata, flags);
             int win32Error = Marshal.GetLastWin32Error();
             if (emEnumHandle.IsInvalid)
+            {
+                emEnumHandle.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return emEnumHandle;
         }
 
@@ -153,6 +165,7 @@ namespace System.Diagnostics.Eventing.Reader
 
             if (emHandle.IsInvalid)
             {
+                emHandle.Dispose();
                 if (win32Error != Interop.Errors.ERROR_NO_MORE_ITEMS)
                     EventLogException.Throw(win32Error);
                 return null;
@@ -166,7 +179,11 @@ namespace System.Diagnostics.Eventing.Reader
             EventLogHandle channelEnum = UnsafeNativeMethods.EvtOpenChannelEnum(session, flags);
             int win32Error = Marshal.GetLastWin32Error();
             if (channelEnum.IsInvalid)
+            {
+                channelEnum.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return channelEnum;
         }
 
@@ -175,7 +192,11 @@ namespace System.Diagnostics.Eventing.Reader
             EventLogHandle pubEnum = UnsafeNativeMethods.EvtOpenPublisherEnum(session, flags);
             int win32Error = Marshal.GetLastWin32Error();
             if (pubEnum.IsInvalid)
+            {
+                pubEnum.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return pubEnum;
         }
 
@@ -184,7 +205,11 @@ namespace System.Diagnostics.Eventing.Reader
             EventLogHandle handle = UnsafeNativeMethods.EvtOpenChannelConfig(session, channelPath, flags);
             int win32Error = Marshal.GetLastWin32Error();
             if (handle.IsInvalid)
+            {
+                handle.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return handle;
         }
 
@@ -201,7 +226,11 @@ namespace System.Diagnostics.Eventing.Reader
             EventLogHandle logHandle = UnsafeNativeMethods.EvtOpenLog(session, path, flags);
             int win32Error = Marshal.GetLastWin32Error();
             if (logHandle.IsInvalid)
+            {
+                logHandle.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return logHandle;
         }
 
@@ -253,7 +282,11 @@ namespace System.Diagnostics.Eventing.Reader
             EventLogHandle renderContextHandleValues = UnsafeNativeMethods.EvtCreateRenderContext(valuePathsCount, valuePaths, flags);
             int win32Error = Marshal.GetLastWin32Error();
             if (renderContextHandleValues.IsInvalid)
+            {
+                renderContextHandleValues.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return renderContextHandleValues;
         }
 
@@ -302,7 +335,11 @@ namespace System.Diagnostics.Eventing.Reader
             EventLogHandle handle = UnsafeNativeMethods.EvtCreateBookmark(bookmarkXml);
             int win32Error = Marshal.GetLastWin32Error();
             if (handle.IsInvalid)
+            {
+                handle.Dispose();
                 EventLogException.Throw(win32Error);
+            }
+
             return handle;
         }
 

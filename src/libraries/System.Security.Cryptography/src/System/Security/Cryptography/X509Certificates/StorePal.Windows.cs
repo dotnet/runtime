@@ -21,7 +21,10 @@ namespace System.Security.Cryptography.X509Certificates
 
             SafeCertStoreHandle certStoreHandle = Interop.Crypt32.CertDuplicateStore(storeHandle);
             if (certStoreHandle == null || certStoreHandle.IsInvalid)
+            {
+                certStoreHandle?.Dispose();
                 throw new CryptographicException(SR.Cryptography_InvalidStoreHandle, nameof(storeHandle));
+            }
 
             var pal = new StorePal(certStoreHandle);
             return pal;
@@ -71,9 +74,11 @@ namespace System.Security.Cryptography.X509Certificates
         public void Dispose()
         {
             SafeCertStoreHandle? certStore = _certStore;
-            _certStore = null!;
             if (certStore != null)
+            {
+                _certStore = null!;
                 certStore.Dispose();
+            }
         }
 
         internal SafeCertStoreHandle SafeCertStoreHandle

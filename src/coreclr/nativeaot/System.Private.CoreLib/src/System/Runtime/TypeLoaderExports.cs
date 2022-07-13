@@ -30,9 +30,7 @@ namespace System.Runtime
             ptrToData = RuntimeImports.RhNewObject(pEEType);
 
             Entry entry = LookupInCache(s_cache, pEETypePtr, pEETypePtr);
-            if (entry == null)
-            {
-                entry = CacheMiss(pEETypePtr, pEETypePtr,
+            entry ??= CacheMiss(pEETypePtr, pEETypePtr,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
                     {
                         IntPtr result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
@@ -40,7 +38,6 @@ namespace System.Runtime
                             result = RuntimeAugments.GetFallbackDefaultConstructor();
                         return result;
                     });
-            }
             RawCalliHelper.Call(entry.Result, ptrToData);
         }
 
@@ -73,60 +70,42 @@ namespace System.Runtime
         public static IntPtr GenericLookup(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             return entry.Result;
         }
 
         public static void GenericLookupAndCallCtor(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             RawCalliHelper.Call(entry.Result, arg);
         }
 
         public static object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult);
         }
 
         public static object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult, arg);
         }
 
         public static void GenericLookupAndCheckArrayElemType(IntPtr context, object arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             RawCalliHelper.Call(entry.Result, entry.AuxResult, arg);
         }
 
         public static object GenericLookupAndCast(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
@@ -160,12 +139,9 @@ namespace System.Runtime
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
             Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot);
-            if (entry == null)
-            {
-                entry = CacheMiss((IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot,
+            entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
-            }
             return entry.Result;
         }
 
@@ -173,13 +149,10 @@ namespace System.Runtime
         internal static unsafe IntPtr OpenInstanceMethodLookup(IntPtr openResolver, object obj)
         {
             Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), openResolver);
-            if (entry == null)
-            {
-                entry = CacheMiss((IntPtr)obj.GetMethodTable(), openResolver,
+            entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), openResolver,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject),
                     obj);
-            }
             return entry.Result;
         }
 
@@ -201,10 +174,7 @@ namespace System.Runtime
         internal static IntPtr RuntimeCacheLookupInCache(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature, factory, contextObject);
-            }
+            entry ??= CacheMiss(context, signature, factory, contextObject);
             auxResult = entry.AuxResult;
             return entry.Result;
         }

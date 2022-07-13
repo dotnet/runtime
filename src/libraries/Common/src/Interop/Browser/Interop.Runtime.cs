@@ -9,7 +9,22 @@ internal static partial class Interop
     internal static unsafe partial class Runtime
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string InvokeJS(string str, out int exceptionalResult);
+        internal static extern void ReleaseCSOwnedObject(IntPtr jsHandle);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern unsafe void BindJSFunction(in string function_name, in string module_name, void* signature, out IntPtr bound_function_js_handle, out int is_exception, out object result);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSFunction(IntPtr bound_function_js_handle, void* data);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void MarshalPromise(void* data);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern IntPtr RegisterGCRoot(IntPtr start, int bytesSize, IntPtr name);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void DeregisterGCRoot(IntPtr handle);
+
+        #region Legacy
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InvokeJSWithArgsRef(IntPtr jsHandle, in string method, in object?[] parms, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -26,8 +41,6 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void TypedArrayToArrayRef(IntPtr jsHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void ReleaseCSOwnedObject(IntPtr jsHandle);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void CreateCSOwnedObjectRef(in string className, in object[] parms, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void TypedArrayCopyToRef(IntPtr jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
@@ -35,21 +48,6 @@ internal static partial class Interop
         internal static extern void TypedArrayFromRef(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void TypedArrayCopyFromRef(IntPtr jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
-
-
-        #region Legacy
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketSend(IntPtr webSocketJSHandle, IntPtr messagePtr, int offset, int length, int messageType, bool endOfMessage, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketReceive(IntPtr webSocketJSHandle, IntPtr bufferPtr, int offset, int length, IntPtr responsePtr, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketOpenRef(in string uri, in object[]? subProtocols, in Delegate onClosed, out IntPtr webSocketJSHandle, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketAbort(IntPtr webSocketJSHandle, out int exceptionalResult, out string result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void WebSocketCloseRef(IntPtr webSocketJSHandle, int code, in string? reason, bool waitForCloseReceived, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void CancelPromiseRef(IntPtr promiseJSHandle, out int exceptionalResult, out string result);
 
         #endregion
 

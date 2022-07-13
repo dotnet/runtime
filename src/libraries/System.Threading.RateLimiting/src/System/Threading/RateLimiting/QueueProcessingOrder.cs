@@ -4,16 +4,16 @@
 namespace System.Threading.RateLimiting
 {
     /// <summary>
-    /// Controls the behavior of <see cref="RateLimiter.WaitAsync"/> when not enough resources can be leased.
+    /// Controls the behavior of <see cref="RateLimiter.WaitAndAcquireAsync"/> when not enough resources can be leased.
     /// </summary>
     public enum QueueProcessingOrder
     {
         /// <summary>
-        /// Lease the oldest queued <see cref="RateLimiter.WaitAsync"/>.
+        /// Lease the oldest queued <see cref="RateLimiter.WaitAndAcquireAsync"/> call.
         /// </summary>
         OldestFirst,
         /// <summary>
-        /// Lease the newest queued <see cref="RateLimiter.WaitAsync"/>.
+        /// Lease the newest queued <see cref="RateLimiter.WaitAndAcquireAsync"/> call.
         /// </summary>
         NewestFirst
     }

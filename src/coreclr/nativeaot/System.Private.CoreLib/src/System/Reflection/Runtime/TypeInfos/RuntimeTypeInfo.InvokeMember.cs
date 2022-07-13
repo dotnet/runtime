@@ -72,8 +72,7 @@ namespace System.Reflection.Runtime.TypeInfos
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
 
             #region Get a Binder
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             #endregion
 
@@ -375,11 +374,9 @@ namespace System.Reflection.Runtime.TypeInfos
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                if (finalists == null)
-                    finalists = new MethodInfo[] { finalist };
+                finalists ??= new MethodInfo[] { finalist };
 
-                if (providedArgs == null)
-                    providedArgs = Array.Empty<object>();
+                providedArgs ??= Array.Empty<object>();
 
                 object? state = null;
 

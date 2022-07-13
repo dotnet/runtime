@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
-using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -19,6 +18,13 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection : HttpConnectionBase
     {
+        // Equivalent to the bytes returned from HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(":protocol")
+        private static ReadOnlySpan<byte> ProtocolLiteralHeaderBytes => new byte[] { 0x0, 0x9, 0x3a, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c };
+
+        private static readonly TaskCompletionSourceWithCancellation<bool> s_settingsReceivedSingleton = CreateSuccessfullyCompletedTcs();
+
+        private TaskCompletionSourceWithCancellation<bool>? _initialSettingsReceived;
+
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
 
@@ -174,7 +180,14 @@ namespace System.Net.Http
 
         private object SyncObject => _httpStreams;
 
-        public async ValueTask SetupAsync()
+        internal TaskCompletionSourceWithCancellation<bool> InitialSettingsReceived =>
+            _initialSettingsReceived ??
+            Interlocked.CompareExchange(ref _initialSettingsReceived, new(), null) ??
+            _initialSettingsReceived;
+
+        internal bool IsConnectEnabled { get; private set; }
+
+        public async ValueTask SetupAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -208,7 +221,7 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
-                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
@@ -217,6 +230,13 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 Dispose();
+
+                if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
+                {
+                    // Note, AddHttp2ConnectionAsync handles this OCE separately so don't wrap it.
+                    throw;
+                }
+
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
@@ -825,6 +845,20 @@ namespace System.Net.Http
                             // We don't actually store this value; we always send frames of the minimum size (16K).
                             break;
 
+                        case SettingId.EnableConnect:
+                            if (settingValue == 1)
+                            {
+                                IsConnectEnabled = true;
+                            }
+                            else if (settingValue == 0 && IsConnectEnabled)
+                            {
+                                // Accroding to RFC: a sender MUST NOT send a SETTINGS_ENABLE_CONNECT_PROTOCOL parameter
+                                // with the value of 0 after previously sending a value of 1.
+                                // https://datatracker.ietf.org/doc/html/rfc8441#section-3
+                                ThrowProtocolError();
+                            }
+                            break;
+
                         default:
                             // All others are ignored because we don't care about them.
                             // Note, per RFC, unknown settings IDs should be ignored.
@@ -832,10 +866,20 @@ namespace System.Net.Http
                     }
                 }
 
-                if (initialFrame && !maxConcurrentStreamsReceived)
+                if (initialFrame)
                 {
-                    // Set to 'infinite' because MaxConcurrentStreams was not set on the initial SETTINGS frame.
-                    ChangeMaxConcurrentStreams(int.MaxValue);
+                    if (!maxConcurrentStreamsReceived)
+                    {
+                        // Set to 'infinite' because MaxConcurrentStreams was not set on the initial SETTINGS frame.
+                        ChangeMaxConcurrentStreams(int.MaxValue);
+                    }
+
+                    if (_initialSettingsReceived is null)
+                    {
+                        Interlocked.CompareExchange(ref _initialSettingsReceived, s_settingsReceivedSingleton, null);
+                    }
+                    // Set result in case if CompareExchange lost the race
+                    InitialSettingsReceived.TrySetResult(true);
                 }
 
                 _incomingBuffer.Discard(frameHeader.PayloadLength);
@@ -1448,6 +1492,13 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
+                if (request.Headers.Protocol != null)
+                {
+                    WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
+                    Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
+                    WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
+                }
+
                 WriteHeaderCollection(request, request.Headers, ref headerBuffer);
             }
 
@@ -1888,7 +1939,15 @@ namespace System.Net.Http
             MaxConcurrentStreams = 0x3,
             InitialWindowSize = 0x4,
             MaxFrameSize = 0x5,
-            MaxHeaderListSize = 0x6
+            MaxHeaderListSize = 0x6,
+            EnableConnect = 0x8
+        }
+
+        private static TaskCompletionSourceWithCancellation<bool> CreateSuccessfullyCompletedTcs()
+        {
+            var tcs = new TaskCompletionSourceWithCancellation<bool>();
+            tcs.TrySetResult(true);
+            return tcs;
         }
 
         // Note that this is safe to be called concurrently by multiple threads.
