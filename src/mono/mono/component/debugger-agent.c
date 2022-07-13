@@ -8859,14 +8859,14 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		break;
 	}
 	case MDBGPROT_CMD_METHOD_GET_PRETTY_NAME: {
-		MonoType *type = (&method->klass->_byval_arg);
+		MonoType *type = m_class_get_byval_arg (method->klass);
 		buffer_add_int (buf, type->type);
 		if (type->type == MONO_TYPE_GENERICINST)
 		{
 			MonoGenericContext *context;
 			GString *res;
 			res = g_string_new ("");
-			mono_type_get_desc (res, &type->data.generic_class->container_class->_byval_arg, TRUE);
+			mono_type_get_desc (res, m_class_get_byval_arg (type->data.generic_class->container_class), TRUE);
 			buffer_add_string (buf, (g_string_free (res, FALSE)));
 			context = &type->data.generic_class->context;
 			if (context->class_inst)
@@ -8901,7 +8901,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			int i = -1;
 			while (klass)
 			{
-				klass = klass->nested_in;
+				klass = m_class_get_nested_in (klass);
 				i++;
 			}
 			buffer_add_int (buf, i);
@@ -8909,13 +8909,13 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			while (klass)
 			{
 				res = g_string_new ("");
-				if (*(klass->name_space)) {
-					g_string_append (res, klass->name_space);
+				if (strlen(m_class_get_name_space (klass)) > 0) {
+					g_string_append (res, m_class_get_name_space (klass));
 					g_string_append_c (res, '.');
 				}
-				g_string_append (res, klass->name);
+				g_string_append (res, m_class_get_name (klass));
 				buffer_add_string (buf, (g_string_free (res, FALSE)));
-				klass = klass->nested_in;
+				klass = m_class_get_nested_in (klass);
 			}
 			buffer_add_string (buf, method->name);
 		}
