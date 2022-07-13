@@ -56,7 +56,7 @@ static const fx_definition_t& get_root_framework(const fx_definition_vector_t& f
         fx_definitions.end(),
         [&](const std::unique_ptr<fx_definition_t>& fxdef)
         {
-            return fxdef->get_name() == L"Microsoft.NETCore.App";
+            return fxdef->get_name() == _X("Microsoft.NETCore.App");
         });
     return **fx;
 }
