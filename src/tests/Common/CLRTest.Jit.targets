@@ -35,6 +35,10 @@ WARNING:   When setting properties based on their current state (for example:
       <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
       <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
 
+      <_IlasmSwitches Condition="'$(DebugType)' == 'Full'">$(_IlasmSwitches) -DEBUG</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'Impl'">$(_IlasmSwitches) -DEBUG=IMPL</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(DebugType)' == 'PdbOnly'">$(_IlasmSwitches) -DEBUG=OPT</_IlasmSwitches>
+
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 # IlasmRoundTrip Script
 # For CLRTestKind==RunOnly, we don't do any ilasm round-trip testing. We also need to disable
