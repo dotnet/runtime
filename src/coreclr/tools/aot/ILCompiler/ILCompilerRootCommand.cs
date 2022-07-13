@@ -18,7 +18,7 @@ internal class ILCompilerRootCommand : RootCommand
     public Argument<Dictionary<string, string>> InputFilePaths { get; } =
         new("input-file-path", result => Helpers.BuildPathDictionay(result.Tokens, true), false, "Input file(s)") { Arity = ArgumentArity.OneOrMore };
     public Option<Dictionary<string, string>> ReferenceFiles { get; } =
-        new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), false, "Reference file(s) for compilation");
+        new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), true, "Reference file(s) for compilation");
     public Option<string> OutputFilePath { get; } =
         new(new[] { "--out", "-o" }, "Output file path");
     public Option<bool> Optimize { get; } =

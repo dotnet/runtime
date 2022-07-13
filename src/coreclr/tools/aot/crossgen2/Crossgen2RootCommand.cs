@@ -20,7 +20,7 @@ internal class Crossgen2RootCommand : RootCommand
     public Option<Dictionary<string, string>> UnrootedInputFilePaths { get; } =
         new(new[] { "--unrooted-input-file-paths", "-u" }, result => Helpers.BuildPathDictionay(result.Tokens, true), true, SR.UnrootedInputFilesToCompile);
     public Option<Dictionary<string, string>> ReferenceFilePaths { get; } =
-        new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), false, SR.ReferenceFiles);
+        new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), true, SR.ReferenceFiles);
     public Option<string> InstructionSet { get; } =
         new(new[] { "--instruction-set" }, SR.InstructionSets);
     public Option<string[]> MibcFilePaths { get; } =
@@ -28,7 +28,7 @@ internal class Crossgen2RootCommand : RootCommand
     public Option<string> OutputFilePath { get; } =
         new(new[] { "--out", "-o" }, SR.OutputFilePath);
     public Option<string> CompositeRootPath { get; } =
-        new(new[] { "--compositerootpath", "-crp" }, SR.CompositeRootPath);
+        new(new[] { "--compositerootpath", "--crp" }, SR.CompositeRootPath);
     public Option<bool> Optimize { get; } =
         new(new[] { "--optimize", "-O" }, SR.EnableOptimizationsOption);
     public Option<bool> OptimizeDisabled { get; } =
@@ -40,7 +40,7 @@ internal class Crossgen2RootCommand : RootCommand
     public Option<bool> InputBubble { get; } =
         new(new[] { "--inputbubble" }, SR.InputBubbleOption);
     public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
-        new(new[] { "--inputbubbleref" }, result => Helpers.BuildPathDictionay(result.Tokens, false), false, SR.InputBubbleReferenceFiles);
+        new(new[] { "--inputbubbleref" }, result => Helpers.BuildPathDictionay(result.Tokens, false), true, SR.InputBubbleReferenceFiles);
     public Option<bool> Composite { get; } =
         new(new[] { "--composite" }, SR.CompositeBuildMode);
     public Option<string> CompositeKeyFile { get; } =
@@ -74,7 +74,7 @@ internal class Crossgen2RootCommand : RootCommand
     public Option<string> ImageBase { get; } =
         new(new[] { "--imagebase" }, SR.ImageBase);
     public Option<TargetArchitecture> TargetArchitecture { get; } =
-        new(new[] { "--targetarch" }, result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), true, SR.TargetArchOption);
+        new(new[] { "--targetarch" }, result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), true, SR.TargetArchOption) { Arity = ArgumentArity.OneOrMore };
     public Option<TargetOS> TargetOS { get; } =
         new(new[] { "--targetos" }, result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), true, SR.TargetOSOption);
     public Option<string> JitPath { get; } =
