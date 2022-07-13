@@ -139,6 +139,9 @@
       <_EmccLinkFlags Include="-s MODULARIZE=1"/>
       <_EmccLinkFlags Include="-Wl,--allow-undefined"/>
       <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
+      <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
+           active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
+      <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
@@ -340,7 +343,7 @@
           >
     <!-- install typescript and rollup -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm ci" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm audit" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm audit --verbose --registry=https://registry.npmjs.org/" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
     <!-- npm install is faster on dev machine as it doesn't wipe node_modules folder -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
@@ -365,7 +368,7 @@
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <!-- compile typescript -->
-    <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <Copy SourceFiles="runtime/package.json;"
           DestinationFolder="$(NativeBinDir)"

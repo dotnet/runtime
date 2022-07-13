@@ -57,10 +57,7 @@ namespace System.Net.NetworkInformation
             // Cache correct handle.
             InitialiseIcmpHandle();
 
-            if (_replyBuffer == null)
-            {
-                _replyBuffer = SafeLocalAllocHandle.LocalAlloc(MaxUdpPacket);
-            }
+            _replyBuffer ??= SafeLocalAllocHandle.LocalAlloc(MaxUdpPacket);
 
             int error;
             try
@@ -148,6 +145,7 @@ namespace System.Net.NetworkInformation
                 _handlePingV4 = Interop.IpHlpApi.IcmpCreateFile();
                 if (_handlePingV4.IsInvalid)
                 {
+                    _handlePingV4.Dispose();
                     _handlePingV4 = null;
                     throw new Win32Exception(); // Gets last error.
                 }
@@ -157,6 +155,7 @@ namespace System.Net.NetworkInformation
                 _handlePingV6 = Interop.IpHlpApi.Icmp6CreateFile();
                 if (_handlePingV6.IsInvalid)
                 {
+                    _handlePingV6.Dispose();
                     _handlePingV6 = null;
                     throw new Win32Exception(); // Gets last error.
                 }

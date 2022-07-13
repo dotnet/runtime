@@ -412,7 +412,6 @@ enum class AddressExposedReason
     WIDE_INDIR,       // We access via indirection with wider type.
     OSR_EXPOSED,      // It was exposed in the original method, osr has to repeat it.
     STRESS_LCL_FLD,   // Stress mode replaces localVar with localFld and makes them addrExposed.
-    COPY_FLD_BY_FLD,  // Field by field copy takes the address of the local, can be fixed.
     DISPATCH_RET_BUF  // Caller return buffer dispatch.
 };
 
@@ -1415,8 +1414,10 @@ enum class PhaseChecks
 // Specify compiler data that a phase might modify
 enum class PhaseStatus : unsigned
 {
-    MODIFIED_NOTHING,
-    MODIFIED_EVERYTHING
+    MODIFIED_NOTHING,    // Phase did not make any changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
+    MODIFIED_EVERYTHING, // Phase made changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
 };
 
 // The following enum provides a simple 1:1 mapping to CLR API's
@@ -1771,7 +1772,7 @@ struct IPmappingDsc
     bool             ipmdIsLabel;   // Can this code be a branch label?
 };
 
-struct PreciseIPMapping
+struct RichIPMapping
 {
     emitLocation nativeLoc;
     DebugInfo    debugInfo;
@@ -2265,7 +2266,7 @@ public:
                                 GenTree*   op2  = nullptr);
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
-    GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq);
+    GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq);
     GenTreeIntCon* gtNewNull();
     GenTreeIntCon* gtNewTrue();
     GenTreeIntCon* gtNewFalse();
@@ -2276,7 +2277,7 @@ public:
 
     GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t value, GenTreeFlags iconFlags, bool isInvariant);
 
-    GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields = nullptr);
+    GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
 
     GenTreeFlags gtTokenToIconFlags(unsigned token);
 
@@ -2344,10 +2345,7 @@ public:
     GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
 
     GenTreeLclVar* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
-    GenTreeLclFld* gtNewLclFldAddrNode(unsigned      lclNum,
-                                       unsigned      lclOffs,
-                                       FieldSeqNode* fieldSeq,
-                                       var_types     type = TYP_I_IMPL);
+    GenTreeLclFld* gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
 
 #ifdef FEATURE_SIMD
     GenTreeSIMD* gtNewSIMDNode(
@@ -2608,7 +2606,13 @@ public:
 
     GenTreeIndir* gtNewIndexIndir(GenTreeIndexAddr* indexAddr);
 
+    void gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block);
+
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
+
+    GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+
+    GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -2698,8 +2702,6 @@ public:
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
 
-    void gtUpdateNodeOperSideEffectsPost(GenTree* tree);
-
     // Returns "true" iff the complexity (not formally defined, but first interpretation
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
@@ -2708,7 +2710,7 @@ public:
 
     GenTree* gtReverseCond(GenTree* tree);
 
-    static bool gtHasRef(GenTree* tree, ssize_t lclNum);
+    static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
 
@@ -2836,7 +2838,6 @@ public:
     unsigned gtDispMultiRegCount(GenTree* tree);
 #endif
     void gtDispRegVal(GenTree* tree);
-    void gtDispZeroFieldSeq(GenTree* tree);
     void gtDispVN(GenTree* tree);
     void gtDispCommonEndLine(GenTree* tree);
 
@@ -2874,8 +2875,7 @@ public:
     void gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
     void gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack);
-    void gtDispAnyFieldSeq(FieldSeqNode* fieldSeq);
-    void gtDispFieldSeq(FieldSeqNode* pfsn);
+    void gtDispFieldSeq(FieldSeq* fieldSeq, ssize_t offset);
 
     void gtDispRange(LIR::ReadOnlyRange const& range);
 
@@ -3185,8 +3185,6 @@ public:
                        CORINFO_ARG_LIST_HANDLE varList,
                        CORINFO_SIG_INFO*       varSig);
 
-    static unsigned lvaTypeRefMask(var_types type);
-
     var_types lvaGetActualType(unsigned lclNum);
     var_types lvaGetRealType(unsigned lclNum);
 
@@ -3245,13 +3243,11 @@ public:
 
     void lvaSortByRefCount();
 
-    void lvaMarkLocalVars(); // Local variable ref-counting
+    PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
     void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
-
-    VARSET_VALRET_TP lvaStmtLclMask(Statement* stmt);
 
 #ifdef DEBUG
     struct lvaStressLclFldArgs
@@ -4007,10 +4003,7 @@ private:
     void impSpillSpecialSideEff();
     void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
-    void               impSpillValueClasses();
-    void               impSpillEvalStack();
-    static fgWalkPreFn impFindValueClasses;
-    void impSpillLclRefs(ssize_t lclNum);
+    void impSpillLclRefs(unsigned lclNum);
 
     BasicBlock* impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter);
 
@@ -4196,12 +4189,14 @@ private:
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
-                                CORINFO_CALL_INFO*     callInfo);
+                                CORINFO_CALL_INFO*     callInfo,
+                                IL_OFFSET              ilOffset);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
-                                      CORINFO_CALL_INFO*     callInfo);
+                                      CORINFO_CALL_INFO*     callInfo,
+                                      IL_OFFSET              ilOffset);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
                                       var_types                callerRetType,
@@ -4546,6 +4541,68 @@ public:
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
+    //------------------------------------------------------------------------------------------------------------
+    // MorphMDArrayTempCache: a simple cache of compiler temporaries in the local variable table, used to minimize
+    // the number of locals allocated when doing early multi-dimensional array operation expansion. Two types of
+    // temps are created and cached (due to the two types of temps needed by the MD array expansion): TYP_INT and
+    // TYP_REF. `GrabTemp` either returns an available temp from the cache or allocates a new temp and returns it
+    // after adding it to the cache. `Reset` makes all the temps in the cache available for subsequent re-use.
+    //
+    class MorphMDArrayTempCache
+    {
+    private:
+        class TempList
+        {
+        public:
+            TempList(Compiler* compiler)
+                : m_compiler(compiler), m_first(nullptr), m_insertPtr(&m_first), m_nextAvail(nullptr)
+            {
+            }
+
+            unsigned GetTemp();
+
+            void Reset()
+            {
+                m_nextAvail = m_first;
+            }
+
+        private:
+            struct Node
+            {
+                Node(unsigned tmp) : next(nullptr), tmp(tmp)
+                {
+                }
+
+                Node*    next;
+                unsigned tmp;
+            };
+
+            Compiler* m_compiler;
+            Node*     m_first;
+            Node**    m_insertPtr;
+            Node*     m_nextAvail;
+        };
+
+        TempList intTemps; // Temps for genActualType() == TYP_INT
+        TempList refTemps; // Temps for TYP_REF
+
+    public:
+        MorphMDArrayTempCache(Compiler* compiler) : intTemps(compiler), refTemps(compiler)
+        {
+        }
+
+        unsigned GrabTemp(var_types type);
+
+        void Reset()
+        {
+            intTemps.Reset();
+            refTemps.Reset();
+        }
+    };
+
+    bool fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock* block, Statement* stmt);
+    PhaseStatus fgMorphArrayOps();
+
     void fgSetOptions();
 
 #ifdef DEBUG
@@ -4698,12 +4755,6 @@ public:
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
 
-    // Requires value numbering phase to have completed. Returns the value number ("gtVN") of the
-    // "tree," EXCEPT in the case of GTF_VAR_USEASG, because the tree node's gtVN member is the
-    // "use" VN. Performs a lookup into the map of (use asg tree -> def VN.) to return the "def's"
-    // VN.
-    inline ValueNum GetUseAsgDefVNOrTreeVN(GenTree* tree);
-
     // Requires that "lcl" has the GTF_VAR_DEF flag set.  Returns the SSA number of "lcl".
     // Except: assumes that lcl is a def, and if it is
     // a partial def (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
@@ -4713,7 +4764,7 @@ public:
     inline bool PreciseRefCountsRequired();
 
     // Performs SSA conversion.
-    void fgSsaBuild();
+    PhaseStatus fgSsaBuild();
 
     // Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.
     void fgResetForSsa();
@@ -4737,7 +4788,7 @@ public:
 
     // Do value numbering (assign a value number to each
     // tree node).
-    void fgValueNumber();
+    PhaseStatus fgValueNumber();
 
     void fgValueNumberLocalStore(GenTree*             storeNode,
                                  GenTreeLclVarCommon* lclDefNode,
@@ -4750,14 +4801,10 @@ public:
 
     void fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, unsigned storeSize, ValueNum value);
 
-    void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset);
+    void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset);
 
-    void fgValueNumberFieldStore(GenTree*      storeNode,
-                                 GenTree*      baseAddr,
-                                 FieldSeqNode* fieldSeq,
-                                 ssize_t       offset,
-                                 unsigned      storeSize,
-                                 ValueNum      value);
+    void fgValueNumberFieldStore(
+        GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
@@ -4816,6 +4863,9 @@ public:
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
 
+    // Does value-numbering for a bitcast tree.
+    void fgValueNumberBitCast(GenTree* tree);
+
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
 
@@ -4869,7 +4919,6 @@ public:
 
 #ifdef DEBUG
     void fgDebugCheckExceptionSets();
-    void fgDebugCheckValueNumberedTree(GenTree* tree);
 #endif
 
     // These are the current value number for the memory implicit variables while
@@ -5180,7 +5229,7 @@ public:
 
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
-    void fgCreateLoopPreHeader(unsigned lnum);
+    bool fgCreateLoopPreHeader(unsigned lnum);
 
     void fgUnreachableBlock(BasicBlock* block);
 
@@ -5189,6 +5238,8 @@ public:
     BasicBlock* fgLastBBInMainFunction();
 
     BasicBlock* fgEndBBAfterMainFunction();
+
+    BasicBlock* fgGetDomSpeculatively(const BasicBlock* block);
 
     void fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd);
 
@@ -5257,18 +5308,22 @@ public:
 
     bool fgReorderBlocks(bool useProfile);
 
+#ifdef FEATURE_EH_FUNCLETS
+    bool fgFuncletsAreCold();
+#endif // FEATURE_EH_FUNCLETS
+
     PhaseStatus fgDetermineFirstColdBlock();
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
 
     bool fgUpdateFlowGraph(bool doTailDup = false);
 
-    void fgFindOperOrder();
+    PhaseStatus fgFindOperOrder();
 
     // method that returns if you should split here
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
 
-    void fgSetBlockOrder();
+    PhaseStatus fgSetBlockOrder();
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
@@ -5512,7 +5567,6 @@ private:
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
-    bool fgIsSafeToClone(GenTree* tree);
     TempInfo fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType = nullptr);
     GenTree* fgMakeMultiUse(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
 
@@ -5611,9 +5665,6 @@ private:
         }
     };
 
-    // A MACK_CopyBlock context is immutable, so we can just make one of these and share it.
-    static MorphAddrContext s_CopyBlockMAC;
-
 #ifdef FEATURE_SIMD
     GenTree* getSIMDStructFromField(GenTree*     tree,
                                     CorInfoType* simdBaseJitTypeOut,
@@ -5701,7 +5752,6 @@ private:
     GenTree* fgMorphOneAsgBlockOp(GenTree* tree);
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenTree* initVal, unsigned blockSize);
-    GenTree* fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
@@ -5868,9 +5918,6 @@ private:
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
 
-    static fgWalkPreFn  fgUpdateSideEffectsPre;
-    static fgWalkPostFn fgUpdateSideEffectsPost;
-
     // The given local variable, required to be a struct variable, is being assigned via
     // a "lclField", to make it masquerade as an integral type in the ABI.  Make sure that
     // the variable is not enregistered, and is therefore not promoted independently.
@@ -5917,7 +5964,7 @@ public:
 
 protected:
     // Do hoisting for all loops.
-    void optHoistLoopCode();
+    PhaseStatus optHoistLoopCode();
 
     // To represent sets of VN's that have already been hoisted in outer loops.
     typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> VNSet;
@@ -5958,17 +6005,10 @@ protected:
 
     // Do hoisting of all loops nested within loop "lnum" (an index into the optLoopTable), followed
     // by the loop "lnum" itself.
-    //
-    // "m_pHoistedInCurLoop" helps a lot in eliminating duplicate expressions getting hoisted
-    // and reducing the count of total expressions hoisted out of loop. When calculating the
-    // profitability, we compare this with number of registers and hence, lower the number of expressions
-    // getting hoisted, better chances that they will get enregistered and CSE considering them.
-    //
-    void optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
+    bool optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
-    // Returns the new preheaders created.
-    void optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
+    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
 
     // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
     // outside of that loop.
@@ -6018,7 +6058,7 @@ private:
     void optPerformHoistExpr(GenTree* expr, BasicBlock* exprBb, unsigned lnum);
 
 public:
-    void optOptimizeBools();
+    PhaseStatus optOptimizeBools();
 
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
@@ -6106,6 +6146,8 @@ public:
                                   // hoisted
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
         int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
+
+        bool lpHoistAddedPreheader; // The loop preheader was added during hoisting
 
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
                         FieldHandleSet;
@@ -6273,6 +6315,7 @@ protected:
 
 public:
     LoopDsc*      optLoopTable;        // loop descriptor table
+    bool          optLoopTableValid;   // info in loop table should be valid
     unsigned char optLoopCount;        // number of tracked loops
     unsigned char loopAlignCandidates; // number of loops identified for alignment
 
@@ -6298,7 +6341,7 @@ public:
                        BasicBlock*   exit,
                        unsigned char exitCnt);
 
-    void optClearLoopIterInfo();
+    PhaseStatus optClearLoopIterInfo();
 
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
@@ -6410,7 +6453,7 @@ protected:
         int arrayLengthCount;
     };
 
-    static fgWalkResult optInvertCountTreeInfo(GenTree** pTree, fgWalkData* data);
+    OptInvertCountTreeInfoType optInvertCountTreeInfo(GenTree* tree);
 
     bool optInvertWhileLoop(BasicBlock* block);
 
@@ -6428,9 +6471,19 @@ private:
                            bool       dupCond,
                            unsigned*  iterCount);
 
-    static fgWalkPreFn optIsVarAssgCB;
-
 protected:
+    struct isVarAssgDsc
+    {
+        GenTree*     ivaSkip;
+        ALLVARSET_TP ivaMaskVal;        // Set of variables assigned to.  This is a set of all vars, not tracked vars.
+        unsigned     ivaVar;            // Variable we are interested in, or -1
+        varRefKinds  ivaMaskInd;        // What kind of indirect assignments are there?
+        callInterf   ivaMaskCall;       // What kind of calls are there?
+        bool         ivaMaskIncomplete; // Variables not representable in ivaMaskVal were assigned to.
+    };
+
+    bool optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc);
+
     bool optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip, unsigned var);
 
     bool optIsVarAssgLoop(unsigned lnum, unsigned var);
@@ -6677,19 +6730,6 @@ protected:
 
     void optOptimizeCSEs();
 
-    struct isVarAssgDsc
-    {
-        GenTree*     ivaSkip;
-        ALLVARSET_TP ivaMaskVal; // Set of variables assigned to.  This is a set of all vars, not tracked vars.
-#ifdef DEBUG
-        void* ivaSelf;
-#endif
-        unsigned    ivaVar;            // Variable we are interested in, or -1
-        varRefKinds ivaMaskInd;        // What kind of indirect assignments are there?
-        callInterf  ivaMaskCall;       // What kind of calls are there?
-        bool        ivaMaskIncomplete; // Variables not representable in ivaMaskVal were assigned to.
-    };
-
     static callInterf optCallInterf(GenTreeCall* call);
 
 public:
@@ -6766,19 +6806,25 @@ public:
         }
     };
 
-#define OMF_HAS_NEWARRAY 0x00000001         // Method contains 'new' of an array
-#define OMF_HAS_NEWOBJ 0x00000002           // Method contains 'new' of an object type.
-#define OMF_HAS_ARRAYREF 0x00000004         // Method contains array element loads or stores.
-#define OMF_HAS_NULLCHECK 0x00000008        // Method contains null check.
-#define OMF_HAS_FATPOINTER 0x00000010       // Method contains call, that needs fat pointer transformation.
-#define OMF_HAS_OBJSTACKALLOC 0x00000020    // Method contains an object allocated on the stack.
-#define OMF_HAS_GUARDEDDEVIRT 0x00000040    // Method contains guarded devirtualization candidate
-#define OMF_HAS_EXPRUNTIMELOOKUP 0x00000080 // Method contains a runtime lookup to an expandable dictionary.
-#define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
-#define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
-#define OMF_HAS_FROZEN_STRING 0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
+// clang-format off
+
+#define OMF_HAS_NEWARRAY                       0x00000001 // Method contains 'new' of an SD array
+#define OMF_HAS_NEWOBJ                         0x00000002 // Method contains 'new' of an object type.
+#define OMF_HAS_ARRAYREF                       0x00000004 // Method contains array element loads or stores.
+#define OMF_HAS_NULLCHECK                      0x00000008 // Method contains null check.
+#define OMF_HAS_FATPOINTER                     0x00000010 // Method contains call, that needs fat pointer transformation.
+#define OMF_HAS_OBJSTACKALLOC                  0x00000020 // Method contains an object allocated on the stack.
+#define OMF_HAS_GUARDEDDEVIRT                  0x00000040 // Method contains guarded devirtualization candidate
+#define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
+#define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
+#define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
+#define OMF_HAS_FROZEN_STRING                  0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
-#define OMF_HAS_TAILCALL_SUCCESSOR 0x00001000             // Method has potential tail call in a non BBJ_RETURN block
+#define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
+#define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
+#define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional instrinsic array element loads or stores.
+
+    // clang-format on
 
     bool doesMethodHaveFatPointer()
     {
@@ -6909,9 +6955,9 @@ public:
     GenTree* optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree* optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
     bool optDoEarlyPropForBlock(BasicBlock* block);
-    bool optDoEarlyPropForFunc();
-    void optEarlyProp();
-    void optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
+    bool        optDoEarlyPropForFunc();
+    PhaseStatus optEarlyProp();
+    bool optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
     GenTree* optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
     bool optIsNullCheckFoldingLegal(GenTree*    tree,
                                     GenTree*    nullCheckTree,
@@ -7020,11 +7066,7 @@ public:
                 GenTreeFlags iconFlags; // gtFlags
             };
             union {
-                struct
-                {
-                    SsaVar        lcl;
-                    FieldSeqNode* zeroOffsetFieldSeq;
-                };
+                SsaVar        lcl;
                 IntVal        u1;
                 __int64       lconVal;
                 double        dconVal;
@@ -7127,8 +7169,7 @@ public:
 
                 case O2K_LCLVAR_COPY:
                     return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum) &&
-                           (op2.zeroOffsetFieldSeq == that->op2.zeroOffsetFieldSeq);
+                           (!vnBased || (op2.lcl.ssaNum == that->op2.lcl.ssaNum));
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
@@ -7238,6 +7279,7 @@ public:
                                       bool             helperCallArgs = false);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
+    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
@@ -7310,7 +7352,7 @@ public:
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
 
-    void optAddCopies();
+    PhaseStatus optAddCopies();
 
     /**************************************************************************
      *                          Range checks
@@ -7365,9 +7407,6 @@ protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
 
     bool optReachWithoutCall(BasicBlock* srcBB, BasicBlock* dstBB);
-
-protected:
-    bool optLoopsMarked;
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -7749,11 +7788,8 @@ public:
 
     // Record the instr offset mapping to the generated code
 
-    jitstd::list<IPmappingDsc> genIPmappings;
-
-#ifdef DEBUG
-    jitstd::list<PreciseIPMapping> genPreciseIPmappings;
-#endif
+    jitstd::list<IPmappingDsc>  genIPmappings;
+    jitstd::list<RichIPMapping> genRichIPmappings;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
     // GT_CALL node to its debug info.  This info is used to emit sequence points
@@ -7872,15 +7908,6 @@ public:
     // Gets a register mask that represent the kill set for a helper call since
     // not all JIT Helper calls follow the standard ABI on the target architecture.
     regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper);
-
-#ifdef TARGET_ARM
-    // Requires that "varDsc" be a promoted struct local variable being passed as an argument, beginning at
-    // "firstArgRegNum", which is assumed to have already been aligned to the register alignment restriction of the
-    // struct type. Adds bits to "*pArgSkippedRegMask" for any argument registers *not* used in passing "varDsc" --
-    // i.e., internal "holes" caused by internal alignment constraints.  For example, if the struct contained an int and
-    // a double, and we at R0 (on ARM), then R1 would be skipped, and the bit for R1 would be added to the mask.
-    void fgAddSkippedRegsInPromotedStructArg(LclVarDsc* varDsc, unsigned firstArgRegNum, regMaskTP* pArgSkippedRegMask);
-#endif // TARGET_ARM
 
     // If "tree" is a indirection (GT_IND, or GT_OBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR
     // node, else NULL.
@@ -9259,6 +9286,10 @@ public:
         static const bool compUseSoftFP = false;
 #endif // ARM_SOFTFP
 #endif // CONFIGURABLE_ARM_ABI
+
+        // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
+        bool compJitEarlyExpandMDArrays;
+
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
@@ -9953,7 +9984,6 @@ public:
         unsigned m_escapeAddress;
         unsigned m_osrExposed;
         unsigned m_stressLclFld;
-        unsigned m_copyFldByFld;
         unsigned m_dispatchRetBuf;
         unsigned m_wideIndir;
 
@@ -10441,8 +10471,6 @@ public:
     void JitTestCheckVN();  // Value numbering tests.
 #endif                      // DEBUG
 
-    // The "FieldSeqStore", for canonicalizing field sequences.  See the definition of FieldSeqStore for
-    // operations.
     FieldSeqStore* m_fieldSeqStore;
 
     FieldSeqStore* GetFieldSeqStore()
@@ -10450,45 +10478,13 @@ public:
         Compiler* compRoot = impInlineRoot();
         if (compRoot->m_fieldSeqStore == nullptr)
         {
-            // Create a CompAllocator that labels sub-structure with CMK_FieldSeqStore, and use that for allocation.
-            CompAllocator ialloc(getAllocator(CMK_FieldSeqStore));
-            compRoot->m_fieldSeqStore = new (ialloc) FieldSeqStore(ialloc);
+            CompAllocator alloc       = getAllocator(CMK_FieldSeqStore);
+            compRoot->m_fieldSeqStore = new (alloc) FieldSeqStore(alloc);
         }
         return compRoot->m_fieldSeqStore;
     }
 
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeqNode*> NodeToFieldSeqMap;
-
-    // Some nodes of "TYP_BYREF" or "TYP_I_IMPL" actually represent the address of a field within a struct, but since
-    // the offset of the field is zero, there's no "GT_ADD" node.  We normally attach a field sequence to the constant
-    // that is added, but what do we do when that constant is zero, and is thus not present?  We use this mechanism to
-    // attach the field sequence directly to the address node.
-    NodeToFieldSeqMap* m_zeroOffsetFieldMap;
-
-    NodeToFieldSeqMap* GetZeroOffsetFieldMap()
-    {
-        // Don't need to worry about inlining here
-        if (m_zeroOffsetFieldMap == nullptr)
-        {
-            // Create a CompAllocator that labels sub-structure with CMK_ZeroOffsetFieldMap, and use that for
-            // allocation.
-            CompAllocator ialloc(getAllocator(CMK_ZeroOffsetFieldMap));
-            m_zeroOffsetFieldMap = new (ialloc) NodeToFieldSeqMap(ialloc);
-        }
-        return m_zeroOffsetFieldMap;
-    }
-
-    // Requires that "op1" is a node of type "TYP_BYREF" or "TYP_I_IMPL".  We are dereferencing this with the fields in
-    // "fieldSeq", whose offsets are required all to be zero.  Ensures that any field sequence annotation currently on
-    // "op1" or its components is augmented by appending "fieldSeq".  In practice, if "op1" is a GT_LCL_FLD, it has
-    // a field sequence as a member; otherwise, it may be the addition of an a byref and a constant, where the const
-    // has a field sequence -- in this case "fieldSeq" is appended to that of the constant; otherwise, we
-    // record the field sequence using the ZeroOffsetFieldMap described above.
-    //
-    // One exception above is that "op1" is a node of type "TYP_REF" where "op1" is a GT_LCL_VAR.
-    // This happens when System.Object vtable pointer is a regular field at offset 0 in System.Private.CoreLib in
-    // NativeAOT. Such case is handled same as the default case.
-    void fgAddFieldSeqForZeroOffset(GenTree* op1, FieldSeqNode* fieldSeq);
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeq*> NodeToFieldSeqMap;
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 
@@ -10752,6 +10748,8 @@ public:
             case GT_COPY:
             case GT_RELOAD:
             case GT_ARR_LENGTH:
+            case GT_MDARR_LENGTH:
+            case GT_MDARR_LOWER_BOUND:
             case GT_CAST:
             case GT_BITCAST:
             case GT_CKFINITE:
@@ -11224,19 +11222,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
-// Values used to mark the types a stack slot is used for
-
-const unsigned TYPE_REF_INT      = 0x01; // slot used as a 32-bit int
-const unsigned TYPE_REF_LNG      = 0x02; // slot used as a 64-bit long
-const unsigned TYPE_REF_FLT      = 0x04; // slot used as a 32-bit float
-const unsigned TYPE_REF_DBL      = 0x08; // slot used as a 64-bit float
-const unsigned TYPE_REF_PTR      = 0x10; // slot used as a 32-bit pointer
-const unsigned TYPE_REF_BYR      = 0x20; // slot used as a byref pointer
-const unsigned TYPE_REF_STC      = 0x40; // slot used as a struct
-const unsigned TYPE_REF_TYPEMASK = 0x7F; // bits that represent the type
-
-// const unsigned TYPE_REF_ADDR_TAKEN  = 0x80; // slots address was taken
 
 /*****************************************************************************
  *

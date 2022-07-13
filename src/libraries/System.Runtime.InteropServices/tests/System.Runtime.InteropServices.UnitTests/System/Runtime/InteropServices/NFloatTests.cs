@@ -1601,9 +1601,9 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData( float.PositiveInfinity,  3,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  4,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  5,  float.PositiveInfinity, 0.0f)]
-        public static void Root32(float x, int n, float expectedResult, float allowedVariance)
+        public static void RootN32(float x, int n, float expectedResult, float allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, NFloat.Root(x, n), allowedVariance);
+            AssertExtensions.Equal(expectedResult, NFloat.RootN(x, n), allowedVariance);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
@@ -1650,6 +1650,39 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Equal(-expectedResult, (float)NFloat.AsinPi(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, (float)NFloat.AsinPi(+value), allowedVariance);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData( float.NaN,               float.NaN,               float.NaN,    0.0f)]
+        [InlineData( 0.0f,                   -1.0f,                    1.0f,         CrossPlatformMachineEpsilon32)]    // y: sinpi(0)              x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.0f,                   -0.0f,                    1.0f,         CrossPlatformMachineEpsilon32)]    // y: sinpi(0)              x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.0f,                    0.0f,                    0.0f,         0.0f)]                             // y: sinpi(0)              x:  cospi(0.5)
+        [InlineData( 0.0f,                    1.0f,                    0.0f,         0.0f)]                             // y: sinpi(0)              x:  cospi(0)
+        [InlineData( 0.841470985f,            0.540302306f,            0.318309886f, CrossPlatformMachineEpsilon32)]    // y: sinpi(1 / pi)         x:  cospi(1 / pi)
+        [InlineData( 0.978770938f,            0.204957194f,            0.434294482f, CrossPlatformMachineEpsilon32)]    // y: sinpi(log10(e))       x:  cospi(log10(e))
+        [InlineData( 1.0f,                   -0.0f,                    0.5f,         CrossPlatformMachineEpsilon32)]    // y: sinpi(0.5)            x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 1.0f,                    0.0f,                    0.5f,         CrossPlatformMachineEpsilon32)]    // y: sinpi(0.5)            x:  cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.909297427f,           -0.416146837f,            0.636619772f, CrossPlatformMachineEpsilon32)]    // y: sinpi(2 / pi)         x:  cospi(2 / pi)
+        [InlineData( 0.821482831f,           -0.570233249f,            0.693147181f, CrossPlatformMachineEpsilon32)]    // y: sinpi(ln(2))          x:  cospi(ln(2))
+        [InlineData( 0.795693202f,           -0.605699867f,            0.707106781f, CrossPlatformMachineEpsilon32)]    // y: sinpi(1 / sqrt(2))    x:  cospi(1 / sqrt(2))
+        [InlineData( 0.624265953f,           -0.781211892f,            0.785398163f, CrossPlatformMachineEpsilon32)]    // y: sinpi(pi / 4)         x:  cospi(pi / 4)
+        [InlineData(-0.392469559f,           -0.919764995f,           -0.871620833f, CrossPlatformMachineEpsilon32)]    // y: sinpi(2 / sqrt(pi))   x:  cospi(2 / sqrt(pi))
+        [InlineData(-0.963902533f,           -0.266255342f,           -0.585786438f, CrossPlatformMachineEpsilon32)]    // y: sinpi(sqrt(2))        x:  cospi(sqrt(2))
+        [InlineData(-0.983838529f,           -0.179057946f,           -0.557304959f, CrossPlatformMachineEpsilon32)]    // y: sinpi(log2(e))        x:  cospi(log2(e))
+        [InlineData(-0.975367972f,            0.220584041f,           -0.429203673f, CrossPlatformMachineEpsilon32)]    // y: sinpi(pi / 2)         x:  cospi(pi / 2)
+        [InlineData( 0.813763848f,            0.581195664f,            0.302585093f, CrossPlatformMachineEpsilon32)]    // y: sinpi(ln(10))         x:  cospi(ln(10))
+        [InlineData( 0.773942685f,           -0.633255651f,            0.718281828f, CrossPlatformMachineEpsilon32)]    // y: sinpi(e)              x:  cospi(e)
+        [InlineData(-0.430301217f,           -0.902685362f,           -0.858407346f, CrossPlatformMachineEpsilon32)]    // y: sinpi(pi)             x:  cospi(pi)
+        [InlineData( 1.0f,                    float.NegativeInfinity,  1.0f,         CrossPlatformMachineEpsilon32)]    // y: sinpi(0.5)                                    ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 1.0f,                    float.PositiveInfinity,  0.0f,         0.0f)]                             // y: sinpi(0.5)
+        [InlineData( float.PositiveInfinity, -1.0f,                    0.5f,         CrossPlatformMachineEpsilon32)]    //                          x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( float.PositiveInfinity,  1.0f,                    0.5f,         CrossPlatformMachineEpsilon32)]    //                          x:  cospi(0)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( float.PositiveInfinity,  float.NegativeInfinity,  0.75f,        CrossPlatformMachineEpsilon32)]    //                                                  ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( float.PositiveInfinity,  float.PositiveInfinity,  0.25f,        CrossPlatformMachineEpsilon32)]    //                                                  ; This should be exact, but has an issue on WASM/Unix
+        public static void Atan2PiTest32(float y, float x, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, (float)NFloat.Atan2Pi(-y, +x), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, (float)NFloat.Atan2Pi(+y, +x), allowedVariance);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
@@ -2244,9 +2277,9 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData( double.PositiveInfinity,  3,  double.PositiveInfinity, 0.0)]
         [InlineData( double.PositiveInfinity,  4,  double.PositiveInfinity, 0.0)]
         [InlineData( double.PositiveInfinity,  5,  double.PositiveInfinity, 0.0)]
-        public static void Root64(double x, int n, double expectedResult, double allowedVariance)
+        public static void RootN64(double x, int n, double expectedResult, double allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, NFloat.Root((NFloat)x, n), allowedVariance);
+            AssertExtensions.Equal(expectedResult, NFloat.RootN((NFloat)x, n), allowedVariance);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
@@ -2293,6 +2326,39 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Equal(-expectedResult, NFloat.AsinPi((NFloat)(-value)), allowedVariance);
             AssertExtensions.Equal(+expectedResult, NFloat.AsinPi((NFloat)(+value)), allowedVariance);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData( double.NaN,               double.NaN,              double.NaN,           0.0)]
+        [InlineData( 0.0,                     -1.0,                      1.0,                 CrossPlatformMachineEpsilon64)]   // y: sinpi(0)              x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.0,                     -0.0,                      1.0,                 CrossPlatformMachineEpsilon64)]   // y: sinpi(0)              x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.0,                      0.0,                      0.0,                 0.0)]                             // y: sinpi(0)              x:  cospi(0.5)
+        [InlineData( 0.0,                      1.0,                      0.0,                 0.0)]                             // y: sinpi(0)              x:  cospi(0)
+        [InlineData( 0.84147098480789651,      0.54030230586813972,      0.31830988618379067, CrossPlatformMachineEpsilon64)]   // y: sinpi(1 / pi)         x:  cospi(1 / pi)
+        [InlineData( 0.97877093770393305,      0.20495719432643395,      0.43429448190325183, CrossPlatformMachineEpsilon64)]   // y: sinpi(log10(e))       x:  cospi(log10(e))
+        [InlineData( 1.0,                     -0.0,                      0.5,                 CrossPlatformMachineEpsilon64)]   // y: sinpi(0.5)            x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 1.0,                      0.0,                      0.5,                 CrossPlatformMachineEpsilon64)]   // y: sinpi(0.5)            x:  cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.90929742682568170,     -0.41614683654714239,      0.63661977236758134, CrossPlatformMachineEpsilon64)]   // y: sinpi(2 / pi)         x:  cospi(2 / pi)
+        [InlineData( 0.82148283122563883,     -0.57023324876887755,      0.69314718055994531, CrossPlatformMachineEpsilon64)]   // y: sinpi(ln(2))          x:  cospi(ln(2))
+        [InlineData( 0.79569320156748087,     -0.60569986707881343,      0.70710678118654752, CrossPlatformMachineEpsilon64)]   // y: sinpi(1 / sqrt(2))    x:  cospi(1 / sqrt(2))
+        [InlineData( 0.62426595263969903,     -0.78121189211048819,      0.78539816339744831, CrossPlatformMachineEpsilon64)]   // y: sinpi(pi / 4)         x:  cospi(pi / 4)
+        [InlineData(-0.39246955856278420,     -0.91976499476851874,     -0.87162083290448743, CrossPlatformMachineEpsilon64)]   // y: sinpi(2 / sqrt(pi))   x:  cospi(2 / sqrt(pi))
+        [InlineData(-0.96390253284987733,     -0.26625534204141549,     -0.58578643762690495, CrossPlatformMachineEpsilon64)]   // y: sinpi(sqrt(2))        x:  cospi(sqrt(2))
+        [InlineData(-0.98383852942436249,     -0.17905794598427576,     -0.55730495911103659, CrossPlatformMachineEpsilon64)]   // y: sinpi(log2(e))        x:  cospi(log2(e))
+        [InlineData(-0.97536797208363139,      0.22058404074969809,     -0.42920367320510338, CrossPlatformMachineEpsilon64)]   // y: sinpi(pi / 2)         x:  cospi(pi / 2)
+        [InlineData( 0.81376384817462330,      0.58119566361426737,      0.30258509299404568, CrossPlatformMachineEpsilon64)]   // y: sinpi(ln(10))         x:  cospi(ln(10))
+        [InlineData( 0.77394268526670828,     -0.63325565131482003,      0.71828182845904524, CrossPlatformMachineEpsilon64)]   // y: sinpi(e)              x:  cospi(e)
+        [InlineData(-0.43030121700009227,     -0.90268536193307107,     -0.85840734641020676, CrossPlatformMachineEpsilon64)]   // y: sinpi(pi)             x:  cospi(pi)
+        [InlineData( 1.0,                      double.NegativeInfinity,  1.0,                 CrossPlatformMachineEpsilon64)]   // y: sinpi(0.5)                                    ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 1.0,                      double.PositiveInfinity,  0.0,                 0.0)]                             // y: sinpi(0.5)
+        [InlineData( double.PositiveInfinity, -1.0,                      0.5,                 CrossPlatformMachineEpsilon64)]   //                          x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  1.0,                      0.5,                 CrossPlatformMachineEpsilon64)]   //                          x:  cospi(0)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  double.NegativeInfinity,  0.75,                CrossPlatformMachineEpsilon64)]   //                                                  ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  double.PositiveInfinity,  0.25,                CrossPlatformMachineEpsilon64)]   //                                                  ; This should be exact, but has an issue on WASM/Unix
+        public static void Atan2PiTest(double y, double x, double expectedResult, double allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, NFloat.Atan2Pi((NFloat)(-y), (NFloat)(+x)), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, NFloat.Atan2Pi((NFloat)(+y), (NFloat)(+x)), allowedVariance);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]

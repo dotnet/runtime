@@ -131,7 +131,12 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
                         if (!success)
-                            throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                        {
+                            Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                            bCryptKeyHandle.Dispose();
+                            throw e;
+                        }
+
                         return bCryptKeyHandle;
                     }
                 }

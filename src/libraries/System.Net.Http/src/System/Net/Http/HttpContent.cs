@@ -109,17 +109,7 @@ namespace System.Net.Http
         }
 #endif
 
-        public HttpContentHeaders Headers
-        {
-            get
-            {
-                if (_headers == null)
-                {
-                    _headers = new HttpContentHeaders(this);
-                }
-                return _headers;
-            }
-        }
+        public HttpContentHeaders Headers => _headers ??= new HttpContentHeaders(this);
 
         private bool IsBuffered
         {
@@ -695,10 +685,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private void CheckTaskNotNull(Task task)

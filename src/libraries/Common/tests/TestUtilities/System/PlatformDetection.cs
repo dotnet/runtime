@@ -38,6 +38,7 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
+        public static bool IsNotAndroidX86 => !(IsAndroid && IsX86Process);
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
@@ -92,6 +93,7 @@ namespace System
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
+        public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
         public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsAppleMobile;

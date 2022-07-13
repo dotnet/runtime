@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (!_stackGuard.TryEnterOnCurrentStack())
             {
-                return _stackGuard.RunOnEmptyStack((c, a) => VisitCallSite(c, a), callSite, argument);
+                return _stackGuard.RunOnEmptyStack(VisitCallSite, callSite, argument);
             }
 
             switch (callSite.Cache.Location)

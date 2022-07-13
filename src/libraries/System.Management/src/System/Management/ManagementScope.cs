@@ -68,10 +68,7 @@ namespace System.Management
             finally
             {
                 // dispose of the key
-                if (s_switchesRegKey != null)
-                {
-                    s_switchesRegKey.Dispose();
-                }
+                s_switchesRegKey?.Dispose();
             }
 
             // if for any reason we cannot retrieve the value of the switch from the Registry,
@@ -808,10 +805,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
-                    return options = ConnectionOptions._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
-                else
-                    return options;
+                return options ??= ConnectionOptions._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
             }
             set
             {
@@ -849,10 +843,7 @@ namespace System.Management
         {
             get
             {
-                if (prvpath == null)
-                    return prvpath = ManagementPath._Clone(null);
-                else
-                    return prvpath;
+                return prvpath ??= ManagementPath._Clone(null);
             }
             set
             {

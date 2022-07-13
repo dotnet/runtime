@@ -69,9 +69,7 @@ namespace System.IO.Packaging
             {
                 ThrowIfObjectDisposed();
 
-                if (_packageProperties == null)
-                    _packageProperties = new PartBasedPackageProperties(this);
-                return _packageProperties;
+                return _packageProperties ??= new PartBasedPackageProperties(this);
             }
         }
 
@@ -455,8 +453,7 @@ namespace System.IO.Packaging
                     // close core properties
                     // This method will write out the core properties to the stream
                     // These will get flushed to the disk as a part of the DoFlush operation
-                    if (_packageProperties != null)
-                        _packageProperties.Close();
+                    _packageProperties?.Close();
 
                     // flush relationships
                     FlushRelationships();
@@ -509,8 +506,7 @@ namespace System.IO.Packaging
             // Write core properties.
             // This call will write out the xml for the core properties to the stream
             // These properties will get flushed to disk as a part of the DoFlush operation
-            if (_packageProperties != null)
-                _packageProperties.Flush();
+            _packageProperties?.Flush();
 
             // Write package relationships XML to the relationship part stream.
             // These will get flushed to disk as a part of the DoFlush operation
@@ -739,10 +735,7 @@ namespace System.IO.Packaging
         {
             if (!_disposed && disposing)
             {
-                if (_partList != null)
-                {
-                    _partList.Clear();
-                }
+                _partList?.Clear();
 
                 if (_packageProperties != null)
                 {
@@ -1001,17 +994,13 @@ namespace System.IO.Packaging
         private void EnsureRelationships()
         {
             // once per package
-            if (_relationships == null)
-            {
-                _relationships = new InternalRelationshipCollection(this);
-            }
+            _relationships ??= new InternalRelationshipCollection(this);
         }
 
         //Delete All Package-level Relationships
         private void ClearRelationships()
         {
-            if (_relationships != null)
-                _relationships.Clear();
+            _relationships?.Clear();
         }
 
         //Flush the relationships at package level

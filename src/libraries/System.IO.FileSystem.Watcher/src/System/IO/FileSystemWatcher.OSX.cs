@@ -324,7 +324,9 @@ namespace System.IO
                         EventStreamFlags);
                     if (eventStream.IsInvalid)
                     {
-                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                        Exception e = Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                        eventStream.Dispose();
+                        throw e;
                     }
 
                     cleanupGCHandle = false;

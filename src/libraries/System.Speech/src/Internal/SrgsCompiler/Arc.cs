@@ -315,19 +315,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void AddStartTag(Tag tag)
         {
-            if (_startTags == null)
-            {
-                _startTags = new Collection<Tag>();
-            }
+            _startTags ??= new Collection<Tag>();
             _startTags.Add(tag);
         }
 
         internal void AddEndTag(Tag tag)
         {
-            if (_endTags == null)
-            {
-                _endTags = new Collection<Tag>();
-            }
+            _endTags ??= new Collection<Tag>();
             _endTags.Add(tag);
         }
 
@@ -403,10 +397,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             if (arc._startTags != null)
             {
-                if (_startTags == null)
-                {
-                    _startTags = new Collection<Tag>();
-                }
+                _startTags ??= new Collection<Tag>();
                 foreach (Tag tag in arc._startTags)
                 {
                     Tag newTag = new(tag);
@@ -432,10 +423,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
             if (arc._endTags != null)
             {
-                if (_endTags == null)
-                {
-                    _endTags = new Collection<Tag>();
-                }
+                _endTags ??= new Collection<Tag>();
                 foreach (Tag tag in arc._endTags)
                 {
                     Tag newTag = endArcs[tag];
@@ -480,15 +468,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         internal void ConnectStates()
         {
-            if (_end != null)
-            {
-                _end.InArcs.Add(this);
-            }
-
-            if (_start != null)
-            {
-                _start.OutArcs.Add(this);
-            }
+            _end?.InArcs.Add(this);
+            _start?.OutArcs.Add(this);
         }
 
         /// <summary>
@@ -639,15 +620,9 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 if (value != _start)
                 {
-                    if (_start != null)
-                    {
-                        _start.OutArcs.Remove(this);
-                    }
+                    _start?.OutArcs.Remove(this);
                     _start = value;
-                    if (_start != null)
-                    {
-                        _start.OutArcs.Add(this);
-                    }
+                    _start?.OutArcs.Add(this);
                 }
             }
         }
@@ -663,15 +638,9 @@ namespace System.Speech.Internal.SrgsCompiler
                 // If no change, then do nothing
                 if (value != _end)
                 {
-                    if (_end != null)
-                    {
-                        _end.InArcs.Remove(this);
-                    }
+                    _end?.InArcs.Remove(this);
                     _end = value;
-                    if (_end != null)
-                    {
-                        _end.InArcs.Add(this);
-                    }
+                    _end?.InArcs.Add(this);
                 }
             }
         }

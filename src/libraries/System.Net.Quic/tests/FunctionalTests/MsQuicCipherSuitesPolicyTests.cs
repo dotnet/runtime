@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Collections.Generic;
 using System.Net.Security;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,16 +17,23 @@ namespace System.Net.Quic.Tests
 
         private async Task TestConnection(CipherSuitesPolicy serverPolicy, CipherSuitesPolicy clientPolicy)
         {
-            var listenerOptions = CreateQuicListenerOptions();
-            listenerOptions.ServerAuthenticationOptions.CipherSuitesPolicy = serverPolicy;
-            using QuicListener listener = await CreateQuicListener(listenerOptions);
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.ServerAuthenticationOptions.CipherSuitesPolicy = serverPolicy;
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
-            var clientOptions = CreateQuicClientOptions();
+            var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = clientPolicy;
-            clientOptions.RemoteEndPoint = listener.ListenEndPoint;
-            using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
+            await using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
 
-            await clientConnection.ConnectAsync();
             await clientConnection.CloseAsync(0);
         }
 
@@ -42,13 +50,21 @@ namespace System.Net.Quic.Tests
         public void NoSupportedCiphers_ThrowsArgumentException(TlsCipherSuite[] ciphers)
         {
             CipherSuitesPolicy policy = new CipherSuitesPolicy(ciphers);
-            var listenerOptions = CreateQuicListenerOptions();
-            listenerOptions.ServerAuthenticationOptions.CipherSuitesPolicy = policy;
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.ServerAuthenticationOptions.CipherSuitesPolicy = policy;
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
             Assert.ThrowsAsync<ArgumentException>(async () => await CreateQuicListener(listenerOptions));
 
-            var clientOptions = CreateQuicClientOptions();
+            var clientOptions = CreateQuicClientOptions(new IPEndPoint(IPAddress.Loopback, 5000));
             clientOptions.ClientAuthenticationOptions.CipherSuitesPolicy = policy;
-            clientOptions.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 5000);
             Assert.ThrowsAsync<ArgumentException>(async () => await CreateQuicConnection(clientOptions));
         }
 

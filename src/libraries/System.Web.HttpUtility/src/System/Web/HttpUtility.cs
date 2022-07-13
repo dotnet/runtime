@@ -74,7 +74,7 @@ namespace System.Web
                     }
                 }
 
-                return sb.ToString(0, sb.Length - 1);
+                return sb.Length > 0 ? sb.ToString(0, sb.Length - 1) : "";
             }
         }
 

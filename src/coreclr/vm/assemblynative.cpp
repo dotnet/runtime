@@ -355,9 +355,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly
 
     BEGIN_QCALL;
 
-    if (!wszName)
-        COMPlusThrowArgumentNull(W("name"), W("ArgumentNull_String"));
-
     BOOL prohibitAsmQualifiedName = TRUE;
 
     AssemblyBinder * pBinder = NULL;
@@ -619,7 +616,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     {
         if (fLoadIfNotFound)
         {
-            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile);
+            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(mdFile);
             modules.Append(pModule);
         }
     }

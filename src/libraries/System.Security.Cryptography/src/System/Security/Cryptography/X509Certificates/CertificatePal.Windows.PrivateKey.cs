@@ -385,8 +385,9 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
+                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                     pal.Dispose();
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw e;
                 }
             }
 
@@ -573,8 +574,9 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
+                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                     pal.Dispose();
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw e;
                 }
             }
 
@@ -596,8 +598,9 @@ namespace System.Security.Cryptography.X509Certificates
                 Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
                 handle))
             {
+                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                 pal.Dispose();
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw e;
             }
 
             // The value was transferred to the certificate.

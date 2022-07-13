@@ -341,7 +341,7 @@ MethodTableBuilder::ExpandApproxInterface(
         bmtInterfaceEntry * pItfEntry = &bmtInterface->pInterfaceMap[i];
         bmtRTType * pItfType = pItfEntry->GetInterfaceType();
 
-        // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+        // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
         TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
         if (MetaSig::CompareTypeDefsUnderSubstitutions(pItfType->GetMethodTable(),
                                                        pNewInterface,
@@ -5758,7 +5758,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                 for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
                                 {
                                     bmtRTType * pCurItf = bmtInterface->pInterfaceMap[i].GetInterfaceType();
-                                    // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+                                    // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
                                     TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
                                     if (MetaSig::CompareTypeDefsUnderSubstitutions(
                                         pCurItf->GetMethodTable(),      pDeclMT,
@@ -5788,7 +5788,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                         for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
                                         {
                                             bmtRTType * pCurItf = bmtInterface->pInterfaceMap[i].GetInterfaceType();
-                                            // Type Equivalence is respected for this comparision as we just need to find an
+                                            // Type Equivalence is respected for this comparison as we just need to find an
                                             // equivalent interface, the particular interface is unimportant
                                             if (MetaSig::CompareTypeDefsUnderSubstitutions(
                                                 pCurItf->GetMethodTable(), pDeclMT,
@@ -8343,10 +8343,18 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
     if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout))
     {
+        LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is enregisterable\n",
+               this->GetDebugClassName()));
+
         // All the above tests passed. It's registers passed struct!
         GetHalfBakedMethodTable()->SetRegPassedStruct();
 
         StoreEightByteClassification(&helper);
+    }
+    else
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is _not_ enregisterable\n",
+               this->GetDebugClassName()));
     }
 }
 
@@ -8802,10 +8810,6 @@ MethodTableBuilder::HandleExplicitLayout(
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMT->IsByRefLike());
-
-    // ByReference<T> is an indication for a byref field, treat it as such.
-    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-         return MarkTagType(pFieldLayout, TARGET_POINTER_SIZE, byref);
 
     ExplicitClassTrust explicitClassTrust;
 
@@ -9691,7 +9695,7 @@ MethodTableBuilder::ExpandExactInterface(
     // determined the layout of the interface map for the "generic" version of the class.
     for (DWORD i = 0; i < bmtInfo->nAssigned; i++)
     {
-        // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+        // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
         TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
         if (MetaSig::CompareTypeDefsUnderSubstitutions(bmtInfo->pExactMTs[i],
                                                        pIntf,
@@ -9776,7 +9780,7 @@ void MethodTableBuilder::InterfaceAmbiguityCheck(bmtInterfaceAmbiguityCheckInfo 
     // determined the layout of the interface map for the "generic" version of the class.
     for (DWORD i = 0; i < bmtCheckInfo->nAssigned; i++)
     {
-        // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+        // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
         TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
         if (MetaSig::CompareTypeDefsUnderSubstitutions(bmtCheckInfo->ppExactDeclaredInterfaces[i],
                                                        pIntf,
@@ -9902,9 +9906,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
         if (g_pNullableClass != NULL)
         {
-            _ASSERTE(g_pByReferenceClass != NULL);
-            _ASSERTE(g_pByReferenceClass->IsByRefLike());
-
             _ASSERTE(g_pNullableClass->IsNullable());
 
             // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
@@ -11012,7 +11013,7 @@ BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(bmtRTType *pDeclType,
                     // If this is generic, we need to compare under substitutions
                     Substitution curItfSubs(tkParent, pCurIntfModule, &pCurItf->GetSubstitution());
 
-                    // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+                    // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
                     TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
                     if (MetaSig::CompareTypeDefsUnderSubstitutions(
                         pPotentialInterfaceMT, pDeclType->GetMethodTable(),

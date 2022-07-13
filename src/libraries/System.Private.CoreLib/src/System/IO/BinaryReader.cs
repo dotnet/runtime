@@ -143,7 +143,7 @@ namespace System.IO
 
             _charBytes ??= new byte[MaxCharBytesSize];
 
-            Span<char> singleChar = stackalloc char[1];
+            char singleChar = '\0';
 
             while (charsRead == 0)
             {
@@ -178,7 +178,7 @@ namespace System.IO
 
                 try
                 {
-                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), singleChar, flush: false);
+                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), new Span<char>(ref singleChar), flush: false);
                 }
                 catch
                 {
@@ -196,7 +196,7 @@ namespace System.IO
                 Debug.Assert(charsRead < 2, "BinaryReader::ReadOneChar - assuming we only got 0 or 1 char, not 2!");
             }
             Debug.Assert(charsRead > 0);
-            return singleChar[0];
+            return singleChar;
         }
 
         public virtual byte ReadByte() => InternalReadByte();

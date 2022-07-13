@@ -58,6 +58,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TypesWithInvalidMembers_WithMembers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task TypeWithInvalidMember(Type classType, Type invalidMemberType, string invalidMemberName)
         {
             static void ValidateException(InvalidOperationException ex, Type classType, Type invalidMemberType, string invalidMemberName)

@@ -322,7 +322,7 @@ static const char * szLowMemoryAssertMessage = "Assert failure (unable to format
 bool _DbgBreakCheck(
     LPCSTR      szFile,
     int         iLine,
-    LPCSTR      szExpr,
+    LPCUTF8     szExpr,
     BOOL        fConstrained)
 {
     STATIC_CONTRACT_THROWS;
@@ -383,12 +383,12 @@ bool _DbgBreakCheck(
     else
     {
         // Note: we cannot convert to unicode or concatenate in this situation.
-        OutputDebugStringA(szLowMemoryAssertMessage);
-        OutputDebugStringA("\n");
-        OutputDebugStringA(szFile);
-        OutputDebugStringA("\n");
-        OutputDebugStringA(szExpr);
-        OutputDebugStringA("\n");
+        OutputDebugStringUtf8(szLowMemoryAssertMessage);
+        OutputDebugStringUtf8("\n");
+        OutputDebugStringUtf8(szFile);
+        OutputDebugStringUtf8("\n");
+        OutputDebugStringUtf8(szExpr);
+        OutputDebugStringUtf8("\n");
         printf(szLowMemoryAssertMessage);
         printf("\n");
         printf(szFile);
@@ -624,7 +624,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
         // If we have a supplied context, then don't skip any frames. Else we'll
         // be using the current context, so skip this frame.
         const int cSkip = (pContext == NULL) ? 1 : 0;
-        char * szString = s.OpenANSIBuffer(cchMaxAssertStackLevelStringLen * cTotal);
+        char * szString = s.OpenUTF8Buffer(cchMaxAssertStackLevelStringLen * cTotal);
         GetStringFromStackLevels(cSkip, cTotal, szString, pContext);
         s.CloseBuffer((COUNT_T) strlen(szString));
 

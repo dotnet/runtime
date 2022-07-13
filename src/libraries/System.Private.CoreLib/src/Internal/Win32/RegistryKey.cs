@@ -37,10 +37,7 @@ namespace Internal.Win32
 
         void IDisposable.Dispose()
         {
-            if (_hkey != null)
-            {
-                _hkey.Dispose();
-            }
+            _hkey?.Dispose();
         }
 
         public void DeleteValue(string name, bool throwOnMissingValue)
@@ -97,6 +94,8 @@ namespace Internal.Win32
             {
                 return new RegistryKey(result);
             }
+
+            result.Dispose();
 
             // Return null if we didn't find the key.
             if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
