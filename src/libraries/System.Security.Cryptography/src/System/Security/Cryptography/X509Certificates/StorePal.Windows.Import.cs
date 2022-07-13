@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates
                     !Interop.Crypt32.CertAddCertificateLinkToStore(certStore, certContext, Interop.Crypt32.CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                 {
                     Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
-                    certStore?.Dispose();
+                    certStore.Dispose();
                     throw e;
                 }
             }

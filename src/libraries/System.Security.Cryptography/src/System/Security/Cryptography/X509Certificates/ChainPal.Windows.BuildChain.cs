@@ -67,6 +67,7 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 if (!Interop.Crypt32.CertGetCertificateChain(storeHandle.DangerousGetHandle(), certContext, &ft, extraStoreHandle, ref chainPara, flags, IntPtr.Zero, out chain))
                                 {
+                                    chain.Dispose();
                                     return null;
                                 }
                             }
