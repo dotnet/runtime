@@ -3,7 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Microsoft.Win32.Primitives.cs" />
+    <Compile Include="$(CoreLibRefContractsDir)Microsoft.Win32.Primitives.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

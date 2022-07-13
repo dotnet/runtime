@@ -345,4 +345,10 @@
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
+
+  <!-- Import refererence assembly logic -->
+  <PropertyGroup>
+    <IsSourceProject>true</IsSourceProject>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>

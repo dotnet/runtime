@@ -6,8 +6,8 @@
     <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Diagnostics.Tracing.cs" />
-    <Compile Include="System.Diagnostics.Tracing.Counters.cs" />
+    <Compile Include="$(CoreLibRefContractsDir)System.Diagnostics.Tracing.cs" />
+    <Compile Include="$(CoreLibRefContractsDir)System.Diagnostics.Tracing.Counters.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

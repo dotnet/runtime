@@ -6,7 +6,7 @@
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Threading.ThreadPool.cs" />
+    <Compile Include="$(CoreLibRefContractsDir)System.Threading.ThreadPool.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <!-- disable warnings about obsolete APIs,
+        Remove warning disable when nullable attributes are respected,
+        Type has no accessible constructors which use only CLS-compliant types -->
+    <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015</NoWarn>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <FeatureWasmPerfTracing>false</FeatureWasmPerfTracing>
+    <FeatureWasmThreads>false</FeatureWasmThreads>
+    <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants>$(DefineConstants);HIDE_URI_TYPES</DefineConstants>
+    <DefineConstants>$(DefineConstants);HIDE_CONTRACT_TYPES</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- contracts where all types were moved to CoreLib, these are used both here and in the contract assemblies and are generated -->
+    <Compile Include="contracts\Microsoft.Win32.Primitives.cs" />
+    <Compile Include="contracts\System.Diagnostics.Contracts.cs" />
+    <Compile Include="contracts\System.Diagnostics.Tracing.cs" />
+    <Compile Include="contracts\System.Diagnostics.Tracing.Counters.cs" />
+    <Compile Include="contracts\System.Numerics.Vectors.cs" />
+    <Compile Include="contracts\System.Reflection.Emit.ILGeneration.cs" />
+    <Compile Include="contracts\System.Reflection.Emit.Lightweight.cs" />
+    <Compile Include="contracts\System.Reflection.Emit.cs" />
+    <Compile Include="contracts\System.Reflection.Primitives.cs" />
+    <Compile Include="contracts\System.Runtime.Intrinsics.cs" />
+    <Compile Include="contracts\System.Runtime.Loader.cs" />
+    <Compile Include="contracts\System.Runtime.cs" />
+    <Compile Include="contracts\System.Text.Encoding.Extensions.cs" />
+    <Compile Include="contracts\System.Threading.Overlapped.cs" />
+    <Compile Include="contracts\System.Threading.ThreadPool.cs" />
+    <Compile Include="contracts\System.Threading.Thread.cs" />
+  
+    <!-- contracts where types were partially moved to CoreLib, these are used both here and in the contract assemblies and are generated -->
+    <Compile Include="..\..\System.Collections.Concurrent\ref\System.Collections.Concurrent.cs" />
+    <Compile Include="..\..\System.Collections\ref\System.Collections.cs" />
+    <Compile Include="..\..\System.Diagnostics.StackTrace\ref\System.Diagnostics.StackTrace.cs" />
+    <Compile Include="..\..\System.Memory\ref\System.Memory.cs" />
+    <Compile Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.cs" />
+    <Compile Include="..\..\System.Threading\ref\System.Threading.cs" />
+
+    <!-- types only exposed through CoreLib, this is manually maintained -->
+    <Compile Include="System.Private.CoreLib.ExtraApis.cs" />
+
+    <!-- types not exposed in contracts but forwarded from the mscorlib shim, this is manually maintained -->
+    <Compile Include="System.Private.CoreLib.ManualShimTypeForwards.cs" />
+  </ItemGroup>
+</Project>

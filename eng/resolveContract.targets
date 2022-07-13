@@ -12,6 +12,7 @@
     <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
     <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
     <GenAPILangVersion Condition="'$(LangVersion)' != ''">$(LangVersion)</GenAPILangVersion>
+    <ProjectForGenAPIDocIdGeneration Condition="'$(IsSourceProject)' == 'true' and '$(ProjectForGenAPIDocIdGeneration)' == ''">$(CoreLibProject)</ProjectForGenAPIDocIdGeneration>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
@@ -60,11 +61,36 @@
                                       ReferenceAssembly="" />
     </ItemGroup>
   </Target>
-  
+
+  <Target Name="GenerateDocIdsForCoreLibOrUriProject"
+          Condition="'@(ProjectReference->WithMetadataValue('Identity', '$(ProjectForGenAPIDocIdGeneration)'))' != '' and ('$(ContractTypesPartiallyMovedToCoreLib)' == 'true' or '$(ContractTypesPartiallyMovedToUri)' == 'true')">
+    <PropertyGroup>
+      <!-- generate conditional compilation symbols to hide types implemented in contracts so we can include the .cs in the System.Private.CoreLib ref -->
+      <GenAPIConditionalTypeList>$(IntermediateOutputPath)GenAPIConditionalTypeList.txt</GenAPIConditionalTypeList>
+      <GenAPIConditionalTypeListSymbol Condition="'$(GenAPIConditionalTypeListSymbol)' == ''">!HIDE_CONTRACT_TYPES</GenAPIConditionalTypeListSymbol>
+      <GenAPIConditionalTypeListWrapOtherTypes Condition="'$(GenAPIConditionalTypeListWrapOtherTypes)' == ''">true</GenAPIConditionalTypeListWrapOtherTypes>
+    </PropertyGroup>
+    <ItemGroup>
+      <_genAPIResolvedCoreLibProjectReferenceDir Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)')->'%(RootDir)%(Directory)')" />
+      <_genAPIResolvedProjectForGenAPIDocIdGeneration Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(ProjectForGenAPIDocIdGeneration)'))" />
+    </ItemGroup>
+
+    <Microsoft.DotNet.GenAPI.GenAPITask
+        Assembly="@(_genAPIResolvedProjectForGenAPIDocIdGeneration)"
+        LibPath="@(_genAPIResolvedCoreLibProjectReferenceDir)"
+        WriterType="DocIds"
+        DocIdKinds="Namespace, Type"
+        OutputPath="$(GenAPIConditionalTypeList)" />
+  </Target>
+
   <Target Name="SetGenAPIProperties"
+          DependsOnTargets="GenerateDocIdsForCoreLibOrUriProject"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
-      <GenAPIFollowTypeForwards Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)'">true</GenAPIFollowTypeForwards>
+      <GenAPIFollowTypeForwards Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)' or '%(ProjectReference.Identity)' == '$(UriProject)'">true</GenAPIFollowTypeForwards>
+
+      <!-- for contracts where all types were moved to CoreLib we generate the ref .cs in the CoreLib directory for easier maintenance -->
+      <GenAPITargetPath Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)' and '$(ContractTypesPartiallyMovedToCoreLib)' != 'true'">$([MSBuild]::NormalizePath('$(CoreLibRefContractsDir)', '$(AssemblyName).cs'))</GenAPITargetPath>
     </PropertyGroup>
   </Target>
 

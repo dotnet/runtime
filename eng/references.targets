@@ -23,20 +23,11 @@
       <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
                                    '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
     </ProjectReference>
-    <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
+    <!-- If a CoreLib src/ref ProjectReference is present, make all P2P assets non transitive. -->
     <ProjectReference Update="@(ProjectReference->WithMetadataValue('PrivateAssets', ''))"
                       PrivateAssets="all"
                       Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
   </ItemGroup>
-
-  <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib as it is platform specific. -->
-  <Target Name="DisableProjectReferenceArchitectureMismatchWarningForCoreLib"
-          Condition="'@(_coreLibProjectReference)' != ''"
-          BeforeTargets="ResolveAssemblyReferences">
-    <PropertyGroup>
-      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
-    </PropertyGroup>
-  </Target>
 
   <!-- Filter out transitive P2Ps which should be excluded. -->
   <Target Name="FilterTransitiveProjectReferences"
@@ -91,6 +82,16 @@
     <ItemGroup>
       <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)"
                                       Condition="$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ReplaceCoreLibSrcWithRefAssemblyForCompilation"
+          AfterTargets="FindReferenceAssembliesForReferences"
+          Condition="'@(_coreLibProjectReference)' != ''">
+    <ItemGroup>
+      <_resolvedCoreLibProjectReference Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)'))" />
+      <ReferencePathWithRefAssemblies Remove="@(_resolvedCoreLibProjectReference)" />
+      <ReferencePathWithRefAssemblies Include="@(_resolvedCoreLibProjectReference->Metadata('ReferenceAssembly'))" />
     </ItemGroup>
   </Target>
 

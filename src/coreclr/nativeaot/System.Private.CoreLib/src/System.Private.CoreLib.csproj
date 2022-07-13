@@ -613,4 +613,10 @@
     <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
+
+  <!-- Import refererence assembly logic -->
+  <PropertyGroup>
+    <IsSourceProject>true</IsSourceProject>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>

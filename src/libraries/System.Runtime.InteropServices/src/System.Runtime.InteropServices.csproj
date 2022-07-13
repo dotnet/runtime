@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ContractTypesPartiallyMovedToCoreLib>true</ContractTypesPartiallyMovedToCoreLib>
   </PropertyGroup>
 
   <ItemGroup>

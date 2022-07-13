@@ -5,4 +5,7 @@
     <StrongNameKeyId>ECMA</StrongNameKeyId>
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CoreLibProject)" />
+  </ItemGroup>
 </Project>
