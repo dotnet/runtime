@@ -6,6 +6,7 @@ parameters:
   compare: false
   onlySanityCheck: false
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
+  collectHelixLogsScript: ''
 
 jobs:
 
@@ -45,7 +46,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'javascriptcore'
-        collectHelixLogsScript: ${{ variables['_wasmCollectHelixLogsScript'] }}
+        collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         #downloadSpecificBuild:
           #buildId: '1693181'
@@ -71,7 +72,7 @@ jobs:
         runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptengine: 'javascriptcore'
-        collectHelixLogsScript: ${{ variables['_wasmCollectHelixLogsScript'] }}
+        collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
 
 - ${{ if eq(parameters.runProfile, 'option#2') }}:
@@ -111,7 +112,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
-        collectHelixLogsScript: ${{ variables['_wasmCollectHelixLogsScript'] }}
+        collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
@@ -135,7 +136,7 @@ jobs:
         runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
-        collectHelixLogsScript: ${{ variables['_wasmCollectHelixLogsScript'] }}
+        collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}

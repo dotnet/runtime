@@ -18,8 +18,9 @@ jobs:
 - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
   parameters:
     runProfile: 'option#2'
+    collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
     #onlySanityCheck: false
     #downloadSpecificBuild:
-      #buildId: '1694033'
+      #buildId: '1878694'
       #pipeline: 'perf-wasm'
-      #branchName: 'refs/pull/67312/head'
+      #branchName: 'refs/pull/72119/head'
