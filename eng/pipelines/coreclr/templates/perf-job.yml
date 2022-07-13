@@ -22,6 +22,9 @@ parameters:
   skipLiveLibrariesDownload: false
   collectHelixLogsScript: ''
   timeoutInMinutes: 320
+  compare: false
+  onlySanityCheck: false
+  downloadSpecificBuild: null # buildId, pipeline, branchName, project
 
 ### Perf job
 
@@ -61,23 +64,24 @@ jobs:
     collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
 
     # Test job depends on the corresponding build job
-    dependsOn:
-    - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'wasm')) }}:
-      - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    - ${{ if and(ne(parameters.liveLibrariesBuildConfig, ''), eq(parameters.skipLiveLibrariesDownload, 'false')) }}:
-      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-    - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
-      - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    - ${{ if eq(parameters.runtimeType, 'wasm')}}:
-      - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'Browser', '', 'wasm', 'Linux', parameters.buildConfig, parameters.runtimeType) }}
-    - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
-      - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
-    - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
-      - ${{ 'build_Android_arm64_release_AndroidMono' }}
-      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
-    - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
-      - ${{ 'build_iOS_arm64_release_iOSMono' }}
-      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
+    ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
+      dependsOn:
+      - ${{ if not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'wasm')) }}:
+        - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if and(ne(parameters.liveLibrariesBuildConfig, ''), eq(parameters.skipLiveLibrariesDownload, 'false')) }}:
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+      - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
+        - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if eq(parameters.runtimeType, 'wasm')}}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'Browser', '', 'wasm', 'Linux', parameters.buildConfig, parameters.runtimeType) }}
+      - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
+      - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
+        - ${{ 'build_Android_arm64_release_AndroidMono' }}
+        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
+      - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
+        - ${{ 'build_iOS_arm64_release_iOSMono' }}
+        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
@@ -88,9 +92,9 @@ jobs:
       ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monodotnet $(Build.SourcesDirectory)/.dotnet-mono
       ${{ if and(eq(parameters.runtimeType, 'wasm'), ne(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }}
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }} $(extraSetupParametersSuffix)
       ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'AOT')) }}:
-        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }}
+        extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }} $(extraSetupParametersSuffix)
       ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), ne(parameters.osSubGroup, '_musl')) }}:
@@ -102,7 +106,15 @@ jobs:
     ${{ if eq(parameters.runtimeType, 'iosMono') }}:
       extraSetupParameters: --architecture ${{ parameters.archType }} --iosmono --iosllvmbuild ${{ parameters.iOSLlvmBuild }}
 
-    variables: ${{ parameters.variables }}
+    variables:
+    - ${{ each variable in parameters.variables }}:
+      - name: ${{ variable.name }}
+        value: ${{ variable.value }}
+    - name: extraSetupParametersSuffix
+      ${{ if eq(parameters.compare, 'true') }}:
+        value: '--compare'
+      ${{ if eq(parameters.onlySanityCheck, 'true') }}:
+        value: '--only-sanity'
 
     frameworks:
       - ${{ parameters.framework }}
@@ -140,12 +152,21 @@ jobs:
 
     # Download wasm
     - ${{ if eq(parameters.runtimeType, 'wasm') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)/BrowserWasm
-          artifactFileName: BrowserWasm.zip
-          artifactName: BrowserWasm
-          displayName: BrowserWasm
+      - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(librariesDownloadDir)/BrowserWasm
+            artifactFileName: BrowserWasm.zip
+            artifactName: BrowserWasm
+            displayName: BrowserWasm
+      - ${{ if ne(parameters.downloadSpecificBuild.buildId, '') }}:
+        - template: /eng/pipelines/common/download-specific-artifact-step.yml
+          parameters:
+            unpackFolder: $(librariesDownloadDir)/BrowserWasm
+            artifactFileName: BrowserWasm.zip
+            artifactName: BrowserWasm
+            displayName: BrowserWasm
+            ${{ insert }}: ${{ parameters.downloadSpecificBuild }}
 
       - script: >-
           mkdir -p $(librariesDownloadDir)/bin/wasm/wasm-data &&
