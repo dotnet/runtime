@@ -120,8 +120,12 @@
 
     <!-- Host files. Mobile uses a different hosting model, so we don't include the .NET host components there. -->
     <ItemGroup Condition="'$(TargetsMobile)' != 'true' and Exists('$(DotNetHostBinDir)')">
-      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostpolicy$(LibSuffix)" />
-      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)" />
+      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostpolicy$(LibSuffix)">
+        <IsNative>true</IsNative>
+      </RuntimeFiles>
+      <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)">
+        <IsNative>true</IsNative>
+      </RuntimeFiles>
     </ItemGroup>
 
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
