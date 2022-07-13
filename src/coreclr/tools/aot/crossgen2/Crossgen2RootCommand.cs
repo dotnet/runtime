@@ -22,7 +22,7 @@ internal class Crossgen2RootCommand : RootCommand
     public Option<Dictionary<string, string>> ReferenceFilePaths { get; } =
         new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), false, SR.ReferenceFiles);
     public Option<string> InstructionSet { get; } =
-        new(new[] { "--instructionset" }, SR.InstructionSets);
+        new(new[] { "--instruction-set" }, SR.InstructionSets);
     public Option<string[]> MibcFilePaths { get; } =
         new(new[] { "--mibc", "-m" }, () => Array.Empty<string>(), SR.MibcFiles);
     public Option<string> OutputFilePath { get; } =
