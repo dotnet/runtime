@@ -1128,13 +1128,13 @@ namespace System.Net.Http
                     // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,
                     // but in that case http2ConnectionWaiter.ConnectionCancellationTokenSource shall be null.
                     Debug.Assert(http11ConnectionWaiter is null || http2ConnectionWaiter?.ConnectionCancellationTokenSource is null);
-                    CancelIfNecessary(http11ConnectionWaiter);
-                    CancelIfNecessary(http2ConnectionWaiter);
+                    CancelIfNecessary(http11ConnectionWaiter, cancellationToken.IsCancellationRequested);
+                    CancelIfNecessary(http2ConnectionWaiter, cancellationToken.IsCancellationRequested);
                 }
             }
         }
 
-        private void CancelIfNecessary<T>(HttpConnectionWaiter<T>? waiter)
+        private void CancelIfNecessary<T>(HttpConnectionWaiter<T>? waiter, bool requestCancelled)
         {
             if (waiter == null || waiter.ConnectionCancellationTokenSource == null) return;
 
@@ -1147,7 +1147,8 @@ namespace System.Net.Http
 
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    Trace($"Cancelling a pending connection attempt with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms");
+                    Trace($"Cancelling a pending connection attempt with timeout of {GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion} ms, " +
+                        $"Reason: {(requestCancelled ? "Request cancelled" : "Request served by another connection")}.");
                 }
 
                 if (GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion > 0)
