@@ -17,11 +17,34 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 internal static partial class SyntaxValueProviderExtensions
 {
+    // Normal class as Runtime does not seem to support records currently.
+
     /// <summary>
     /// Information computed about a particular tree.  Cached so we don't repeatedly recompute this important
     /// information each time the incremental pipeline is rerun.
     /// </summary>
-    private sealed record SyntaxTreeInfo(SyntaxTree Tree, bool ContainsGlobalAliases, bool ContainsAttributeList);
+    private sealed class SyntaxTreeInfo : IEquatable<SyntaxTreeInfo>
+    {
+        public readonly SyntaxTree Tree;
+        public readonly bool ContainsGlobalAliases;
+        public readonly bool ContainsAttributeList;
+
+        public SyntaxTreeInfo(SyntaxTree tree, bool containsGlobalAliases, bool containsAttributeList)
+        {
+            Tree = tree;
+            ContainsGlobalAliases = containsGlobalAliases;
+            ContainsAttributeList = containsAttributeList;
+        }
+
+        public bool Equals(SyntaxTreeInfo other)
+            => Tree == other?.Tree;
+
+        public override bool Equals(object obj)
+            => this.Equals(obj as SyntaxTreeInfo);
+
+        public override int GetHashCode()
+            => Tree.GetHashCode();
+    }
 
     /// <summary>
     /// Caching of syntax-tree to the info we've computed about it.  Used because compilations will have thousands of
