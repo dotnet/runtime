@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "No X.509 support on browser")]
     public static class ChainPolicyTests
     {
         private static readonly Oid s_emailProtectionEku = new Oid("1.3.6.1.5.5.7.3.4", null);
