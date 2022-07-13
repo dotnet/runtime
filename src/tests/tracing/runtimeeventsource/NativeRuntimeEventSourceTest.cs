@@ -45,7 +45,7 @@ namespace Tracing.Tests
                         Thread.Sleep(100);
 
                         if ((OperatingSystem.IsWindows() && listener.SeenProvidersAndEvents.Contains("Microsoft-Windows-DotNETRuntime/EVENTID(65)"))
-                             || (listener.EventCount > 0))
+                             || (!OperatingSystem.IsWindows() && listener.EventCount > 0))
                         {
                             break;
                         }
