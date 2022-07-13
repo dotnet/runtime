@@ -360,6 +360,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementParametersAndModifiers };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementNativeToManagedOnlyOutParameter };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementNativeToManagedOnlyReturnValue };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.DefaultModeByValueInParameter };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.DefaultModeReturnValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshalling };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.DefaultMarshallerParametersAndModifiers<byte>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.DefaultMarshallerParametersAndModifiers<sbyte>() };
@@ -392,6 +394,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementParametersAndModifiers };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementNativeToManagedOnlyOutParameter };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementNativeToManagedOnlyReturnValue };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.DefaultModeByValueInParameter };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.DefaultModeReturnValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.CustomElementMarshalling };
             yield return new[] { ID(), CodeSnippets.CollectionsOfCollectionsStress };
         }
