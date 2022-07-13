@@ -36,11 +36,7 @@ namespace Internal.TypeSystem
         Thiscall                = 0x00000003,
         Fastcall                = 0x00000004,
         Varargs                 = 0x00000005,
-
-        /// <summary>
-        /// Platform-default unmanaged calling convention.
-        /// </summary>
-        Unmanaged               = 0x00000009,
+        // Unmanaged            = 0x00000009, - this one is always translated to cdecl/stdcall
 
         // The ones higher than 0xF are defined by the type system
         // There are no such calling conventions yet.
@@ -55,36 +51,41 @@ namespace Internal.TypeSystem
         {
             // If calling convention is anything but 'unmanaged', or there's no modifiers, we can bitcast to our enum and we're done.
             MethodSignatureFlags unmanagedCallconv = signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask;
-            if (unmanagedCallconv != MethodSignatureFlags.UnmanagedCallingConvention || !signature.HasEmbeddedSignatureData)
+            if (unmanagedCallconv != MethodSignatureFlags.UnmanagedCallingConvention)
             {
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)CallingConventions.Cdecl
                     && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)CallingConventions.Stdcall
                     && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)CallingConventions.Thiscall);
+                Debug.Assert(unmanagedCallconv != 0);
                 return (CallingConventions)unmanagedCallconv;
             }
 
             // If calling convention is 'unmanaged', there might be more metadata in the custom modifiers.
             CallingConventions result = 0;
-            foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
+
+            if (signature.HasEmbeddedSignatureData)
             {
-                if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
-                    continue;
+                foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
+                {
+                    if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
+                        continue;
 
-                // We only care about the modifiers for the return type. These will be at the start of
-                // the signature, so will be first in the array of embedded signature data.
-                if (data.index != MethodSignature.IndexOfCustomModifiersOnReturnType)
-                    break;
+                    // We only care about the modifiers for the return type. These will be at the start of
+                    // the signature, so will be first in the array of embedded signature data.
+                    if (data.index != MethodSignature.IndexOfCustomModifiersOnReturnType)
+                        break;
 
-                if (data.type is not MetadataType mdType)
-                    continue;
+                    if (data.type is not MetadataType mdType)
+                        continue;
 
-                result = AccumulateCallingConventions(result, mdType);
+                    result = AccumulateCallingConventions(result, mdType);
+                }
             }
 
             // If we haven't found a calling convention in the modifiers, the calling convention is 'unmanaged'.
             if ((result & CallingConventions.CallingConventionMask) == 0)
             {
-                result |= CallingConventions.Unmanaged;
+                result |= GetPlatformDefaultUnmanagedCallingConvention(signature.Context);
             }
 
             return result;
@@ -94,7 +95,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(method.IsUnmanagedCallersOnly);
             CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute = ((EcmaMethod)method).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute").Value;
-            return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute) & ~CallingConventions.IsSuppressGcTransition;
+            return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute, method.Context) & ~CallingConventions.IsSuppressGcTransition;
         }
 
         public static CallingConventions GetPInvokeMethodCallingConventions(this MethodDesc method)
@@ -119,11 +120,11 @@ namespace Internal.TypeSystem
                 CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ((EcmaMethod)method).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
                 if (unmanagedCallConvAttribute != null)
                 {
-                    result = GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value);
+                    result = GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value, method.Context);
                 }
                 else
                 {
-                    result = CallingConventions.Unmanaged;
+                    result = GetPlatformDefaultUnmanagedCallingConvention(method.Context);
                 }
             }
 
@@ -133,7 +134,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        private static CallingConventions GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray)
+        private static CallingConventions GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, TypeSystemContext context)
         {
             ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
             foreach (var arg in attributeWithCallConvsArray.NamedArguments)
@@ -160,7 +161,7 @@ namespace Internal.TypeSystem
             // If we haven't found a calling convention in the attribute, the calling convention is 'unmanaged'.
             if ((result & CallingConventions.CallingConventionMask) == 0)
             {
-                result |= CallingConventions.Unmanaged;
+                result |= GetPlatformDefaultUnmanagedCallingConvention(context);
             }
 
             return result;
@@ -191,5 +192,8 @@ namespace Internal.TypeSystem
 
             return existing | addedCallConv.Value;
         }
+
+        private static CallingConventions GetPlatformDefaultUnmanagedCallingConvention(TypeSystemContext context)
+            => context.Target.IsWindows ? CallingConventions.Stdcall : CallingConventions.Cdecl;
     }
 }

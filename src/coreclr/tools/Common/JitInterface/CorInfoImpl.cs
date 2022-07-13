@@ -1497,13 +1497,9 @@ namespace Internal.JitInterface
                 case CallingConventions.Fastcall:
                     result = CorInfoCallConvExtension.Fastcall;
                     break;
-                case CallingConventions.Unmanaged:
-                    result = _compilation.TypeSystemContext.Target.IsWindows ?
-                        CorInfoCallConvExtension.Stdcall : CorInfoCallConvExtension.C;
-                    break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
-                    result = CorInfoCallConvExtension.Managed;
+                    result = CorInfoCallConvExtension.Managed; // unreachable
                     break;
             }
 
