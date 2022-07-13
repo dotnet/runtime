@@ -229,8 +229,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (innerType.ToDisplayString() != TypeNames.CustomTypeMarshallerAttributeGenericPlaceholder
-                && innerType.ToDisplayString() != TypeNames.CustomMarshallerAttributeGenericPlaceholder)
+            if (innerType.ToDisplayString() != TypeNames.CustomMarshallerAttributeGenericPlaceholder)
             {
                 return managedType;
             }

@@ -45,6 +45,9 @@ namespace Microsoft.Quic
         [NativeTypeName("#define QUIC_STATUS_ADDRESS_IN_USE QUIC_STATUS_HRESULT_FROM_WIN32(WSAEADDRINUSE)")]
         public const int QUIC_STATUS_ADDRESS_IN_USE = unchecked((int)(10048) <= 0 ? ((int)(10048)) : ((int)(((10048) & 0x0000FFFF) | (7 << 16) | 0x80000000)));
 
+        [NativeTypeName("#define QUIC_STATUS_INVALID_ADDRESS QUIC_STATUS_HRESULT_FROM_WIN32(WSAEADDRNOTAVAIL)")]
+        public const int QUIC_STATUS_INVALID_ADDRESS = unchecked((int)(10049) <= 0 ? ((int)(10049)) : ((int)(((10049) & 0x0000FFFF) | (7 << 16) | 0x80000000)));
+
         [NativeTypeName("#define QUIC_STATUS_CONNECTION_TIMEOUT ERROR_QUIC_CONNECTION_TIMEOUT")]
         public const int QUIC_STATUS_CONNECTION_TIMEOUT = unchecked((int)(0x80410006));
 
@@ -96,11 +99,17 @@ namespace Microsoft.Quic
         [NativeTypeName("#define QUIC_STATUS_UNKNOWN_CERTIFICATE QUIC_STATUS_TLS_ALERT(46)")]
         public const int QUIC_STATUS_UNKNOWN_CERTIFICATE = unchecked(((int)(0x80410100)) | (0xff & 46));
 
+        [NativeTypeName("#define QUIC_STATUS_REQUIRED_CERTIFICATE QUIC_STATUS_TLS_ALERT(116)")]
+        public const int QUIC_STATUS_REQUIRED_CERTIFICATE = unchecked(((int)(0x80410100)) | (0xff & 116));
+
         [NativeTypeName("#define QUIC_STATUS_CERT_EXPIRED CERT_E_EXPIRED")]
         public const int QUIC_STATUS_CERT_EXPIRED = unchecked((int)(0x800B0101));
 
         [NativeTypeName("#define QUIC_STATUS_CERT_UNTRUSTED_ROOT CERT_E_UNTRUSTEDROOT")]
         public const int QUIC_STATUS_CERT_UNTRUSTED_ROOT = unchecked((int)(0x800B0109));
+
+        [NativeTypeName("#define QUIC_STATUS_CERT_NO_CERT SEC_E_NO_CREDENTIALS")]
+        public const int QUIC_STATUS_CERT_NO_CERT = unchecked((int)(0x8009030E));
 
         public const int QUIC_ADDRESS_FAMILY_UNSPEC = 0;
         public const int QUIC_ADDRESS_FAMILY_INET = 2;

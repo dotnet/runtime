@@ -173,7 +173,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 QUIC_HANDLE* handle;
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionOpen(
+                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionOpen(
                     MsQuicApi.Api.Registration.QuicHandle,
                     &NativeCallback,
                     (void*)GCHandle.ToIntPtr(_state.StateGCHandle),
@@ -236,7 +236,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     state.Connection = null;
                 }
 
-                state.ConnectTcs.TrySetException(new MsQuicException(connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT.Status, "Connection has been shutdown by transport"));
+                state.ConnectTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(connectionEvent.SHUTDOWN_INITIATED_BY_TRANSPORT.Status, "Connection has been shutdown by transport"));
             }
 
             // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
@@ -545,7 +545,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 try
                 {
                     Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionStart(
+                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionStart(
                         _state.Handle.QuicHandle,
                         _configuration.QuicHandle,
                         af,
@@ -584,7 +584,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _state.RevocationMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
                     _state.RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
                     _configuration = SafeMsQuicConfigurationHandle.Create(options, options.ServerAuthenticationOptions, targetHost);
-                    ThrowIfFailure(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
+                    ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
                         _state.Handle.QuicHandle,
                         _configuration.QuicHandle));
                 }

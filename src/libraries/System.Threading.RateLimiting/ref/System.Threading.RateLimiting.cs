@@ -14,7 +14,7 @@ namespace System.Threading.RateLimiting
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public override int GetAvailablePermits() { throw null; }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class ConcurrencyLimiterOptions
     {
@@ -34,7 +34,7 @@ namespace System.Threading.RateLimiting
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public override int GetAvailablePermits() { throw null; }
         public override bool TryReplenish() { throw null; }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class FixedWindowRateLimiterOptions
     {
@@ -77,8 +77,8 @@ namespace System.Threading.RateLimiting
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public abstract int GetAvailablePermits(TResource resourceID);
-        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsync(TResource resourceID, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(TResource resourceID, int permitCount, System.Threading.CancellationToken cancellationToken);
+        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(TResource resourceID, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(TResource resourceID, int permitCount, System.Threading.CancellationToken cancellationToken);
     }
     public enum QueueProcessingOrder
     {
@@ -96,8 +96,8 @@ namespace System.Threading.RateLimiting
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public abstract int GetAvailablePermits();
-        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsync(int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken);
+        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, System.Threading.CancellationToken cancellationToken);
     }
     public abstract partial class RateLimitLease : System.IDisposable
     {
@@ -112,12 +112,12 @@ namespace System.Threading.RateLimiting
     }
     public static partial class RateLimitPartition
     {
-        public static System.Threading.RateLimiting.RateLimitPartition<TKey> CreateConcurrencyLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.ConcurrencyLimiterOptions> factory) { throw null; }
-        public static System.Threading.RateLimiting.RateLimitPartition<TKey> CreateFixedWindowLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.FixedWindowRateLimiterOptions> factory) { throw null; }
-        public static System.Threading.RateLimiting.RateLimitPartition<TKey> CreateNoLimiter<TKey>(TKey partitionKey) { throw null; }
-        public static System.Threading.RateLimiting.RateLimitPartition<TKey> CreateSlidingWindowLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.SlidingWindowRateLimiterOptions> factory) { throw null; }
-        public static System.Threading.RateLimiting.RateLimitPartition<TKey> CreateTokenBucketLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.TokenBucketRateLimiterOptions> factory) { throw null; }
-        public static System.Threading.RateLimiting.RateLimitPartition<TKey> Create<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.RateLimiter> factory) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> GetConcurrencyLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.ConcurrencyLimiterOptions> factory) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> GetFixedWindowLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.FixedWindowRateLimiterOptions> factory) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> GetNoLimiter<TKey>(TKey partitionKey) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> GetSlidingWindowLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.SlidingWindowRateLimiterOptions> factory) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> GetTokenBucketLimiter<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.TokenBucketRateLimiterOptions> factory) { throw null; }
+        public static System.Threading.RateLimiting.RateLimitPartition<TKey> Get<TKey>(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.RateLimiter> factory) { throw null; }
     }
     public partial struct RateLimitPartition<TKey>
     {
@@ -125,8 +125,8 @@ namespace System.Threading.RateLimiting
         private object _dummy;
         private int _dummyPrimitive;
         public RateLimitPartition(TKey partitionKey, System.Func<TKey, System.Threading.RateLimiting.RateLimiter> factory) { throw null; }
+        public readonly System.Func<TKey, System.Threading.RateLimiting.RateLimiter> Factory { get { throw null; } }
         public readonly TKey PartitionKey { get { throw null; } }
-        public readonly Func<TKey, RateLimiter> Factory { get { throw null; } }
     }
     public abstract partial class ReplenishingRateLimiter : System.Threading.RateLimiting.RateLimiter
     {
@@ -146,7 +146,7 @@ namespace System.Threading.RateLimiting
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public override int GetAvailablePermits() { throw null; }
         public override bool TryReplenish() { throw null; }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int requestCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class SlidingWindowRateLimiterOptions
     {
@@ -169,7 +169,7 @@ namespace System.Threading.RateLimiting
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public override int GetAvailablePermits() { throw null; }
         public override bool TryReplenish() { throw null; }
-        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int tokenCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(int tokenCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class TokenBucketRateLimiterOptions
     {

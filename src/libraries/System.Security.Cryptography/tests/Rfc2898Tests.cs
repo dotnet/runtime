@@ -20,14 +20,14 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Ctor_NullPasswordBytes()
         {
-            Assert.Throws<NullReferenceException>(() =>
+            Assert.Throws<ArgumentNullException>("password", () =>
                 new Rfc2898DeriveBytes((byte[])null, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
         [Fact]
         public static void Ctor_NullPasswordString()
         {
-            Assert.Throws<ArgumentNullException>(() =>
+            Assert.Throws<ArgumentNullException>("password", () =>
                 new Rfc2898DeriveBytes((string)null, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
