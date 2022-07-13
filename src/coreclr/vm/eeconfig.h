@@ -94,7 +94,7 @@ public:
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
 #endif
 
-    bool          ReadyToRun(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
+    bool          ReadyToRun(void) const { LIMITED_METHOD_CONTRACT;  return fReadyToRun; }
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     // OSR Config
