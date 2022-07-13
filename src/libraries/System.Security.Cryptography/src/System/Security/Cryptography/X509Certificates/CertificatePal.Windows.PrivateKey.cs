@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new RSACng(cngKey);
+                    return new RSACng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new DSACng(cngKey);
+                    return new DSACng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new ECDsaCng(cngKey);
+                    return new ECDsaCng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return GetPrivateKey<ECDiffieHellman>(
                 csp => throw new NotSupportedException(SR.NotSupported_ECDiffieHellman_Csp),
-                cngKey => new ECDiffieHellmanCng(cngKey)
+                cngKey => new ECDiffieHellmanCng(cngKey, transferOwnership: true)
             );
         }
 

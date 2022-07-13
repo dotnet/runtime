@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
@@ -28,6 +29,16 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(key));
 
             Key = CngAlgorithmCore.Duplicate(key);
+        }
+
+        [SupportedOSPlatform("windows")]
+        internal ECDiffieHellmanCng(CngKey key, bool transferOwnership)
+        {
+            Debug.Assert(key is not null);
+            Debug.Assert(key.AlgorithmGroup == CngAlgorithmGroup.ECDiffieHellman);
+            Debug.Assert(transferOwnership);
+
+            Key = key;
         }
 
         /// <summary>
