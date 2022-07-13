@@ -1,16 +1,16 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="7.0.0-preview.7.22361.2">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="7.0.0-rc.1.22362.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>ff676e4cfa9bc0e9898c8f4e43fb14f5fe90dd65</Sha>
+      <Sha>6ef6b3ea4dc0a6ab7de3cd3d357db0f88b8b31b5</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.22359.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>abea512fd737ffd1faaa9e64fc7d004ce3ff5781</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-preview.7.22361.2">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-rc.1.22362.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>7d277787570614a3dd99e1d6022375d9ae43e6af</Sha>
+      <Sha>11a9acf5ab6fe5a20f0a7d4326c785bd51e9859c</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
@@ -274,9 +274,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>ef79689662cf121dd5e713c1389e2379668f5e4d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.1.0-alpha.0.22354.2">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.1.0-alpha.0.22362.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>a604ae39f3e72f5b80e67130d2b0ceb640d41bff</Sha>
+      <Sha>c6dfd18158f2290855b98e71734f5f169cf1dfe7</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="7.0.0-beta.22361.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>

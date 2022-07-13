@@ -767,6 +767,31 @@ partial class Program
         }
 
         [Fact]
+        public async Task LeadingAndTrailingTriviaIsPreservedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        {|#0:Regex.Replace(text, @"" \s+"" , ""  "")|};
+}";
+
+            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+static partial class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        MyRegex().Replace(text, ""  "");
+    [RegexGenerator("" \\s+"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, expectedFixedCode);
+        }
+
+        [Fact]
         public async Task TestAsArgument()
         {
             string test = @"using System.Text.RegularExpressions;
@@ -789,6 +814,7 @@ public partial class C
 
             await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
         }
+
         #region Test helpers
 
         private static string ConstructRegexInvocation(InvocationType invocationType, string pattern, string? options = null)

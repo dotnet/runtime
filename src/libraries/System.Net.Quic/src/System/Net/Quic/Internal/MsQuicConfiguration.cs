@@ -81,7 +81,7 @@ internal static class MsQuicConfiguration
         certificate ??= authenticationOptions.ServerCertificate ?? authenticationOptions.ServerCertificateSelectionCallback?.Invoke(authenticationOptions, targetHost);
         if (certificate is null)
         {
-            throw new ArgumentException($"Server must provide a certificate in '{nameof(SslServerAuthenticationOptions.ServerCertificate)}' or '{nameof(SslServerAuthenticationOptions.ServerCertificateContext)}' or via '{nameof(SslServerAuthenticationOptions.ServerCertificateSelectionCallback)}'  for the connection.", nameof(options));
+            throw new ArgumentException(SR.Format(SR.net_quic_not_null_ceritifcate, nameof(SslServerAuthenticationOptions.ServerCertificate), nameof(SslServerAuthenticationOptions.ServerCertificateContext), nameof(SslServerAuthenticationOptions.ServerCertificateSelectionCallback)), nameof(options));
         }
 
         return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
@@ -92,7 +92,7 @@ internal static class MsQuicConfiguration
         // Validate options and SSL parameters.
         if (alpnProtocols is null || alpnProtocols.Count <= 0)
         {
-            throw new ArgumentException($"Expected at least one '{nameof(SslApplicationProtocol)}' for the connection.", nameof(options));
+            throw new ArgumentException(SR.Format(SR.net_quic_not_null_not_empty_connection, nameof(SslApplicationProtocol)), nameof(options));
         }
 
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
@@ -124,7 +124,8 @@ internal static class MsQuicConfiguration
             &settings,
             (uint)sizeof(QUIC_SETTINGS),
             (void*)IntPtr.Zero,
-            &handle), "ConfigurationOpen failed");
+            &handle),
+            "ConfigurationOpen failed");
         MsQuicSafeHandle configurationHandle = new MsQuicSafeHandle(handle, MsQuicApi.Api.ApiTable->ConfigurationClose, SafeHandleType.Configuration);
 
         try
