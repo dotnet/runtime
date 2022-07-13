@@ -322,13 +322,19 @@ public sealed partial class QuicStream
             _sendBuffers.Initialize(buffer);
             unsafe
             {
-                ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->StreamSend(
+                int status = MsQuicApi.Api.ApiTable->StreamSend(
                     _handle.QuicHandle,
                     _sendBuffers.Buffers,
                     (uint)_sendBuffers.Count,
                     completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                    null),
-                    "StreamSend failed");
+                    null);
+                if (status == QUIC_STATUS_ABORTED)
+                {
+                    // If status == QUIC_STATUS_ABORTED, we either received PEER_RECEIVE_ABORTED or will receive SHUTDOWN_COMPLETE(ConnectionClose) later, all of which completes the _sendTcs.
+                    _sendBuffers.Reset();
+                    return valueTask;
+                }
+                ThrowHelper.ThrowIfMsQuicError(status, "StreamSend failed");
             }
         }
         catch (Exception ex)
