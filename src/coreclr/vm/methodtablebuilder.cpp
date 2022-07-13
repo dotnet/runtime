@@ -7991,7 +7991,26 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         DWORD   dwCumulativeInstanceFieldPos;
 
         // Instance fields start right after the parent
-        dwCumulativeInstanceFieldPos    = HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0;
+        if (HasParent())
+        {
+            MethodTable* pParentMT = GetParentMethodTable();
+            if (pParentMT->HasLayout() && pParentMT->GetLayoutInfo()->IsZeroSized())
+            {
+                // If the parent type has sequential/explicit layout and is "zero sized"
+                // then we don't want to use the actual class size here.
+                // That includes an extra byte that isn't actually used, so we shouldn't
+                // count it here.
+                dwCumulativeInstanceFieldPos = 0;
+            }
+            else
+            {
+                dwCumulativeInstanceFieldPos = pParentMT->GetNumInstanceFieldBytes();
+            }
+        }
+        else
+        {
+            dwCumulativeInstanceFieldPos = 0;
+        }
 
         DWORD dwOffsetBias = 0;
 #ifdef FEATURE_64BIT_ALIGNMENT
