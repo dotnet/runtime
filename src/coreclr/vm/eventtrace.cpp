@@ -7649,10 +7649,12 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
             flags |= (UINT32)Flags::QuickJitForLoops;
         }
     }
+#ifdef FEATURE_PGO
     if (g_pConfig->TieredPGO())
     {
         flags |= (UINT32)Flags::TieredPGO;
     }
+#endif
     if (g_pConfig->ReadyToRun())
     {
         flags |= (UINT32)Flags::ReadyToRun;
