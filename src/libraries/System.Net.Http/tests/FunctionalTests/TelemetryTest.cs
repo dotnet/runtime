@@ -664,7 +664,7 @@ namespace System.Net.Http.Functional.Tests
                                 connection = await server.EstablishGenericConnectionAsync();
                             }
 
-                            using (connection)
+                            await using (connection)
                             {
                                 // Dummy request to ensure that the MaxConcurrentStreams setting has been acknowledged
                                 await connection.ReadRequestDataAsync(readBody: false);

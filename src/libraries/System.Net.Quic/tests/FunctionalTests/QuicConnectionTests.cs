@@ -189,7 +189,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    await using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     await DoWrites(clientStream, writesBeforeClose);
 
                     // Wait for peer to receive data
@@ -202,7 +202,7 @@ namespace System.Net.Quic.Tests
                 },
                 async serverConnection =>
                 {
-                    using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
+                    await using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
                     await DoReads(serverStream, writesBeforeClose);
 
                     sync.Release();
@@ -269,7 +269,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    await using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     await DoWrites(clientStream, writesBeforeClose);
 
                     // Wait for peer to receive data
@@ -282,7 +282,7 @@ namespace System.Net.Quic.Tests
                 },
                 async serverConnection =>
                 {
-                    using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
+                    await using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
                     await DoReads(serverStream, writesBeforeClose);
 
                     sync.Release();
