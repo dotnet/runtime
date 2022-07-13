@@ -3,14 +3,15 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Diagnostics.Tracing;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Tracing.Tests.Common;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace Tracing.Tests
 {
@@ -30,17 +31,21 @@ namespace Tracing.Tests
 
                     // If on Windows, attempt some Overlapped IO (triggers ThreadPool events)
                     if (OperatingSystem.IsWindows())
+                    {
                         DoOverlappedIO();
+                    }
 
                     // Generate some GC events.
                     GC.Collect(2, GCCollectionMode.Forced);
 
                     Stopwatch sw = Stopwatch.StartNew();
-
+                    
                     while (sw.Elapsed <= TimeSpan.FromMinutes(1))
                     {
                         Thread.Sleep(100);
-                        if (listener.SeenProvidersAndEvents.Contains("Microsoft-Windows-DotNETRuntime/EVENTID(65)"))
+
+                        if ((OperatingSystem.IsWindows() && listener.SeenProvidersAndEvents.Contains("Microsoft-Windows-DotNETRuntime/EVENTID(65)"))
+                             || (listener.EventCount > 0))
                         {
                             break;
                         }
@@ -48,10 +53,16 @@ namespace Tracing.Tests
 
                     // Ensure that we've seen some events.
                     foreach (string s in listener.SeenProvidersAndEvents)
+                    {
                         Console.WriteLine(s);
+                    }
+
                     Assert.True("listener.EventCount > 0", listener.EventCount > 0);
+                    
                     if (OperatingSystem.IsWindows())
+                    {
                         Assert.True("Saw the ThreadPoolIOPack event", listener.SeenProvidersAndEvents.Contains("Microsoft-Windows-DotNETRuntime/EVENTID(65)"));
+                    }
                 }
 
                 // Generate some more GC events.
@@ -69,7 +80,9 @@ namespace Tracing.Tests
             while (true)
             {
                 for(int i=0; i<1000; i++)
+                {
                     GC.KeepAlive(new object());
+                }
 
                 Thread.Sleep(10);
             }
@@ -86,7 +99,7 @@ namespace Tracing.Tests
 
     internal sealed class SimpleEventListener : EventListener
     {
-        public HashSet<string> SeenProvidersAndEvents { get; private set; } = new();
+        public ConcurrentBag<string> SeenProvidersAndEvents { get; private set; } = new();
         private string m_name;
 
         // Keep track of the set of keywords to be enabled.
