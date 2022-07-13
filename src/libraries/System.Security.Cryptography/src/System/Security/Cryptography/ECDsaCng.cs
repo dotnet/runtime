@@ -80,12 +80,30 @@ namespace System.Security.Cryptography
 
         private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
         {
-            Key = ECCng.ImportFullKeyBlob(ecfullKeyBlob, includePrivateParameters);
+            CngKey key = ECCng.ImportFullKeyBlob(ecfullKeyBlob, includePrivateParameters);
+            try
+            {
+                Key = key;
+            }
+            catch
+            {
+                key.Dispose();
+                throw;
+            }
         }
 
         private void ImportKeyBlob(byte[] ecfullKeyBlob, string curveName, bool includePrivateParameters)
         {
-            Key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
+            CngKey key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
+            try
+            {
+                Key = key;
+            }
+            catch
+            {
+                key.Dispose();
+                throw;
+            }
         }
 
         private byte[] ExportKeyBlob(bool includePrivateParameters)
@@ -100,7 +118,15 @@ namespace System.Security.Cryptography
 
         private void AcceptImport(CngPkcs8.Pkcs8Response response)
         {
-            Key = response.Key;
+            try
+            {
+                Key = response.Key;
+            }
+            catch
+            {
+                response.FreeKey();
+                throw;
+            }
         }
 
         public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)

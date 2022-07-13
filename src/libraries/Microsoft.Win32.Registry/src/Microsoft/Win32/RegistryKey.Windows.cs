@@ -350,15 +350,13 @@ namespace Microsoft.Win32
                     GetRegistryKeyAccess(IsWritable()) | (int)_regView,
                     out SafeRegistryHandle result);
 
-                if (ret == 0 && !result.IsInvalid)
+                if (ret != 0 || result.IsInvalid)
                 {
-                    return result;
-                }
-                else
-                {
+                    result.Dispose();
                     Win32Error(ret, null);
-                    throw new IOException(Interop.Kernel32.GetMessage(ret), ret);
                 }
+
+                return result;
             }
         }
 

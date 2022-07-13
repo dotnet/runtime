@@ -22,8 +22,9 @@ namespace System.Security.Cryptography
 
             if (key.IsInvalid)
             {
+                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
                 key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                throw e;
             }
 
             _key = new ECOpenSsl(key);
