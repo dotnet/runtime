@@ -457,13 +457,17 @@ JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* LoopCloneContext::Ensur
     if (blockConditions[loopNum] == nullptr)
     {
         blockConditions[loopNum] =
-            new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>(alloc, condBlocks);
+            new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>(alloc);
     }
+
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = blockConditions[loopNum];
-    for (unsigned i = 0; i < condBlocks; ++i)
+    // Iterate backwards to make sure the expand array stack reallocs just once here.
+    unsigned existingSize = levelCond->Size();
+    for (unsigned index = condBlocks; index > existingSize; index--)
     {
-        levelCond->Set(i, new (alloc) JitExpandArrayStack<LC_Condition>(alloc));
+        levelCond->Set(index - 1, new (alloc) JitExpandArrayStack<LC_Condition>(alloc));
     }
+
     return levelCond;
 }
 
