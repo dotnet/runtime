@@ -76,7 +76,7 @@ namespace System.Net
                             {
                                 chain.ChainPolicy = chainPolicy;
                             }
-                            
+
                             UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
                         }
                     }
