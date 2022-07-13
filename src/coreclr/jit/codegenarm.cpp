@@ -1014,7 +1014,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     GenTree*  data    = tree->gtOp1;
     regNumber dataReg = REG_NA;
-    genConsumeReg(data);
+    genConsumeRegs(data);
 
     if (data->isContained())
     {
