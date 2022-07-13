@@ -390,4 +390,7 @@
   <data name="CpuFamilies" xml:space="preserve">
     <value>The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:</value>
   </data>
+  <data name="Crossgen2BannerText" xml:space="preserve">
+    <value>Microsoft (R) .NET Crossgen2 Compiler</value>
+  </data>
 </root>

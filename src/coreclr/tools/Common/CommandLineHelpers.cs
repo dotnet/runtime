@@ -6,6 +6,7 @@ using System.CommandLine.Binding;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 
@@ -35,7 +36,7 @@ internal static class Helpers
         return dictionary;
     }
 
-    private static TargetOS GetTargetOS(string token)
+    public static TargetOS GetTargetOS(string token)
     {
         if(string.IsNullOrEmpty(token))
         {
@@ -61,7 +62,7 @@ internal static class Helpers
         throw new CommandLineException($"Target OS '{token}' is not supported");
     }
 
-    private static TargetArchitecture GetTargetArchitecture(string token)
+    public static TargetArchitecture GetTargetArchitecture(string token)
     {
         if(string.IsNullOrEmpty(token))
         {
@@ -83,6 +84,8 @@ internal static class Helpers
             return Internal.TypeSystem.TargetArchitecture.ARM;
         else if (token.Equals("arm64", StringComparison.OrdinalIgnoreCase))
             return Internal.TypeSystem.TargetArchitecture.ARM64;
+        else if (token.Equals("armel", StringComparison.OrdinalIgnoreCase))
+            return Internal.TypeSystem.TargetArchitecture.ARMEL;
 
         throw new CommandLineException($"Target architecture '{token}' is not supported");
     }
