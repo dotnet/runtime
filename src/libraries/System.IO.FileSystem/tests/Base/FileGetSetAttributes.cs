@@ -62,7 +62,7 @@ namespace System.IO.Tests
             AssertSettingInvalidAttributes(path, attributes);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.FileCreateCaseSensitive))]
         [InlineData(FileAttributes.Hidden)]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]

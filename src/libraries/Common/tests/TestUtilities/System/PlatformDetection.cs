@@ -82,12 +82,13 @@ namespace System
         public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
 #if NETCOREAPP
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
-                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+        public static bool FileCreateCaseSensitive => IsCaseSensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                                                                        && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 #else
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+        public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
         public static bool IsThreadingSupported => !IsBrowser;
