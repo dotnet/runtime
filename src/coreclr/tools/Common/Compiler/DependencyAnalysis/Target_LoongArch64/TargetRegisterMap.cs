@@ -20,6 +20,7 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         public readonly Register Arg5;
         public readonly Register Arg6;
         public readonly Register Arg7;
+        public readonly Register IntraProcedureCallScratch1;
         public readonly Register Result;
 
         public TargetRegisterMap(TargetOS os)
@@ -32,6 +33,7 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
             Arg5 = Register.R9;
             Arg6 = Register.R11;
             Arg7 = Register.R12;
+            IntraProcedureCallScratch1 = Register.R21;
             Result = Register.R4; // TODO: ???
         }
     }

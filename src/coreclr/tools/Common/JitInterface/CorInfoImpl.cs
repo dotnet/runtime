@@ -3054,12 +3054,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc typeDesc = HandleToObject(cls);
-            return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
-        }
-
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
@@ -3277,6 +3271,12 @@ namespace Internal.JitInterface
 
             SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
             return true;
+        }
+
+        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc typeDesc = HandleToObject(cls);
+            return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
