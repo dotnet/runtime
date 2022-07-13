@@ -54,15 +54,15 @@ namespace Microsoft.Win32.RegistryTests
             //throwOnMissing is true with subkey present
             using (var rk = TestRegistryKey.CreateSubKey(subKeyExists))
             {
-                rk.CreateSubKey("a");
-                rk.CreateSubKey("b");
+                using RegistryKey a = rk.CreateSubKey("a");
+                using RegistryKey b = rk.CreateSubKey("b");
                 TestRegistryKey.DeleteSubKeyTree(subKeyExists, false);
             }
             //throwOnMissing is false with subkey present
             using (var rk = TestRegistryKey.CreateSubKey(subKeyExists2))
             {
-                rk.CreateSubKey("a");
-                rk.CreateSubKey("b");
+                using RegistryKey a = rk.CreateSubKey("a");
+                using RegistryKey b = rk.CreateSubKey("b");
                 TestRegistryKey.DeleteSubKeyTree(subKeyExists2, true);
             }
         }
