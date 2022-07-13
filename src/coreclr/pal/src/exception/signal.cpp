@@ -746,6 +746,11 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
+        char* enable = getenv("COMPlus_EnableDumpOnSigTerm");
+        if (enable != nullptr && strcmp(enable, "1") == 0)
+        {
+            PROCCreateCrashDumpIfEnabled(code);
+        }
         // g_pSynchronizationManager shouldn't be null if PAL is initialized.
         _ASSERTE(g_pSynchronizationManager != nullptr);
 

@@ -217,7 +217,7 @@ namespace System.Security.Cryptography
 
                     if (rsaPaddingProcessor != null)
                     {
-                        return rsaPaddingProcessor.DepadOaep(paddingBuf, destination, out bytesWritten);
+                        return rsaPaddingProcessor.DepadOaep(paddingBuf.AsSpan(0, returnValue), destination, out bytesWritten);
                     }
                     else
                     {
