@@ -1150,6 +1150,66 @@ ep_rt_runtime_version_get_utf8 (void)
 }
 
 /*
+ * Little-Endian Conversion.
+ */
+
+static
+EP_ALWAYS_INLINE
+uint16_t
+ep_rt_val_uint16_t (uint16_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uint32_t
+ep_rt_val_uint32_t (uint32_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uint64_t
+ep_rt_val_uint64_t (uint64_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int16_t
+ep_rt_val_int16_t (int16_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int32_t
+ep_rt_val_int32_t (int32_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int64_t
+ep_rt_val_int64_t (int64_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uintptr_t
+ep_rt_val_uintptr_t (uintptr_t value)
+{
+	return value;
+}
+
+/*
 * Atomics.
 */
 
@@ -1369,10 +1429,9 @@ ep_rt_method_get_full_name (
 	EX_TRY
 	{
 		SString method_name;
-		StackScratchBuffer conversion;
 
 		TypeString::AppendMethodInternal (method_name, method, TypeString::FormatNamespace | TypeString::FormatSignature);
-		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 (conversion);
+		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 ();
 		if (method_name_utf8) {
 			size_t method_name_utf8_len = strlen (method_name_utf8) + 1;
 			size_t to_copy = method_name_utf8_len < name_len ? method_name_utf8_len : name_len;
@@ -2155,7 +2214,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
 	ep_return_null_if_nok (path_utf16 != NULL);
 
 	CFileStream *file_stream = new (nothrow) CFileStream ();
@@ -2543,7 +2602,7 @@ ep_rt_utf8_string_replace (
 
 static
 ep_char16_t *
-ep_rt_utf8_to_utf16_string (
+ep_rt_utf8_to_utf16le_string (
 	const ep_char8_t *str,
 	size_t len)
 {
@@ -2642,6 +2701,16 @@ ep_rt_utf16_to_utf8_string (
 
 	str_utf8 [size_utf8 - 1] = 0;
 	return str_utf8;
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_utf16le_to_utf8_string (
+	const ep_char16_t *str,
+	size_t len)
+{
+	return ep_rt_utf16_to_utf8_string (str, len);
 }
 
 static

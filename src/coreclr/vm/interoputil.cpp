@@ -179,6 +179,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
     return hr;
 }
 
+#if FEATURE_COMINTEROP
 //-------------------------------------------------------------------
  // Used to populate ExceptionData with COM data
 //-------------------------------------------------------------------
@@ -212,6 +213,7 @@ void FillExceptionData(
         }
     }
 }
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute,
@@ -1016,7 +1018,7 @@ namespace
         if (FAILED(cap.ValidateProlog()))
             return COR_E_BADIMAGEFORMAT;
 
-        U1 u1;
+        UINT8 u1;
         if (FAILED(cap.GetU1(&u1)))
             return COR_E_BADIMAGEFORMAT;
 

@@ -241,10 +241,7 @@ namespace System.Drawing.Internal
             HandleRef hdc = new HandleRef(this, _hDC);
             int state = Interop.Gdi32.SaveDC(hdc);
 
-            if (_contextStack == null)
-            {
-                _contextStack = new Stack();
-            }
+            _contextStack ??= new Stack();
 
             GraphicsState g = new GraphicsState();
             g.hBitmap = _hCurrentBmp;

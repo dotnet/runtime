@@ -700,6 +700,10 @@ namespace System.Net.Sockets
         {
             get
             {
+                if (SocketType == SocketType.Stream)
+                {
+                    return false;
+                }
                 return (int)GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast)! != 0 ? true : false;
             }
             set
@@ -1049,6 +1053,7 @@ namespace System.Net.Sockets
 
                 SocketsTelemetry.Log.AfterAccept(errorCode);
 
+                acceptedSocketHandle.Dispose();
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
@@ -1381,11 +1386,8 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = remoteEP;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            _rightEndPoint ??= remoteEP;
 
             return bytesTransferred;
         }
@@ -1830,11 +1832,9 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (socketException != null)
@@ -3291,7 +3291,7 @@ namespace System.Net.Sockets
                 // DualMode: When bound to IPv6Any you must enable both socket options.
                 // When bound to an IPv4 mapped IPv6 address you must enable the IPv4 socket option.
                 IPEndPoint? ipEndPoint = _rightEndPoint as IPEndPoint;
-                IPAddress? boundAddress = (ipEndPoint != null ? ipEndPoint.Address : null);
+                IPAddress? boundAddress = ipEndPoint?.Address;
                 Debug.Assert(boundAddress != null, "Not Bound");
                 if (_addressFamily == AddressFamily.InterNetwork)
                 {

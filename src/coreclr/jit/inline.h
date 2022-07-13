@@ -344,11 +344,12 @@ class InlineResult
 public:
     // Construct a new InlineResult to help evaluate a
     // particular call for inlining.
-    InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description);
+    InlineResult(
+        Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport = false);
 
     // Construct a new InlineResult to evaluate a particular
     // method to see if it is inlineable.
-    InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description);
+    InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description, bool doNotReport = false);
 
     // Has the policy determined this inline should fail?
     bool IsFailure() const
@@ -483,18 +484,42 @@ public:
     // Result that can be reported back to the runtime
     CorInfoInline Result() const
     {
+        if (m_reportFailureAsVmFailure)
+            return INLINE_CHECK_CAN_INLINE_VMFAIL;
+
+        if (m_successResult != INLINE_PASS)
+            return m_successResult;
+
         return InlGetCorInfoInlineDecision(m_Policy->GetDecision());
     }
 
     // String describing the decision made
     const char* ResultString() const
     {
+        if (m_reportFailureAsVmFailure)
+            return "VM Reported !CanInline";
+
+        if (m_successResult == INLINE_PREJIT_SUCCESS)
+            return "PreJIT Success";
+
+        if (m_successResult == INLINE_CHECK_CAN_INLINE_SUCCESS)
+            return "CheckCanInline Success";
+
         return InlGetDecisionString(m_Policy->GetDecision());
     }
 
     // String describing the reason for the decision
     const char* ReasonString() const
     {
+        if (m_reportFailureAsVmFailure)
+            return "VM Reported !CanInline";
+
+        if (m_successResult == INLINE_PREJIT_SUCCESS)
+            return "PreJIT Success";
+
+        if (m_successResult == INLINE_CHECK_CAN_INLINE_SUCCESS)
+            return "CheckCanInline Success";
+
         return InlGetObservationString(m_Policy->GetObservation());
     }
 
@@ -504,12 +529,15 @@ public:
         return m_Policy;
     }
 
-    // SetReported indicates that this particular result doesn't need
-    // to be reported back to the runtime, either because the runtime
-    // already knows, or we aren't actually inlining yet.
-    void SetReported()
+    // Set the code that shall be reported if the InlineResult is a success
+    void SetSuccessResult(CorInfoInline inlineSuccessCode)
     {
-        m_Reported = true;
+        m_successResult = inlineSuccessCode;
+    }
+
+    void SetVMFailure()
+    {
+        m_reportFailureAsVmFailure = true;
     }
 
     // Get the InlineContext for this inline.
@@ -544,13 +572,15 @@ private:
     CORINFO_METHOD_HANDLE m_Callee;
     unsigned              m_ImportedILSize; // estimated size of imported IL
     const char*           m_Description;
-    bool                  m_Reported;
+    CorInfoInline         m_successResult;
+    bool                  m_DoNotReport;
+    bool                  m_reportFailureAsVmFailure;
 };
 
-// ClassProfileCandidateInfo provides information about
+// HandleHistogramProfileCandidateInfo provides information about
 // profiling an indirect or virtual call.
 //
-struct ClassProfileCandidateInfo
+struct HandleHistogramProfileCandidateInfo
 {
     IL_OFFSET ilOffset;
     unsigned  probeIndex;
@@ -559,7 +589,7 @@ struct ClassProfileCandidateInfo
 // GuardedDevirtualizationCandidateInfo provides information about
 // a potential target of a virtual or interface call.
 //
-struct GuardedDevirtualizationCandidateInfo : ClassProfileCandidateInfo
+struct GuardedDevirtualizationCandidateInfo : HandleHistogramProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;
@@ -584,6 +614,7 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     unsigned               preexistingSpillTemp;
     unsigned               clsAttr;
     unsigned               methAttr;
+    IL_OFFSET              ilOffset; // actual IL offset of instruction that resulted in this inline candidate
     CorInfoInitClassResult initClassResult;
     var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
@@ -712,6 +743,12 @@ public:
 
     // Dump full subtree in xml format
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+    IL_OFFSET GetActualCallOffset()
+    {
+        return m_ActualCallOffset;
+    }
 
     // Get callee handle
     CORINFO_METHOD_HANDLE GetCallee() const
@@ -723,8 +760,6 @@ public:
     {
         return m_Ordinal;
     }
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // Get the parent context for this context.
     InlineContext* GetParent() const
@@ -824,28 +859,28 @@ public:
 private:
     InlineContext(InlineStrategy* strategy);
 
-    InlineStrategy*   m_InlineStrategy;    // overall strategy
-    InlineContext*    m_Parent;            // logical caller (parent)
-    InlineContext*    m_Child;             // first child
-    InlineContext*    m_Sibling;           // next child of the parent
-    const BYTE*       m_Code;              // address of IL buffer for the method
-    unsigned          m_ILSize;            // size of IL buffer for the method
-    unsigned          m_ImportedILSize;    // estimated size of imported IL
-    ILLocation        m_Location;          // inlining statement location within parent
-    InlineObservation m_Observation;       // what lead to this inline success or failure
-    int               m_CodeSizeEstimate;  // in bytes * 10
-    bool              m_Success : 1;       // true if this was a successful inline
-    bool              m_Devirtualized : 1; // true if this was a devirtualized call
-    bool              m_Guarded : 1;       // true if this was a guarded call
-    bool              m_Unboxed : 1;       // true if this call now invokes the unboxed entry
+    InlineStrategy*       m_InlineStrategy;    // overall strategy
+    InlineContext*        m_Parent;            // logical caller (parent)
+    InlineContext*        m_Child;             // first child
+    InlineContext*        m_Sibling;           // next child of the parent
+    const BYTE*           m_Code;              // address of IL buffer for the method
+    CORINFO_METHOD_HANDLE m_Callee;            // handle to the method
+    unsigned              m_ILSize;            // size of IL buffer for the method
+    unsigned              m_ImportedILSize;    // estimated size of imported IL
+    ILLocation            m_Location;          // inlining statement location within parent
+    IL_OFFSET             m_ActualCallOffset;  // IL offset of actual call instruction leading to the inline
+    InlineObservation     m_Observation;       // what lead to this inline success or failure
+    int                   m_CodeSizeEstimate;  // in bytes * 10
+    unsigned              m_Ordinal;           // Ordinal number of this inline
+    bool                  m_Success : 1;       // true if this was a successful inline
+    bool                  m_Devirtualized : 1; // true if this was a devirtualized call
+    bool                  m_Guarded : 1;       // true if this was a guarded call
+    bool                  m_Unboxed : 1;       // true if this call now invokes the unboxed entry
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    InlinePolicy*         m_Policy;           // policy that evaluated this inline
-    CORINFO_METHOD_HANDLE m_Callee;           // handle to the method
-    unsigned              m_TreeID;           // ID of the GenTreeCall in the parent
-    unsigned              m_Ordinal;          // Ordinal number of this inline
-    IL_OFFSET             m_ActualCallOffset; // IL offset of actual call instruction leading to the inline
+    InlinePolicy* m_Policy; // policy that evaluated this inline
+    unsigned      m_TreeID; // ID of the GenTreeCall in the parent
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

@@ -80,7 +80,7 @@ BOOL Module::HasReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_READYTORUN
-    if (IsReadyToRun() && GetReadyToRunInfo()->GetInlineTrackingMap() != NULL)
+    if (IsReadyToRun() && GetReadyToRunInfo()->HasReadyToRunInlineTrackingMap())
     {
         return TRUE;
     }
@@ -92,9 +92,9 @@ COUNT_T Module::GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef in
 {
     WRAPPER_NO_CONTRACT;
 #ifdef FEATURE_READYTORUN
-    if(IsReadyToRun() && GetReadyToRunInfo()->GetInlineTrackingMap() != NULL)
+    if(HasReadyToRunInlineTrackingMap())
     {
-        return GetReadyToRunInfo()->GetInlineTrackingMap()->GetInliners(inlineeOwnerMod, inlineeTkn, inlinersSize, inliners, incompleteData);
+        return GetReadyToRunInfo()->GetInliners(inlineeOwnerMod, inlineeTkn, inlinersSize, inliners, incompleteData);
     }
 #endif
     return 0;
@@ -178,7 +178,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
         DWORD dwTransientFlags = m_dwTransientFlags;
         if ((dwTransientFlags & dwFlag) != 0)
             return FALSE;
-        if ((DWORD)FastInterlockCompareExchange((LONG*)&m_dwTransientFlags, dwTransientFlags | dwFlag, dwTransientFlags) == dwTransientFlags)
+        if ((DWORD)InterlockedCompareExchange((LONG*)&m_dwTransientFlags, dwTransientFlags | dwFlag, dwTransientFlags) == dwTransientFlags)
             return TRUE;
     }
 }
@@ -341,6 +341,7 @@ Module::Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly)
 
     PREFIX_ASSUME(pAssembly != NULL);
 
+    m_loaderAllocator = NULL;
     m_pAssembly = pAssembly;
     m_moduleRef = moduleRef;
     m_pPEAssembly      = pPEAssembly;
@@ -419,6 +420,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
     CONTRACTL_END;
 
+    m_loaderAllocator = GetAssembly()->GetLoaderAllocator();
     m_pSimpleName = m_pPEAssembly->GetSimpleName();
 
     m_Crst.Init(CrstModule);
@@ -434,7 +436,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #ifdef FEATURE_COLLECTIBLE_TYPES
     if (GetAssembly()->IsCollectible())
     {
-        FastInterlockOr(&m_dwPersistedFlags, COLLECTIBLE_MODULE);
+        InterlockedOr((LONG*)&m_dwPersistedFlags, COLLECTIBLE_MODULE);
     }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
@@ -478,21 +480,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
-    if (m_pMemberRefToDescHashTable == NULL)
-    {
-        if (IsReflection())
-        {
-            m_pMemberRefToDescHashTable = MemberRefToDescHashTable::Create(this, MEMBERREF_MAP_INITIAL_SIZE, pamTracker);
-        }
-        else
-        {
-            IMDInternalImport* pImport = GetMDImport();
-
-            // Get #MemberRefs and create memberrefToDesc hash table
-            m_pMemberRefToDescHashTable = MemberRefToDescHashTable::Create(this, pImport->GetCountWithTokenKind(mdtMemberRef) + 1, pamTracker);
-        }
-    }
-
     // this will be initialized a bit later.
     m_ModuleID = NULL;
     m_ModuleIndex.m_dwIndex = (SIZE_T)-1;
@@ -523,133 +510,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 }
 
 #endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-MemberRefToDescHashTable* MemberRefToDescHashTable::Create(Module *pModule, DWORD cInitialBuckets, AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
-    }
-    CONTRACTL_END;
-
-    LoaderHeap *pHeap = pModule->GetAssembly()->GetLowFrequencyHeap();
-    MemberRefToDescHashTable *pThis = (MemberRefToDescHashTable*)pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(MemberRefToDescHashTable)));
-
-    // The base class get initialized through chaining of constructors. We allocated the hash instance via the
-    // loader heap instead of new so use an in-place new to call the constructors now.
-    new (pThis) MemberRefToDescHashTable(pModule, pHeap, cInitialBuckets);
-
-    return pThis;
-}
-
-//Inserts FieldRef
-MemberRefToDescHashEntry* MemberRefToDescHashTable::Insert(mdMemberRef token , FieldDesc *value)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
-    }
-    CONTRACTL_END;
-
-    LookupContext sAltContext;
-
-    _ASSERTE((dac_cast<TADDR>(value) & IS_FIELD_MEMBER_REF) == 0);
-
-    MemberRefToDescHashEntry *pEntry = (PTR_MemberRefToDescHashEntry) BaseFindFirstEntryByHash(RidFromToken(token), &sAltContext);
-    if (pEntry != NULL)
-    {
-        // If memberRef is hot token in that case entry for memberref is already persisted in ngen image. So entry for it will already be present in hash table.
-        // However its value will be null. We need to set its actual value.
-        if(pEntry->m_value == dac_cast<TADDR>(NULL))
-        {
-            pEntry->m_value = dac_cast<TADDR>(value)|IS_FIELD_MEMBER_REF;
-        }
-
-        _ASSERTE(pEntry->m_value == (dac_cast<TADDR>(value)|IS_FIELD_MEMBER_REF));
-        return pEntry;
-    }
-
-    // For non hot tokens insert new entry in hashtable
-    pEntry = BaseAllocateEntry(NULL);
-    pEntry->m_value = dac_cast<TADDR>(value)|IS_FIELD_MEMBER_REF;
-    BaseInsertEntry(RidFromToken(token), pEntry);
-
-    return pEntry;
-}
-
-// Insert MethodRef
-MemberRefToDescHashEntry* MemberRefToDescHashTable::Insert(mdMemberRef token , MethodDesc *value)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
-    }
-    CONTRACTL_END;
-
-    LookupContext sAltContext;
-
-    MemberRefToDescHashEntry *pEntry = (PTR_MemberRefToDescHashEntry) BaseFindFirstEntryByHash(RidFromToken(token), &sAltContext);
-    if (pEntry != NULL)
-    {
-        // If memberRef is hot token in that case entry for memberref is already persisted in ngen image. So entry for it will already be present in hash table.
-        // However its value will be null. We need to set its actual value.
-        if(pEntry->m_value == dac_cast<TADDR>(NULL))
-        {
-            pEntry->m_value = dac_cast<TADDR>(value);
-        }
-
-        _ASSERTE(pEntry->m_value == dac_cast<TADDR>(value));
-        return pEntry;
-    }
-
-    // For non hot tokens insert new entry in hashtable
-    pEntry = BaseAllocateEntry(NULL);
-    pEntry->m_value = dac_cast<TADDR>(value);
-    BaseInsertEntry(RidFromToken(token), pEntry);
-
-    return pEntry;
-}
-
-#endif // !DACCESS_COMPILE
-
-PTR_MemberRef MemberRefToDescHashTable::GetValue(mdMemberRef token, BOOL *pfIsMethod)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    LookupContext sAltContext;
-
-    MemberRefToDescHashEntry *pEntry = (PTR_MemberRefToDescHashEntry) BaseFindFirstEntryByHash(RidFromToken(token), &sAltContext);
-    if (pEntry != NULL)
-    {
-        if(pEntry->m_value & IS_FIELD_MEMBER_REF)
-            *pfIsMethod = FALSE;
-        else
-            *pfIsMethod = TRUE;
-        return (PTR_MemberRef)(pEntry->m_value & (~MEMBER_REF_MAP_ALL_FLAGS));
-    }
-
-    return NULL;
-}
 
 
 void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
@@ -962,7 +822,7 @@ MethodTable *Module::GetGlobalMethodTable()
                                                    ClassLoader::FailIfUninstDefOrRef).AsMethodTable();
         }
 
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_GLOBAL_CLASS);
+        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_GLOBAL_CLASS);
         RETURN pMT;
     }
     else
@@ -1580,11 +1440,11 @@ BOOL Module::HasDefaultDllImportSearchPathsAttribute()
     attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(this, TokenFromRid(1, mdtAssembly),&m_DefaultDllImportSearchPathsAttributeValue);
     if(attributeIsFound)
     {
-        FastInterlockOr(&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED | DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS);
+        InterlockedOr((LONG*)&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED | DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS);
     }
     else
     {
-        FastInterlockOr(&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED);
+        InterlockedOr((LONG*)&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED);
     }
 
     return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS) != 0 ;
@@ -1644,7 +1504,7 @@ BOOL Module::IsRuntimeWrapExceptions()
                 fRuntimeWrapExceptions = TRUE;
         }
 ErrExit:
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
+        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
             (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
     }
 
@@ -1681,7 +1541,7 @@ BOOL Module::IsRuntimeMarshallingEnabled()
                         (const void**)&pVal, &cbVal);
     }
 
-    FastInterlockOr(&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
+    InterlockedOr((LONG*)&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
     return hr != S_OK;
@@ -1712,7 +1572,7 @@ BOOL Module::IsPreV4Assembly()
             }
         }
 
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
+        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_IS_PRE_V4_ASSEMBLY |
             (fIsPreV4Assembly ? IS_PRE_V4_ASSEMBLY : 0));
     }
 
@@ -1731,7 +1591,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
     }
     CONTRACTL_END;
 
-    DWORD newId = FastInterlockExchangeAdd((LONG*)&m_cDynamicEntries, 1);
+    DWORD newId = InterlockedExchangeAdd((LONG*)&m_cDynamicEntries, 1);
 
     if (newId >= VolatileLoad(&m_maxDynamicEntries))
     {
@@ -1993,6 +1853,7 @@ void Module::AllocateMaps()
     {
         TYPEDEF_MAP_INITIAL_SIZE = 5,
         TYPEREF_MAP_INITIAL_SIZE = 5,
+        MEMBERREF_MAP_INITIAL_SIZE = 10,
         MEMBERDEF_MAP_INITIAL_SIZE = 10,
         GENERICPARAM_MAP_INITIAL_SIZE = 5,
         GENERICTYPEDEF_MAP_INITIAL_SIZE = 5,
@@ -2012,6 +1873,7 @@ void Module::AllocateMaps()
 
         // The above is essential.  The following ones are precautionary.
         m_TypeRefToMethodTableMap.dwCount = TYPEREF_MAP_INITIAL_SIZE;
+        m_MemberRefMap.dwCount = MEMBERREF_MAP_INITIAL_SIZE;
         m_MethodDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_FieldDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_GenericParamToDescMap.dwCount = GENERICPARAM_MAP_INITIAL_SIZE;
@@ -2029,6 +1891,9 @@ void Module::AllocateMaps()
 
         // Get # TypeRefs
         m_TypeRefToMethodTableMap.dwCount = pImport->GetCountWithTokenKind(mdtTypeRef)+1;
+
+        // Get # MemberRefs
+        m_MemberRefMap.dwCount = pImport->GetCountWithTokenKind(mdtMemberRef)+1;
 
         // Get # MethodDefs
         m_MethodDefToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtMethodDef)+1;
@@ -2053,6 +1918,7 @@ void Module::AllocateMaps()
 
     nTotal += m_TypeDefToMethodTableMap.dwCount;
     nTotal += m_TypeRefToMethodTableMap.dwCount;
+    nTotal += m_MemberRefMap.dwCount;
     nTotal += m_MethodDefToDescMap.dwCount;
     nTotal += m_FieldDefToDescMap.dwCount;
     nTotal += m_GenericParamToDescMap.dwCount;
@@ -2075,9 +1941,13 @@ void Module::AllocateMaps()
     m_TypeRefToMethodTableMap.supportedFlags = TYPE_REF_MAP_ALL_FLAGS;
     m_TypeRefToMethodTableMap.pTable = &pTable[m_TypeDefToMethodTableMap.dwCount];
 
+    m_MemberRefMap.pNext = NULL;
+    m_MemberRefMap.supportedFlags = MEMBER_REF_MAP_ALL_FLAGS;
+    m_MemberRefMap.pTable = &m_TypeRefToMethodTableMap.pTable[m_TypeRefToMethodTableMap.dwCount];
+
     m_MethodDefToDescMap.pNext  = NULL;
     m_MethodDefToDescMap.supportedFlags = METHOD_DEF_MAP_ALL_FLAGS;
-    m_MethodDefToDescMap.pTable = &m_TypeRefToMethodTableMap.pTable[m_TypeRefToMethodTableMap.dwCount];
+    m_MethodDefToDescMap.pTable = &m_MemberRefMap.pTable[m_MemberRefMap.dwCount];
 
     m_FieldDefToDescMap.pNext  = NULL;
     m_FieldDefToDescMap.supportedFlags = FIELD_DEF_MAP_ALL_FLAGS;
@@ -2123,7 +1993,7 @@ void Module::FreeClassTables()
     if (m_dwTransientFlags & CLASSES_FREED)
         return;
 
-    FastInterlockOr(&m_dwTransientFlags, CLASSES_FREED);
+    InterlockedOr((LONG*)&m_dwTransientFlags, CLASSES_FREED);
 
 #if _DEBUG
     DebugLogRidMapOccupancy();
@@ -2220,12 +2090,6 @@ void Module::StartUnload()
     SetBeingUnloaded();
 }
 
-BOOL Module::IsInCurrentVersionBubble()
-{
-    LIMITED_METHOD_CONTRACT;
-    return TRUE;
-}
-
 #if defined(FEATURE_READYTORUN)
 //---------------------------------------------------------------------------------------
 // Check if the target module is in the same version bubble as this one
@@ -2253,7 +2117,6 @@ BOOL Module::IsInSameVersionBubble(Module *target)
     }
 
     NativeImage *nativeImage = this->GetCompositeNativeImage();
-    IMDInternalImport* pMdImport = NULL;
 
     if (nativeImage != NULL)
     {
@@ -2262,20 +2125,12 @@ BOOL Module::IsInSameVersionBubble(Module *target)
             // Fast path for modules contained within the same native image
             return TRUE;
         }
-        pMdImport = nativeImage->GetManifestMetadata();
-    }
-    else
-    {
-        // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
-        COUNT_T cMeta=0;
-        const void* pMeta = GetPEAssembly()->GetPEImage()->GetNativeManifestMetadata(&cMeta);
-        if (pMeta == NULL)
-        {
-            return FALSE;
-        }
-        pMdImport = GetNativeAssemblyImport();
     }
 
+    IMDInternalImport* pMdImport = GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
+    if (pMdImport == NULL)
+        return FALSE;
+    
     LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
 
     HENUMInternal assemblyEnum;
@@ -2698,7 +2553,7 @@ ILStubCache* Module::GetILStubCache()
     {
         ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator()->GetHighFrequencyHeap());
 
-        if (FastInterlockCompareExchangePointer(&m_pILStubCache, pILStubCache, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_pILStubCache, pILStubCache, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete pILStubCache;
@@ -2920,7 +2775,7 @@ UINT32 Module::GetTlsIndex()
 // getting a false sense of security (in addition to its functional shortcomings)
 
 #ifndef DACCESS_COMPILE
-BOOL Module::IsSigInIL(PCCOR_SIGNATURE signature)
+BOOL Module::IsSigInILImpl(PCCOR_SIGNATURE signature)
 {
     CONTRACTL
     {
@@ -2935,7 +2790,7 @@ BOOL Module::IsSigInIL(PCCOR_SIGNATURE signature)
     return m_pPEAssembly->IsPtrInPEImage(signature);
 }
 
-void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb)
+void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb)
 {
     CONTRACTL
     {
@@ -2980,7 +2835,7 @@ void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickByt
 }
 
 
-OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain)
+OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token)
 {
     CONTRACTL
     {
@@ -3005,16 +2860,9 @@ OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain)
 
     GCX_COOP();
 
-    // We can only do this for native images as they guarantee that resolvestringref will be
-    // called only once per string from this module. @TODO: We really dont have any way of asserting
-    // this, which would be nice... (and is needed to guarantee correctness)
-    // Retrieve the string from the either the appropriate LoaderAllocator
     LoaderAllocator *pLoaderAllocator;
 
-    if (this->IsCollectible())
-        pLoaderAllocator = this->GetLoaderAllocator();
-    else
-        pLoaderAllocator = pDomain->GetLoaderAllocator();
+    pLoaderAllocator = this->GetLoaderAllocator();
 
     string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData);
 
@@ -3206,7 +3054,7 @@ Module::GetAssemblyIfLoaded(
 } // Module::GetAssemblyIfLoaded
 
 DWORD
-Module::GetAssemblyRefFlags(
+ModuleBase::GetAssemblyRefFlags(
     mdAssemblyRef tkAssemblyRef)
 {
     CONTRACTL
@@ -3238,7 +3086,7 @@ Module::GetAssemblyRefFlags(
 } // Module::GetAssemblyRefFlags
 
 #ifndef DACCESS_COMPILE
-DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
+DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
     CONTRACT(DomainAssembly *)
     {
@@ -3297,7 +3145,12 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
 
     RETURN pDomainAssembly;
 }
-
+#else
+DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+{
+    WRAPPER_NO_CONTRACT;
+    ThrowHR(E_FAIL);
+}
 #endif // !DACCESS_COMPILE
 
 Module *Module::GetModuleIfLoaded(mdFile kFile)
@@ -3335,51 +3188,20 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(kFile);
     }
 
-    Module *pModule = LookupFile(kFile);
-    if (pModule == NULL)
+    if (kFile == mdFileNil)
     {
-        if (IsManifest())
-        {
-            if (kFile == mdFileNil)
-                pModule = GetAssembly()->GetModule();
-        }
-        else
-        {
-            // If we didn't find it there, look at the "master rid map" in the manifest file
-            Assembly *pAssembly = GetAssembly();
-            mdFile kMatch;
-
-            // This is required only because of some lower casing on the name
-            kMatch = pAssembly->GetManifestFileToken(GetMDImport(), kFile);
-            if (IsNilToken(kMatch))
-            {
-                if (kMatch == mdFileNil)
-                {
-                    pModule = pAssembly->GetModule();
-                }
-                else
-                {
-                    RETURN NULL;
-                }
-            }
-            else
-            pModule = pAssembly->GetModule()->LookupFile(kMatch);
-        }
-
 #ifndef DACCESS_COMPILE
-        if (pModule != NULL)
-            StoreFileNoThrow(kFile, pModule);
+        StoreFileNoThrow(kFile, this);
 #endif
+        return this;
     }
 
-#ifndef DACCESS_COMPILE
-#endif // !DACCESS_COMPILE
-    RETURN pModule;
+    RETURN NULL;
 }
 
 #ifndef DACCESS_COMPILE
 
-DomainAssembly *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
+DomainAssembly *ModuleBase::LoadModule(mdFile kFile)
 {
     CONTRACT(DomainAssembly *)
     {
@@ -3401,7 +3223,7 @@ DomainAssembly *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
     else
     {
         // This is mdtFile
-        IfFailThrow(GetAssembly()->GetMDImport()->GetFileProps(kFile,
+        IfFailThrow(GetMDImport()->GetFileProps(kFile,
                                     &psModuleName,
                                     NULL,
                                     NULL,
@@ -3444,25 +3266,11 @@ PTR_Module Module::LookupModule(mdToken kFile)
     }
 
     PTR_Module pModule = LookupFile(kFile);
-    if (pModule == NULL && !IsManifest())
-    {
-        // If we didn't find it there, look at the "master rid map" in the manifest file
-        Assembly *pAssembly = GetAssembly();
-        mdFile kMatch = pAssembly->GetManifestFileToken(GetMDImport(), kFile);
-        if (IsNilToken(kMatch)) {
-            if (kMatch == mdFileNil)
-                pModule = pAssembly->GetModule();
-            else
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        else
-            pModule = pAssembly->GetModule()->LookupFile(kMatch);
-    }
     RETURN pModule;
 }
 
 
-TypeHandle Module::LookupTypeRef(mdTypeRef token)
+TypeHandle ModuleBase::LookupTypeRef(mdTypeRef token)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -3487,7 +3295,7 @@ TypeHandle Module::LookupTypeRef(mdTypeRef token)
 // This function must also check that another thread didn't already add a LookupMap capable
 // of containing the same RID.
 //
-PTR_TADDR LookupMapBase::GrowMap(Module * pModule, DWORD rid)
+PTR_TADDR LookupMapBase::GrowMap(ModuleBase * pModule, DWORD rid)
 {
     CONTRACT(PTR_TADDR)
     {
@@ -4398,7 +4206,7 @@ LoaderHeap *Module::GetThunkHeap()
             ThunkHeapStubManager::g_pManager->GetRangeList(),
             UnlockedLoaderHeap::HeapKind::Executable);
 
-        if (FastInterlockCompareExchangePointer(&m_pThunkHeap, pNewHeap, 0) != 0)
+        if (InterlockedCompareExchangeT(&m_pThunkHeap, pNewHeap, 0) != 0)
         {
             delete pNewHeap;
         }
@@ -4407,9 +4215,9 @@ LoaderHeap *Module::GetThunkHeap()
     RETURN m_pThunkHeap;
 }
 
-Module *Module::GetModuleFromIndex(DWORD ix)
+ModuleBase *Module::GetModuleFromIndex(DWORD ix)
 {
-    CONTRACT(Module*)
+    CONTRACT(ModuleBase*)
     {
         INSTANCE_CHECK;
         THROWS;
@@ -4441,9 +4249,9 @@ Module *Module::GetModuleFromIndex(DWORD ix)
 
 #endif // !DACCESS_COMPILE
 
-Module *Module::GetModuleFromIndexIfLoaded(DWORD ix)
+ModuleBase *Module::GetModuleFromIndexIfLoaded(DWORD ix)
 {
-    CONTRACT(Module*)
+    CONTRACT(ModuleBase*)
     {
         INSTANCE_CHECK;
         NOTHROW;
@@ -4479,7 +4287,7 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
     }
     CONTRACT_END;
 
-    RETURN GetPEAssembly()->GetPEImage()->GetNativeMDImport(loadAllowed);
+    RETURN GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
 }
 
 BYTE* Module::GetNativeFixupBlobData(RVA rva)
@@ -4732,7 +4540,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 void Module::SetIsIJWFixedUp()
 {
     LIMITED_METHOD_CONTRACT;
-    FastInterlockOr(&m_dwTransientFlags, IS_IJW_FIXED_UP);
+    InterlockedOr((LONG*)&m_dwTransientFlags, IS_IJW_FIXED_UP);
 }
 #endif // !DACCESS_COMPILE
 
@@ -4740,7 +4548,7 @@ void Module::SetIsIJWFixedUp()
 void Module::SetBeingUnloaded()
 {
     LIMITED_METHOD_CONTRACT;
-    FastInterlockOr((ULONG*)&m_dwTransientFlags, IS_BEING_UNLOADED);
+    InterlockedOr((LONG*)&m_dwTransientFlags, IS_BEING_UNLOADED);
 }
 
 // ===========================================================================
@@ -5363,7 +5171,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         // Save the LookupMap structures.
         m_MethodDefToDescMap.ListEnumMemoryRegions(flags);
         m_FieldDefToDescMap.ListEnumMemoryRegions(flags);
-        m_pMemberRefToDescHashTable->EnumMemoryRegions(flags);
+        m_MemberRefMap.ListEnumMemoryRegions(flags);
         m_GenericParamToDescMap.ListEnumMemoryRegions(flags);
         m_GenericTypeDefToCanonMethodTableMap.ListEnumMemoryRegions(flags);
         m_FileReferencesMap.ListEnumMemoryRegions(flags);
@@ -5489,6 +5297,18 @@ LPCWSTR Module::GetPathForErrorMessages()
     {
         return W("");
     }
+}
+
+LPCWSTR ModuleBase::GetPathForErrorMessages()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+    return W("");
 }
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
@@ -5761,3 +5581,21 @@ void EEConfig::DebugCheckAndForceIBCFailure(BitForMask bitForMask)
     }
 }
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
+
+#ifdef DACCESS_COMPILE
+void DECLSPEC_NORETURN ModuleBase::ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
+                                                      mdToken token,
+                                                      UINT resIDWhy)
+{
+    WRAPPER_NO_CONTRACT;
+    ThrowHR(E_FAIL);
+}
+#else
+void DECLSPEC_NORETURN Module::ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
+                                                      mdToken token,
+                                                      UINT resIDWhy)
+{
+    WRAPPER_NO_CONTRACT;
+    GetAssembly()->ThrowTypeLoadException(pInternalImport, token, NULL, resIDWhy);
+}
+#endif

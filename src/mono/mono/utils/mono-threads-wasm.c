@@ -229,13 +229,14 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	pthread_attr_t attr;
 	pthread_t thread;
 	gint res;
-	gsize set_stack_size;
 
 	res = pthread_attr_init (&attr);
 	if (res != 0)
 		g_error ("%s: pthread_attr_init failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
 #if 0
+	gsize set_stack_size;
+
 	if (stack_size)
 		set_stack_size = *stack_size;
 	else
@@ -411,6 +412,29 @@ mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
 }
 
 #ifndef DISABLE_THREADS
+extern void
+mono_wasm_pthread_on_pthread_attached (gpointer pthread_id);
+#endif
+
+void
+mono_threads_wasm_on_thread_attached (void)
+{
+#ifdef DISABLE_THREADS
+	return;
+#else
+	if (mono_threads_wasm_is_browser_thread ()) {
+		return;
+	}
+	// Notify JS that the pthread attachd to Mono
+	pthread_t id = pthread_self ();
+	MONO_ENTER_GC_SAFE;
+	mono_wasm_pthread_on_pthread_attached (id);
+	MONO_EXIT_GC_SAFE;
+#endif
+}
+
+
+#ifndef DISABLE_THREADS
 void
 mono_threads_wasm_async_run_in_main_thread (void (*func) (void))
 {
@@ -422,6 +446,14 @@ mono_threads_wasm_async_run_in_main_thread_vi (void (*func) (gpointer), gpointer
 {
 	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VI, func, user_data);
 }
+
+void
+mono_threads_wasm_async_run_in_main_thread_vii (void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VII, func, user_data1, user_data2);
+}
+
+
 #endif /* DISABLE_THREADS */
 
 #endif /* HOST_BROWSER */

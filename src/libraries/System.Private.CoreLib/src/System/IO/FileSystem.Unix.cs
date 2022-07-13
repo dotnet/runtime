@@ -16,14 +16,26 @@ namespace System.IO
         // See: https://man7.org/linux/man-pages/man7/path_resolution.7.html
         private const int MaxFollowedLinks = 40;
 
+        // This gets filtered by umask.
+        internal const UnixFileMode DefaultUnixCreateDirectoryMode =
+            UnixFileMode.UserRead |
+            UnixFileMode.UserWrite |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead |
+            UnixFileMode.GroupWrite |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherRead |
+            UnixFileMode.OtherWrite |
+            UnixFileMode.OtherExecute;
+
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             long fileLength;
-            Interop.Sys.Permissions filePermissions;
+            UnixFileMode filePermissions;
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, openPermissions: filePermissions,
-                                            (Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path) => CreateOpenException(error, flags, path));
+                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
+                                            CreateOpenException);
 
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
 
@@ -279,6 +291,9 @@ namespace System.IO
         }
 
         public static void CreateDirectory(string fullPath)
+            => CreateDirectory(fullPath, DefaultUnixCreateDirectoryMode);
+
+        public static void CreateDirectory(string fullPath, UnixFileMode unixCreateMode)
         {
             // The argument is a full path, which means it is an absolute path that
             // doesn't contain "//", "/./", and "/../".
@@ -290,7 +305,7 @@ namespace System.IO
                 return; // fullPath is '/'.
             }
 
-            int result = Interop.Sys.MkDir(fullPath, (int)Interop.Sys.Permissions.Mask);
+            int result = Interop.Sys.MkDir(fullPath, (int)unixCreateMode);
             if (result == 0)
             {
                 return; // Created directory.
@@ -303,7 +318,7 @@ namespace System.IO
             }
             else if (errorInfo.Error == Interop.Error.ENOENT) // Some parts of the path don't exist yet.
             {
-                CreateParentsAndDirectory(fullPath);
+                CreateParentsAndDirectory(fullPath, unixCreateMode);
             }
             else
             {
@@ -311,7 +326,7 @@ namespace System.IO
             }
         }
 
-        private static void CreateParentsAndDirectory(string fullPath)
+        private static void CreateParentsAndDirectory(string fullPath, UnixFileMode unixCreateMode)
         {
             // Try create parents bottom to top and track those that could not
             // be created due to missing parents. Then create them top to bottom.
@@ -334,7 +349,7 @@ namespace System.IO
                 }
 
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, i);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
                 if (result == 0)
                 {
                     break; // Created parent.
@@ -366,7 +381,7 @@ namespace System.IO
             for (i = stackDir.Length - 1; i >= 0; i--)
             {
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, stackDir[i]);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
                 if (result < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -585,26 +600,69 @@ namespace System.IO
             return attributes;
         }
 
+        public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
+            => default(FileStatus).GetAttributes(fileHandle);
+
         public static void SetAttributes(string fullPath, FileAttributes attributes)
             => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
+
+        public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
+            => default(FileStatus).SetAttributes(fileHandle, attributes, asDirectory: false);
+
+        public static UnixFileMode GetUnixFileMode(string fullPath)
+        {
+            UnixFileMode mode = default(FileStatus).GetUnixFileMode(fullPath);
+
+            if (mode == (UnixFileMode)(-1))
+                FileSystemInfo.ThrowNotFound(fullPath);
+
+            return mode;
+        }
+
+        public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
+            => default(FileStatus).GetUnixFileMode(fileHandle);
+
+        public static void SetUnixFileMode(string fullPath, UnixFileMode mode)
+            => default(FileStatus).SetUnixFileMode(fullPath, mode);
+
+        public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
+            => default(FileStatus).SetUnixFileMode(fileHandle, mode);
 
         public static DateTimeOffset GetCreationTime(string fullPath)
             => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;
 
+        public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetCreationTime(fileHandle).UtcDateTime;
+
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetCreationTime(fullPath, time, asDirectory);
+
+        public static void SetCreationTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetCreationTime(fileHandle, time, asDirectory: false);
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
             => default(FileStatus).GetLastAccessTime(fullPath).UtcDateTime;
 
+        public static DateTimeOffset GetLastAccessTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetLastAccessTime(fileHandle).UtcDateTime;
+
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetLastAccessTime(fullPath, time, asDirectory);
+
+        public static unsafe void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetLastAccessTime(fileHandle, time, asDirectory: false);
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
             => default(FileStatus).GetLastWriteTime(fullPath).UtcDateTime;
 
+        public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetLastWriteTime(fileHandle).UtcDateTime;
+
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetLastWriteTime(fullPath, time, asDirectory);
+
+        public static unsafe void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetLastWriteTime(fileHandle, time, asDirectory: false);
 
         public static string[] GetLogicalDrives()
         {

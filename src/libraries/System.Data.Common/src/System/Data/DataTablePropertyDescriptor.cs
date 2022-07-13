@@ -21,15 +21,9 @@ namespace System.Data
 
         public override Type PropertyType => typeof(IBindingList);
 
-        public override bool Equals([NotNullWhen(true)] object? other)
-        {
-            if (other is DataTablePropertyDescriptor)
-            {
-                DataTablePropertyDescriptor descriptor = (DataTablePropertyDescriptor)other;
-                return (descriptor.Table == Table);
-            }
-            return false;
-        }
+        public override bool Equals([NotNullWhen(true)] object? other) =>
+            other is DataTablePropertyDescriptor descriptor &&
+            descriptor.Table == Table;
 
         public override int GetHashCode() => Table.GetHashCode();
 

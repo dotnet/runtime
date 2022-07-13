@@ -3,7 +3,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
-    <Nullable>annotations</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
@@ -115,8 +114,23 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="IdentityValidator.Windows.cs" />
+    <Compile Include="Interop\SafeCertContextHandle.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs"
              Link="Common\System\Net\Capability.Security.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertContextPropId.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="IdentityValidator.Unix.cs" />

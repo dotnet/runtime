@@ -9,12 +9,16 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
     public class BreakpointTests : DebuggerTests
     {
+        public BreakpointTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task CreateGoodBreakpoint()
         {
@@ -135,14 +139,14 @@ namespace DebuggerTests
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                "IntAdd",
+                "Math.IntAdd",
                 wait_for_event_fn: (pause_location) =>
                 {
                     Assert.Equal("other", pause_location["reason"]?.Value<string>());
                     Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                     var top_frame = pause_location["callFrames"][0];
-                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Equal("Math.IntAdd", top_frame["functionName"].Value<string>());
                     Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
 
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
@@ -150,7 +154,7 @@ namespace DebuggerTests
                     //now check the scope
                     var scope = top_frame["scopeChain"][0];
                     Assert.Equal("local", scope["type"]);
-                    Assert.Equal("IntAdd", scope["name"]);
+                    Assert.Equal("Math.IntAdd", scope["name"]);
 
                     Assert.Equal("object", scope["object"]["type"]);
 
@@ -198,9 +202,9 @@ namespace DebuggerTests
         };
 
         [Theory]
-        //[MemberData(nameof(FalseConditions))]
+        [MemberData(nameof(FalseConditions))]
         [MemberData(nameof(TrueConditions))]
-        //[MemberData(nameof(InvalidConditions))]
+        [MemberData(nameof(InvalidConditions))]
         public async Task ConditionalBreakpoint2(string function_to_call, string method_to_stop, string condition, bool bp_stop_expected)
         {
             Result [] bps = new Result[2];
@@ -211,7 +215,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bps[bp_stop_expected ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
                 bps[bp_stop_expected ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
-                method_to_stop);
+                "Math." + method_to_stop);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
@@ -248,13 +252,13 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bps[bp_stop_expected ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
                 bps[bp_stop_expected ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
-                method_to_stop);
+                "Math." + method_to_stop);
 
             await SendCommandAndCheck(null, "Debugger.resume",
                 null,
                 bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
                 bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
-                method_to_stop);
+                "Math." + method_to_stop);
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -263,35 +267,35 @@ namespace DebuggerTests
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test2.cs", 58, 8,
-                "BreakOnDebuggerBreakCommand",
+                "UserBreak.BreakOnDebuggerBreakCommand",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 59, 8, "BreakOnDebuggerBreakCommand",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 59, 8, "UserBreak.BreakOnDebuggerBreakCommand",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 60, 8, "BreakOnDebuggerBreakCommand",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 60, 8, "UserBreak.BreakOnDebuggerBreakCommand",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 20);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 61, 8, "BreakOnDebuggerBreakCommand",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 61, 8, "UserBreak.BreakOnDebuggerBreakCommand",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 50);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 62, 4, "BreakOnDebuggerBreakCommand",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test2.cs", 62, 4, "UserBreak.BreakOnDebuggerBreakCommand",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 100);
@@ -323,7 +327,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[library-dependency-debugger-test1] TestDependency:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
-               "IntAdd");
+               "TestDependency.IntAdd");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 5);
             CheckNumber(locals, "b", 10);
@@ -339,7 +343,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak",
+                "LoopClass.LoopToBreak",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 3);
@@ -351,7 +355,7 @@ namespace DebuggerTests
                 null,
                 bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak");
+                "LoopClass.LoopToBreak");
         }
 
         [Fact]
@@ -364,7 +368,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak",
+                "LoopClass.LoopToBreak",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 0);
@@ -376,7 +380,7 @@ namespace DebuggerTests
                 null,
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak",
+                "LoopClass.LoopToBreak",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 3);
@@ -387,7 +391,7 @@ namespace DebuggerTests
                 null,
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak",
+                "LoopClass.LoopToBreak",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 6);
@@ -398,7 +402,7 @@ namespace DebuggerTests
                 null,
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak",
+                "LoopClass.LoopToBreak",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 9);
@@ -409,7 +413,7 @@ namespace DebuggerTests
                 null,
                 bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak");
+                "LoopClass.LoopToBreak");
         }
 
         [Fact]
@@ -422,7 +426,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_check.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_check.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak"
+                "LoopClass.LoopToBreak"
             );
         }
 
@@ -435,7 +439,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak",
+                "LoopClass.LoopToBreak",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 0);
@@ -447,7 +451,7 @@ namespace DebuggerTests
                 null,
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak",
+                "LoopClass.LoopToBreak",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 1);
@@ -458,7 +462,7 @@ namespace DebuggerTests
                 null,
                 bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
-                "LoopToBreak",
+                "LoopClass.LoopToBreak",
                 locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 2);
@@ -473,12 +477,12 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                "IntAdd");
+                "Math.IntAdd");
             Assert.Equal("other", pause_location["reason"]?.Value<string>());
             Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
             var top_frame = pause_location["callFrames"][0];
-            Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+            Assert.Equal("Math.IntAdd", top_frame["functionName"].Value<string>());
             Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
 
             CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
@@ -486,7 +490,7 @@ namespace DebuggerTests
             //now check the scope
             var scope = top_frame["scopeChain"][0];
             Assert.Equal("local", scope["type"]);
-            Assert.Equal("IntAdd", scope["name"]);
+            Assert.Equal("Math.IntAdd", scope["name"]);
 
             Assert.Equal("object", scope["object"]["type"]);
             CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
@@ -510,14 +514,14 @@ namespace DebuggerTests
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                "IntAdd",
+                "Math.IntAdd",
                 wait_for_event_fn: (pause_location) =>
                 {
                     Assert.Equal("other", pause_location["reason"]?.Value<string>());
                     Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                     var top_frame = pause_location["callFrames"][0];
-                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Equal("Math.IntAdd", top_frame["functionName"].Value<string>());
                     Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
 
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
@@ -525,7 +529,7 @@ namespace DebuggerTests
                     //now check the scope
                     var scope = top_frame["scopeChain"][0];
                     Assert.Equal("local", scope["type"]);
-                    Assert.Equal("IntAdd", scope["name"]);
+                    Assert.Equal("Math.IntAdd", scope["name"]);
 
                     Assert.Equal("object", scope["object"]["type"]);
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
@@ -550,7 +554,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_final.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_final.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName
+                "DebuggerAttribute." + evalFunName
             );
         }
 
@@ -567,32 +571,32 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName
+                "DebuggerAttribute." + evalFunName
             );
             await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName);
+                "DebuggerAttribute." + evalFunName);
             await SendCommandAndCheck(null, "Debugger.resume",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_final.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_final.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName);
+                "DebuggerAttribute." + evalFunName);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "RunStepThrough", "DebuggerAttribute", 1, 847, 8)]
-        [InlineData(true, "RunStepThrough", "DebuggerAttribute", 1, 847, 8)]
-        [InlineData(false, "RunNonUserCode", "DebuggerAttribute", 1, 852, 4, "NonUserCodeBp")]
-        [InlineData(true, "RunNonUserCode", "DebuggerAttribute", 1, 867, 8)]
-        [InlineData(false, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8)]
-        [InlineData(true, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8)]
-        [InlineData(false, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1091, 4)]
-        [InlineData(true, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1091, 4)]
-        [InlineData(false, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1048, 4, "NonUserCodeDefaultMethod")]
-        [InlineData(true, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1097, 4)]
-        public async Task StepThroughOrNonUserCodeAttributeStepInNoBp(bool justMyCodeEnabled, string evalFunName, string evalClassName, int bpLine, int line, int col, string funcName="")
+        [InlineData(false, "RunStepThrough", "DebuggerAttribute", 1, 847, 8, "DebuggerAttribute.RunStepThrough")]
+        [InlineData(true, "RunStepThrough", "DebuggerAttribute", 1, 847, 8, "DebuggerAttribute.RunStepThrough")]
+        [InlineData(false, "RunNonUserCode", "DebuggerAttribute", 1, 852, 4, "DebuggerAttribute.NonUserCodeBp")]
+        [InlineData(true, "RunNonUserCode", "DebuggerAttribute", 1, 867, 8, "DebuggerAttribute.RunNonUserCode")]
+        [InlineData(false, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8, "DebuggerAttribute.RunStepThroughWithNonUserCode")]
+        [InlineData(true, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8, "DebuggerAttribute.RunStepThroughWithNonUserCode")]
+        [InlineData(false, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1108, 4, "DefaultInterfaceMethod.EvaluateStepThroughAttr")]
+        [InlineData(true, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1108, 4, "DefaultInterfaceMethod.EvaluateStepThroughAttr")]
+        [InlineData(false, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1065, 4, "IExtendIDefaultInterface.NonUserCodeDefaultMethod")]
+        [InlineData(true, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1114, 4, "DefaultInterfaceMethod.EvaluateNonUserCodeAttr")]
+        public async Task StepThroughOrNonUserCodeAttributeStepInNoBp2(bool justMyCodeEnabled, string evalFunName, string evalClassName, int bpLine, int line, int col, string funcName="")
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", evalClassName, evalFunName, bpLine);
             var init_location = await EvaluateAndCheck(
@@ -600,11 +604,9 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName
+                evalClassName + "." + evalFunName
             );
             await SetJustMyCode(justMyCodeEnabled);
-            if (funcName == "")
-                funcName = evalFunName;
             await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line, col, funcName);
         }
 
@@ -625,7 +627,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName
+                "DebuggerAttribute." + evalFunName
             );
             
             await SetJustMyCode(justMyCodeEnabled);
@@ -635,11 +637,11 @@ namespace DebuggerTests
                 var bp2_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", decoratedFunName, 3);
                 var line1 = bp1_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
                 var line2 = bp2_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
-                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, decoratedFunName);
-                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line2, 8, decoratedFunName);
+                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, "DebuggerAttribute." + decoratedFunName);
+                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line2, 8, "DebuggerAttribute." + decoratedFunName);
                 funName = evalFunName;
             }
-            await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line, col, funName);
+            await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line, col, "DebuggerAttribute." + funName);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
@@ -657,7 +659,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName
+                "DebuggerAttribute." + evalFunName
             );
 
             await SetJustMyCode(justMyCodeEnabled);
@@ -665,11 +667,11 @@ namespace DebuggerTests
             {
                 var bp1_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", decoratedFunName, 1);
                 var line1 = bp1_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
-                await SendCommandAndCheck(null, "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, decoratedFunName);
+                await SendCommandAndCheck(null, "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, "DebuggerAttribute." + decoratedFunName);
             }
             var bp_outside_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 2);
             var line2 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
-            await SendCommandAndCheck(null, "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", line2, 8, evalFunName);
+            await SendCommandAndCheck(null, "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", line2, 8, "DebuggerAttribute." + evalFunName);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
@@ -698,7 +700,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName
+                "DebuggerAttribute." + evalFunName
             );
 
             await SetJustMyCode(justMyCodeEnabled);
@@ -707,8 +709,8 @@ namespace DebuggerTests
             if (line2 == -1)
                 line2 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
             
-            await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line1, col1, functionNameCheck1);
-            await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line2, col2, functionNameCheck2);
+            await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line1, col1, "DebuggerAttribute." + functionNameCheck1);
+            await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line2, col2, "DebuggerAttribute." + functionNameCheck2);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
@@ -732,7 +734,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                evalFunName
+                className + "." + evalFunName
             );
             var bp_final = await SetBreakpointInMethod("debugger-test.dll", className, evalFunName, lineBpFinal);
             if (hasBpInDecoratedFun)
@@ -740,14 +742,14 @@ namespace DebuggerTests
                 var bp_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", decoratedMethodClassName, "BoundaryBp", 2);
                 var line_decorated_fun = bp_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
                 var col_decorated_fun = bp_decorated_fun.Value["locations"][0]["columnNumber"].Value<int>();
-                await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line_decorated_fun, col_decorated_fun, "BoundaryBp");
+                await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line_decorated_fun, col_decorated_fun, decoratedMethodClassName + ".BoundaryBp");
             }
             if (isTestingUserBp)
-                await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", 879, 8, "BoundaryUserBp");
+                await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", 879, 8, decoratedMethodClassName + ".BoundaryUserBp");
             
             var line = bp_final.Value["locations"][0]["lineNumber"].Value<int>();
             var col = bp_final.Value["locations"][0]["columnNumber"].Value<int>();
-            await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line, col, evalFunName);
+            await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line, col,  className + "." + evalFunName);
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -757,12 +759,12 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                "IntAdd");
+                "Math.IntAdd");
             Assert.Equal("other", pause_location["reason"]?.Value<string>());
             Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
             var top_frame = pause_location["callFrames"][0];
-            Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+            Assert.Equal("Math.IntAdd", top_frame["functionName"].Value<string>());
             Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
 
             CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
@@ -770,7 +772,7 @@ namespace DebuggerTests
             //now check the scope
             var scope = top_frame["scopeChain"][0];
             Assert.Equal("local", scope["type"]);
-            Assert.Equal("IntAdd", scope["name"]);
+            Assert.Equal("Math.IntAdd", scope["name"]);
 
             Assert.Equal("object", scope["object"]["type"]);
             CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
@@ -795,14 +797,14 @@ namespace DebuggerTests
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
-                "IntAdd",
+                "Math.IntAdd",
                 wait_for_event_fn: async (pause_location) =>
                 {
                     Assert.Equal("other", pause_location["reason"]?.Value<string>());
                     Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                     var top_frame = pause_location["callFrames"][0];
-                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Equal("Math.IntAdd", top_frame["functionName"].Value<string>());
                     Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
 
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
@@ -810,7 +812,7 @@ namespace DebuggerTests
                     //now check the scope
                     var scope = top_frame["scopeChain"][0];
                     Assert.Equal("local", scope["type"]);
-                    Assert.Equal("IntAdd", scope["name"]);
+                    Assert.Equal("Math.IntAdd", scope["name"]);
 
                     Assert.Equal("object", scope["object"]["type"]);
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
@@ -821,11 +823,13 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", 1070, 1001, 999, 1003)]
-        [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", 1071, 1030, 1028, 1032)]
-        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", 37, 1014, 1012, 1016, true, "Start<IDefaultInterface/<DefaultMethodAsync>d__2>")]
+        [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1087, 1003, 1001, 1005)]
+        [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", "DefaultInterfaceMethod.Evaluate", 1088, 1047, 1045, 1049)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsync>d__3>", 37, 1016, 1014, 1018)]
+        [InlineData("IDefaultInterface", "DefaultMethodStatic", "EvaluateStatic", "DefaultInterfaceMethod.EvaluateStatic", 1124, 1022, 1020, 1024)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsyncStatic", "EvaluateAsyncStatic", "System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<IDefaultInterface.<DefaultMethodAsyncStatic>d__5>", 37, 1031, 1029, 1033)]
         public async Task BreakInDefaultInterfaceMethod(
-            string dimClassName, string dimName, string entryMethod,  int evaluateAsPrevFrameLine, int dimAsPrevFrameLine, int functionLocationLine, int functionEndLine, bool isAsync = false, string asyncPrevFrameInDim = "")
+            string dimClassName, string dimName, string entryMethod,  string prevFrameInDim, int evaluateAsPrevFrameLine, int dimAsPrevFrameLine, int functionLocationLine, int functionEndLine)
         {
             string assembly = "dotnet://debugger-test.dll/debugger-test.cs";
             var bpDim = await SetBreakpointInMethod("debugger-test.dll", dimClassName, dimName, 1);
@@ -834,12 +838,11 @@ namespace DebuggerTests
                 assembly,
                 bpDim.Value["locations"][0]["lineNumber"].Value<int>(),
                 bpDim.Value["locations"][0]["columnNumber"].Value<int>(),
-                isAsync ? "MoveNext" : dimName,
-                wait_for_event_fn: async (pause_location) => { await CheckDefaultMethod(pause_location, isAsync ? "MoveNext" : dimName); }
+                dimClassName + "." + dimName,
+                wait_for_event_fn: async (pause_location) => { await CheckDefaultMethod(pause_location,  dimClassName + "." + dimName); }
             );
 
             // check prev frame in DIM
-            string prevFrameInDim = isAsync ? asyncPrevFrameInDim : entryMethod;
             Assert.Equal(pauseInDim["callFrames"][1]["functionName"].Value<string>(), prevFrameInDim);
             Assert.Equal(pauseInDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), evaluateAsPrevFrameLine);
 
@@ -851,10 +854,10 @@ namespace DebuggerTests
                 null,
                 bpFunCalledFromDim.Value["locations"][0]["lineNumber"].Value<int>(),
                 bpFunCalledFromDim.Value["locations"][0]["columnNumber"].Value<int>(),
-                funCalledFromDim);
+                "DefaultInterfaceMethod." + funCalledFromDim);
             
-            string prevFrameFromDim = isAsync ? "MoveNext" : dimName;
-            Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["functionName"].Value<string>(), prevFrameFromDim);
+            string prevFrameFromDim = dimName;
+            Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["functionName"].Value<string>(), dimClassName + "." + prevFrameFromDim);
             Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), dimAsPrevFrameLine);
 
 
@@ -893,7 +896,7 @@ namespace DebuggerTests
                 assembly,
                 final_bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 final_bp.Value["locations"][0]["columnNumber"].Value<int>(),
-                methodName
+                "DefaultInterfaceMethod." + methodName
             );
         }
     }

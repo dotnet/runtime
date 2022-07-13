@@ -17,6 +17,9 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Rules for IL rewriters](#rules-for-il-rewriters)
 - [Checked user-defined operators](#checked-user-defined-operators)
 - [Atomic reads and writes](#atomic-reads-and-writes)
+- [Backward branch constraints](#backward-branch-constraints)
+- [API documentation](#api-documentation)
+- [Debug Interchange Format](#debug-interchange-format)
 
 ## Signatures
 
@@ -1020,3 +1023,17 @@ A checked user-defined operator is expected to throw an exception when the resul
 Section "I.12.6.6 Atomic reads and writes" adds clarification that the atomicity guarantees apply to built-in primitive value types and pointers only.
 
 A conforming CLI shall guarantee that read and write access of *built-in primitive value types and pointers* to properly aligned memory locations no larger than the native word size (the size of type native int) is atomic (see §I.12.6.2) when all the write accesses to a location are the same size.
+
+## Backward branch constraints
+
+Section "II.1.7.5 Backward branch constraints" is deleted. These constraints were not enforced by any mainstream .NET runtime and they are not respected by .NET compilers. It means that it is not possible to infer the exact state of the evaluation stack at every instruction with a single forward-pass through the CIL instruction stream.
+
+## API documentation
+
+API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://docs.microsoft.com/en-us/dotnet/api/.
+
+The incorrect description of `System.Array.Initialize` API in section "II.13.2 Initializing value types" is replaced with "The Base Class Library provides the method System.Array.Initialize (see Partition IV) to initialize every element of an array of unboxed value types by calling its parameterless instance constructor."
+
+## Debug Interchange Format
+
+The Debug Interchange Format described in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).

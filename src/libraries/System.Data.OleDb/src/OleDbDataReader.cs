@@ -721,10 +721,7 @@ namespace System.Data.OleDb
             // release unmanaged objects
             RowHandleBuffer? rowHandleNativeBuffer = _rowHandleNativeBuffer;
             _rowHandleNativeBuffer = null;
-            if (null != rowHandleNativeBuffer)
-            {
-                rowHandleNativeBuffer.Dispose();
-            }
+            rowHandleNativeBuffer?.Dispose();
         }
 
         internal void CloseReaderFromConnection(bool canceling)
@@ -978,12 +975,9 @@ namespace System.Data.OleDb
                 reader.BuildMetaInfo();
                 reader.HasRowsRead();
 
-                if (_connection != null)
-                {
-                    // connection tracks all readers to prevent cmd from executing
-                    // until all readers (including nested) are closed
-                    _connection.AddWeakReference(reader, OleDbReferenceCollection.DataReaderTag);
-                }
+                // connection tracks all readers to prevent cmd from executing
+                // until all readers (including nested) are closed
+                _connection?.AddWeakReference(reader, OleDbReferenceCollection.DataReaderTag);
             }
 
             return reader!;
@@ -1972,8 +1966,8 @@ namespace System.Data.OleDb
                 MetaData info = _metadata[i];
                 if ((null != info.baseTableName) && (0 < info.baseTableName.Length))
                 {
-                    catalogName = ((null != info.baseCatalogName) ? info.baseCatalogName : "");
-                    schemaName = ((null != info.baseSchemaName) ? info.baseSchemaName : "");
+                    catalogName = info.baseCatalogName ?? "";
+                    schemaName = info.baseSchemaName ?? "";
                     if (null == baseTableName)
                     {
                         baseSchemaName = schemaName;

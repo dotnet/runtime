@@ -248,8 +248,7 @@ namespace System.IO.Compression
 
             private void EnsureNotDisposed()
             {
-                if (InitializationState == State.Disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
+                ObjectDisposedException.ThrowIf(InitializationState == State.Disposed, this);
             }
 
 

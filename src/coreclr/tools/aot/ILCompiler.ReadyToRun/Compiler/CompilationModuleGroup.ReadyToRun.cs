@@ -6,6 +6,7 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.TypeSystem.Ecma;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace ILCompiler
@@ -42,6 +43,23 @@ namespace ILCompiler
         public virtual bool VersionsWithMethodBody(MethodDesc methodDesc) => ContainsMethodBody(methodDesc, unboxingStub: false);
 
         /// <summary>
+        /// Returns true when a given method does not belong to the same version bubble as the compilation module group,
+        /// but we can support inlining it into other modules.
+        /// </summary>
+        /// <param name="methodDesc">Method to check</param>
+        /// <returns>True if the given method versions with the current compilation module group</returns>
+        public virtual bool CrossModuleInlineable(MethodDesc methodDesc) => false;
+
+
+        /// <summary>
+        /// Returns true when a given method does not belong to the same version bubble as the compilation module group,
+        /// but we can support compiling it into the modules being compiled
+        /// </summary>
+        /// <param name="methodDesc">Method to check</param>
+        /// <returns>True if the given method versions with the current compilation module group</returns>
+        public virtual bool CrossModuleCompileable(MethodDesc methodDesc) => false;
+
+        /// <summary>
         /// Returns true when a given module belongs to the same version bubble as the compilation module group.
         /// </summary>
         /// <param name="module">Module to check</param>
@@ -73,8 +91,9 @@ namespace ILCompiler
         /// When set to true, unconditionally add module overrides to all signatures. This is needed in composite
         /// build mode so that import cells and instance entry point table are caller module-agnostic.
         /// </summary>
-        public bool EnforceOwningType(EcmaModule module)
+        public bool EnforceOwningType(IEcmaModule module)
         {
+            Debug.Assert(VersionsWithModule((ModuleDesc)module) || module is MutableModule);
             return IsCompositeBuildMode || module != CompilationModuleSet.Single();
         }
 

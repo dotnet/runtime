@@ -752,6 +752,32 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
+        private static Dictionary<(string, TargetArchitecture), string> AllInstructionSetGroups { get; } = new()
+            {
+                { ("x86-x64",    TargetArchitecture.X64),   "sse2" },
+                { ("x86-x64",    TargetArchitecture.X86),   "sse2" },
+                { ("x86-x64-v2", TargetArchitecture.X64),   "sse4.2 popcnt" },
+                { ("x86-x64-v2", TargetArchitecture.X86),   "sse4.2 popcnt" },
+                { ("x86-x64-v3", TargetArchitecture.X64),   "x86-x64-v2 avx2 bmi bmi2 lzcnt movbe fma" },
+                { ("x86-x64-v3", TargetArchitecture.X86),   "x86-x64-v2 avx2 bmi bmi2 lzcnt movbe fma" },
+                { ("skylake",    TargetArchitecture.X64),   "x86-x64-v3" },
+                { ("skylake",    TargetArchitecture.X86),   "x86-x64-v3" },
+                { ("armv8-a",    TargetArchitecture.ARM64), "neon" },
+                { ("armv8.1-a",  TargetArchitecture.ARM64), "armv8-a lse crc rdma" },
+                { ("armv8.2-a",  TargetArchitecture.ARM64), "armv8.1-a" },
+                { ("armv8.3-a",  TargetArchitecture.ARM64), "armv8.2-a rcpc" },
+                { ("armv8.4-a",  TargetArchitecture.ARM64), "armv8.3-a dotprod" },
+                { ("armv8.5-a",  TargetArchitecture.ARM64), "armv8.4-a" },
+                { ("armv8.6-a",  TargetArchitecture.ARM64), "armv8.5-a" },
+                { ("apple-m1",   TargetArchitecture.ARM64), "armv8.5-a" },
+            };
+
+        public static IEnumerable<string> AllCpuNames =>
+            AllInstructionSetGroups.Keys.Select(key => key.Item1).Distinct();
+
+        public static IEnumerable<string> CpuNameToInstructionSets(string cpu, TargetArchitecture arch) =>
+            AllInstructionSetGroups.TryGetValue((cpu, arch), out string value) ? value.Split(' ') : null;
+
         public struct InstructionSetInfo
         {
             public readonly string Name;

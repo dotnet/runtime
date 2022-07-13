@@ -903,7 +903,7 @@ OBJECTREF AppDomain::GetMissingObject()
         // Retrieve the value static field and store it.
         OBJECTHANDLE hndMissing = CreateHandle(pValueFD->GetStaticOBJECTREF());
 
-        if (FastInterlockCompareExchangePointer(&m_hndMissing, hndMissing, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_hndMissing, hndMissing, NULL) != NULL)
         {
             // Exchanged failed. The m_hndMissing did not equal NULL and was returned.
             DestroyHandle(hndMissing);
@@ -1039,6 +1039,10 @@ void SystemDomain::Attach()
     // Each domain gets its own ReJitManager, and ReJitManager has its own static
     // initialization to run
     ReJitManager::InitStatic();
+
+#ifdef FEATURE_READYTORUN
+    InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 }
 
 
@@ -1358,12 +1362,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // the SZArrayHelper class here.
     g_pSZArrayHelperClass = CoreLibBinder::GetClass(CLASS__SZARRAYHELPER);
 
-    // Load ByReference class
-    //
-    // NOTE: ByReference<T> must be the first by-ref-like system type to be loaded,
-    //       because MethodTable::ClassifyEightBytesWithManagedLayout depends on it.
-    g_pByReferenceClass = CoreLibBinder::GetClass(CLASS__BYREFERENCE);
-
     // Load Nullable class
     g_pNullableClass = CoreLibBinder::GetClass(CLASS__NULLABLE);
 
@@ -1372,6 +1370,12 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // We have delayed allocation of CoreLib's static handles until we load the object class
     CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+
+    // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
+
+    // Int32 has to be loaded next to break cycle in IShiftOperators
+    CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_I4);
 
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
@@ -2390,7 +2394,7 @@ void FileLoadLock::SetError(Exception *ex)
 void FileLoadLock::AddRef()
 {
     LIMITED_METHOD_CONTRACT;
-    FastInterlockIncrement((LONG *) &m_dwRefCount);
+    InterlockedIncrement((LONG *) &m_dwRefCount);
 }
 
 UINT32 FileLoadLock::Release()
@@ -2403,7 +2407,7 @@ UINT32 FileLoadLock::Release()
     }
     CONTRACTL_END;
 
-    LONG count = FastInterlockDecrement((LONG *) &m_dwRefCount);
+    LONG count = InterlockedDecrement((LONG *) &m_dwRefCount);
     if (count == 0)
         delete this;
 
@@ -4034,7 +4038,7 @@ RCWRefCache *AppDomain::GetRCWRefCache()
 
     if (!m_pRCWRefCache) {
         NewHolder<RCWRefCache> pRCWRefCache = new RCWRefCache(this);
-        if (FastInterlockCompareExchangePointer(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
+        if (InterlockedCompareExchangeT(&m_pRCWRefCache, (RCWRefCache *)pRCWRefCache, NULL) == NULL)
         {
             pRCWRefCache.SuppressRelease();
         }

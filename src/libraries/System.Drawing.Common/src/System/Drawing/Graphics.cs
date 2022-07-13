@@ -11,6 +11,10 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
@@ -60,6 +64,37 @@ namespace System.Drawing
 
         public delegate bool DrawImageAbort(IntPtr callbackdata);
 
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(DrawImageAbort), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        internal static class DrawImageAbortMarshaller
+        {
+            internal unsafe struct KeepAliveMarshaller
+            {
+                private delegate Interop.BOOL DrawImageAbortNative(IntPtr callbackdata);
+                private DrawImageAbortNative? _managed;
+                private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+                public void FromManaged(DrawImageAbort? managed)
+                {
+                    _managed = managed is null ? null : data => managed(data) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                }
+
+                public delegate* unmanaged<IntPtr, Interop.BOOL> ToUnmanaged()
+                {
+                    return _nativeFunction;
+                }
+
+                public void OnInvoked()
+                {
+                    GC.KeepAlive(_managed);
+                }
+
+                [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "This method is part of the marshaller shape and is required to be an instance method.")]
+                public void Free() { }
+            }
+        }
+#endif
+
         /// <summary>
         /// Callback for EnumerateMetafile methods.
         /// This method can then call Metafile.PlayRecord to play the record that was just enumerated.
@@ -75,7 +110,41 @@ namespace System.Drawing
             int flags,
             int dataSize,
             IntPtr data,
-            PlayRecordCallback callbackData);
+            PlayRecordCallback? callbackData);
+
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(EnumerateMetafileProc), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        internal static class EnumerateMetafileProcMarshaller
+        {
+            internal unsafe struct KeepAliveMarshaller
+            {
+                private delegate Interop.BOOL EnumerateMetafileProcNative(
+                    EmfPlusRecordType recordType,
+                    int flags,
+                    int dataSize,
+                    IntPtr data,
+                    IntPtr callbackData);
+                private EnumerateMetafileProcNative? _managed;
+                private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+                public void FromManaged(EnumerateMetafileProc? managed)
+                {
+                    _managed = managed is null ? null : (recordType, flags, dataSize, data, callbackData) =>
+                        managed(recordType, flags, dataSize, data, callbackData == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<PlayRecordCallback>(callbackData)) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                }
+
+                public delegate* unmanaged<IntPtr, Interop.BOOL> ToUnmanaged()
+                {
+                    return _nativeFunction;
+                }
+
+                public void OnInvoked()
+                {
+                    GC.KeepAlive(_managed);
+                }
+            }
+        }
+#endif
 
         /// <summary>
         /// Constructor to initialize this object from a native GDI+ Graphics pointer.

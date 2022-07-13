@@ -5,10 +5,10 @@ import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roo
 import {
     JSHandle, MonoArray, MonoMethod, MonoObject,
     MonoObjectNull, MonoString, coerceNull as coerceNull,
-    VoidPtrNull, MonoStringNull, MonoObjectRef,
+    VoidPtrNull, MonoObjectRef,
     MonoStringRef, is_nullish
 } from "./types";
-import { BINDING, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./imports";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -20,11 +20,12 @@ import {
     _decide_if_result_is_marshaled, find_method,
     BoundMethodToken
 } from "./method-binding";
-import { conv_string, conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root } from "./strings";
+import { conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root } from "./strings";
 import cwraps from "./cwraps";
 import { bindings_lazy_init } from "./startup";
 import { _create_temp_frame, _release_temp_frame } from "./memory";
-import { VoidPtr, Int32Ptr, EmscriptenModule } from "./types/emscripten";
+import { VoidPtr, Int32Ptr } from "./types/emscripten";
+import { assembly_load } from "./class-loader";
 
 function _verify_args_for_method_call(args_marshal: string/*ArgsMarshalString*/, args: any) {
     const has_args = args && (typeof args === "object") && args.length > 0;
@@ -68,7 +69,7 @@ to suppress marshaling of the return value, place '!' at the end of args_marshal
 */
 export function call_method_ref(method: MonoMethod, this_arg: WasmRoot<MonoObject> | MonoObjectRef | undefined, args_marshal: string/*ArgsMarshalString*/, args: ArrayLike<any>): any {
     // HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
-    let this_arg_ref : MonoObjectRef | undefined = undefined;
+    let this_arg_ref: MonoObjectRef | undefined = undefined;
     if (typeof (this_arg) === "number")
         this_arg_ref = this_arg;
     else if (typeof (this_arg) === "object")
@@ -197,7 +198,7 @@ export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMar
 export function mono_bind_assembly_entry_point(assembly: string, signature?: string/*ArgsMarshalString*/): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
-    const asm = cwraps.mono_wasm_assembly_load(assembly);
+    const asm = assembly_load(assembly);
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);
 
@@ -393,6 +394,12 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
         if (!js_name) {
             globalObj = globalThis;
         }
+        else if (js_name == "Module") {
+            globalObj = Module;
+        }
+        else if (js_name == "INTERNAL") {
+            globalObj = INTERNAL;
+        }
         else {
             globalObj = (<any>globalThis)[js_name];
         }
@@ -474,11 +481,11 @@ export function parseFQN(fqn: string)
     }
 
     if (!assembly.trim())
-        throw new Error("No assembly name specified");
+        throw new Error("No assembly name specified " + fqn);
     if (!classname.trim())
-        throw new Error("No class name specified");
+        throw new Error("No class name specified " + fqn);
     if (!methodname.trim())
-        throw new Error("No method name specified");
+        throw new Error("No method name specified " + fqn);
     return { assembly, namespace, classname, methodname };
 }
 
@@ -516,27 +523,5 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
         exceptionRoot.copy_to_address(<any>exceptionMessage);
         exceptionRoot.release();
         return 0;
-    }
-}
-
-// code like `App.call_test_method();`
-export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): MonoString | null {
-    if (code === MonoStringNull)
-        return MonoStringNull;
-
-    const js_code = conv_string(code)!;
-
-    try {
-        const closedEval = function (Module: EmscriptenModule, MONO: any, BINDING: any, INTERNAL: any, code: string) {
-            return eval(code);
-        };
-        const res = closedEval(Module, MONO, BINDING, INTERNAL, js_code);
-        Module.setValue(is_exception, 0, "i32");
-        if (typeof res === "undefined" || res === null)
-            return MonoStringNull;
-
-        return js_string_to_mono_string(res.toString());
-    } catch (ex) {
-        return wrap_error(is_exception, ex);
     }
 }

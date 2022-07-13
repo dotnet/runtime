@@ -150,7 +150,7 @@ namespace System
             Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
             if (status != Number.ParsingStatus.OK)
             {
-                Number.ThrowOverflowOrFormatException(status, TypeCode.UInt16);
+                Number.ThrowOverflowOrFormatException(status, s, TypeCode.UInt16);
             }
 
             if (i > MaxValue) Number.ThrowOverflowException(TypeCode.UInt16);
@@ -373,6 +373,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static ushort IBinaryNumber<ushort>.AllBitsSet => MaxValue;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(ushort value) => BitOperations.IsPow2((uint)value);
 
@@ -399,17 +402,17 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
-        static bool IComparisonOperators<ushort, ushort>.operator <(ushort left, ushort right) => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<ushort, ushort, bool>.operator <(ushort left, ushort right) => left < right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<ushort, ushort>.operator <=(ushort left, ushort right) => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<ushort, ushort, bool>.operator <=(ushort left, ushort right) => left <= right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
-        static bool IComparisonOperators<ushort, ushort>.operator >(ushort left, ushort right) => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<ushort, ushort, bool>.operator >(ushort left, ushort right) => left > right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<ushort, ushort>.operator >=(ushort left, ushort right) => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<ushort, ushort, bool>.operator >=(ushort left, ushort right) => left >= right;
 
         //
         // IDecrementOperators
@@ -428,18 +431,15 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static ushort IDivisionOperators<ushort, ushort, ushort>.operator /(ushort left, ushort right) => (ushort)(left / right);
 
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static ushort IDivisionOperators<ushort, ushort, ushort>.operator checked /(ushort left, ushort right) => (ushort)(left / right);
-
         //
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
-        static bool IEqualityOperators<ushort, ushort>.operator ==(ushort left, ushort right) => left == right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        static bool IEqualityOperators<ushort, ushort, bool>.operator ==(ushort left, ushort right) => left == right;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
-        static bool IEqualityOperators<ushort, ushort>.operator !=(ushort left, ushort right) => left != right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        static bool IEqualityOperators<ushort, ushort, bool>.operator !=(ushort left, ushort right) => left != right;
 
         //
         // IIncrementOperators
@@ -526,6 +526,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static ushort INumberBase<ushort>.Abs(ushort value) => value;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ushort result;
+
+            if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ushort result;
+
+            if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ushort result;
+
+            if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<ushort>.IsCanonical(ushort value) => true;
 
@@ -591,7 +648,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ushort>.TryConvertFromChecked<TOther>(TOther value, out ushort result)
+        static bool INumberBase<ushort>.TryConvertFromChecked<TOther>(TOther value, out ushort result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out ushort result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -653,7 +714,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ushort>.TryConvertFromSaturating<TOther>(TOther value, out ushort result)
+        static bool INumberBase<ushort>.TryConvertFromSaturating<TOther>(TOther value, out ushort result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out ushort result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -716,7 +781,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ushort>.TryConvertFromTruncating<TOther>(TOther value, out ushort result)
+        static bool INumberBase<ushort>.TryConvertFromTruncating<TOther>(TOther value, out ushort result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out ushort result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1009,14 +1078,14 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static ushort IShiftOperators<ushort, ushort>.operator <<(ushort value, int shiftAmount) => (ushort)(value << shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static ushort IShiftOperators<ushort, int, ushort>.operator <<(ushort value, int shiftAmount) => (ushort)(value << shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static ushort IShiftOperators<ushort, ushort>.operator >>(ushort value, int shiftAmount) => (ushort)(value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static ushort IShiftOperators<ushort, int, ushort>.operator >>(ushort value, int shiftAmount) => (ushort)(value >> shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static ushort IShiftOperators<ushort, ushort>.operator >>>(ushort value, int shiftAmount) => (ushort)(value >>> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static ushort IShiftOperators<ushort, int, ushort>.operator >>>(ushort value, int shiftAmount) => (ushort)(value >>> shiftAmount);
 
         //
         // ISpanParsable

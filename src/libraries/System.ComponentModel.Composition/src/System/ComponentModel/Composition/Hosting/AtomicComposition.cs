@@ -93,10 +93,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Requires.NotNull(completeAction, nameof(completeAction));
 
-            if (_completeActionList == null)
-            {
-                _completeActionList = new List<Action>();
-            }
+            _completeActionList ??= new List<Action>();
             _completeActionList.Add(completeAction);
         }
 
@@ -108,10 +105,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Requires.NotNull(revertAction, nameof(revertAction));
 
-            if (_revertActionList == null)
-            {
-                _revertActionList = new List<Action>();
-            }
+            _revertActionList ??= new List<Action>();
             _revertActionList.Add(revertAction);
         }
 
@@ -172,13 +166,10 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                         catch (Exception e)
                         {
-                            if (exceptions == null)
-                            {
-                                //If any exceptions leak through the actions we will swallow them for now
-                                // complete processing the list
-                                // and we will throw InvalidOperationException with an AggregateException as it's innerException
-                                exceptions = new List<Exception>();
-                            }
+                            //If any exceptions leak through the actions we will swallow them for now
+                            // complete processing the list
+                            // and we will throw InvalidOperationException with an AggregateException as it's innerException
+                            exceptions ??= new List<Exception>();
                             exceptions.Add(e);
                         }
                     }
@@ -211,12 +202,9 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     catch (Exception e)
                     {
-                        if (exceptions == null)
-                        {
-                            //If any exceptions leak through the actions we will swallow them for now complete processing the list
-                            // and we will throw InvalidOperationException with an AggregateException as it's innerException
-                            exceptions = new List<Exception>();
-                        }
+                        //If any exceptions leak through the actions we will swallow them for now complete processing the list
+                        // and we will throw InvalidOperationException with an AggregateException as it's innerException
+                        exceptions ??= new List<Exception>();
                         exceptions.Add(e);
                     }
                 }
@@ -269,7 +257,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             set
             {
-                if (value == true && _containsInnerAtomicComposition == true)
+                if (value && _containsInnerAtomicComposition)
                 {
                     throw new InvalidOperationException(SR.AtomicComposition_AlreadyNested);
                 }

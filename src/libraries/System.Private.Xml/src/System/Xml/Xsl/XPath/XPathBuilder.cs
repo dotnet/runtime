@@ -8,14 +8,13 @@ using System.Globalization;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
+using FunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.XPath.XPathBuilder.FuncId>;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 //#define StopMaskOptimisation
 
 namespace System.Xml.Xsl.XPath
 {
-    using FunctionInfo = XPathBuilder.FunctionInfo<XPathBuilder.FuncId>;
-    using T = XmlQueryTypeFactory;
-
     internal class XPathBuilder : IXPathBuilder<QilNode>, IXPathEnvironment
     {
         private readonly XPathQilFactory _f;
@@ -459,7 +458,7 @@ namespace System.Xml.Xsl.XPath
                     "ReverseAxe in Qil is actually reverse and we compile them here in builder by wrapping to DocOrderDistinct()"
                 );
                 // The trick here is that we unwarp it back, compile as regular predicate and wrap again.
-                // this way this wat we hold invariant that path expresion are always DOD and make predicates on reverse axe
+                // this way this wat we hold invariant that path expression are always DOD and make predicates on reverse axe
                 // work as specified in XPath 2.0 FS: http://www.w3.org/TR/xquery-semantics/#id-axis-steps
                 nodeset = ((QilUnary)nodeset).Child;
             }

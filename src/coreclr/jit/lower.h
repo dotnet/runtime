@@ -308,7 +308,10 @@ private:
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
-    void LowerPutArgStk(GenTreePutArgStk* tree);
+    void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
+#ifdef TARGET_XARCH
+    void LowerPutArgStk(GenTreePutArgStk* putArgStk);
+#endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
@@ -330,7 +333,7 @@ private:
     void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
     bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc);
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
-    GenTree* LowerArrElem(GenTree* node);
+    GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
     void LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_SIMD
@@ -351,11 +354,12 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
-    GenTree* LowerModPow2(GenTree* node);
+    void LowerModPow2(GenTree* node);
     GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS

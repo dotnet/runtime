@@ -383,10 +383,7 @@ namespace System.Management
             {
                 Initialize(true);
 
-                if (methods == null)
-                    methods = new MethodDataCollection(this);
-
-                return methods;
+                return methods ??= new MethodDataCollection(this);
             }
         }
 
@@ -476,8 +473,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             if (status < 0)
@@ -607,8 +603,7 @@ namespace System.Management
                 ClassName, o.Flags, o.GetContext(), sink.Stub);
 
 
-            if (securityHandler != null)
-                securityHandler.Reset();
+            securityHandler?.Reset();
 
             if (status < 0)
             {
@@ -694,8 +689,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             if (status < 0)
@@ -761,8 +755,7 @@ namespace System.Management
                 ClassName, o.Flags, o.GetContext(), sink.Stub);
 
 
-            if (securityHandler != null)
-                securityHandler.Reset();
+            securityHandler?.Reset();
 
             if (status < 0)
             {
@@ -1052,8 +1045,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             if (status < 0)
@@ -1156,8 +1148,7 @@ namespace System.Management
                     q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1230,7 +1221,7 @@ namespace System.Management
 
             IEnumWbemClassObject enumWbem = null;
 
-            EnumerationOptions o = (null != options) ? options : new EnumerationOptions();
+            EnumerationOptions o = options ?? new EnumerationOptions();
             //Ensure EnumerateDeep flag is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
@@ -1251,8 +1242,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             if (status < 0)
@@ -1344,8 +1334,7 @@ namespace System.Management
                     q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {

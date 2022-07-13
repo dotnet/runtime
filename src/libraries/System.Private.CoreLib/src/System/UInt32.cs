@@ -359,6 +359,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static uint IBinaryNumber<uint>.AllBitsSet => MaxValue;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(uint value) => BitOperations.IsPow2(value);
 
@@ -385,17 +388,17 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
-        static bool IComparisonOperators<uint, uint>.operator <(uint left, uint right) => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<uint, uint, bool>.operator <(uint left, uint right) => left < right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<uint, uint>.operator <=(uint left, uint right) => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<uint, uint, bool>.operator <=(uint left, uint right) => left <= right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
-        static bool IComparisonOperators<uint, uint>.operator >(uint left, uint right) => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<uint, uint, bool>.operator >(uint left, uint right) => left > right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<uint, uint>.operator >=(uint left, uint right) => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<uint, uint, bool>.operator >=(uint left, uint right) => left >= right;
 
         //
         // IDecrementOperators
@@ -414,18 +417,15 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static uint IDivisionOperators<uint, uint, uint>.operator /(uint left, uint right) => left / right;
 
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static uint IDivisionOperators<uint, uint, uint>.operator checked /(uint left, uint right) => left / right;
-
         //
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
-        static bool IEqualityOperators<uint, uint>.operator ==(uint left, uint right) => left == right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        static bool IEqualityOperators<uint, uint, bool>.operator ==(uint left, uint right) => left == right;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
-        static bool IEqualityOperators<uint, uint>.operator !=(uint left, uint right) => left != right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        static bool IEqualityOperators<uint, uint, bool>.operator !=(uint left, uint right) => left != right;
 
         //
         // IIncrementOperators
@@ -512,6 +512,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static uint INumberBase<uint>.Abs(uint value) => value;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            uint result;
+
+            if (typeof(TOther) == typeof(uint))
+            {
+                result = (uint)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            uint result;
+
+            if (typeof(TOther) == typeof(uint))
+            {
+                result = (uint)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            uint result;
+
+            if (typeof(TOther) == typeof(uint))
+            {
+                result = (uint)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<uint>.IsCanonical(uint value) => true;
 
@@ -577,7 +634,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<uint>.TryConvertFromChecked<TOther>(TOther value, out uint result)
+        static bool INumberBase<uint>.TryConvertFromChecked<TOther>(TOther value, out uint result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out uint result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -639,7 +700,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<uint>.TryConvertFromSaturating<TOther>(TOther value, out uint result)
+        static bool INumberBase<uint>.TryConvertFromSaturating<TOther>(TOther value, out uint result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out uint result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -702,7 +767,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<uint>.TryConvertFromTruncating<TOther>(TOther value, out uint result)
+        static bool INumberBase<uint>.TryConvertFromTruncating<TOther>(TOther value, out uint result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out uint result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1001,14 +1070,14 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static uint IShiftOperators<uint, uint>.operator <<(uint value, int shiftAmount) => value << shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static uint IShiftOperators<uint, int, uint>.operator <<(uint value, int shiftAmount) => value << shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static uint IShiftOperators<uint, uint>.operator >>(uint value, int shiftAmount) => value >> shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static uint IShiftOperators<uint, int, uint>.operator >>(uint value, int shiftAmount) => value >> shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static uint IShiftOperators<uint, uint>.operator >>>(uint value, int shiftAmount) => value >>> shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static uint IShiftOperators<uint, int, uint>.operator >>>(uint value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISpanParsable

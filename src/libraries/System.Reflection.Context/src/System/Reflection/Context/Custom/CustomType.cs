@@ -134,8 +134,7 @@ namespace System.Reflection.Context.Custom
             if (matchingProperties.Count == 0)
                 return null;
 
-            if (binder == null)
-                binder = Type.DefaultBinder;
+            binder ??= Type.DefaultBinder;
 
             return binder.SelectProperty(bindingAttr, matchingProperties.ToArray(), returnType, types, modifiers);
         }
@@ -276,24 +275,12 @@ namespace System.Reflection.Context.Custom
             {
                 Debug.Assert(getPropertySetter && types != null && types.Length == 1);
 
-                if (binder == null)
-                    binder = Type.DefaultBinder;
+                binder ??= Type.DefaultBinder;
 
                 return (MethodInfo?)binder.SelectMethod(bindingAttr, matchingMethods.ToArray(), types, modifiers);
             }
         }
 
-        private IEnumerable<PropertyInfo> NewProperties
-        {
-            get
-            {
-                if (_newProperties == null)
-                {
-                    _newProperties = ReflectionContext.GetNewPropertiesForType(this);
-                }
-
-                return _newProperties;
-            }
-        }
+        private IEnumerable<PropertyInfo> NewProperties => _newProperties ??= ReflectionContext.GetNewPropertiesForType(this);
     }
 }

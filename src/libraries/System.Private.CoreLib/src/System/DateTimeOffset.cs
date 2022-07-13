@@ -1031,19 +1031,19 @@ namespace System
         public static bool operator !=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime != right.UtcDateTime;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime < right.UtcDateTime;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime <= right.UtcDateTime;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime > right.UtcDateTime;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime >= right.UtcDateTime;
 

@@ -207,8 +207,8 @@ namespace System.Net.Sockets
 
             WSABuffer[]? leasedWSA = null;
             GCHandle[]? leasedGC = null;
-            Span<WSABuffer> WSABuffers = stackalloc WSABuffer[0];
-            Span<GCHandle> objectsToPin = stackalloc GCHandle[0];
+            scoped Span<WSABuffer> WSABuffers;
+            scoped Span<GCHandle> objectsToPin;
             if (useStack)
             {
                 WSABuffers = stackalloc WSABuffer[StackThreshold];
@@ -329,8 +329,8 @@ namespace System.Net.Sockets
 
             WSABuffer[]? leasedWSA = null;
             GCHandle[]? leasedGC = null;
-            Span<WSABuffer> WSABuffers = stackalloc WSABuffer[0];
-            Span<GCHandle> objectsToPin = stackalloc GCHandle[0];
+            scoped Span<WSABuffer> WSABuffers;
+            scoped Span<GCHandle> objectsToPin;
             if (useStack)
             {
                 WSABuffers = stackalloc WSABuffer[StackThreshold];

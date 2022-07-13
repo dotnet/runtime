@@ -44,7 +44,7 @@ namespace System.IO.Compression
         public override int ReadByte()
         {
             byte b = default;
-            int bytesRead = Read(MemoryMarshal.CreateSpan(ref b, 1));
+            int bytesRead = Read(new Span<byte>(ref b));
             return bytesRead != 0 ? b : -1;
         }
 

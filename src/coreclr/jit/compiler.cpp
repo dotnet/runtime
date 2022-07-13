@@ -116,25 +116,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sz,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) al,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) st,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) jitType,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -1869,9 +1869,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         impSpillCliqueSuccMembers = JitExpandArray<BYTE>(getAllocator());
 
         new (&genIPmappings, jitstd::placement_t()) jitstd::list<IPmappingDsc>(getAllocator(CMK_DebugInfo));
-#ifdef DEBUG
-        new (&genPreciseIPmappings, jitstd::placement_t()) jitstd::list<PreciseIPMapping>(getAllocator(CMK_DebugOnly));
-#endif
+        new (&genRichIPmappings, jitstd::placement_t()) jitstd::list<RichIPMapping>(getAllocator(CMK_DebugOnly));
 
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();
 
@@ -1935,11 +1933,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeTestData      = nullptr;
     m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
 #endif
-    m_switchDescMap      = nullptr;
-    m_blockToEHPreds     = nullptr;
-    m_fieldSeqStore      = nullptr;
-    m_zeroOffsetFieldMap = nullptr;
-    m_refAnyClass        = nullptr;
+    m_switchDescMap  = nullptr;
+    m_blockToEHPreds = nullptr;
+    m_fieldSeqStore  = nullptr;
+    m_refAnyClass    = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {
         m_memorySsaMap[memoryKind] = nullptr;
@@ -2820,6 +2817,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
+    opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2991,6 +2990,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
+        }
+
+        // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
+        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specfied by
+        // JitEarlyExpandMDArraysFilter.
+        if (JitConfig.JitEarlyExpandMDArrays() == 0)
+        {
+            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodName, info.compClassName,
+                                                                  &info.compMethodInfo->args))
+            {
+                opts.compJitEarlyExpandMDArrays = true;
+            }
         }
     }
 
@@ -3199,10 +3210,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
-#ifdef TARGET_ARM64
-    // TODO-ARM64-NYI: enable hot/cold splitting
+#ifdef FEATURE_CFI_SUPPORT
+    // Hot/cold splitting is not being tested on NativeAOT.
+    if (generateCFIUnwindCodes())
+    {
+        opts.compProcedureSplitting = false;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+#ifdef TARGET_LOONGARCH64
+    // Hot/cold splitting is not being tested on LoongArch64.
     opts.compProcedureSplitting = false;
-#endif // TARGET_ARM64
+#endif // TARGET_LOONGARCH64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -4698,6 +4717,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Figure out what locals are address-taken.
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
@@ -4830,6 +4850,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks();
 #endif
 
+    // Morph multi-dimensional array operations.
+    // (Consider deferring all array operation morphing, including single-dimensional array ops,
+    // from global morph to here, so cloning doesn't have to deal with morphed forms.)
+    //
+    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);
+
     // Create the variable table (and compute variable ref counts)
     //
     DoPhase(this, PHASE_MARK_LOCAL_VARS, &Compiler::lvaMarkLocalVars);
@@ -4840,11 +4866,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Introduce copies for some single-def locals to make them more
+        // amenable to optimization
+        //
+        DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
+
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
-
-        // optOptimizeBools() might have changed the number of blocks; the dominators/reachability might be bad.
     }
 
     // Figure out the order in which operators are to be evaluated
@@ -4854,7 +4883,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Weave the tree lists. Anyone who modifies the tree shapes after
     // this point is responsible for calling fgSetStmtSeq() to keep the
     // nodes properly linked.
-    // This can create GC poll calls, and create new BasicBlocks (without updating dominators/reachability).
     //
     DoPhase(this, PHASE_SET_BLOCK_ORDER, &Compiler::fgSetBlockOrder);
 
@@ -4867,6 +4895,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doLoopHoisting  = true;
         bool doCopyProp      = true;
         bool doBranchOpt     = true;
+        bool doCse           = true;
         bool doAssertionProp = true;
         bool doRangeAnalysis = true;
         int  iterations      = 1;
@@ -4878,6 +4907,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doLoopHoisting  = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp      = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doBranchOpt     = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
+        doCse           = doValueNum;
         doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
 
@@ -4894,6 +4924,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Build up SSA form for the IR
                 //
                 DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
+            }
+            else
+            {
+                // At least do local var liveness; lowering depends on this.
+                fgLocalVarLiveness();
             }
 
             if (doEarlyProp)
@@ -4929,9 +4964,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
-            // Remove common sub-expressions
-            //
-            DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+            if (doCse)
+            {
+                // Remove common sub-expressions
+                //
+                DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+            }
 
             if (doAssertionProp)
             {
@@ -4983,7 +5021,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif
 
     // Dominator and reachability sets are no longer valid.
-    fgDomsComputed = false;
+    // The loop table is no longer valid.
+    fgDomsComputed    = false;
+    optLoopTableValid = false;
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -5199,25 +5239,41 @@ void Compiler::placeLoopAlignInstructions()
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
+            BasicBlock* const loopTop = block->bbNext;
 
             // If jmp was not found, then block before the loop start is where align instruction will be added.
+            //
             if (bbHavingAlign == nullptr)
             {
-                bbHavingAlign = block;
-                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
-                        block->bbNext->bbNum);
+                // In some odd cases we may see blocks within the loop before we see the
+                // top block of the loop. Just bail on aligning such loops.
+                //
+                if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+                {
+                    loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+                }
+                else
+                {
+                    bbHavingAlign = block;
+                    JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
+                            block->bbNum, loopTop->bbNum);
+                }
             }
             else
             {
                 JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
                         "\n",
-                        bbHavingAlign->bbNum, block->bbNext->bbNum);
+                        bbHavingAlign->bbNum, loopTop->bbNum);
             }
 
-            bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            if (bbHavingAlign != nullptr)
+            {
+                bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            }
+
             minBlockSoFar         = BB_MAX_WEIGHT;
             bbHavingAlign         = nullptr;
-            currentAlignedLoopNum = block->bbNext->bbNatLoopNum;
+            currentAlignedLoopNum = loopTop->bbNatLoopNum;
 
             if (--loopsToProcess == 0)
             {
@@ -6384,10 +6440,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compHndBBtabCount      = 0;
     compHndBBtabAllocCount = 0;
 
-    info.compNativeCodeSize    = 0;
-    info.compTotalHotCodeSize  = 0;
-    info.compTotalColdCodeSize = 0;
-    info.compClassProbeCount   = 0;
+    info.compNativeCodeSize            = 0;
+    info.compTotalHotCodeSize          = 0;
+    info.compTotalColdCodeSize         = 0;
+    info.compHandleHistogramProbeCount = 0;
 
     compHasBackwardJump          = false;
     compHasBackwardJumpInHandler = false;
@@ -6563,7 +6619,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             // This looks like a viable inline candidate.  Since
             // we're not actually inlining, don't report anything.
-            prejitResult.SetReported();
+            prejitResult.SetSuccessResult(INLINE_PREJIT_SUCCESS);
         }
     }
     else
@@ -9579,11 +9635,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
                         break;
 
-                    case GTF_ICON_FIELD_OFF:
-
-                        chars += printf("[ICON_FIELD_OFF]");
-                        break;
-
                     default:
                         assert(!"a forgotten handle flag");
                         break;
@@ -9805,7 +9856,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 #endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
-            if (tree->OperIsIndirOrArrLength())
+            if (tree->OperIsIndirOrArrMetaData())
             {
                 chars += printf("[IND_NONFAULTING]");
             }
@@ -9943,16 +9994,21 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 {
-    if (varTypeIsArithmetic(tree))
+    static const var_types s_typesBySize[] = {TYP_UNDEF, TYP_BYTE,  TYP_SHORT, TYP_UNDEF, TYP_INT,
+                                              TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_LONG};
+
+    if (!varTypeIsStruct(tree))
     {
 #if defined(TARGET_XARCH)
         // Just an optimization for XARCH - smaller mov
-        if (varTypeIsLong(tree))
+        if (genTypeSize(tree) == 8)
         {
             return TYP_INT;
         }
 #endif
-        return tree->TypeGet();
+
+        assert((genTypeSize(tree) < ARRAY_SIZE(s_typesBySize)) && (s_typesBySize[genTypeSize(tree)] != TYP_UNDEF));
+        return s_typesBySize[genTypeSize(tree)];
     }
     // for the rest: probe a single byte to avoid potential AVEs
     return TYP_BYTE;
@@ -10171,10 +10227,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_stressLclFld++;
                     break;
 
-                case AddressExposedReason::COPY_FLD_BY_FLD:
-                    m_copyFldByFld++;
-                    break;
-
                 case AddressExposedReason::DISPATCH_RET_BUF:
                     m_dispatchRetBuf++;
                     break;
@@ -10273,7 +10325,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_wideIndir, m_addrExposed);
     PRINT_STATS(m_osrExposed, m_addrExposed);
     PRINT_STATS(m_stressLclFld, m_addrExposed);
-    PRINT_STATS(m_copyFldByFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

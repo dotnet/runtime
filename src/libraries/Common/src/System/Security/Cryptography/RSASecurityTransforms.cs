@@ -152,10 +152,8 @@ namespace System.Security.Cryptography
                     // don't match the public key fields.
                     //
                     // Public import should go off without a hitch.
-                    ImportPrivateKey(
-                        parameters,
-                        out SafeSecKeyRefHandle privateKey,
-                        out SafeSecKeyRefHandle publicKey);
+                    SafeSecKeyRefHandle privateKey = ImportKey(parameters);
+                    SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
                     SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
                 }
                 else
@@ -558,11 +556,8 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    if (_keys != null)
-                    {
-                        // Do not set _keys to null, in order to prevent rehydration.
-                        _keys.Dispose();
-                    }
+                    // Do not set _keys to null, in order to prevent rehydration.
+                    _keys?.Dispose();
                 }
 
                 base.Dispose(disposing);

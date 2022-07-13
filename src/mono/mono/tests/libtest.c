@@ -7803,7 +7803,7 @@ TestStructWithUtf8Field(struct FieldWithUtf8 fieldStruct)
     pszNative = (char*)utf8Strings[stringIndex];
 
     outLen = strlen(pszNative);
-    // do byte by byte comparision
+    // do byte by byte comparison
     for (size_t i = 0; i < outLen; i++)
     {
         if (pszNative[i] != pszManagedutf8[i])

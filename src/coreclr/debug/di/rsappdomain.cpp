@@ -1082,8 +1082,9 @@ HRESULT CordbAppDomain::GetObjectForCCW(CORDB_ADDRESS ccwPointer, ICorDebugValue
 
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-
     VALIDATE_POINTER_TO_OBJECT(ppManagedObject, ICorDebugValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
     HRESULT hr = S_OK;
 
     *ppManagedObject = NULL;

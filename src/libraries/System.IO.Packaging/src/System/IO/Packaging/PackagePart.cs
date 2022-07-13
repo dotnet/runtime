@@ -113,9 +113,13 @@ namespace System.IO.Packaging
             _container = package;
 
             if (contentType == null)
+            {
                 _contentType = null;
+            }
             else
+            {
                 _contentType = new ContentType(contentType);
+            }
 
             _requestedStreams = null;
             _compressionOption = compressionOption;
@@ -333,8 +337,7 @@ namespace System.IO.Packaging
             Debug.Assert(!IsStreamClosed(s));
 
             //Lazy init
-            if (_requestedStreams == null)
-                _requestedStreams = new List<Stream>(); //Default capacity is 4
+            _requestedStreams ??= new List<Stream>(); //Default capacity is 4
 
             //Delete all the closed streams from the _requestedStreams list.
             //Each time a new stream is handed out, we go through the list
@@ -575,8 +578,7 @@ namespace System.IO.Packaging
         //Delete all the relationships for this part
         internal void ClearRelationships()
         {
-            if (_relationships != null)
-                _relationships.Clear();
+            _relationships?.Clear();
         }
 
         //Flush all the streams that are currently opened for this part and the relationships for this part
@@ -722,7 +724,7 @@ namespace System.IO.Packaging
         //If the part has been deleted then we throw
         private void ThrowIfPackagePartDeleted()
         {
-            if (_deleted == true)
+            if (_deleted)
                 throw new InvalidOperationException(SR.PackagePartDeleted);
         }
 

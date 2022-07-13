@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
@@ -167,12 +168,18 @@
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
-    <Compile Include="Serialization\JsonPolymorphicTypeConfigurationTests.cs" />
+    <Compile Include="Serialization\JsonPolymorphismOptionsTests.cs" />
     <Compile Include="Serialization\JsonSerializerApiValidation.cs" />
     <Compile Include="Serialization\JsonSerializerWrapper.Reflection.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverMultiContextTests.cs" />
+    <Compile Include="Serialization\MetadataTests\JsonTypeInfoResolverTests.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonPropertyInfo.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonTypeInfo.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
+    <Compile Include="Serialization\MetadataTests\TestResolver.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
@@ -196,10 +203,25 @@
     <Compile Include="Serialization\Stream.DeserializeAsyncEnumerable.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
+    <Compile Include="Serialization\TypeInfoResolverFunctionalTests.cs" />
     <Compile Include="Serialization\UnsupportedTypesTests.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />
     <Compile Include="Serialization\WriteValueTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.ClassWithCustomConverter.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.DateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.DictionaryStringHighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.GetJsonTypeInfo.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.HighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.Int32.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.ListDateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.PropertyNames.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.String.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.StringArray.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />

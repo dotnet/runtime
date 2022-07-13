@@ -58,6 +58,10 @@ private:
     void RewriteAssignment(LIR::Use& use);
     void RewriteAddress(LIR::Use& use);
 
+#ifdef TARGET_ARM64
+    void RewriteSubLshDiv(GenTree** use);
+#endif
+
     // Root visitor
     Compiler::fgWalkResult RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parents);
 };

@@ -3,11 +3,13 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
+    [StructLayout(LayoutKind.Auto)]
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStackFrame
     {
@@ -124,12 +126,12 @@ namespace System.Text.Json
             // if the current element is the same type as the previous element.
             if (PolymorphicJsonTypeInfo?.PropertyType != runtimeType)
             {
-                JsonTypeInfo typeInfo = options.GetOrAddJsonTypeInfo(runtimeType);
+                JsonTypeInfo typeInfo = options.GetTypeInfoCached(runtimeType);
                 PolymorphicJsonTypeInfo = typeInfo.PropertyInfoForTypeInfo;
             }
 
             PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
-            return PolymorphicJsonTypeInfo.ConverterBase;
+            return PolymorphicJsonTypeInfo.EffectiveConverter;
         }
 
         /// <summary>
@@ -141,7 +143,7 @@ namespace System.Text.Json
 
             PolymorphicJsonTypeInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo;
             PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
-            return PolymorphicJsonTypeInfo.ConverterBase;
+            return PolymorphicJsonTypeInfo.EffectiveConverter;
         }
 
         /// <summary>
@@ -152,7 +154,7 @@ namespace System.Text.Json
             Debug.Assert(PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntrySuspended);
             Debug.Assert(PolymorphicJsonTypeInfo is not null);
             PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
-            return PolymorphicJsonTypeInfo.ConverterBase;
+            return PolymorphicJsonTypeInfo.EffectiveConverter;
         }
 
         /// <summary>

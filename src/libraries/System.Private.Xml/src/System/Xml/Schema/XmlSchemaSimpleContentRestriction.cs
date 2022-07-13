@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Xml.Serialization;
+
 namespace System.Xml.Schema
 {
-    using System.Xml.Serialization;
-
     public class XmlSchemaSimpleContentRestriction : XmlSchemaContent
     {
         private XmlQualifiedName _baseTypeName = XmlQualifiedName.Empty;
@@ -17,7 +17,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName BaseTypeName
         {
             get { return _baseTypeName; }
-            set { _baseTypeName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _baseTypeName = value ?? XmlQualifiedName.Empty; }
         }
 
         [XmlElement("simpleType", typeof(XmlSchemaSimpleType))]

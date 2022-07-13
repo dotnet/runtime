@@ -383,8 +383,7 @@ namespace System.Numerics
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is Complex)) return false;
-            return Equals((Complex)obj);
+            return obj is Complex other && Equals(other);
         }
 
         public bool Equals(Complex value)
@@ -392,14 +391,7 @@ namespace System.Numerics
             return m_real.Equals(value.m_real) && m_imaginary.Equals(value.m_imaginary);
         }
 
-        public override int GetHashCode()
-        {
-            int n1 = 99999997;
-            int realHash = m_real.GetHashCode() % n1;
-            int imaginaryHash = m_imaginary.GetHashCode();
-            int finalHash = realHash ^ imaginaryHash;
-            return finalHash;
-        }
+        public override int GetHashCode() => HashCode.Combine(m_real, m_imaginary);
 
         public override string ToString() => $"<{m_real}; {m_imaginary}>";
 
@@ -923,13 +915,6 @@ namespace System.Numerics
         }
 
         //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static Complex IAdditionOperators<Complex, Complex, Complex>.operator checked +(Complex left, Complex right) => left + right;
-
-        //
         // IAdditiveIdentity
         //
 
@@ -943,16 +928,6 @@ namespace System.Numerics
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         public static Complex operator --(Complex value) => value - One;
 
-        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        static Complex IDecrementOperators<Complex>.operator checked --(Complex value) => --value;
-
-        //
-        // IDivisionOperators
-        //
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static Complex IDivisionOperators<Complex, Complex, Complex>.operator checked /(Complex left, Complex right) => left / right;
-
         //
         // IIncrementOperators
         //
@@ -960,22 +935,12 @@ namespace System.Numerics
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         public static Complex operator ++(Complex value) => value + One;
 
-        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        static Complex IIncrementOperators<Complex>.operator checked ++(Complex value) => ++value;
-
         //
         // IMultiplicativeIdentity
         //
 
         /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
         static Complex IMultiplicativeIdentity<Complex, Complex>.MultiplicativeIdentity => new Complex(1.0, 0.0);
-
-        //
-        // IMultiplyOperators
-        //
-
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static Complex IMultiplyOperators<Complex, Complex, Complex>.operator checked *(Complex left, Complex right) => left * right;
 
         //
         // INumberBase
@@ -992,6 +957,63 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static Complex INumberBase<Complex>.Abs(Complex value) => Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<Complex>.IsCanonical(Complex value) => true;
@@ -2230,20 +2252,6 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Complex result) => TryParse(s, DefaultNumberStyle, provider, out result);
-
-        //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static Complex ISubtractionOperators<Complex, Complex, Complex>.operator checked -(Complex left, Complex right) => left - right;
-
-        //
-        // IUnaryNegationOperators
-        //
-
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static Complex IUnaryNegationOperators<Complex, Complex>.operator checked -(Complex value) => -value;
 
         //
         // IUnaryPlusOperators

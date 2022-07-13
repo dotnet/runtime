@@ -714,28 +714,10 @@ namespace System.IO.Packaging
             }
 
             //Returns the normalized string for the part uri.
-            internal string NormalizedPartUriString
-            {
-                get
-                {
-                    if (_normalizedPartUriString == null)
-                        _normalizedPartUriString = GetNormalizedPartUriString();
-
-                    return _normalizedPartUriString;
-                }
-            }
+            internal string NormalizedPartUriString => _normalizedPartUriString ??= GetNormalizedPartUriString();
 
             //Returns the normalized part uri
-            internal ValidatedPartUri NormalizedPartUri
-            {
-                get
-                {
-                    if (_normalizedPartUri == null)
-                        _normalizedPartUri = GetNormalizedPartUri();
-
-                    return _normalizedPartUri;
-                }
-            }
+            internal ValidatedPartUri NormalizedPartUri => _normalizedPartUri ??= GetNormalizedPartUri();
 
             //Returns true, if the original string passed to create
             //this object was normalized
@@ -837,7 +819,7 @@ namespace System.IO.Packaging
 
                 // In addition we need to make sure that the relationship is not created by taking another relationship
                 // as the source of this uri. So XXX/_rels/_rels/YYY.rels.rels would be invalid.
-                if (segments.Length > 3 && result == true)
+                if (segments.Length > 3 && result)
                 {
                     if ((segments[segments.Length - 1]).EndsWith(RelsrelsUpperCaseExtension, StringComparison.Ordinal))
                     {

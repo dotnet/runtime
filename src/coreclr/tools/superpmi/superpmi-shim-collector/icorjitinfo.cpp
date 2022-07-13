@@ -115,6 +115,13 @@ CorInfoInline interceptor_ICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /*
     return temp;
 }
 
+void interceptor_ICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                                     CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    mc->cr->AddCall("beginInlining");
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
 // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
 // JIT.
@@ -1158,6 +1165,16 @@ void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] meth
     mc->cr->AddCall("setVars");
     mc->cr->recSetVars(ftn, cVars, vars); // Since the EE frees, we've gotta record before its sent to the EE.
     original_ICorJitInfo->setVars(ftn, cVars, vars);
+}
+
+void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+                                          uint32_t                          numInlineTreeNodes,
+                                          ICorDebugInfo::RichOffsetMapping* mappings,
+                                          uint32_t                          numMappings)
+{
+    mc->cr->AddCall("reportRichMappings");
+    // TODO: record these mappings
+    original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
 /*-------------------------- Misc ---------------------------------------*/

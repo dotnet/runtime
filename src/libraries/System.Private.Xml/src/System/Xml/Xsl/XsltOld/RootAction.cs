@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl.Runtime;
+using MS.Internal.Xml.XPath;
+using System.Security;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.Runtime;
-    using MS.Internal.Xml.XPath;
-    using System.Security;
-
     internal sealed class Key
     {
         private readonly XmlQualifiedName _name;
@@ -35,10 +35,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public void AddKey(XPathNavigator root, Hashtable table)
         {
-            if (_keyNodes == null)
-            {
-                _keyNodes = new ArrayList();
-            }
+            _keyNodes ??= new ArrayList();
             _keyNodes.Add(new DocumentKeyList(root, table));
         }
 
@@ -88,17 +85,7 @@ namespace System.Xml.Xsl.XsltOld
         private List<Key>? _keyList;
         private XsltOutput? _output;
 
-        internal XsltOutput Output
-        {
-            get
-            {
-                if (_output == null)
-                {
-                    _output = new XsltOutput();
-                }
-                return _output;
-            }
-        }
+        internal XsltOutput Output => _output ??= new XsltOutput();
 
         /*
          * Compile
@@ -110,10 +97,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertKey(XmlQualifiedName name, int MatchKey, int UseKey)
         {
-            if (_keyList == null)
-            {
-                _keyList = new List<Key>();
-            }
+            _keyList ??= new List<Key>();
             _keyList.Add(new Key(name, MatchKey, UseKey));
         }
 
@@ -135,10 +119,7 @@ namespace System.Xml.Xsl.XsltOld
             // As we mentioned we need to invert all lists.
             foreach (AttributeSetAction attSet in _attributeSetTable.Values)
             {
-                if (attSet.containedActions != null)
-                {
-                    attSet.containedActions.Reverse();
-                }
+                attSet.containedActions?.Reverse();
             }
 
             //  ensures there are no cycles in the attribute-sets use dfs marking method

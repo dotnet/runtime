@@ -198,13 +198,10 @@ namespace System.Xml
 
             if (first)
             {
-                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
+                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || name[0] != ':')) ||
                      matchPos == 0)
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
 
                     bufBld.Append("_x");
                     if (length > 1 && XmlCharType.IsHighSurrogate(name[0]) && XmlCharType.IsLowSurrogate(name[1]))
@@ -239,10 +236,7 @@ namespace System.Xml
                     (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
                     (matchPos == position))
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     if (matchPos == position)
                         if (en!.MoveNext())
                         {
@@ -1171,36 +1165,33 @@ namespace System.Xml
 
         private static void CreateAllDateTimeFormats()
         {
-            if (s_allDateTimeFormats == null)
-            {
-                // no locking; the array is immutable so it's not a problem that it may get initialized more than once
-                s_allDateTimeFormats = new string[] {
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFF",                  //time
-                    "HH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFFzzzzzz",
-                    "yyyy-MM-dd",                   // date
-                    "yyyy-MM-ddZ",
-                    "yyyy-MM-ddzzzzzz",
-                    "yyyy-MM",                      // yearMonth
-                    "yyyy-MMZ",
-                    "yyyy-MMzzzzzz",
-                    "yyyy",                         // year
-                    "yyyyZ",
-                    "yyyyzzzzzz",
-                    "--MM-dd",                      // monthDay
-                    "--MM-ddZ",
-                    "--MM-ddzzzzzz",
-                    "---dd",                        // day
-                    "---ddZ",
-                    "---ddzzzzzz",
-                    "--MM--",                       // month
-                    "--MM--Z",
-                    "--MM--zzzzzz",
-                };
-            }
+            // no locking; the array is immutable so it's not a problem that it may get initialized more than once
+            s_allDateTimeFormats ??= new string[] {
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFF",                  //time
+                "HH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFFzzzzzz",
+                "yyyy-MM-dd",                   // date
+                "yyyy-MM-ddZ",
+                "yyyy-MM-ddzzzzzz",
+                "yyyy-MM",                      // yearMonth
+                "yyyy-MMZ",
+                "yyyy-MMzzzzzz",
+                "yyyy",                         // year
+                "yyyyZ",
+                "yyyyzzzzzz",
+                "--MM-dd",                      // monthDay
+                "--MM-ddZ",
+                "--MM-ddzzzzzz",
+                "---dd",                        // day
+                "---ddZ",
+                "---ddzzzzzz",
+                "--MM--",                       // month
+                "--MM--Z",
+                "--MM--zzzzzz",
+            };
         }
 
         [Obsolete("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
@@ -1516,10 +1507,7 @@ namespace System.Xml
                 char ch = value[i];
                 if ((int)ch < 0x20 || ch == '"')
                 {
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(value.Length + 4);
-                    }
+                    sb ??= new StringBuilder(value.Length + 4);
                     if (i - start > 0)
                     {
                         sb.Append(value, start, i - start);

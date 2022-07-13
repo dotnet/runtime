@@ -105,7 +105,7 @@ namespace Internal.Reflection.Execution
         /// </summary>
         /// <param name="runtimeTypeHandle">Runtime handle of the type in question</param>
         /// <param name="qTypeDefinition">TypeDef handle for the type</param>
-        public sealed unsafe override bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
+        public sealed override unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
             Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
             return TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition);
@@ -117,7 +117,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //    runtimeTypeHandle is a typedef or a generic type instance (not a constructed type such as an array)
         //
-        public sealed unsafe override bool IsReflectionBlocked(RuntimeTypeHandle runtimeTypeHandle)
+        public sealed override unsafe bool IsReflectionBlocked(RuntimeTypeHandle runtimeTypeHandle)
         {
             // For generic types, use the generic type definition
             runtimeTypeHandle = GetTypeDefinition(runtimeTypeHandle);
@@ -165,7 +165,7 @@ namespace Internal.Reflection.Execution
         /// </summary>
         /// <param name="qTypeDefinition">TypeDef handle for the type to look up</param>
         /// <param name="runtimeTypeHandle">Runtime type handle (MethodTable) for the given type</param>
-        public sealed unsafe override bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
+        public sealed override unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetOrCreateNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle);
         }
@@ -182,7 +182,7 @@ namespace Internal.Reflection.Execution
         /// <param name="runtimeTypeHandle">MethodTable of the type in question</param>
         /// <param name="metadataReader">Metadata reader for the type</param>
         /// <param name="typeRefHandle">Located TypeRef handle</param>
-        public sealed unsafe override bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle)
+        public sealed override unsafe bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle)
         {
             return TypeLoaderEnvironment.TryGetTypeReferenceForNamedType(runtimeTypeHandle, out metadataReader, out typeRefHandle);
         }
@@ -205,7 +205,7 @@ namespace Internal.Reflection.Execution
         /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
         /// <param name="typeRefHandle">TypeRef handle to look up</param>
         /// <param name="runtimeTypeHandle">Resolved MethodTable for the type reference</param>
-        public sealed unsafe override bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle)
+        public sealed override unsafe bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle)
         {
             return TypeLoaderEnvironment.TryGetNamedTypeForTypeReference(metadataReader, typeRefHandle, out runtimeTypeHandle);
         }
@@ -219,7 +219,7 @@ namespace Internal.Reflection.Execution
         //
         // This is not equivalent to calling TryGetMultiDimTypeForElementType() with a rank of 1!
         //
-        public sealed unsafe override bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
+        public sealed override unsafe bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
         {
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
@@ -240,7 +240,7 @@ namespace Internal.Reflection.Execution
         //
         // This is not equivalent to calling TryGetMultiDimTypeElementType() with a rank of 1!
         //
-        public sealed unsafe override bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
+        public sealed override unsafe bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
         {
             elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
             return true;
@@ -256,7 +256,7 @@ namespace Internal.Reflection.Execution
         //
         // Calling this with rank 1 is not equivalent to calling TryGetArrayTypeForElementType()!
         //
-        public sealed unsafe override bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle)
+        public sealed override unsafe bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
@@ -279,7 +279,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //     targetTypeHandle is a valid RuntimeTypeHandle.
         //
-        public sealed unsafe override bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        public sealed override unsafe bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetPointerTypeForTargetType(targetTypeHandle, out pointerTypeHandle);
         }
@@ -291,7 +291,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //      pointerTypeHandle is a valid RuntimeTypeHandle of type pointer.
         //
-        public sealed unsafe override bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        public sealed override unsafe bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
         {
             targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
             return true;
@@ -304,7 +304,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //     targetTypeHandle is a valid RuntimeTypeHandle.
         //
-        public sealed unsafe override bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
+        public sealed override unsafe bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetByRefTypeForTargetType(targetTypeHandle, out byRefTypeHandle);
         }
@@ -316,7 +316,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //      byRefTypeHandle is a valid RuntimeTypeHandle of a byref.
         //
-        public sealed unsafe override bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        public sealed override unsafe bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle)
         {
             targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(byRefTypeHandle);
             return true;
@@ -330,7 +330,7 @@ namespace Internal.Reflection.Execution
         //      runtimeTypeDefinitionHandle is a valid RuntimeTypeHandle for a generic type.
         //      genericTypeArgumentHandles is an array of valid RuntimeTypeHandles.
         //
-        public sealed unsafe override bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
+        public sealed override unsafe bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
         {
             if (TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle))
             {
@@ -387,8 +387,7 @@ namespace Internal.Reflection.Execution
 
             // If we failed to get a MethodInvokeInfo for an exact method, or a canonically equivalent method, check if there is a universal canonically
             // equivalent entry that could be used (it will be much slower, and require a calling convention converter)
-            if (methodInvokeInfo == null)
-                methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
+            methodInvokeInfo ??= TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
                     methodInfo, ref methodSignatureComparer, CanonicalFormKind.Universal);
 #endif
 
@@ -1400,7 +1399,7 @@ namespace Internal.Reflection.Execution
         //
         // This resolves RuntimeMethodHandles for methods declared on non-generic types (declaringTypeHandle is an output of this method.)
         //
-        public sealed unsafe override bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        public sealed override unsafe bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             MethodNameAndSignature nameAndSignature;
             methodHandle = default(QMethodDefinition);
@@ -1421,7 +1420,7 @@ namespace Internal.Reflection.Execution
         //
         // This resolves RuntimeFieldHandles for fields declared on non-generic types (declaringTypeHandle is an output of this method.)
         //
-        public sealed unsafe override bool TryGetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
+        public sealed override unsafe bool TryGetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
             fieldHandle = default(FieldHandle);
 

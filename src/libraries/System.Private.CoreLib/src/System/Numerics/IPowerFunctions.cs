@@ -6,6 +6,7 @@ namespace System.Numerics
     /// <summary>Defines support for power functions.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface IPowerFunctions<TSelf>
+        : INumberBase<TSelf>
         where TSelf : IPowerFunctions<TSelf>
     {
         /// <summary>Computes a value raised to a given power.</summary>

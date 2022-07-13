@@ -381,10 +381,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
         {
-            if (content != null)
-            {
-                content.WriteTo(writer, elementName, Atom10Constants.Atom10Namespace);
-            }
+            content?.WriteTo(writer, elementName, Atom10Constants.Atom10Namespace);
         }
 
         internal static void WriteElement(XmlWriter writer, string elementName, string value)
@@ -582,10 +579,7 @@ namespace System.ServiceModel.Syndication
                     if (preserveAttributeExtensions)
                     {
                         string value = reader.Value;
-                        if (attrs == null)
-                        {
-                            attrs = new Dictionary<XmlQualifiedName, string>();
-                        }
+                        attrs ??= new Dictionary<XmlQualifiedName, string>();
                         attrs.Add(new XmlQualifiedName(name, ns), value);
                     }
                 }
@@ -762,7 +756,7 @@ namespace System.ServiceModel.Syndication
                             }
                             else if (reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace) && !isSourceFeed)
                             {
-                                feedItems = feedItems ?? new NullNotAllowedCollection<SyndicationItem>();
+                                feedItems ??= new NullNotAllowedCollection<SyndicationItem>();
                                 IEnumerable<SyndicationItem> items = ReadItems(reader, result, out areAllItemsRead);
                                 foreach (SyndicationItem item in items)
                                 {
@@ -1129,14 +1123,14 @@ namespace System.ServiceModel.Syndication
             TextSyndicationContent title = feed.Title;
             if (isElementRequired)
             {
-                title = title ?? new TextSyndicationContent(string.Empty);
+                title ??= new TextSyndicationContent(string.Empty);
             }
             WriteContentTo(writer, Atom10Constants.TitleTag, title);
             WriteContentTo(writer, Atom10Constants.SubtitleTag, feed.Description);
             string id = feed.Id;
             if (isElementRequired)
             {
-                id = id ?? s_idGenerator.Next();
+                id ??= s_idGenerator.Next();
             }
             WriteElement(writer, Atom10Constants.IdTag, id);
             WriteContentTo(writer, Atom10Constants.RightsTag, feed.Copyright);

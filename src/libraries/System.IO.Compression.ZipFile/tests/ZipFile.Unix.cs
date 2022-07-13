@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Compression.Tests
@@ -56,6 +57,16 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixCreateSetsPermissionsInExternalAttributesUMaskZero()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                umask(0);
+                new ZipFile_Unix().UnixCreateSetsPermissionsInExternalAttributes();
+            }).Dispose();
+        }
+
         [Fact]
         public void UnixExtractSetsFilePermissionsFromExternalAttributes()
         {
@@ -90,6 +101,16 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixExtractSetsFilePermissionsFromExternalAttributesUMaskZero()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                umask(0);
+                new ZipFile_Unix().UnixExtractSetsFilePermissionsFromExternalAttributes();
+            }).Dispose();
+        }
+
         private static string[] CreateFiles(string folderPath, string[] testPermissions)
         {
             string[] expectedPermissions = new string[testPermissions.Length];
@@ -100,7 +121,7 @@ namespace System.IO.Compression.Tests
                 string filename = Path.Combine(folderPath, $"{permissions}.txt");
                 File.WriteAllText(filename, "contents");
 
-                Assert.Equal(0, Interop.Sys.ChMod(filename, Convert.ToInt32(permissions, 8)));
+                File.SetUnixFileMode(filename, (UnixFileMode)Convert.ToInt32(permissions, 8));
 
                 // In some environments, the file mode may be modified by the OS.
                 // See the Rationale section of https://linux.die.net/man/3/chmod.
@@ -126,6 +147,8 @@ namespace System.IO.Compression.Tests
 
         private static void EnsureFilePermissions(string filename, string permissions)
         {
+            permissions = GetExpectedPermissions(permissions);
+
             Interop.Sys.FileStatus status;
             Assert.Equal(0, Interop.Sys.Stat(filename, out status));
 
@@ -199,26 +222,28 @@ namespace System.IO.Compression.Tests
 
         private static string GetExpectedPermissions(string expectedPermissions)
         {
-            if (string.IsNullOrEmpty(expectedPermissions))
+            using (var tempFolder = new TempDirectory())
             {
-                // Create a new file, and get its permissions to get the current system default permissions
-
-                using (var tempFolder = new TempDirectory())
+                string filename = Path.Combine(tempFolder.Path, Path.GetRandomFileName());
+                FileStreamOptions fileStreamOptions = new()
                 {
-                    string filename = Path.Combine(tempFolder.Path, Path.GetRandomFileName());
-                    File.WriteAllText(filename, "contents");
-
-                    Interop.Sys.FileStatus status;
-                    Assert.Equal(0, Interop.Sys.Stat(filename, out status));
-
-                    expectedPermissions = Convert.ToString(status.Mode & 0xFFF, 8);
+                    Access = FileAccess.Write,
+                    Mode = FileMode.CreateNew
+                };
+                if (expectedPermissions != null)
+                {
+                    fileStreamOptions.UnixCreateMode = (UnixFileMode)Convert.ToInt32(expectedPermissions, 8);
                 }
-            }
+                new FileStream(filename, fileStreamOptions).Dispose();
 
-            return expectedPermissions;
+                return Convert.ToString((int)File.GetUnixFileMode(filename), 8);
+            }
         }
 
         [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int mkfifo(string path, int mode);
+
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int umask(int umask);
     }
 }

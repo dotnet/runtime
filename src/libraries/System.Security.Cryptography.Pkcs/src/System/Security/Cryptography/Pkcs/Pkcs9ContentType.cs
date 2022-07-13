@@ -19,6 +19,11 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
+        internal Pkcs9ContentType(ReadOnlySpan<byte> rawData)
+            : base(Oids.ContentTypeOid.CopyOid(), rawData)
+        {
+        }
+
         //
         // Public properties.
         //
@@ -27,7 +32,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyContentType ?? (_lazyContentType = Decode(RawData));
+                return _lazyContentType ??= Decode(RawData);
             }
         }
 

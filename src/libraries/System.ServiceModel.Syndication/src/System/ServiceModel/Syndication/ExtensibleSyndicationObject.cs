@@ -38,12 +38,12 @@ namespace System.ServiceModel.Syndication
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get => _attributeExtensions ?? (_attributeExtensions = new Dictionary<XmlQualifiedName, string>());
+            get => _attributeExtensions ??= new Dictionary<XmlQualifiedName, string>();
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
-            get => _elementExtensions ?? (_elementExtensions = new SyndicationElementExtensionCollection());
+            get => _elementExtensions ??= new SyndicationElementExtensionCollection();
         }
 
         private static XmlBuffer CreateXmlBuffer(XmlDictionaryReader unparsedExtensionsReader, int maxExtensionSize)
@@ -109,10 +109,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            if (_elementExtensions != null)
-            {
-                _elementExtensions.WriteTo(writer, shouldSkipElement);
-            }
+            _elementExtensions?.WriteTo(writer, shouldSkipElement);
         }
 
         public ExtensibleSyndicationObject Clone() => new ExtensibleSyndicationObject(this);
