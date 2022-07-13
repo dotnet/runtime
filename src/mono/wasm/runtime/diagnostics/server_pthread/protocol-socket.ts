@@ -13,13 +13,13 @@ export interface BinaryProtocolCommand {
 }
 
 
-export interface ProtcolCommandEvent extends Event {
+export interface ProtocolCommandEvent extends Event {
     type: typeof dotnetDiagnosticsServerProtocolCommandEvent;
     data: BinaryProtocolCommand;
 }
 
 export interface ProtocolSocketEventMap extends WebSocketEventMap {
-    [dotnetDiagnosticsServerProtocolCommandEvent]: ProtcolCommandEvent;
+    [dotnetDiagnosticsServerProtocolCommandEvent]: ProtocolCommandEvent;
 }
 
 /// An adapter that takes a websocket connection and converts MessageEvent into ProtocolCommandEvent by
@@ -30,6 +30,7 @@ interface ProtocolSocket {
     removeEventListener<K extends keyof ProtocolSocketEventMap>(type: K, listener: (this: ProtocolSocket, ev: ProtocolSocketEventMap[K]) => any, options?: boolean | EventListenerOptions): void;
     removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
     send(buf: Uint8Array): void;
+    dispatchEvent(evt: Event): boolean;
 }
 
 enum InState {
@@ -79,6 +80,10 @@ class ProtocolSocketImpl implements ProtocolSocket {
             ev.data.arrayBuffer().then(this.onArrayBuffer.bind(this));
         }
         // otherwise it's string, ignore it.
+    }
+
+    dispatchEvent(evt: Event): boolean {
+        return this.sock.dispatchEvent(evt);
     }
 
     onArrayBuffer(this: ProtocolSocketImpl, buf: ArrayBuffer) {

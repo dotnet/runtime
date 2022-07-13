@@ -3,7 +3,7 @@
 
 /// <reference lib="webworker" />
 
-import { assertNever } from "../../types";
+import { assertNever, mono_assert } from "../../types";
 import { pthread_self } from "../../pthreads/worker";
 import { Module } from "../../imports";
 import cwraps from "../../cwraps";
@@ -28,11 +28,27 @@ import {
 } from "./protocol-client-commands";
 import { makeEventPipeStreamingSession } from "./streaming-session";
 import parseMockCommand from "./mock-command-parser";
+import { CommonSocket } from "./common-socket";
+import { createProtocolSocket, dotnetDiagnosticsServerProtocolCommandEvent, BinaryProtocolCommand, ProtocolCommandEvent } from "./protocol-socket";
 
 function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
     return new Promise((resolve) => {
         const listener = (event: Event) => { resolve(event as MessageEvent<string | ArrayBuffer>); };
         src.addEventListener("message", listener, { once: true });
+    });
+}
+
+function addOneShotProtocolCommandEventListener(src: EventTarget): Promise<ProtocolCommandEvent> {
+    return new Promise((resolve) => {
+        const listener = (event: Event) => { resolve(event as ProtocolCommandEvent); };
+        src.addEventListener(dotnetDiagnosticsServerProtocolCommandEvent, listener, { once: true });
+    });
+}
+
+function addOneShotOpenEventListenr(src: EventTarget): Promise<Event> {
+    return new Promise((resolve) => {
+        const listener = (event: Event) => { resolve(event); };
+        src.addEventListener("open", listener, { once: true });
     });
 }
 
@@ -42,11 +58,13 @@ export interface DiagnosticServer {
 
 class DiagnosticServerImpl implements DiagnosticServer {
     readonly websocketUrl: string;
+    readonly mocked: boolean;
     runtimeResumed = false;
 
     constructor(websocketUrl: string) {
         this.websocketUrl = websocketUrl;
         pthread_self.addEventListenerFromBrowser(this.onMessageFromMainThread.bind(this));
+        this.mocked = websocketUrl.startsWith("mock:");
     }
 
     private startRequestedController = new PromiseController<void>();
@@ -88,12 +106,26 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
+    async openSocket(): Promise<CommonSocket> {
+        if (this.mocked) {
+            return mockScript.open();
+        } else {
+            const sock = new WebSocket(this.websocketUrl);
+            await addOneShotOpenEventListenr(sock);
+            return sock;
+        }
+    }
 
     async advertiseAndWaitForClient(): Promise<void> {
         try {
-            const ws = mockScript.open();
-            const p = addOneShotMessageEventListener(ws);
-            ws.send("ADVR_V1");
+            const ws = await this.openSocket();
+            let p: Promise<MessageEvent<string | ArrayBuffer>> | Promise<ProtocolCommandEvent>;
+            if (this.mocked) {
+                p = addOneShotMessageEventListener(ws);
+            } else {
+                p = addOneShotProtocolCommandEventListener(createProtocolSocket(ws));
+            }
+            this.sendAdvertise(ws);
             const message = await p;
             console.debug("received advertising response: ", message);
             const cmd = this.parseCommand(message);
@@ -113,8 +145,39 @@ class DiagnosticServerImpl implements DiagnosticServer {
         }
     }
 
+    sendAdvertise(ws: CommonSocket) {
+        const BUF_LENGTH = 34;
+        const buf = new ArrayBuffer(BUF_LENGTH);
+        const view = new Uint8Array(buf);
+        let pos = 0;
+        const text = "ADVR_V1";
+        for (let i = 0; i < text.length; i++) {
+            view[pos++] = text.charCodeAt(i);
+        }
+        view[pos++] = 0; // nul terminator
+        const guid = "C979E170-B538-475C-BCF1-B04A30DA1430";
+        guid.split("-").forEach((part) => {
+            // FIXME: I'm sure the endianness is wrong here
+            for (let i = 0; i < part.length; i += 2) {
+                view[pos++] = parseInt(part.substring(i, 2), 16);
+            }
+        });
+        // "process ID" in 2 32-bit parts
+        const pid = [0, 1234];
+        for (let i = 0; i < pid.length; i++) {
+            view[pos++] = pid[i] & 0xFF;
+            view[pos++] = (pid[i] >> 8) & 0xFF;
+            view[pos++] = (pid[i] >> 16) & 0xFF;
+            view[pos++] = (pid[i] >> 24) & 0xFF;
+        }
+        view[pos++] = 0;
+        view[pos++] = 0; // two reserved zero bytes
+        mono_assert(pos == BUF_LENGTH, "did not format ADVR_V1 correctly");
+        ws.send(buf);
 
-    parseCommand(message: MessageEvent<string | ArrayBuffer>): ProtocolClientCommandBase | null {
+    }
+
+    parseCommand(message: MessageEvent<string | ArrayBuffer> | ProtocolCommandEvent): ProtocolClientCommandBase | null {
         if (typeof message.data === "string") {
             return parseMockCommand(message.data);
         } else {
@@ -194,9 +257,11 @@ export function mono_wasm_diagnostic_server_on_server_thread_created(websocketUr
     const websocketUrl = Module.UTF8ToString(websocketUrlPtr);
     console.debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     const server = new DiagnosticServerImpl(websocketUrl);
-    queueMicrotask(() => {
-        mockScript.run();
-    });
+    if (websocketUrl.startsWith("mock:")) {
+        queueMicrotask(() => {
+            mockScript.run();
+        });
+    }
     queueMicrotask(() => {
         server.serverLoop();
     });
