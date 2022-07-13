@@ -72,6 +72,7 @@ namespace ILCompiler
             Logger logger,
             IEnumerable<KeyValuePair<string, bool>> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
+            IEnumerable<string> additionalRootedAssemblies,
             IEnumerable<string> trimmedAssemblies)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
         {
@@ -84,6 +85,7 @@ namespace ILCompiler
             _featureSwitchHashtable = new FeatureSwitchHashtable(new Dictionary<string, bool>(featureSwitchValues));
 
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
+            _rootEntireAssembliesModules.UnionWith(additionalRootedAssemblies);
             _trimmedAssemblies = new HashSet<string>(trimmedAssemblies);
         }
 
