@@ -169,8 +169,6 @@ typedef struct _libunwindInfo
     UnwindReadMemoryCallback ReadMemory;
 } libunwindInfo;
 
-#if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
-
 #define EXTRACT_BITS(value, mask)   ((value >> __builtin_ctz(mask)) & (((1 << __builtin_popcount(mask))) - 1))
 
 #define DW_EH_VERSION           1
@@ -526,6 +524,8 @@ ReadEncodedPointer(
     *valp = value;
     return true;
 }
+
+#if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
 
 template<class T>
 static bool
@@ -2282,7 +2282,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     }
 
 #ifdef FEATURE_USE_SYSTEM_LIBUNWIND
-    if (ehFrameHdrAddr  == 0) {
+    if (ehFrameHdrAddr == 0) {
         ASSERT("ELF: No PT_GNU_EH_FRAME program header\n");
         return -UNW_EINVAL;
     }
@@ -2504,6 +2504,144 @@ exit:
         unw_destroy_addr_space(addrSpace);
     }
     return result;
+}
+
+BOOL
+PALAPI
+PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
+{
+    _ASSERTE(ehFrameStart != nullptr);
+    _ASSERTE(ehFrameSize != nullptr);
+    _ASSERTE(ehFrameHdrAddr != 0);
+    *ehFrameStart = 0;
+    *ehFrameSize = 0;
+
+    libunwindInfo info;
+    info.BaseAddress = baseAddress;
+    info.Context = nullptr;
+    info.FunctionStart = 0;
+    info.ReadMemory = readMemoryCallback;
+
+    eh_frame_hdr ehFrameHdr;
+    if (!info.ReadMemory((PVOID)ehFrameHdrAddr, &ehFrameHdr, sizeof(eh_frame_hdr))) {
+        ERROR("ELF: reading ehFrameHdrAddr %p\n", ehFrameHdrAddr);
+        return FALSE;
+    }
+    TRACE("ehFrameHdrAddr %p version %d eh_frame_ptr_enc %d fde_count_enc %d table_enc %d\n",
+        ehFrameHdrAddr, ehFrameHdr.version, ehFrameHdr.eh_frame_ptr_enc, ehFrameHdr.fde_count_enc, ehFrameHdr.table_enc);
+
+    if (ehFrameHdr.version != DW_EH_VERSION) {
+        ASSERT("ehFrameHdr version %x not supported\n", ehFrameHdr.version);
+        return FALSE;
+    }
+    unw_word_t addr = ehFrameHdrAddr + sizeof(eh_frame_hdr);
+    unw_word_t ehFramePtr;
+    unw_word_t fdeCount;
+
+    // Decode the eh_frame_hdr info
+    if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.eh_frame_ptr_enc, UINTPTR_MAX, &ehFramePtr)) {
+        ERROR("decoding eh_frame_ptr\n");
+        return FALSE;
+    }
+    if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.fde_count_enc, UINTPTR_MAX, &fdeCount)) {
+        ERROR("decoding fde_count_enc\n");
+        return FALSE;
+    }
+    TRACE("ehFrameStart %p fdeCount %p\n", ehFrameStart, fdeCount);
+
+    // If there are no frame table entries
+    if (fdeCount == 0) {
+        TRACE("No frame table entries\n");
+        return FALSE;
+    }
+
+    uint64_t totalSize = 0;
+    uint64_t encounteredCieCount = 0;
+    uint64_t encounteredFdeCount = 0;
+    addr = ehFramePtr;
+
+    while (true)
+    {
+        bool is64BitEncoding = false;
+        uint64_t initialLength = 0;
+        uint32_t initialLength32;
+
+        if (!ReadValue32(&info, &addr, &initialLength32)) {
+            return FALSE;
+        }
+        totalSize += sizeof(initialLength32);
+
+        if (initialLength32 >= 0xfffffff0)
+        {
+            if (initialLength32 == 0xffffffff)
+            {
+                // 64 bit encoding
+                is64BitEncoding = true;
+                if (!ReadValue64(&info, &addr, &initialLength)) {
+                    return FALSE;
+                }
+                totalSize += sizeof(initialLength);
+            }
+            else
+            {
+                // 32 bit encoding
+                initialLength = static_cast<uint64_t>(initialLength32);
+            }
+        }
+        else
+        {
+            // 32 bit encoding
+            initialLength = static_cast<uint64_t>(initialLength32);
+        }
+
+        if (initialLength == 0)
+        {
+            break;
+        }
+
+        // "addr" either points to a CIE_id in a CIE or CIE_ptr in a FDE. A value of zero indicates a CIE.
+        uint64_t ciePtr;
+        if (is64BitEncoding)
+        {
+            if (!ReadValue64(&info, &addr, &ciePtr)) {
+                return FALSE;
+            }
+            addr -= sizeof(ciePtr);
+        }
+        else
+        {
+            uint32_t ciePtr32;
+            if (!ReadValue32(&info, &addr, &ciePtr32)) {
+                return FALSE;
+            }
+            addr -= sizeof(ciePtr32);
+            ciePtr = static_cast<uint64_t>(ciePtr32);
+        }
+
+        if (ciePtr == 0)
+        {
+            encounteredCieCount++;
+        }
+        else
+        {
+            encounteredFdeCount++;
+        }
+
+        totalSize += initialLength;
+        addr += initialLength;
+
+        // If we've seen more FDEs than expected, somehow either the header is inconsistent or we overread the end of the table.
+        if (encounteredFdeCount >= fdeCount)
+        {
+            break;
+        }
+    }
+
+    _ASSERTE(encounteredFdeCount == fdeCount);
+
+    *ehFrameStart = ehFramePtr;
+    *ehFrameSize = totalSize;
+    return TRUE;
 }
 
 #else
