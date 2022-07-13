@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Formats.Asn1;
 using Test.Cryptography;
 using Xunit;
 
@@ -10,6 +8,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class ChainPolicyTests
     {
+        private static readonly Oid s_emailProtectionEku = new Oid("1.3.6.1.5.5.7.3.4", null);
+        private static readonly Oid s_timestampEku = new Oid("1.3.6.1.5.5.7.3.8", null);
+
         [Fact]
         public static void DefaultCtorState()
         {
@@ -23,8 +24,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = new X509Certificate2(SelfSigned1PemBytes))
             {
                 X509ChainPolicy policy = new X509ChainPolicy();
-                policy.CertificatePolicy.Add(new Oid("0.0"));
-                policy.ApplicationPolicy.Add(new Oid("1.1"));
+                policy.CertificatePolicy.Add(s_emailProtectionEku);
+                policy.ApplicationPolicy.Add(s_timestampEku);
                 policy.ExtraStore.Add(cert);
                 policy.CustomTrustStore.Add(cert);
                 policy.DisableCertificateDownloads = true;
@@ -56,8 +57,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert2 = new X509Certificate2(SelfSigned1PemBytes))
             {
                 X509ChainPolicy source = new X509ChainPolicy();
-                source.CertificatePolicy.Add(new Oid("0.0"));
-                source.ApplicationPolicy.Add(new Oid("1.1"));
+                source.CertificatePolicy.Add(s_timestampEku);
+                source.ApplicationPolicy.Add(s_emailProtectionEku);
                 source.ExtraStore.Add(cert);
                 source.CustomTrustStore.Add(cert2);
                 source.DisableCertificateDownloads = true;
@@ -107,8 +108,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.True(policy.VerificationTimeIgnored, "policy.VerificationTimeIgnored");
             Assert.Equal(TimeSpan.Zero, policy.UrlRetrievalTimeout);
 
-            // A fairly generous tolerance of an NTP adjustment.
-            Assert.Equal(DateTime.Now, policy.VerificationTime, TimeSpan.FromMinutes(30));
+            // A DST adjustment will make the two Now values differ by the jump time, which
+            // is never more than an hour.
+            // An NTP jump is usually limited to 5 minutes.
+            // Add another 10 minutes for never seeing this fail.
+            Assert.Equal(DateTime.Now, policy.VerificationTime, TimeSpan.FromMinutes(75));
 
             Assert.Empty(policy.ApplicationPolicy);
             Assert.Empty(policy.CertificatePolicy);
@@ -116,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Empty(policy.CustomTrustStore);
         }
 
-        // TODO: Unify with TestData.SelfSigned1PemBytes after all X509 tests are unified in.
+        // TODO (66338): Unify with TestData.SelfSigned1PemBytes after all X509 tests are unified in.
         private static readonly byte[] SelfSigned1PemBytes = ByteUtils.AsciiBytes(
             @"-----BEGIN CERTIFICATE-----
 MIIDWjCCAkKgAwIBAgIJAJpCQ7mtFWHeMA0GCSqGSIb3DQEBCwUAMEIxCzAJBgNV
