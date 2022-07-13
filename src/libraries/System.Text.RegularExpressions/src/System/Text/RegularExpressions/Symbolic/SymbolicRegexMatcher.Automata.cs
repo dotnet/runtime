@@ -40,18 +40,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Maps state IDs to context-independent information for all states in <see cref="_stateArray"/>.
         /// The first valid entry is at index 1.
         /// </summary>
-        private ContextIndependentState[] _stateInfo;
-
-        /// <summary>Context-independent information available for every state.</summary>
-        [Flags]
-        private enum ContextIndependentState : byte
-        {
-            IsInitial = 1,
-            IsDeadend = 2,
-            IsNullable = 4,
-            CanBeNullable = 8,
-            SimulatesBacktracking = 16,
-        }
+        private StateFlags[] _stateFlagsArray;
 
         /// <summary>
         /// The transition function for DFA mode.
@@ -153,20 +142,6 @@ namespace System.Text.RegularExpressions.Symbolic
             return _nfaDelta.AsSpan(nfaState << _mintermsLog, numMinterms);
         }
 
-        /// <summary>Get context-independent information for the given state.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable, bool SimulatesBacktracking) GetStateInfo(int stateId)
-        {
-            Debug.Assert(stateId > 0);
-
-            ContextIndependentState info = _stateInfo[stateId];
-            return ((info & ContextIndependentState.IsInitial) != 0,
-                    (info & ContextIndependentState.IsDeadend) != 0,
-                    (info & ContextIndependentState.IsNullable) != 0,
-                    (info & ContextIndependentState.CanBeNullable) != 0,
-                    (info & ContextIndependentState.SimulatesBacktracking) != 0);
-        }
-
         /// <summary>
         /// Create a state with given node and previous character context.
         /// </summary>
@@ -204,53 +179,13 @@ namespace System.Text.RegularExpressions.Symbolic
                     int newsize = _stateArray.Length * 2;
                     ArrayResizeAndVolatilePublish(ref _stateArray, newsize);
                     ArrayResizeAndVolatilePublish(ref _dfaDelta, newsize << _mintermsLog);
-                    ArrayResizeAndVolatilePublish(ref _stateInfo, newsize);
+                    ArrayResizeAndVolatilePublish(ref _stateFlagsArray, newsize);
                 }
                 _stateArray[state.Id] = state;
-                _stateInfo[state.Id] = BuildStateInfo(state.Id,
-                    isInitialState,
-                    state.IsDeadend(Solver),
-                    state.Node.IsNullable,
-                    state.Node.CanBeNullable,
-                    state.Node.Kind != SymbolicRegexNodeKind.DisableBacktrackingSimulation);
+                _stateFlagsArray[state.Id] = state.BuildStateFlags(Solver, isInitialState);
             }
 
             return state;
-
-            // Assign the context-independent information for the given state
-            static ContextIndependentState BuildStateInfo(int stateId, bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable, bool simulatesBacktracking)
-            {
-                Debug.Assert(stateId > 0);
-                Debug.Assert(!isNullable || canBeNullable);
-
-                ContextIndependentState info = 0;
-
-                if (isInitial)
-                {
-                    info |= ContextIndependentState.IsInitial;
-                }
-
-                if (isDeadend)
-                {
-                    info |= ContextIndependentState.IsDeadend;
-                }
-
-                if (canBeNullable)
-                {
-                    info |= ContextIndependentState.CanBeNullable;
-                    if (isNullable)
-                    {
-                        info |= ContextIndependentState.IsNullable;
-                    }
-                }
-
-                if (simulatesBacktracking)
-                {
-                    info |= ContextIndependentState.SimulatesBacktracking;
-                }
-
-                return info;
-            }
         }
 
         /// <summary>
