@@ -34,6 +34,7 @@
     <!-- [ActiveIssue("https://github.com/dotnet/runtime/issues/71559")]: PNSE generator cannot handle required keyword, so excluding affected classes in ExcludeApiList.PNSE.txt and including real code for now. -->
     <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
     <Compile Include="System\Net\Quic\QuicConnectionOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicDefaults.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
