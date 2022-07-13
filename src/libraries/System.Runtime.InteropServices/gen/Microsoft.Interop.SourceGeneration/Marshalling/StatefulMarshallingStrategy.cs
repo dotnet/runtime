@@ -209,7 +209,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (CanUseCallerAllocatedBuffer(info, context))
+            if (MarshallerHelpers.CanUseCallerAllocatedBuffer(info, context))
             {
                 return GenerateCallerAllocatedBufferMarshalStatements();
             }
@@ -269,11 +269,6 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
             return _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
-        }
-
-        private static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
-        {
-            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
         }
 
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context)
