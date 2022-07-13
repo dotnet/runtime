@@ -79,6 +79,11 @@ namespace System.Runtime.Serialization.Json
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteStartObject(System.Xml.XmlWriter writer, object? graph) { }
     }
+    public static partial class DataContractJsonSerializerExtensions
+    {
+        public static System.Runtime.Serialization.ISerializationSurrogateProvider? GetSerializationSurrogateProvider(this System.Runtime.Serialization.Json.DataContractJsonSerializer serializer) { throw null; }
+        public static void SetSerializationSurrogateProvider(this System.Runtime.Serialization.Json.DataContractJsonSerializer serializer, System.Runtime.Serialization.ISerializationSurrogateProvider? provider) { }
+    }
     public partial class DataContractJsonSerializerSettings
     {
         public DataContractJsonSerializerSettings() { }
