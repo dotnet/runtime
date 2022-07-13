@@ -69,6 +69,22 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     result = true;
 exit:
+    if (kill(pid, 0) == 0)
+    {
+        printf_status("Target process is alive\n");
+    }
+    else
+    {
+        int err = errno;
+        if (err == ESRCH)
+        {
+            printf_error("Target process terminated\n");
+        }
+        else
+        {
+            printf_error("kill(%d, 0) FAILED %s (%d)\n", pid, strerror(err), err);
+        }
+    }
     crashInfo->CleanupAndResumeProcess();
     return result;
 }
