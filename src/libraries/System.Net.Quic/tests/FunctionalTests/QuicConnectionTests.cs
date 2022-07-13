@@ -21,19 +21,13 @@ namespace System.Net.Quic.Tests
         {
             await using QuicListener listener = await CreateQuicListener();
 
-            using QuicConnection clientConnection = await CreateQuicConnection(listener.LocalEndPoint);
-
-            Assert.False(clientConnection.Connected);
-            Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
-
-            ValueTask connectTask = clientConnection.ConnectAsync();
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
             ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
 
             await new Task[] { connectTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
-            QuicConnection serverConnection = acceptTask.Result;
+            await using QuicConnection serverConnection = acceptTask.Result;
+            await using QuicConnection clientConnection = connectTask.Result;
 
-            Assert.True(clientConnection.Connected);
-            Assert.True(serverConnection.Connected);
             Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
             Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
             Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
@@ -43,7 +37,7 @@ namespace System.Net.Quic.Tests
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
         {
-            QuicStream s = await c.OpenBidirectionalStreamAsync();
+            QuicStream s = await c.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
 
             // This will pend
             await s.ReadAsync(new byte[1]);
@@ -64,7 +58,7 @@ namespace System.Net.Quic.Tests
                 async serverConnection =>
                 {
                     // Pend operations before the client closes.
-                    Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
+                    Task<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync().AsTask();
                     Assert.False(acceptTask.IsCompleted);
                     Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
                     Assert.False(connectTask.IsCompleted);
@@ -83,7 +77,7 @@ namespace System.Net.Quic.Tests
 
                     // Subsequent attempts should fail
                     // TODO: Which exception is correct?
-                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await serverConnection.AcceptStreamAsync());
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAnyAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
                 });
         }
@@ -101,12 +95,12 @@ namespace System.Net.Quic.Tests
                 async serverConnection =>
                 {
                     // Pend operations before the client closes.
-                    Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
+                    Task<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync().AsTask();
                     Assert.False(acceptTask.IsCompleted);
                     Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
                     Assert.False(connectTask.IsCompleted);
 
-                    serverConnection.Dispose();
+                    await serverConnection.DisposeAsync();
 
                     sync.Release();
 
@@ -115,13 +109,13 @@ namespace System.Net.Quic.Tests
 
                     // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
                     // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
-                    // To be revisited once we standartize on exceptions.
+                    // To be revisited once we standardize on exceptions.
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
                     await Assert.ThrowsAsync<QuicException>(() => connectTask);
 
                     // Subsequent attempts should fail
                     // TODO: Should these be QuicOperationAbortedException, to match above? Or vice-versa?
-                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptStreamAsync());
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await OpenAndUseStreamAsync(serverConnection));
                 });
         }
@@ -137,11 +131,13 @@ namespace System.Net.Quic.Tests
                     await sync.WaitAsync();
 
                     await clientConnection.CloseAsync(ExpectedErrorCode);
+
+                    sync.Release();
                 },
                 async serverConnection =>
                 {
                     // Pend operations before the client closes.
-                    Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
+                    Task<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync().AsTask();
                     Assert.False(acceptTask.IsCompleted);
                     Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
                     Assert.False(connectTask.IsCompleted);
@@ -156,8 +152,10 @@ namespace System.Net.Quic.Tests
                     ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => connectTask);
                     Assert.Equal(ExpectedErrorCode, ex.ApplicationErrorCode);
 
+                    await sync.WaitAsync();
+
                     // Subsequent attempts should fail
-                    ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => serverConnection.AcceptStreamAsync().AsTask());
+                    ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => serverConnection.AcceptInboundStreamAsync().AsTask());
                     Assert.Equal(ExpectedErrorCode, ex.ApplicationErrorCode);
                     ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, () => OpenAndUseStreamAsync(serverConnection));
                     Assert.Equal(ExpectedErrorCode, ex.ApplicationErrorCode);
@@ -191,7 +189,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
+                    await using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     await DoWrites(clientStream, writesBeforeClose);
 
                     // Wait for peer to receive data
@@ -204,7 +202,7 @@ namespace System.Net.Quic.Tests
                 },
                 async serverConnection =>
                 {
-                    using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                    await using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
                     await DoReads(serverStream, writesBeforeClose);
 
                     sync.Release();
@@ -216,6 +214,45 @@ namespace System.Net.Quic.Tests
                     ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverStream.WriteAsync(new byte[1]));
                     Assert.Equal(ExpectedErrorCode, ex.ApplicationErrorCode);
                 });
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        public async Task Dispose_WithoutClose_ConnectionClosesWithDefault(int writesBeforeClose)
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    await DoWrites(clientStream, writesBeforeClose);
+
+                    // Wait for peer to receive data
+                    await sync.WaitAsync();
+
+                    await clientConnection.DisposeAsync();
+
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await clientStream.ReadAsync(new byte[1]));
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await clientStream.WriteAsync(new byte[1]));
+                },
+                async serverConnection =>
+                {
+                    using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
+                    await DoReads(serverStream, writesBeforeClose);
+
+                    sync.Release();
+
+                    // Since the peer did the abort, we should receive the abort error code in the exception.
+                    QuicException ex;
+                    ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverStream.ReadAsync(new byte[1]));
+                    Assert.Equal(DefaultCloseErrorCodeClient, ex.ApplicationErrorCode);
+                    ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverStream.WriteAsync(new byte[1]));
+                    Assert.Equal(DefaultCloseErrorCodeClient, ex.ApplicationErrorCode);
+                }, listenerOptions: listenerOptions);
         }
 
         [OuterLoop("Depends on IdleTimeout")]
@@ -232,20 +269,20 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
+                    await using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     await DoWrites(clientStream, writesBeforeClose);
 
                     // Wait for peer to receive data
                     await sync.WaitAsync();
 
-                    clientConnection.Dispose();
+                    await clientConnection.DisposeAsync();
 
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await clientStream.ReadAsync(new byte[1]));
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await clientStream.WriteAsync(new byte[1]));
                 },
                 async serverConnection =>
                 {
-                    using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                    await using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
                     await DoReads(serverStream, writesBeforeClose);
 
                     sync.Release();

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 
-namespace System.Net.Quic.Implementations.MsQuic.Internal;
+namespace System.Net.Quic;
 
 /// <summary>
 /// Helper class to convert managed data into QUIC_BUFFER* consumable by MsQuic.
@@ -87,44 +87,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
     {
         Reserve(1);
         SetBuffer(0, buffer);
-    }
-
-    /// <summary>
-    /// Initializes QUIC_BUFFER* with the provided buffers.
-    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
-    /// </summary>
-    /// <param name="buffers">Buffers to be passed to MsQuic as QUIC_BUFFER*.</param>
-    public void Initialize(ReadOnlySequence<byte> buffers)
-    {
-        int count = 0;
-        foreach (ReadOnlyMemory<byte> _ in buffers)
-        {
-            ++count;
-        }
-
-        Reserve(count);
-        int i = 0;
-        foreach (ReadOnlyMemory<byte> buffer in buffers)
-        {
-            SetBuffer(i++, buffer);
-        }
-    }
-
-    /// <summary>
-    /// Initializes QUIC_BUFFER* with the provided buffers.
-    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
-    /// </summary>
-    /// <param name="buffers">Buffers to be passed to MsQuic as QUIC_BUFFER*.</param>
-    public void Initialize(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers)
-    {
-        int count = buffers.Length;
-        Reserve(count);
-
-        ReadOnlySpan<ReadOnlyMemory<byte>> span = buffers.Span;
-        for (int i = 0; i < span.Length; i++)
-        {
-            SetBuffer(i, span[i]);
-        }
     }
 
     /// <summary>

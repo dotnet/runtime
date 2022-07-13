@@ -175,7 +175,6 @@
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
     <NetCoreAppLibraryNoReference>
-      System.Net.Quic;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
       System.Private.Uri;
