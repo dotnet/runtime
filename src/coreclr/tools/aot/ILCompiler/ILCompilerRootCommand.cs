@@ -92,7 +92,7 @@ namespace ILCompiler
         public Option<int> Parallelism { get; } =
             new(new[] { "--parallelism" }, () => Environment.ProcessorCount, "Maximum number of threads to use during compilation");
         public Option<string> InstructionSet { get; } =
-            new(new[] { "--instructionset" }, "Instruction set to allow or disallow");
+            new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
         public Option<string> Guard { get; } =
             new(new[] { "--guard" }, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
         public Option<bool> PreinitStatics { get; } =
