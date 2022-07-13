@@ -13,6 +13,7 @@
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" Condition="'$(TargetPlatformIdentifier)' != 'Browser'" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs" Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs" Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
+    <Compile Include="System\Net\WebSockets\HttpResponseHeadersReadOnlyCollection.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />

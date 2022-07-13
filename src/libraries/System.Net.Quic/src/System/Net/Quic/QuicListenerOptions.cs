@@ -16,21 +16,44 @@ public sealed class QuicListenerOptions
     /// <summary>
     /// The endpoint to listen on.
     /// </summary>
-    public required IPEndPoint ListenEndPoint { get; set; }
+    public IPEndPoint ListenEndPoint { get; set; } = null!;
 
     /// <summary>
     /// List of application protocols which the listener will accept. At least one must be specified.
     /// </summary>
-    public required List<SslApplicationProtocol> ApplicationProtocols { get; set; }
+    public List<SslApplicationProtocol> ApplicationProtocols { get; set; } = null!;
 
     /// <summary>
-    /// Number of connections to be held without accepting the connection.
-    ///
+    /// Number of connections to be held without accepting any them, i.e. maximum size of the pending connection queue.
     /// </summary>
     public int ListenBacklog { get; set; }
 
     /// <summary>
     /// Selection callback to choose inbound connection options dynamically.
     /// </summary>
-    public required Func<QuicConnection, SslClientHelloInfo, CancellationToken, ValueTask<QuicServerConnectionOptions>> ConnectionOptionsCallback { get; set; }
+    public Func<QuicConnection, SslClientHelloInfo, CancellationToken, ValueTask<QuicServerConnectionOptions>> ConnectionOptionsCallback { get; set; } = null!;
+
+    /// <summary>
+    /// Validates the options and potentially sets platform specific defaults.
+    /// </summary>
+    /// <param name="argumentName">Name of the from the caller.</param>
+    internal void Validate(string argumentName)
+    {
+        if (ListenEndPoint is null)
+        {
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_listener, nameof(QuicListenerOptions.ListenEndPoint)), argumentName);
+        }
+        if (ApplicationProtocols is null || ApplicationProtocols.Count <= 0)
+        {
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_not_empty_listener, nameof(QuicListenerOptions.ApplicationProtocols)), argumentName);
+        }
+        if (ListenBacklog == 0)
+        {
+            ListenBacklog = QuicDefaults.DefaultListenBacklog;
+        }
+        if (ConnectionOptionsCallback is null)
+        {
+            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_listener, nameof(QuicListenerOptions.ConnectionOptionsCallback)), argumentName);
+        }
+    }
 }

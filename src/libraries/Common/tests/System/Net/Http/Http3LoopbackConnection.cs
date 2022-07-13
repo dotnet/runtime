@@ -91,12 +91,12 @@ namespace System.Net.Test.Common
 
         public async ValueTask<Http3LoopbackStream> OpenUnidirectionalStreamAsync()
         {
-            return new Http3LoopbackStream(await _connection.OpenUnidirectionalStreamAsync());
+            return new Http3LoopbackStream(await _connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional));
         }
 
         public async ValueTask<Http3LoopbackStream> OpenBidirectionalStreamAsync()
         {
-            return new Http3LoopbackStream(await _connection.OpenBidirectionalStreamAsync());
+            return new Http3LoopbackStream(await _connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional));
         }
 
         public static int GetRequestId(QuicStream stream)
@@ -131,7 +131,7 @@ namespace System.Net.Test.Common
 
                 while (true)
                 {
-                    QuicStream quicStream = await _connection.AcceptStreamAsync().ConfigureAwait(false);
+                    QuicStream quicStream = await _connection.AcceptInboundStreamAsync().ConfigureAwait(false);
 
                     if (!quicStream.CanWrite)
                     {
@@ -165,7 +165,7 @@ namespace System.Net.Test.Common
 
             if (!_delayedStreams.TryDequeue(out QuicStream quicStream))
             {
-                quicStream = await _connection.AcceptStreamAsync().ConfigureAwait(false);
+                quicStream = await _connection.AcceptInboundStreamAsync().ConfigureAwait(false);
             }
 
             var stream = new Http3LoopbackStream(quicStream);

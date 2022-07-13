@@ -816,128 +816,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private CorInfoCallConvExtension GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, out bool suppressGCTransition)
-        {
-            suppressGCTransition = false;
-            CorInfoCallConvExtension callConv = (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention();
-
-            bool found = false;
-            bool memberFunctionVariant = false;
-            foreach (DefType defType in attributeWithCallConvsArray.EnumerateCallConvsFromAttribute())
-            {
-                if (defType.Name == "CallConvMemberFunction")
-                {
-                    memberFunctionVariant = true;
-                    continue;
-                }
-
-                if (defType.Name == "CallConvSuppressGCTransition")
-                {
-                    suppressGCTransition = true;
-                    continue;
-                }
-
-                CorInfoCallConvExtension? callConvLocal = GetCallingConventionForCallConvType(defType);
-
-                if (callConvLocal.HasValue)
-                {
-                    // Error if there are multiple recognized calling conventions
-                    if (found)
-                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramMultipleCallConv, MethodBeingCompiled);
-
-                    callConv = callConvLocal.Value;
-                    found = true;
-                }
-            }
-
-            if (memberFunctionVariant)
-            {
-                callConv = GetMemberFunctionCallingConventionVariant(callConv);
-            }
-
-            return callConv;
-        }
-
-        private bool TryGetUnmanagedCallingConventionFromModOpt(MethodSignature signature, out CorInfoCallConvExtension callConv, out bool suppressGCTransition)
-        {
-            suppressGCTransition = false;
-            // Default to managed since in the modopt case we need to differentiate explicitly using a calling convention that matches the default
-            // and not specifying a calling convention at all and using the implicit default case in P/Invoke stub inlining.
-            callConv = CorInfoCallConvExtension.Managed;
-            if (!signature.HasEmbeddedSignatureData)
-                return false;
-
-            bool found = false;
-            bool memberFunctionVariant = false;
-            foreach (EmbeddedSignatureData data in signature.GetEmbeddedSignatureData())
-            {
-                if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
-                    continue;
-
-                // We only care about the modifiers for the return type. These will be at the start of
-                // the signature, so will be first in the array of embedded signature data.
-                if (data.index != MethodSignature.IndexOfCustomModifiersOnReturnType)
-                    break;
-
-                if (!(data.type is DefType defType))
-                    continue;
-
-                if (defType.Namespace != "System.Runtime.CompilerServices")
-                    continue;
-
-                if (defType.Name == "CallConvSuppressGCTransition")
-                {
-                    suppressGCTransition = true;
-                    continue;
-                }
-                else if (defType.Name == "CallConvMemberFunction")
-                {
-                    memberFunctionVariant = true;
-                    continue;
-                }
-
-                CorInfoCallConvExtension? callConvLocal = GetCallingConventionForCallConvType(defType);
-
-                if (callConvLocal.HasValue)
-                {
-                    // Error if there are multiple recognized calling conventions
-                    if (found)
-                        ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramMultipleCallConv, MethodBeingCompiled);
-
-                    callConv = callConvLocal.Value;
-                    found = true;
-                }
-            }
-
-            if (memberFunctionVariant)
-            {
-                callConv = GetMemberFunctionCallingConventionVariant(found ? callConv : (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention());
-                found = true;
-            }
-
-            return found;
-        }
-
-        private static CorInfoCallConvExtension? GetCallingConventionForCallConvType(DefType defType) =>
-            // Look for a recognized calling convention in metadata.
-            defType.Name switch
-            {
-                "CallConvCdecl" => CorInfoCallConvExtension.C,
-                "CallConvStdcall" => CorInfoCallConvExtension.Stdcall,
-                "CallConvFastcall" => CorInfoCallConvExtension.Fastcall,
-                "CallConvThiscall" => CorInfoCallConvExtension.Thiscall,
-                _ => null
-            };
-
-        private static CorInfoCallConvExtension GetMemberFunctionCallingConventionVariant(CorInfoCallConvExtension baseCallConv) =>
-            baseCallConv switch
-            {
-                CorInfoCallConvExtension.C => CorInfoCallConvExtension.CMemberFunction,
-                CorInfoCallConvExtension.Stdcall => CorInfoCallConvExtension.StdcallMemberFunction,
-                CorInfoCallConvExtension.Fastcall => CorInfoCallConvExtension.FastcallMemberFunction,
-                var c => c
-            };
-
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig, MethodILScope scope)
         {
             sig->callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
@@ -1553,12 +1431,6 @@ namespace Internal.JitInterface
             return type.IsIntrinsic;
         }
 
-        private MethodSignatureFlags PlatformDefaultUnmanagedCallingConvention()
-        {
-            return _compilation.TypeSystemContext.Target.IsWindows ?
-                MethodSignatureFlags.UnmanagedCallingConventionStdCall : MethodSignatureFlags.UnmanagedCallingConventionCdecl;
-        }
-
         private CorInfoCallConvExtension getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig, ref bool pSuppressGCTransition)
         {
             pSuppressGCTransition = false;
@@ -1579,79 +1451,70 @@ namespace Internal.JitInterface
         }
         private CorInfoCallConvExtension GetUnmanagedCallConv(MethodDesc methodDesc, out bool suppressGCTransition)
         {
-            suppressGCTransition = false;
-            MethodSignatureFlags callConv = methodDesc.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask;
-            if (callConv == MethodSignatureFlags.None)
+            UnmanagedCallingConventions callingConventions;
+
+            if ((methodDesc.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == 0)
             {
                 if (methodDesc.IsPInvoke)
                 {
-                    suppressGCTransition = methodDesc.HasSuppressGCTransitionAttribute();
-                    MethodSignatureFlags unmanagedCallConv = methodDesc.GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
-
-                    if (unmanagedCallConv == MethodSignatureFlags.None)
-                    {
-                        MethodDesc methodDescLocal = methodDesc;
-                        if (methodDesc is IL.Stubs.PInvokeTargetNativeMethod rawPInvoke)
-                        {
-                            methodDescLocal = rawPInvoke.Target;
-                        }
-
-                        CustomAttributeValue<TypeDesc>? unmanagedCallConvAttribute = ((EcmaMethod)methodDescLocal).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallConvAttribute");
-                        if (unmanagedCallConvAttribute != null)
-                        {
-                            bool suppressGCTransitionLocal;
-                            CorInfoCallConvExtension callConvFromAttribute = GetUnmanagedCallingConventionFromAttribute(unmanagedCallConvAttribute.Value, out suppressGCTransitionLocal);
-                            suppressGCTransition |= suppressGCTransitionLocal;
-                            return callConvFromAttribute;
-                        }
-
-                        unmanagedCallConv = PlatformDefaultUnmanagedCallingConvention();
-                    }
-
-                    // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoCallConvExtension via a simple cast
-                    Debug.Assert((int)CorInfoCallConvExtension.C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
-                    Debug.Assert((int)CorInfoCallConvExtension.Stdcall == (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall);
-                    Debug.Assert((int)CorInfoCallConvExtension.Thiscall == (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall);
-
-                    return (CorInfoCallConvExtension)unmanagedCallConv;
+                    callingConventions = methodDesc.GetPInvokeMethodCallingConventions();
                 }
                 else
                 {
                     Debug.Assert(methodDesc.IsUnmanagedCallersOnly);
-                    CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute = ((EcmaMethod)methodDesc).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute").Value;
-                    return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute, out _);
+                    callingConventions = methodDesc.GetUnmanagedCallersOnlyMethodCallingConventions();
                 }
             }
-            return GetUnmanagedCallConv(methodDesc.Signature, out suppressGCTransition);
+            else
+            {
+                callingConventions = methodDesc.Signature.GetStandaloneMethodSignatureCallingConventions();
+            }
+
+            return ToCorInfoCallConvExtension(callingConventions, out suppressGCTransition);
         }
 
         private CorInfoCallConvExtension GetUnmanagedCallConv(MethodSignature signature, out bool suppressGCTransition)
         {
-            suppressGCTransition = false;
-            switch (signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
+            return ToCorInfoCallConvExtension(signature.GetStandaloneMethodSignatureCallingConventions(), out suppressGCTransition);
+        }
+
+        private CorInfoCallConvExtension ToCorInfoCallConvExtension(UnmanagedCallingConventions callConvs, out bool suppressGCTransition)
+        {
+            CorInfoCallConvExtension result;
+            switch (callConvs & UnmanagedCallingConventions.CallingConventionMask)
             {
-                case MethodSignatureFlags.None:
-                    ThrowHelper.ThrowInvalidProgramException();
-                    return CorInfoCallConvExtension.Managed;
-                case MethodSignatureFlags.UnmanagedCallingConventionCdecl:
-                    return CorInfoCallConvExtension.C;
-                case MethodSignatureFlags.UnmanagedCallingConventionStdCall:
-                    return CorInfoCallConvExtension.Stdcall;
-                case MethodSignatureFlags.UnmanagedCallingConventionThisCall:
-                    return CorInfoCallConvExtension.Thiscall;
-                case MethodSignatureFlags.UnmanagedCallingConvention:
-                    if (TryGetUnmanagedCallingConventionFromModOpt(signature, out CorInfoCallConvExtension callConvMaybe, out suppressGCTransition))
-                    {
-                        return callConvMaybe;
-                    }
-                    else
-                    {
-                        return (CorInfoCallConvExtension)PlatformDefaultUnmanagedCallingConvention();
-                    }
+                case UnmanagedCallingConventions.Cdecl:
+                    result = CorInfoCallConvExtension.C;
+                    break;
+                case UnmanagedCallingConventions.Stdcall:
+                    result = CorInfoCallConvExtension.Stdcall;
+                    break;
+                case UnmanagedCallingConventions.Thiscall:
+                    result = CorInfoCallConvExtension.Thiscall;
+                    break;
+                case UnmanagedCallingConventions.Fastcall:
+                    result = CorInfoCallConvExtension.Fastcall;
+                    break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
-                    return CorInfoCallConvExtension.Managed;
+                    result = CorInfoCallConvExtension.Managed; // unreachable
+                    break;
             }
+
+            if ((callConvs & UnmanagedCallingConventions.IsMemberFunction) != 0)
+            {
+                result = result switch
+                {
+                    CorInfoCallConvExtension.C => CorInfoCallConvExtension.CMemberFunction,
+                    CorInfoCallConvExtension.Stdcall => CorInfoCallConvExtension.StdcallMemberFunction,
+                    CorInfoCallConvExtension.Fastcall => CorInfoCallConvExtension.FastcallMemberFunction,
+                    _ => result,
+                };
+            }
+
+            suppressGCTransition = (callConvs & UnmanagedCallingConventions.IsSuppressGcTransition) != 0;
+
+            return result;
         }
 
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
