@@ -1073,18 +1073,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 {
     GenTree* data       = tree->gtOp1;
     GenTree* actualData = data->gtSkipReloadOrCopy();
-    unsigned regCount   = 1;
-    // var = call, where call returns a multi-reg return value
-    // case is handled separately.
+
+    // Stores from a multi-reg source are handled separately.
     if (actualData->IsMultiRegNode())
     {
-        regCount = actualData->GetMultiRegCount(compiler);
-        if (regCount > 1)
-        {
-            genMultiRegStoreToLocal(tree);
-        }
+        genMultiRegStoreToLocal(tree);
     }
-    if (regCount == 1)
+    else
     {
         unsigned   varNum     = tree->GetLclNum();
         LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
