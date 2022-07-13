@@ -153,7 +153,6 @@ namespace System.Runtime.Serialization
         public string Name { get { throw null; } }
         public long Order { get { throw null; } }
     }
-    [Obsolete("Schema handling abilities has moved to System.Runtime.Serialization.Schema. Please use the classes there.")]
     public partial class ExportOptions
     {
         public ExportOptions() { }
@@ -234,7 +233,6 @@ namespace System.Runtime.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, out System.Xml.XmlNamespaceManager namespaces) { throw null; }
     }
-    [Obsolete("Schema handling abilities has moved to System.Runtime.Serialization.Schema. Please use the classes there.")]
     public partial class XsdDataContractExporter
     {
         public XsdDataContractExporter() { }
