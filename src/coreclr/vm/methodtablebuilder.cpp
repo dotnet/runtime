@@ -3925,12 +3925,12 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 if (fIsStatic)
                 {
                     // Byref-like types cannot be used for static fields
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_STATICFIELD);
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_STATICFIELD);
                 }
                 if (!bmtFP->fIsByRefLikeType)
                 {
                     // Non-byref-like types cannot contain byref-like instance fields
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_INSTANCEFIELD);
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_INSTANCEFIELD);
                 }
                 break;
             }
@@ -4100,12 +4100,12 @@ IS_VALUETYPE:
                     if (fIsStatic)
                     {
                         // Byref-like types cannot be used for static fields
-                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_STATICFIELD);
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_STATICFIELD);
                     }
                     if (!bmtFP->fIsByRefLikeType)
                     {
                         // Non-byref-like types cannot contain byref-like instance fields
-                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_INSTANCEFIELD);
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_INSTANCEFIELD);
                     }
                 }
 
