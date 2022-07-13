@@ -3516,8 +3516,6 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                        Justification = "The array type would be available at runtime")]
         protected internal DataRow[] NewRowArray(int size)
         {
             if (IsTypedDataTable)

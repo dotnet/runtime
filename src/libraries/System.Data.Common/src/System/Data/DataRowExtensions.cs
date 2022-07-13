@@ -143,8 +143,6 @@ namespace System.Data
         {
             internal static readonly Converter<object, T?> s_unbox = Create();
 
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                        Justification = "The value type field would be available")]
             private static Converter<object, T?> Create()
             {
                 if (typeof(T).IsValueType)
