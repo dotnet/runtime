@@ -7636,8 +7636,8 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
         None = 0x0,
         QuickJit = 0x1,
         QuickJitForLoops = 0x2,
-        TieredPGO = 0x3,
-        ReadyToRun = 0x4,
+        TieredPGO = 0x4,
+        ReadyToRun = 0x8,
     };
 
     UINT32 flags = (UINT32)Flags::None;
