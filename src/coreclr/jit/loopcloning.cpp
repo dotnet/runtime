@@ -456,8 +456,7 @@ JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* LoopCloneContext::Ensur
 {
     if (blockConditions[loopNum] == nullptr)
     {
-        blockConditions[loopNum] =
-            new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>(alloc);
+        blockConditions[loopNum] = new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>(alloc);
     }
 
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = blockConditions[loopNum];
