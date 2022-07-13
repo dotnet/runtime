@@ -47,6 +47,18 @@ namespace System.Net.Http
             return new HttpProtocolException((long)protocolError, message, null);
         }
 
+        internal static HttpProtocolException CreateHttp3StreamException(Http3ErrorCode protocolError)
+        {
+            string message = SR.Format(SR.net_http_http3_stream_error, GetName(protocolError), ((int)protocolError).ToString("x"));
+            return new HttpProtocolException((long)protocolError, message, null);
+        }
+
+        internal static HttpProtocolException CreateHttp3ConnectionException(Http3ErrorCode protocolError)
+        {
+            string message = SR.Format(SR.net_http_http3_connection_error, GetName(protocolError), ((int)protocolError).ToString("x"));
+            return new HttpProtocolException((long)protocolError, message, null);
+        }
+
         private static string GetName(Http2ProtocolErrorCode code) =>
             // These strings are the names used in the HTTP2 spec and should not be localized.
             code switch
@@ -66,6 +78,29 @@ namespace System.Net.Http
                 Http2ProtocolErrorCode.InadequateSecurity => "INADEQUATE_SECURITY",
                 Http2ProtocolErrorCode.Http11Required => "HTTP_1_1_REQUIRED",
                 _ => "(unknown error)",
+            };
+
+        private static string GetName(Http3ErrorCode code) =>
+            // These strings come from the H3 spec and should not be localized.
+            code switch
+            {
+                Http3ErrorCode.NoError => "H3_NO_ERROR",
+                Http3ErrorCode.ProtocolError => "H3_GENERAL_PROTOCOL_ERROR",
+                Http3ErrorCode.InternalError => "H3_INTERNAL_ERROR",
+                Http3ErrorCode.StreamCreationError => "H3_STREAM_CREATION_ERROR",
+                Http3ErrorCode.ClosedCriticalStream => "H3_CLOSED_CRITICAL_STREAM",
+                Http3ErrorCode.UnexpectedFrame => "H3_FRAME_UNEXPECTED",
+                Http3ErrorCode.FrameError => "H3_FRAME_ERROR",
+                Http3ErrorCode.ExcessiveLoad => "H3_EXCESSIVE_LOAD",
+                Http3ErrorCode.IdError => "H3_ID_ERROR",
+                Http3ErrorCode.SettingsError => "H3_SETTINGS_ERROR",
+                Http3ErrorCode.MissingSettings => "H3_MISSING_SETTINGS",
+                Http3ErrorCode.RequestRejected => "H3_REQUEST_REJECTED",
+                Http3ErrorCode.RequestCancelled => "H3_REQUEST_CANCELLED",
+                Http3ErrorCode.RequestIncomplete => "H3_REQUEST_INCOMPLETE",
+                Http3ErrorCode.ConnectError => "H3_CONNECT_ERROR",
+                Http3ErrorCode.VersionFallback => "H3_VERSION_FALLBACK",
+                _ => "(unknown error)"
             };
 #endif
     }
