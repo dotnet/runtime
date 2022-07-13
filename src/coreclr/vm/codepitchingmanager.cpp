@@ -78,7 +78,7 @@ static void CreateRWLock(SimpleRWLock** lock)
         void *pLockSpace = SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(SimpleRWLock)));
         SimpleRWLock *pLock = new (pLockSpace) SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT);
 
-        if (FastInterlockCompareExchangePointer(lock, pLock, NULL) != NULL)
+        if (InterlockedCompareExchangeT(lock, pLock, NULL) != NULL)
             SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->BackoutMem(pLockSpace, sizeof(SimpleRWLock));
     }
 }
@@ -340,8 +340,6 @@ void MethodDesc::PitchNativeCode()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-
-    g_IBCLogger.LogMethodDescAccess(this);
 
     if (!IsPitchable())
         return;

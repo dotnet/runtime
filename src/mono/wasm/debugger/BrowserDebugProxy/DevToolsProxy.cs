@@ -17,32 +17,22 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class DevToolsProxy
     {
-        protected TaskCompletionSource<Exception> side_exception = new();
-        protected TaskCompletionSource shutdown_requested = new();
         protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        protected WasmDebuggerConnection browser;
-        protected WasmDebuggerConnection ide;
+        protected DevToolsQueue browser;
+        protected DevToolsQueue ide;
         private int next_cmd_id;
-        private readonly ChannelWriter<Task> _channelWriter;
-        private readonly ChannelReader<Task> _channelReader;
-        protected List<DevToolsQueue> queues = new List<DevToolsQueue>();
-
         protected readonly ILogger logger;
+        protected RunLoop _runLoop;
         private readonly string _loggerId;
 
         public event EventHandler<RunLoopExitState> RunLoopStopped;
-        public bool IsRunning => Stopped is null;
-        public RunLoopExitState Stopped { get; private set; }
+        public bool IsRunning => _runLoop?.IsRunning == true;
+        public RunLoopExitState Stopped => _runLoop?.StoppedState;
 
-        public DevToolsProxy(ILoggerFactory loggerFactory, string loggerId)
+        public DevToolsProxy(ILogger logger, string loggerId)
         {
             _loggerId = loggerId;
-            string loggerSuffix = string.IsNullOrEmpty(loggerId) ? string.Empty : $"-{loggerId}";
-            logger = loggerFactory.CreateLogger($"DevToolsProxy{loggerSuffix}");
-
-            var channel = Channel.CreateUnbounded<Task>(new UnboundedChannelOptions { SingleReader = true });
-            _channelWriter = channel.Writer;
-            _channelReader = channel.Reader;
+            this.logger = logger;
         }
 
         protected int GetNewCmdId() => Interlocked.Increment(ref next_cmd_id);
@@ -57,25 +47,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return Task.FromResult(false);
         }
 
-        private DevToolsQueue GetQueueForConnection(WasmDebuggerConnection conn)
-            => queues.FirstOrDefault(q => q.Connection == conn);
-
-        protected DevToolsQueue GetQueueForTask(Task task)
+        protected Task Send(DevToolsQueue queue, JObject o, CancellationToken token)
         {
-            return queues.FirstOrDefault(q => q.CurrentSend == task);
-        }
-
-        protected async Task Send(WasmDebuggerConnection conn, JObject o, CancellationToken token)
-        {
-            logger.LogTrace($"to-{conn.Id}: {GetFromOrTo(o)} {o}");
+            logger.LogTrace($"to-{queue.Id}: {GetFromOrTo(o)} {o}");
             var msg = o.ToString(Formatting.None);
             var bytes = Encoding.UTF8.GetBytes(msg);
 
-            DevToolsQueue queue = GetQueueForConnection(conn);
-
-            Task task = queue.Send(bytes, token);
-            if (task != null)
-                await _channelWriter.WriteAsync(task, token);
+            return _runLoop.Send(bytes, token, queue);
         }
 
         protected virtual async Task OnEvent(SessionId sessionId, JObject parms, CancellationToken token)
@@ -92,7 +70,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception e)
             {
-                side_exception.TrySetResult(e);
+                _runLoop.Fail(e);
             }
         }
 
@@ -110,7 +88,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception e)
             {
-                side_exception.TrySetResult(e);
+                _runLoop.Fail(e);
             }
         }
 
@@ -147,7 +125,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception ex)
             {
-                side_exception.TrySetResult(ex);
+                _runLoop.Fail(ex);
                 throw;
             }
         }
@@ -171,7 +149,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception ex)
             {
-                side_exception.TrySetResult(ex);
+                _runLoop.Fail(ex);
                 throw;
             }
         }
@@ -231,7 +209,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             JObject o = result.ToJObject(id);
             if (!result.IsOk)
-                logger.LogError($"sending error response for id: {id} -> {result}");
+                logger.LogDebug($"sending error response for id: {id} -> {result}");
 
             return Send(this.ide, o, token);
         }
@@ -262,7 +240,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using var ideConn = new DevToolsDebuggerConnection(ideSocket, "ide", logger);
                 using var browserConn = new DevToolsDebuggerConnection(browserSocket, "browser", logger);
 
-                await StartRunLoop(ideConn: ideConn, browserConn: browserConn, cts);
+                await RunLoopAsync(ideConn: ideConn, browserConn: browserConn, cts);
             }
             catch (Exception ex)
             {
@@ -271,188 +249,27 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        protected Task StartRunLoop(WasmDebuggerConnection ideConn, WasmDebuggerConnection browserConn, CancellationTokenSource cts)
-            => Task.Run(async () =>
-            {
-                try
-                {
-                    RunLoopExitState exitState;
-
-                    try
-                    {
-                        Stopped = await RunLoopActual(ideConn, browserConn, cts);
-                        exitState = Stopped;
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogDebug($"RunLoop threw an exception: {ex}");
-                        Stopped = new(RunLoopStopReason.Exception, ex);
-                        RunLoopStopped?.Invoke(this, Stopped);
-                        return;
-                    }
-
-                    try
-                    {
-                        logger.LogDebug($"RunLoop stopped, reason: {exitState}");
-                        RunLoopStopped?.Invoke(this, Stopped);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, $"Invoking RunLoopStopped event ({exitState}) failed with {ex}");
-                    }
-                }
-                finally
-                {
-                    ideConn?.Dispose();
-                    browserConn?.Dispose();
-                }
-            });
-
-
-        private async Task<RunLoopExitState> RunLoopActual(WasmDebuggerConnection ideConn,
-                                                           WasmDebuggerConnection browserConn,
-                                                           CancellationTokenSource cts)
+        protected async Task RunLoopAsync(WasmDebuggerConnection ideConn, WasmDebuggerConnection browserConn, CancellationTokenSource cts)
         {
-            using (ide = ideConn)
+            try
             {
-                queues.Add(new DevToolsQueue(ide));
-                using (browser = browserConn)
-                {
-                    queues.Add(new DevToolsQueue(browser));
-                    var x = cts;
-
-                    List<Task> pending_ops = new();
-
-                    pending_ops.Add(browser.ReadOneAsync(x.Token));
-                    pending_ops.Add(ide.ReadOneAsync(x.Token));
-                    pending_ops.Add(side_exception.Task);
-                    pending_ops.Add(shutdown_requested.Task);
-                    Task<bool> readerTask = _channelReader.WaitToReadAsync(x.Token).AsTask();
-                    pending_ops.Add(readerTask);
-
-                    try
-                    {
-                        while (!x.IsCancellationRequested)
-                        {
-                            Task completedTask = await Task.WhenAny(pending_ops.ToArray()).ConfigureAwait(false);
-
-                            if (shutdown_requested.Task.IsCompleted)
-                            {
-                                x.Cancel();
-                                return new(RunLoopStopReason.Shutdown, null);
-                            }
-
-                            if (side_exception.Task.IsCompleted)
-                                return new(RunLoopStopReason.Exception, await side_exception.Task);
-
-                            if (completedTask.IsFaulted)
-                            {
-                                if (completedTask == pending_ops[0] && !browser.IsConnected)
-                                    return new(RunLoopStopReason.HostConnectionClosed, completedTask.Exception);
-                                else if (completedTask == pending_ops[1] && !ide.IsConnected)
-                                    return new(RunLoopStopReason.IDEConnectionClosed, completedTask.Exception);
-
-                                return new(RunLoopStopReason.Exception, completedTask.Exception);
-                            }
-
-                            if (x.IsCancellationRequested)
-                                return new(RunLoopStopReason.Cancelled, null);
-
-                            // FIXME: instead of this, iterate through pending_ops, and clear it
-                            // out every time we wake up
-                            if (pending_ops.Where(t => t.IsFaulted).FirstOrDefault() is Task faultedTask)
-                                return new(RunLoopStopReason.Exception, faultedTask.Exception);
-
-                            if (readerTask.IsCompleted)
-                            {
-                                while (_channelReader.TryRead(out Task newTask))
-                                {
-                                    pending_ops.Add(newTask);
-                                }
-
-                                pending_ops[4] = _channelReader.WaitToReadAsync(x.Token).AsTask();
-                            }
-
-                            // logger.LogDebug("pump {0} {1}", completedTask, pending_ops.IndexOf (completedTask));
-                            if (completedTask == pending_ops[0])
-                            {
-                                string msg = await (Task<string>)completedTask;
-                                if (msg != null)
-                                {
-                                    pending_ops[0] = browser.ReadOneAsync(x.Token);
-                                    Task newTask = ProcessBrowserMessage(msg, x.Token);
-                                    if (newTask != null)
-                                        pending_ops.Add(newTask);
-                                }
-                            }
-                            else if (completedTask == pending_ops[1])
-                            {
-                                string msg = await (Task<string>)completedTask;
-                                if (msg != null)
-                                {
-                                    pending_ops[1] = ide.ReadOneAsync(x.Token);
-                                    Task newTask = ProcessIdeMessage(msg, x.Token);
-                                    if (newTask != null)
-                                        pending_ops.Add(newTask);
-                                }
-                            }
-                            else if (completedTask == pending_ops[2])
-                            {
-                                throw await (Task<Exception>)completedTask;
-                            }
-                            else
-                            {
-                                //must be a background task
-                                pending_ops.Remove(completedTask);
-                                DevToolsQueue queue = GetQueueForTask(completedTask);
-                                if (queue != null)
-                                {
-                                    if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))
-                                        pending_ops.Add(tsk);
-                                }
-                            }
-                        }
-
-                        _channelWriter.Complete();
-                        if (shutdown_requested.Task.IsCompleted)
-                            return new(RunLoopStopReason.Shutdown, null);
-                        if (x.IsCancellationRequested)
-                            return new(RunLoopStopReason.Cancelled, null);
-
-                        return new(RunLoopStopReason.Exception, new InvalidOperationException($"This shouldn't ever get thrown. Unsure why the loop stopped"));
-                    }
-                    catch (Exception e)
-                    {
-                        _channelWriter.Complete(e);
-                        throw;
-                    }
-                    finally
-                    {
-                        if (!x.IsCancellationRequested)
-                            x.Cancel();
-                        foreach (Task t in pending_ops)
-                            logger.LogDebug($"\t{t}: {t.Status}");
-                        logger.LogDebug($"browser: {browser.IsConnected}, ide: {ide.IsConnected}");
-
-                        queues?.Clear();
-                    }
-                }
+                this.ide = new DevToolsQueue(ideConn);
+                this.browser = new DevToolsQueue(browserConn);
+                ideConn.OnReadAsync = ProcessIdeMessage;
+                browserConn.OnReadAsync = ProcessBrowserMessage;
+                _runLoop = new(new[] { ide, browser }, logger);
+                _runLoop.RunLoopStopped += RunLoopStopped;
+                await _runLoop.RunAsync(cts);
+            }
+            finally
+            {
+                _runLoop?.Dispose();
+                _runLoop = null;
             }
         }
 
-        public virtual void Shutdown()
-        {
-            logger.LogDebug($"Proxy.Shutdown, browser: {browser.IsConnected}, ide: {ide.IsConnected}");
-            shutdown_requested.TrySetResult();
-        }
-
-        public void Fail(Exception exception)
-        {
-            if (side_exception.Task.IsCompleted)
-                logger.LogError($"Fail requested again with {exception}");
-            else
-                side_exception.TrySetResult(exception);
-        }
+        public virtual void Shutdown() => _runLoop?.Shutdown();
+        public void Fail(Exception exception) => _runLoop?.Fail(exception);
 
         protected virtual string GetFromOrTo(JObject o) => string.Empty;
 

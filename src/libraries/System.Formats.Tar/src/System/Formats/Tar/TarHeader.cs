@@ -43,7 +43,7 @@ namespace System.Formats.Tar
         // Position in the stream where the data ends in this header.
         internal long _endOfHeaderAndDataAndBlockAlignment;
 
-        internal TarFormat _format;
+        internal TarEntryFormat _format;
 
         // Common attributes
 

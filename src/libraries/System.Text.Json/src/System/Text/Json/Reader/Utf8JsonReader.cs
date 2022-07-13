@@ -40,7 +40,6 @@ namespace System.Text.Json
 
         private long _totalConsumed;
         private bool _isLastSegment;
-        internal bool _stringHasEscaping;
         private readonly bool _isMultiSegment;
         private bool _trailingCommaBeforeComment;
 
@@ -53,6 +52,8 @@ namespace System.Text.Json
         internal ReadOnlySequence<byte> OriginalSequence => _sequence;
 
         internal ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
+
+        internal readonly int ValueLength => HasValueSequence ? checked((int)ValueSequence.Length) : ValueSpan.Length;
 
         /// <summary>
         /// Gets the value of the last processed token as a ReadOnlySpan&lt;byte&gt; slice
@@ -131,6 +132,12 @@ namespace System.Text.Json
         public bool HasValueSequence { get; private set; }
 
         /// <summary>
+        /// Lets the caller know whether the current <see cref="ValueSpan" /> or <see cref="ValueSequence"/> properties
+        /// contain escape sequences per RFC 8259 section 7, and therefore require unescaping before being consumed.
+        /// </summary>
+        public bool ValueIsEscaped { get; private set; }
+
+        /// <summary>
         /// Returns the mode of this instance of the <see cref="Utf8JsonReader"/>.
         /// True when the reader was constructed with the input span containing the entire data to process.
         /// False when the reader was constructed knowing that the input span may contain partial data with more data to follow.
@@ -182,7 +189,7 @@ namespace System.Text.Json
             _bytePositionInLine = _bytePositionInLine,
             _inObject = _inObject,
             _isNotPrimitive = _isNotPrimitive,
-            _stringHasEscaping = _stringHasEscaping,
+            _valueIsEscaped = ValueIsEscaped,
             _trailingCommaBeforeComment = _trailingCommaBeforeComment,
             _tokenType = _tokenType,
             _previousTokenType = _previousTokenType,
@@ -213,7 +220,7 @@ namespace System.Text.Json
             _bytePositionInLine = state._bytePositionInLine;
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
-            _stringHasEscaping = state._stringHasEscaping;
+            ValueIsEscaped = state._valueIsEscaped;
             _trailingCommaBeforeComment = state._trailingCommaBeforeComment;
             _tokenType = state._tokenType;
             _previousTokenType = state._previousTokenType;
@@ -468,7 +475,7 @@ namespace System.Text.Json
                 return CompareToSequence(otherUtf8Text);
             }
 
-            if (_stringHasEscaping)
+            if (ValueIsEscaped)
             {
                 return UnescapeAndCompare(otherUtf8Text);
             }
@@ -558,7 +565,7 @@ namespace System.Text.Json
         {
             Debug.Assert(HasValueSequence);
 
-            if (_stringHasEscaping)
+            if (ValueIsEscaped)
             {
                 return UnescapeSequenceAndCompare(other);
             }
@@ -699,7 +706,7 @@ namespace System.Text.Json
             //      - For non-ASCII UTF-16 characters outside of the BMP, transcoding = 2x, (surrogate pairs - 2 characters transcode to 4 UTF-8 bytes)
 
             if (sourceLength < charTextLength
-                || sourceLength / (_stringHasEscaping ? JsonConstants.MaxExpansionFactorWhileEscaping : JsonConstants.MaxExpansionFactorWhileTranscoding) > charTextLength)
+                || sourceLength / (ValueIsEscaped ? JsonConstants.MaxExpansionFactorWhileEscaping : JsonConstants.MaxExpansionFactorWhileTranscoding) > charTextLength)
             {
                 return true;
             }
@@ -712,7 +719,7 @@ namespace System.Text.Json
             long sourceLength = ValueSequence.Length;
 
             if (sourceLength < charTextLength
-                || sourceLength / (_stringHasEscaping ? JsonConstants.MaxExpansionFactorWhileEscaping : JsonConstants.MaxExpansionFactorWhileTranscoding) > charTextLength)
+                || sourceLength / (ValueIsEscaped ? JsonConstants.MaxExpansionFactorWhileEscaping : JsonConstants.MaxExpansionFactorWhileTranscoding) > charTextLength)
             {
                 return true;
             }
@@ -799,6 +806,7 @@ namespace System.Text.Json
         {
             bool retVal = false;
             ValueSpan = default;
+            ValueIsEscaped = false;
 
             if (!HasMoreData())
             {
@@ -1250,8 +1258,8 @@ namespace System.Text.Json
                 first = _buffer[_consumed];
             }
 
-            // The next character must be a key / value seperator. Validate and skip.
-            if (first != JsonConstants.KeyValueSeperator)
+            // The next character must be a key / value separator. Validate and skip.
+            if (first != JsonConstants.KeyValueSeparator)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedSeparatorAfterPropertyNameNotFound, first);
             }
@@ -1283,7 +1291,7 @@ namespace System.Text.Json
                 {
                     _bytePositionInLine += idx + 2; // Add 2 for the start and end quotes.
                     ValueSpan = localBuffer.Slice(0, idx);
-                    _stringHasEscaping = false;
+                    ValueIsEscaped = false;
                     _tokenType = JsonTokenType.String;
                     _consumed += idx + 2;
                     return true;
@@ -1382,7 +1390,7 @@ namespace System.Text.Json
         Done:
             _bytePositionInLine++;  // Add 1 for the end quote
             ValueSpan = data.Slice(0, idx);
-            _stringHasEscaping = true;
+            ValueIsEscaped = true;
             _tokenType = JsonTokenType.String;
             _consumed += idx + 2;
             return true;
@@ -2551,11 +2559,9 @@ namespace System.Text.Json
         private ReadOnlySpan<byte> GetUnescapedSpan()
         {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            if (_stringHasEscaping)
+            if (ValueIsEscaped)
             {
-                int idx = span.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(idx != -1);
-                span = JsonReaderHelper.GetUnescapedSpan(span, idx);
+                span = JsonReaderHelper.GetUnescapedSpan(span);
             }
 
             return span;

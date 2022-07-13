@@ -60,7 +60,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 				/* get the basic block for the handler and
 				 * check if the exception object is used.
 				 * Flag is set during method_to_ir due to
-				 * pop-op is optmized away in codegen (burg).
+				 * pop-op is optimized away in codegen (burg).
 				 */
 				tbb = cfg->cil_offset_to_bb [clause->handler_offset];
 				if (tbb && tbb->flags & BB_EXCEPTION_DEAD_OBJ && !(tbb->flags & BB_EXCEPTION_UNSAFE)) {
@@ -115,7 +115,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 }
 
 #ifdef MONO_ARCH_HAVE_CMOV_OPS
-static const int int_cmov_opcodes [] = {
+static const guint16 int_cmov_opcodes [] = {
 	OP_CMOV_IEQ,
 	OP_CMOV_INE_UN,
 	OP_CMOV_ILE,
@@ -128,7 +128,7 @@ static const int int_cmov_opcodes [] = {
 	OP_CMOV_IGT_UN
 };
 
-static const int long_cmov_opcodes [] = {
+static const guint16 long_cmov_opcodes [] = {
 	OP_CMOV_LEQ,
 	OP_CMOV_LNE_UN,
 	OP_CMOV_LLE,
@@ -720,7 +720,7 @@ mono_if_conversion (MonoCompile *cfg)
 		mono_link_bblock (cfg, bb, next_bb);
 
 		/* Rewrite the second branch */
-		branch2->opcode = br_to_br_un (branch2->opcode);
+		branch2->opcode = GINT_TO_OPCODE (br_to_br_un (branch2->opcode));
 
 		mono_merge_basic_blocks (cfg, bb, next_bb);
 	}
@@ -1463,7 +1463,7 @@ mono_optimize_branches (MonoCompile *cfg)
 				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
 					if (bb->last_ins->inst_false_bb && bb->last_ins->inst_false_bb->out_of_line && (bb->region == bb->last_ins->inst_false_bb->region) && !cfg->disable_out_of_line_bblocks) {
 						/* Reverse the branch */
-						bb->last_ins->opcode = mono_reverse_branch_op (bb->last_ins->opcode);
+						bb->last_ins->opcode = GUINT32_TO_OPCODE (mono_reverse_branch_op (bb->last_ins->opcode));
 						bbn = bb->last_ins->inst_false_bb;
 						bb->last_ins->inst_false_bb = bb->last_ins->inst_true_bb;
 						bb->last_ins->inst_true_bb = bbn;

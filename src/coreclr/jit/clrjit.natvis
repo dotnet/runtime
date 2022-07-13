@@ -28,8 +28,8 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
 
   <Type Name="Compiler::LoopDsc">
     <DisplayString Condition="lpFlags &amp; LPFLG_REMOVED">REMOVED</DisplayString>
-    <DisplayString Condition="lpFlags &amp; LPFLG_HAS_PREHEAD">BB{lpTop->bbNum,d}-BB{lpBottom->bbNum,d} pre-h:BB{lpHead->bbNum,d} e:BB{lpEntry->bbNum,d} {lpFlags,en}</DisplayString>
-    <DisplayString>BB{lpTop->bbNum,d}-BB{lpBottom->bbNum,d} h:BB{lpHead->bbNum,d} e:BB{lpEntry->bbNum,d} {lpFlags,en}</DisplayString>
+    <DisplayString Condition="lpFlags &amp; LPFLG_HAS_PREHEAD">[BB{lpTop->bbNum,d}..BB{lpBottom->bbNum,d}] pre-h:BB{lpHead->bbNum,d} e:BB{lpEntry->bbNum,d} {lpFlags,en}</DisplayString>
+    <DisplayString>[BB{lpTop->bbNum,d}..BB{lpBottom->bbNum,d}] h:BB{lpHead->bbNum,d} e:BB{lpEntry->bbNum,d} {lpFlags,en}</DisplayString>
   </Type>
 
   <Type Name="EHblkDsc">
@@ -49,6 +49,9 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
   <Type Name="GenTreeStrCon">
     <DisplayString>CNS_STR</DisplayString>
+  </Type>
+  <Type Name="GenTreeVecCon">
+    <DisplayString>CNS_VEC</DisplayString>
   </Type>
   <Type Name="GenTreeLngCon">
     <DisplayString>{gtTreeID, d}: [[LngCon={((GenTreeLngCon*)this)-&gt;gtLconVal, l}]</DisplayString>

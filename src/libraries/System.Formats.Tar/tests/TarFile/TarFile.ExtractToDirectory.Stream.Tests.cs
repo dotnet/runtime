@@ -52,7 +52,7 @@ namespace System.Formats.Tar.Tests
             string fileWithTwoSegments = Path.Join(secondSegment, "c.txt");
 
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 // No preceding directory entries for the segments
                 UstarTarEntry entry = new UstarTarEntry(TarEntryType.RegularFile, fileWithTwoSegments);
@@ -78,7 +78,7 @@ namespace System.Formats.Tar.Tests
         public void Extract_LinkEntry_TargetOutsideDirectory(TarEntryType entryType)
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry = new UstarTarEntry(entryType, "link");
                 entry.LinkName = PlatformDetection.IsWindows ? @"C:\Windows\System32\notepad.exe" : "/usr/bin/nano";
@@ -97,8 +97,7 @@ namespace System.Formats.Tar.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void Extract_SymbolicLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink);
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68360", TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
         public void Extract_HardLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.HardLink);
 
         private void Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType entryType)
@@ -112,7 +111,7 @@ namespace System.Formats.Tar.Tests
             File.Create(targetPath).Dispose();
 
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.Ustar, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
             {
                 UstarTarEntry entry = new UstarTarEntry(entryType, linkName);
                 entry.LinkName = targetPath;

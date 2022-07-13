@@ -68,8 +68,6 @@ namespace System.Data.Common
 
 #pragma warning disable CA1823 // used in some compilations and not others
         private static readonly Regex s_connectionStringValidKeyRegex = new Regex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$", RegexOptions.Compiled); // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
-        private static readonly Regex s_connectionStringValidValueRegex = new Regex("^[^\u0000]*$", RegexOptions.Compiled); // value not allowed to contain embedded null
-
         private static readonly Regex s_connectionStringQuoteValueRegex = new Regex("^[^\"'=;\\s\\p{Cc}]*$", RegexOptions.Compiled); // generally do not quote the value if it matches the pattern
         private static readonly Regex s_connectionStringQuoteOdbcValueRegex = new Regex("^\\{([^\\}\u0000]|\\}\\})*\\}$", RegexOptions.ExplicitCapture | RegexOptions.Compiled); // do not quote odbc value if it matches this pattern
 #pragma warning restore CA1823
@@ -402,10 +400,6 @@ namespace System.Data.Common
         {
             if (null != keyvalue)
             {
-#if DEBUG
-                bool compValue = s_connectionStringValidValueRegex.IsMatch(keyvalue);
-                Debug.Assert((-1 == keyvalue.IndexOf('\u0000')) == compValue, "IsValueValid mismatch with regex");
-#endif
                 return (-1 == keyvalue.IndexOf('\u0000')); // string.Contains(char) is .NetCore2.1+ specific
             }
             return true;

@@ -10,6 +10,7 @@ namespace System.Net.Security
     internal interface IReadWriteAdapter
     {
         static abstract ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken);
+        static abstract ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken);
         static abstract ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken);
         static abstract Task FlushAsync(Stream stream, CancellationToken cancellationToken);
         static abstract Task WaitAsync(TaskCompletionSource<bool> waiter);
@@ -19,6 +20,9 @@ namespace System.Net.Security
     {
         public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, cancellationToken);
+
+        public static ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken) =>
+            stream.ReadAtLeastAsync(buffer, minimumBytes, throwOnEndOfStream, cancellationToken);
 
         public static ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
@@ -32,6 +36,9 @@ namespace System.Net.Security
     {
         public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
             new ValueTask<int>(stream.Read(buffer.Span));
+
+        public static ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken) =>
+            new ValueTask<int>(stream.ReadAtLeast(buffer.Span, minimumBytes, throwOnEndOfStream));
 
         public static ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

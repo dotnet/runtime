@@ -45,8 +45,8 @@ namespace DebuggerTests
                 if (t != clientRunLoopStopped.Task)
                     Assert.Fail($"Proxy did not stop, as expected");
                 RunLoopExitState? state = await clientRunLoopStopped.Task;
-                if (state.reason != RunLoopStopReason.ProxyConnectionClosed)
-                    Assert.Fail($"Client runloop did not stop with ProxyConnectionClosed. state: {state}.{Environment.NewLine}SendCommand had failed with {ex}");
+                if (state.reason != RunLoopStopReason.ConnectionClosed)
+                    Assert.Fail($"Client runloop did not stop with ConnectionClosed. state: {state}.{Environment.NewLine}SendCommand had failed with {ex}");
             }
         }
 

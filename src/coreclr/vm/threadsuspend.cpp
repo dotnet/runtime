@@ -1227,398 +1227,400 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
     _ASSERTE(this != pCurThread);      // Aborting another thread.
 
+    if (!UseSpecialUserModeApc())
+    {
 #ifdef _DEBUG
-    DWORD elapsed_time = 0;
+        DWORD elapsed_time = 0;
 #endif
 
-    // We do not want this thread to be alerted.
-    ThreadPreventAsyncHolder preventAsync(pCurThread != NULL);
+        // We do not want this thread to be alerted.
+        ThreadPreventAsyncHolder preventAsync(pCurThread != NULL);
 
 #ifdef _DEBUG
-    // If UserAbort times out, put up msgbox once.
-    BOOL fAlreadyAssert = FALSE;
+        // If UserAbort times out, put up msgbox once.
+        BOOL fAlreadyAssert = FALSE;
 #endif
 
 #if !defined(DISABLE_THREADSUSPEND)
-    DWORD dwSwitchCount = 0;
+        DWORD dwSwitchCount = 0;
 #endif // !defined(DISABLE_THREADSUSPEND)
 
-    for (;;)
-    {
-        // Lock the thread store
-        LOG((LF_SYNC, INFO3, "UserAbort obtain lock\n"));
-
-        ULONGLONG abortEndTime = GetAbortEndTime();
-        if (abortEndTime != MAXULONGLONG)
+        while (true)
         {
-            ULONGLONG now_time = CLRGetTickCount64();
+            // Lock the thread store
+            LOG((LF_SYNC, INFO3, "UserAbort obtain lock\n"));
 
-            if (now_time >= abortEndTime)
+            ULONGLONG abortEndTime = GetAbortEndTime();
+            if (abortEndTime != MAXULONGLONG)
             {
-                // timeout, but no action on timeout.
-                // Debugger can call this function to abort func-eval with a timeout
-                return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
-            }
-        }
+                ULONGLONG now_time = CLRGetTickCount64();
 
-        // Thread abort needs to walk stack to decide if thread abort can proceed.
-        // It is unsafe to crawl a stack of thread if the thread is OS-suspended which we do during
-        // thread abort.  For example, Thread T1 aborts thread T2.  T2 is suspended by T1. Inside SQL
-        // this means that no thread sharing the same scheduler with T2 can run.  If T1 needs a lock which
-        // is owned by one thread on the scheduler, T1 will wait forever.
-        // Our solution is to move T2 to a safe point, resume it, and then do stack crawl.
-
-        // We need to make sure that ThreadStoreLock is released after CheckForAbort.  This makes sure
-        // that ThreadAbort does not race against GC.
-        class CheckForAbort
-        {
-        private:
-            Thread *m_pThread;
-            BOOL m_fHoldingThreadStoreLock;
-            BOOL m_NeedRelease;
-        public:
-            CheckForAbort(Thread *pThread, BOOL fHoldingThreadStoreLock)
-            : m_pThread(pThread),
-              m_fHoldingThreadStoreLock(fHoldingThreadStoreLock),
-              m_NeedRelease(TRUE)
-            {
-                if (!fHoldingThreadStoreLock)
+                if (now_time >= abortEndTime)
                 {
-                    ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
+                    // timeout, but no action on timeout.
+                    // Debugger can call this function to abort func-eval with a timeout
+                    return HRESULT_FROM_WIN32(ERROR_TIMEOUT);
                 }
-                ThreadStore::ResetStackCrawlEvent();
+            }
 
-                // The thread being aborted may clear the TS_AbortRequested bit and the matching increment
-                // of g_TrapReturningThreads behind our back. Increment g_TrapReturningThreads here
-                // to ensure that we stop for the stack crawl even if the TS_AbortRequested bit is cleared.
-                ThreadStore::TrapReturningThreads(TRUE);
-            }
-            void NeedStackCrawl()
+            // Thread abort needs to walk stack to decide if thread abort can proceed.
+            // It is unsafe to crawl a stack of thread if the thread is OS-suspended which we do during
+            // thread abort.  For example, Thread T1 aborts thread T2.  T2 is suspended by T1. Inside SQL
+            // this means that no thread sharing the same scheduler with T2 can run.  If T1 needs a lock which
+            // is owned by one thread on the scheduler, T1 will wait forever.
+            // Our solution is to move T2 to a safe point, resume it, and then do stack crawl.
+
+            // We need to make sure that ThreadStoreLock is released after CheckForAbort.  This makes sure
+            // that ThreadAbort does not race against GC.
+            class CheckForAbort
             {
-                m_pThread->SetThreadState(Thread::TS_StackCrawlNeeded);
-            }
-            ~CheckForAbort()
-            {
-                Release();
-            }
-            void Release()
-            {
-                if (m_NeedRelease)
+            private:
+                Thread *m_pThread;
+                BOOL m_fHoldingThreadStoreLock;
+                BOOL m_NeedRelease;
+            public:
+                CheckForAbort(Thread *pThread, BOOL fHoldingThreadStoreLock)
+                : m_pThread(pThread),
+                m_fHoldingThreadStoreLock(fHoldingThreadStoreLock),
+                m_NeedRelease(TRUE)
                 {
-                    m_NeedRelease = FALSE;
-                    ThreadStore::TrapReturningThreads(FALSE);
-                    ThreadStore::SetStackCrawlEvent();
-                    m_pThread->ResetThreadState(TS_StackCrawlNeeded);
-                    if (!m_fHoldingThreadStoreLock)
+                    if (!fHoldingThreadStoreLock)
                     {
-                        ThreadSuspend::UnlockThreadStore();
+                        ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
+                    }
+                    ThreadStore::ResetStackCrawlEvent();
+
+                    // The thread being aborted may clear the TS_AbortRequested bit and the matching increment
+                    // of g_TrapReturningThreads behind our back. Increment g_TrapReturningThreads here
+                    // to ensure that we stop for the stack crawl even if the TS_AbortRequested bit is cleared.
+                    ThreadStore::TrapReturningThreads(TRUE);
+                }
+                void NeedStackCrawl()
+                {
+                    m_pThread->SetThreadState(Thread::TS_StackCrawlNeeded);
+                }
+                ~CheckForAbort()
+                {
+                    Release();
+                }
+                void Release()
+                {
+                    if (m_NeedRelease)
+                    {
+                        m_NeedRelease = FALSE;
+                        ThreadStore::TrapReturningThreads(FALSE);
+                        ThreadStore::SetStackCrawlEvent();
+                        m_pThread->ResetThreadState(TS_StackCrawlNeeded);
+                        if (!m_fHoldingThreadStoreLock)
+                        {
+                            ThreadSuspend::UnlockThreadStore();
+                        }
                     }
                 }
-            }
-        };
-        CheckForAbort checkForAbort(this, fHoldingThreadStoreLock);
+            };
+            CheckForAbort checkForAbort(this, fHoldingThreadStoreLock);
 
-        // We own TS lock.  The state of the Thread can not be changed.
-        if (m_State & TS_Unstarted)
-        {
-            // This thread is not yet started.
-#ifdef _DEBUG
-            m_dwAbortPoint = 2;
-#endif
-
-            return S_OK;
-        }
-
-        if (GetThreadHandle() == INVALID_HANDLE_VALUE &&
-            (m_State & TS_Unstarted) == 0)
-        {
-            // The thread is going to die or is already dead.
-            UnmarkThreadForAbort();
-#ifdef _DEBUG
-            m_dwAbortPoint = 3;
-#endif
-
-            return S_OK;
-        }
-
-        // What if someone else has this thread suspended already?   It'll depend where the
-        // thread got suspended.
-        //
-        // User Suspend:
-        //     We'll just set the abort bit and hope for the best on the resume.
-        //
-        // GC Suspend:
-        //    If it's suspended in jitted code, we'll hijack the IP.
-        //    <REVISIT_TODO> Consider race w/ GC suspension</REVISIT_TODO>
-        //    If it's suspended but not in jitted code, we'll get suspended for GC, the GC
-        //    will complete, and then we'll abort the target thread.
-        //
-
-        // It's possible that the thread has completed the abort already.
-        //
-        if (!(m_State & TS_AbortRequested))
-        {
-#ifdef _DEBUG
-            m_dwAbortPoint = 4;
-#endif
-
-            return S_OK;
-        }
-
-        // If a thread is Dead or Detached, abort is a NOP.
-        //
-        if (m_State & (TS_Dead | TS_Detached | TS_TaskReset))
-        {
-            UnmarkThreadForAbort();
-
-#ifdef _DEBUG
-            m_dwAbortPoint = 5;
-#endif
-            return S_OK;
-        }
-
-        // It's possible that some stub notices the AbortRequested bit -- even though we
-        // haven't done any real magic yet.  If the thread has already started it's abort, we're
-        // done.
-        //
-        // Two more cases can be folded in here as well.  If the thread is unstarted, it'll
-        // abort when we start it.
-        //
-        // If the thread is user suspended (SyncSuspended) -- we're out of luck.  Set the bit and
-        // hope for the best on resume.
-        //
-        if ((m_State & TS_AbortInitiated) && !IsRudeAbort())
-        {
-#ifdef _DEBUG
-            m_dwAbortPoint = 6;
-#endif
-            break;
-        }
-
-        BOOL fOutOfRuntime = FALSE;
-        BOOL fNeedStackCrawl = FALSE;
-
-#ifdef DISABLE_THREADSUSPEND
-        // On platforms that do not support safe thread suspension we have to
-        // rely on the GCPOLL mechanism; the mechanism is activated above by
-        // TrapReturningThreads.  However when reading shared state we need
-        // to erect appropriate memory barriers. So the interlocked operation
-        // below ensures that any future reads on this thread will happen after
-        // any earlier writes on a different thread have taken effect.
-        FastInterlockOr((DWORD*)&m_State, 0);
-
-#else // DISABLE_THREADSUSPEND
-
-        // Win32 suspend the thread, so it isn't moving under us.
-        SuspendThreadResult str = SuspendThread();
-        switch (str)
-        {
-        case STR_Success:
-            break;
-
-        case STR_Failure:
-        case STR_UnstartedOrDead:
-        case STR_NoStressLog:
-            checkForAbort.Release();
-            __SwitchToThread(0, ++dwSwitchCount);
-            continue;
-
-        default:
-            UNREACHABLE();
-        }
-
-        _ASSERTE(str == STR_Success);
-
-#endif // DISABLE_THREADSUSPEND
-
-        // It's possible that the thread has completed the abort already.
-        //
-        if (!(m_State & TS_AbortRequested))
-        {
-#ifndef DISABLE_THREADSUSPEND
-            ResumeThread();
-#endif
-
-#ifdef _DEBUG
-            m_dwAbortPoint = 63;
-#endif
-            return S_OK;
-        }
-
-        // Check whether some stub noticed the AbortRequested bit in-between our test above
-        // and us suspending the thread.
-        if ((m_State & TS_AbortInitiated) && !IsRudeAbort())
-        {
-#ifndef DISABLE_THREADSUSPEND
-            ResumeThread();
-#endif
-#ifdef _DEBUG
-            m_dwAbortPoint = 65;
-#endif
-            break;
-        }
-
-        // If Threads is stopped under a managed debugger, it will have both
-        // TS_DebugSuspendPending and TS_SyncSuspended, regardless of whether
-        // the thread is actually suspended or not.
-        if (m_State & TS_SyncSuspended)
-        {
-#ifndef DISABLE_THREADSUSPEND
-            ResumeThread();
-#endif
-            checkForAbort.Release();
-#ifdef _DEBUG
-            m_dwAbortPoint = 7;
-#endif
-
-            //
-            // If it's stopped by the debugger, we don't want to throw an exception.
-            // Debugger suspension is to have no effect of the runtime behaviour.
-            //
-            if (m_State & TS_DebugSuspendPending)
+            // We own TS lock.  The state of the Thread can not be changed.
+            if (m_State & TS_Unstarted)
             {
+                // This thread is not yet started.
+#ifdef _DEBUG
+                m_dwAbortPoint = 2;
+#endif
+
                 return S_OK;
             }
 
-            COMPlusThrow(kThreadStateException, IDS_EE_THREAD_ABORT_WHILE_SUSPEND);
-        }
+            if (GetThreadHandle() == INVALID_HANDLE_VALUE &&
+                (m_State & TS_Unstarted) == 0)
+            {
+                // The thread is going to die or is already dead.
+                UnmarkThreadForAbort();
+#ifdef _DEBUG
+                m_dwAbortPoint = 3;
+#endif
 
-        // If the thread has no managed code on it's call stack, abort is a NOP.  We're about
-        // to touch the unmanaged thread's stack -- for this to be safe, we can't be
-        // Dead/Detached/Unstarted.
-        //
-        _ASSERTE(!(m_State & (  TS_Dead
-                              | TS_Detached
-                              | TS_Unstarted)));
+                return S_OK;
+            }
 
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-        // TODO WIN64: consider this if there is a way to detect of managed code on stack.
-        if ((m_pFrame == FRAME_TOP)
-            && (GetFirstCOMPlusSEHRecord(this) == EXCEPTION_CHAIN_END)
-           )
-        {
+            // What if someone else has this thread suspended already?   It'll depend where the
+            // thread got suspended.
+            //
+            // User Suspend:
+            //     We'll just set the abort bit and hope for the best on the resume.
+            //
+            // GC Suspend:
+            //    If it's suspended in jitted code, we'll hijack the IP.
+            //    <REVISIT_TODO> Consider race w/ GC suspension</REVISIT_TODO>
+            //    If it's suspended but not in jitted code, we'll get suspended for GC, the GC
+            //    will complete, and then we'll abort the target thread.
+            //
+
+            // It's possible that the thread has completed the abort already.
+            //
+            if (!(m_State & TS_AbortRequested))
+            {
+#ifdef _DEBUG
+                m_dwAbortPoint = 4;
+#endif
+
+                return S_OK;
+            }
+
+            // If a thread is Dead or Detached, abort is a NOP.
+            //
+            if (m_State & (TS_Dead | TS_Detached | TS_TaskReset))
+            {
+                UnmarkThreadForAbort();
+
+#ifdef _DEBUG
+                m_dwAbortPoint = 5;
+#endif
+                return S_OK;
+            }
+
+            // It's possible that some stub notices the AbortRequested bit -- even though we
+            // haven't done any real magic yet.  If the thread has already started it's abort, we're
+            // done.
+            //
+            // Two more cases can be folded in here as well.  If the thread is unstarted, it'll
+            // abort when we start it.
+            //
+            // If the thread is user suspended (SyncSuspended) -- we're out of luck.  Set the bit and
+            // hope for the best on resume.
+            //
+            if ((m_State & TS_AbortInitiated) && !IsRudeAbort())
+            {
+#ifdef _DEBUG
+                m_dwAbortPoint = 6;
+#endif
+                break;
+            }
+
+            BOOL fOutOfRuntime = FALSE;
+            BOOL fNeedStackCrawl = FALSE;
+
+#ifdef DISABLE_THREADSUSPEND
+            // On platforms that do not support safe thread suspension we have to
+            // rely on the GCPOLL mechanism; the mechanism is activated above by
+            // TrapReturningThreads.  However when reading shared state we need
+            // to erect appropriate memory barriers. So the interlocked operation
+            // below ensures that any future reads on this thread will happen after
+            // any earlier writes on a different thread have taken effect.
+            InterlockedOr((LONG*)&m_State, 0);
+
+#else // DISABLE_THREADSUSPEND
+
+            // Win32 suspend the thread, so it isn't moving under us.
+            SuspendThreadResult str = SuspendThread();
+            switch (str)
+            {
+            case STR_Success:
+                break;
+
+            case STR_Failure:
+            case STR_UnstartedOrDead:
+            case STR_NoStressLog:
+                checkForAbort.Release();
+                __SwitchToThread(0, ++dwSwitchCount);
+                continue;
+
+            default:
+                UNREACHABLE();
+            }
+
+            _ASSERTE(str == STR_Success);
+
+#endif // DISABLE_THREADSUSPEND
+
+            // It's possible that the thread has completed the abort already.
+            //
+            if (!(m_State & TS_AbortRequested))
+            {
 #ifndef DISABLE_THREADSUSPEND
-            ResumeThread();
+                ResumeThread();
+#endif
+
+#ifdef _DEBUG
+                m_dwAbortPoint = 63;
+#endif
+                return S_OK;
+            }
+
+            // Check whether some stub noticed the AbortRequested bit in-between our test above
+            // and us suspending the thread.
+            if ((m_State & TS_AbortInitiated) && !IsRudeAbort())
+            {
+#ifndef DISABLE_THREADSUSPEND
+                ResumeThread();
 #endif
 #ifdef _DEBUG
-            m_dwAbortPoint = 8;
+                m_dwAbortPoint = 65;
+#endif
+                break;
+            }
+
+            // If Threads is stopped under a managed debugger, it will have both
+            // TS_DebugSuspendPending and TS_SyncSuspended, regardless of whether
+            // the thread is actually suspended or not.
+            if (m_State & TS_SyncSuspended)
+            {
+#ifndef DISABLE_THREADSUSPEND
+                ResumeThread();
+#endif
+                checkForAbort.Release();
+#ifdef _DEBUG
+                m_dwAbortPoint = 7;
 #endif
 
-            return S_OK;
-        }
-#endif // TARGET_X86
+                //
+                // If it's stopped by the debugger, we don't want to throw an exception.
+                // Debugger suspension is to have no effect of the runtime behaviour.
+                //
+                if (m_State & TS_DebugSuspendPending)
+                {
+                    return S_OK;
+                }
 
-
-        if (!m_fPreemptiveGCDisabled)
-        {
-            if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame()
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-                && ((size_t) GetFirstCOMPlusSEHRecord(this) > ((size_t) m_pFrame) - 20)
-#endif // TARGET_X86
-                )
-            {
-                fOutOfRuntime = TRUE;
+                COMPlusThrow(kThreadStateException, IDS_EE_THREAD_ABORT_WHILE_SUSPEND);
             }
-        }
 
-        checkForAbort.NeedStackCrawl();
-        if (!m_fPreemptiveGCDisabled)
-        {
-            fNeedStackCrawl = TRUE;
-        }
+            // If the thread has no managed code on it's call stack, abort is a NOP.  We're about
+            // to touch the unmanaged thread's stack -- for this to be safe, we can't be
+            // Dead/Detached/Unstarted.
+            //
+            _ASSERTE(!(m_State & (  TS_Dead
+                                | TS_Detached
+                                | TS_Unstarted)));
+
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
+            // TODO WIN64: consider this if there is a way to detect of managed code on stack.
+            if ((m_pFrame == FRAME_TOP)
+                && (GetFirstCOMPlusSEHRecord(this) == EXCEPTION_CHAIN_END)
+            )
+            {
+#ifndef DISABLE_THREADSUSPEND
+                ResumeThread();
+#endif
+#ifdef _DEBUG
+                m_dwAbortPoint = 8;
+#endif
+
+                return S_OK;
+            }
+#endif // TARGET_X86
+
+
+            if (!m_fPreemptiveGCDisabled)
+            {
+                if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame()
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
+                    && ((size_t) GetFirstCOMPlusSEHRecord(this) > ((size_t) m_pFrame) - 20)
+#endif // TARGET_X86
+                    )
+                {
+                    fOutOfRuntime = TRUE;
+                }
+            }
+
+            checkForAbort.NeedStackCrawl();
+            if (!m_fPreemptiveGCDisabled)
+            {
+                fNeedStackCrawl = TRUE;
+            }
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-        else
-        {
-            HandleJITCaseForAbort();
-        }
+            else
+            {
+                HandleJITCaseForAbort();
+            }
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
 #ifndef DISABLE_THREADSUSPEND
-        // The thread is not suspended now.
-        ResumeThread();
+            // The thread is not suspended now.
+            ResumeThread();
 #endif
 
-        if (!fNeedStackCrawl)
-        {
-            goto LPrepareRetry;
-        }
+            if (!fNeedStackCrawl)
+            {
+                goto LPrepareRetry;
+            }
 
-        if (!ReadyForAbort()) {
-            goto LPrepareRetry;
-        }
+            if (!ReadyForAbort()) {
+                goto LPrepareRetry;
+            }
 
-        // !!! Check for Exception in flight should happen before induced thread abort.
-        // !!! ReadyForAbort skips catch and filter clause.
+            // !!! Check for Exception in flight should happen before induced thread abort.
+            // !!! ReadyForAbort skips catch and filter clause.
 
-        // If an exception is currently being thrown, one of two things will happen.  Either, we'll
-        // catch, and notice the abort request in our end-catch, or we'll not catch [in which case
-        // we're leaving managed code anyway.  The top-most handler is responsible for resetting
-        // the bit.
-        //
-        if (HasException() &&
-            // For rude abort, we will initiated abort
-            !IsRudeAbort())
-        {
+            // If an exception is currently being thrown, one of two things will happen.  Either, we'll
+            // catch, and notice the abort request in our end-catch, or we'll not catch [in which case
+            // we're leaving managed code anyway.  The top-most handler is responsible for resetting
+            // the bit.
+            //
+            if (HasException() &&
+                // For rude abort, we will initiated abort
+                !IsRudeAbort())
+            {
 #ifdef _DEBUG
-            m_dwAbortPoint = 9;
+                m_dwAbortPoint = 9;
 #endif
-            break;
-        }
+                break;
+            }
 
-        // If the thread is in sleep, wait, or join interrupt it
-        // However, we do NOT want to interrupt if the thread is already processing an exception
-        if (m_State & TS_Interruptible)
-        {
-            UserInterrupt(TI_Abort);        // if the user wakes up because of this, it will read the
-                                            // abort requested bit and initiate the abort
+            // If the thread is in sleep, wait, or join interrupt it
+            // However, we do NOT want to interrupt if the thread is already processing an exception
+            if (m_State & TS_Interruptible)
+            {
+                UserInterrupt(TI_Abort);        // if the user wakes up because of this, it will read the
+                                                // abort requested bit and initiate the abort
 #ifdef _DEBUG
-            m_dwAbortPoint = 10;
+                m_dwAbortPoint = 10;
 #endif
-            goto LPrepareRetry;
-        }
+                goto LPrepareRetry;
+            }
 
-        if (fOutOfRuntime)
-        {
-            // If the thread is running outside the EE, and is behind a stub that's going
-            // to catch...
+            if (fOutOfRuntime)
+            {
+                // If the thread is running outside the EE, and is behind a stub that's going
+                // to catch...
 #ifdef _DEBUG
-            m_dwAbortPoint = 11;
+                m_dwAbortPoint = 11;
 #endif
-            break;
-        }
+                break;
+            }
 
-        // Ok.  It's not in managed code, nor safely out behind a stub that's going to catch
-        // it on the way in.  We have to poll.
+            // Ok.  It's not in managed code, nor safely out behind a stub that's going to catch
+            // it on the way in.  We have to poll.
 
 LPrepareRetry:
 
-        checkForAbort.Release();
+            checkForAbort.Release();
 
-        // Don't do a Sleep.  It's possible that the thread we are trying to abort is
-        // stuck in unmanaged code trying to get into the apartment that we are supposed
-        // to be pumping!  Instead, ping the current thread's handle.  Obviously this
-        // will time out, but it will pump if we need it to.
-        if (pCurThread)
-        {
-            pCurThread->Join(ABORT_POLL_TIMEOUT, TRUE);
-        }
-        else
-        {
-            ClrSleepEx(ABORT_POLL_TIMEOUT, FALSE);
-        }
+            // Don't do a Sleep.  It's possible that the thread we are trying to abort is
+            // stuck in unmanaged code trying to get into the apartment that we are supposed
+            // to be pumping!  Instead, ping the current thread's handle.  Obviously this
+            // will time out, but it will pump if we need it to.
+            if (pCurThread)
+            {
+                pCurThread->Join(ABORT_POLL_TIMEOUT, TRUE);
+            }
+            else
+            {
+                ClrSleepEx(ABORT_POLL_TIMEOUT, FALSE);
+            }
 
 
 #ifdef _DEBUG
-        elapsed_time += ABORT_POLL_TIMEOUT;
-        if (g_pConfig->GetGCStressLevel() == 0 && !fAlreadyAssert)
-        {
-            _ASSERTE(elapsed_time < ABORT_FAIL_TIMEOUT);
-            fAlreadyAssert = TRUE;
-        }
+            elapsed_time += ABORT_POLL_TIMEOUT;
+            if (g_pConfig->GetGCStressLevel() == 0 && !fAlreadyAssert)
+            {
+                _ASSERTE(elapsed_time < ABORT_FAIL_TIMEOUT);
+                fAlreadyAssert = TRUE;
+            }
 #endif
 
-    } // for(;;)
-
+        } // while (true)
+    }
     if ((GetAbortEndTime() != MAXULONGLONG)  && IsAbortRequested())
     {
         while (TRUE)
@@ -1627,6 +1629,14 @@ LPrepareRetry:
             {
                 return S_OK;
             }
+
+#ifdef FEATURE_THREAD_ACTIVATION
+            if (UseSpecialUserModeApc())
+            {
+                InjectActivation(ActivationReason::ThreadAbort);
+            }
+#endif // FEATURE_THREAD_ACTIVATION
+
             ULONGLONG curTime = CLRGetTickCount64();
             if (curTime >= GetAbortEndTime())
             {
@@ -1673,7 +1683,7 @@ void Thread::LockAbortRequest(Thread* pThread)
             }
             YieldProcessorNormalized(); // indicate to the processor that we are spinning
         }
-        if (FastInterlockCompareExchange(&(pThread->m_AbortRequestLock),1,0) == 0) {
+        if (InterlockedCompareExchange(&(pThread->m_AbortRequestLock),1,0) == 0) {
             return;
         }
         __SwitchToThread(0, ++dwSwitchCount);
@@ -1685,7 +1695,7 @@ void Thread::UnlockAbortRequest(Thread *pThread)
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE (pThread->m_AbortRequestLock == 1);
-    FastInterlockExchange(&pThread->m_AbortRequestLock, 0);
+    InterlockedExchange(&pThread->m_AbortRequestLock, 0);
 }
 
 void Thread::MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType)
@@ -1735,7 +1745,7 @@ void Thread::SetAbortRequestBit()
         {
             break;
         }
-        if (FastInterlockCompareExchange((LONG*)&m_State, curValue|TS_AbortRequested, curValue) == curValue)
+        if (InterlockedCompareExchange((LONG*)&m_State, curValue|TS_AbortRequested, curValue) == curValue)
         {
             ThreadStore::TrapReturningThreads(TRUE);
 
@@ -1765,7 +1775,7 @@ void Thread::RemoveAbortRequestBit()
         {
             break;
         }
-        if (FastInterlockCompareExchange((LONG*)&m_State, curValue&(~TS_AbortRequested), curValue) == curValue)
+        if (InterlockedCompareExchange((LONG*)&m_State, curValue&(~TS_AbortRequested), curValue) == curValue)
         {
             ThreadStore::TrapReturningThreads(FALSE);
 
@@ -1796,7 +1806,7 @@ void Thread::UnmarkThreadForAbort()
     if (IsAbortRequested())
     {
         RemoveAbortRequestBit();
-        FastInterlockAnd((DWORD*)&m_State,~(TS_AbortInitiated));
+        ResetThreadState(TS_AbortInitiated);
         m_fRudeAbortInitiated = FALSE;
         ResetUserInterrupted();
     }
@@ -2121,7 +2131,7 @@ void Thread::RareDisablePreemptiveGC()
 
         DWORD dwSwitchCount = 0;
 
-        for (;;)
+        while (true)
         {
             EnablePreemptiveGC();
 
@@ -2174,7 +2184,7 @@ void Thread::RareDisablePreemptiveGC()
             END_GCX_ASSERT_PREEMP;
 
             // disable preemptive gc.
-            FastInterlockOr(&m_fPreemptiveGCDisabled, 1);
+            InterlockedOr((LONG*)&m_fPreemptiveGCDisabled, 1);
 
             // The fact that we check whether 'this' is the GC thread may seem
             // strange.  After all, we determined this before entering the method.
@@ -2214,7 +2224,7 @@ void Thread::HandleThreadAbort ()
     {
         ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
         // We are going to abort.  Abort satisfies Thread.Interrupt requirement.
-        FastInterlockExchange (&m_UserInterrupt, 0);
+        InterlockedExchange (&m_UserInterrupt, 0);
 
         // generate either a ThreadAbort exception
         STRESS_LOG1(LF_APPDOMAIN, LL_INFO100, "Thread::HandleThreadAbort throwing abort for %x\n", GetThreadId());
@@ -2258,7 +2268,7 @@ void Thread::PreWorkForThreadAbort()
     SetAbortInitiated();
     // if an abort and interrupt happen at the same time (e.g. on a sleeping thread),
     // the abort is favored. But we do need to reset the interrupt bits.
-    FastInterlockAnd((ULONG *) &m_State, ~(TS_Interruptible | TS_Interrupted));
+    ResetThreadState((ThreadState)(TS_Interruptible | TS_Interrupted));
     ResetUserInterrupted();
 }
 
@@ -2435,7 +2445,7 @@ void ThreadStore::TrapReturningThreads(BOOL yes)
     ForbidSuspendThreadHolder suspend;
 
     DWORD dwSwitchCount = 0;
-    while (1 == FastInterlockExchange(&g_fTrapReturningThreadsLock, 1))
+    while (1 == InterlockedExchange(&g_fTrapReturningThreadsLock, 1))
     {
         // we can't forbid suspension while we are sleeping and don't hold the lock
         // this will trigger an assert on SQLCLR but is a general issue
@@ -2448,11 +2458,11 @@ void ThreadStore::TrapReturningThreads(BOOL yes)
     {
 #ifdef _DEBUG
         CounterHolder trtHolder(&g_trtChgInFlight);
-        FastInterlockIncrement(&g_trtChgStamp);
+        InterlockedIncrement(&g_trtChgStamp);
 #endif
 
         GCHeapUtilities::GetGCHeap()->SetSuspensionPending(true);
-        FastInterlockIncrement ((LONG *)&g_TrapReturningThreads);
+        InterlockedIncrement ((LONG *)&g_TrapReturningThreads);
         _ASSERTE(g_TrapReturningThreads > 0);
 
 #ifdef _DEBUG
@@ -2461,7 +2471,7 @@ void ThreadStore::TrapReturningThreads(BOOL yes)
     }
     else
     {
-        FastInterlockDecrement ((LONG *)&g_TrapReturningThreads);
+        InterlockedDecrement ((LONG *)&g_TrapReturningThreads);
         GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
         _ASSERTE(g_TrapReturningThreads >= 0);
     }
@@ -3728,7 +3738,7 @@ void EnableStressHeapHelper()
 
 // We're done with our GC.  Let all the threads run again.
 // By this point we've already unblocked most threads.  This just releases the ThreadStore lock.
-void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
+void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceeded)
 {
     CONTRACTL {
         NOTHROW;
@@ -3744,7 +3754,7 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
     _ASSERTE(IsGCSpecialThread() || ThreadStore::HoldingThreadStore());
     _ASSERTE(!GCHeapUtilities::IsGCInProgress() );
 
-    STRESS_LOG2(LF_SYNC, LL_INFO1000, "Thread::ResumeRuntime(finishedGC=%d, SuspendSucceeded=%d) - Start\n", bFinishedGC, SuspendSucceded);
+    STRESS_LOG2(LF_SYNC, LL_INFO1000, "Thread::ResumeRuntime(finishedGC=%d, SuspendSucceeded=%d) - Start\n", bFinishedGC, SuspendSucceeded);
 
     //
     // Notify everyone who cares, that this suspension is over, and this thread is going to go do other things.
@@ -4181,7 +4191,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
             // we need to erect appropriate memory barriers. So the interlocked
             // operation below ensures that any future reads on this thread will
             // happen after any earlier writes on a different thread.
-            FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
+            InterlockedOr((LONG*)&thread->m_fPreemptiveGCDisabled, 0);
         }
         else
         {
@@ -4217,7 +4227,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 #endif // !DISABLE_THREADSUSPEND && FEATURE_HIJACK && !TARGET_UNIX
 
             // Remember that this thread will be running to a safe point
-            FastInterlockIncrement(&m_DebugWillSyncCount);
+            InterlockedIncrement(&m_DebugWillSyncCount);
 
             // When the thread reaches a safe place, it will wait
             // on the DebugSuspendEvent which clients can set when they
@@ -4277,7 +4287,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                 thread->IsInForbidSuspendForDebuggerRegion())
             {
                 // Remember that this thread will be running to a safe point
-                FastInterlockIncrement(&m_DebugWillSyncCount);
+                InterlockedIncrement(&m_DebugWillSyncCount);
                 thread->SetThreadState(TS_DebugWillSync);
             }
 
@@ -4298,7 +4308,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
     // thread to sync.
     //
 
-    if (FastInterlockDecrement(&m_DebugWillSyncCount) < 0)
+    if (InterlockedDecrement(&m_DebugWillSyncCount) < 0)
     {
         LOG((LF_CORDB, LL_INFO1000,
              "SUSPEND: all threads sync before return.\n"));
@@ -4362,7 +4372,7 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
             // we need to erect appropriate memory barriers. So the interlocked
             // operation below ensures that any future reads on this thread will
             // happen after any earlier writes on a different thread.
-            FastInterlockOr(&thread->m_fPreemptiveGCDisabled, 0);
+            InterlockedOr((LONG*)&thread->m_fPreemptiveGCDisabled, 0);
             if (!thread->m_fPreemptiveGCDisabled)
             {
                 if (thread->IsInForbidSuspendForDebuggerRegion())
@@ -4472,8 +4482,8 @@ RetrySuspension:
 
         // The thread is synced. Remove the sync bits and dec the sync count.
 Label_MarkThreadAsSynced:
-        FastInterlockAnd((ULONG *) &thread->m_State, ~TS_DebugWillSync);
-        if (FastInterlockDecrement(&m_DebugWillSyncCount) < 0)
+        thread->ResetThreadState(TS_DebugWillSync);
+        if (InterlockedDecrement(&m_DebugWillSyncCount) < 0)
         {
             // If that was the last thread, then the CLR is synced.
             // We return while own the thread store lock. We return true now, which indicates this to the caller.
@@ -4602,7 +4612,7 @@ BOOL Thread::WaitSuspendEventsHelper(void)
             while (oldState & TS_DebugSuspendPending) {
 
                 ThreadState newState = (ThreadState)(oldState | TS_SyncSuspended);
-                if (FastInterlockCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
+                if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
                 {
                     result = m_DebugSuspendEvent.Wait(INFINITE,FALSE);
 #if _DEBUG
@@ -4656,7 +4666,7 @@ void Thread::WaitSuspendEvents(BOOL fDoWait)
                 //
                 ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
 
-                if (FastInterlockCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
+                if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
                 {
                     //
                     // We are done.
@@ -4758,7 +4768,7 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
 
     // Bash the stack to return to one of our stubs
     *esb->m_ppvRetAddrPtr = pvHijackAddr;
-    FastInterlockOr((ULONG *) &m_State, TS_Hijacked);
+    SetThreadState(TS_Hijacked);
 }
 
 // If we are unhijacking another thread (not the current thread), then the caller is responsible for
@@ -4786,7 +4796,7 @@ void Thread::UnhijackThread()
         STRESS_LOG2(LF_SYNC, LL_INFO100, "Unhijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
         // restore the return address and clear the flag
         *m_ppvHJRetAddrPtr = m_pvHJRetAddr;
-        FastInterlockAnd((ULONG *) &m_State, ~TS_Hijacked);
+        ResetThreadState(TS_Hijacked);
 
         // But don't touch m_pvHJRetAddr.  We may need that to resume a thread that
         // is currently hijacked!
@@ -5188,17 +5198,15 @@ BOOL ThreadCaughtInKernelModeExceptionHandling(Thread *pThread, CONTEXT *ctx)
     // still has page guard bit set. We can't hit the race in such case so we just leave. Besides, we can't access the
     // memory with page guard flag or not committed.
     MEMORY_BASIC_INFORMATION mbi;
-#undef VirtualQuery
-    // This code can run below YieldTask, which means that it must not call back into the host.
-    // The reason is that YieldTask is invoked by the host, and the host needs not be reentrant.
     if (VirtualQuery((LPCVOID)(UINT_PTR)ctx->Esp, &mbi, sizeof(mbi)) == sizeof(mbi))
     {
         if (!(mbi.State & MEM_COMMIT) || (mbi.Protect & PAGE_GUARD))
             return FALSE;
     }
     else
+    {
         STRESS_LOG0 (LF_SYNC, ERROR, "VirtualQuery failed!");
-#define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
+    }
 
     // The first two values on the stack should be a pointer to the EXCEPTION_RECORD and a pointer to the CONTEXT.
     UINT_PTR Esp = (UINT_PTR)ctx->Esp;
@@ -5499,7 +5507,7 @@ void Thread::MarkForSuspension(ULONG bit)
 
     _ASSERTE((m_State & bit) == 0);
 
-    FastInterlockOr((ULONG *) &m_State, bit);
+    InterlockedOr((LONG*)&m_State, bit);
     ThreadStore::TrapReturningThreads(TRUE);
 }
 
@@ -5520,12 +5528,12 @@ void Thread::UnmarkForSuspension(ULONG mask)
 
     // we decrement the global first to be able to satisfy the assert from DbgFindThread
     ThreadStore::TrapReturningThreads(FALSE);
-    FastInterlockAnd((ULONG *) &m_State, mask);
+    InterlockedAnd((LONG*)&m_State, mask);
 }
 
 //----------------------------------------------------------------------------
 
-void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
+void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
 {
     ThreadSuspend::s_fSuspended = false;
 #ifdef TIME_SUSPEND
@@ -5578,7 +5586,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     Thread  *thread = NULL;
     while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
     {
-        thread->PrepareForEERestart(SuspendSucceded);
+        thread->PrepareForEERestart(SuspendSucceeded);
     }
 
     //
@@ -5605,7 +5613,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
     _ASSERTE(IsGCSpecialThread() || ThreadStore::HoldingThreadStore());
 
-    ResumeRuntime(bFinishedGC, SuspendSucceded);
+    ResumeRuntime(bFinishedGC, SuspendSucceeded);
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 
@@ -5950,6 +5958,7 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
     {
         case ActivationReason::SuspendForGC:
         case ActivationReason::SuspendForDebugger:
+        case ActivationReason::ThreadAbort:
             HandleSuspensionForInterruptedThread(pContext);
             break;
 

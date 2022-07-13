@@ -814,7 +814,7 @@ namespace System.Threading
         private void SetResetEvents(bool observedSense)
         {
             // Increment the phase count using Volatile class because m_currentPhase is 64 bit long type, that could cause torn write on 32 bit machines
-            CurrentPhaseNumber = CurrentPhaseNumber + 1;
+            CurrentPhaseNumber++;
             if (observedSense)
             {
                 _oddEvent.Reset();

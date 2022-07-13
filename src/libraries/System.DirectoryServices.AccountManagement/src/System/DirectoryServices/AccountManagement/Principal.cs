@@ -32,7 +32,7 @@ namespace System.DirectoryServices.AccountManagement
                 CheckDisposedOrDeleted();
 
                 // The only way we can't have a PrincipalContext is if we're unpersisted
-                Debug.Assert(_ctx != null || this.unpersisted == true);
+                Debug.Assert(_ctx != null || this.unpersisted);
 
                 return _ctx;
             }
@@ -47,7 +47,7 @@ namespace System.DirectoryServices.AccountManagement
                 CheckDisposedOrDeleted();
 
                 // The only way we can't have a PrincipalContext is if we're unpersisted
-                Debug.Assert(_ctx != null || this.unpersisted == true);
+                Debug.Assert(_ctx != null || this.unpersisted);
 
                 if (_ctx == null)
                     throw new InvalidOperationException(SR.PrincipalMustSetContextForProperty);
@@ -303,7 +303,7 @@ namespace System.DirectoryServices.AccountManagement
             // and they never set a PrincipalContext.
             if (_ctx == null)
             {
-                Debug.Assert(this.unpersisted == true);
+                Debug.Assert(this.unpersisted);
                 throw new InvalidOperationException(SR.PrincipalMustSetContextForSave);
             }
 
@@ -340,7 +340,7 @@ namespace System.DirectoryServices.AccountManagement
             // and they never set a PrincipalContext.
             if (context == null)
             {
-                Debug.Assert(this.unpersisted == true);
+                Debug.Assert(this.unpersisted);
                 throw new InvalidOperationException(SR.NullArguments);
             }
 
@@ -360,7 +360,7 @@ namespace System.DirectoryServices.AccountManagement
             // context is of the same type.
             if (context.ContextType != _ctx.ContextType)
             {
-                Debug.Assert(this.unpersisted == true);
+                Debug.Assert(this.unpersisted);
                 throw new InvalidOperationException(SR.SaveToMustHaveSamecontextType);
             }
 
@@ -802,7 +802,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (_ctx == null)
             {
-                Debug.Assert(this.unpersisted == true);
+                Debug.Assert(this.unpersisted);
                 return null;
             }
 

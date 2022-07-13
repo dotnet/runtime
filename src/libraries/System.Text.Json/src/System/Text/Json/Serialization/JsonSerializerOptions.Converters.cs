@@ -98,7 +98,7 @@ namespace System.Text.Json
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 24;
+            const int NumberOfSimpleConverters = 26;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
@@ -109,6 +109,10 @@ namespace System.Text.Json
             Add(JsonMetadataServices.CharConverter);
             Add(JsonMetadataServices.DateTimeConverter);
             Add(JsonMetadataServices.DateTimeOffsetConverter);
+#if NETCOREAPP
+            Add(JsonMetadataServices.DateOnlyConverter);
+            Add(JsonMetadataServices.TimeOnlyConverter);
+#endif
             Add(JsonMetadataServices.DoubleConverter);
             Add(JsonMetadataServices.DecimalConverter);
             Add(JsonMetadataServices.GuidConverter);
@@ -128,7 +132,7 @@ namespace System.Text.Json
             Add(JsonMetadataServices.UriConverter);
             Add(JsonMetadataServices.VersionConverter);
 
-            Debug.Assert(NumberOfSimpleConverters == converters.Count);
+            Debug.Assert(converters.Count <= NumberOfSimpleConverters);
 
             return converters;
 

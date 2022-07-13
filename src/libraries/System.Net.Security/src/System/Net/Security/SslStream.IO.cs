@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -23,6 +23,9 @@ namespace System.Net.Security
 
         private object _handshakeLock => _sslAuthenticationOptions;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
+
+        private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
+        private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
 
         private bool _receivedEOF;
 
@@ -52,11 +55,12 @@ namespace System.Net.Security
             _exception = s_disposedSentinel;
             CloseContext();
 
-            // Ensure a Read operation is not in progress,
-            // block potential reads since SslStream is disposing.
-            // This leaves the _nestedRead = 1, but that's ok, since
-            // subsequent Reads first check if the context is still available.
-            if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0)
+            // Ensure a Read or Auth operation is not in progress,
+            // block potential future read and auth operations since SslStream is disposing.
+            // This leaves the _nestedRead = 1 and _nestedAuth = 1, but that's ok, since
+            // subsequent operations check the _exception sentinel first
+            if (Interlocked.Exchange(ref _nestedRead, 1) == 0 &&
+                Interlocked.Exchange(ref _nestedAuth, 1) == 0)
             {
                 _buffer.ReturnBuffer();
             }
@@ -116,12 +120,12 @@ namespace System.Net.Security
 
         private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions!.TargetHost);
+            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
             long startingTimestamp = Stopwatch.GetTimestamp();
 
             try
             {
-                Task task = isAsync?
+                Task task = isAsync ?
                     ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
                     ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
 
@@ -184,7 +188,7 @@ namespace System.Net.Security
                     throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
                 }
 
-                _sslAuthenticationOptions!.RemoteCertRequired = true;
+                _sslAuthenticationOptions.RemoteCertRequired = true;
                 _isRenego = true;
 
 
@@ -221,7 +225,7 @@ namespace System.Net.Security
                 }
                 while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
-                CompleteHandshake(_sslAuthenticationOptions!);
+                CompleteHandshake(_sslAuthenticationOptions);
             }
             finally
             {
@@ -331,7 +335,7 @@ namespace System.Net.Security
                     }
                 }
 
-                CompleteHandshake(_sslAuthenticationOptions!);
+                CompleteHandshake(_sslAuthenticationOptions);
             }
             finally
             {
@@ -375,9 +379,11 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.Handshake:
-                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+#pragma warning disable CS0618
+                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[_lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls] == (byte)TlsHandshakeType.ClientHello &&
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
-                     {
+#pragma warning restore CS0618
+                    {
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
                                                                     TlsFrameHelper.ProcessingOptions.ServerName;
@@ -393,7 +399,7 @@ namespace System.Net.Security
                             // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
                             if (_lastFrame.TargetName != null)
                             {
-                                _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                                _sslAuthenticationOptions.TargetHost = _lastFrame.TargetName;
                             }
 
                             if (_sslAuthenticationOptions.ServerOptionDelegate != null)
@@ -444,7 +450,7 @@ namespace System.Net.Security
                     break;
                 }
 
-                frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
+                frameSize = nextHeader.Length;
 
                 // Can process more handshake frames in single step or during TLS1.3 post-handshake auth, but we should
                 // avoid processing too much so as to preserve API boundary between handshake and I/O.
@@ -503,7 +509,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, _sslAuthenticationOptions!.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
                 return false;
@@ -674,7 +680,7 @@ namespace System.Net.Security
             return _buffer.EncryptedLength >= frameSize;
         }
 
-
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -745,7 +751,7 @@ namespace System.Net.Security
                     // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
                     // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
 
-                    if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
+                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
                     {
                         // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
                         // Tls1.3 does not have renegotiation. However on Windows this error code is used
@@ -759,6 +765,7 @@ namespace System.Net.Security
             return status;
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -973,7 +980,7 @@ namespace System.Net.Security
                 throw new AuthenticationException(SR.net_frame_read_size);
             }
 
-            return _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
+            return _lastFrame.Header.Length;
         }
     }
 }

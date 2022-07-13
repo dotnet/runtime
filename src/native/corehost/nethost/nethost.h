@@ -13,7 +13,7 @@
         // Consuming the nethost as a static library
         // Shouldn't export attempt to dllimport.
         #ifdef NETHOST_USE_AS_STATIC
-            #define NETHOST_API 
+            #define NETHOST_API
         #else
             #define NETHOST_API __declspec(dllimport)
         #endif
@@ -77,7 +77,7 @@ struct get_hostfxr_parameters {
 //
 //   get_hostfxr_parameters
 //     Optional. Parameters that modify the behaviour for locating the hostfxr library.
-//     If nullptr, hostfxr is located using the enviroment variable or global registration
+//     If nullptr, hostfxr is located using the environment variable or global registration
 //
 // Return value:
 //   0 on success, otherwise failure

@@ -5,11 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml.Xsl.XPath;
 using System.Xml.Xsl.Qil;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using T = XmlQueryTypeFactory;
-
     // <spec>http://www.w3.org/TR/xslt20/#dt-singleton-focus</spec>
     internal enum SingletonFocusType
     {

@@ -17,8 +17,6 @@ namespace System
           IComparable<DateOnly>,
           IEquatable<DateOnly>,
           ISpanFormattable,
-          IComparisonOperators<DateOnly, DateOnly>,
-          IMinMaxValue<DateOnly>,
           ISpanParsable<DateOnly>
     {
         private readonly int _dayNumber;

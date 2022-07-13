@@ -15,8 +15,6 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string InvokeJS(string str, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void CompileFunctionRef(in string str, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InvokeJSWithArgsRef(IntPtr jsHandle, in string method, in object?[] parms, out int exceptionalResult, out object result);
         // FIXME: All of these signatures need to be object? in various places and not object, but the nullability
         //  warnings will take me hours and hours to fix so I'm not doing that right now since they're already broken
@@ -69,15 +67,6 @@ internal static partial class Interop
             if (exception != 0)
                 throw new JSException(res);
             return res;
-        }
-
-        public static System.Runtime.InteropServices.JavaScript.Function? CompileFunction(string snippet)
-        {
-            CompileFunctionRef(snippet, out int exception, out object res);
-            if (exception != 0)
-                throw new JSException((string)res);
-            ReleaseInFlight(res);
-            return res as System.Runtime.InteropServices.JavaScript.Function;
         }
 
         public static object GetGlobalObject(string? str = null)

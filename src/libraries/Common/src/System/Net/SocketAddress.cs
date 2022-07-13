@@ -133,6 +133,7 @@ namespace System.Net.Internals
         {
             Buffer = buffer.ToArray();
             InternalSize = Buffer.Length;
+            SocketAddressPal.SetAddressFamily(Buffer, addressFamily);
         }
 
         internal IPAddress GetIPAddress()

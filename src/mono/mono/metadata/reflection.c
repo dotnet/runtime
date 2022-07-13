@@ -1159,7 +1159,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 }
 
 static gboolean
-add_local_var_info_to_array (MonoMethodHeader *header, int idx, MonoArrayHandle dest, MonoError *error)
+add_local_var_info_to_array (MonoMethodHeader *header, guint16 idx, MonoArrayHandle dest, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
@@ -1172,7 +1172,7 @@ add_local_var_info_to_array (MonoMethodHeader *header, int idx, MonoArrayHandle 
 
 	MONO_HANDLE_SET (info, local_type, rt);
 
-	MONO_HANDLE_SETVAL (info, is_pinned, MonoBoolean, header->locals [idx]->pinned);
+	MONO_HANDLE_SETVAL (info, is_pinned, MonoBoolean, !!header->locals [idx]->pinned);
 	MONO_HANDLE_SETVAL (info, local_index, guint16, idx);
 
 	MONO_HANDLE_ARRAY_SETREF (dest, idx, info);
@@ -1182,7 +1182,7 @@ leave:
 }
 
 static gboolean
-add_exception_handling_clause_to_array (MonoMethodHeader *header, int idx, MonoArrayHandle dest, MonoError *error)
+add_exception_handling_clause_to_array (MonoMethodHeader *header, unsigned int idx, MonoArrayHandle dest, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
@@ -1238,7 +1238,6 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	guint32 method_rva, local_var_sig_token;
 	char *ptr;
 	unsigned char format, flags;
-	int i;
 	gpointer params [6];
 	MonoBoolean init_locals_param;
 	gint32 sig_token_param;
@@ -1312,7 +1311,7 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	MonoArrayHandle locals_arr;
 	locals_arr = mono_array_new_handle (mono_class_get_local_variable_info_class (), header->num_locals, error);
 	goto_if_nok (error, fail);
-	for (i = 0; i < header->num_locals; ++i) {
+	for (guint16 i = 0; i < header->num_locals; ++i) {
 		if (!add_local_var_info_to_array (header, i, locals_arr, error))
 			goto fail;
 	}
@@ -1321,7 +1320,7 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	MonoArrayHandle exn_clauses;
 	exn_clauses = mono_array_new_handle (mono_class_get_exception_handling_clause_class (), header->num_clauses, error);
 	goto_if_nok (error, fail);
-	for (i = 0; i < header->num_clauses; ++i) {
+	for (unsigned int i = 0; i < header->num_clauses; ++i) {
 		if (!add_exception_handling_clause_to_array (header, i, exn_clauses, error))
 			goto fail;
 	}
@@ -1330,7 +1329,7 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	  MethodBody (ExceptionHandlingClause[] clauses, LocalVariableInfo[] locals,
 	              byte[] il, bool init_locals, int sig_token, int max_stack)
 	*/
-	init_locals_param = header->init_locals;
+	init_locals_param = !!header->init_locals;
 	sig_token_param = local_var_sig_token;
 	max_stack_param = header->max_stack;
 	mono_metadata_free_mh (header);
@@ -1591,7 +1590,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 				while (*p && *p != ',') {
 					p++;
 				}
-				len = (p - start + 1);
+				len = GPTRDIFF_TO_INT (p - start + 1);
 				if (len > MONO_PUBLIC_KEY_TOKEN_LENGTH)
 					len = MONO_PUBLIC_KEY_TOKEN_LENGTH;
 				char* pkt_lower = g_ascii_strdown (start, len);
@@ -2049,7 +2048,7 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 				int nspace_len;
 
 				nested_name = g_strdup (lastp + 1);
-				nspace_len = lastp - (char*)mod->data;
+				nspace_len = GPTRDIFF_TO_INT (lastp - (char*)mod->data);
 				nested_nspace = (char *)g_malloc (nspace_len + 1);
 				memcpy (nested_nspace, mod->data, nspace_len);
 				nested_nspace [nspace_len] = '\0';
@@ -2228,7 +2227,7 @@ mono_reflection_get_type_internal_dynamic (MonoAssemblyLoadContext *alc, MonoIma
 	modules = MONO_HANDLE_NEW (MonoArray, NULL);
 	MONO_HANDLE_GET (modules, abuilder, modules);
 	if (!MONO_HANDLE_IS_NULL (modules)) {
-		int n = mono_array_handle_length (modules);
+		int n = GUINTPTR_TO_INT (mono_array_handle_length (modules));
 		for (i = 0; i < n; ++i) {
 			type = module_builder_array_get_type (alc, modules, i, rootimage, info, ignorecase, search_mscorlib, error);
 			if (type)
@@ -2241,7 +2240,7 @@ mono_reflection_get_type_internal_dynamic (MonoAssemblyLoadContext *alc, MonoIma
 	loaded_modules = MONO_HANDLE_NEW (MonoArray, NULL);
 	MONO_HANDLE_GET (loaded_modules, abuilder, loaded_modules);
 	if (!type && !MONO_HANDLE_IS_NULL(loaded_modules)) {
-		int n = mono_array_handle_length (loaded_modules);
+		int n = GUINTPTR_TO_INT (mono_array_handle_length (loaded_modules));
 		for (i = 0; i < n; ++i) {
 			type = module_array_get_type (alc, loaded_modules, i, rootimage, info, ignorecase, search_mscorlib, error);
 			if (type)
@@ -2637,7 +2636,7 @@ generic_inst_from_type_array_handle (MonoArrayHandle types, MonoError *error)
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoGenericInst *ginst = NULL;
-	int count = mono_array_handle_length (types);
+	int count = GUINTPTR_TO_INT (mono_array_handle_length (types));
 	MonoType **type_argv = g_new0 (MonoType *, count);
 	MonoReflectionTypeHandle garg = MONO_HANDLE_NEW (MonoReflectionType, NULL);
 	for (int i = 0; i < count; i++) {

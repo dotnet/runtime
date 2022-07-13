@@ -62,7 +62,7 @@ lower_load (MonoCompile *cfg, MonoInst *load, MonoInst *ldaddr)
 		if (cfg->verbose_level > 2) { printf ("mem2reg replacing: "); mono_print_ins (load); }
 	}
 
-	load->opcode = mono_type_to_regmove (cfg, type);
+	load->opcode = GUINT_TO_OPCODE (mono_type_to_regmove (cfg, type));
 	mini_type_to_eval_stack_type (cfg, type, load);
 	load->sreg1 = var->dreg;
 	mono_atomic_inc_i32 (&mono_jit_stats.loads_eliminated);
@@ -95,9 +95,9 @@ lower_store (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 
 	int coerce_op = mono_type_to_stloc_coerce (type);
 	if (coerce_op)
-		store->opcode = coerce_op;
+		store->opcode = GINT_TO_OPCODE (coerce_op);
 	else
-		store->opcode = mono_type_to_regmove (cfg, type);
+		store->opcode = GUINT_TO_OPCODE (mono_type_to_regmove (cfg, type));
 	mini_type_to_eval_stack_type (cfg, type, store);
 	store->dreg = var->dreg;
 	mono_atomic_inc_i32 (&mono_jit_stats.stores_eliminated);

@@ -126,7 +126,7 @@ namespace System
                     break;
                 }
 
-                if (ch <= '9' && ch >= '0')
+                if (char.IsAsciiDigit(ch))
                 {
                     if (!haveNumber && (ch == '0'))
                     {
@@ -217,7 +217,7 @@ namespace System
                     ch = name[current];
                     int digitValue;
 
-                    if ((numberBase == Decimal || numberBase == Hex) && '0' <= ch && ch <= '9')
+                    if ((numberBase == Decimal || numberBase == Hex) && char.IsAsciiDigit(ch))
                     {
                         digitValue = ch - '0';
                     }

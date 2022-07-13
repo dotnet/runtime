@@ -2374,7 +2374,7 @@ namespace System
                 buf = ref Unsafe.Add(ref buf, numIters * numElements);
                 length -= numIters * numElements * 2;
             }
-            else if (Sse2.IsSupported && (nuint)Vector128<byte>.Count * 2 <= length)
+            else if (Ssse3.IsSupported && (nuint)Vector128<byte>.Count * 2 <= length)
             {
                 Vector128<byte> reverseMask = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
                 nuint numElements = (nuint)Vector128<byte>.Count;

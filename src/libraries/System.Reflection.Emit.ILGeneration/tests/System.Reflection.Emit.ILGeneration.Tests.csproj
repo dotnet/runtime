@@ -11,6 +11,7 @@
     <Compile Include="ILGenerator\Emit3Tests.cs" />
     <Compile Include="ILGenerator\Emit4Tests.cs" />
     <Compile Include="ILGenerator\EmitMethodInfo.cs" />
+    <Compile Include="ILGenerator\EmitWithModsTests.cs" />
     <Compile Include="ILGenerator\EmitWriteLineTests.cs" />
     <Compile Include="ILGenerator\ExceptionEmitTests.cs" />
     <Compile Include="ILGenerator\ILOffsetTests.cs" />

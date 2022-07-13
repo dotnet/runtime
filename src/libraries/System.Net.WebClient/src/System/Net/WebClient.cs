@@ -1252,7 +1252,7 @@ namespace System.Net
 
         private static bool IsSafe(char ch)
         {
-            if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9')
+            if (char.IsAsciiLetterOrDigit(ch))
             {
                 return true;
             }

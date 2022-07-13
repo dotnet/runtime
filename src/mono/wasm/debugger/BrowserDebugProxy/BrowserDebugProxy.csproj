@@ -4,6 +4,7 @@
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn),CA2007</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

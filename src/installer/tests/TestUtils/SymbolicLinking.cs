@@ -64,6 +64,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
         private static extern bool CreateSymbolicLink(
             string symbolicLinkName,
             string targetFileName,

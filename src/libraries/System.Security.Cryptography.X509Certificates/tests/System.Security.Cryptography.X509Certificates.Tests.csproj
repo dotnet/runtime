@@ -34,6 +34,7 @@
     <Compile Include="ContentTypeTests.cs" />
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />
+    <Compile Include="ExtensionsTests\AuthorityInformationAccessTests.cs" />
     <Compile Include="ExtensionsTests\BasicConstraintsTests.cs" />
     <Compile Include="ExtensionsTests\ComprehensiveTests.cs" />
     <Compile Include="ExtensionsTests\EnhancedKeyUsageTests.cs" />
@@ -123,16 +124,6 @@
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
     <Compile Include="X509StoreMutableTests.Android.cs" />
     <Compile Include="RevocationTests\DynamicRevocationTests.Android.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
-             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs"
-             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
-             Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
-             Link="Common\Interop\Android\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(TargetPlatformIdentifier)' == 'OSX'">
     <Compile Include="X509StoreMutableTests.OSX.cs" />

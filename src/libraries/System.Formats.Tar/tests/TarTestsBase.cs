@@ -96,18 +96,19 @@ namespace System.Formats.Tar.Tests
         }
 
         // MemoryStream containing the copied contents of the specified file. Meant for reading and writing.
-        protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName)
-        {
-            string path = GetTarFilePath(compressionMethod, format, testCaseName);
-            FileStreamOptions options = new()
-            {
-                Access = FileAccess.Read,
-                Mode = FileMode.Open,
-                Share = FileShare.Read
+        protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName) =>
+            GetMemoryStream(GetTarFilePath(compressionMethod, format, testCaseName));
 
-            };
+        protected static string GetStrangeTarFilePath(string testCaseName) =>
+            Path.Join(Directory.GetCurrentDirectory(), "strange", testCaseName + ".tar");
+
+        protected static MemoryStream GetStrangeTarMemoryStream(string testCaseName) =>
+            GetMemoryStream(GetStrangeTarFilePath(testCaseName));
+
+        private static MemoryStream GetMemoryStream(string path)
+        {
             MemoryStream ms = new();
-            using (FileStream fs = new FileStream(path, options))
+            using (FileStream fs = File.OpenRead(path))
             {
                 fs.CopyTo(ms);
             }

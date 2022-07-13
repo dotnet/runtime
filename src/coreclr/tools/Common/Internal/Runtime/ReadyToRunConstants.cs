@@ -19,6 +19,21 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
     }
 
+    public enum ReadyToRunImportSectionType : byte
+    {
+        Unknown      = 0,
+        StubDispatch = 2,
+        StringHandle = 3,
+    }
+
+    [Flags]
+    public enum ReadyToRunImportSectionFlags : ushort
+    {
+        None     = 0x0000,
+        Eager    = 0x0001, // Section at module load time.
+        PCode    = 0x0004, // Section contains pointers to code
+    }
+
     /// <summary>
     /// Constants for method and field encoding
     /// </summary>

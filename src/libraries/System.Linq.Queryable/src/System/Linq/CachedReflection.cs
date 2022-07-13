@@ -203,13 +203,13 @@ namespace System.Linq
         private static MethodInfo? s_DefaultIfEmpty_TSource_1;
 
         public static MethodInfo DefaultIfEmpty_TSource_1(Type TSource) =>
-             (s_DefaultIfEmpty_TSource_1 ??= new Func<IQueryable<object>, IQueryable<object>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
+             (s_DefaultIfEmpty_TSource_1 ??= new Func<IQueryable<object>, IQueryable<object?>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_DefaultIfEmpty_TSource_2;
 
         public static MethodInfo DefaultIfEmpty_TSource_2(Type TSource) =>
-             (s_DefaultIfEmpty_TSource_2 ??= new Func<IQueryable<object>, object, IQueryable<object>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
+             (s_DefaultIfEmpty_TSource_2 ??= new Func<IQueryable<object>, object, IQueryable<object?>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Distinct_TSource_1;
@@ -311,15 +311,13 @@ namespace System.Linq
         private static MethodInfo? s_FirstOrDefault_TSource_3;
 
         public static MethodInfo FirstOrDefault_TSource_3(Type TSource) =>
-            (s_FirstOrDefault_TSource_3 ??
-            (s_FirstOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_FirstOrDefault_TSource_3 ??= new Func<IQueryable<object>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_FirstOrDefault_TSource_4;
 
         public static MethodInfo FirstOrDefault_TSource_4(Type TSource) =>
-            (s_FirstOrDefault_TSource_4 ??
-            (s_FirstOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_FirstOrDefault_TSource_4 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_GroupBy_TSource_TKey_2;
@@ -445,15 +443,13 @@ namespace System.Linq
         private static MethodInfo? s_LastOrDefault_TSource_3;
 
         public static MethodInfo LastOrDefault_TSource_3(Type TSource) =>
-            (s_LastOrDefault_TSource_3 ??
-             (s_LastOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_LastOrDefault_TSource_3 ??= new Func<IQueryable<object>, object, object>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_LastOrDefault_TSource_4;
 
         public static MethodInfo LastOrDefault_TSource_4(Type TSource) =>
-            (s_LastOrDefault_TSource_4 ??
-             (s_LastOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_LastOrDefault_TSource_4 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.LastOrDefault).GetMethodInfo().GetGenericMethodDefinition())
             .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_LongCount_TSource_1;
@@ -639,15 +635,13 @@ namespace System.Linq
         private static MethodInfo? s_SingleOrDefault_TSource_3;
 
         public static MethodInfo SingleOrDefault_TSource_3(Type TSource) =>
-            (s_SingleOrDefault_TSource_3 ??
-            (s_SingleOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_SingleOrDefault_TSource_3 ??= new Func<IQueryable<object>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition())
              .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SingleOrDefault_TSource_4;
 
         public static MethodInfo SingleOrDefault_TSource_4(Type TSource) =>
-            (s_SingleOrDefault_TSource_4 ??
-            (s_SingleOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_SingleOrDefault_TSource_4 ??= new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition())
              .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Skip_TSource_2;

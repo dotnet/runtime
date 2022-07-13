@@ -1181,7 +1181,6 @@ namespace System.IO.Ports
             Write(text + NewLine);
         }
 
-#pragma warning disable CA2002
         // ----- SECTION: internal utility methods ----------------*
 
         // included here just to use the event filter to block unwanted invocations of the Serial Port's events.
@@ -1253,7 +1252,6 @@ namespace System.IO.Ports
                 }
             }
         }
-#pragma warning restore CA2002
 
         private void CompactBuffer()
         {

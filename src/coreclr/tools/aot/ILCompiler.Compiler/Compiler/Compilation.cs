@@ -445,7 +445,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Retreives method whose runtime handle is suitable for use with GVMLookupForSlot.
+        /// Retrieves method whose runtime handle is suitable for use with GVMLookupForSlot.
         /// </summary>
         public MethodDesc GetTargetOfGenericVirtualMethodCall(MethodDesc calledMethod)
         {

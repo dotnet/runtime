@@ -3166,7 +3166,7 @@ public:
     }
 };
 
-/* Buid the source files table for DWARF source line info */
+/* Build the source files table for DWARF source line info */
 bool NotifyGdb::BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines, const char * &cuPath)
 {
     FileTableBuilder fileTable(nlines);

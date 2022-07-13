@@ -6,6 +6,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
+#include <clrconfignocache.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
@@ -188,7 +189,11 @@ ds_rt_config_value_get_default_port_suspend (void)
 
 static
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerateCoreDumpCommandPayload *payload)
+ds_rt_generate_core_dump (
+	DiagnosticsDumpCommandId commandId,
+	DiagnosticsGenerateCoreDumpCommandPayload *payload,
+	ep_char8_t *errorMessageBuffer,
+	int32_t cbErrorMessageBuffer)
 {
 	STATIC_CONTRACT_NOTHROW;
 
@@ -196,15 +201,17 @@ ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerat
 	EX_TRY
 	{
 		uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
- 		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
- 		{
- 			// For the old commmand, this payload field is a bool of whether to enable logging
- 			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
+		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+		{
+			// For the old commmand, this payload field is a bool of whether to enable logging
+			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
 		}
-		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
-			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-			flags))
+		LPCWSTR dumpName = reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload));
+		int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
+		if (GenerateDump(dumpName, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
+		{
 			result = DS_IPC_S_OK;
+		}
 	}
 	EX_CATCH {}
 	EX_END_CATCH(SwallowAllExceptions);
@@ -336,13 +343,15 @@ ds_rt_server_log_pause_message (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	CLRConfigStringHolder ports(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend ();
+	const char diagPortsName[] = "DOTNET_DiagnosticPorts";
+	CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
+	LPCSTR ports = diagPorts.AsString();
 
-	DWORD dotnetDiagnosticPortSuspend = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend);
-	wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n"));
-	wprintf(W("DOTNET_DiagnosticPorts=\"%s\"\n"), ports == nullptr ? W("") : ports.GetValue());
-	wprintf(W("DOTNET_DefaultDiagnosticPortSuspend=%d\n"), port_suspended);
+	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend();
+
+	printf("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
+	printf("%s=\"%s\"\n", diagPortsName, ports == nullptr ? "" : ports);
+	printf("DOTNET_DefaultDiagnosticPortSuspend=%u\n", port_suspended);
 	fflush(stdout);
 }
 

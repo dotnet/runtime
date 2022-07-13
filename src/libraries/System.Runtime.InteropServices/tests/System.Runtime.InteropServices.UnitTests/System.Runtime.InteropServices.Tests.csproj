@@ -15,7 +15,6 @@
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeMemoryTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CULongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CLongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CoClassAttributeTests.cs" />
@@ -149,6 +148,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\StringMarshalingTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\MessageSendTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\PendingExceptionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\LibObjC.cs" />

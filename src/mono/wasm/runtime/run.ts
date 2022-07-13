@@ -1,5 +1,6 @@
-import { ExitStatus, INTERNAL, Module, quit } from "./imports";
+import { ExitStatus, INTERNAL, Module, quit, runtimeHelpers } from "./imports";
 import { mono_call_assembly_entry_point } from "./method-calls";
+import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args, runtime_is_initialized_reject } from "./startup";
 
 export async function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void> {
@@ -14,8 +15,13 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
     }
 }
 
+ 
 export async function mono_run_main(main_assembly_name: string, args: string[]): Promise<number> {
     mono_wasm_set_main_args(main_assembly_name, args);
+    if (runtimeHelpers.wait_for_debugger == -1) {
+        console.log("waiting for debugger...");
+        return await mono_wasm_wait_for_debugger().then(() => mono_call_assembly_entry_point(main_assembly_name, [args], "m"));
+    }
     return mono_call_assembly_entry_point(main_assembly_name, [args], "m");
 }
 

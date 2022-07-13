@@ -4046,7 +4046,7 @@ interface ICorProfilerInfo8 : ICorProfilerInfo7
                                [out] ReJITID * pReJitId);
 
     /*
-    * Retrieves informaiton about dynamic methods
+    * Retrieves information about dynamic methods
     *
     * Certain methods like IL Stubs or LCG do not have
     * associated metadata that can be retrieved using the IMetaDataImport APIs.

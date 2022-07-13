@@ -155,6 +155,40 @@ template<class T> void DeleteDbiMemory(T *p)
     g_pAllocator->Free((BYTE*) p);
 }
 
+void* AllocDbiMemory(size_t size)
+{
+    void *result;
+    if (g_pAllocator != nullptr)
+    {
+        result = g_pAllocator->Alloc(size);
+    }
+    else
+    {
+        result = new (nothrow) BYTE[size];
+    }
+    if (result == NULL)
+    {
+        ThrowOutOfMemory();
+    }
+    return result;
+}
+
+void DeleteDbiMemory(void* p)
+{
+    if (p == NULL)
+    {
+        return;
+    }
+    if (g_pAllocator != nullptr)
+    {
+        g_pAllocator->Free((BYTE*)p);
+    }
+    else
+    {
+        ::delete (BYTE*)p;
+    }
+}
+
 // Delete memory and invoke dtor for memory allocated with 'operator (forDbi) new[]'
 // There's an inherent risk here - where each element's destructor will get called within
 // the context of the DAC. If the destructor tries to use the CRT allocator logic expecting
@@ -868,7 +902,7 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
         return;
     }
 
-    NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
 
     DebugInfoRequest request;
     request.InitFromStartingAddr(pMethodDesc, CORDB_ADDRESS_TO_TADDR(startAddr));
@@ -1960,7 +1994,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedInstantiation(TypeHandle
 {
     WRAPPER_NO_CONTRACT;
 
-    NewHolder<TypeHandle> pInst(new TypeHandle[nTypeArgs]);
+    NewArrayHolder<TypeHandle> pInst(new TypeHandle[nTypeArgs]);
 
     // get the type handle for each of the type parameters
     if (!ReadLoadedTypeHandles(retrieveWhich, nTypeArgs, pInst))
@@ -6416,7 +6450,7 @@ HRESULT DacHeapWalker::MoveToNextObject()
 
 bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
 {
-    // With heap corruption, it's entierly possible that the MethodTable
+    // With heap corruption, it's entirely possible that the MethodTable
     // we get is bad.  This could cause exceptions, which we will catch
     // and return false.  This causes the heapwalker to move to the next
     // segment.
@@ -6444,6 +6478,12 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
             size = AlignLarge(size);
         else
             size = Align(size);
+
+        // If size == 0, it means we have a heap corruption and
+        // we will stuck in an infinite loop, so better fail the call now.
+        ret &= (0 < size);
+        // Also guard for cases where the size reported is too large and exceeds the high allocation mark.
+        ret &= ((tMT + size) <= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
     }
     EX_CATCH
     {

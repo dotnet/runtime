@@ -602,8 +602,7 @@ namespace System.Net
                 commandList.Add(new PipelineEntry(FormatFtpCommand("RNFR", baseDir + requestFilename), flags));
 
                 string renameTo;
-                if (!string.IsNullOrEmpty(request.RenameTo)
-                    && request.RenameTo.StartsWith("/", StringComparison.OrdinalIgnoreCase))
+                if (request.RenameTo is not null && request.RenameTo.StartsWith('/'))
                 {
                     renameTo = request.RenameTo; // Absolute path
                 }
@@ -770,11 +769,11 @@ namespace System.Net
             else
             {
                 directory = path.Substring(0, index + 1);
-                filename = path.Substring(index + 1, path.Length - (index + 1));
+                filename = path.Substring(index + 1);
             }
 
             // strip off trailing '/' on directory if present
-            if (directory.Length > 1 && directory[directory.Length - 1] == '/')
+            if (directory.Length > 1 && directory.EndsWith('/'))
                 directory = directory.Substring(0, directory.Length - 1);
         }
 
@@ -846,7 +845,7 @@ namespace System.Net
         {
             get
             {
-                return (_bannerMessage != null) ? _bannerMessage.ToString() : null;
+                return _bannerMessage?.ToString();
             }
         }
 
@@ -857,7 +856,7 @@ namespace System.Net
         {
             get
             {
-                return (_welcomeMessage != null) ? _welcomeMessage.ToString() : null;
+                return _welcomeMessage?.ToString();
             }
         }
 
@@ -868,7 +867,7 @@ namespace System.Net
         {
             get
             {
-                return (_exitMessage != null) ? _exitMessage.ToString() : null;
+                return _exitMessage?.ToString();
             }
         }
 
@@ -954,11 +953,11 @@ namespace System.Net
             escapedFilename = escapedFilename.Replace("#", "%23");
 
             // help us out if the user forgot to add a slash to the directory name
-            string orginalPath = baseUri.AbsolutePath;
-            if (orginalPath.Length > 0 && orginalPath[orginalPath.Length - 1] != '/')
+            string originalPath = baseUri.AbsolutePath;
+            if (originalPath.Length > 0 && !originalPath.EndsWith('/'))
             {
                 UriBuilder uriBuilder = new UriBuilder(baseUri);
-                uriBuilder.Path = orginalPath + "/";
+                uriBuilder.Path = originalPath + "/";
                 baseUri = uriBuilder.Uri;
             }
 
@@ -1040,8 +1039,7 @@ namespace System.Net
                 index--;
 
             int port = Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo);
-            port = port |
-                   (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
+            port |= (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
 
             return port;
         }

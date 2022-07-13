@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -375,16 +376,6 @@ namespace System.Net.Security
                 ref resultBlob,
                 ref contextFlags);
 
-            // Confidentiality flag should not be set if not requested
-            if (status.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded)
-            {
-                ContextFlagsPal mask = ContextFlagsPal.Confidentiality;
-                if ((requestedContextFlags & mask) != (contextFlags & mask))
-                {
-                    throw new PlatformNotSupportedException(SR.net_nego_protection_level_not_supported);
-                }
-            }
-
             return status;
         }
 
@@ -618,21 +609,8 @@ namespace System.Net.Security
         internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
         {
             SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext)securityContext;
-            byte[] tempOutput = GssWrap(gssContext.GssContext, false, new ReadOnlySpan<byte>(buffer, offset, count));
-            // Create space for prefixing with the length
-            const int prefixLength = 4;
-            output = new byte[tempOutput.Length + prefixLength];
-            Array.Copy(tempOutput, 0, output, prefixLength, tempOutput.Length);
-            int resultSize = tempOutput.Length;
-            unchecked
-            {
-                output[0] = (byte)((resultSize) & 0xFF);
-                output[1] = (byte)(((resultSize) >> 8) & 0xFF);
-                output[2] = (byte)(((resultSize) >> 16) & 0xFF);
-                output[3] = (byte)(((resultSize) >> 24) & 0xFF);
-            }
-
-            return resultSize + 4;
+            output = GssWrap(gssContext.GssContext, false, new ReadOnlySpan<byte>(buffer, offset, count));
+            return output.Length;
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrowserDebugProxy;
@@ -16,7 +17,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal sealed class FirefoxMonoProxy : MonoProxy
 {
-    public FirefoxMonoProxy(ILoggerFactory loggerFactory, string loggerId = null) : base(loggerFactory, null, loggerId: loggerId)
+    public FirefoxMonoProxy(ILogger logger, string loggerId = null, ProxyOptions options = null) : base(logger, null, loggerId: loggerId, options: options)
     {
     }
 
@@ -40,9 +41,9 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             await browserClient.ConnectAsync("127.0.0.1", portBrowser);
             logger.LogTrace($".. connected to the browser!");
 
-            await StartRunLoop(ideConn, browserConn, cts);
+            await RunLoopAsync(ideConn, browserConn, cts);
             if (Stopped?.reason == RunLoopStopReason.Exception)
-                throw Stopped.exception;
+                ExceptionDispatchInfo.Capture(Stopped.exception).Throw();
         }
         finally
         {
@@ -63,7 +64,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         }
         catch (Exception e)
         {
-            side_exception.TrySetException(e);
+            _runLoop.Fail(e);
         }
     }
 
@@ -80,7 +81,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         catch (Exception e)
         {
             logger.LogError($"OnCommand for id: {id}, {parms} failed: {e}");
-            side_exception.TrySetException(e);
+            _runLoop.Fail(e);
         }
     }
 
@@ -159,10 +160,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         }
         catch (Exception ex)
         {
-            // FIXME: using `side_exception` right now because the runloop doesn't
-            // immediately look at all faulted tasks
             logger.LogError(ex.ToString());
-            side_exception.TrySetResult(ex);
+            _runLoop.Fail(ex);
             throw;
         }
     }
@@ -186,7 +185,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         catch (Exception ex)
         {
             logger.LogError(ex.ToString());
-            side_exception.TrySetResult(ex);
+            _runLoop.Fail(ex);
             throw;
         }
     }
@@ -606,7 +605,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
                         JObject retValue = await resolver.Resolve(args?["text"]?.Value<string>(), token);
                         if (retValue == null)
-                            retValue = await EvaluateExpression.CompileAndRunTheExpression(args?["text"]?.Value<string>(), resolver, token);
+                            retValue = await ExpressionEvaluator.CompileAndRunTheExpression(args?["text"]?.Value<string>(), resolver, logger, token);
                         var osend = JObject.FromObject(new
                         {
                             type = "evaluationResult",

@@ -1,0 +1,16 @@
+{
+    "wasmHostProperties": {
+        "perHostConfig": [
+            {
+                "name": "node",
+                "js-path": "main.cjs",
+                "Host": "nodejs"
+            },
+            {
+                "name": "v8",
+                "js-path": "main.cjs",
+                "Host": "v8"
+            }
+        ]
+    }
+}

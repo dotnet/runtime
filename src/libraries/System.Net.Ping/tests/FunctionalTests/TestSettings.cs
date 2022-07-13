@@ -18,7 +18,7 @@ namespace System.Net.NetworkInformation.Tests
         // By default, FreeBSD supports buffer only up to 56 bytes
         public static readonly byte[] PayloadAsBytes = Encoding.UTF8.GetBytes(OperatingSystem.IsFreeBSD() ? TestSettings.PayloadAsString.Substring(0, 55) : TestSettings.PayloadAsString);
 
-        public static readonly byte[] PayloadAsBytesShort = Encoding.UTF8.GetBytes("ABCDEF0123456789");
+        public static readonly byte[] PayloadAsBytesShort = "ABCDEF0123456789"u8.ToArray();
 
         public static IPAddress[] GetLocalIPAddresses()
         {

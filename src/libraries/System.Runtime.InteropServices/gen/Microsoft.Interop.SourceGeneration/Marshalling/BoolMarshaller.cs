@@ -114,8 +114,12 @@ namespace Microsoft.Interop
     /// </remarks>
     public sealed class ByteBoolMarshaller : BoolMarshallerBase
     {
-        public ByteBoolMarshaller()
-            : base(PredefinedType(Token(SyntaxKind.ByteKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
+        /// <summary>
+        /// Constructor a <see cref="ByteBoolMarshaller" instance.
+        /// </summary>
+        /// <param name="signed">True if the byte should be signed, otherwise false</param>
+        public ByteBoolMarshaller(bool signed)
+            : base(PredefinedType(Token(signed ? SyntaxKind.SByteKeyword : SyntaxKind.ByteKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
@@ -128,8 +132,12 @@ namespace Microsoft.Interop
     /// </remarks>
     public sealed class WinBoolMarshaller : BoolMarshallerBase
     {
-        public WinBoolMarshaller()
-            : base(PredefinedType(Token(SyntaxKind.IntKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
+        /// <summary>
+        /// Constructor a <see cref="WinBoolMarshaller" instance.
+        /// </summary>
+        /// <param name="signed">True if the int should be signed, otherwise false</param>
+        public WinBoolMarshaller(bool signed)
+            : base(PredefinedType(Token(signed ? SyntaxKind.IntKeyword : SyntaxKind.UIntKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }

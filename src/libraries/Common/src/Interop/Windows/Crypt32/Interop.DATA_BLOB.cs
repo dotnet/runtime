@@ -31,6 +31,8 @@ internal static partial class Interop
                 Marshal.Copy(pbData, array, 0, (int)cbData);
                 return array;
             }
+
+            internal unsafe ReadOnlySpan<byte> DangerousAsSpan() => new ReadOnlySpan<byte>((void*)pbData, (int)cbData);
         }
     }
 }

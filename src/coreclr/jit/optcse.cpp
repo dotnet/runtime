@@ -385,13 +385,13 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     bool     isSharedConst        = false;
     int      configValue          = JitConfig.JitConstCSE();
 
-#if defined(TARGET_ARM64)
-    // ARM64 - allow to combine with nearby offsets, when config is not 2 or 4
-    if ((configValue != CONST_CSE_ENABLE_ARM64_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
+#if defined(TARGET_ARMARCH)
+    // ARMARCH - allow to combine with nearby offsets, when config is not 2 or 4
+    if ((configValue != CONST_CSE_ENABLE_ARM_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARM64
+#endif // TARGET_ARMARCH
 
     // All Platforms - also allow to combine with nearby offsets, when config is 3
     if (configValue == CONST_CSE_ENABLE_ALL)
@@ -785,10 +785,12 @@ bool Compiler::optValnumCSE_Locate()
                 }
 
                 // Don't allow CSE of constants if it is disabled
-                //
                 if (tree->IsIntegralConst())
                 {
-                    if (!enableConstCSE)
+                    if (!enableConstCSE &&
+                        // Unconditionally allow these constant handles to be CSE'd
+                        !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
+                        !tree->IsIconHandle(GTF_ICON_STR_HDL))
                     {
                         continue;
                     }
@@ -1218,7 +1220,7 @@ public:
     }
 
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
-    // We also handle the case where calls conditionally kill CSE availabilty.
+    // We also handle the case where calls conditionally kill CSE availability.
     //
     bool EndMerge(BasicBlock* block)
     {
@@ -1251,9 +1253,9 @@ public:
         // If it is 'true' then the initial value of m_preMergeOut was different than the final value that
         // we computed for bbCseOut.  When it is true we will visit every the successor of 'block'
         //
-        // This is also why we need to allocate an extra bit in our cseLivenessTrair BitVecs.
-        // We always need to visit our successor blocks once, thus we require that that the first time
-        // that we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
+        // This is also why we need to allocate an extra bit in our cseLivenessTraits BitVecs.
+        // We always need to visit our successor blocks once, thus we require that the first time
+        // we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
         // the new value of bbCseOut.
         //
         bool notDone = !BitVecOps::Equal(m_comp->cseLivenessTraits, block->bbCseOut, m_preMergeOut);
@@ -1851,7 +1853,19 @@ public:
                 //
                 // Thus we might need to use large displacements when loading or storing
                 // to CSE LclVars that are not enregistered
-                // On ARM64 this means using rsGetRsvdReg() to hold the large displacement
+                // On ARM64 this means using rsGetRsvdReg() or R21 to hold the large displacement
+                //
+                largeFrame = true;
+                break; // early out,  we don't need to keep increasing frameSize
+            }
+#elif defined(TARGET_LOONGARCH64)
+            if (frameSize > 0x7ff)
+            {
+                // We likely have a large stack frame.
+                //
+                // Thus we might need to use large displacements when loading or storing
+                // to CSE LclVars that are not enregistered
+                // On LoongArch64 this means using rsGetRsvdReg() to hold the large displacement
                 //
                 largeFrame = true;
                 break; // early out,  we don't need to keep increasing frameSize
@@ -1887,7 +1901,7 @@ public:
 
             // The enregCount only tracks the uses of integer registers
             //
-            // We could track floating point register usage seperately
+            // We could track floating point register usage separately
             // but it isn't worth the additional complexity as floating point CSEs
             // are rare and we typically have plenty of floating point register available.
             //
@@ -2948,9 +2962,9 @@ public:
         do
         {
             /* Process the next node in the list */
-            GenTree*    exp  = lst->tslTree;
-            Statement*  stmt = lst->tslStmt;
-            BasicBlock* blk  = lst->tslBlock;
+            GenTree* const    exp  = lst->tslTree;
+            Statement* const  stmt = lst->tslStmt;
+            BasicBlock* const blk  = lst->tslBlock;
 
             /* Advance to the next node in the list */
             lst = lst->tslNext;
@@ -3198,9 +3212,9 @@ public:
                     noway_assert(asg->AsOp()->gtOp2 == val);
                 }
 
-                // assign the proper Value Numbers
-                asg->gtVNPair.SetBoth(ValueNumStore::VNForVoid()); // The GT_ASG node itself is $VN.Void
-                asg->AsOp()->gtOp1->gtVNPair = val->gtVNPair;      // The dest op is the same as 'val'
+                // Assign the proper Value Numbers.
+                asg->gtVNPair                = ValueNumStore::VNPForVoid(); // The GT_ASG node itself is $VN.Void.
+                asg->AsOp()->gtOp1->gtVNPair = ValueNumStore::VNPForVoid(); // As is the LHS.
 
                 noway_assert(asg->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
 
@@ -3249,7 +3263,7 @@ public:
                         cseUse->SetDoNotCSE();
                     }
                 }
-                cseUse->gtVNPair = val->gtVNPair; // The 'cseUse' is equal to 'val'
+                cseUse->gtVNPair = exp->gtVNPair; // The 'cseUse' is equal to the original expression.
 
                 /* Create a comma node for the CSE assignment */
                 cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, cseUse);
@@ -3565,11 +3579,11 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+        case GT_CNS_VEC:
             return true; // We reach here only when CSE_CONSTS is enabled
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
-        case GT_LCL_FLD:
             return true;
 
         case GT_LCL_VAR:
@@ -3672,7 +3686,9 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
             return true; // allow Intrinsics to be CSE-ed
 
         case GT_OBJ:
-            return varTypeIsEnregisterable(type); // Allow enregisterable GT_OBJ's to be CSE-ed. (i.e. SIMD types)
+        case GT_LCL_FLD:
+            // TODO-1stClassStructs: support CSE for enregisterable TYP_STRUCTs.
+            return varTypeIsEnregisterable(type);
 
         case GT_COMMA:
             return true; // Allow GT_COMMA nodes to be CSE-ed.

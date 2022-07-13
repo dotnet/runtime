@@ -1,8 +1,5 @@
-const createDotnetRuntime = require("./dotnet.js");
+const { App } = require("./app-support.cjs");
 
-async function main() {
-    const { MONO } = await createDotnetRuntime();
-    const app_args = process.argv.slice(2);
-    await MONO.mono_run_main_and_exit("console.dll", app_args);
-};
-main();
+App.init = async function () {
+    await App.MONO.mono_run_main_and_exit("console.0.dll", App.processedArguments.applicationArgs);
+}

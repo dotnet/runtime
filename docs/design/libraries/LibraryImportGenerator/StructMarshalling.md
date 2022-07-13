@@ -246,7 +246,23 @@ As an alternative design, we can use a different definition of "does not require
 
 For the auto-layout clause, we have one small issue; today, our ref-assemblies do not expose if a value type is marked as `[StructLayout(LayoutKind.Auto)]`, so we'd still have some cases where we might have runtime failures. However, we can update the tooling used in dotnet/runtime, GenAPI, to expose this information if we so desire. Once that case is handled, we have a mechanism that we can safely use to determine, at compile time, which types will not require marshalling. If we decide to not cover this case (as cases where users mark types as `LayoutKind.Auto` manually are exceptionally rare), we still have a solid design as Roslyn will automatically determine for us if a type is `unmanaged`, so we don't need to do any additional work.
 
-As `unmanaged` is a C# language concept, we can use Roslyn's APIs to determine if a type is `unmanaged` to determine if it does not require marshalling without needing to define any new attributes and reshape the ecosystem. However, to enable this work, the LibraryImportGenerator, as well as any other source generators that generate calls to native code using the interop team's infrastructure, will need to require that the user applies the `DisableRuntimeMarshallingAttribute` to their assembly when custom user-defined types are used. As we believe that users should be able to move over their assemblies to the new source-generated interop world as a whole assembly, we do not believe that this will cause any serious issues in adoption. To help support users in this case, the interop team will provide a code-fix that will generate the `DisableRuntimeMarshallingAttribute` for users when they use the source generator.
+As `unmanaged` is a C# language concept, we can use Roslyn's APIs to determine if a type is `unmanaged` to determine if it does not require marshalling without needing to define any new attributes and reshape the ecosystem. However, to enable this work, the LibraryImportGenerator, as well as any other source generators that generate calls to native code using the interop team's infrastructure, will need to require that the user applies the `DisableRuntimeMarshallingAttribute` to their assembly when non-trivial custom user-defined types are used. To help support users in this case, the interop team will provide a code-fix that will generate the `DisableRuntimeMarshallingAttribute` for users when they use the source generator. New codebases that adopt the source-generated interop world should immediately apply `DisableRuntimeMarshallingAttribute`.
+
+Applying `DisableRuntimeMarshallingAttribute` can impact existing codebases depending on what interop APIs are used. Along with the potential difficultly in tracking down these places there is also an argument to made around the UX of the source-generator. Users are permitted to rely upon the runtime's definition of blittable and not apply `DisableRuntimeMarshallingAttribute` if all the types to be marshalled adhere to the following constraints, termed "strictly blittable" in code:
+
+1) Is always blittable (for example, `int` or `double`, but not `char`).
+2) Is a value type defined in the source project the current source generator is running on.
+3) Is a type composed of types adhering to (1) and (2).
+
+For example, the following value type would require the consumer of the source generator to apply `DisableRuntimeMarshallingAttribute` if the above was not permitted.
+
+```csharp
+struct S
+{
+    public short A;
+    public short B;
+}
+```
 
 ### Usage
 

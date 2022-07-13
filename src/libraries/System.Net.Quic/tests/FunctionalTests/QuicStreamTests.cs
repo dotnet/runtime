@@ -12,10 +12,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    public abstract class QuicStreamTests<T> : QuicTestBase<T>
-         where T : IQuicImplProviderFactory, new()
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    public sealed class QuicStreamTests : QuicTestBase
     {
-        private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
+        private static byte[] s_data = "Hello world!"u8.ToArray();
         public QuicStreamTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -179,7 +180,7 @@ namespace System.Net.Quic.Tests
             {
                 byte[] buffer = new byte[64];
                 QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
-                ValueTask writeTask = clientStream.WriteAsync(Encoding.UTF8.GetBytes("PING"), endStream: true);
+                ValueTask writeTask = clientStream.WriteAsync("PING"u8.ToArray(), endStream: true);
                 ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
                 await new Task[] { writeTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
                 QuicStream serverStream = acceptTask.Result;
@@ -254,7 +255,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task TestStreams()
         {
-            using QuicListener listener = CreateQuicListener();
+            using QuicListener listener = await CreateQuicListener();
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
             using (clientConnection)
             using (serverConnection)
@@ -498,12 +499,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ReadOutstanding_ReadAborted_Throws()
         {
-            // aborting doesn't work properly on mock
-            if (typeof(T) == typeof(MockProviderFactory))
-            {
-                return;
-            }
-
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
             using (clientConnection)
             using (serverConnection)
@@ -620,12 +615,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteCanceled_NextWriteThrows()
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55995")]
-            if (typeof(T) == typeof(MockProviderFactory))
-            {
-                return;
-            }
-
             const long expectedErrorCode = 1234;
 
             await RunClientServer(
@@ -796,12 +785,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteAsync_LocalAbort_Throws()
         {
-            if (IsMockProvider)
-            {
-                // Mock provider does not support aborting pending writes via AbortWrite
-                return;
-            }
-
             const int ExpectedErrorCode = 0xfffffff;
             SemaphoreSlim sem = new SemaphoreSlim(0);
 
@@ -812,7 +795,7 @@ namespace System.Net.Quic.Tests
                 },
                 async serverStream =>
                 {
-                    // It may happen, that the WriteAsync call finishes early (before the AbortWrite 
+                    // It may happen, that the WriteAsync call finishes early (before the AbortWrite
                     // below), and we hit a check on the next iteration of the WriteForever.
                     // But in most cases it will still exercise aborting the outstanding write task.
 
@@ -991,18 +974,5 @@ namespace System.Net.Quic.Tests
                 }
             );
         }
-    }
-
-    [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
-    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory>
-    {
-        public QuicStreamTests_MockProvider(ITestOutputHelper output) : base(output) { }
-    }
-
-    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
-    {
-        public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
     }
 }

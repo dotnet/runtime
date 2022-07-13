@@ -30,10 +30,12 @@ namespace Microsoft.Interop
         /// The native type should match the managed type, including rehydrating marshalling attributes and by-ref syntax (pure forwarding).
         /// </summary>
         ManagedTypeAndAttributes,
+
         /// <summary>
         /// The native signature should be the type returned by <see cref="IMarshallingGenerator.AsNativeType(TypePositionInfo)"/> passed by value.
         /// </summary>
         NativeType,
+
         /// <summary>
         /// The native signature should be a pointer to the type returned by <see cref="IMarshallingGenerator.AsNativeType(TypePositionInfo)"/> passed by value.
         /// </summary>
@@ -49,14 +51,21 @@ namespace Microsoft.Interop
         /// The managed value should be passed as-is, including any managed by-ref syntax used in the managed declaration.
         /// </summary>
         ManagedIdentifier,
+
         /// <summary>
         /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
         /// </summary>
         NativeIdentifier,
+
         /// <summary>
         /// The address of the native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
         /// </summary>
-        AddressOfNativeIdentifier
+        AddressOfNativeIdentifier,
+
+        /// <summary>
+        /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be cast to the native type.
+        /// </summary>
+        CastNativeIdentifier
     }
 
     /// <summary>

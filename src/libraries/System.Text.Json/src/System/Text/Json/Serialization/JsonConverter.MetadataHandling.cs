@@ -86,18 +86,18 @@ namespace System.Text.Json.Serialization
                     {
                         Debug.Assert(CanHaveMetadata);
 
-                        if (resolver.TryGetDerivedJsonTypeInfo(runtimeType, out JsonTypeInfo? derivedJsonTypeInfo, out string? typeDiscriminatorId))
+                        if (resolver.TryGetDerivedJsonTypeInfo(runtimeType, out JsonTypeInfo? derivedJsonTypeInfo, out object? typeDiscriminator))
                         {
                             polymorphicConverter = state.Current.InitializePolymorphicReEntry(derivedJsonTypeInfo);
 
-                            if (typeDiscriminatorId is not null)
+                            if (typeDiscriminator is not null)
                             {
                                 if (!polymorphicConverter.CanHaveMetadata)
                                 {
                                     ThrowHelper.ThrowNotSupportedException_DerivedConverterDoesNotSupportMetadata(derivedJsonTypeInfo.Type);
                                 }
 
-                                state.PolymorphicTypeDiscriminator = typeDiscriminatorId;
+                                state.PolymorphicTypeDiscriminator = typeDiscriminator;
                             }
                         }
                         else

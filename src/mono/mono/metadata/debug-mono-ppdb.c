@@ -754,7 +754,7 @@ table_locator (const void *a, const void *b)
 {
 	locator_t *loc = (locator_t *)a;
 	const char *bb = (const char *)b;
-	guint32 table_index = (bb - loc->t->base) / loc->t->row_size;
+	guint32 table_index = GPTRDIFF_TO_UINT32 ((bb - loc->t->base) / loc->t->row_size);
 	guint32 col;
 
 	col = mono_metadata_decode_row_col(loc->t, table_index, loc->col_idx);

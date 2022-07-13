@@ -1440,7 +1440,10 @@ int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int3
     ssize_t res;
 #if defined(__APPLE__) && __APPLE__
     // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
-    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+    // According to https://github.com/dotnet/runtime/issues/63291 the EPROTOTYPE may be
+    // permanent so we need to limit retries.
+    int maxProtoRetry = 4;
+    while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && (errno == EINTR || (errno == EPROTOTYPE && --maxProtoRetry > 0)));
 #else
     while ((res = send(fd, buffer, (size_t)bufferLen, socketFlags)) < 0 && errno == EINTR);
 #endif
@@ -1476,7 +1479,10 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
     ssize_t res;
 #if defined(__APPLE__) && __APPLE__
     // possible OSX kernel bug: https://github.com/dotnet/runtime/issues/27221
-    while ((res = sendmsg(fd, &header, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+    // According to https://github.com/dotnet/runtime/issues/63291 the EPROTOTYPE may be
+    // permanent so we need to limit retries.
+    int maxProtoRetry = 4;
+    while ((res = sendmsg(fd, &header, socketFlags)) < 0 && (errno == EINTR || (errno == EPROTOTYPE && --maxProtoRetry > 0)));
 #else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
 #endif
@@ -3125,10 +3131,10 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
 
     int outfd = ToFileDescriptor(out_fd);
     int infd = ToFileDescriptor(in_fd);
+    off_t offtOffset = (off_t)offset;
+    int savedErrno;
 
 #if HAVE_SENDFILE_4
-    off_t offtOffset = (off_t)offset;
-
     ssize_t res;
     while ((res = sendfile(outfd, infd, &offtOffset, (size_t)count)) < 0 && errno == EINTR);
     if (res != -1)
@@ -3146,9 +3152,9 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     {
         off_t len = count;
 #if HAVE_SENDFILE_7
-        ssize_t res = sendfile(infd, outfd, (off_t)offset, (size_t)count, NULL, &len, 0);
+        ssize_t res = sendfile(infd, outfd, offtOffset, (size_t)count, NULL, &len, 0);
 #else
-        ssize_t res = sendfile(infd, outfd, (off_t)offset, &len, NULL, 0);
+        ssize_t res = sendfile(infd, outfd, offtOffset, &len, NULL, 0);
 #endif
         assert(len >= 0);
 
@@ -3180,18 +3186,76 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
         // For everything other than EINTR, bail.
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
-
 #else
-    // If we ever need to run on a platform that doesn't have sendfile,
-    // we can implement this with a simple read/send loop.  For now,
-    // we just mark it as not supported.
-    (void)outfd;
-    (void)infd;
-    (void)offset;
-    (void)count;
+    // Emulate sendfile using a simple read/send loop.
     *sent = 0;
-    errno = ENOTSUP;
-    return SystemNative_ConvertErrorPlatformToPal(errno);
+    char* buffer = NULL;
+
+    // Save the original input file position and seek to the offset position
+    off_t inputFileOrigOffset = lseek(in_fd, 0, SEEK_CUR);
+    if (inputFileOrigOffset == -1 || lseek(in_fd, offtOffset, SEEK_SET) == -1)
+    {
+        goto error;
+    }
+
+    // Allocate a buffer
+    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
+    buffer = (char*)malloc(bufferLength);
+    if (buffer == NULL)
+    {
+        goto error;
+    }
+
+    // Repeatedly read from the source and write to the destination
+    while (count > 0)
+    {
+        size_t numBytesToRead = Min((size_t)count, bufferLength);
+
+        // Read up to what will fit in our buffer.  We're done if we get back 0 bytes or read 'count' bytes
+        ssize_t bytesRead;
+        while ((bytesRead = read(in_fd, buffer, numBytesToRead)) < 0 && errno == EINTR);
+        if (bytesRead == -1)
+        {
+            goto error;
+        }
+        if (bytesRead == 0)
+        {
+            break;
+        }
+        assert(bytesRead > 0);
+
+        // Write what was read.
+        ssize_t writeOffset = 0;
+        while (bytesRead > 0)
+        {
+            ssize_t bytesWritten;
+            while ((bytesWritten = write(out_fd, buffer + writeOffset, (size_t)bytesRead)) < 0 && errno == EINTR);
+            if (bytesWritten == -1)
+            {
+                goto error;
+            }
+            assert(bytesWritten >= 0);
+            bytesRead -= bytesWritten;
+            count -= bytesWritten;
+            writeOffset += bytesWritten;
+            *sent += bytesWritten;
+        }
+    }
+
+    // Restore the original input file position
+    if (lseek(in_fd, inputFileOrigOffset, SEEK_SET) == -1)
+    {
+        goto error;
+    }
+
+    free(buffer);
+    return Error_SUCCESS;
+
+error:
+    savedErrno = errno;
+    free(buffer);
+    return SystemNative_ConvertErrorPlatformToPal(savedErrno);
+
 #endif
 }
 

@@ -132,7 +132,7 @@ namespace System.IO
         {
             // This was probably meant to call _unmanagedStream.SetLength(value), but it was forgotten in V.4.0.
             // Now this results in a call to the base which touches the underlying array which is never actually used.
-            // We cannot fix it due to compat now, but we should fix this at the next SxS release oportunity.
+            // We cannot fix it due to compat now, but we should fix this at the next SxS release opportunity.
             base.SetLength(value);
         }
 

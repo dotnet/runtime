@@ -333,6 +333,34 @@ set(libunwind_s390x_la_SOURCES_s390x
     s390x/Gget_proc_info.c s390x/Gregs.c s390x/Gresume.c
     s390x/Gis_signal_frame.c s390x/Gstep.c
 )
+# The list of files that go both into libunwind and libunwind-ppc64le:
+set(libunwind_la_SOURCES_ppc64le_common
+    ${libunwind_la_SOURCES_common}
+    ppc64/is_fpreg.c ppc64/regname.c ppc64/get_func_addr.c
+)
+
+# The list of files that go into libunwind:
+set(libunwind_la_SOURCES_ppc64le
+    ${libunwind_la_SOURCES_ppc64le_common}
+    ${libunwind_la_SOURCES_local}
+    ppc64/setcontext.S 
+    ppc64/Lapply_reg_state.c ppc64/Lreg_states_iterate.c
+    ppc64/Lcreate_addr_space.c ppc/Lget_save_loc.c ppc64/Lglobal.c
+    ppc64/Linit.c ppc/Linit_local.c 
+    ppc64/Lregs.c ppc64/Lresume.c
+    ppc/Lis_signal_frame.c ppc64/Lstep.c
+)
+
+# The list of files that go into libunwind-ppc64le:
+set(libunwind_ppc64le_la_SOURCES_ppc64le
+    ${libunwind_la_SOURCES_ppc64le_common}
+    ${libunwind_la_SOURCES_generic}
+    ppc64/Gapply_reg_state.c ppc64/Greg_states_iterate.c
+    ppc64/Gcreate_addr_space.c ppc/Gget_save_loc.c ppc64/Gglobal.c
+    ppc64/Ginit.c ppc/Ginit_local.c
+    ppc64/Gregs.c ppc64/Gresume.c
+    ppc/Gis_signal_frame.c ppc64/Gstep.c
+)
 
 if(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_HOST_ARCH_ARM64)
@@ -363,6 +391,10 @@ if(CLR_CMAKE_HOST_UNIX)
     elseif(CLR_CMAKE_HOST_ARCH_S390X)
         set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
         set(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
+        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+    elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
+        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_ppc64le})
+        set(libunwind_remote_la_SOURCES             ${libunwind_ppc64le_la_SOURCES_ppc64le})
         set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
         set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_loongarch})
@@ -418,6 +450,10 @@ else(CLR_CMAKE_HOST_UNIX)
         set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
         set(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
         set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+    elseif(CLR_CMAKE_TARGET_ARCH_POWERPC64)
+        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_ppc64le})
+        set(libunwind_remote_la_SOURCES             ${libunwind_ppc64le_la_SOURCES_ppc64le})
+        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     endif()
 
     set_source_files_properties(${CLR_DIR}/pal/src/exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/inc)
@@ -434,5 +470,9 @@ else(CLR_CMAKE_HOST_UNIX)
       ${libunwind_elf_la_SOURCES}
     )
 endif(CLR_CMAKE_HOST_UNIX)
+
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-int-conversion>)
+endif()
 
 addprefix(LIBUNWIND_SOURCES "${CMAKE_CURRENT_LIST_DIR}/libunwind/src" "${LIBUNWIND_SOURCES_BASE}")

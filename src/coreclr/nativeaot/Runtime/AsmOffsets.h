@@ -42,7 +42,7 @@ ASM_OFFSET(   14,    18, MethodTable, m_VTable)
 ASM_OFFSET(    0,     0, Thread, m_rgbAllocContextBuffer)
 ASM_OFFSET(   28,    38, Thread, m_ThreadStateFlags)
 ASM_OFFSET(   2c,    40, Thread, m_pTransitionFrame)
-ASM_OFFSET(   30,    48, Thread, m_pHackPInvokeTunnel)
+ASM_OFFSET(   30,    48, Thread, m_pDeferredTransitionFrame)
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
 #ifdef HOST_64BIT

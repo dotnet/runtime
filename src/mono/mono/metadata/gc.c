@@ -481,7 +481,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 				break;
 			}
 
-			res = mono_coop_sem_timedwait (&req->done, timeout - elapsed, MONO_SEM_FLAGS_ALERTABLE);
+			res = mono_coop_sem_timedwait (&req->done, GINT64_TO_UINT (timeout - elapsed), MONO_SEM_FLAGS_ALERTABLE);
 		}
 
 		if (res == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {

@@ -129,6 +129,18 @@ The wrapper script used to actually run these tests, accepts:
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
+### Symbolicating traces
+
+Exceptions thrown after the runtime starts get symbolicating from js itself. Exceptions before that, like asserts containing native traces get symbolicated by xharness using `src/mono/wasm/symbolicator`.
+
+If you need to symbolicate some traces manually, then you need the corresponding `dotnet.js.symbols` file. Then:
+
+```
+src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.js.symbols /path/to/file/with/traces
+```
+
+When not relinking, or not building with AOT, you can find `dotnet.js.symbols` in the runtime pack.
+
 ## Debugger tests on macOS
 
 Debugger tests need `Google Chrome` to be installed.

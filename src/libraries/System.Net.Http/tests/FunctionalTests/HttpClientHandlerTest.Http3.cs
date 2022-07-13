@@ -19,7 +19,9 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version30;
 
@@ -45,15 +47,7 @@ namespace System.Net.Http.Functional.Tests
                 using (requestStream)
                 {
                     Assert.False(settingsStream.CanWrite, "Expected unidirectional control stream.");
-
-                    long? streamType = await settingsStream.ReadIntegerAsync();
-                    Assert.Equal(Http3LoopbackStream.ControlStream, streamType);
-
-                    List<(long settingId, long settingValue)> settings = await settingsStream.ReadSettingsAsync();
-                    (long settingId, long settingValue) = Assert.Single(settings);
-
-                    Assert.Equal(Http3LoopbackStream.MaxHeaderListSize, settingId);
-                    Assert.Equal(headerSizeLimit * 1024L, settingValue);
+                    Assert.Equal(headerSizeLimit * 1024L, connection.MaxHeaderListSize);
 
                     await requestStream.ReadRequestDataAsync();
                     await requestStream.SendResponseAsync();
@@ -80,7 +74,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55957")]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
@@ -119,7 +112,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56000")]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
@@ -171,13 +163,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
-            // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/53688")]
-            if (this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
             var lastRequestContentStarted = new TaskCompletionSource();
 
@@ -433,12 +418,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ServerCertificateCustomValidationCallback_Succeeds()
         {
-            // Mock doesn't make use of cart validation callback.
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             HttpRequestMessage? callbackRequest = null;
             int invocationCount = 0;
 
@@ -575,15 +554,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [ConditionalTheory(nameof(IsQuicSupported))]
         [MemberData(nameof(InteropUris))]
         public async Task Public_Interop_ExactVersion_Success(string uri)
         {
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             using HttpClient client = CreateHttpClient();
             using HttpRequestMessage request = new HttpRequestMessage
             {
@@ -599,15 +573,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [ConditionalTheory(nameof(IsQuicSupported))]
         [MemberData(nameof(InteropUrisWithContent))]
         public async Task Public_Interop_ExactVersion_BufferContent_Success(string uri)
         {
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             using HttpClient client = CreateHttpClient();
             using HttpRequestMessage request = new HttpRequestMessage
             {
@@ -626,18 +595,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [ConditionalTheory(nameof(IsQuicSupported))]
         [MemberData(nameof(InteropUris))]
         public async Task Public_Interop_Upgrade_Success(string uri)
         {
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             // Create the handler manually without passing in useVersion = Http3 to avoid using VersionHttpClientHandler,
             // because it overrides VersionPolicy on each request with RequestVersionExact (bypassing Alt-Svc code path completely).
-            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(quicImplementationProvider: UseQuicImplementationProvider));
+            using HttpClient client = CreateHttpClient(CreateHttpClientHandler());
 
             // First request uses HTTP/1 or HTTP/2 and receives an Alt-Svc either by header or (with HTTP/2) by frame.
 
@@ -677,16 +641,11 @@ namespace System.Net.Http.Functional.Tests
             CancellationToken
         }
 
-        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [ConditionalTheory(nameof(IsQuicSupported))]
         [InlineData(CancellationType.Dispose)]
         [InlineData(CancellationType.CancellationToken)]
         public async Task ResponseCancellation_ServerReceivesCancellation(CancellationType type)
         {
-            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
-            {
-                return;
-            }
-
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
             using var clientDone = new SemaphoreSlim(0);
@@ -765,14 +724,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56265")]
         public async Task ResponseCancellation_BothCancellationTokenAndDispose_Success()
         {
-            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
-            {
-                return;
-            }
-
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
             using var clientDone = new SemaphoreSlim(0);
@@ -852,15 +805,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsMsQuicSupported))]
+        [ConditionalFact(nameof(IsQuicSupported))]
         public async Task Alpn_H3_Success()
         {
-            // Mock doesn't use ALPN.
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             var options = new Http3Options() { Alpn = SslApplicationProtocol.Http3.ToString() };
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
 
@@ -892,15 +839,9 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(nameof(IsMsQuicSupported))]
+        [ConditionalFact(nameof(IsQuicSupported))]
         public async Task Alpn_NonH3_NegotiationFailure()
         {
-            // Mock doesn't use ALPN.
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
 
@@ -962,7 +903,7 @@ namespace System.Net.Http.Functional.Tests
             return (SslApplicationProtocol)alpn;
         }
 
-        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [ConditionalTheory(nameof(IsQuicSupported))]
         [MemberData(nameof(StatusCodesTestData))]
         public async Task StatusCodes_ReceiveSuccess(HttpStatusCode statusCode, bool qpackEncode)
         {
@@ -1058,6 +999,7 @@ namespace System.Net.Http.Functional.Tests
             var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
 
             Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
             // Send headers
             await requestStream.FlushAsync();
 
@@ -1087,15 +1029,10 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(nameof(IsMsQuicSupported))]
+        [ConditionalFact(nameof(IsQuicSupported))]
         [OuterLoop("Uses Task.Delay")]
         public async Task RequestContentStreaming_Timeout_BothClientAndServerReceiveCancellation()
         {
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             var message = new byte[1024];
             var random = new Random(0);
             random.NextBytes(message);
@@ -1157,14 +1094,9 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(nameof(IsMsQuicSupported))]
+        [ConditionalFact(nameof(IsQuicSupported))]
         public async Task RequestContentStreaming_Cancellation_BothClientAndServerReceiveCancellation()
         {
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             var message = new byte[1024];
             var random = new Random(0);
             random.NextBytes(message);
@@ -1227,14 +1159,9 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
-        [ConditionalFact(nameof(IsMsQuicSupported))]
+        [ConditionalFact(nameof(IsQuicSupported))]
         public async Task DuplexStreaming_RequestCTCancellation_DoesNotApply()
         {
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             var message = new byte[1024];
             var random = new Random(0);
             random.NextBytes(message);
@@ -1313,6 +1240,92 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
+        [ConditionalTheory(nameof(IsQuicSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DuplexStreaming_AbortByServer_StreamingCancelled(bool graceful)
+        {
+            var message = new byte[1024];
+            var random = new Random(0);
+            random.NextBytes(message);
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            Http3LoopbackConnection connection = null;
+            Http3LoopbackStream serverStream = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                serverStream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData requestData = await serverStream.ReadRequestDataAsync(readBody: false).WaitAsync(TimeSpan.FromSeconds(30));
+
+                // abort the connection, including the just-received connection
+                if (graceful)
+                {
+                    await connection.ShutdownAsync(true);
+                }
+                else
+                {
+                    await connection.CloseAsync(Http3LoopbackConnection.H3_INTERNAL_ERROR);
+                }
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                var cts = new CancellationTokenSource();
+
+                var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+
+                // wait for the content to start transferring
+                Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10)); // the stream is Http3WriteStream
+
+                CancellationToken serializeToken = requestContent.SerializeCancellationToken;
+                Assert.False(serializeToken.IsCancellationRequested);
+
+                // Send headers
+                await requestStream.FlushAsync();
+
+                // wait for the server to abort the request, which should cancel the token provided to the HttpContent
+                TaskCompletionSource waitTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                {
+                    using CancellationTokenRegistration registration = serializeToken.UnsafeRegister(static tcs => ((TaskCompletionSource)tcs!).TrySetResult(), waitTcs);
+                    await waitTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                }
+
+                if (graceful)
+                {
+                    // HttpClient will retry to send the request, so we cancel the sending itself
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => responseTask);
+                }
+                else
+                {
+                    await Assert.ThrowsAnyAsync<HttpRequestException>(() => responseTask);
+                }
+            });
+
+            await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(120));
+
+            Assert.NotNull(serverStream);
+            serverStream.Dispose();
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
         public static TheoryData<HttpStatusCode, bool> StatusCodesTestData()
         {
             var statuses = Enum.GetValues(typeof(HttpStatusCode)).Cast<HttpStatusCode>().Where(s => s >= HttpStatusCode.OK); // exclude informational
@@ -1346,9 +1359,7 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
-                // This endpoint is consistently failing.
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/63009")]
-                //{ "https://pgjones.dev/" }, // aioquic with content
+                { "https://quic.nginx.org/" }, // Nginx with content
             };
     }
 
@@ -1357,6 +1368,8 @@ namespace System.Net.Http.Functional.Tests
         private readonly TaskCompletionSource _completeTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<Stream> _getStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        public CancellationToken SerializeCancellationToken { get; private set; }
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             throw new NotSupportedException();
@@ -1364,6 +1377,7 @@ namespace System.Net.Http.Functional.Tests
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
+            SerializeCancellationToken = cancellationToken;
             _getStreamTcs.TrySetResult(stream);
             await _completeTcs.Task.WaitAsync(cancellationToken);
         }

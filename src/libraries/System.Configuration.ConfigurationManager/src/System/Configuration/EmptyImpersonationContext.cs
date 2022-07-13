@@ -12,7 +12,7 @@ namespace System.Configuration
 
         internal static IDisposable GetStaticInstance()
         {
-            return s_emptyImpersonationContext ?? (s_emptyImpersonationContext = new EmptyImpersonationContext());
+            return s_emptyImpersonationContext ??= new EmptyImpersonationContext();
         }
     }
 }

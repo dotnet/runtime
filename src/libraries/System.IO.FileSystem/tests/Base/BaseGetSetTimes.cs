@@ -148,7 +148,7 @@ namespace System.IO.Tests
             T item = GetExistingItem();
 
             // These linq calls make an IEnumerable of pairs of functions that are not identical
-            // (eg. not (creationtime, creationtime)), includes both orders as seperate entries
+            // (eg. not (creationtime, creationtime)), includes both orders as separate entries
             // as they it have different behavior in reverse order (of functions), in addition
             // to the pairs of functions, there is a reverse bool that allows a test for both
             // increasing and decreasing timestamps as to not limit the test unnecessarily.

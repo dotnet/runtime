@@ -57,12 +57,6 @@ namespace Internal.Runtime.Augments
         }
 
         [CLSCompliant(false)]
-        public static void InitializeInteropLookups(InteropCallbacks callbacks)
-        {
-            s_interopCallbacks = callbacks;
-        }
-
-        [CLSCompliant(false)]
         public static void InitializeStackTraceMetadataSupport(StackTraceMetadataCallbacks callbacks)
         {
             s_stackTraceMetadataCallbacks = callbacks;
@@ -205,9 +199,16 @@ namespace Internal.Runtime.Augments
             functionPointer = delegateObj.m_functionPointer;
         }
 
+        // Low level method that returns the loaded modules as array. ReadOnlySpan returning overload
+        // cannot be used early during startup.
         public static int GetLoadedModules(TypeManagerHandle[] resultArray)
         {
             return Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetLoadedModules(resultArray);
+        }
+
+        public static ReadOnlySpan<TypeManagerHandle> GetLoadedModules()
+        {
+            return Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetLoadedModules();
         }
 
         public static IntPtr GetOSModuleFromPointer(IntPtr pointerVal)
@@ -809,16 +810,6 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        internal static InteropCallbacks InteropCallbacks
-        {
-            get
-            {
-                InteropCallbacks callbacks = s_interopCallbacks;
-                Debug.Assert(callbacks != null);
-                return callbacks;
-            }
-        }
-
         internal static StackTraceMetadataCallbacks StackTraceCallbacksIfAvailable
         {
             get
@@ -842,7 +833,6 @@ namespace Internal.Runtime.Augments
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
-        private static InteropCallbacks s_interopCallbacks;
 
         public static void ReportUnhandledException(Exception exception)
         {
@@ -968,7 +958,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
-                Buffer.ZeroMemory((byte*)region, (nuint)cbBufferAligned);
+                NativeMemory.Clear(region, (nuint)cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T>((IntPtr)pfnTargetToInvoke, region, ref context);
@@ -1007,7 +997,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
-                Buffer.ZeroMemory((byte*)region, (nuint)cbBufferAligned);
+                NativeMemory.Clear(region, (nuint)cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T, U>((IntPtr)pfnTargetToInvoke, region, ref context, ref context2);
