@@ -211,6 +211,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <param name="type">Parameter type</param>
         /// <param name="argDest">Location of the parameter</param>
         /// <param name="frame">Frame map to update by marking GC locations</param>
+        /// <param name="topLevel">Indicates if the call is for a type or inner member</param>
         private void GcScanRoots(TypeDesc type, in ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool topLevel)
         {
             switch (type.Category)
