@@ -1237,6 +1237,14 @@ namespace ILCompiler.Dataflow
             ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
                                                              offset, out newObjValue);
 
+            // Multi-dimensional array access is represented as a call to a special Get method on the array (runtime provided method)
+            // We don't track multi-dimensional arrays in any way, so return unknown value.
+            if (calledMethod is ArrayMethod { Kind: ArrayMethodKind.Get })
+            {
+                currentStack.Push(new StackSlot(UnknownValue.Instance));
+                return;
+            }
+
             var dereferencedMethodParams = new List<MultiValue>();
             foreach (var argument in methodArguments)
                 dereferencedMethodParams.Add(DereferenceValue(argument, locals, ref interproceduralState));
