@@ -13,7 +13,7 @@ namespace System.Threading.RateLimiting.Tests
 {
     internal static class Utils
     {
-        internal static Func<Task> StopTimerAndGetTimerFunc<T>(PartitionedRateLimiter<T> limiter)
+        internal static async Task<Func<Task>> StopTimerAndGetTimerFunc<T>(PartitionedRateLimiter<T> limiter)
         {
             var innerTimer = limiter.GetType().GetField("_timer", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
             Assert.NotNull(innerTimer);
@@ -21,6 +21,11 @@ namespace System.Threading.RateLimiting.Tests
             Assert.NotNull(timerStopMethod);
             // Stop the current Timer so it doesn't fire unexpectedly
             timerStopMethod.Invoke(innerTimer.GetValue(limiter), Array.Empty<object>());
+
+            // Await the timer task to make sure the Heartbeat continuation isn't going to run in the background during test code
+            var timerTask = limiter.GetType().GetField("_timerTask", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            Assert.NotNull(timerTask);
+            await (Task)timerTask.GetValue(limiter);
 
             // Create a new Timer object so that disposing the PartitionedRateLimiter doesn't fail with an ODE, but this new Timer wont actually do anything
             var timerCtor = innerTimer.FieldType.GetConstructor(new Type[] { typeof(TimeSpan), typeof(TimeSpan) });
@@ -31,6 +36,7 @@ namespace System.Threading.RateLimiting.Tests
 
             var timerLoopMethod = limiter.GetType().GetMethod("Heartbeat", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
             Assert.NotNull(timerLoopMethod);
+
             return () => (Task)timerLoopMethod.Invoke(limiter, Array.Empty<object>());
         }
     }

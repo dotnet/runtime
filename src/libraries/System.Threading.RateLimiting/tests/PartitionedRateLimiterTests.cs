@@ -462,7 +462,7 @@ namespace System.Threading.RateLimiting.Tests
                 });
             });
 
-            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
+            var timerLoopMethod = await Utils.StopTimerAndGetTimerFunc(limiter);
 
             var lease = limiter.Acquire("");
             Assert.True(lease.IsAcquired);
@@ -514,7 +514,7 @@ namespace System.Threading.RateLimiting.Tests
                 }
             });
 
-            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
+            var timerLoopMethod = await Utils.StopTimerAndGetTimerFunc(limiter);
 
             var lease = limiter.Acquire("1");
             Assert.True(lease.IsAcquired);
@@ -569,7 +569,7 @@ namespace System.Threading.RateLimiting.Tests
                 });
             });
 
-            var timerLoopMethod = Utils.StopTimerAndGetTimerFunc(limiter);
+            var timerLoopMethod = await Utils.StopTimerAndGetTimerFunc(limiter);
 
             // Add the replenishing limiter to the internal storage
             limiter.Acquire("2");
