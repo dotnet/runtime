@@ -32,8 +32,6 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
-using CallingConventions = Internal.TypeSystem.CallingConventions;
-
 namespace Internal.JitInterface
 {
     enum CompilationResult
@@ -1453,7 +1451,7 @@ namespace Internal.JitInterface
         }
         private CorInfoCallConvExtension GetUnmanagedCallConv(MethodDesc methodDesc, out bool suppressGCTransition)
         {
-            CallingConventions callingConventions;
+            UnmanagedCallingConventions callingConventions;
 
             if ((methodDesc.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == 0)
             {
@@ -1480,21 +1478,21 @@ namespace Internal.JitInterface
             return ToCorInfoCallConvExtension(signature.GetStandaloneMethodSignatureCallingConventions(), out suppressGCTransition);
         }
 
-        private CorInfoCallConvExtension ToCorInfoCallConvExtension(CallingConventions callConvs, out bool suppressGCTransition)
+        private CorInfoCallConvExtension ToCorInfoCallConvExtension(UnmanagedCallingConventions callConvs, out bool suppressGCTransition)
         {
             CorInfoCallConvExtension result;
-            switch (callConvs & CallingConventions.CallingConventionMask)
+            switch (callConvs & UnmanagedCallingConventions.CallingConventionMask)
             {
-                case CallingConventions.Cdecl:
+                case UnmanagedCallingConventions.Cdecl:
                     result = CorInfoCallConvExtension.C;
                     break;
-                case CallingConventions.Stdcall:
+                case UnmanagedCallingConventions.Stdcall:
                     result = CorInfoCallConvExtension.Stdcall;
                     break;
-                case CallingConventions.Thiscall:
+                case UnmanagedCallingConventions.Thiscall:
                     result = CorInfoCallConvExtension.Thiscall;
                     break;
-                case CallingConventions.Fastcall:
+                case UnmanagedCallingConventions.Fastcall:
                     result = CorInfoCallConvExtension.Fastcall;
                     break;
                 default:
@@ -1503,7 +1501,7 @@ namespace Internal.JitInterface
                     break;
             }
 
-            if ((callConvs & CallingConventions.IsMemberFunction) != 0)
+            if ((callConvs & UnmanagedCallingConventions.IsMemberFunction) != 0)
             {
                 result = result switch
                 {
@@ -1514,7 +1512,7 @@ namespace Internal.JitInterface
                 };
             }
 
-            suppressGCTransition = (callConvs & CallingConventions.IsSuppressGcTransition) != 0;
+            suppressGCTransition = (callConvs & UnmanagedCallingConventions.IsSuppressGcTransition) != 0;
 
             return result;
         }

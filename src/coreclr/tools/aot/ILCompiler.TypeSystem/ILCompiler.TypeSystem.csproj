@@ -119,9 +119,6 @@
     <Compile Include="..\..\Common\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs">
       <Link>Utilities\ArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\CallingConventions.cs">
-      <Link>TypeSystem\Common\CallingConventions.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>

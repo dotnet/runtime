@@ -16,7 +16,7 @@ namespace Internal.TypeSystem
     /// irrespective of their metadata encoding.
     /// </summary>
     [Flags]
-    public enum CallingConventions
+    public enum UnmanagedCallingConventions
     {
         //
         // Calling convention modifiers
@@ -47,21 +47,21 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets calling conventions for a standalone ('calli') method signature.
         /// </summary>
-        public static CallingConventions GetStandaloneMethodSignatureCallingConventions(this MethodSignature signature)
+        public static UnmanagedCallingConventions GetStandaloneMethodSignatureCallingConventions(this MethodSignature signature)
         {
             // If calling convention is anything but 'unmanaged', or there's no modifiers, we can bitcast to our enum and we're done.
             MethodSignatureFlags unmanagedCallconv = signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask;
             if (unmanagedCallconv != MethodSignatureFlags.UnmanagedCallingConvention)
             {
-                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)CallingConventions.Cdecl
-                    && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)CallingConventions.Stdcall
-                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)CallingConventions.Thiscall);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
                 Debug.Assert(unmanagedCallconv != 0);
-                return (CallingConventions)unmanagedCallconv;
+                return (UnmanagedCallingConventions)unmanagedCallconv;
             }
 
             // If calling convention is 'unmanaged', there might be more metadata in the custom modifiers.
-            CallingConventions result = 0;
+            UnmanagedCallingConventions result = 0;
 
             if (signature.HasEmbeddedSignatureData)
             {
@@ -83,7 +83,7 @@ namespace Internal.TypeSystem
             }
 
             // If we haven't found a calling convention in the modifiers, the calling convention is 'unmanaged'.
-            if ((result & CallingConventions.CallingConventionMask) == 0)
+            if ((result & UnmanagedCallingConventions.CallingConventionMask) == 0)
             {
                 result |= GetPlatformDefaultUnmanagedCallingConvention(signature.Context);
             }
@@ -91,18 +91,18 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        public static CallingConventions GetUnmanagedCallersOnlyMethodCallingConventions(this MethodDesc method)
+        public static UnmanagedCallingConventions GetUnmanagedCallersOnlyMethodCallingConventions(this MethodDesc method)
         {
             Debug.Assert(method.IsUnmanagedCallersOnly);
             CustomAttributeValue<TypeDesc> unmanagedCallersOnlyAttribute = ((EcmaMethod)method).GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute").Value;
-            return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute, method.Context) & ~CallingConventions.IsSuppressGcTransition;
+            return GetUnmanagedCallingConventionFromAttribute(unmanagedCallersOnlyAttribute, method.Context) & ~UnmanagedCallingConventions.IsSuppressGcTransition;
         }
 
-        public static CallingConventions GetPInvokeMethodCallingConventions(this MethodDesc method)
+        public static UnmanagedCallingConventions GetPInvokeMethodCallingConventions(this MethodDesc method)
         {
             Debug.Assert(method.IsPInvoke);
 
-            CallingConventions result;
+            UnmanagedCallingConventions result;
 
             if (method is Internal.IL.Stubs.PInvokeTargetNativeMethod pinvokeTarget)
                 method = pinvokeTarget.Target;
@@ -110,10 +110,10 @@ namespace Internal.TypeSystem
             MethodSignatureFlags unmanagedCallConv = method.GetPInvokeMethodMetadata().Flags.UnmanagedCallingConvention;
             if (unmanagedCallConv != MethodSignatureFlags.None)
             {
-                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)CallingConventions.Cdecl
-                    && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)CallingConventions.Stdcall
-                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)CallingConventions.Thiscall);
-                result = (CallingConventions)unmanagedCallConv;
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
+                result = (UnmanagedCallingConventions)unmanagedCallConv;
             }
             else
             {
@@ -129,12 +129,12 @@ namespace Internal.TypeSystem
             }
 
             if (method.HasCustomAttribute("System.Runtime.InteropServices", "SuppressGCTransitionAttribute"))
-                result |= CallingConventions.IsSuppressGcTransition;
+                result |= UnmanagedCallingConventions.IsSuppressGcTransition;
 
             return result;
         }
 
-        private static CallingConventions GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, TypeSystemContext context)
+        private static UnmanagedCallingConventions GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, TypeSystemContext context)
         {
             ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
             foreach (var arg in attributeWithCallConvsArray.NamedArguments)
@@ -145,7 +145,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            CallingConventions result = 0;
+            UnmanagedCallingConventions result = 0;
 
             if (!callConvArray.IsDefault)
             {
@@ -159,7 +159,7 @@ namespace Internal.TypeSystem
             }
 
             // If we haven't found a calling convention in the attribute, the calling convention is 'unmanaged'.
-            if ((result & CallingConventions.CallingConventionMask) == 0)
+            if ((result & UnmanagedCallingConventions.CallingConventionMask) == 0)
             {
                 result |= GetPlatformDefaultUnmanagedCallingConvention(context);
             }
@@ -167,19 +167,19 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        private static CallingConventions AccumulateCallingConventions(CallingConventions existing, MetadataType newConvention)
+        private static UnmanagedCallingConventions AccumulateCallingConventions(UnmanagedCallingConventions existing, MetadataType newConvention)
         {
             if (newConvention.Namespace != "System.Runtime.CompilerServices")
                 return existing;
 
-            CallingConventions? addedCallConv = newConvention.Name switch
+            UnmanagedCallingConventions? addedCallConv = newConvention.Name switch
             {
-                "CallConvCdecl" => CallingConventions.Cdecl,
-                "CallConvStdcall" => CallingConventions.Stdcall,
-                "CallConvFastcall" => CallingConventions.Fastcall,
-                "CallConvThiscall" => CallingConventions.Thiscall,
-                "CallConvSuppressGCTransition" => CallingConventions.IsSuppressGcTransition,
-                "CallConvMemberFunction" => CallingConventions.IsMemberFunction,
+                "CallConvCdecl" => UnmanagedCallingConventions.Cdecl,
+                "CallConvStdcall" => UnmanagedCallingConventions.Stdcall,
+                "CallConvFastcall" => UnmanagedCallingConventions.Fastcall,
+                "CallConvThiscall" => UnmanagedCallingConventions.Thiscall,
+                "CallConvSuppressGCTransition" => UnmanagedCallingConventions.IsSuppressGcTransition,
+                "CallConvMemberFunction" => UnmanagedCallingConventions.IsMemberFunction,
                 _ => null
             };
 
@@ -187,13 +187,13 @@ namespace Internal.TypeSystem
                 return existing;
 
             // Do not allow accumulating additional calling conventions - only modifiers are allowed
-            if ((addedCallConv.Value & CallingConventions.CallingConventionMask) != 0 && (existing & CallingConventions.CallingConventionMask) != 0)
+            if ((addedCallConv.Value & UnmanagedCallingConventions.CallingConventionMask) != 0 && (existing & UnmanagedCallingConventions.CallingConventionMask) != 0)
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramMultipleCallConv);
 
             return existing | addedCallConv.Value;
         }
 
-        private static CallingConventions GetPlatformDefaultUnmanagedCallingConvention(TypeSystemContext context)
-            => context.Target.IsWindows ? CallingConventions.Stdcall : CallingConventions.Cdecl;
+        private static UnmanagedCallingConventions GetPlatformDefaultUnmanagedCallingConvention(TypeSystemContext context)
+            => context.Target.IsWindows ? UnmanagedCallingConventions.Stdcall : UnmanagedCallingConventions.Cdecl;
     }
 }

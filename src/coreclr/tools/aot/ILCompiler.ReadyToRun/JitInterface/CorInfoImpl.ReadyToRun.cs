@@ -25,8 +25,6 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using System.Text;
 
-using CallingConventions = Internal.TypeSystem.CallingConventions;
-
 namespace Internal.JitInterface
 {
     internal class RequiresRuntimeJitIfUsedSymbol
@@ -2649,7 +2647,7 @@ namespace Internal.JitInterface
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
 
-            if ((ecmaMethod.GetPInvokeMethodCallingConventions() & CallingConventions.IsSuppressGcTransition) != 0)
+            if ((ecmaMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
             {
                 pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken));
                 pLookup.accessType = InfoAccessType.IAT_PVALUE;
