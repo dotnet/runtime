@@ -170,7 +170,8 @@ namespace System.Net.Http
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
 
-            static long TimeSpanToMs(TimeSpan value) {
+            static long TimeSpanToMs(TimeSpan value)
+            {
                 double milliseconds = value.TotalMilliseconds;
                 return (long)(milliseconds > int.MaxValue ? int.MaxValue : milliseconds);
             }
@@ -486,7 +487,7 @@ namespace System.Net.Http
                         if (frameHeader.Type == FrameType.GoAway)
                         {
                             var (_, errorCode) = ReadGoAwayFrame(frameHeader);
-                            ThrowProtocolError(errorCode);
+                            ThrowProtocolError(errorCode, SR.net_http_http2_connection_close);
                         }
                         else
                         {
@@ -1045,7 +1046,7 @@ namespace System.Net.Http
             var (lastStreamId, errorCode) = ReadGoAwayFrame(frameHeader);
 
             Debug.Assert(lastStreamId >= 0);
-            Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode);
+            Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode, SR.net_http_http2_connection_close);
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();
@@ -1258,7 +1259,7 @@ namespace System.Net.Http
                 Debug.Assert(sizeof(long) == FrameHeader.PingLength);
 
                 Span<byte> span = writeBuffer.Span;
-                FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, state.isAck ? FrameFlags.Ack: FrameFlags.None, streamId: 0);
+                FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, state.isAck ? FrameFlags.Ack : FrameFlags.None, streamId: 0);
                 BinaryPrimitives.WriteInt64BigEndian(span.Slice(FrameHeader.Size), state.pingContent);
 
                 return true;
@@ -1923,13 +1924,13 @@ namespace System.Net.Http
 
             // Some frame types define bits differently.  Define them all here for simplicity.
 
-            EndStream =     0b00000001,
-            Ack =           0b00000001,
-            EndHeaders =    0b00000100,
-            Padded =        0b00001000,
-            Priority =      0b00100000,
+            EndStream = 0b00000001,
+            Ack = 0b00000001,
+            EndHeaders = 0b00000100,
+            Padded = 0b00001000,
+            Priority = 0b00100000,
 
-            ValidBits =     0b00101101
+            ValidBits = 0b00101101
         }
 
         private enum SettingId : ushort
@@ -2140,7 +2141,7 @@ namespace System.Net.Http
             ThrowProtocolError(Http2ProtocolErrorCode.ProtocolError);
 
         [DoesNotReturn]
-        private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode) =>
-            throw HttpProtocolException.CreateHttp2ConnectionException(errorCode);
+        private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode, string? message = null) =>
+            throw HttpProtocolException.CreateHttp2ConnectionException(errorCode, message);
     }
 }

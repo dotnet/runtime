@@ -231,8 +231,9 @@ namespace System.Net.Http
             catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
             {
                 Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
 
-                switch ((Http3ErrorCode)ex.ApplicationErrorCode.Value)
+                switch (code)
                 {
                     case Http3ErrorCode.VersionFallback:
                         // The server is requesting us fall back to an older HTTP version.
@@ -244,14 +245,16 @@ namespace System.Net.Http
 
                     default:
                         // Our stream was reset.
-                        Exception? abortException = _connection.AbortException;
-                        throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
+                        throw new HttpRequestException(SR.net_http_client_execution_error, HttpProtocolException.CreateHttp3StreamException(code));
                 }
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
             {
                 // Our connection was reset. Start shutting down the connection.
-                Exception abortException = _connection.Abort(ex);
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
+
+                Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.

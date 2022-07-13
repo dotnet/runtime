@@ -408,6 +408,9 @@
   <data name="net_http_http2_connection_error" xml:space="preserve">
     <value>The HTTP/2 server sent invalid data on the connection. HTTP/2 error code '{0}' (0x{1}).</value>
   </data>
+  <data name="net_http_http2_connection_close" xml:space="preserve">
+    <value>The HTTP/2 server closed the connection. HTTP/2 error code '{0}' (0x{1}).</value>
+  </data>
   <data name="net_http_http2_stream_error" xml:space="preserve">
     <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
   </data>
@@ -479,6 +482,9 @@
   </data>
   <data name="net_http_http3_connection_error" xml:space="preserve">
     <value>The HTTP/3 server sent invalid data on the connection. HTTP/3 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http3_connection_close" xml:space="preserve">
+    <value>The HTTP/3 server closed the connection. HTTP/3 error code '{0}' (0x{1}).</value>
   </data>
   <data name="net_http_retry_on_older_version" xml:space="preserve">
     <value>The server is unable to process the request using the current HTTP version and indicates the request should be retried on an older HTTP version.</value>
