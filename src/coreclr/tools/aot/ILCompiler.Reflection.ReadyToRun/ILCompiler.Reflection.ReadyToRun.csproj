@@ -7,8 +7,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <AssemblyKey>Open</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
-    <!-- ILSpy requires this assembly to target netstandard2.0 -->
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- ILSpy requires this assembly to target net6.0 -->
+    <TargetFramework>net6.0</TargetFramework>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
@@ -16,11 +16,6 @@
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
