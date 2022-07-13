@@ -31,6 +31,14 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
+        private async Task AssertProtocolErrorAsync(long errorCode, Func<Task> task)
+        {
+            HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(task);
+            _output.WriteLine(outerEx.InnerException.Message);
+            HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
+            Assert.Equal(errorCode, protocolEx.ErrorCode);
+        }
+
         [Theory]
         [InlineData(10)] // 2 bytes settings value.
         [InlineData(100)] // 4 bytes settings value.
@@ -298,11 +306,77 @@ namespace System.Net.Http.Functional.Tests
                     VersionPolicy = HttpVersionPolicy.RequestVersionExact
                 };
 
-                await Assert.ThrowsAsync<HttpRequestException>(async () => await client.SendAsync(request));
+                await AssertProtocolErrorAsync(UnexpectedFrameErrorCode, () => client.SendAsync(request));
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
+
+        [Fact]
+        public async Task ServerClosesConnection_ThrowsHttpProtocolException()
+        {
+            const long GeneralProtocolError = 0x101;
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                await connection.CloseAsync(GeneralProtocolError);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await AssertProtocolErrorAsync(GeneralProtocolError, () => client.SendAsync(request));
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task ServerClosesStream_ThrowsHttpProtocolException()
+        {
+            // normally, the server should not use this code when resetting the stream, but we should still check if we behave sanely...
+            const long GeneralProtocolError = 0x101;
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                await stream.AbortAndWaitForShutdownAsync(GeneralProtocolError);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                await AssertProtocolErrorAsync(GeneralProtocolError, () => client.SendAsync(request));
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
 
         [Fact]
         public async Task RequestSentResponseDisposed_ThrowsOnServer()

@@ -421,6 +421,13 @@ namespace System.Net.Http
             {
                 // Shutdown initiated by us, no need to abort.
             }
+            catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
+            {
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
+
+                Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
+            }
             catch (Exception ex)
             {
                 Abort(ex);
