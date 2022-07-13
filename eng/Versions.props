@@ -36,16 +36,16 @@
       This version is a moving target until we ship.
       It should never go ahead of the Roslyn version included in the SDK version in dotnet/arcade's global.json to avoid causing breaks in product construction.
     -->
-    <MicrosoftCodeAnalysisVersion_4_X>4.2.0-2.final</MicrosoftCodeAnalysisVersion_4_X>
+    <MicrosoftCodeAnalysisVersion_4_X>4.3.0-2.final</MicrosoftCodeAnalysisVersion_4_X>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.3</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.3.0-1.22206.2</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.3.0-1.22206.2</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>4.3.0-1.22206.2</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.3.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.3.0-2.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.3.0-2.final</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22362.3</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <MicrosoftCodeAnalysisVersion>4.3.0-1.22206.2</MicrosoftCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisVersion>4.3.0-2.final</MicrosoftCodeAnalysisVersion>
     <!--
       TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
     -->
