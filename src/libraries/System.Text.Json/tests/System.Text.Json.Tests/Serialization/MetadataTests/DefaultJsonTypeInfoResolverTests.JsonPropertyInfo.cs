@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoOptionsAreSet()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(MyClass), options);
             CreatePropertyAndCheckOptions(options, typeInfo);
 
@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoPropertyTypeIsSet()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(MyClass), options);
             Assert.Equal(2, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoNameIsSetAndIsMutableForDefaultResolver()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(MyClass), options);
             Assert.Equal(2, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoForDefaultResolverHasNamingPoliciesRulesApplied()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(MyClass), options);
             Assert.Equal(2, typeInfo.Properties.Count);
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoCustomConverterIsNullWhenUsingCreateJsonPropertyInfo()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = new() { TypeInfoResolver = JsonSerializerOptions.Default.TypeInfoResolver };
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(TestClassWithCustomConverterOnProperty), options);
             JsonPropertyInfo propertyInfo = typeInfo.CreateJsonPropertyInfo(typeof(MyClass), "test");
 
@@ -121,7 +121,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoCustomConverterIsNotNullForPropertyWithCustomConverter()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(TestClassWithCustomConverterOnProperty), options);
             Assert.Equal(1, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
@@ -259,7 +259,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoGetIsNullAndMutableWhenUsingCreateJsonPropertyInfo()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(TestClassWithCustomConverterOnProperty), options);
             JsonPropertyInfo propertyInfo = typeInfo.CreateJsonPropertyInfo(typeof(MyClass), "test");
             Assert.Null(propertyInfo.Get);
@@ -275,7 +275,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoGetIsNotNullForDefaultResolver()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(TestClassWithCustomConverterOnProperty), options);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
 
@@ -383,7 +383,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoSetIsNullAndMutableWhenUsingCreateJsonPropertyInfo()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(TestClassWithCustomConverterOnProperty), options);
             JsonPropertyInfo propertyInfo = typeInfo.CreateJsonPropertyInfo(typeof(MyClass), "test");
             Assert.Null(propertyInfo.Set);
@@ -399,7 +399,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoSetIsNotNullForDefaultResolver()
         {
-            JsonSerializerOptions options = new();
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(TestClassWithCustomConverterOnProperty), options);
             Assert.Equal(1, typeInfo.Properties.Count);
             JsonPropertyInfo propertyInfo = typeInfo.Properties[0];

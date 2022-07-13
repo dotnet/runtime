@@ -271,6 +271,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             }
         }
 
+        // Wait for STOP_COMPLETE, the last event, so that all resources can be safely released.
         await valueTask.ConfigureAwait(false);
         _handle.Dispose();
 

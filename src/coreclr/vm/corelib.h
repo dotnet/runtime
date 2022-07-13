@@ -792,6 +792,7 @@ DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSup
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
+DEFINE_FIELD_U(_ctorStackTrace,            SafeHandle,            m_ctorStackTrace)
 DEFINE_FIELD_U(handle,                     SafeHandle,            m_handle)
 DEFINE_FIELD_U(_state,                     SafeHandle,            m_state)
 DEFINE_FIELD_U(_ownsHandle,                SafeHandle,            m_ownsHandle)

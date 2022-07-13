@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new RSACng(cngKey);
+                    return new RSACng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new DSACng(cngKey);
+                    return new DSACng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new ECDsaCng(cngKey);
+                    return new ECDsaCng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return GetPrivateKey<ECDiffieHellman>(
                 csp => throw new NotSupportedException(SR.NotSupported_ECDiffieHellman_Csp),
-                cngKey => new ECDiffieHellmanCng(cngKey)
+                cngKey => new ECDiffieHellmanCng(cngKey, transferOwnership: true)
             );
         }
 
@@ -385,8 +385,9 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
+                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                     pal.Dispose();
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw e;
                 }
             }
 
@@ -573,8 +574,9 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
+                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                     pal.Dispose();
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw e;
                 }
             }
 
@@ -596,8 +598,9 @@ namespace System.Security.Cryptography.X509Certificates
                 Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
                 handle))
             {
+                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                 pal.Dispose();
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw e;
             }
 
             // The value was transferred to the certificate.

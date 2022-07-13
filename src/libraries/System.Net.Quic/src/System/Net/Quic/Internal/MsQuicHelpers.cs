@@ -65,7 +65,8 @@ internal static class MsQuicHelpers
             handle.QuicHandle,
             parameter,
             &length,
-            (byte*)&value));
+            (byte*)&value),
+            $"GetParam({handle}, {parameter}) failed");
 
         return value;
     }
@@ -77,6 +78,7 @@ internal static class MsQuicHelpers
             handle.QuicHandle,
             parameter,
             (uint)sizeof(T),
-            (byte*)&value));
+            (byte*)&value),
+            $"SetParam({handle}, {parameter}) failed");
     }
 }

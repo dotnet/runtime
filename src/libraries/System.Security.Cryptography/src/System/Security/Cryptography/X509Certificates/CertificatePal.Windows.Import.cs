@@ -133,7 +133,12 @@ namespace System.Security.Cryptography.X509Certificates
 
                 SafeCertContextHandle? pCertContext = null;
                 if (!Interop.crypt32.CertFindCertificateInStore(hCertStore, Interop.Crypt32.CertFindType.CERT_FIND_SUBJECT_CERT, &certInfo, ref pCertContext))
-                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                {
+                    Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                    pCertContext.Dispose();
+                    throw e;
+                }
+
                 return pCertContext;
             }
         }
@@ -152,7 +157,9 @@ namespace System.Security.Cryptography.X509Certificates
                     hStore = Interop.Crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
                     if (hStore.IsInvalid)
                     {
-                        throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                        Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                        hStore.Dispose();
+                        throw e;
                     }
                 }
             }

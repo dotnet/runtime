@@ -36,6 +36,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
     }
 
     public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;
+    public bool IsCompletedSuccessfully => IsCompleted && _valueTaskSource.GetStatus(_valueTaskSource.Version) == ValueTaskSourceStatus.Succeeded;
 
     public bool TryInitialize(out ValueTask valueTask, object? keepAlive = null, CancellationToken cancellationToken = default)
     {
@@ -64,6 +65,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
             if (state == State.None)
             {
                 // Keep alive the caller object until the result is read from the task.
+                // Used for keeping caller alive during async interop calls.
                 if (keepAlive is not null)
                 {
                     Debug.Assert(!_keepAlive.IsAllocated);

@@ -1725,6 +1725,7 @@ namespace System.Net
                         token = Interop.HttpApi.SafeLocalFreeChannelBinding.LocalAlloc(tokenSize);
                         if (token.IsInvalid)
                         {
+                            token.Dispose();
                             throw new OutOfMemoryException();
                         }
                         Marshal.Copy(blob, tokenOffset, token.DangerousGetHandle(), tokenSize);
