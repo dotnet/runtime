@@ -232,13 +232,11 @@ namespace System.Net.Http
 
                 return await responseTask.ConfigureAwait(false);
             }
-            catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
+            catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
             {
-                Debug.Assert(ex.ApplicationErrorCode.HasValue);
-
-                // This will happen if we aborted _connection somewhere.
-                Abort(ex);
-                throw new HttpRequestException(SR.Format(SR.net_http_http3_connection_error, ex.ApplicationErrorCode.Value), ex, RequestRetryType.RetryOnConnectionFailure);
+                // This will happen if we aborted _connection somewhere and we have pending OpenOutboundStreamAsync call.
+                Debug.Assert(_abortException is not null);
+                throw new HttpRequestException(SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
             {

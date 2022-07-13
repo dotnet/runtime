@@ -41,9 +41,9 @@ namespace System.Net.Http
             return new HttpProtocolException((long)protocolError, message, null);
         }
 
-        internal static HttpProtocolException CreateHttp2ConnectionException(Http2ProtocolErrorCode protocolError)
+        internal static HttpProtocolException CreateHttp2ConnectionException(Http2ProtocolErrorCode protocolError, string? message = null)
         {
-            string message = SR.Format(SR.net_http_http2_connection_error, GetName(protocolError), ((int)protocolError).ToString("x"));
+            message = SR.Format(message ?? SR.net_http_http2_connection_error, GetName(protocolError), ((int)protocolError).ToString("x"));
             return new HttpProtocolException((long)protocolError, message, null);
         }
 
@@ -53,9 +53,9 @@ namespace System.Net.Http
             return new HttpProtocolException((long)protocolError, message, null);
         }
 
-        internal static HttpProtocolException CreateHttp3ConnectionException(Http3ErrorCode protocolError)
+        internal static HttpProtocolException CreateHttp3ConnectionException(Http3ErrorCode protocolError, string? message = null)
         {
-            string message = SR.Format(SR.net_http_http3_connection_error, GetName(protocolError), ((int)protocolError).ToString("x"));
+            message = SR.Format(message ?? SR.net_http_http3_connection_error, GetName(protocolError), ((int)protocolError).ToString("x"));
             return new HttpProtocolException((long)protocolError, message, null);
         }
 
