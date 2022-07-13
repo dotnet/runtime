@@ -124,11 +124,11 @@ namespace LibraryImportGenerator.UnitTests
             // [In, Out] attributes
             // By value non-blittable array
             yield return new[] { ID(), CodeSnippets.ByValueParameterWithModifier("S[]", "Out")
-                + CodeSnippets.CustomStructMarshalling_V1.NonBlittableUserDefinedType()
-                + CodeSnippets.CustomStructMarshalling_V1.NativeTypeRef };
+                + CodeSnippets.CustomStructMarshalling.NonBlittableUserDefinedType()
+                + CodeSnippets.CustomStructMarshalling.Stateless.Default };
             yield return new[] { ID(), CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out")
-                + CodeSnippets.CustomStructMarshalling_V1.NonBlittableUserDefinedType()
-                + CodeSnippets.CustomStructMarshalling_V1.NativeTypeRef };
+                + CodeSnippets.CustomStructMarshalling.NonBlittableUserDefinedType()
+                + CodeSnippets.CustomStructMarshalling.Stateless.Default };
 
             // Enums
             yield return new[] { ID(), CodeSnippets.EnumParameters };
@@ -207,19 +207,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.OptionalStackallocParametersAndModifiers };
             yield return new[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.DefaultModeByValueInParameter };
             yield return new[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.DefaultModeReturnValue };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.ParametersAndModifiers };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.StackallocParametersAndModifiersNoRef };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.StackallocTwoStageParametersAndModifiersNoRef };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.OptionalStackallocParametersAndModifiers };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.TwoStageParametersAndModifiers };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.PinnableParametersAndModifiers };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.NativeTypePinnable("byte", "byte") };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.NativeTypePinnable("byte", "int") };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.MarshalUsingParametersAndModifiers };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.NativeToManagedOnlyOutParameter };
-            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling_V1.NativeToManagedOnlyReturnValue };
-            yield return new[] { ID(), CodeSnippets.ArrayMarshallingWithCustomStructElement };
-            yield return new[] { ID(), CodeSnippets.ArrayMarshallingWithCustomStructElementWithValueProperty };
 
             // Escaped C# keyword identifiers
             yield return new[] { ID(), CodeSnippets.ByValueParameterWithName("Method", "@event") };
@@ -329,18 +316,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.ByValueWithStaticPinning<double>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.ByValueWithStaticPinning<IntPtr>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.ByValueWithStaticPinning<UIntPtr>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<byte>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<sbyte>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<short>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<ushort>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<int>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<uint>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<long>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<ulong>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<float>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<double>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<IntPtr>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.ByValue<UIntPtr>() };
             yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<byte[]>() };
             yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<sbyte[]>() };
             yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<short[]>() };
@@ -418,32 +393,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementNativeToManagedOnlyOutParameter };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementNativeToManagedOnlyReturnValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.CustomElementMarshalling };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<byte>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<sbyte>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<short>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<ushort>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<int>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<uint>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<long>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<ulong>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<float>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<double>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<IntPtr>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.DefaultMarshallerParametersAndModifiers<UIntPtr>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<byte>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<sbyte>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<short>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<ushort>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<int>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<uint>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<long>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<ulong>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<float>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<double>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<IntPtr>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerParametersAndModifiers<UIntPtr>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.CustomMarshallerReturnValueLength<int>() };
-            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling_V1.GenericCollectionWithCustomElementMarshalling };
             yield return new[] { ID(), CodeSnippets.CollectionsOfCollectionsStress };
         }
 

@@ -18,6 +18,11 @@ namespace System.Net.Quic.Tests
 {
     public abstract class QuicTestBase
     {
+        public const long DefaultStreamErrorCodeClient = 123456;
+        public const long DefaultStreamErrorCodeServer = 654321;
+        public const long DefaultCloseErrorCodeClient = 789;
+        public const long DefaultCloseErrorCodeServer = 987;
+
         private static readonly byte[] s_ping = "PING"u8.ToArray();
         private static readonly byte[] s_pong = "PONG"u8.ToArray();
 
@@ -42,10 +47,19 @@ namespace System.Net.Quic.Tests
             return true;
         }
 
+        public async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
+        {
+            QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
+            Assert.Equal(expectedError, ex.QuicError);
+            return ex;
+        }
+
         public QuicServerConnectionOptions CreateQuicServerOptions()
         {
             return new QuicServerConnectionOptions()
             {
+                DefaultStreamErrorCode = DefaultStreamErrorCodeServer,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeServer,
                 ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
             };
         }
@@ -73,6 +87,8 @@ namespace System.Net.Quic.Tests
         {
             return new QuicClientConnectionOptions()
             {
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
                 RemoteEndPoint = endpoint,
                 ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
             };
@@ -99,7 +115,7 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        internal ValueTask<QuicListener> CreateQuicListener(int MaxInboundUnidirectionalStreams = 100, int MaxInboundBidirectionalStreams = 100)
         {
             var options = CreateQuicListenerOptions();
             return CreateQuicListener(options);
@@ -123,11 +139,7 @@ namespace System.Net.Quic.Tests
         {
             await using (QuicListener listener = await CreateQuicListener(listenerOptions))
             {
-                clientOptions ??= new QuicClientConnectionOptions()
-                {
-                    RemoteEndPoint = listener.LocalEndPoint,
-                    ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
-                };
+                clientOptions ??= CreateQuicClientOptions(listener.LocalEndPoint);
                 if (clientOptions.RemoteEndPoint is IPEndPoint iPEndPoint && !iPEndPoint.Equals(listener.LocalEndPoint))
                 {
                     clientOptions.RemoteEndPoint = listener.LocalEndPoint;
@@ -158,11 +170,10 @@ namespace System.Net.Quic.Tests
             ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
             while (retry > 0)
             {
-                clientConnection = await CreateQuicConnection(clientOptions);
                 retry--;
                 try
                 {
-                    await clientConnection.ConnectAsync().ConfigureAwait(false);
+                    clientConnection = await CreateQuicConnection(clientOptions).ConfigureAwait(false);
                     break;
                 }
                 catch (QuicException ex) when (ex.HResult == (int)SocketError.ConnectionRefused)
@@ -185,17 +196,14 @@ namespace System.Net.Quic.Tests
                 await listener.DisposeAsync();
             }
 
-            Assert.True(serverConnection.Connected);
-            Assert.True(clientConnection.Connected);
-
             return (clientConnection, serverTask.Result);
         }
 
         internal async Task PingPong(QuicConnection client, QuicConnection server)
         {
-            using QuicStream clientStream = await client.OpenBidirectionalStreamAsync();
+            using QuicStream clientStream = await client.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
             ValueTask t = clientStream.WriteAsync(s_ping);
-            using QuicStream serverStream = await server.AcceptStreamAsync();
+            using QuicStream serverStream = await server.AcceptInboundStreamAsync();
 
             byte[] buffer = new byte[s_ping.Length];
             int remains = s_ping.Length;
@@ -234,8 +242,8 @@ namespace System.Net.Quic.Tests
             for (int i = 0; i < iterations; ++i)
             {
                 (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
-                using (clientConnection)
-                using (serverConnection)
+                await using (clientConnection)
+                await using (serverConnection)
                 {
                     await new[]
                     {
@@ -252,8 +260,22 @@ namespace System.Net.Quic.Tests
                             await serverFinished.WaitAsync();
                         })
                     }.WhenAllOrAnyFailed(millisecondsTimeout);
-                    await serverConnection.CloseAsync(ServerCloseErrorCode);
-                    await clientConnection.CloseAsync(ClientCloseErrorCode);
+                    try
+                    {
+                        await serverConnection.CloseAsync(ServerCloseErrorCode);
+                    }
+                    catch (ObjectDisposedException ex)
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
+                    try
+                    {
+                        await clientConnection.CloseAsync(ClientCloseErrorCode);
+                    }
+                    catch (ObjectDisposedException ex)
+                    {
+                        _output.WriteLine(ex.ToString());
+                    }
                 }
             }
         }
@@ -265,7 +287,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = bidi ? await connection.OpenBidirectionalStreamAsync() : await connection.OpenUnidirectionalStreamAsync();
+                    await using QuicStream stream = bidi ? await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional) : await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
                     // Open(Bi|Uni)directionalStream only allocates ID. We will force stream opening
                     // by Writing there and receiving data on the other side.
                     await stream.WriteAsync(buffer);
@@ -277,7 +299,7 @@ namespace System.Net.Quic.Tests
                 },
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
                     Assert.Equal(1, await stream.ReadAsync(buffer));
 
                     await serverFunction(stream);

@@ -137,6 +137,30 @@ namespace SharedTypes
         }
     }
 
+    [NativeMarshalling(typeof(IntStructWrapperMarshaller))]
+    public struct IntStructWrapper
+    {
+        public int Value;
+    }
+
+    [CustomMarshaller(typeof(IntStructWrapper), MarshalMode.Default, typeof(IntStructWrapperMarshaller))]
+    public static class IntStructWrapperMarshaller
+    {
+        public static IntStructWrapperNative ConvertToUnmanaged(IntStructWrapper managed)
+        {
+            return new() { value = managed.Value };
+        }
+        public static IntStructWrapper ConvertToManaged(IntStructWrapperNative unmanaged)
+        {
+            return new() { Value = unmanaged.value };
+        }
+    }
+
+    public struct IntStructWrapperNative
+    {
+        public int value;
+    }
+
     [NativeMarshalling(typeof(IntWrapperMarshaller))]
     public class IntWrapper
     {

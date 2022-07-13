@@ -103,16 +103,20 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Get the parent type declaration so that we can inspect its methods as well as check if we need to add the partial keyword.
-            TypeDeclarationSyntax? typeDeclaration = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+            SyntaxNode? typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
 
-            if (typeDeclaration is null)
+            if (typeDeclarationOrCompilationUnit is null)
             {
-                return document;
+                typeDeclarationOrCompilationUnit = await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
             }
 
             // Calculate what name should be used for the generated static partial method
             string methodName = DefaultRegexMethodName;
-            ITypeSymbol? typeSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) as ITypeSymbol;
+
+            INamedTypeSymbol? typeSymbol = typeDeclarationOrCompilationUnit is TypeDeclarationSyntax typeDeclaration ?
+                semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) :
+                semanticModel.GetDeclaredSymbol((CompilationUnitSyntax)typeDeclarationOrCompilationUnit, cancellationToken)?.ContainingType;
+
             if (typeSymbol is not null)
             {
                 IEnumerable<ISymbol> members = GetAllMembers(typeSymbol);
@@ -147,9 +151,12 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // We need to find the typeDeclaration again, but now using the new root.
-            typeDeclaration = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
-            Debug.Assert(typeDeclaration is not null);
-            TypeDeclarationSyntax newTypeDeclaration = typeDeclaration;
+            typeDeclarationOrCompilationUnit = typeDeclarationOrCompilationUnit is TypeDeclarationSyntax ?
+                nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() :
+                await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+
+            Debug.Assert(typeDeclarationOrCompilationUnit is not null);
+            SyntaxNode newTypeDeclarationOrCompilationUnit = typeDeclarationOrCompilationUnit;
 
             // We generate a new invocation node to call our new partial method, and use it to replace the nodeToFix.
             DocumentEditor editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
@@ -177,12 +184,12 @@ namespace System.Text.RegularExpressions.Generator
                 SyntaxNode createRegexMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
                 SyntaxNode method = generator.InvocationExpression(generator.MemberAccessExpression(createRegexMethod, invocationOperation.TargetMethod.Name), arguments.Select(arg => arg.Syntax).ToArray());
 
-                newTypeDeclaration = newTypeDeclaration.ReplaceNode(nodeToFix, WithTrivia(method, nodeToFix));
+                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(method, nodeToFix));
             }
             else // When using a Regex constructor
             {
                 SyntaxNode invokeMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
-                newTypeDeclaration = newTypeDeclaration.ReplaceNode(nodeToFix, WithTrivia(invokeMethod, nodeToFix));
+                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(invokeMethod, nodeToFix));
             }
 
             // Initialize the inputs for the RegexGenerator attribute.
@@ -223,10 +230,12 @@ namespace System.Text.RegularExpressions.Generator
             newMethod = (MethodDeclarationSyntax)generator.AddAttributes(newMethod, attributes);
 
             // Add the method to the type.
-            newTypeDeclaration = newTypeDeclaration.AddMembers(newMethod);
+            newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit is TypeDeclarationSyntax newTypeDeclaration ?
+                newTypeDeclaration.AddMembers(newMethod) :
+                ((CompilationUnitSyntax)newTypeDeclarationOrCompilationUnit).AddMembers((ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMethod }));
 
             // Replace the old type declaration with the new modified one, and return the document.
-            return document.WithSyntaxRoot(root.ReplaceNode(typeDeclaration, newTypeDeclaration));
+            return document.WithSyntaxRoot(root.ReplaceNode(typeDeclarationOrCompilationUnit, newTypeDeclarationOrCompilationUnit));
 
             static IEnumerable<ISymbol> GetAllMembers(ITypeSymbol? symbol)
             {
