@@ -41,6 +41,7 @@ internal class Program
     private readonly string _outputFilePath;
     private readonly TargetArchitecture _targetArchitecture;
     private readonly TargetOS _targetOS;
+    private readonly bool _armelAbi;
 
     public Program(Crossgen2RootCommand command)
     {
@@ -51,6 +52,12 @@ internal class Program
         _outputFilePath = Get(command.OutputFilePath);
         _targetOS = Get(command.TargetOS);
         _targetArchitecture = Get(command.TargetArchitecture);
+        _armelAbi = _targetArchitecture == TargetArchitecture.ARMEL;
+
+        if (_armelAbi)
+        {
+            _targetArchitecture = TargetArchitecture.ARM;
+        }
 
         if (command.Result.GetValueForOption(command.WaitForDebugger))
         {
@@ -181,7 +188,7 @@ internal class Program
 
         SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-        var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _targetArchitecture == TargetArchitecture.ARMEL ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+        var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
         ConfigureImageBase(targetDetails);
 

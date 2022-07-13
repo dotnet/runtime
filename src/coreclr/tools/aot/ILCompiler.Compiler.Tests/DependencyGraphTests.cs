@@ -72,7 +72,7 @@ namespace ILCompiler.Compiler.Tests
                 new FullyBlockedMetadataBlockingPolicy(), new FullyBlockedManifestResourceBlockingPolicy(),
                 null, new NoStackTraceEmissionPolicy(), new NoDynamicInvokeThunkGenerationPolicy(),
                 new ILLink.Shared.TrimAnalysis.FlowAnnotations(Logger.Null, ilProvider), UsageBasedMetadataGenerationOptions.None,
-                Logger.Null, Array.Empty<KeyValuePair<string, bool>>(), Array.Empty<string>(), Array.Empty<string>());
+                Logger.Null, Array.Empty<KeyValuePair<string, bool>>(), Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>());
 
             CompilationBuilder builder = new RyuJitCompilationBuilder(context, compilationGroup)
                 .UseILProvider(ilProvider);
