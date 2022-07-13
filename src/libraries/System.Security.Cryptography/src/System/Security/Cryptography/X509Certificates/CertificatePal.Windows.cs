@@ -475,14 +475,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal SafeCertContextHandle CertContext
+        internal SafeCertContextHandle GetCertContext()
         {
-            get
-            {
-                SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
-                GC.KeepAlive(_certContext);
-                return certContext;
-            }
+            SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
+            GC.KeepAlive(_certContext);
+            return certContext;
         }
 
         private static Interop.Crypt32.CertNameType MapNameType(X509NameType nameType)
@@ -530,9 +527,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 // We need to delete any associated key container upon disposition. Thus, replace the safehandle we got with a safehandle whose
                 // Release() method performs the key container deletion.
-                SafeCertContextHandle oldCertContext = certContext;
-                certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
-                GC.KeepAlive(oldCertContext);
+                using (SafeCertContextHandle oldCertContext = certContext)
+                {
+                    certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
+                }
             }
             _certContext = certContext;
         }
