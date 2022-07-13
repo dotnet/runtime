@@ -3,6 +3,8 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <!-- This library has been annotated to be AOT safe -->
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>    
   </PropertyGroup>
 
   <ItemGroup>

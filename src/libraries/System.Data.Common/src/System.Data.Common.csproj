@@ -3,6 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn);SYSLIB0038</NoWarn>
+    <!-- This library has been annotated to be AOT safe -->
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.TypeForwards.cs" />
