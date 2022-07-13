@@ -101,7 +101,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
             int count = 0;
@@ -243,7 +242,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

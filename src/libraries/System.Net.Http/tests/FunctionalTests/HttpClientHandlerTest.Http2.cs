@@ -127,7 +127,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_StreamResetByServerBeforePrefix_RequestFailsWithGoawayProtocolError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -429,7 +428,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses delays")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_SettingsFrameNotSentOnNewConnection_ClientApplies100StreamLimit()
         {
             const int DefaultMaxConcurrentStreams = 100;
@@ -481,7 +479,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses delays")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]  // TODO revisit outerloop tests
         public async Task GetAsync_ServerDelaysSendingSettingsThenSetsLowerMaxConcurrentStreamsLimitThenIncreaseIt_ClientAppliesEachLimitChangeProperly()
         {
             const int DefaultMaxConcurrentStreams = 100;
@@ -542,7 +539,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses delays")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_ServerSendSettingsWithoutMaxConcurrentStreams_ClientAppliesInfiniteLimit()
         {
             const int DefaultMaxConcurrentStreams = 100;
@@ -1592,7 +1588,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_InitialWindowSize_ClientDoesNotExceedWindows()
         {
             const int ContentSize = DefaultInitialWindowSize + 1000;
@@ -1813,7 +1808,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_MaxConcurrentStreams_LimitEnforced()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1882,7 +1876,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_WaitingForStream_Cancellation()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -2017,7 +2010,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses Task.Delay")]
         [InlineData(false)]
         [InlineData(true)]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_PendingSend_SendsReset(bool waitForData)
         {
             var cts = new CancellationTokenSource();
@@ -2622,7 +2614,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_CancelledBeforeResponseHeadersReceived_ResetsStream()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2740,7 +2731,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_DisposeResponseBodyBeforeEnd_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2808,7 +2798,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_DisposeResponseBodyAfterEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2882,7 +2871,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_FinishRequestBodyAndDisposeResponseBodyAfterEndReceivedButBeforeConsumed_DoesNotResetStream()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -3069,7 +3057,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, HttpStatusCode.OK)]
         [InlineData(false, HttpStatusCode.OK)]
         [OuterLoop("Uses Task.Delay")]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_ConcurentSendReceive_Ok(bool shouldWaitForRequestBody, HttpStatusCode responseCode)
         {
             string requestContent = new string('*', 300);
@@ -3137,7 +3124,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_ConcurentSendReceive_Fail()
         {
             TaskCompletionSource<bool> tsc = new TaskCompletionSource<bool>();
@@ -3210,7 +3196,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Waits for seconds for events that shouldn't happen")]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_StreamContentRequestBody_WaitsForRequestBodyToComplete()
         {
             var waitToSendRequestBody = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -3473,7 +3458,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled()
         {
             TaskCompletionSource clientComplete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
