@@ -219,7 +219,7 @@ jobs:
           artifactFileName: 'MauiBlazorAndroidApp.tar.gz'
           artifactName: 'MauiBlazorAndroidApp'
           displayName: 'Maui Blazor Android App'
-          
+
 
     # Download iOSMono tests and MauiiOS/MacCatalyst
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:

@@ -46,6 +46,11 @@ jobs:
       runAOT: true
       alwaysRun: true
 
+  - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+    parameters:
+      runProfile: 'option#2'
+      onlySanityCheck: true
+
 #
 # ********** For !rolling builds, IOW - PR builds *************
 # - run everything, if relevant paths changed
@@ -170,3 +175,8 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       # ff tests are unstable currently
       shouldContinueOnError: true
+
+  - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+    parameters:
+      runProfile: 'option#2'
+      onlySanityCheck: true

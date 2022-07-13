@@ -135,7 +135,7 @@ jobs:
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
     # run ci-setup
-    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)\machine-setup.cmd 
+    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)\machine-setup.cmd
       displayName: Run ci setup script (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
     - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) $(ExtraSetupArguments) --output-file $(WorkItemDirectory)/machine-setup.sh
@@ -196,7 +196,7 @@ jobs:
         includeRootFolder: false
         archiveFile: '$(WorkItemDirectory).zip'
         verbose: True
-      
+
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
       parameters:
