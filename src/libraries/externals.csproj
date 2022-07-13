@@ -27,7 +27,7 @@
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
           AfterTargets="AfterResolveReferences"
-          Condition="'$(TestNativeAot)' != 'true'">
+          Condition="Exists('$(DotNetHostBinDir)') and '$(TestNativeAot)' != 'true'">
     <PropertyGroup>
       <UseHardlink>true</UseHardlink>
     </PropertyGroup>

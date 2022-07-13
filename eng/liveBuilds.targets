@@ -119,7 +119,7 @@
     </ItemGroup>
 
     <!-- Host files. Mobile uses a different hosting model, so we don't include the .NET host components there. -->
-    <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+    <ItemGroup Condition="'$(TargetsMobile)' != 'true' and Exists('$(DotNetHostBinDir)')">
       <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostpolicy$(LibSuffix)" />
       <RuntimeFiles Include="$(DotNetHostBinDir)\$(LibPrefix)hostfxr$(LibSuffix)" />
     </ItemGroup>
