@@ -261,8 +261,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void ValidateEncryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
+            using (ICryptoTransform encryptor = aes.CreateEncryptor())
             {
-                ValidateTransformProperties(aes, aes.CreateEncryptor());
+                ValidateTransformProperties(aes, encryptor);
             }
         }
 
@@ -271,8 +272,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void ValidateDecryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
+            using (ICryptoTransform decryptor = aes.CreateDecryptor())
             {
-                ValidateTransformProperties(aes, aes.CreateDecryptor());
+                ValidateTransformProperties(aes, decryptor);
             }
         }
 

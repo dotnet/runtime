@@ -45,7 +45,7 @@ namespace System.Security.Principal
         private SecurityIdentifier? _user;
         private IdentityReferenceCollection? _groups;
 
-        private SafeAccessTokenHandle _safeTokenHandle = SafeAccessTokenHandle.InvalidHandle;
+        private SafeAccessTokenHandle _safeTokenHandle;
         private readonly string? _authType;
         private int _isAuthenticated = -1;
         private volatile TokenImpersonationLevel _impersonationLevel;
@@ -77,21 +77,27 @@ namespace System.Security.Principal
 
             try
             {
-                if (!identity._safeTokenHandle.IsInvalid && identity._safeTokenHandle != SafeAccessTokenHandle.InvalidHandle && identity._safeTokenHandle.DangerousGetHandle() != IntPtr.Zero)
+                if (!identity._safeTokenHandle.IsInvalid && identity._safeTokenHandle.DangerousGetHandle() != IntPtr.Zero)
                 {
                     identity._safeTokenHandle.DangerousAddRef(ref mustDecrement);
 
                     if (!identity._safeTokenHandle.IsInvalid && identity._safeTokenHandle.DangerousGetHandle() != IntPtr.Zero)
+                    {
                         CreateFromToken(identity._safeTokenHandle.DangerousGetHandle());
+                    }
 
                     _authType = identity._authType;
                     _isAuthenticated = identity._isAuthenticated;
                 }
+
+                _safeTokenHandle ??= SafeAccessTokenHandle.InvalidHandle;
             }
             finally
             {
                 if (mustDecrement)
+                {
                     identity._safeTokenHandle.DangerousRelease();
+                }
             }
         }
 
@@ -105,7 +111,15 @@ namespace System.Security.Principal
 
         private WindowsIdentity()
             : base(null, null, null, ClaimTypes.Name, ClaimTypes.GroupSid)
-        { }
+        {
+            _safeTokenHandle = SafeAccessTokenHandle.InvalidHandle;
+        }
+
+        private WindowsIdentity(SafeAccessTokenHandle safeTokenHandle)
+            : base(null, null, null, ClaimTypes.Name, ClaimTypes.GroupSid)
+        {
+            _safeTokenHandle = safeTokenHandle;
+        }
 
         /// <summary>
         /// Initializes a new instance of the WindowsIdentity class for the user represented by the specified User Principal Name (UPN).
@@ -191,14 +205,23 @@ namespace System.Security.Principal
                                 out QUOTA_LIMITS quota,
                                 out int subStatus);
 
-                            if (ntStatus == unchecked((int)Interop.StatusOptions.STATUS_ACCOUNT_RESTRICTION) && subStatus < 0)
-                                ntStatus = subStatus;
-                            if (ntStatus < 0) // non-negative numbers indicate success
-                                throw GetExceptionFromNtStatus(ntStatus);
-                            if (subStatus < 0) // non-negative numbers indicate success
-                                throw GetExceptionFromNtStatus(subStatus);
+                            profileBuffer.Dispose();
 
-                            profileBuffer?.Dispose();
+                            if (ntStatus == unchecked((int)Interop.StatusOptions.STATUS_ACCOUNT_RESTRICTION) && subStatus < 0)
+                            {
+                                ntStatus = subStatus;
+                            }
+
+                            if (ntStatus < 0) // non-negative numbers indicate success
+                            {
+                                accessTokenHandle.Dispose();
+                                throw GetExceptionFromNtStatus(ntStatus);
+                            }
+                            if (subStatus < 0) // non-negative numbers indicate success
+                            {
+                                accessTokenHandle.Dispose();
+                                throw GetExceptionFromNtStatus(subStatus);
+                            }
 
                             _safeTokenHandle = accessTokenHandle;
                         }
@@ -252,13 +275,13 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
             }
 
-            SafeAccessTokenHandle duplicateAccessToken = SafeAccessTokenHandle.InvalidHandle;
+            SafeAccessTokenHandle duplicateAccessToken;
             IntPtr currentProcessHandle = Interop.Kernel32.GetCurrentProcess();
             if (!Interop.Kernel32.DuplicateHandle(
                     currentProcessHandle,
                     accessToken,
                     currentProcessHandle,
-                    ref duplicateAccessToken,
+                    out duplicateAccessToken,
                     0,
                     true,
                     Interop.DuplicateHandleOptions.DUPLICATE_SAME_ACCESS))
@@ -291,6 +314,7 @@ namespace System.Security.Principal
             }
         }
 
+        [MemberNotNull(nameof(_safeTokenHandle))]
         private void CreateFromToken(IntPtr userToken)
         {
             _safeTokenHandle = DuplicateAccessToken(userToken);
@@ -448,38 +472,35 @@ namespace System.Security.Principal
                 return false;
 
             // CheckTokenMembership expects an impersonation token
-            SafeAccessTokenHandle token = SafeAccessTokenHandle.InvalidHandle;
+            using SafeAccessTokenHandle invalidHandle = SafeAccessTokenHandle.InvalidHandle;
+            SafeAccessTokenHandle token = invalidHandle;
             TokenImpersonationLevel til = ImpersonationLevel;
             bool isMember = false;
 
             try
             {
-                if (til == TokenImpersonationLevel.None)
-                {
-                    if (!Interop.Advapi32.DuplicateTokenEx(_safeTokenHandle,
+                if (til == TokenImpersonationLevel.None &&
+                    !Interop.Advapi32.DuplicateTokenEx(_safeTokenHandle,
                                                       (uint)TokenAccessLevels.Query,
                                                       IntPtr.Zero,
                                                       (uint)TokenImpersonationLevel.Identification,
                                                       (uint)TokenType.TokenImpersonation,
                                                       ref token))
-                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
+                {
+                    throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
                 }
-
 
                 // CheckTokenMembership will check if the SID is both present and enabled in the access token.
                 if (!Interop.Advapi32.CheckTokenMembership((til != TokenImpersonationLevel.None ? _safeTokenHandle : token),
                                                       sid.BinaryForm,
                                                       ref isMember))
+                {
                     throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
-
-
+                }
             }
             finally
             {
-                if (token != SafeAccessTokenHandle.InvalidHandle)
-                {
-                    token.Dispose();
-                }
+                token.Dispose();
             }
 
             return isMember;
@@ -559,7 +580,8 @@ namespace System.Security.Principal
             if (_name == null)
             {
                 // revert thread impersonation for the duration of the call to get the name.
-                RunImpersonated(SafeAccessTokenHandle.InvalidHandle, delegate
+                using SafeAccessTokenHandle invalidHandle = SafeAccessTokenHandle.InvalidHandle;
+                RunImpersonated(invalidHandle, delegate
                 {
                     NTAccount? ntAccount = User!.Translate(typeof(NTAccount)) as NTAccount;
                     _name = ntAccount!.ToString();
@@ -731,9 +753,19 @@ namespace System.Security.Principal
 
             SafeAccessTokenHandle previousToken = GetCurrentToken(TokenAccessLevels.MaximumAllowed, false, out bool isImpersonating, out int hr);
             if (previousToken == null || previousToken.IsInvalid)
+            {
+                previousToken?.Dispose();
                 throw new SecurityException(Marshal.GetPInvokeErrorMessage(hr));
+            }
 
-            s_currentImpersonatedToken.Value = isImpersonating ? previousToken : null;
+            if (isImpersonating)
+            {
+                s_currentImpersonatedToken.Value = previousToken;
+            }
+            else
+            {
+                previousToken.Dispose();
+            }
 
             ExecutionContext? currentContext = ExecutionContext.Capture();
 
@@ -778,16 +810,19 @@ namespace System.Security.Principal
             SafeAccessTokenHandle safeTokenHandle = GetCurrentToken(desiredAccess, threadOnly, out bool isImpersonating, out int hr);
             if (safeTokenHandle == null || safeTokenHandle.IsInvalid)
             {
+                safeTokenHandle?.Dispose();
+
                 // either we wanted only ThreadToken - return null
                 if (threadOnly && !isImpersonating)
+                {
                     return null;
+                }
+
                 // or there was an error
                 throw new SecurityException(Marshal.GetPInvokeErrorMessage(hr));
             }
-            WindowsIdentity wi = new WindowsIdentity();
-            wi._safeTokenHandle.Dispose();
-            wi._safeTokenHandle = safeTokenHandle;
-            return wi;
+
+            return new WindowsIdentity(safeTokenHandle);
         }
 
         //
@@ -819,14 +854,20 @@ namespace System.Security.Principal
             hr = 0;
             bool success = Interop.Advapi32.OpenThreadToken(desiredAccess, WinSecurityContext.Both, out SafeAccessTokenHandle safeTokenHandle);
             if (!success)
-                hr = Marshal.GetHRForLastWin32Error();
-            if (!success && hr == GetHRForWin32Error(Interop.Errors.ERROR_NO_TOKEN))
             {
-                // No impersonation
-                isImpersonating = false;
-                if (!threadOnly)
-                    safeTokenHandle = GetCurrentProcessToken(desiredAccess, out hr);
+                hr = Marshal.GetHRForLastWin32Error();
+                if (hr == GetHRForWin32Error(Interop.Errors.ERROR_NO_TOKEN))
+                {
+                    // No impersonation
+                    isImpersonating = false;
+                    if (!threadOnly)
+                    {
+                        safeTokenHandle.Dispose();
+                        safeTokenHandle = GetCurrentProcessToken(desiredAccess, out hr);
+                    }
+                }
             }
+
             return safeTokenHandle;
         }
 
@@ -867,43 +908,55 @@ namespace System.Security.Principal
         private static SafeLocalAllocHandle? GetTokenInformation(SafeAccessTokenHandle tokenHandle, TokenInformationClass tokenInformationClass, bool nullOnInvalidParam = false)
         {
             SafeLocalAllocHandle safeLocalAllocHandle = SafeLocalAllocHandle.InvalidHandle;
-            Interop.Advapi32.GetTokenInformation(tokenHandle,
-                                                          (uint)tokenInformationClass,
-                                                          safeLocalAllocHandle,
-                                                          0,
-                                                          out uint dwLength);
-            int dwErrorCode = Marshal.GetLastWin32Error();
-            switch (dwErrorCode)
+            try
             {
-                case Interop.Errors.ERROR_BAD_LENGTH:
-                // special case for TokenSessionId. Falling through
-                case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
-                    safeLocalAllocHandle.Dispose();
-                    safeLocalAllocHandle = SafeLocalAllocHandle.LocalAlloc(checked((int)dwLength));
-
-                    bool result = Interop.Advapi32.GetTokenInformation(tokenHandle,
-                                                             (uint)tokenInformationClass,
-                                                             safeLocalAllocHandle,
-                                                             dwLength,
-                                                             out _);
-                    if (!result)
-                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
-                    break;
-                case Interop.Errors.ERROR_INVALID_HANDLE:
-                    throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
-                case Interop.Errors.ERROR_INVALID_PARAMETER:
-                    if (nullOnInvalidParam)
-                    {
+                Interop.Advapi32.GetTokenInformation(tokenHandle,
+                                                              (uint)tokenInformationClass,
+                                                              safeLocalAllocHandle,
+                                                              0,
+                                                              out uint dwLength);
+                int dwErrorCode = Marshal.GetLastWin32Error();
+                switch (dwErrorCode)
+                {
+                    case Interop.Errors.ERROR_BAD_LENGTH: // special case for TokenSessionId. Falling through
+                    case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
                         safeLocalAllocHandle.Dispose();
-                        return null;
-                    }
+                        safeLocalAllocHandle = SafeLocalAllocHandle.LocalAlloc(checked((int)dwLength));
 
-                    // Throw the exception.
-                    goto default;
-                default:
-                    throw new SecurityException(Marshal.GetPInvokeErrorMessage(dwErrorCode));
+                        bool result = Interop.Advapi32.GetTokenInformation(tokenHandle,
+                                                                 (uint)tokenInformationClass,
+                                                                 safeLocalAllocHandle,
+                                                                 dwLength,
+                                                                 out _);
+                        if (!result)
+                        {
+                            throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
+                        }
+                        break;
+
+                    case Interop.Errors.ERROR_INVALID_HANDLE:
+                        throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
+
+                    case Interop.Errors.ERROR_INVALID_PARAMETER:
+                        if (nullOnInvalidParam)
+                        {
+                            safeLocalAllocHandle.Dispose();
+                            return null;
+                        }
+
+                        // Throw the exception.
+                        goto default;
+                    default:
+                        throw new SecurityException(Marshal.GetPInvokeErrorMessage(dwErrorCode));
+                }
+
+                return safeLocalAllocHandle;
             }
-            return safeLocalAllocHandle;
+            catch
+            {
+                safeLocalAllocHandle.Dispose();
+                throw;
+            }
         }
 
         private static string? GetAuthType(WindowsIdentity identity)

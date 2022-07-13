@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 
-namespace System.Net.Quic.Implementations.MsQuic.Internal;
+namespace System.Net.Quic;
 
 /// <summary>
 /// Helper class to convert managed data into QUIC_BUFFER* consumable by MsQuic.

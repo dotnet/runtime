@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             fixed (byte* paddress = &MemoryMarshal.GetReference(address))
             {
-                ThrowIfFailure(api.ApiTable->GetParam(
+                ThrowHelper.ThrowIfMsQuicError(api.ApiTable->GetParam(
                     nativeObject.QuicHandle,
                     param,
                     &valueLen,
@@ -42,7 +42,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             fixed (byte* paddress = &MemoryMarshal.GetReference(address))
             {
-                ThrowIfFailure(api.ApiTable->SetParam(
+                ThrowHelper.ThrowIfMsQuicError(api.ApiTable->SetParam(
                     nativeObject.QuicHandle,
                     param,
                     (uint)address.Length,
@@ -55,7 +55,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             ushort value;
             uint valueLen = (uint)sizeof(ushort);
 
-            ThrowIfFailure(api.ApiTable->GetParam(
+            ThrowHelper.ThrowIfMsQuicError(api.ApiTable->GetParam(
                 nativeObject.QuicHandle,
                 param,
                 &valueLen,
@@ -67,7 +67,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static unsafe void SetUShortParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param, ushort value)
         {
-            ThrowIfFailure(api.ApiTable->SetParam(
+            ThrowHelper.ThrowIfMsQuicError(api.ApiTable->SetParam(
                 nativeObject.QuicHandle,
                 param,
                 sizeof(ushort),
@@ -79,7 +79,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             ulong value;
             uint valueLen = (uint)sizeof(ulong);
 
-            ThrowIfFailure(api.ApiTable->GetParam(
+            ThrowHelper.ThrowIfMsQuicError(api.ApiTable->GetParam(
                 nativeObject.QuicHandle,
                 param,
                 &valueLen,
@@ -91,7 +91,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static unsafe void SetULongParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param, ulong value)
         {
-            ThrowIfFailure(api.ApiTable->SetParam(
+            ThrowHelper.ThrowIfMsQuicError(api.ApiTable->SetParam(
                 nativeObject.QuicHandle,
                 param,
                 sizeof(ulong),

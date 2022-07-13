@@ -20,6 +20,8 @@ namespace System.Net.Quic
             _provider = provider;
         }
 
+        internal ValueTask StartAsync(CancellationToken cancellationToken) => _provider.StartAsync(cancellationToken);
+
         //
         // Boilerplate implementation stuff
         //
