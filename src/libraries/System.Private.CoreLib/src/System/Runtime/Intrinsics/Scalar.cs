@@ -16,7 +16,7 @@ namespace System.Runtime.Intrinsics
             {
                 if (!IsSupported)
                 {
-                    throw new PlatformNotSupportedException();
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
                 }
 
                 if (typeof(T) == typeof(byte))
@@ -81,7 +81,7 @@ namespace System.Runtime.Intrinsics
             {
                 if (!IsSupported)
                 {
-                    throw new PlatformNotSupportedException();
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
                 }
 
                 if (typeof(T) == typeof(byte))
@@ -144,7 +144,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             // byte, ushort, uint, and ulong should have already been handled
@@ -188,7 +188,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -250,7 +250,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(double))
@@ -272,7 +272,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -334,7 +334,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -396,7 +396,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -480,7 +480,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(double))
@@ -502,7 +502,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -564,7 +564,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -626,7 +626,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -688,7 +688,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -750,7 +750,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -811,7 +811,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -873,7 +873,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -927,7 +927,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(short))
@@ -961,7 +961,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -1015,7 +1015,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
@@ -1077,7 +1077,7 @@ namespace System.Runtime.Intrinsics
         {
             if (!IsSupported)
             {
-                throw new PlatformNotSupportedException();
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
             }
 
             if (typeof(T) == typeof(byte))
