@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
-public unsafe class Program
+public unsafe class UnmanagedCallersOnlyBasicTest
 {
     public static class UnmanagedCallersOnlyDll
     {
@@ -33,26 +33,6 @@ public unsafe class Program
         public static extern int CallManagedProcOnNewThread(IntPtr callbackProc, int n);
     }
 
-    public static int Main(string[] args)
-    {
-        try
-        {
-            TestUnmanagedCallersOnlyValid();
-            TestUnmanagedCallersOnlyValid_CallConvStdcall();
-            TestUnmanagedCallersOnlyValid_CallConvCdecl();
-            TestUnmanagedCallersOnlyValid_OnNewNativeThread();
-            TestUnmanagedCallersOnlyValid_PrepareMethod();
-            TestUnmanagedCallersOnlyMultipleTimesValid();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
-
-        return 100;
-    }
-
     private static int DoubleImpl(int n)
     {
         return 2 * n;
@@ -64,6 +44,7 @@ public unsafe class Program
         return DoubleImpl(n);
     }
 
+    [Fact]
     public static void TestUnmanagedCallersOnlyValid()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid)}...");
@@ -79,6 +60,7 @@ public unsafe class Program
         return DoubleImpl(n);
     }
 
+    [Fact]
     public static void TestUnmanagedCallersOnlyValid_CallConvStdcall()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvStdcall)}...");
@@ -96,6 +78,7 @@ public unsafe class Program
         return DoubleImpl(n);
     }
 
+    [Fact]
     public static void TestUnmanagedCallersOnlyValid_CallConvCdecl()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvCdecl)}...");
@@ -107,6 +90,7 @@ public unsafe class Program
         Assert.Equal(expected, actual);
     }
 
+    [Fact]
     public static void TestUnmanagedCallersOnlyValid_OnNewNativeThread()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_OnNewNativeThread)}...");
@@ -122,12 +106,13 @@ public unsafe class Program
         return DoubleImpl(n);
     }
 
+    [Fact]
     // This test is about the interaction between Tiered Compilation and the UnmanagedCallersOnlyAttribute.
     public static void TestUnmanagedCallersOnlyValid_PrepareMethod()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_PrepareMethod)}...");
         // Prepare the managed callback.
-        var preparedCallback = typeof(Program).GetMethod(nameof(ManagedCallback_Prepared));
+        var preparedCallback = typeof(UnmanagedCallersOnlyBasicTest).GetMethod(nameof(ManagedCallback_Prepared));
         RuntimeHelpers.PrepareMethod(preparedCallback.MethodHandle);
 
         UnmanagedCallersOnlyOnNewNativeThread(12345);
@@ -151,6 +136,7 @@ public unsafe class Program
         return UnmanagedCallersOnlyDll.DoubleImplNative(n);
     }
 
+    [Fact]
     public static void TestUnmanagedCallersOnlyMultipleTimesValid()
     {
         Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyMultipleTimesValid)}...");
