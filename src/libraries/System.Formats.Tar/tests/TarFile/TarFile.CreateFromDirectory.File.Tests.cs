@@ -52,17 +52,26 @@ namespace System.Formats.Tar.Tests
             using TempDirectory source = new TempDirectory();
             using TempDirectory destination = new TempDirectory();
 
+            UnixFileMode baseDirectoryMode = TestPermission1;
+            SetUnixFileMode(source.Path, baseDirectoryMode);
+
             string fileName1 = "file1.txt";
             string filePath1 = Path.Join(source.Path, fileName1);
             File.Create(filePath1).Dispose();
+            UnixFileMode filename1Mode = TestPermission2;
+            SetUnixFileMode(filePath1, filename1Mode);
 
             string subDirectoryName = "dir/"; // The trailing separator is preserved in the TarEntry.Name
             string subDirectoryPath = Path.Join(source.Path, subDirectoryName);
             Directory.CreateDirectory(subDirectoryPath);
+            UnixFileMode subDirectoryMode = TestPermission3;
+            SetUnixFileMode(subDirectoryPath, subDirectoryMode);
 
             string fileName2 = "file2.txt";
             string filePath2 = Path.Join(subDirectoryPath, fileName2);
             File.Create(filePath2).Dispose();
+            UnixFileMode filename2Mode = TestPermission4;
+            SetUnixFileMode(filePath2, filename2Mode);
 
             string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
             TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory);
@@ -78,25 +87,38 @@ namespace System.Formats.Tar.Tests
                 entries.Add(entry);
             }
 
-            Assert.Equal(3, entries.Count);
+            int expectedCount = 3 + (includeBaseDirectory ? 1 : 0);
+            Assert.Equal(expectedCount, entries.Count);
 
             string prefix = includeBaseDirectory ? Path.GetFileName(source.Path) + '/' : string.Empty;
+
+            if (includeBaseDirectory)
+            {
+                TarEntry baseEntry = entries.FirstOrDefault(x =>
+                    x.EntryType == TarEntryType.Directory &&
+                    x.Name == prefix);
+                Assert.NotNull(baseEntry);
+                AssertEntryModeEquals(baseEntry, baseDirectoryMode);
+            }
 
             TarEntry entry1 = entries.FirstOrDefault(x =>
                 x.EntryType == TarEntryType.RegularFile &&
                 x.Name == prefix + fileName1);
             Assert.NotNull(entry1);
+            AssertEntryModeEquals(entry1, filename1Mode);
 
             TarEntry directory = entries.FirstOrDefault(x =>
                 x.EntryType == TarEntryType.Directory &&
                 x.Name == prefix + subDirectoryName);
             Assert.NotNull(directory);
+            AssertEntryModeEquals(directory, subDirectoryMode);
 
             string actualFileName2 = subDirectoryName + fileName2; // Notice the trailing separator in subDirectoryName
             TarEntry entry2 = entries.FirstOrDefault(x =>
                 x.EntryType == TarEntryType.RegularFile &&
                 x.Name == prefix + actualFileName2);
             Assert.NotNull(entry2);
+            AssertEntryModeEquals(entry2, filename2Mode);
         }
 
         [Fact]
@@ -144,7 +166,17 @@ namespace System.Formats.Tar.Tests
 
             string prefix = includeBaseDirectory ? Path.GetFileName(source.Path) + '/' : string.Empty;
 
-            TarEntry entry = reader.GetNextEntry();
+            TarEntry entry;
+
+            if (includeBaseDirectory)
+            {
+                entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(TarEntryType.Directory, entry.EntryType);
+                Assert.Equal(prefix, entry.Name);
+            }
+
+            entry = reader.GetNextEntry();
             Assert.NotNull(entry);
             Assert.Equal(TarEntryType.Directory, entry.EntryType);
             Assert.Equal(prefix + "segment1/", entry.Name);

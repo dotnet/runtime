@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -312,24 +313,24 @@ namespace System.Formats.Tar
         internal abstract bool IsDataStreamSetterSupported();
 
         // Extracts the current entry to a location relative to the specified directory.
-        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite)
+        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes)
         {
             (string fileDestinationPath, string? linkTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
 
             if (EntryType == TarEntryType.Directory)
             {
-                Directory.CreateDirectory(fileDestinationPath);
+                TarHelpers.CreateDirectory(fileDestinationPath, Mode, overwrite, pendingModes);
             }
             else
             {
                 // If it is a file, create containing directory.
-                Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
+                TarHelpers.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!, mode: null, overwrite, pendingModes);
                 ExtractToFileInternal(fileDestinationPath, linkTargetPath, overwrite);
             }
         }
 
         // Asynchronously extracts the current entry to a location relative to the specified directory.
-        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, CancellationToken cancellationToken)
+        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -340,13 +341,13 @@ namespace System.Formats.Tar
 
             if (EntryType == TarEntryType.Directory)
             {
-                Directory.CreateDirectory(fileDestinationPath);
+                TarHelpers.CreateDirectory(fileDestinationPath, Mode, overwrite, pendingModes);
                 return Task.CompletedTask;
             }
             else
             {
                 // If it is a file, create containing directory.
-                Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
+                TarHelpers.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!, mode: null, overwrite, pendingModes);
                 return ExtractToFileInternalAsync(fileDestinationPath, linkTargetPath, overwrite, cancellationToken);
             }
         }
@@ -435,7 +436,19 @@ namespace System.Formats.Tar
             {
                 case TarEntryType.Directory:
                 case TarEntryType.DirectoryList:
-                    Directory.CreateDirectory(filePath);
+                    // Mode must only be used for the leaf directory.
+                    // VerifyPathsForEntryType ensures we're only creating a leaf.
+                    Debug.Assert(Directory.Exists(Path.GetDirectoryName(filePath)));
+                    Debug.Assert(!Directory.Exists(filePath));
+
+                    if (!OperatingSystem.IsWindows())
+                    {
+                        Directory.CreateDirectory(filePath, Mode);
+                    }
+                    else
+                    {
+                        Directory.CreateDirectory(filePath);
+                    }
                     break;
 
                 case TarEntryType.SymbolicLink:

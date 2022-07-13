@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     // Static class containing a variety of helper methods.
-    internal static class TarHelpers
+    internal static partial class TarHelpers
     {
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;

@@ -15,8 +15,16 @@ namespace System.Formats.Tar.Tests
 
         // Default values are what a TarEntry created with its constructor will set
         protected const UnixFileMode DefaultFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
-        private const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
+        protected const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
         protected const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute; // Creating archives in Windows always sets the mode to 777
+
+        // Permissions used by tests. User has all permissions to avoid permission errors.
+        protected const UnixFileMode UserAll = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+        protected const UnixFileMode TestPermission1 = UserAll | UnixFileMode.GroupRead;
+        protected const UnixFileMode TestPermission2 = UserAll | UnixFileMode.GroupExecute;
+        protected const UnixFileMode TestPermission3 = UserAll | UnixFileMode.OtherRead;
+        protected const UnixFileMode TestPermission4 = UserAll | UnixFileMode.OtherExecute;
+
         protected const int DefaultGid = 0;
         protected const int DefaultUid = 0;
         protected const int DefaultDeviceMajor = 0;
@@ -359,6 +367,35 @@ namespace System.Formats.Tar.Tests
             {
                 yield return new object[] { format, TarEntryType.SymbolicLink };
                 yield return new object[] { format, TarEntryType.HardLink };
+            }
+        }
+
+        protected static void SetUnixFileMode(string path, UnixFileMode mode)
+        {
+            if (!PlatformDetection.IsWindows)
+            {
+                File.SetUnixFileMode(path, mode);
+            }
+        }
+
+        protected static void AssertEntryModeEquals(TarEntry entry, UnixFileMode mode)
+        {
+            if (!PlatformDetection.IsWindows)
+            {
+                Assert.Equal(mode, entry.Mode);
+            }
+            else
+            {
+                bool isDirectory = entry.EntryType == TarEntryType.Directory;
+                Assert.Equal(isDirectory ? DefaultDirectoryMode : DefaultFileMode, entry.Mode);
+            }
+        }
+
+        protected static void AssertFileModeEquals(string path, UnixFileMode mode)
+        {
+            if (!PlatformDetection.IsWindows)
+            {
+                Assert.Equal(mode, File.GetUnixFileMode(path));
             }
         }
     }

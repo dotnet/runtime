@@ -1,8 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -91,6 +93,69 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<InvalidOperationException>(() => entry.ExtractToFile(fileName, overwrite: false));
 
             Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
+        }
+
+        public static IEnumerable<object[]> GetFormatsAndFiles()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            {
+                foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
+                {
+                    yield return new object[] { format, entryType };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetFormatsAndFiles))]
+        public void Extract(TarEntryFormat format, TarEntryType entryType)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            (string entryName, string destination, PosixTarEntry entry) = Prepare_Extract(root, format, entryType);
+
+            entry.ExtractToFile(destination, overwrite: true);
+
+            Verify_Extract(destination, entry, entryType);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetFormatsAndFiles))]
+        public async Task Extract_Async(TarEntryFormat format, TarEntryType entryType)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            (string entryName, string destination, PosixTarEntry entry) = Prepare_Extract(root, format, entryType);
+
+            await entry.ExtractToFileAsync(destination, overwrite: true);
+
+            Verify_Extract(destination, entry, entryType);
+        }
+
+        private (string, string, PosixTarEntry) Prepare_Extract(TempDirectory root, TarEntryFormat format, TarEntryType entryType)
+        {
+            string entryName = entryType.ToString();
+            string destination = Path.Join(root.Path, entryName);
+
+            PosixTarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, entryName) as PosixTarEntry;
+            Assert.NotNull(entry);
+            entry.Mode = TestPermission1;
+
+            return (entryName, destination, entry);
+        }
+
+        private void Verify_Extract(string destination, PosixTarEntry entry, TarEntryType entryType)
+        {
+            if (entryType is TarEntryType.RegularFile)
+            {
+                Assert.True(File.Exists(destination));
+            }
+            else if (entryType is TarEntryType.Directory)
+            {
+                Assert.True(Directory.Exists(destination));
+            }
+
+            AssertFileModeEquals(destination, TestPermission1);
         }
     }
 }
