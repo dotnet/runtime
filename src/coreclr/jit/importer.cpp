@@ -5386,8 +5386,8 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 
 GenTree* Compiler::impTypeGetTypeCode(GenTree* type)
 {
-    GenTree* retNode = nullptr;
-    CORINFO_CLASS_HANDLE hClass = NO_CLASS_HANDLE;
+    GenTree*             retNode = nullptr;
+    CORINFO_CLASS_HANDLE hClass  = NO_CLASS_HANDLE;
     if (gtIsTypeof(type, &hClass))
     {
         int typeCode = -1;
