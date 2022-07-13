@@ -39,7 +39,7 @@
          Items to remove:
          NU1605: Package downgrade detected
     -->
-    <WarningsAsErrors>$([System.Text.RegularExpressions.Regex]::Replace($(WarningsAsErrors), '\bNU1605\b', ''))</WarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors.Replace('NU1605', ''))</WarningsAsErrors>
 
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and
                                               '$(IsSourceProject)' == 'true' and
