@@ -223,8 +223,12 @@ namespace ILCompiler
                 // in places where they assume IL-level trimming (where the method cannot be removed).
                 // We ask for a full reflectable method with its method body instead of just the
                 // metadata.
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectableMethod(type.GetMethod("Invoke", null)), "Delegate invoke method is always reflectable");
+                MethodDesc invokeMethod = type.GetMethod("Invoke", null);
+                if (!IsReflectionBlocked(invokeMethod))
+                {
+                    dependencies ??= new DependencyList();
+                    dependencies.Add(factory.ReflectableMethod(invokeMethod), "Delegate invoke method is always reflectable");
+                }
             }
 
             MetadataType mdType = type as MetadataType;
