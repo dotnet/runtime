@@ -33,8 +33,13 @@
          SYSLIB0036: Regex.CompileToAssembly
     -->
     <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0025;SYSLIB0032;SYSLIB0036</NoWarn>
-    <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
-    <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
+    <!-- Microsoft.NET.Sdk enables some warnings as errors out of the box.
+         We want to remove some items from this list so they don't fail the build.
+         Can't use 'WarningsNotAsErrors' element because vbproj doesn't honor it.
+         Items to remove:
+         NU1605: Package downgrade detected
+    -->
+    <WarningsAsErrors>$([System.Text.RegularExpressions.Regex]::Replace($(WarningsAsErrors), '\bNU1605\b', ''))</WarningsAsErrors>
 
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and
                                               '$(IsSourceProject)' == 'true' and
