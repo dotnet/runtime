@@ -56,14 +56,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .WithFramework("OMWare", "7.3.1"))
                 // https://github.com/dotnet/runtime/issues/71027
                 // This should pass just fine and resolve all frameworks correctly
-                // Currently it fails because it does resolve frameworks, but incorrectly
-                // looks for hostpolicy in MiddleWare, instead of Microsoft.NETCore.App.
-                .Should().Fail().And.HaveStdErrContaining("hostpolicy");
-                //.ShouldHaveResolvedFramework(
-                //    MicrosoftNETCoreApp, "5.1.1")
-                //.And.HaveResolvedFramework("MiddleWare", "2.1.")
-                //.And.HaveResolvedFramework("SerializerWare", "3.0.1")
-                //.And.HaveResolvedFramework("OMWare", "7.3.1");
+                .ShouldHaveResolvedFramework(
+                    MicrosoftNETCoreApp, "5.1.1")
+                .And.HaveResolvedFramework("MiddleWare", "2.1.")
+                .And.HaveResolvedFramework("SerializerWare", "3.0.1")
+                .And.HaveResolvedFramework("OMWare", "7.3.1");
         }
 
         private CommandResult RunTest(

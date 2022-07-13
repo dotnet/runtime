@@ -45,7 +45,20 @@ typedef std::vector<std::unique_ptr<fx_definition_t>> fx_definition_vector_t;
 
 static const fx_definition_t& get_root_framework(const fx_definition_vector_t& fx_definitions)
 {
-    return *fx_definitions[fx_definitions.size() - 1];
+    // Fixes https://github.com/dotnet/runtime/issues/71027.
+    // If this was to assume that Microsoft.NETCore.App is last in the runtimeconfig.json list
+    // then it could fail when users install frameworks that depends on other frameworks than
+    // just the root framework making the host incorrectly think that is the root framework
+    // and goes about loading hostpolicy in the wrong framework directory instead of the actual
+    // root framework. As such std::find_if is our friend here.
+    auto const& fx = std::find_if(
+        fx_definitions.begin(),
+        fx_definitions.end(),
+        [&](const std::unique_ptr<fx_definition_t>& fxdef)
+        {
+            return fxdef->get_name() == L"Microsoft.NETCore.App";
+        });
+    return **fx;
 }
 
 static const fx_definition_t& get_app(const fx_definition_vector_t& fx_definitions)
