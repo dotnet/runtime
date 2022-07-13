@@ -73,6 +73,9 @@ public sealed partial class QuicStream
     private bool _canRead;
     private bool _canWrite;
 
+    // TODO: remove once/if https://github.com/microsoft/msquic/pull/2883 is merged
+    private readonly QuicConnection.State _connectionState;
+
     private long _id = -1;
     private QuicStreamType _type;
 
@@ -95,11 +98,13 @@ public sealed partial class QuicStream
     /// <summary>
     /// Initializes a new instance of an outbound <see cref="QuicStream" />.
     /// </summary>
+    /// <param name="connectionState">Connection state</param>
     /// <param name="connectionHandle"><see cref="QuicConnection"/> safe handle, used to increment/decrement reference count with each associated stream.</param>
     /// <param name="type">The type of the stream to open.</param>
     /// <param name="defaultErrorCode">Error code used when the stream needs to abort read or write side of the stream internally.</param>
-    internal unsafe QuicStream(MsQuicContextSafeHandle connectionHandle, QuicStreamType type, long defaultErrorCode)
+    internal unsafe QuicStream(QuicConnection.State connectionState, MsQuicContextSafeHandle connectionHandle, QuicStreamType type, long defaultErrorCode)
     {
+        _connectionState = connectionState;
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
         try
         {
@@ -133,12 +138,14 @@ public sealed partial class QuicStream
     /// <summary>
     /// Initializes a new instance of an inbound <see cref="QuicStream" />.
     /// </summary>
+    /// <param name="connectionState">Connection state</param>
     /// <param name="connectionHandle"><see cref="QuicConnection"/> safe handle, used to increment/decrement reference count with each associated stream.</param>
     /// <param name="handle">Native handle.</param>
     /// <param name="flags">Related data from the PEER_STREAM_STARTED connection event.</param>
     /// <param name="defaultErrorCode">Error code used when the stream needs to abort read or write side of the stream internally.</param>
-    internal unsafe QuicStream(MsQuicContextSafeHandle connectionHandle, QUIC_HANDLE* handle, QUIC_STREAM_OPEN_FLAGS flags, long defaultErrorCode)
+    internal unsafe QuicStream(QuicConnection.State connectionState, MsQuicContextSafeHandle connectionHandle, QUIC_HANDLE* handle, QUIC_STREAM_OPEN_FLAGS flags, long defaultErrorCode)
     {
+        _connectionState = connectionState;
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
         try
         {
@@ -468,7 +475,7 @@ public sealed partial class QuicStream
     {
         if (data.ConnectionShutdown != 0)
         {
-            Exception exception = data.ConnectionShutdownByApp != 0 && data.ConnectionClosedRemotely == 0 ? ThrowHelper.GetOperationAbortedException() : ThrowHelper.GetConnectionAbortedException((long)data.ConnectionErrorCode);
+            Exception exception = ThrowHelper.GetConnectionAbortedException(_connectionState.AbortErrorCode);
             _startedTcs.TrySetException(exception);
             _receiveTcs.TrySetException(exception, final: true);
             _sendTcs.TrySetException(exception, final: true);

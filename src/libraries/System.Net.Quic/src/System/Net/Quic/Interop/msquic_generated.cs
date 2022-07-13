@@ -2411,7 +2411,7 @@ namespace Microsoft.Quic
                 }
 
                 [NativeTypeName("BOOLEAN : 1")]
-                internal byte ConnectionShutdownByApp
+                internal byte ConnectionShutdownByPeer
                 {
                     get
                     {
@@ -2424,31 +2424,17 @@ namespace Microsoft.Quic
                     }
                 }
 
-                [NativeTypeName("BOOLEAN : 1")]
-                internal byte ConnectionClosedRemotely
-                {
-                    get
-                    {
-                        return (byte)((_bitfield >> 2) & 0x1u);
-                    }
-
-                    set
-                    {
-                        _bitfield = (byte)((_bitfield & ~(0x1u << 2)) | ((value & 0x1u) << 2));
-                    }
-                }
-
-                [NativeTypeName("BOOLEAN : 5")]
+                [NativeTypeName("BOOLEAN : 6")]
                 internal byte RESERVED
                 {
                     get
                     {
-                        return (byte)((_bitfield >> 3) & 0x1Fu);
+                        return (byte)((_bitfield >> 2) & 0x3Fu);
                     }
 
                     set
                     {
-                        _bitfield = (byte)((_bitfield & ~(0x1Fu << 3)) | ((value & 0x1Fu) << 3));
+                        _bitfield = (byte)((_bitfield & ~(0x3Fu << 2)) | ((value & 0x3Fu) << 2));
                     }
                 }
 

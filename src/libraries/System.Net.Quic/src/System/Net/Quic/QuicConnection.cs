@@ -121,6 +121,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     private long _defaultCloseErrorCode;
 
+    // TODO: remove once/if https://github.com/microsoft/msquic/pull/2883 is merged
+    internal sealed class State
+    {
+        public long AbortErrorCode = -1;
+    }
+    private State _state = new State();
+
     /// <summary>
     /// Set when CONNECTED is received or inside the constructor for an inbound connection from NEW_CONNECTION data.
     /// </summary>
@@ -359,7 +366,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         QuicStream? stream = null;
         try
         {
-            stream = new QuicStream(_handle, type, _defaultStreamErrorCode);
+            stream = new QuicStream(_state, _handle, type, _defaultStreamErrorCode);
             await stream.StartAsync(cancellationToken).ConfigureAwait(false);
         }
         catch
@@ -455,6 +462,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
+        _state.AbortErrorCode = 0;
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
         _connectedTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
@@ -462,6 +470,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
+        _state.AbortErrorCode = (long)data.ErrorCode;
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException((long)data.ErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
@@ -483,7 +492,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
     {
-        QuicStream stream = new QuicStream(_handle, data.Stream, data.Flags, _defaultStreamErrorCode);
+        QuicStream stream = new QuicStream(_state, _handle, data.Stream, data.Flags, _defaultStreamErrorCode);
         if (!_acceptQueue.Writer.TryWrite(stream))
         {
             if (NetEventSource.Log.IsEnabled())
