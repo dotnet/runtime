@@ -247,13 +247,13 @@ internal class ILCompilerRootCommand : RootCommand
 #else
             catch (Exception e)
             {
-                context.Console.ResetColor();
-                context.Console.ForegroundColor = ConsoleColor.Red;
+                Console.ResetColor();
+                Console.ForegroundColor = ConsoleColor.Red;
 
-                context.Console.Error.WriteLine("Error: " + e.Message);
-                context.Console.Error.WriteLine(e.ToString());
+                Console.Error.WriteLine("Error: " + e.Message);
+                Console.Error.WriteLine(e.ToString());
 
-                context.Console.ResetColor();
+                Console.ResetColor();
 
                 context.ExitCode = 1;
             }
