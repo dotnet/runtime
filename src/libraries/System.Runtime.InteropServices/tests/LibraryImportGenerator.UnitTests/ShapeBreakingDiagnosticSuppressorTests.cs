@@ -20,7 +20,67 @@ namespace LibraryImportGenerator.Unit.Tests
     public class ShapeBreakingDiagnosticSuppressorTests
     {
         [Fact]
-        public async Task EmptyParameterlessFreeMethodHasSuppressedDiagnostic()
+        public async Task StatefulValueMarshallerMethodsThatDoNotUseInstanceState_SuppressesDiagnostic()
+        {
+            await VerifySuppressorAsync("""
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                struct S
+                {
+                    public bool b;
+                };
+
+                [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanagedIn))]
+                static class Marshaller
+                {
+                    public struct ManagedToUnmanagedIn
+                    {
+                        public static int BufferSize { get; } = 1;
+
+                        public void {|#0:FromManaged|}(S s)
+                        {
+                        }
+
+                        public void {|#1:FromManaged|}(S s, Span<byte> buffer)
+                        {
+                        }
+
+                        public ManagedToUnmanagedIn {|#2:ToUnmanaged|}()
+                        {
+                            return default;
+                        }
+
+                        public void {|#3:FromUnmanaged|}(ManagedToUnmanagedIn unmanaged)
+                        {
+                        }
+
+                        public S {|#4:ToManaged|}()
+                        {
+                            return default;
+                        }
+                
+                        public void {|#5:Free|}() {}
+                
+                        public void {|#6:OnInvoked|}() {}
+
+                        public ref byte {|#7:GetPinnableReference|}() => ref Unsafe.NullRef<byte>();
+                    }
+                }
+                """,
+                SuppressedDiagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression, DiagnosticSeverity.Info).WithLocation(0),
+                SuppressedDiagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression, DiagnosticSeverity.Info).WithLocation(1),
+                SuppressedDiagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression, DiagnosticSeverity.Info).WithLocation(2),
+                SuppressedDiagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression, DiagnosticSeverity.Info).WithLocation(3),
+                SuppressedDiagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression, DiagnosticSeverity.Info).WithLocation(4),
+                SuppressedDiagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression, DiagnosticSeverity.Info).WithLocation(5),
+                SuppressedDiagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression, DiagnosticSeverity.Info).WithLocation(6),
+                SuppressedDiagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression, DiagnosticSeverity.Info).WithLocation(7));
+        }
+
+        [Fact]
+        public async Task MethodWithShapeMatchingNameButDifferingSignature_DoesNotSuppressDiagnostic()
         {
             await VerifySuppressorAsync("""
                 using System.Runtime.InteropServices.Marshalling;
@@ -35,15 +95,50 @@ namespace LibraryImportGenerator.Unit.Tests
                 {
                     public struct ManagedToUnmanagedIn
                     {
-                        private int i;
-                        public void FromManaged(S s) { i = s.b ? 1 : 0; }
-                        public ManagedToUnmanagedIn ToUnmanaged() => this;
-
-                        public void {|#0:Free|}() {}
+                        public void {|#0:Free|}(int i) {}
                     }
                 }
                 """,
-                new DiagnosticResult(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression.SuppressedDiagnosticId, DiagnosticSeverity.Info).WithLocation(0).WithIsSuppressed(true));
+                Diagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression.SuppressedDiagnosticId, DiagnosticSeverity.Info).WithLocation(0));
+        }
+
+        [Fact]
+        public async Task StatefulValueMarshallerMethodsForMarshallerInNonNestedMarshaller_DoesNotSuppressDiagnostics()
+        {
+            // For performance reasons, we only look on containing types to find a CustomMarshallerAttribute.
+            // As a result, we miss some cases of the bad diagnostics.
+            // Since we're going to recommend people make their marshallers nested types of their entry-point type,
+            // this limitation isn't unreasonable. If the user isn't following our best practices, then they're going
+            // to have a worse dev experience.
+            await VerifySuppressorAsync("""
+                using System.Runtime.InteropServices.Marshalling;
+
+                struct S
+                {
+                    public bool b;
+                };
+
+                [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanagedIn))]
+                static class Marshaller
+                {
+                }
+
+                public struct ManagedToUnmanagedIn
+                {
+                    public void {|#0:Free|}() {}
+                }
+                """,
+                Diagnostic(ShapeBreakingDiagnosticSuppressor.MarkMethodsAsStaticSuppression.SuppressedDiagnosticId, DiagnosticSeverity.Info).WithLocation(0));
+        }
+
+        private static DiagnosticResult Diagnostic(string id, DiagnosticSeverity originalDiagnosticSeverity)
+        {
+            return new DiagnosticResult(id, originalDiagnosticSeverity);
+        }
+
+        private static DiagnosticResult SuppressedDiagnostic(SuppressionDescriptor descriptor, DiagnosticSeverity originalDiagnosticSeverity)
+        {
+            return new DiagnosticResult(descriptor.SuppressedDiagnosticId, originalDiagnosticSeverity).WithIsSuppressed(true);
         }
 
         private static async Task VerifySuppressorAsync(string source, params DiagnosticResult[] expected)
