@@ -2609,7 +2609,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(0, await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
 
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Fact]

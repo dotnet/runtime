@@ -185,7 +185,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 MsQuicApi.Api.Registration.QuicHandle,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
-                &handle));
+                &handle),
+                "ConnectionOpen failed");
             _handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->ConnectionClose, SafeHandleType.Connection);
         }
         catch
@@ -234,7 +235,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
-                throw new ArgumentException($"Unsupported remote endpoint type '{options.RemoteEndPoint.GetType()}', expected IP or DNS endpoint.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.net_quic_unsupported_endpoint_type, options.RemoteEndPoint.GetType()), nameof(options));
             }
             int addressFamily = QUIC_ADDRESS_FAMILY_UNSPEC;
 
@@ -299,7 +300,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                         _configuration.QuicHandle,
                         (ushort)addressFamily,
                         (sbyte*)targetHostPtr,
-                        (ushort)port));
+                        (ushort)port),
+                        "ConnectionStart failed");
                 }
             }
             finally
@@ -334,7 +336,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
                     _handle.QuicHandle,
-                    _configuration.QuicHandle));
+                    _configuration.QuicHandle),
+                    "ConnectionSetConfiguration failed");
             }
         }
 
@@ -452,9 +455,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
-        _connectedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
-        // TODO: we should differentiate transport from app since the error code here is bogus.
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(0)));
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
+        _connectedTcs.TrySetException(exception);
+        _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
@@ -579,6 +582,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
         }
 
+        // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
         await valueTask.ConfigureAwait(false);
         _handle.Dispose();
 

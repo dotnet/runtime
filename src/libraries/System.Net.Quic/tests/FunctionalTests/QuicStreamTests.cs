@@ -573,7 +573,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[1024 * 1024];
 
                     QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => ReadAll(stream, buffer));
-                    Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
+                    Assert.Equal(DefaultStreamErrorCodeClient, ex.ApplicationErrorCode);
                 }
             );
         }
@@ -621,7 +621,7 @@ namespace System.Net.Quic.Tests
                     }
 
                     QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => ReadUntilAborted());
-                    Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
+                    Assert.Equal(DefaultStreamErrorCodeClient, ex.ApplicationErrorCode);
                 }
             );
         }
