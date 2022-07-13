@@ -792,7 +792,7 @@ emit_vector_create_elementwise (
 	return ins;
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM) 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 static int
 type_to_xinsert_op (MonoTypeEnum type)
@@ -1732,7 +1732,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		int instc0 = OP_FMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, MONO_TYPE_R4, fsig, args);
 		return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, pairwise_multiply);
-#else
+#elif defined(TARGET_AMD64)
 		if (!(mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41))
 			return NULL;
 
@@ -1748,6 +1748,8 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c1 = MONO_TYPE_R4;
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
+#else
+		return NULL;
 #endif
 	}
 	case SN_Abs: {
@@ -1778,10 +1780,12 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_SquareRoot: {
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, MONO_TYPE_R4, fsig, args);
-#else
+#elif defined(TARGET_AMD64)
 		ins = emit_simd_ins (cfg, klass, OP_XOP_X_X, args [0]->dreg, -1);
 		ins->inst_c0 = (IntrinsicId)INTRINS_SSE_SQRT_PS;
 		return ins;
+#else
+		return NULL;
 #endif
 	}
 	case SN_CopyTo:
@@ -1794,7 +1798,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	return NULL;
 }
 
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 #ifdef TARGET_AMD64
 
