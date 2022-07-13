@@ -3,7 +3,7 @@ DOTNET:=$(TOP)./dotnet.sh
 DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 
 MONO_CONFIG ?=Debug
-MONO_ARCH=arm64
+MONO_ARCH=x64
 AOT?=false
 
 #NET_TRACE_PATH=<path-to-trace-of-sample>
@@ -17,7 +17,7 @@ else
 	TARGET_OS=linux
 endif
 
-MONO_ENV_OPTIONS ?=--llvm
+MONO_ENV_OPTIONS ?=
 
 publish:
 	$(DOTNET) publish \

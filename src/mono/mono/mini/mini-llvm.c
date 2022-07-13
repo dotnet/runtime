@@ -1423,9 +1423,9 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 
 		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind && LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
 			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
-		if (LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
+		if (LLVMGetTypeKind (dtype) == LLVMPointerTypeKind && LLVMGetTypeKind (stype) == LLVMIntegerTypeKind)
 			return LLVMBuildIntToPtr (ctx->builder, v, dtype, "");
-		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind)
+		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind && LLVMGetTypeKind (dtype) == LLVMIntegerTypeKind)
 			return LLVMBuildPtrToInt (ctx->builder, v, dtype, "");
 
 		if (mono_arch_is_soft_float ()) {
@@ -5998,12 +5998,29 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgAsIArgs:
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
-				LLVMValueRef retval;
-				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+				LLVMValueRef retval, elem;
+				MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
+				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, klass);
 
 				if (is_simd) {
 					g_assert (values [ins->sreg1]);
-					retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, values [ins->sreg1], pointer_type (ret_type)), "");
+					int align = mono_class_value_size (klass, NULL);
+					retval = build_alloca_llvm_type_name (ctx, ret_type, align, "struct_ret");
+					retval = LLVMBuildLoad2 (builder, ret_type, retval, "struct_ret");
+
+					int len;
+					if (!strcmp ("Vector4", m_class_get_name (klass)))
+						len = 4;
+					else if (!strcmp ("Vector2", m_class_get_name (klass)))
+						len = 2;
+					else
+						g_assert_not_reached ();
+					
+					for (int i = 0; i < len; i++)
+					{
+						elem = LLVMBuildExtractElement (builder, values [ins->sreg1], const_int32 (i), "extract_elem");
+						retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
+					}
 				} else{
 					g_assert (addresses [ins->sreg1] || values [ins->sreg1]);
 					retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");

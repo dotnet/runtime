@@ -306,18 +306,20 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				break;
 			case SN_Multiply:
 			case SN_op_Multiply:
-				if (fsig->params [1]->type != MONO_TYPE_GENERICINST) {
-					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
-					ins->inst_c1 = arg_type;
-					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
-					ins->inst_c0 = OP_FMUL;
-					return ins;
-				} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
-					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
-					ins->inst_c1 = arg_type;
-					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
-					ins->inst_c0 = OP_FMUL;
-					return ins;
+				if (strcmp ("Vector4", m_class_get_name (klass)) && strcmp ("Vector2", m_class_get_name (klass))) {
+					if (fsig->params [1]->type != MONO_TYPE_GENERICINST) {
+						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
+						ins->inst_c1 = arg_type;
+						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
+						ins->inst_c0 = OP_FMUL;
+						return ins;
+					} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
+						ins->inst_c1 = arg_type;
+						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
+						ins->inst_c0 = OP_FMUL;
+						return ins;
+					}
 				}
 				instc0 = OP_FMUL;
 				break;
@@ -512,8 +514,15 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 {
 	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
 	int vector_size = mono_class_value_size (vector_class, NULL);
-	MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
-	int element_size = mono_class_value_size (element_class, NULL);
+	int element_size;
+	if (!strcmp ("Vector4", m_class_get_name (vector_class)))
+		element_size = vector_size / 4;
+	else if (!strcmp ("Vector4", m_class_get_name (vector_class)))
+		element_size = vector_size / 2;
+	else {
+		MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
+		element_size = mono_class_value_size (element_class, NULL);
+	}
 	gboolean has_single_element = vector_size == element_size;
 
 	// If there's just one element we need to extract it instead of summing the whole array
@@ -1717,33 +1726,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Min:
 		if (!(!fsig->hasthis && fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
-		// ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
-		// ins->inst_c1 = etype->type;
-
-		// switch (id) {
-		// case SN_op_Addition:
-		// 	ins->inst_c0 = OP_FADD;
-		// 	break;
-		// case SN_op_Division:
-		// 	ins->inst_c0 = OP_FDIV;
-		// 	break;
-		// case SN_op_Multiply:
-		// 	ins->inst_c0 = OP_FMUL;
-		// 	break;
-		// case SN_op_Subtraction:
-		// 	ins->inst_c0 = OP_FSUB;
-		// 	break;
-		// case SN_Max:
-		// 	ins->inst_c0 = OP_FMAX;
-		// 	break;
-		// case SN_Min:
-		// 	ins->inst_c0 = OP_FMIN;
-		// 	break;
-		// default:
-		// 	g_assert_not_reached ();
-		// 	break;
-		// }
-		// return ins;
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	case SN_Dot: {
 #ifdef TARGET_ARM64
