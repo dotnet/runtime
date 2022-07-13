@@ -20,6 +20,7 @@ using Internal.TypeSystem.Ecma;
 using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.IBC;
+using System.Diagnostics;
 
 namespace ILCompiler
 {
@@ -245,9 +246,16 @@ namespace ILCompiler
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                if (_targetOS == TargetOS.OSX)
+                {
+                    // For osx-arm64 we know that apple-m1 is a baseline
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                }
             }
-
 
             if (_commandLineOptions.InstructionSet != null)
             {
