@@ -10,15 +10,14 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
-// Stripped-down variant of Interop/UnmanagedCallersOnly/* test used for testing Mono AOT support for UnmanagedCallersOnly attribute
 public unsafe class Program
 {
-    public static class UnmanagedCallersOnly_MonoAotDll
+    public static class UnmanagedCallersOnlyDll
     {
-        [DllImport(nameof(UnmanagedCallersOnly_MonoAotDll))]
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProc_Stdcall(delegate* unmanaged[Stdcall]<int, int> callbackProc, int n);
 
-        [DllImport(nameof(UnmanagedCallersOnly_MonoAotDll))]
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProc_Cdecl(delegate* unmanaged[Cdecl]<int, int> callbackProc, int n);
     }
 
@@ -55,7 +54,7 @@ public unsafe class Program
 
         int n = 12345;
         int expected = DoubleImpl(n);
-        int actual = UnmanagedCallersOnly_MonoAotDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_Stdcall, n);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_Stdcall, n);
 
         return expected == actual ? 0 : -1;
     }
@@ -66,7 +65,7 @@ public unsafe class Program
 
         int n = 12345;
         int expected = DoubleImpl(n);
-        int actual = UnmanagedCallersOnly_MonoAotDll.CallManagedProc_Cdecl(&ManagedDoubleCallback_Cdecl, n);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Cdecl(&ManagedDoubleCallback_Cdecl, n);
 
         return expected == actual ? 0 : -1;
     }
