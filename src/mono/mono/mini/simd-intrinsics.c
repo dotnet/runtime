@@ -1129,6 +1129,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_Create: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		else if (is_create_from_half_vectors_overload (fsig))
