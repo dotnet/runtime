@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            SyntaxNode nodeToFix = root.FindNode(context.Span, getInnermostNodeForTie: false);
+            SyntaxNode nodeToFix = root.FindNode(context.Span, getInnermostNodeForTie: true);
             if (nodeToFix is null)
             {
                 return;
@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator
             context.RegisterCodeFix(
                 CodeAction.Create(
                     SR.UseRegexSourceGeneratorTitle,
-                    cancellationToken => ConvertToSourceGenerator(context.Document, context.Diagnostics[0], cancellationToken),
+                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, context.Diagnostics[0], cancellationToken),
                     equivalenceKey: SR.UseRegexSourceGeneratorTitle),
                 context.Diagnostics);
         }
@@ -65,10 +65,12 @@ namespace System.Text.RegularExpressions.Generator
         /// nodes in order to apply the code fix to the diagnostic.
         /// </summary>
         /// <param name="document">The original document.</param>
+        /// <param name="root">The root of the syntax tree.</param>
+        /// <param name="nodeToFix">The node to fix. This is where the diagnostic was produced.</param>
         /// <param name="diagnostic">The diagnostic to fix.</param>
         /// <param name="cancellationToken">The cancellation token for the async operation.</param>
         /// <returns>The new document with the replaced nodes after applying the code fix.</returns>
-        private static async Task<Document> ConvertToSourceGenerator(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
+        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, Diagnostic diagnostic, CancellationToken cancellationToken)
         {
             // We first get the compilation object from the document
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
@@ -86,14 +88,6 @@ namespace System.Text.RegularExpressions.Generator
                 return document;
             }
 
-            // Find the node that corresponding to the diagnostic which we will then fix.
-            SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-            if (root is null)
-            {
-                return document;
-            }
-
-            SyntaxNode nodeToFix = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: false);
             // Save the operation object from the nodeToFix before it gets replaced by the new method invocation.
             // We will later use this operation to get the parameters out and pass them into the RegexGenerator attribute.
             IOperation? operation = semanticModel.GetOperation(nodeToFix, cancellationToken);
@@ -140,7 +134,7 @@ namespace System.Text.RegularExpressions.Generator
                 });
 
             // We find nodeToFix again by calculating the offset of how many partial keywords we had to add.
-            nodeToFix = root.FindNode(new TextSpan(nodeToFix.Span.Start + (typesModified * "partial".Length), nodeToFix.Span.Length));
+            nodeToFix = root.FindNode(new TextSpan(nodeToFix.Span.Start + (typesModified * "partial".Length), nodeToFix.Span.Length), getInnermostNodeForTie: true);
             if (nodeToFix is null)
             {
                 return document;

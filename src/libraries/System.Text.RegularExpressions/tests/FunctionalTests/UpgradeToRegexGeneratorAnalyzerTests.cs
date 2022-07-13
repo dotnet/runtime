@@ -748,6 +748,29 @@ partial class Program
             }.RunAsync();
         }
 
+        [Fact]
+        public async Task TestAsArgument()
+        {
+            string test = @"using System.Text.RegularExpressions;
+public class C
+{
+    void M1(Regex r) => _ = r;
+    void M2() => M1([|new Regex("""")|]);
+}
+";
+
+            string fixedCode = @"using System.Text.RegularExpressions;
+public partial class C
+{
+    void M1(Regex r) => _ = r;
+    void M2() => M1(MyRegex());
+    [RegexGenerator("""")]
+    private static partial Regex MyRegex();
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
+        }
         #region Test helpers
 
         private static string ConstructRegexInvocation(InvocationType invocationType, string pattern, string? options = null)
