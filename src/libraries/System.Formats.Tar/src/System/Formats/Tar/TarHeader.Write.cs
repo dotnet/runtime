@@ -166,6 +166,8 @@ namespace System.Formats.Tar
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass them to the extended attributes header for writing
             _extendedAttributes ??= new Dictionary<string, string>();
+
+            // Don't need to store the returned checksum, we only need it written to the archive in the extended attributes entry header
             await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, _extendedAttributes, isGea: false, cancellationToken).ConfigureAwait(false);
 
             buffer.Span.Clear(); // Reset it to reuse it
@@ -299,16 +301,16 @@ namespace System.Formats.Tar
         }
 
         // Shared checksum and data length calculations for GNU entry writing.
-        private void WriteAsGnuSharedInternal(Span<byte> buffer, out long actualLength, out int checksum)
+        private void WriteAsGnuSharedInternal(Span<byte> buffer, out long actualLength, out int finalChecksum)
         {
             actualLength = GetTotalDataBytesToWrite();
 
-            checksum = WriteName(buffer, out _);
+            int checksum = WriteName(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu));
             checksum += WriteGnuMagicAndVersion(buffer);
             checksum += WritePosixAndGnuSharedFields(buffer);
             checksum += WriteGnuFields(buffer);
-            checksum += WriteChecksum(checksum, buffer);
+            finalChecksum = WriteChecksum(checksum, buffer);
         }
 
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.
@@ -371,7 +373,7 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            WriteAsPaxSharedInternal(buffer.Span, out long actualLength, out int checksum);
+            WriteAsPaxSharedInternal(buffer.Span, out long actualLength, out int finalChecksum);
 
             await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -380,19 +382,19 @@ namespace System.Formats.Tar
                 await WriteDataAsync(archiveStream, _dataStream, actualLength, cancellationToken).ConfigureAwait(false);
             }
 
-            return checksum;
+            return finalChecksum;
         }
 
         // Shared checksum and data length calculations for PAX entry writing.
-        private void WriteAsPaxSharedInternal(Span<byte> buffer, out long actualLength, out int checksum)
+        private void WriteAsPaxSharedInternal(Span<byte> buffer, out long actualLength, out int finalChecksum)
         {
             actualLength = GetTotalDataBytesToWrite();
 
-            checksum = WritePosixName(buffer);
+            int checksum = WritePosixName(buffer);
             checksum += WriteCommonFields(buffer, actualLength, GetCorrectTypeFlagForFormat(TarEntryFormat.Pax));
             checksum += WritePosixMagicAndVersion(buffer);
             checksum += WritePosixAndGnuSharedFields(buffer);
-            checksum += WriteChecksum(checksum, buffer);
+            finalChecksum = WriteChecksum(checksum, buffer);
         }
 
         // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
