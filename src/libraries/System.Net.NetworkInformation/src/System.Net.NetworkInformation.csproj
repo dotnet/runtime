@@ -161,6 +161,7 @@
   </ItemGroup>
   <!-- Browser -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <Compile Include="System\Net\NetworkInformation\BrowserNetworkInterfaceInterop.cs" />
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Browser.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Browser.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Browser.cs" />

@@ -13,7 +13,6 @@ namespace System.Net.NetworkInformation
 {
     public partial class NetworkChange
     {
-        private static bool s_isBrowserNetworkChangeListenerAttached;
         private static event NetworkAvailabilityChangedEventHandler? s_networkAvailabilityChanged;
 
         [UnsupportedOSPlatform("illumos")]
@@ -22,17 +21,17 @@ namespace System.Net.NetworkInformation
         {
             add
             {
-                if (!s_isBrowserNetworkChangeListenerAttached)
-                {
-                    BrowserNetworkInterfaceInterop.AddChangeListener(OnNetworkAvailabilityChanged);
-                    s_isBrowserNetworkChangeListenerAttached = true;
-                }
+                if (s_networkAvailabilityChanged == null)
+                    BrowserNetworkInterfaceInterop.SetChangeListener(OnNetworkAvailabilityChanged);
 
                 s_networkAvailabilityChanged += value;
             }
             remove
             {
                 s_networkAvailabilityChanged -= value;
+
+                if (s_networkAvailabilityChanged == null)
+                    BrowserNetworkInterfaceInterop.RemoveChangeListener();
             }
         }
 
