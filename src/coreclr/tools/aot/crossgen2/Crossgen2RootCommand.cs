@@ -252,7 +252,7 @@ internal class Crossgen2RootCommand : RootCommand
                     // + a rsp file that should work to directly run out of the zip file
 
                     Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValueForOption(OutputFilePath), args,
-                        context.ParseResult, new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist" });
+                        context.ParseResult, new[] { "r", "reference", "u", "unrooted-input-file-paths", "m", "mibc", "inputbubbleref" });
                 }
 
                 context.ExitCode = new Program(this).Run();
