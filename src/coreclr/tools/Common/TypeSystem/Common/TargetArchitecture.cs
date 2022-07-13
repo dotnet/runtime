@@ -14,7 +14,6 @@ namespace Internal.TypeSystem
         Unknown,
         ARM,
         ARM64,
-        ARMEL,
         X64,
         X86,
         Wasm32,
