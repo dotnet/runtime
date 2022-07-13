@@ -7,25 +7,25 @@ namespace System.Net.NetworkInformation.Tests
 {
     // Partial class used for both NetworkAddressChanged and NetworkAvailabilityChanged
     // so that the tests for each don't run concurrently
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class NetworkChangedTests
     {
         private readonly NetworkAvailabilityChangedEventHandler _availabilityHandler = delegate { };
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
         public void NetworkAvailabilityChanged_AddRemove_Success()
         {
             NetworkChange.NetworkAvailabilityChanged += _availabilityHandler;
             NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
         public void NetworkAvailabilityChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void NetworkAddressChanged_Add_DoesNotBlock()
         {
             // Register without unregistering.
@@ -39,6 +39,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void NetworkAddressChanged_AddAndRemove_NetworkAvailabilityChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAddressChanged += _addressHandler;
@@ -51,6 +52,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void NetworkAvailabilityChanged_NetworkAddressChanged_AddAndRemove_Success(bool addAddressFirst, bool removeAddressFirst)
         {
             if (addAddressFirst)
