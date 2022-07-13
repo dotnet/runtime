@@ -105,7 +105,7 @@ namespace System.Formats.Asn1
             ReadOnlySpan<byte> contents = ReadIntegerBytes(source, ruleSet, out int consumed, expectedTag);
 
 #if NETCOREAPP2_1_OR_GREATER
-            BigInteger value = new BigInteger(contents, isUnsigned: false, isBigEndian: true);
+            BigInteger value = new BigInteger(contents, isBigEndian: true);
 #else
             byte[] tmp = CryptoPool.Rent(contents.Length);
             BigInteger value;
@@ -114,10 +114,10 @@ namespace System.Formats.Asn1
             {
                 byte fill = (contents[0] & 0x80) == 0 ? (byte)0 : (byte)0xFF;
                 // Fill the unused portions of tmp with positive or negative padding.
-                new Span<byte>(tmp, contents.Length, tmp.Length - contents.Length).Fill(fill);
+                tmp.AsSpan(contents.Length, tmp.Length - contents.Length).Fill(fill);
                 contents.CopyTo(tmp);
                 // Convert to Little-Endian.
-                new Span<byte>(tmp, 0, contents.Length).Reverse();
+                tmp.AsSpan(0, contents.Length).Reverse();
                 value = new BigInteger(tmp);
             }
             finally
