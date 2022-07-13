@@ -56,7 +56,7 @@ namespace System.Threading.RateLimiting
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ValueTask<RateLimitLease> WaitAsync(TResource resourceID, int permitCount = 1, CancellationToken cancellationToken = default)
+        public ValueTask<RateLimitLease> WaitAndAcquireAsync(TResource resourceID, int permitCount = 1, CancellationToken cancellationToken = default)
         {
             if (permitCount < 0)
             {
@@ -68,17 +68,17 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(Task.FromCanceled<RateLimitLease>(cancellationToken));
             }
 
-            return WaitAsyncCore(resourceID, permitCount, cancellationToken);
+            return WaitAndAcquireAsyncCore(resourceID, permitCount, cancellationToken);
         }
 
         /// <summary>
-        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="WaitAsync"/>.
+        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="WaitAndAcquireAsync"/>.
         /// </summary>
         /// <param name="resourceID">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
-        protected abstract ValueTask<RateLimitLease> WaitAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken);
+        protected abstract ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken);
 
         /// <summary>
         /// Dispose method for implementations to write.
