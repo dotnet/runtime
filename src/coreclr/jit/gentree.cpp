@@ -17985,6 +17985,10 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
             }
         }
     }
+    if (handle != nullptr)
+    {
+        *handle = NO_CLASS_HANDLE;
+    }
     return false;
 }
 
