@@ -24,7 +24,7 @@ namespace System.Net.NetworkInformation
             {
                 if (!s_isBrowserNetworkChangeListenerAttached)
                 {
-                    BrowserNetworkInterfaceInterop.AddChangeListener(OnNetworkChanged);
+                    BrowserNetworkInterfaceInterop.AddChangeListener(OnNetworkAvailabilityChanged);
                     s_isBrowserNetworkChangeListenerAttached = true;
                 }
 
@@ -36,7 +36,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static void OnNetworkChanged(bool isOnline) => s_networkAvailabilityChanged?.Invoke(null, new NetworkAvailabilityEventArgs(isOnline));
+        private static void OnNetworkAvailabilityChanged(bool isOnline) => s_networkAvailabilityChanged?.Invoke(null, new NetworkAvailabilityEventArgs(isOnline));
 
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("illumos")]
