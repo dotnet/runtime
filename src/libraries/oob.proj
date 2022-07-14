@@ -8,7 +8,6 @@
 
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
-    <ProjectReference Include="$(CoreLibProject)" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
     <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
 

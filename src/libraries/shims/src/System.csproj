@@ -7,7 +7,4 @@
   <ItemGroup>
     <Compile Include="System.forwards.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(CoreLibProject)" />
-  </ItemGroup>
 </Project>
