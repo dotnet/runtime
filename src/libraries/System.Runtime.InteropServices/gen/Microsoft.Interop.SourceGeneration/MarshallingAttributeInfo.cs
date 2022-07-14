@@ -550,9 +550,10 @@ namespace Microsoft.Interop
                 return NoMarshallingInfo.Instance;
             }
 
-            if (!entryPointType.IsStatic)
+            if (!(entryPointType.IsStatic && entryPointType.TypeKind == TypeKind.Class)
+                && entryPointType.TypeKind != TypeKind.Struct)
             {
-                _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerTypeMustBeStatic), entryPointType.ToDisplayString(), type.ToDisplayString());
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerTypeMustBeStaticClassOrStruct), entryPointType.ToDisplayString(), type.ToDisplayString());
                 return NoMarshallingInfo.Instance;
             }
 

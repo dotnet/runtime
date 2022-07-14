@@ -702,6 +702,20 @@ public class Marshaller
                 + NonBlittableUserDefinedType()
                 + NonStatic;
 
+            private static string Struct = @"
+[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+public struct Marshaller
+{
+    public struct Native { }
+
+    public void FromManaged(S s) {}
+    public Native ToUnmanaged() => default;
+}
+";
+            public static string StructMarshallerEntryPoint => BasicParameterByValue("S")
+                + NonBlittableUserDefinedType()
+                + Struct;
+
             public static class Stateless
             {
                 private static string In = @"
