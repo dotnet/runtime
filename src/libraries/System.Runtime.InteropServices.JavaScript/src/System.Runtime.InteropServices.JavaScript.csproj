@@ -3,9 +3,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <!-- Use following lines to write the generated files to disk. -->
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <RootNamespace></RootNamespace>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -15,19 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.JavaScript.SupportedOSPlatform.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.Generated.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.cs" />
 
@@ -51,6 +40,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSException.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.BigInt64.cs" />
@@ -70,6 +60,16 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.String.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
-
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

@@ -68,9 +68,9 @@ namespace System.Threading.RateLimiting
             return GetRateLimiter(resourceID).Acquire(permitCount);
         }
 
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken)
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken)
         {
-            return GetRateLimiter(resourceID).WaitAsync(permitCount, cancellationToken);
+            return GetRateLimiter(resourceID).WaitAndAcquireAsync(permitCount, cancellationToken);
         }
 
         private RateLimiter GetRateLimiter(TResource resourceID)

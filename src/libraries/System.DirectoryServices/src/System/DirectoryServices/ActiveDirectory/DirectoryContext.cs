@@ -605,7 +605,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             // If this is a directory user, extract domain info from username
                             if (!Utils.IsSamUser())
                             {
-                                WindowsIdentity identity = WindowsIdentity.GetCurrent();
+                                using WindowsIdentity identity = WindowsIdentity.GetCurrent();
 
                                 int index = identity.Name.IndexOf('\\');
                                 Debug.Assert(index != -1);

@@ -1124,20 +1124,30 @@ namespace System.Runtime.InteropServices
         }
 
         //
-        // IFloatingPointIeee754
+        // IFloatingPointConstants
         //
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.E" />
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
         public static NFloat E => new NFloat(NativeType.E);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        public static NFloat Pi => new NFloat(NativeType.Pi);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        public static NFloat Tau => new NFloat(NativeType.Tau);
+
+        //
+        // IFloatingPointIeee754
+        //
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
         public static NFloat NegativeZero => new NFloat(NativeType.NegativeZero);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Pi" />
-        public static NFloat Pi => new NFloat(NativeType.Pi);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static NFloat Atan2(NFloat y, NFloat x) => new NFloat(NativeType.Atan2(y._value, x._value));
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Tau" />
-        public static NFloat Tau => new NFloat(NativeType.Tau);
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static NFloat Atan2Pi(NFloat y, NFloat x) => new NFloat(NativeType.Atan2Pi(y._value, x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static NFloat BitDecrement(NFloat x) => new NFloat(NativeType.BitDecrement(x._value));
@@ -1772,8 +1782,8 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
         public static NFloat Hypot(NFloat x, NFloat y) => new NFloat(NativeType.Hypot(x._value, y._value));
 
-        /// <inheritdoc cref="IRootFunctions{TSelf}.Root(TSelf, int)" />
-        public static NFloat Root(NFloat x, int n) => new NFloat(NativeType.Root(x._value, n));
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static NFloat RootN(NFloat x, int n) => new NFloat(NativeType.RootN(x._value, n));
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
         public static NFloat Sqrt(NFloat x) => new NFloat(NativeType.Sqrt(x._value));
@@ -1814,12 +1824,6 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
         public static NFloat Atan(NFloat x) => new NFloat(NativeType.Atan(x._value));
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2(TSelf, TSelf)" />
-        public static NFloat Atan2(NFloat y, NFloat x) => new NFloat(NativeType.Atan2(y._value, x._value));
-
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan2Pi(TSelf, TSelf)" />
-        public static NFloat Atan2Pi(NFloat y, NFloat x) => new NFloat(NativeType.Atan2Pi(y._value, x._value));
-
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         public static NFloat AtanPi(NFloat x) => new NFloat(NativeType.AtanPi(x._value));
 
@@ -1835,8 +1839,15 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (NFloat Sin, NFloat Cos) SinCos(NFloat x)
         {
-            var (sin, cos) = MathF.SinCos((float)x);
+            var (sin, cos) = NativeType.SinCos(x._value);
             return (new NFloat(sin), new NFloat(cos));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (NFloat SinPi, NFloat CosPi) SinCosPi(NFloat x)
+        {
+            var (sinPi, cosPi) = NativeType.SinCosPi(x._value);
+            return (new NFloat(sinPi), new NFloat(cosPi));
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />

@@ -24,7 +24,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasProperty(string propertyName)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            return JavaScriptImports.HasProperty(this, propertyName);
         }
 
         /// <summary>
@@ -33,7 +34,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string GetTypeOfProperty(string propertyName)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            return JavaScriptImports.GetTypeOfProperty(this, propertyName);
         }
 
         /// <summary>
@@ -45,7 +47,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetPropertyAsBoolean(string propertyName)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            return JavaScriptImports.GetPropertyAsBoolean(this, propertyName);
         }
 
         /// <summary>
@@ -57,7 +60,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetPropertyAsInt32(string propertyName)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            return JavaScriptImports.GetPropertyAsInt32(this, propertyName);
         }
 
         /// <summary>
@@ -69,7 +73,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double GetPropertyAsDouble(string propertyName)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            return JavaScriptImports.GetPropertyAsDouble(this, propertyName);
         }
 
         /// <summary>
@@ -81,7 +86,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string? GetPropertyAsString(string propertyName)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            return JavaScriptImports.GetPropertyAsString(this, propertyName);
         }
 
         /// <summary>
@@ -93,7 +99,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JSObject? GetPropertyAsJSObject(string propertyName)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            return JavaScriptImports.GetPropertyAsJSObject(this, propertyName);
         }
 
         /// <summary>
@@ -106,7 +113,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[]? GetPropertyAsByteArray(string propertyName)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            return JavaScriptImports.GetPropertyAsByteArray(this, propertyName);
         }
 
         /// <summary>
@@ -115,7 +123,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, bool value)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            JavaScriptImports.SetPropertyBool(this, propertyName, value);
         }
 
         /// <summary>
@@ -124,7 +133,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, int value)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            JavaScriptImports.SetPropertyInt(this, propertyName, value);
         }
 
         /// <summary>
@@ -133,7 +143,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, double value)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            JavaScriptImports.SetPropertyDouble(this, propertyName, value);
         }
 
         /// <summary>
@@ -142,7 +153,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, string? value)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            JavaScriptImports.SetPropertyString(this, propertyName, value);
         }
 
         /// <summary>
@@ -151,7 +163,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, JSObject? value)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            JavaScriptImports.SetPropertyJSObject(this, propertyName, value);
         }
 
         /// <summary>
@@ -161,7 +174,8 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, byte[]? value)
         {
-            throw new NotImplementedException();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+            JavaScriptImports.SetPropertyBytes(this, propertyName, value);
         }
     }
 }

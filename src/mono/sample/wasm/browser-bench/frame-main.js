@@ -6,18 +6,19 @@
 import createDotnetRuntime from './dotnet.js'
 
 class FrameApp {
-    async init({ BINDING }) {
-        const reachManagedReached = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.AppStartTask/ReachManaged:Reached");
-        await reachManagedReached();
+    async init({ MONO }) {
+        const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Bench.Sample.dll");
+        exports.Sample.AppStartTask.FrameApp.ReachedManaged();
     }
 
-    reached() {
+    reachedCallback() {
         window.parent.resolveAppStartEvent("reached");
     }
 }
 
 try {
     globalThis.frameApp = new FrameApp();
+    globalThis.frameApp.ReachedCallback = globalThis.frameApp.reachedCallback.bind(globalThis.frameApp);
 
     let mute = false;
     window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
@@ -26,7 +27,7 @@ try {
         mute = true;
     }
 
-    const { BINDING } = await createDotnetRuntime(() => ({
+    const { MONO } = await createDotnetRuntime(() => ({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         printErr: function () {
@@ -44,7 +45,7 @@ try {
     }));
 
     window.parent.resolveAppStartEvent("onDotnetReady");
-    await frameApp.init({ BINDING });
+    await frameApp.init({ MONO });
 }
 catch (err) {
     if (!mute) {
