@@ -1544,7 +1544,7 @@ ReturnZero:
                     }
                     else
                     {
-                        // Otherwise, we return the maximum precision verison of zero or negative zero
+                        // Otherwise, we return the maximum precision version of zero or negative zero
                         uint zeroFlags = 0;
                         if (double.IsNegative(input))
                         {

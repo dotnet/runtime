@@ -19,10 +19,9 @@ namespace System
     // Decimal data type is ideally suited to financial calculations that
     // require a large number of significant digits and no round-off errors.
     //
-    // The finite set of values of type Decimal are of the form m
-    // / 10^e, where m is an integer such that
-    // -2^96 <; m <; 2^96, and e is an integer
-    // between 0 and 28 inclusive.
+    // The finite set of values of type Decimal are of the form m / 10^e,
+    // where m is an integer such that -2^96 < m < 2^96,
+    // and e is an integer between 0 and 28 inclusive.
     //
     // Contrary to the float and double data types, decimal
     // fractional numbers such as 0.1 can be represented exactly in the

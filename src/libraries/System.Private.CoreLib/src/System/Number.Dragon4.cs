@@ -158,7 +158,7 @@ namespace System
                 decimalExponent = maxDecimalScale;
             }
 
-            // Compute the numerator or denomonator by multiplying scaledValue by 10^(digitExponent - 1) and 10^decimalExponent
+            // Compute the numerator or denominator by multiplying scaledValue by 10^(digitExponent - 1) and 10^decimalExponent
             int totalExtraScale = state.digitExponent + decimalExponent - 1;
             if (totalExtraScale >= 0)
             {
@@ -198,7 +198,7 @@ namespace System
                 }
             }
 
-            // There is an edge case where some numbers utilizing all 29 decimal digits for thier mantissa will overflow past 96 bits.
+            // There is an edge case where some numbers utilizing all 29 decimal digits for their mantissa will overflow past 96 bits.
             // In these cases, we should scale them down by 10 and adjust the decimalExponent accordingly,
             // representing the same value with one less sigfig.
             if (decimalMantissa.GetLength() == 4)
@@ -506,7 +506,7 @@ namespace System
                 int compare = BigInteger.Compare(ref state.scaledValue, ref state.scale);
                 roundDown = compare < 0;
 
-                // if we are directly in the middle, round towards the even digit (i.e. IEEE rouding rules)
+                // if we are directly in the middle, round towards the even digit (i.e. IEEE rounding rules)
                 if (compare == 0)
                 {
                     roundDown = (outputDigit & 1) == 0;
@@ -576,7 +576,7 @@ namespace System
                     // 1) Expand the input value by multiplying out the mantissa and exponent.
                     //    This represents the input value in its whole number representation.
                     // 2) Apply an additional scale of 2 such that later comparisons against the margin values are simplified.
-                    // 3) Set the margin value to the loweset mantissa bit's scale.
+                    // 3) Set the margin value to the lowest mantissa bit's scale.
 
                     // scaledValue      = 2 * 2 * mantissa * 2^exponent
                     BigInteger.SetUInt64(out state.scaledValue, 4 * mantissa);
