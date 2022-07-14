@@ -382,6 +382,48 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task ServerClosesConnection_ResponseContentStream_ThrowsHttpProtocolException()
+        {
+            const long GeneralProtocolError = 0x101;
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                await stream.ReadRequestBodyAsync();
+                await stream.SendResponseHeadersAsync();
+                await stream.SendDataFrameAsync(new byte[1024]);
+                await semaphore.WaitAsync();
+                await connection.CloseAsync(GeneralProtocolError);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var stream = await response.Content.ReadAsStreamAsync();
+                await stream.ReadAsync(new byte[1024]);
+                semaphore.Release();
+                var ex = await Assert.ThrowsAsync<HttpProtocolException>(async () => await stream.ReadAsync(new byte[1024]));
+                Assert.Equal(GeneralProtocolError, ex.ErrorCode);
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
         public async Task RequestSentResponseDisposed_ThrowsOnServer()
         {
             byte[] data = Encoding.UTF8.GetBytes(new string('a', 1024));
