@@ -3527,7 +3527,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	unsigned char *locals = NULL;
 	int call_args_offset;
 	int return_offset;
-#ifdef HOST_WASI	
+#ifdef HOST_WASI
 	gboolean debugger_enabled = mono_component_debugger()->debugger_enabled();
 #endif
 	gboolean gc_transitions = FALSE;
