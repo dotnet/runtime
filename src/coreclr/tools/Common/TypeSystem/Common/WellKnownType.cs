@@ -46,6 +46,5 @@ namespace Internal.TypeSystem
         Exception,
 
         TypedReference,
-        ByReferenceOfT,
     }
 }

@@ -576,6 +576,7 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr GetFunctionPointerForDelegate(System.Delegate d) { throw null; }
         public static System.IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. This API will return -1 for modules without a file on disk.")]
         public static System.IntPtr GetHINSTANCE(System.Reflection.Module m) { throw null; }
         public static int GetHRForException(System.Exception? e) { throw null; }
         public static int GetHRForLastWin32Error() { throw null; }
@@ -586,6 +587,8 @@ namespace System.Runtime.InteropServices
         public static int GetLastPInvokeError() { throw null; }
         public static int GetLastSystemError() { throw null; }
         public static int GetLastWin32Error() { throw null; }
+        public static string GetLastPInvokeErrorMessage() { throw null; }
+        public static string GetPInvokeErrorMessage(int error) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject(object? obj, System.IntPtr pDstNativeVariant) { }
@@ -812,7 +815,7 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void Clear(void* ptr, nuint byteCount) { throw null; }
     }
-    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>
+    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointConstants<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>
     {
         private readonly int _dummyPrimitive;
         public NFloat(double value) { throw null; }
@@ -828,6 +831,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat PositiveInfinity { get { throw null; } }
         public static int Size { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.AdditiveIdentity { get { throw null; } }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>.AllBitsSet { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.MultiplicativeIdentity { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.Radix { get { throw null; } }
@@ -858,6 +862,9 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Cos(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cosh(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat CosPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -990,7 +997,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Pow(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalSqrtEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
-        public static System.Runtime.InteropServices.NFloat Root(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
+        public static System.Runtime.InteropServices.NFloat RootN(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, int digits) { throw null; }
         public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, int digits, System.MidpointRounding mode) { throw null; }
@@ -999,6 +1006,7 @@ namespace System.Runtime.InteropServices
         public static int Sign(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Sin(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static (System.Runtime.InteropServices.NFloat Sin, System.Runtime.InteropServices.NFloat Cos) SinCos(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static (System.Runtime.InteropServices.NFloat SinPi, System.Runtime.InteropServices.NFloat CosPi) SinCosPi(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Sinh(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat SinPi(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Sqrt(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -2117,88 +2125,80 @@ namespace System.Runtime.InteropServices.ObjectiveC
 namespace System.Runtime.InteropServices.Marshalling
 {
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct AnsiStringMarshaller
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class AnsiStringMarshaller
     {
-        public AnsiStringMarshaller(string? str) { }
-        public AnsiStringMarshaller(string? str, System.Span<byte> buffer) { }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
-    }
-    [System.CLSCompliantAttribute(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute.GenericPlaceholder[]),
-        System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public unsafe ref struct ArrayMarshaller<T>
-    {
-        public ArrayMarshaller(int sizeOfNativeElement) { }
-        public ArrayMarshaller(T[]? array, int sizeOfNativeElement) { }
-        public ArrayMarshaller(T[]? array, System.Span<byte> buffer, int sizeOfNativeElement) { }
-        public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
-        public System.Span<T> GetManagedValuesDestination(int length) { throw null; }
-        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) { throw null; }
-        public System.Span<byte> GetNativeValuesDestination() { throw null; }
-        public ref byte GetPinnableReference() { throw null; }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
-        public T[]? ToManaged() { throw null; }
-        public void FreeNative() { }
-    }
-    [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct BStrStringMarshaller
-    {
-        public BStrStringMarshaller(string? str) { }
-        public BStrStringMarshaller(string? str, System.Span<ushort> buffer) { }
-        public void* ToNativeValue() { throw null; }
-        public void FromNativeValue(void* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
-    public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
-    {
-        public CustomTypeMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind marshallerKind = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.Value) { }
-        public System.Type ManagedType { get { throw null; } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind MarshallerKind { get { throw null; } }
-        public int BufferSize { get { throw null; } set { } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerDirection Direction { get { throw null; } set { } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures Features { get { throw null; } set { } }
-        public struct GenericPlaceholder
+        public static byte* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(byte* unmanaged) { throw null; }
+        public static void Free(byte* unmanaged) { throw null; }
+
+        public ref struct ManagedToUnmanagedIn
         {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public byte* ToUnmanaged()  { throw null; }
+            public void Free() { throw null; }
         }
     }
-    [System.FlagsAttribute]
-    public enum CustomTypeMarshallerDirection
+
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.ArrayMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.ArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
+    public static unsafe class ArrayMarshaller<T, TUnmanagedElement>
+        where TUnmanagedElement : unmanaged
     {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        None = 0,
-        In = 0x1,
-        Out = 0x2,
-        Ref = In | Out,
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements) { throw null; }
+        public static System.ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) { throw null; }
+        public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static System.Span<T> GetManagedValuesDestination(T[]? managed) { throw null; }
+        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static void Free(TUnmanagedElement* unmanaged) { }
+
+        public unsafe ref struct ManagedToUnmanagedIn
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(T[]? array, System.Span<TUnmanagedElement> buffer) { }
+            public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
+            public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
+            public ref TUnmanagedElement GetPinnableReference() { throw null; }
+            public static ref T GetPinnableReference(T[]? array) { throw null; }
+            public TUnmanagedElement* ToUnmanaged() { throw null; }
+            public void Free() { }
+        }
     }
-    [System.FlagsAttribute]
-    public enum CustomTypeMarshallerFeatures
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.BStrStringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.BStrStringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class BStrStringMarshaller
     {
-        None = 0,
-        UnmanagedResources = 0x1,
-        CallerAllocatedBuffer = 0x2,
-        TwoStageMarshalling = 0x4
-    }
-    public enum CustomTypeMarshallerKind
-    {
-        Value,
-        LinearCollection
+        public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
+        public static void Free(ushort* unmanaged) { throw null; }
+
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public ushort* ToUnmanaged()  { throw null; }
+            public void Free() { throw null; }
+        }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute
@@ -2211,58 +2211,71 @@ namespace System.Runtime.InteropServices.Marshalling
         public int ElementIndirectionDepth { get { throw null; } set { } }
         public const string ReturnsCountValue = "return-value";
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
-    public sealed partial class NativeMarshallingAttribute : System.Attribute
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
+    public static unsafe class PointerArrayMarshaller<T, TUnmanagedElement>
+        where T : unmanaged
+        where TUnmanagedElement : unmanaged
     {
-        public NativeMarshallingAttribute(System.Type nativeType) { }
-        public System.Type NativeType { get { throw null; } }
-    }
-    [System.CLSCompliantAttribute(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
-        System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public unsafe ref struct PointerArrayMarshaller<T> where T : unmanaged
-    {
-        public PointerArrayMarshaller(int sizeOfNativeElement) { }
-        public PointerArrayMarshaller(T*[]? array, int sizeOfNativeElement) { }
-        public PointerArrayMarshaller(T*[]? array, System.Span<byte> buffer, int sizeOfNativeElement) { }
-        public System.ReadOnlySpan<IntPtr> GetManagedValuesSource() { throw null; }
-        public System.Span<IntPtr> GetManagedValuesDestination(int length) { throw null; }
-        public System.ReadOnlySpan<byte> GetNativeValuesSource(int length) { throw null; }
-        public System.Span<byte> GetNativeValuesDestination() { throw null; }
-        public ref byte GetPinnableReference() { throw null; }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
-        public T*[]? ToManaged() { throw null; }
-        public void FreeNative() { }
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T*[]? managed, out int numElements) { throw null; }
+        public static System.ReadOnlySpan<IntPtr> GetManagedValuesSource(T*[]? managed) { throw null; }
+        public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static System.Span<IntPtr> GetManagedValuesDestination(T*[]? managed) { throw null; }
+        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static void Free(TUnmanagedElement* unmanaged) { }
+
+        public unsafe ref struct ManagedToUnmanagedIn
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(T*[]? array, System.Span<TUnmanagedElement> buffer) { }
+            public System.ReadOnlySpan<IntPtr> GetManagedValuesSource() { throw null; }
+            public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
+            public ref TUnmanagedElement GetPinnableReference() { throw null; }
+            public static ref byte GetPinnableReference(T*[]? array) { throw null; }
+            public TUnmanagedElement* ToUnmanaged() { throw null; }
+            public void Free() { }
+        }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct Utf8StringMarshaller
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class Utf8StringMarshaller
     {
-        public Utf8StringMarshaller(string? str) { }
-        public Utf8StringMarshaller(string? str, System.Span<byte> buffer) { }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
+        public static byte* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(byte* unmanaged) { throw null; }
+        public static void Free(byte* unmanaged) { throw null; }
+
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public byte* ToUnmanaged()  { throw null; }
+            public void Free() { throw null; }
+        }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string),
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct Utf16StringMarshaller
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller))]
+    public static unsafe class Utf16StringMarshaller
     {
-        public Utf16StringMarshaller(string? str) { }
-        public void* ToNativeValue() { throw null; }
-        public void FromNativeValue(void* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
+        public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
+        public static void Free(ushort* unmanaged) { throw null; }
+        public static ref readonly char GetPinnableReference(string? str) { throw null; }
     }
 }
 namespace System.Security

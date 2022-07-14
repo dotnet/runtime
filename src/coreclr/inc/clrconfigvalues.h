@@ -233,6 +233,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MiniMdBufferCapacity, W("MiniMdBufferCapacity"
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 CONFIG_DWORD_INFO(INTERNAL_DbgNativeCodeBpBindsAcrossVersions, W("DbgNativeCodeBpBindsAcrossVersions"), 0, "If non-zero causes native breakpoints at offset 0 to bind in all tiered compilation versions of the given method")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RichDebugInfo, W("RichDebugInfo"), 0, "If non-zero store some additional debug information for each jitted method")
 
 ///
 /// Diagnostics (internal general-purpose)
@@ -574,7 +575,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 #define TC_DelaySingleProcMultiplier (2)
 #else // !_DEBUG
 #define TC_BackgroundWorkerTimeoutMs (4000)
-#define TC_CallCountThreshold (30) // TODO: Find better defaults for PGO
+#define TC_CallCountThreshold (30)
 #define TC_CallCountingDelayMs (100)
 #define TC_DelaySingleProcMultiplier (10)
 #endif // _DEBUG
@@ -618,15 +619,7 @@ CONFIG_DWORD_INFO(INTERNAL_OSR_HighId, W("OSR_HighId"), 10000000, "High end of e
 RETAIL_CONFIG_STRING_INFO(INTERNAL_PGODataPath, W("PGODataPath"), "Read/Write PGO data from/to the indicated file.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ReadPGOData, W("ReadPGOData"), 0, "Read PGO data")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_WritePGOData, W("WritePGOData"), 0, "Write PGO data")
-
-// Enabled for CI tests
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TieredPGO, W("TieredPGO"), 1, "Instrument Tier0 code and make counts available to Tier1")
-
-// Optimized instrumented tier produces less accurate profile, but it's faster and is able to inline code, otherwise for:
-// R2R -> Tier0 inst -> Tier1
-// we start to produce a lot of small redundant first-time compilations and delay promotion for tier1 pending methods
-// each new compilation delays promotion by TC_CallCountingDelayMs
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_OptimizedInstrumentedTier, W("TC_OptimizedInstrumentedTier"), 1, "Instrumented tier should be optimized")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier0 code and make counts available to Tier1")
 #endif
 
 ///

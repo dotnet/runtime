@@ -372,10 +372,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddNamespaceAlias(string StylesheetURI, NamespaceInfo AliasInfo)
         {
-            if (_globalNamespaceAliasTable == null)
-            {
-                _globalNamespaceAliasTable = new Hashtable();
-            }
+            _globalNamespaceAliasTable ??= new Hashtable();
             NamespaceInfo? duplicate = _globalNamespaceAliasTable[StylesheetURI] as NamespaceInfo;
             if (duplicate == null || AliasInfo.stylesheetId <= duplicate.stylesheetId)
             {
@@ -863,7 +860,7 @@ namespace System.Xml.Xsl.XsltOld
                             case '}':
                                 i++; // include '}'
                                 if (i == start + 2)
-                                { // empty XPathExpresion
+                                { // empty XPathExpression
                                     throw XsltException.Create(SR.Xslt_EmptyAvtExpr, avt);
                                 }
                                 lex.Append(avt, start + 1, i - start - 2); // avt without {}

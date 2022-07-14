@@ -64,10 +64,7 @@ namespace System.Net
             }
             set
             {
-                if (_credentials == null)
-                {
-                    _credentials = new WeakReference(null);
-                }
+                _credentials ??= new WeakReference(null);
                 _credentials.Target = value;
             }
         }

@@ -14,7 +14,7 @@
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">Der angegebene Parameter muss von verwaltet zu nicht verwaltet und von nicht verwaltet zu verwaltet gemarshallt werden, aber der Marshaller-Typ ‚{0}‘ unterstützt dies nicht.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
@@ -99,12 +99,17 @@
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">Der angegebene Parameter muss von verwaltet zu nicht verwaltet gemarshallt werden, aber der Marshaller-Typ ‚{0}‘ unterstützt dies nicht.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">Der Marshaller-Einstiegspunkttyp "{0}" für den verwalteten Typ "{1}" muss eine Stelligkeit aufweisen, die größer als der verwaltete Typ ist.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStatic">
         <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
-        <target state="new">The marshaller type '{0}' for managed type '{1}' must be static.</target>
+        <target state="translated">Der Marshaller-Typ ‚{0}‘ für den verwalteten Typ ‚{1}‘ muss statisch sein.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
@@ -159,7 +164,7 @@
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
+        <target state="translated">Der angegebene Parameter muss von nicht verwaltet zu verwaltet gemarshallt werden, aber der Marshaller-Typ ‚{0}‘ unterstützt dies nicht.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">

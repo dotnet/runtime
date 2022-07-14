@@ -411,7 +411,6 @@ namespace Internal.TypeSystem.Interop
                 bool isBlittable = MarshalUtils.IsBlittableType(type);
 
                 // Blittable generics are allowed to be marshalled with the following exceptions:
-                // * ByReference<T>: This represents an interior pointer and is not actually blittable
                 // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
                 // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
                 // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
@@ -420,7 +419,6 @@ namespace Internal.TypeSystem.Interop
                 // We can't block these types for field scenarios for back-compat reasons.
 
                 if (type.HasInstantiation && !isField && (!isBlittable
-                    || InteropTypes.IsSystemByReference(context, type)
                     || InteropTypes.IsSystemSpan(context, type)
                     || InteropTypes.IsSystemReadOnlySpan(context, type)
                     || InteropTypes.IsSystemNullable(context, type)

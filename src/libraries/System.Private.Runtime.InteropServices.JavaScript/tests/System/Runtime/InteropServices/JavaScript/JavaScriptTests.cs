@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     var x = new byte[100 + attempt / 100];
                     if (attempt % 1000 == 0)
                     {
-                        Runtime.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
+                        Utils.InvokeJS("if (globalThis.gc) globalThis.gc();");// needs v8 flag --expose-gc
                         GC.Collect();
                     }
                 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Test.Cryptography;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -673,6 +674,23 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
+        [Theory]
+        [MemberData(nameof(OaepPaddingModes))]
+        public void NonPowerOfTwoKeySizeOaepRoundtrip(RSAEncryptionPadding oaepPaddingMode)
+        {
+            byte[] crypt;
+            byte[] output;
+
+            using (RSA rsa = RSAFactory.Create(3072))
+            {
+                crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
+                output = Decrypt(rsa, crypt, oaepPaddingMode);
+            }
+
+            Assert.NotEqual(crypt, output);
+            Assert.Equal(TestData.HelloBytes, output);
+        }
+
         [Fact]
         public void NotSupportedValueMethods()
         {
@@ -680,6 +698,21 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 Assert.Throws<NotSupportedException>(() => rsa.DecryptValue(null));
                 Assert.Throws<NotSupportedException>(() => rsa.EncryptValue(null));
+            }
+        }
+
+        public static IEnumerable<object[]> OaepPaddingModes
+        {
+            get
+            {
+                yield return new object[] { RSAEncryptionPadding.OaepSHA1 };
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA256 };
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA384 };
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA512 };
+                }
             }
         }
     }

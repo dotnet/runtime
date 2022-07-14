@@ -229,10 +229,7 @@ namespace System.Xml.Xsl
             }
             finally
             {
-                if (fs != null)
-                {
-                    fs.Dispose();
-                }
+                fs?.Dispose();
             }
         }
 

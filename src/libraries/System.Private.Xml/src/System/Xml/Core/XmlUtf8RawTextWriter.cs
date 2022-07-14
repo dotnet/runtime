@@ -648,10 +648,7 @@ namespace System.Xml
         {
             FlushBuffer();
 
-            if (_stream != null)
-            {
-                _stream.Flush();
-            }
+            _stream?.Flush();
         }
 
         //

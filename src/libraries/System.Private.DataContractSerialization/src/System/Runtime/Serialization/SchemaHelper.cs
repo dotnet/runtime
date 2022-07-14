@@ -68,7 +68,7 @@ namespace System.Runtime.Serialization
 
         internal static XmlSchema GetSchema(string ns, XmlSchemaSet schemas)
         {
-            if (ns == null) { ns = string.Empty; }
+            ns ??= string.Empty;
 
             ICollection currentSchemas = schemas.Schemas();
             foreach (XmlSchema schema in currentSchemas)

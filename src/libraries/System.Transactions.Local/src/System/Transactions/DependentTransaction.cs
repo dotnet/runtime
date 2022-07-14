@@ -39,10 +39,7 @@ namespace System.Transactions
 
             lock (_internalTransaction)
             {
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(DependentTransaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 if (_complete)
                 {

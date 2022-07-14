@@ -2321,14 +2321,7 @@ namespace System.Xml
                 _attributePSVINodes = newPSVINodes;
             }
 
-            attInfo = _attributePSVINodes[attIndex];
-            if (attInfo == null)
-            {
-                attInfo = new AttributePSVIInfo();
-                _attributePSVINodes[attIndex] = attInfo;
-            }
-
-            return attInfo;
+            return _attributePSVINodes[attIndex] ??= new AttributePSVIInfo();
         }
 
         private bool IsXSDRoot(string localName, string ns)
@@ -2772,10 +2765,7 @@ namespace System.Xml
 
         internal ValidatingReaderNodeData CreateDummyTextNode(string attributeValue, int depth)
         {
-            if (_textNode == null)
-            {
-                _textNode = new ValidatingReaderNodeData(XmlNodeType.Text);
-            }
+            _textNode ??= new ValidatingReaderNodeData(XmlNodeType.Text);
 
             _textNode.Depth = depth;
             _textNode.RawValue = attributeValue;

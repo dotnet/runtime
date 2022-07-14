@@ -87,14 +87,11 @@ namespace System.ComponentModel
                     return string.Empty;
                 }
 
-                if (culture == null)
-                {
-                    culture = CultureInfo.CurrentCulture;
-                }
+                culture ??= CultureInfo.CurrentCulture;
 
-                DateTimeFormatInfo? formatInfo = (DateTimeFormatInfo?)culture.GetFormat(typeof(DateTimeFormatInfo));
+                DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)culture.GetFormat(typeof(DateTimeFormatInfo))!;
 
-                return timeOnly.ToString(formatInfo!.ShortTimePattern, CultureInfo.CurrentCulture);
+                return timeOnly.ToString(formatInfo.ShortTimePattern, CultureInfo.CurrentCulture);
             }
 
             if (destinationType == typeof(InstanceDescriptor) && value is TimeOnly time)

@@ -2424,10 +2424,7 @@ namespace System.Xml.Xsl.Xslt
             XPathScanner scanner;
             QilNode result;
 
-            if (_keyMatchBuilder == null)
-            {
-                _keyMatchBuilder = new KeyMatchBuilder((IXPathEnvironment)this);
-            }
+            _keyMatchBuilder ??= new KeyMatchBuilder((IXPathEnvironment)this);
             SetEnvironmentFlags(/*allowVariables:*/false, /*allowCurrent:*/false, /*allowKey:*/false);
             if (pttrn == null)
             {

@@ -382,10 +382,10 @@ namespace System.Net
         {
             if (Log.IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg3 == null) arg3 = "";
-                if (arg4 == null) arg4 = "";
+                arg1 ??= "";
+                arg2 ??= "";
+                arg3 ??= "";
+                arg4 ??= "";
 
                 fixed (char* string1Bytes = arg1)
                 fixed (char* string2Bytes = arg2)
@@ -430,9 +430,9 @@ namespace System.Net
         {
             if (Log.IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg3 == null) arg3 = Array.Empty<byte>();
+                arg1 ??= "";
+                arg2 ??= "";
+                arg3 ??= Array.Empty<byte>();
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)
@@ -477,7 +477,7 @@ namespace System.Net
         {
             if (Log.IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
+                arg1 ??= "";
 
                 fixed (char* arg1Ptr = arg1)
                 {
@@ -519,8 +519,8 @@ namespace System.Net
         {
             if (Log.IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg3 == null) arg3 = "";
+                arg1 ??= "";
+                arg3 ??= "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg3Ptr = arg3)
@@ -558,8 +558,8 @@ namespace System.Net
         {
             if (Log.IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
+                arg1 ??= "";
+                arg2 ??= "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)
@@ -597,9 +597,9 @@ namespace System.Net
         {
             if (Log.IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg3 == null) arg3 = "";
+                arg1 ??= "";
+                arg2 ??= "";
+                arg3 ??= "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)
@@ -643,7 +643,7 @@ namespace System.Net
         {
             if (Log.IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
+                arg1 ??= "";
 
                 fixed (char* arg1Ptr = arg1)
                 {
@@ -705,8 +705,8 @@ namespace System.Net
         {
             if (Log.IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
+                arg1 ??= "";
+                arg2 ??= "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)

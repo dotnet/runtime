@@ -652,10 +652,7 @@ namespace System.Diagnostics
                             }
                             else
                             {
-                                if (additionalToRemove == null)
-                                {
-                                    additionalToRemove = new List<ProcessWaitState>();
-                                }
+                                additionalToRemove ??= new List<ProcessWaitState>();
                                 additionalToRemove.Add(pws);
                             }
                         }

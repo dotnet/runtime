@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 #if NET7_0_OR_GREATER
 using System.Runtime.InteropServices.Marshalling;
 #endif
@@ -64,26 +65,32 @@ namespace System.Drawing
         public delegate bool DrawImageAbort(IntPtr callbackdata);
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(DrawImageAbort), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.UnmanagedResources)]
-        internal unsafe struct DrawImageAbortMarshaller
+        [CustomMarshaller(typeof(DrawImageAbort), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        internal static class DrawImageAbortMarshaller
         {
-            private delegate Interop.BOOL DrawImageAbortNative(IntPtr callbackdata);
-            private DrawImageAbortNative? _managed;
-            private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
-            public DrawImageAbortMarshaller(DrawImageAbort? managed)
+            internal unsafe struct KeepAliveMarshaller
             {
-                _managed = managed is null ? null : data => managed(data) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-                _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
-            }
+                private delegate Interop.BOOL DrawImageAbortNative(IntPtr callbackdata);
+                private DrawImageAbortNative? _managed;
+                private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+                public void FromManaged(DrawImageAbort? managed)
+                {
+                    _managed = managed is null ? null : data => managed(data) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                }
 
-            public delegate* unmanaged<IntPtr, Interop.BOOL> ToNativeValue()
-            {
-                return _nativeFunction;
-            }
+                public delegate* unmanaged<IntPtr, Interop.BOOL> ToUnmanaged()
+                {
+                    return _nativeFunction;
+                }
 
-            public void FreeNative()
-            {
-                GC.KeepAlive(_managed);
+                public void OnInvoked()
+                {
+                    GC.KeepAlive(_managed);
+                }
+
+                [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "This method is part of the marshaller shape and is required to be an instance method.")]
+                public void Free() { }
             }
         }
 #endif
@@ -103,35 +110,38 @@ namespace System.Drawing
             int flags,
             int dataSize,
             IntPtr data,
-            PlayRecordCallback callbackData);
+            PlayRecordCallback? callbackData);
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(EnumerateMetafileProc), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.UnmanagedResources)]
-        internal unsafe struct EnumerateMetafileProcMarshaller
+        [CustomMarshaller(typeof(EnumerateMetafileProc), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        internal static class EnumerateMetafileProcMarshaller
         {
-            private delegate Interop.BOOL EnumerateMetafileProcNative(
-                EmfPlusRecordType recordType,
-                int flags,
-                int dataSize,
-                IntPtr data,
-                IntPtr callbackData);
-            private EnumerateMetafileProcNative? _managed;
-            private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
-            public EnumerateMetafileProcMarshaller(EnumerateMetafileProc? managed)
+            internal unsafe struct KeepAliveMarshaller
             {
-                _managed = managed is null ? null : (recordType, flags, dataSize, data, callbackData) =>
-                    managed(recordType, flags, dataSize, data, callbackData == IntPtr.Zero ? null! : Marshal.GetDelegateForFunctionPointer<PlayRecordCallback>(callbackData)) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-                _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
-            }
+                private delegate Interop.BOOL EnumerateMetafileProcNative(
+                    EmfPlusRecordType recordType,
+                    int flags,
+                    int dataSize,
+                    IntPtr data,
+                    IntPtr callbackData);
+                private EnumerateMetafileProcNative? _managed;
+                private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+                public void FromManaged(EnumerateMetafileProc? managed)
+                {
+                    _managed = managed is null ? null : (recordType, flags, dataSize, data, callbackData) =>
+                        managed(recordType, flags, dataSize, data, callbackData == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<PlayRecordCallback>(callbackData)) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                }
 
-            public delegate* unmanaged<IntPtr, Interop.BOOL> ToNativeValue()
-            {
-                return _nativeFunction;
-            }
+                public delegate* unmanaged<IntPtr, Interop.BOOL> ToUnmanaged()
+                {
+                    return _nativeFunction;
+                }
 
-            public void FreeNative()
-            {
-                GC.KeepAlive(_managed);
+                public void OnInvoked()
+                {
+                    GC.KeepAlive(_managed);
+                }
             }
         }
 #endif

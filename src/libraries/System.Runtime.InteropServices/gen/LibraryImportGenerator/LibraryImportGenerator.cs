@@ -12,6 +12,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -61,19 +62,13 @@ namespace Microsoft.Interop
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var attributedMethods = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    static (node, ct) => ShouldVisitNode(node),
-                    static (context, ct) =>
-                    {
-                        MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
-                        if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute))
-                        {
-                            return new { Syntax = syntax, Symbol = methodSymbol };
-                        }
-
-                        return null;
-                    })
+                .ForAttributeWithMetadataName(
+                    context,
+                    TypeNames.LibraryImportAttribute,
+                    static (node, ct) => node is MethodDeclarationSyntax,
+                    static (context, ct) => context.TargetSymbol is IMethodSymbol methodSymbol
+                        ? new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = methodSymbol }
+                        : null)
                 .Where(
                     static modelData => modelData is not null);
 
@@ -270,12 +265,9 @@ namespace Microsoft.Interop
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the LibraryImport attribute
-            LibraryImportData? libraryImportData = ProcessLibraryImportAttribute(generatedDllImportAttr!);
-
-            if (libraryImportData is null)
-            {
-                libraryImportData = new LibraryImportData("INVALID_CSHARP_SYNTAX");
-            }
+            LibraryImportData libraryImportData =
+                ProcessLibraryImportAttribute(generatedDllImportAttr!) ??
+                new LibraryImportData("INVALID_CSHARP_SYNTAX");
 
             if (libraryImportData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {
@@ -341,6 +333,7 @@ namespace Microsoft.Interop
                     generatorFactory = new UnsupportedMarshallingFactory();
                 }
 
+                generatorFactory = new NoMarshallingInfoErrorMarshallingFactory(generatorFactory);
 
                 // The presence of System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute is tied to TFM,
                 // so we use TFM in the generator factory key instead of the Compilation as the compilation changes on every keystroke.
@@ -349,13 +342,24 @@ namespace Microsoft.Interop
                 bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
                     && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
 
-                InteropGenerationOptions interopGenerationOptions = new(options.UseMarshalType, runtimeMarshallingDisabled);
+                // Since the char type can go into the P/Invoke signature here, we can only use it when
+                // runtime marshalling is disabled.
+                generatorFactory = new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: runtimeMarshallingDisabled);
+
+                InteropGenerationOptions interopGenerationOptions = new(options.UseMarshalType);
                 generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
 
-                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(
+                    // Since the char type in an array will not be part of the P/Invoke signature, we can
+                    // use the regular blittable marshaller in all cases.
+                    new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true),
+                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
                 // We don't need to include the later generator factories for collection elements
                 // as the later generator factories only apply to parameters.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+                generatorFactory = new AttributedMarshallingModelGeneratorFactory(
+                    generatorFactory,
+                    elementFactory,
+                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }
@@ -573,19 +577,6 @@ namespace Microsoft.Interop
                     IdentifierName(typeof(T).FullName),
                     IdentifierName(value.ToString()));
             }
-        }
-
-        private static bool ShouldVisitNode(SyntaxNode syntaxNode)
-        {
-            // We only support C# method declarations.
-            if (syntaxNode.Language != LanguageNames.CSharp
-                || !syntaxNode.IsKind(SyntaxKind.MethodDeclaration))
-            {
-                return false;
-            }
-
-            // Filter out methods with no attributes early.
-            return ((MethodDeclarationSyntax)syntaxNode).AttributeLists.Count > 0;
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)

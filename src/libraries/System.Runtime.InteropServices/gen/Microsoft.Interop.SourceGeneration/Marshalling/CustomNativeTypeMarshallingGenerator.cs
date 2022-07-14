@@ -54,7 +54,7 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Marshal:
                     if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
-                        return _nativeTypeMarshaller.GenerateMarshalStatements(info, context, _nativeTypeMarshaller.GetNativeTypeConstructorArguments(info, context));
+                        return _nativeTypeMarshaller.GenerateMarshalStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.Pin:
@@ -69,6 +69,15 @@ namespace Microsoft.Interop
                         return _nativeTypeMarshaller.GeneratePinnedMarshalStatements(info, context);
                     }
                     break;
+                case StubCodeContext.Stage.NotifyForSuccessfulInvoke:
+                    if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
+                    {
+                        if (_nativeTypeMarshaller is ICustomTypeMarshallingStrategy strategyWithGuaranteedUnmarshal)
+                        {
+                            return strategyWithGuaranteedUnmarshal.GenerateNotifyForSuccessfulInvokeStatements(info, context);
+                        }
+                    }
+                    break;
                 case StubCodeContext.Stage.UnmarshalCapture:
                     if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
                     {
@@ -80,6 +89,17 @@ namespace Microsoft.Interop
                         || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
                     {
                         return _nativeTypeMarshaller.GenerateUnmarshalStatements(info, context);
+                    }
+                    break;
+                case StubCodeContext.Stage.GuaranteedUnmarshal:
+                    if (info.IsManagedReturnPosition
+                        || (info.IsByRef && info.RefKind != RefKind.In)
+                        || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
+                    {
+                        if (_nativeTypeMarshaller is ICustomTypeMarshallingStrategy strategyWithGuaranteedUnmarshal)
+                        {
+                            return strategyWithGuaranteedUnmarshal.GenerateGuaranteedUnmarshalStatements(info, context);
+                        }
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:

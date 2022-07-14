@@ -45,7 +45,6 @@ namespace System.Net.Http
         private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = " HTTP/1.0\r\n"u8.ToArray();
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = " HTTP/1.1\r\n"u8.ToArray();
         private static readonly byte[] s_httpSchemeAndDelimiter = "http://"u8.ToArray();
-        private static readonly byte[] s_http1DotBytes = "HTTP/1."u8.ToArray();
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64("HTTP/1.0"u8);
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
@@ -201,12 +200,9 @@ namespace System.Net.Http
         public override bool CheckUsabilityOnScavenge()
         {
             // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
-            if (_readAheadTask is null)
-            {
 #pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
-                _readAheadTask = ReadAheadWithZeroByteReadAsync();
+            _readAheadTask ??= ReadAheadWithZeroByteReadAsync();
 #pragma warning restore CA2012
-            }
 
             // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
             return !_readAheadTask.Value.IsCompleted;
@@ -980,8 +976,7 @@ namespace System.Net.Http
             else
             {
                 byte minorVersion = line[7];
-                if (IsDigit(minorVersion) &&
-                    line.Slice(0, 7).SequenceEqual(s_http1DotBytes))
+                if (IsDigit(minorVersion) && line.StartsWith("HTTP/1."u8))
                 {
                     response.SetVersionWithoutValidation(new Version(1, minorVersion - '0'));
                 }

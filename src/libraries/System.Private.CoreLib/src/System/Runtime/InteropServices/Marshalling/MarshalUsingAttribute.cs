@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// This attribute is recognized by the runtime-provided source generators for source-generated interop scenarios.
     /// It is not used by the interop marshalling system at runtime.
     /// <seealso cref="LibraryImportAttribute"/>
-    /// <seealso cref="CustomTypeMarshallerAttribute" />
+    /// <seealso cref="CustomMarshallerAttribute" />
     /// </remarks>
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed class MarshalUsingAttribute : Attribute
@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Create a <see cref="MarshalUsingAttribute" /> that provides a native marshalling type and optionally size information.
         /// </summary>
-        /// <param name="nativeType">The marshaller type used to convert the attributed type from managed to native code. This type must be attributed with <see cref="CustomTypeMarshallerAttribute" /></param>
+        /// <param name="nativeType">The marshaller type used to convert the attributed type from managed to native code. This type must be attributed with <see cref="CustomMarshallerAttribute" /></param>
         public MarshalUsingAttribute(Type nativeType)
             : this()
         {
@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// The marshaller type used to convert the attributed type from managed to native code. This type must be attributed with <see cref="CustomTypeMarshallerAttribute" />
+        /// The marshaller type used to convert the attributed type from managed to native code. This type must be attributed with <see cref="CustomMarshallerAttribute" />
         /// </summary>
         public Type? NativeType { get; }
 

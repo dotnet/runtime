@@ -82,7 +82,6 @@ private:
         REPRESENTATION_UNICODE  = 0x04, // 100
         REPRESENTATION_ASCII    = 0x01, // 001
         REPRESENTATION_UTF8     = 0x03, // 011
-        REPRESENTATION_ANSI     = 0x07, // 111
 
         REPRESENTATION_VARIABLE_MASK    = 0x02,
         REPRESENTATION_SINGLE_MASK      = 0x01,
@@ -118,8 +117,7 @@ private:
     enum tagUTF8Literal { Utf8Literal };
     enum tagLiteral { Literal };
     enum tagUTF8 { Utf8 };
-    enum tagANSI { Ansi };
-    enum tagASCII {Ascii };
+    enum tagASCII { Ascii };
 
     static void Startup();
     static CHECK CheckStartup();
@@ -141,8 +139,6 @@ private:
     SString(enum tagASCII dummyTag, const ASCII *string, COUNT_T count);
     SString(enum tagUTF8 dummytag, const UTF8 *string);
     SString(enum tagUTF8 dummytag, const UTF8 *string, COUNT_T count);
-    SString(enum tagANSI dummytag, const ANSI *string);
-    SString(enum tagANSI dummytag, const ANSI *string, COUNT_T count);
     SString(WCHAR character);
 
     // NOTE: Literals MUST be read-only never-freed strings.
@@ -167,7 +163,6 @@ private:
     void Set(const WCHAR *string);
     void SetASCII(const ASCII *string);
     void SetUTF8(const UTF8 *string);
-    void SetANSI(const ANSI *string);
     void SetAndConvertToUTF8(const WCHAR* string);
 
     // Set this string to a copy of the first count chars of the given string
@@ -180,7 +175,6 @@ private:
     void SetASCII(const ASCII *string, COUNT_T count);
 
     void SetUTF8(const UTF8 *string, COUNT_T count);
-    void SetANSI(const ANSI *string, COUNT_T count);
 
     // Set this string to the unicode character
     void Set(WCHAR character);
@@ -476,36 +470,12 @@ private:
     // Helper function to convert string in-place to lower-case (no allocation overhead for SString instance)
     static void LowerCase(__inout_z LPWSTR wszString);
 
-    // These routines will use the given scratch string if necessary
-    // to perform a conversion to the desired representation
-
-    // Use a local declaration of InlineScratchBuffer or StackScratchBuffer for parameters of
-    // AbstractScratchBuffer.
-    class AbstractScratchBuffer;
-
-    // These routines will use the given scratch buffer if necessary
-    // to perform a conversion to the desired representation.  Note that
-    // the lifetime of the pointer return is limited by BOTH the
-    // scratch string and the source (this) string.
-    //
-    // Typical usage:
-    //
-    // SString *s = ...;
-    // {
-    //   StackScratchBuffer buffer;
-    //   const ANSI *ansi = s->GetANSI(buffer);
-    //   CallFoo(ansi);
-    // }
-    // // No more pointers to returned buffer allowed.
-    const ANSI *GetANSI(AbstractScratchBuffer &scratch) const;
-
     // You can always get a UTF8 string.  This will force a conversion
     // if necessary.
     const UTF8 *GetUTF8() const;
 
     // Converts/copies into the given output string
     void ConvertToUnicode(SString &dest) const;
-    void ConvertToANSI(SString &dest) const;
     COUNT_T ConvertToUTF8(SString &dest) const;
 
     //-------------------------------------------------------------------
@@ -522,7 +492,7 @@ private:
 
     // example usage:
     // void GetName(SString & str) {
-    //      char * p = str.OpenANSIBuffer(3);
+    //      char * p = str.OpenUTF8Buffer(3);
     //      strcpy(p, "Cat");
     //      str.CloseBuffer();
     // }
@@ -544,7 +514,6 @@ private:
     // Open the raw buffer for writing countChars characters (not including the null).
     WCHAR *OpenUnicodeBuffer(COUNT_T maxCharCount);
     UTF8 *OpenUTF8Buffer(COUNT_T maxSingleCharCount);
-    ANSI *OpenANSIBuffer(COUNT_T maxSingleCharCount);
 
     //Returns the unicode string, the caller is reponsible for lifetime of the string
     WCHAR *GetCopyOfUnicodeString();
@@ -843,20 +812,6 @@ public:
         SetUTF8(string, count);
     }
 
-    FORCEINLINE InlineSString(enum tagANSI dummytag, const ANSI *string)
-      : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
-    {
-        WRAPPER_NO_CONTRACT;
-        SetANSI(string);
-    }
-
-    FORCEINLINE InlineSString(enum tagANSI dummytag, const ANSI *string, COUNT_T count)
-      : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
-    {
-        WRAPPER_NO_CONTRACT;
-        SetANSI(string, count);
-    }
-
     FORCEINLINE InlineSString(WCHAR character)
       : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
     {
@@ -915,35 +870,6 @@ typedef InlineSString<2 * 260> LongPathString;
 // ================================================================================
 
 #define SL(_literal) SString(SString::Literal, _literal)
-
-// ================================================================================
-// ScratchBuffer classes are used by the GetXXX() routines to allocate scratch space in.
-// ================================================================================
-
-class EMPTY_BASES_DECL SString::AbstractScratchBuffer : private SString
-{
-  protected:
-    // Do not use this class directly - use
-    // ScratchBuffer or StackScratchBuffer.
-    AbstractScratchBuffer(void *buffer, COUNT_T size);
-};
-
-template <COUNT_T MEMSIZE>
-class EMPTY_BASES_DECL ScratchBuffer : public SString::AbstractScratchBuffer
-{
-  private:
-    DAC_ALIGNAS(::SString::AbstractScratchBuffer)
-    BYTE m_inline[MEMSIZE];
-
-  public:
-    ScratchBuffer()
-    : AbstractScratchBuffer((void *)m_inline, MEMSIZE)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-};
-
-typedef ScratchBuffer<256> StackScratchBuffer;
 
 // ================================================================================
 // Special contract definition - THROWS_UNLESS_NORMALIZED

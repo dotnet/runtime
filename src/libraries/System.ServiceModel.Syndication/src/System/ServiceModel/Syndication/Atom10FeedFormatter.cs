@@ -381,10 +381,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
         {
-            if (content != null)
-            {
-                content.WriteTo(writer, elementName, Atom10Constants.Atom10Namespace);
-            }
+            content?.WriteTo(writer, elementName, Atom10Constants.Atom10Namespace);
         }
 
         internal static void WriteElement(XmlWriter writer, string elementName, string value)
@@ -582,10 +579,7 @@ namespace System.ServiceModel.Syndication
                     if (preserveAttributeExtensions)
                     {
                         string value = reader.Value;
-                        if (attrs == null)
-                        {
-                            attrs = new Dictionary<XmlQualifiedName, string>();
-                        }
+                        attrs ??= new Dictionary<XmlQualifiedName, string>();
                         attrs.Add(new XmlQualifiedName(name, ns), value);
                     }
                 }

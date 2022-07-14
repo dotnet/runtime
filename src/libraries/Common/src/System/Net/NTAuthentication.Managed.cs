@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
+using System.Buffers;
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
@@ -33,6 +34,8 @@ namespace System.Net
         private byte[]? _negotiateMessage;
         private byte[]? _clientSigningKey;
         private byte[]? _serverSigningKey;
+        private byte[]? _clientSealingKey;
+        private byte[]? _serverSealingKey;
         private RC4? _clientSeal;
         private RC4? _serverSeal;
         private uint _clientSequenceNumber;
@@ -291,6 +294,8 @@ namespace System.Net
             _negotiateMessage = null;
             _clientSigningKey = null;
             _serverSigningKey = null;
+            _clientSealingKey = null;
+            _serverSealingKey = null;
             _clientSeal?.Dispose();
             _serverSeal?.Dispose();
             _clientSeal = null;
@@ -424,13 +429,10 @@ namespace System.Net
                 throw new Win32Exception(NTE_FAIL);
             }
 
-            fixed (void* ptr = &field)
-            {
-                Span<byte> span = new Span<byte>(ptr, sizeof(MessageField));
-                BinaryPrimitives.WriteInt16LittleEndian(span, (short)length);
-                BinaryPrimitives.WriteInt16LittleEndian(span.Slice(2), (short)length);
-                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), offset);
-            }
+            Span<byte> span = MemoryMarshal.AsBytes(new Span<MessageField>(ref field));
+            BinaryPrimitives.WriteInt16LittleEndian(span, (short)length);
+            BinaryPrimitives.WriteInt16LittleEndian(span.Slice(2), (short)length);
+            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), offset);
         }
 
         private static void AddToPayload(ref MessageField field, ReadOnlySpan<byte> data, Span<byte> payload, ref int offset)
@@ -756,8 +758,9 @@ namespace System.Net
             // Derive signing keys
             _clientSigningKey = DeriveKey(exportedSessionKey, ClientSigningKeyMagic);
             _serverSigningKey = DeriveKey(exportedSessionKey, ServerSigningKeyMagic);
-            _clientSeal = new RC4(DeriveKey(exportedSessionKey, ClientSealingKeyMagic));
-            _serverSeal = new RC4(DeriveKey(exportedSessionKey, ServerSealingKeyMagic));
+            _clientSealingKey = DeriveKey(exportedSessionKey, ClientSealingKeyMagic);
+            _serverSealingKey = DeriveKey(exportedSessionKey, ServerSealingKeyMagic);
+            ResetKeys();
             _clientSequenceNumber = 0;
             _serverSequenceNumber = 0;
             CryptographicOperations.ZeroMemory(exportedSessionKey);
@@ -766,6 +769,12 @@ namespace System.Net
 
             statusCode = SecurityStatusPalOk;
             return responseBytes;
+        }
+
+        private void ResetKeys()
+        {
+            _clientSeal = new RC4(_clientSealingKey);
+            _serverSeal = new RC4(_serverSealingKey);
         }
 
         private void CalculateSignature(
@@ -989,6 +998,8 @@ namespace System.Net
                     statusCode = SecurityStatusPalMessageAltered;
                     return null;
                 }
+
+                ResetKeys();
             }
 
             IsCompleted = state == NegState.AcceptCompleted || state == NegState.Reject;
@@ -1002,13 +1013,84 @@ namespace System.Net
             return null;
         }
 
+        internal NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted)
+        {
+            if (_clientSeal == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            Span<byte> output = outputWriter.GetSpan(input.Length + SignatureLength);
+            _clientSeal.Transform(input, output.Slice(SignatureLength, input.Length));
+            CalculateSignature(input, _clientSequenceNumber, _clientSigningKey, _clientSeal, output.Slice(0, SignatureLength));
+            _clientSequenceNumber++;
+
+            isEncrypted = true;
+            outputWriter.Advance(input.Length + SignatureLength);
+
+            return NegotiateAuthenticationStatusCode.Completed;
+        }
+
+        internal NegotiateAuthenticationStatusCode Unwrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, out bool wasEncrypted)
+        {
+            wasEncrypted = true;
+
+            if (_serverSeal == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            if (input.Length < SignatureLength)
+            {
+                return NegotiateAuthenticationStatusCode.InvalidToken;
+            }
+
+            Span<byte> output = outputWriter.GetSpan(input.Length - SignatureLength);
+            _serverSeal.Transform(input.Slice(SignatureLength), output.Slice(0, input.Length - SignatureLength));
+            if (!VerifyMIC(output.Slice(0, input.Length - SignatureLength), input.Slice(0, SignatureLength)))
+            {
+                CryptographicOperations.ZeroMemory(output);
+                return NegotiateAuthenticationStatusCode.MessageAltered;
+            }
+
+            outputWriter.Advance(input.Length - SignatureLength);
+
+            return NegotiateAuthenticationStatusCode.Completed;
+        }
+
+        internal NegotiateAuthenticationStatusCode UnwrapInPlace(Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted)
+        {
+            wasEncrypted = true;
+            unwrappedOffset = SignatureLength;
+            unwrappedLength = input.Length - SignatureLength;
+
+            if (_serverSeal == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            if (input.Length < SignatureLength)
+            {
+                return NegotiateAuthenticationStatusCode.InvalidToken;
+            }
+
+            _serverSeal.Transform(input.Slice(SignatureLength), input.Slice(SignatureLength));
+            if (!VerifyMIC(input.Slice(SignatureLength), input.Slice(0, SignatureLength)))
+            {
+                CryptographicOperations.ZeroMemory(input.Slice(SignatureLength));
+                return NegotiateAuthenticationStatusCode.MessageAltered;
+            }
+
+            return NegotiateAuthenticationStatusCode.Completed;
+        }
+
 #pragma warning disable CA1822
-        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, uint sequenceNumber)
+        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
         {
             throw new PlatformNotSupportedException();
         }
 
-        internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
+        internal int Decrypt(Span<byte> payload, out int newOffset)
         {
             throw new PlatformNotSupportedException();
         }

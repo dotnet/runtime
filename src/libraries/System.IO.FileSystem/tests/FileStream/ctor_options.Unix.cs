@@ -9,7 +9,7 @@ namespace System.IO.Tests
 {
     public partial class FileStream_ctor_options
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsStartingProcessesSupported))]
         [MemberData(nameof(TestUnixFileModes))]
         public void CreateWithUnixFileMode(UnixFileMode mode)
         {

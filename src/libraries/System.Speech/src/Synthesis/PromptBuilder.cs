@@ -236,10 +236,7 @@ namespace System.Speech.Synthesis
                             sVolumeLevel = style.Volume.ToString().ToLowerInvariant();
                             break;
                     }
-                    if (prosodyElement._attributes == null)
-                    {
-                        prosodyElement._attributes = new Collection<AttributeItem>();
-                    }
+                    prosodyElement._attributes ??= new Collection<AttributeItem>();
                     prosodyElement._attributes.Add(new AttributeItem("volume", sVolumeLevel));
                 }
 

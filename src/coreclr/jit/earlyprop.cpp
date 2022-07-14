@@ -17,6 +17,8 @@
 
 bool Compiler::optDoEarlyPropForFunc()
 {
+    // TODO-MDArray: bool propMDArrayLen = (optMethodFlags & OMF_HAS_MDNEWARRAY) && (optMethodFlags &
+    // OMF_HAS_MDARRAYREF);
     bool propArrayLen  = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
     bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
     return propArrayLen || propNullCheck;
@@ -24,6 +26,7 @@ bool Compiler::optDoEarlyPropForFunc()
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
+    // TODO-MDArray: bool bbHasMDArrayRef = (block->bbFlags & BBF_HAS_MD_IDX_LEN) != 0;
     bool bbHasArrayRef  = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
     bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
     return bbHasArrayRef || bbHasNullCheck;
@@ -68,11 +71,12 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
 //------------------------------------------------------------------------------------------
 // optEarlyProp: The entry point of the early value propagation.
 //
+// Returns:
+//    suitable phase status
+//
 // Notes:
-//    This phase performs an SSA-based value propagation, including
-//      1. Array length propagation.
-//      2. Runtime type handle propagation.
-//      3. Null check folding.
+//    This phase performs an SSA-based value propagation, including array
+//    length propagation and null check folding.
 //
 //    For array length propagation, a demand-driven SSA-based backwards tracking of constant
 //    array lengths is performed at each array length reference site which is in form of a
@@ -83,28 +87,23 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
 //    GT_ARR_LENGTH node will then be rewritten to a GT_CNS_INT node if the array length is
 //    constant.
 //
-//    Similarly, the same algorithm also applies to rewriting a method table (also known as
-//    vtable) reference site which is in form of GT_INDIR node. The base pointer, which is
-//    an object reference pointer, is treated in the same way as an array reference pointer.
-//
 //    Null check folding tries to find GT_INDIR(obj + const) that GT_NULLCHECK(obj) can be folded into
 //    and removed. Currently, the algorithm only matches GT_INDIR and GT_NULLCHECK in the same basic block.
-
-void Compiler::optEarlyProp()
+//
+//    TODO: support GT_MDARR_LENGTH, GT_MDARRAY_LOWER_BOUND
+//
+PhaseStatus Compiler::optEarlyProp()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optEarlyProp()\n");
-    }
-#else
     if (!optDoEarlyPropForFunc())
     {
-        return;
+        // We perhaps should verify the OMF are set properly
+        //
+        JITDUMP("no arrays or null checks in the method\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
-#endif
 
     assert(fgSsaPassesCompleted == 1);
+    unsigned numChanges = 0;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -148,19 +147,15 @@ void Compiler::optEarlyProp()
                 assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(block));
                 gtSetStmtInfo(stmt);
                 fgSetStmtSeq(stmt);
+                numChanges++;
             }
 
             stmt = next;
         }
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        JITDUMP("\nAfter optEarlyProp:\n");
-        fgDispBasicBlocks(/*dumpTrees*/ true);
-    }
-#endif
+    JITDUMP("\nOptimized %u trees\n", numChanges);
+    return numChanges > 0 ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //----------------------------------------------------------------
@@ -178,11 +173,12 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
 {
     GenTree*    objectRefPtr = nullptr;
     optPropKind propKind     = optPropKind::OPK_INVALID;
+    bool        folded       = false;
 
-    if (tree->OperIsIndirOrArrLength())
+    if (tree->OperIsIndirOrArrMetaData())
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
-        optFoldNullCheck(tree, nullCheckMap);
+        folded = optFoldNullCheck(tree, nullCheckMap);
     }
     else
     {
@@ -196,12 +192,12 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     }
     else
     {
-        return nullptr;
+        return folded ? tree : nullptr;
     }
 
     if (!objectRefPtr->OperIsScalarLocal() || !lvaInSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
     {
-        return nullptr;
+        return folded ? tree : nullptr;
     }
 #ifdef DEBUG
     else
@@ -415,13 +411,16 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 //    tree           - The input indirection tree.
 //    nullCheckMap   - Map of the local numbers to the latest NULLCHECKs on those locals in the current basic block
 //
+// Returns:
+//    true if a null check was folded
+//
 // Notes:
 //    If a GT_NULLCHECK node is post-dominated by an indirection node on the same local and the trees between
 //    the GT_NULLCHECK and the indirection don't have unsafe side effects, the GT_NULLCHECK can be removed.
 //    The indir will cause a NullReferenceException if and only if GT_NULLCHECK will cause the same
 //    NullReferenceException.
 
-void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
+bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
 #ifdef DEBUG
     if (tree->OperGet() == GT_NULLCHECK)
@@ -432,13 +431,14 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 #else
     if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
     {
-        return;
+        return false;
     }
 #endif
 
     GenTree*   nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
     GenTree*   nullCheckParent = nullptr;
     Statement* nullCheckStmt   = nullptr;
+    bool       folded          = false;
     if ((nullCheckTree != nullptr) && optIsNullCheckFoldingLegal(tree, nullCheckTree, &nullCheckParent, &nullCheckStmt))
     {
 #ifdef DEBUG
@@ -470,6 +470,8 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         Statement* curStmt = compCurStmt;
         fgMorphBlockStmt(compCurBB, nullCheckStmt DEBUGARG("optFoldNullCheck"));
         compCurStmt = curStmt;
+
+        folded = true;
     }
 
     if ((tree->OperGet() == GT_NULLCHECK) && (tree->gtGetOp1()->OperGet() == GT_LCL_VAR))
@@ -477,6 +479,8 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         nullCheckMap->Set(tree->gtGetOp1()->AsLclVarCommon()->GetLclNum(), tree,
                           LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
     }
+
+    return folded;
 }
 
 //----------------------------------------------------------------
@@ -500,15 +504,15 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //       or
 //       indir(add(x, const2))
 //
-//       (indir is any node for which OperIsIndirOrArrLength() is true.)
+//       (indir is any node for which OperIsIndirOrArrMetaData() is true.)
 //
 //     2.  const1 + const2 if sufficiently small.
 
 GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    assert(tree->OperIsIndirOrArrLength());
+    assert(tree->OperIsIndirOrArrMetaData());
 
-    GenTree* addr = (tree->OperGet() == GT_ARR_LENGTH) ? tree->AsArrLen()->ArrRef() : tree->AsIndir()->Addr();
+    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
 
     ssize_t offsetValue = 0;
 

@@ -2781,7 +2781,7 @@ void EfficientEdgeCountReconstructor::Solve()
                 bool     weightKnown = false;
                 if (info->m_incomingUnknown == 0)
                 {
-                    JITDUMP(FMT_BB ": all incoming edge weights known, summming...\n", block->bbNum);
+                    JITDUMP(FMT_BB ": all incoming edge weights known, summing...\n", block->bbNum);
                     for (Edge* edge = info->m_incomingEdges; edge != nullptr; edge = edge->m_nextIncomingEdge)
                     {
                         if (!edge->m_weightKnown)
@@ -2799,7 +2799,7 @@ void EfficientEdgeCountReconstructor::Solve()
                 }
                 else if (info->m_outgoingUnknown == 0)
                 {
-                    JITDUMP(FMT_BB ": all outgoing edge weights known, summming...\n", block->bbNum);
+                    JITDUMP(FMT_BB ": all outgoing edge weights known, summing...\n", block->bbNum);
                     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
                     {
                         if (!edge->m_weightKnown)
@@ -3585,6 +3585,27 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                     }
                 }
 
+                // Handler entries are assumed to run rarely, except for
+                // finally blocks: These are executed regardless of if
+                // an exception is thrown, and thus should inherit weight.
+                if (bbIsHandlerBeg(bDst))
+                {
+                    bSrc = bDst->bbPreds->getBlock();
+
+                    // To minimize asmdiffs for now, modify weights only if splitting.
+                    if (fgFirstColdBlock != nullptr)
+                    {
+                        if (bSrc->bbJumpKind == BBJ_CALLFINALLY)
+                        {
+                            newWeight = bSrc->bbWeight;
+                        }
+                        else
+                        {
+                            newWeight = BB_ZERO_WEIGHT;
+                        }
+                    }
+                }
+
                 if ((newWeight != BB_MAX_WEIGHT) && (bDst->bbWeight != newWeight))
                 {
                     changed        = true;
@@ -3598,6 +3619,20 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                     {
                         bDst->bbFlags &= ~BBF_RUN_RARELY;
                     }
+                }
+            }
+            else if (!bDst->hasProfileWeight() && bbIsHandlerBeg(bDst) && !bDst->isRunRarely())
+            {
+                // Assume handler/filter entries are rarely executed.
+                // To avoid unnecessary loop iterations, set weight
+                // only if bDst->bbWeight is not already zero.
+
+                // To minimize asmdiffs for now, modify weights only if splitting.
+                if (fgFirstColdBlock != nullptr)
+                {
+                    changed  = true;
+                    modified = true;
+                    bDst->bbSetRunRarely();
                 }
             }
 

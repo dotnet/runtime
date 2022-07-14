@@ -84,10 +84,16 @@ public:
     CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal);
     virtual ~CrashInfo();
 
+    // Memory usage stats
+    uint64_t m_cbModuleMappings;
+    int m_dataTargetPagesAdded;
+    int m_enumMemoryPagesAdded;
+
     bool Initialize();
     void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
     bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
+    void CombineMemoryRegions();
     bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
     bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
@@ -96,7 +102,7 @@ public:
     ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
     void AddModuleAddressRange(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
     void AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName);
-    void InsertMemoryRegion(uint64_t address, size_t size);
+    int InsertMemoryRegion(uint64_t address, size_t size);
     static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);
 
     inline pid_t Pid() const { return m_pid; }
@@ -132,6 +138,7 @@ public:
 private:
 #ifdef __APPLE__
     bool EnumerateMemoryRegions();
+    void InitializeOtherMappings();
     bool TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found);
     void VisitModule(MachOModule& module);
     void VisitSegment(MachOModule& module, const segment_command_64& segment);
@@ -141,17 +148,15 @@ private:
     bool GetDSOInfo();
     void VisitModule(uint64_t baseAddress, std::string& moduleName);
     void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
-    bool EnumerateModuleMappings();
+    bool EnumerateMemoryRegions();
 #endif
     bool InitializeDAC();
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
-    void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
-    void InsertMemoryBackedRegion(const MemoryRegion& region);
-    void InsertMemoryRegion(const MemoryRegion& region);
+    void AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
+    int InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool ValidRegion(const MemoryRegion& region);
-    void CombineMemoryRegions();
     void Trace(const char* format, ...);
     void TraceVerbose(const char* format, ...);
 };

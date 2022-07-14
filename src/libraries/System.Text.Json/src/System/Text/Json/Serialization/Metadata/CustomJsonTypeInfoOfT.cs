@@ -18,24 +18,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal CustomJsonTypeInfo(JsonSerializerOptions options)
-            : base(GetConverter(options),
-                  options)
+            : base(options.GetConverterFromListOrBuiltInConverter(typeof(T)), options)
         {
-        }
-
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static JsonConverter GetConverter(JsonSerializerOptions options)
-        {
-            DefaultJsonTypeInfoResolver.RootDefaultInstance();
-            return GetEffectiveConverter(
-                    typeof(T),
-                    parentClassType: null, // A TypeInfo never has a "parent" class.
-                    memberInfo: null, // A TypeInfo never has a "parent" property.
-                    options);
         }
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
