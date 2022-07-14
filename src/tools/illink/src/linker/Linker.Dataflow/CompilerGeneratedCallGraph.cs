@@ -9,15 +9,15 @@ namespace Mono.Linker.Dataflow
 {
 	sealed class CompilerGeneratedCallGraph
 	{
-		readonly Dictionary<IMemberDefinition, HashSet<IMemberDefinition>> callGraph;
+		readonly Dictionary<IMemberDefinition, HashSet<IMemberDefinition>> _callGraph;
 
-		public CompilerGeneratedCallGraph () => callGraph = new Dictionary<IMemberDefinition, HashSet<IMemberDefinition>> ();
+		public CompilerGeneratedCallGraph () => _callGraph = new Dictionary<IMemberDefinition, HashSet<IMemberDefinition>> ();
 
 		void TrackCallInternal (IMemberDefinition fromMember, IMemberDefinition toMember)
 		{
-			if (!callGraph.TryGetValue (fromMember, out HashSet<IMemberDefinition>? toMembers)) {
+			if (!_callGraph.TryGetValue (fromMember, out HashSet<IMemberDefinition>? toMembers)) {
 				toMembers = new HashSet<IMemberDefinition> ();
-				callGraph.Add (fromMember, toMembers);
+				_callGraph.Add (fromMember, toMembers);
 			}
 			toMembers.Add (toMember);
 		}
@@ -48,7 +48,7 @@ namespace Mono.Linker.Dataflow
 			visited.Add (start);
 			queue.Enqueue (start);
 			while (queue.TryDequeue (out IMemberDefinition? method)) {
-				if (!callGraph.TryGetValue (method, out HashSet<IMemberDefinition>? callees))
+				if (!_callGraph.TryGetValue (method, out HashSet<IMemberDefinition>? callees))
 					continue;
 
 				foreach (var callee in callees) {
