@@ -6003,7 +6003,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, klass);
 
 				if (is_simd) {
-					g_assert (values [ins->sreg1]);
+					g_assert (lhs);
 					int align = mono_class_value_size (klass, NULL);
 					retval = build_alloca_llvm_type_name (ctx, ret_type, align, "struct_ret");
 					retval = LLVMBuildLoad2 (builder, ret_type, retval, "struct_ret");
@@ -6018,11 +6018,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					
 					for (int i = 0; i < len; i++)
 					{
-						elem = LLVMBuildExtractElement (builder, values [ins->sreg1], const_int32 (i), "extract_elem");
+						elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
 						retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
 					}
 				} else{
-					g_assert (addresses [ins->sreg1] || values [ins->sreg1]);
+					g_assert (addresses [ins->sreg1]);
 					retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
 				}
 				LLVMBuildRet (builder, retval);
