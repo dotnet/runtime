@@ -35,18 +35,20 @@ namespace Microsoft.Interop.Analyzers
             SemanticModel model = context.GetSemanticModel(diagnostic.Location.SourceTree);
             ISymbol diagnosedSymbol = model.GetDeclaredSymbol(diagnostic.Location.SourceTree.GetRoot(context.CancellationToken).FindNode(diagnostic.Location.SourceSpan), context.CancellationToken);
 
-            if (diagnosedSymbol.Kind == SymbolKind.Method)
+            if (diagnosedSymbol.Kind != SymbolKind.Method)
             {
-                if (FindContainingEntryPointTypeAndManagedType(diagnosedSymbol.ContainingType) is (INamedTypeSymbol entryPointMarshallerType, INamedTypeSymbol managedType))
+                return;
+            }
+
+            if (FindContainingEntryPointTypeAndManagedType(diagnosedSymbol.ContainingType) is (INamedTypeSymbol entryPointMarshallerType, INamedTypeSymbol managedType))
+            {
+                bool isLinearCollectionMarshaller = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointMarshallerType);
+                (MarshallerShape _, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(diagnosedSymbol.ContainingType, managedType, isLinearCollectionMarshaller, context.Compilation);
+                if (methods.IsShapeMethod((IMethodSymbol)diagnosedSymbol))
                 {
-                    bool isLinearCollectionMarshaller = entryPointMarshallerType.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.ContiguousCollectionMarshallerAttribute);
-                    (MarshallerShape _, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(diagnosedSymbol.ContainingType, managedType, isLinearCollectionMarshaller, context.Compilation);
-                    if (methods.IsShapeMethod((IMethodSymbol)diagnosedSymbol))
-                    {
-                        // If we are a method of the shape on the stateful marshaller shape, then we need to be our current shape.
-                        // So, suppress the diagnostic to make this method static, as that would break the shape.
-                        context.ReportSuppression(Suppression.Create(MarkMethodsAsStaticSuppression, diagnostic));
-                    }
+                    // If we are a method of the shape on the stateful marshaller shape, then we need to be our current shape.
+                    // So, suppress the diagnostic to make this method static, as that would break the shape.
+                    context.ReportSuppression(Suppression.Create(MarkMethodsAsStaticSuppression, diagnostic));
                 }
             }
         }
@@ -60,7 +62,8 @@ namespace Microsoft.Interop.Analyzers
                             && attr.AttributeConstructor is not null
                             && !attr.ConstructorArguments[0].IsNull
                             && attr.ConstructorArguments[2].Value is INamedTypeSymbol marshallerTypeInAttribute
-                            && SymbolEqualityComparer.Default.Equals(marshallerTypeInAttribute, marshallerType));
+                            && ManualTypeMarshallingHelper.TryResolveMarshallerType(containingType, marshallerTypeInAttribute, _ => { }, out ITypeSymbol? constructedMarshallerType)
+                            && SymbolEqualityComparer.Default.Equals(constructedMarshallerType, marshallerType));
                 if (attrData is not null)
                 {
                     return (containingType, (INamedTypeSymbol)attrData.ConstructorArguments[0].Value);
