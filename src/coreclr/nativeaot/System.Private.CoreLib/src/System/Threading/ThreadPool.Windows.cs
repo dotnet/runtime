@@ -13,6 +13,9 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
+#if !FEATURE_WASM_THREADS
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         private readonly Lock _lock;

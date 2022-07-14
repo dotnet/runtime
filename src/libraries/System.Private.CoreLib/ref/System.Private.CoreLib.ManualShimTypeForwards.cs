@@ -3,33 +3,34 @@
 
 // NOTE: These types are forwarded from the mscorlib.dll shim, but are not publicly
 //       exposed in System.Runtime.dll so we need to manually declare them here.
-//       We only need the simple type definition here instead of the full members list.
+//       We only need the simple type definition here instead of the full members list
+//       since we don't want these to be actually used by libraries code.
 
 namespace System
 {
-    public class CultureAwareComparer { }
-    public class OrdinalComparer { }
-    public class UnitySerializationHolder { }
+    public sealed class CultureAwareComparer { private CultureAwareComparer() { } }
+    public sealed class OrdinalComparer { private OrdinalComparer() { } }
+    public sealed class UnitySerializationHolder { private UnitySerializationHolder() { } }
 }
 namespace System.Collections
 {
-    public class ListDictionaryInternal { }
+    public class ListDictionaryInternal { private ListDictionaryInternal() { } }
 }
 namespace System.Collections.Generic
 {
-    public class ByteEqualityComparer { }
-    public class EnumEqualityComparer<T> { }
-    public class GenericComparer<T> { }
-    public class GenericEqualityComparer<T> { }
-    public class NonRandomizedStringEqualityComparer { }
-    public class NullableComparer<T> { }
-    public class NullableEqualityComparer<T> { }
-    public class ObjectComparer<T> { }
-    public class ObjectEqualityComparer<T> { }
+    public sealed class ByteEqualityComparer { private ByteEqualityComparer() { } }
+    public sealed class EnumEqualityComparer<T> { private EnumEqualityComparer() { } }
+    public sealed class GenericComparer<T> { private GenericComparer() { } }
+    public sealed class GenericEqualityComparer<T> { private GenericEqualityComparer() { } }
+    public sealed class NonRandomizedStringEqualityComparer { private NonRandomizedStringEqualityComparer() { } }
+    public sealed class NullableComparer<T> { private NullableComparer() { } }
+    public sealed class NullableEqualityComparer<T> { private NullableEqualityComparer() { } }
+    public sealed class ObjectComparer<T> { private ObjectComparer() { } }
+    public sealed class ObjectEqualityComparer<T> { private ObjectEqualityComparer() { } }
 }
 namespace System.Diagnostics.Contracts
 {
-    public class ContractException { }
+    public sealed class ContractException { private ContractException() { } }
 }
 namespace System.Reflection.Emit
 {
