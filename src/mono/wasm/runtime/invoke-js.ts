@@ -132,7 +132,8 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
     const fn = scope[fname];
 
     mono_assert(typeof (fn) === "function", () => `${function_name} must be a Function but was ${typeof fn}`);
-    return fn;
+    const bindThis = fn.bind(scope);
+    return bindThis;
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types

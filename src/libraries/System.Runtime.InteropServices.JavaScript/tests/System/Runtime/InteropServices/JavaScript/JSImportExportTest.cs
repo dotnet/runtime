@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -1194,6 +1195,24 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "string");
         }
 
+        [Fact]
+        public void JsExportStringNoNs()
+        {
+            var actual = JavaScriptTestHelper.invoke2_String("test", nameof(JavaScriptTestHelperNoNamespace.EchoString));
+            Assert.Equal("test!", actual);
+        }
+
+        [Fact]
+        public void JsImportNative()
+        {
+            if (JSHost.GlobalThis.HasProperty("window"))
+            {
+                var actual = JavaScriptTestHelper.NativeFunctionToString();
+                Assert.IsType<string>(actual);
+                Assert.StartsWith("http", actual);
+            }
+        }
+
         #endregion String
 
         #region Object
@@ -1267,6 +1286,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 nameof(JavaScriptTestHelper.EchoException),
                 "object", clazz);
         }
+
+        [Fact]
+        public void JsExportThrows()
+        {
+            var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.Throw)));
+            Assert.DoesNotContain("Unexpected error", ex.Message);
+            Assert.Contains("-t-e-s-t-", ex.Message);
+        }
+
         #endregion Exception
 
         #region JSObject
@@ -1810,12 +1838,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var exThrow0 = Assert.Throws<JSException>(() => JavaScriptTestHelper.throw0());
             Assert.Contains("throw-0-msg", exThrow0.Message);
             Assert.DoesNotContain(" at ", exThrow0.Message);
-            Assert.Contains(" at throw0", exThrow0.StackTrace);
+            Assert.Contains(" at Module.throw0", exThrow0.StackTrace);
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
             Assert.DoesNotContain(" at ", exThrow1.Message);
-            Assert.Contains(" at throw1", exThrow1.StackTrace);
+            Assert.Contains(" at Module.throw1", exThrow1.StackTrace);
 
             // anything is a system.object, sometimes it would be JSObject wrapper
             if (typeof(T).IsPrimitive)
