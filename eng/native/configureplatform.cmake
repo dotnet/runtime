@@ -1,6 +1,6 @@
 include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 
-# If set, indicates that this is not an officially supported release
+# If set, indicates that this is not an officially supported release.
 # Release branches should set this to false.
 set(PRERELEASE 0)
 
