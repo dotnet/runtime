@@ -5,6 +5,9 @@ class JSData {
     constructor(name) {
         this.name = name;
     }
+    echoMemberMethod(arg1){
+        return arg1 + "-w-i-t-h-"+ this.name;
+    }
     toString() {
         return `JSData("${this.name}")`;
     }
@@ -260,5 +263,14 @@ export function backback(arg1, arg2, arg3) {
 export const instance = {}
 
 globalThis.javaScriptTestHelper = instance;
+globalThis.data = new JSData("i-n-s-t-a-n-c-e");
+globalThis.rebound = {
+    // our JSImport will try to bind it to `globalThis.rebound` 
+    // but it would stay bound to globalThis.data
+    // because once the function is bound, it would stay bound to the first object and can't be re-bound subsequently
+    // this line is actually the firt binding, not the fact it's part of the class JSData
+    echoMemberMethod: globalThis.data.echoMemberMethod.bind(globalThis.data)
+}
+
 
 // console.log('JavaScriptTestHelper:' Object.keys(globalThis.JavaScriptTestHelper));

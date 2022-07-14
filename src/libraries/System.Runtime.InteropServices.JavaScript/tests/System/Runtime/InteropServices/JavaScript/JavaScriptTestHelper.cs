@@ -20,6 +20,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("globalThis.window.location.toString")]
         public static partial string NativeFunctionToString();
 
+        [JSImport("globalThis.data.echoMemberMethod")]
+        public static partial string MemberEcho(string message);
+
+        [JSImport("globalThis.rebound.echoMemberMethod")]
+        public static partial string ReboundMemberEcho(string message);
+
         [JSExport]
         public static void ConsoleWriteLine([JSMarshalAs<JSType.String>] string message)
         {
