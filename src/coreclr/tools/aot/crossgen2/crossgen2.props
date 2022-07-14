@@ -14,7 +14,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <!-- Trim all dependent assemblies as though they were all marked IsTrimmable. -->
-    <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <TrimMode>full</TrimMode>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
