@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { BINDINGType, DotnetPublicAPI, MONOType } from "./exports";
+import { BINDINGType, MONOType } from "./legacy/exports-legacy";
 import { IDisposable, IMemoryView, ManagedError, ManagedObject, MemoryViewType } from "./marshal";
-import { DotnetModuleConfig, MonoArray, MonoObject, MonoString } from "./types";
+import { DotnetModuleConfig, DotnetPublicAPI, MonoArray, MonoObject, MonoString } from "./types";
 import { EmscriptenModule, TypedArray, VoidPtr } from "./types/emscripten";
 
 // -----------------------------------------------------------

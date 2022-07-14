@@ -4,13 +4,14 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
 
+import { BINDINGType, MONOType } from "./legacy/exports-legacy";
 import { DotnetModule, MonoConfig, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
 
 // these are our public API (except internal)
 export let Module: EmscriptenModule & DotnetModule;
-export let MONO: any;
-export let BINDING: any;
+export let MONO: MONOType;
+export let BINDING: BINDINGType;
 export let INTERNAL: any;
 export let EXPORTS: any;
 export let IMPORTS: any;
@@ -61,8 +62,6 @@ let monoConfig: MonoConfig = {} as any;
 let runtime_is_ready = false;
 
 export const runtimeHelpers: RuntimeHelpers = <any>{
-    namespace: "System.Runtime.InteropServices.JavaScript",
-    classname: "Runtime",
     get mono_wasm_runtime_is_ready() {
         return runtime_is_ready;
     },

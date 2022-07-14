@@ -7,14 +7,14 @@
 		var App = {
 			static_method_table: {},
 			init: function () {
-				this.int_add = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:IntAdd");
-				this.use_complex = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:UseComplex");
-				this.delegates_test = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:DelegatesTest");
-				this.generic_types_test = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:GenericTypesTest");
-				this.outer_method = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:OuterMethod");
-				this.async_method = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math/NestedInMath:AsyncTest");
-				this.method_with_structs = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructs");
-				this.run_all = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] DebuggerTest:run_all");
+				this.int_add = getDotnetRuntime(0).BINDING.bind_static_method ("[debugger-test] Math:IntAdd");
+				this.use_complex = getDotnetRuntime(0).BINDING.bind_static_method ("[debugger-test] Math:UseComplex");
+				this.delegates_test = getDotnetRuntime(0).BINDING.bind_static_method ("[debugger-test] Math:DelegatesTest");
+				this.generic_types_test = getDotnetRuntime(0).BINDING.bind_static_method ("[debugger-test] Math:GenericTypesTest");
+				this.outer_method = getDotnetRuntime(0).BINDING.bind_static_method ("[debugger-test] Math:OuterMethod");
+				this.async_method = getDotnetRuntime(0).BINDING.bind_static_method ("[debugger-test] Math/NestedInMath:AsyncTest");
+				this.method_with_structs = getDotnetRuntime(0).BINDING.bind_static_method ("[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructs");
+				this.run_all = getDotnetRuntime(0).BINDING.bind_static_method ("[debugger-test] DebuggerTest:run_all");
 				this.static_method_table = {};
 				console.log ("ready");
 			},
@@ -22,7 +22,7 @@
 		function invoke_static_method (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined)
-				method = App.static_method_table [method_name] = getDotnetRuntime(0).INTERNAL.mono_bind_static_method (method_name);
+				method = App.static_method_table [method_name] = getDotnetRuntime(0).BINDING.bind_static_method (method_name);
 
 			return method (...args);
 		}
@@ -30,7 +30,7 @@
 		async function invoke_static_method_async (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined) {
-				method = App.static_method_table [method_name] = getDotnetRuntime(0).INTERNAL.mono_bind_static_method (method_name);
+				method = App.static_method_table [method_name] = getDotnetRuntime(0).BINDING.bind_static_method (method_name);
 			}
 
 			return await method (...args);

@@ -138,7 +138,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             IntPtr jsHandle = CreatePendingPromise();
             slot.JSHandle = jsHandle;
-            JSObject promise = JavaScriptExports.CreateCSOwnedProxy(jsHandle);
+            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
             task.GetAwaiter().OnCompleted(Complete);
 
@@ -216,7 +216,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             IntPtr jsHandle = CreatePendingPromise();
             slot.JSHandle = jsHandle;
-            JSObject promise = JavaScriptExports.CreateCSOwnedProxy(jsHandle);
+            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
             task.GetAwaiter().OnCompleted(Complete);
 
@@ -289,7 +289,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             IntPtr jsHandle = CreatePendingPromise();
             slot.JSHandle = jsHandle;
-            JSObject promise = JavaScriptExports.CreateCSOwnedProxy(jsHandle);
+            JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
             task.GetAwaiter().OnCompleted(Complete);
 

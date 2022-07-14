@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { isThenable } from "./cancelable-promise";
-import wrapped_cs_functions from "./corebindings";
+import { javaScriptExports } from "./managed-exports";
 import cwraps from "./cwraps";
 import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./imports";
+import { Module } from "./imports";
 import {
     JSMarshalerArgument, ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
-    set_arg_length, get_arg, is_args_exception, JavaScriptMarshalerArgSize, get_signature_type, get_signature_arg1_type, get_signature_arg2_type, cs_to_js_marshalers, js_to_cs_marshalers,
-    MarshalerToCs, MarshalerToJs, get_signature_res_type, JSMarshalerArguments, bound_js_function_symbol, set_arg_u16, JSMarshalerType, array_element_size, get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, MarshalerType, set_arg_i64_big, set_arg_intptr, IDisposable, set_arg_element_type, ManagedObject
+    set_arg_length, get_arg, get_signature_type, get_signature_arg1_type, get_signature_arg2_type, cs_to_js_marshalers, js_to_cs_marshalers,
+    MarshalerToCs, MarshalerToJs, get_signature_res_type, JSMarshalerArguments, bound_js_function_symbol, set_arg_u16, JSMarshalerType, array_element_size, get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, MarshalerType, set_arg_i64_big, set_arg_intptr, IDisposable, set_arg_element_type, ManagedObject, alloc_stack_frame
 } from "./marshal";
-import { marshal_exception_to_js } from "./marshal-to-js";
 import { _zero_region } from "./memory";
-import { conv_string, js_string_to_mono_string_root } from "./strings";
+import { js_string_to_mono_string_root } from "./strings";
 import { mono_assert, GCHandle, GCHandleNull } from "./types";
 import { TypedArray } from "./types/emscripten";
 
@@ -363,7 +362,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     mono_assert(isThenable(value), "Value is not a Promise");
 
     const anyModule = Module as any;
-    const gc_handle: GCHandle = wrapped_cs_functions._create_task_callback();
+    const gc_handle: GCHandle = javaScriptExports._create_task_callback();
     set_gc_handle(arg, gc_handle);
     set_arg_type(arg, MarshalerType.Task);
     const holder = new TaskCallbackHolder(value);
@@ -372,11 +371,8 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     value.then(data => {
         const sp = anyModule.stackSave();
         try {
-            const args = anyModule.stackAlloc(JavaScriptMarshalerArgSize * 3);
-            const exc = get_arg(args, 0);
-            set_arg_type(exc, MarshalerType.None);
+            const args = alloc_stack_frame(3);
             const res = get_arg(args, 1);
-            set_arg_type(res, MarshalerType.None);
             set_gc_handle(res, <any>gc_handle);
             const arg1 = get_arg(args, 2);
             if (!res_converter) {
@@ -384,9 +380,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             } else {
                 res_converter(arg1, data);
             }
-            const fail = cwraps.mono_wasm_invoke_method_bound(runtimeHelpers.complete_task_method, args);
-            if (fail) throw new Error("ERR22: Unexpected error: " + conv_string(fail));
-            if (is_args_exception(args)) throw marshal_exception_to_js(exc);
+            javaScriptExports._complete_task(args);
         } finally {
             anyModule.stackRestore(sp);
         }
@@ -394,18 +388,15 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     }).catch(reason => {
         const sp = anyModule.stackSave();
         try {
-            const args = anyModule.stackAlloc(JavaScriptMarshalerArgSize * 3);
+            const args = alloc_stack_frame(3);
             const res = get_arg(args, 1);
-            set_arg_type(res, MarshalerType.None);
             set_gc_handle(res, gc_handle);
             const exc = get_arg(args, 0);
             if (typeof reason === "string" || reason === null || reason === undefined) {
                 reason = new Error(reason || "");
             }
             marshal_exception_to_cs(exc, reason);
-            const fail = cwraps.mono_wasm_invoke_method_bound(runtimeHelpers.complete_task_method, args);
-            if (fail) throw new Error("ERR24: Unexpected error: " + conv_string(fail));
-            if (is_args_exception(args)) throw marshal_exception_to_js(exc);
+            javaScriptExports._complete_task(args);
         } finally {
             anyModule.stackRestore(sp);
         }

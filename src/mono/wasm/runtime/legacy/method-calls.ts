@@ -1,148 +1,27 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roots";
-import {
-    JSHandle, MonoArray, MonoMethod, MonoObject,
-    MonoObjectNull, MonoString, coerceNull as coerceNull,
-    VoidPtrNull, MonoObjectRef,
-    MonoStringRef, is_nullish
-} from "./types";
-import { INTERNAL, Module, runtimeHelpers } from "./imports";
+import { assembly_load } from "../class-loader";
+import cwraps from "../cwraps";
+import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
+import { Module, runtimeHelpers, INTERNAL } from "../imports";
+import { wrap_error_root } from "../invoke-js";
+import { _release_temp_frame } from "../memory";
+import { WasmRoot, mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
+import { bindings_lazy_init } from "../startup";
+import { conv_string_root, js_string_to_mono_string_root } from "../strings";
+import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish } from "../types";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
-import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore used by unsafe export
 import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
-import {
-    mono_bind_method,
-    Converter, _compile_converter_for_marshal_string,
-    _decide_if_result_is_marshaled, find_method,
-    BoundMethodToken
-} from "./method-binding";
-import { conv_string_root, js_string_to_mono_string, js_string_to_mono_string_root } from "./strings";
-import cwraps from "./cwraps";
-import { bindings_lazy_init } from "./startup";
-import { _create_temp_frame, _release_temp_frame } from "./memory";
-import { VoidPtr, Int32Ptr } from "./types/emscripten";
-import { assembly_load } from "./class-loader";
+import { Converter, BoundMethodToken, mono_method_resolve, mono_method_get_call_signature_ref, mono_bind_method } from "./method-binding";
 
-function _verify_args_for_method_call(args_marshal: string/*ArgsMarshalString*/, args: any) {
-    const has_args = args && (typeof args === "object") && args.length > 0;
-    const has_args_marshal = typeof args_marshal === "string";
-
-    if (has_args) {
-        if (!has_args_marshal)
-            throw new Error("No signature provided for method call.");
-        else if (args.length > args_marshal.length)
-            throw new Error("Too many parameter values. Expected at most " + args_marshal.length + " value(s) for signature " + args_marshal);
-    }
-
-    return has_args_marshal && has_args;
-}
-
-function _convert_exception_for_method_call(result: WasmRoot<MonoString>, exception: WasmRoot<MonoObject>) {
-    if (exception.value === MonoObjectNull)
-        return null;
-
-    const msg = conv_string_root(result);
-    const err = new Error(msg!); //the convention is that invoke_method ToString () any outgoing exception
-    // console.warn (`error ${msg} at location ${err.stack});
-    return err;
-}
-
-/*
-args_marshal is a string with one character per parameter that tells how to marshal it, here are the valid values:
-
-i: int32
-j: int32 - Enum with underlying type of int32
-l: int64
-k: int64 - Enum with underlying type of int64
-f: float
-d: double
-s: string
-S: interned string
-o: js object will be converted to a C# object (this will box numbers/bool/promises)
-m: raw mono object. Don't use it unless you know what you're doing
-
-to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
-*/
-export function call_method_ref(method: MonoMethod, this_arg: WasmRoot<MonoObject> | MonoObjectRef | undefined, args_marshal: string/*ArgsMarshalString*/, args: ArrayLike<any>): any {
-    // HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
-    let this_arg_ref: MonoObjectRef | undefined = undefined;
-    if (typeof (this_arg) === "number")
-        this_arg_ref = this_arg;
-    else if (typeof (this_arg) === "object")
-        this_arg_ref = (<any>this_arg).address;
-    else
-        this_arg_ref = <any>coerceNull(this_arg);
-
-    // Detect someone accidentally passing the wrong type of value to method
-    if (typeof method !== "number")
-        throw new Error(`method must be an address in the native heap, but was '${method}'`);
-    if (!method)
-        throw new Error("no method specified");
-    if (typeof (this_arg_ref) !== "number")
-        throw new Error(`this_arg must be a root instance, the address of a root, or undefined, but was ${this_arg}`);
-
-    const needs_converter = _verify_args_for_method_call(args_marshal, args);
-
-    let buffer = VoidPtrNull, converter = undefined;
-    const sp = Module.stackSave();
-    let is_result_marshaled = true;
-
-    // TODO: Only do this if the signature needs marshaling
-    _create_temp_frame();
-
-    // check if the method signature needs argument mashalling
-    if (needs_converter) {
-        converter = _compile_converter_for_marshal_string(args_marshal);
-
-        is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);
-
-        buffer = converter.compiled_variadic_function!(method, args);
-    }
-
-    return _call_method_with_converted_args(method, <any>this_arg_ref, converter, null, buffer, is_result_marshaled, sp);
-}
-
-
-export function _handle_exception_for_call(
-    converter: Converter | undefined, token: BoundMethodToken | null,
-    buffer: VoidPtr, resultRoot: WasmRoot<MonoString>,
-    exceptionRoot: WasmRoot<MonoObject>, sp: VoidPtr
-): void {
-    const exc = _convert_exception_for_method_call(resultRoot, exceptionRoot);
-    if (!exc)
-        return;
-
-    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, sp);
-    throw exc;
-}
-
-function _handle_exception_and_produce_result_for_call(
-    converter: Converter | undefined, token: BoundMethodToken | null,
-    buffer: VoidPtr, resultRoot: WasmRoot<MonoString>,
-    exceptionRoot: WasmRoot<MonoObject>, sp: VoidPtr,
-    is_result_marshaled: boolean
-): any {
-    _handle_exception_for_call(converter, token, buffer, resultRoot, exceptionRoot, sp);
-
-    let result: any;
-
-    if (is_result_marshaled)
-        result = unbox_mono_obj_root(resultRoot);
-    else
-        result = resultRoot.value;
-
-    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, sp);
-    return result;
-}
+const boundMethodsByFqn: Map<string, Function> = new Map();
 
 export function _teardown_after_call(
     converter: Converter | undefined, token: BoundMethodToken | null,
-    buffer: VoidPtr, resultRoot: WasmRoot<any>,
-    exceptionRoot: WasmRoot<any>, sp: VoidPtr
+    buffer: VoidPtr,
+    resultRoot: WasmRoot<any>,
+    exceptionRoot: WasmRoot<any>,
+    thisArgRoot: WasmRoot<MonoObject>,
+    sp: VoidPtr
 ): void {
     _release_temp_frame();
     Module.stackRestore(sp);
@@ -161,38 +40,29 @@ export function _teardown_after_call(
         else
             exceptionRoot.release();
     }
-}
-
-function _call_method_with_converted_args(
-    method: MonoMethod, this_arg_ref: MonoObjectRef, converter: Converter | undefined,
-    token: BoundMethodToken | null, buffer: VoidPtr,
-    is_result_marshaled: boolean, sp: VoidPtr
-): any {
-    const resultRoot = mono_wasm_new_root<MonoString>(), exceptionRoot = mono_wasm_new_root<MonoObject>();
-    cwraps.mono_wasm_invoke_method_ref(method, this_arg_ref, buffer, exceptionRoot.address, resultRoot.address);
-    return _handle_exception_and_produce_result_for_call(converter, token, buffer, resultRoot, exceptionRoot, sp, is_result_marshaled);
-}
-
-export function call_static_method(fqn: string, args: any[], signature: string/*ArgsMarshalString*/): any {
-    bindings_lazy_init();// TODO remove this once Blazor does better startup
-
-    const method = mono_method_resolve(fqn);
-
-    if (typeof signature === "undefined")
-        signature = mono_method_get_call_signature_ref(method, undefined);
-
-    return call_method_ref(method, undefined, signature, args);
+    if (typeof (thisArgRoot) === "object") {
+        thisArgRoot.clear();
+        if ((token !== null) && (token.scratchThisArgRoot === null))
+            token.scratchThisArgRoot = thisArgRoot;
+        else
+            thisArgRoot.release();
+    }
 }
 
 export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMarshalString*/): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
+    const key = `${fqn}-${signature}`;
+    let js_method = boundMethodsByFqn.get(key);
+    if (js_method === undefined) {
+        const method = mono_method_resolve(fqn);
 
-    const method = mono_method_resolve(fqn);
+        if (typeof signature === "undefined")
+            signature = mono_method_get_call_signature_ref(method, undefined);
 
-    if (typeof signature === "undefined")
-        signature = mono_method_get_call_signature_ref(method, undefined);
-
-    return mono_bind_method(method, null, signature!, fqn);
+        js_method = mono_bind_method(method, signature!, false, fqn);
+        boundMethodsByFqn.set(key, js_method);
+    }
+    return js_method;
 }
 
 export function mono_bind_assembly_entry_point(assembly: string, signature?: string/*ArgsMarshalString*/): Function {
@@ -213,10 +83,12 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
     if (typeof (signature) !== "string")
         signature = mono_method_get_call_signature_ref(method, undefined);
 
+    const js_method = mono_bind_method(method, signature!, false, assembly + "__entrypoint");
+
     return async function (...args: any[]) {
         if (args.length > 0 && Array.isArray(args[0]))
             args[0] = js_array_to_mono_array(args[0], true, false);
-        return call_method_ref(method, undefined, signature!, args);
+        return js_method(...args);
     };
 }
 
@@ -417,93 +289,6 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
         resultRoot.release();
         nameRoot.release();
     }
-}
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
-    let res = "unknown exception";
-    if (ex) {
-        res = ex.toString();
-        const stack = ex.stack;
-        if (stack) {
-            // Some JS runtimes insert the error message at the top of the stack, some don't,
-            //  so normalize it by using the stack as the result if it already contains the error
-            if (stack.startsWith(res))
-                res = stack;
-            else
-                res += "\n" + stack;
-        }
-
-        res = INTERNAL.mono_wasm_symbolicate_string(res);
-    }
-    if (is_exception) {
-        Module.setValue(is_exception, 1, "i32");
-    }
-    return res;
-}
-
-/**
- * @deprecated Not GC or thread safe
- */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function wrap_error(is_exception: Int32Ptr | null, ex: any): MonoString {
-    const res = _wrap_error_flag(is_exception, ex);
-    return js_string_to_mono_string(res)!;
-}
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
-    const res = _wrap_error_flag(is_exception, ex);
-    js_string_to_mono_string_root(res, <any>result);
-}
-
-export function mono_method_get_call_signature_ref(method: MonoMethod, mono_obj?: WasmRoot<MonoObject>): string/*ArgsMarshalString*/ {
-    return call_method_ref(
-        runtimeHelpers.get_call_sig_ref, undefined, "im",
-        [method, mono_obj ? mono_obj.address : runtimeHelpers._null_root.address]
-    );
-}
-
-export function parseFQN(fqn: string)
-    : { assembly: string, namespace: string, classname: string, methodname: string } {
-    const assembly = fqn.substring(fqn.indexOf("[") + 1, fqn.indexOf("]")).trim();
-    fqn = fqn.substring(fqn.indexOf("]") + 1).trim();
-
-    const methodname = fqn.substring(fqn.indexOf(":") + 1);
-    fqn = fqn.substring(0, fqn.indexOf(":")).trim();
-
-    let namespace = "";
-    let classname = fqn;
-    if (fqn.indexOf(".") != -1) {
-        const idx = fqn.lastIndexOf(".");
-        namespace = fqn.substring(0, idx);
-        classname = fqn.substring(idx + 1);
-    }
-
-    if (!assembly.trim())
-        throw new Error("No assembly name specified " + fqn);
-    if (!classname.trim())
-        throw new Error("No class name specified " + fqn);
-    if (!methodname.trim())
-        throw new Error("No method name specified " + fqn);
-    return { assembly, namespace, classname, methodname };
-}
-
-export function mono_method_resolve(fqn: string): MonoMethod {
-    const { assembly, namespace, classname, methodname } = parseFQN(fqn);
-
-    const asm = cwraps.mono_wasm_assembly_load(assembly);
-    if (!asm)
-        throw new Error("Could not find assembly: " + assembly);
-
-    const klass = cwraps.mono_wasm_assembly_find_class(asm, namespace, classname);
-    if (!klass)
-        throw new Error("Could not find class: " + namespace + ":" + classname + " in assembly " + assembly);
-
-    const method = find_method(klass, methodname, -1);
-    if (!method)
-        throw new Error("Could not find method: " + methodname);
-    return method;
 }
 
 // Blazor specific custom routine

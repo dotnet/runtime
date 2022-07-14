@@ -255,3 +255,11 @@ export function withStackAlloc<T1, T2, T3, TResult>(bytesWanted: number, f: (ptr
     }
 }
 
+// @bytes must be a typed array. space is allocated for it in the native heap
+//  and it is copied to that location. returns the address of the allocation.
+export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
+    const memoryOffset = Module._malloc(bytes.length);
+    const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>memoryOffset, bytes.length);
+    heapBytes.set(bytes);
+    return memoryOffset;
+}

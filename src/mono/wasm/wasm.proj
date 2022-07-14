@@ -355,6 +355,7 @@
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/types/*.ts"/>
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/legacy/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.json"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.js"/>

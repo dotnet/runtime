@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import "node/buffer"; // we use the Buffer type to type some of Emscripten's APIs
-import { bind_runtime_method } from "./method-binding";
+import { BINDINGType, MONOType } from "./legacy/exports-legacy";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
 
 export type GCHandle = {
@@ -131,14 +131,12 @@ export const enum AssetBehaviours {
 }
 
 export type RuntimeHelpers = {
-    get_call_sig_ref: MonoMethod;
-    complete_task_method: MonoMethod;
-    create_task_method: MonoMethod;
-    call_delegate: MonoMethod;
+    runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;
     runtime_interop_exports_classname: string;
     runtime_interop_exports_class: MonoClass;
-    bind_runtime_method: typeof bind_runtime_method;
+    runtime_legacy_exports_classname: string;
+    runtime_legacy_exports_class: MonoClass;
 
     _box_buffer_size: number;
     _unbox_buffer_size: number;
@@ -285,4 +283,26 @@ export const enum MarshalError {
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
 export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
+}
+
+// this represents visibility in the javascript
+// like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
+export interface DotnetPublicAPI {
+    MONO: MONOType,
+    BINDING: BINDINGType,
+    INTERNAL: any,
+    EXPORTS: any,
+    IMPORTS: any,
+    Module: EmscriptenModule,
+    RuntimeId: number,
+    RuntimeBuildInfo: {
+        ProductVersion: string,
+        Configuration: string,
+    }
+}
+
+// We need to replace some of the methods in the Emscripten PThreads support with our own
+export type PThreadReplacements = {
+    loadWasmModuleToWorker: Function,
+    threadInitTLS: Function
 }

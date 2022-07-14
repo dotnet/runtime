@@ -1,24 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { MonoObject, MonoString } from "./export-types";
 import { EXPORTS, Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, generate_arg_marshal_to_js } from "./marshal-to-js";
 import {
     JSMarshalerArguments, JavaScriptMarshalerArgSize, JSFunctionSignature,
     JSMarshalerTypeSize, JSMarshalerSignatureHeaderSize,
-    get_arg, get_sig, set_arg_type,
-    get_signature_argument_count, is_args_exception, bound_cs_function_symbol, get_signature_version, MarshalerType,
+    get_arg, get_sig,
+    get_signature_argument_count, is_args_exception, bound_cs_function_symbol, get_signature_version, MarshalerType, alloc_stack_frame,
 } from "./marshal";
-import { parseFQN, wrap_error_root } from "./method-calls";
-import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
+import { mono_wasm_new_external_root } from "./roots";
 import { conv_string, conv_string_root } from "./strings";
-import { mono_assert, MonoObjectRef, MonoStringRef } from "./types";
+import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import cwraps, { wrap_c_function } from "./cwraps";
-import { find_method } from "./method-binding";
+import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
+import { wrap_error_root } from "./invoke-js";
 
 const exportedMethods = new Map<string, Function>();
 
@@ -48,16 +46,15 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
             throw new Error("Could not find class: " + namespace + ":" + classname + " in assembly " + assembly);
 
         const wrapper_name = `__Wrapper_${methodname}_${signature_hash}`;
-        const method = find_method(klass, wrapper_name, -1);
+        const method = cwraps.mono_wasm_assembly_find_method(klass, wrapper_name, -1);
         if (!method)
             throw new Error(`Could not find method: ${wrapper_name} in ${klass} [${assembly}]`);
 
         const closure: any = {
-            method, get_arg, signature,
-            stackSave: anyModule.stackSave, stackAlloc: anyModule.stackAlloc, stackRestore: anyModule.stackRestore,
-            conv_string,
-            mono_wasm_new_root, init_void, init_result, /*init_argument,*/ marshal_exception_to_js, is_args_exception,
-            mono_wasm_invoke_method_bound: wrap_c_function("mono_wasm_invoke_method_bound"),
+            method, signature,
+            stackSave: anyModule.stackSave, stackRestore: anyModule.stackRestore,
+            alloc_stack_frame,
+            invoke_method_and_handle_exception
         };
         const bound_js_function_name = "_bound_cs_" + `${namespace}_${classname}_${methodname}`.replace(/\./g, "_").replace(/\//g, "_");
         let body = `//# sourceURL=https://mono-wasm.invalid/${bound_js_function_name} \n`;
@@ -75,45 +72,26 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         const { converters: res_converters, call_body: res_call_body, marshaler_type: res_marshaler_type } = generate_arg_marshal_to_js(get_sig(signature, 1), 1, JavaScriptMarshalerArgSize, JSMarshalerTypeSize + JSMarshalerSignatureHeaderSize, "js_result", closure);
         converter_names += res_converters;
 
-        body += `const { method, get_arg, signature, stackSave, stackAlloc, stackRestore, mono_wasm_new_root, conv_string, init_void, init_result, init_argument, marshal_exception_to_js, is_args_exception, mono_wasm_invoke_method_bound ${converter_names} } = closure;\n`;
+        body += `const { method, signature, stackSave, stackRestore,  alloc_stack_frame, invoke_method_and_handle_exception ${converter_names} } = closure;\n`;
         // TODO named arguments instead of arguments keyword
         body += `return function ${bound_js_function_name} () {\n`;
-        if (res_marshaler_type === MarshalerType.String) {
-            body += "let root = null;\n";
-        }
         body += "const sp = stackSave();\n";
         body += "try {\n";
-        body += `  const args = stackAlloc(${(args_count + 2) * JavaScriptMarshalerArgSize});\n`;
-        if (res_marshaler_type !== MarshalerType.Void && res_marshaler_type !== MarshalerType.Discard) {
-            if (res_marshaler_type === MarshalerType.String) {
-                body += "  root = mono_wasm_new_root(0);\n";
-                body += "  init_result(args);\n";
-            }
-            else {
-                body += "  init_result(args);\n";
-            }
-        } else {
-            body += "  init_void(args);\n";
-        }
+        body += `  const args = alloc_stack_frame(${(args_count + 2)});\n`;
 
         body += bodyToCs;
 
-        body += "  const fail = mono_wasm_invoke_method_bound(method, args);\n";
-        body += "  if (fail) throw new Error(\"ERR22: Unexpected error: \" + conv_string(fail));\n";
-        body += "  if (is_args_exception(args)) throw marshal_exception_to_js(get_arg(args, 0));\n";
+        body += "  invoke_method_and_handle_exception(method, args);\n";
         if (res_marshaler_type !== MarshalerType.Void && res_marshaler_type !== MarshalerType.Discard) {
             body += res_call_body;
         }
 
         if (res_marshaler_type !== MarshalerType.Void && res_marshaler_type !== MarshalerType.Discard) {
-            body += "return js_result;\n";
+            body += "  return js_result;\n";
         }
 
         body += "} finally {\n";
         body += "  stackRestore(sp);\n";
-        if (res_marshaler_type === MarshalerType.String) {
-            body += "  if(root) root.release()\n";
-        }
         body += "}}";
         const factory = new Function("closure", body);
         const bound_fn = factory(closure);
@@ -131,22 +109,13 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
     }
 }
 
-function init_void(args: JSMarshalerArguments) {
-    mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
-    const exc = get_arg(args, 0);
-    set_arg_type(exc, MarshalerType.None);
-
-    const res = get_arg(args, 1);
-    set_arg_type(res, MarshalerType.None);
-}
-
-function init_result(args: JSMarshalerArguments) {
-    mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
-    const exc = get_arg(args, 0);
-    set_arg_type(exc, MarshalerType.None);
-
-    const res = get_arg(args, 1);
-    set_arg_type(res, MarshalerType.None);
+export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
+    const fail = cwraps.mono_wasm_invoke_method_bound(method, args);
+    if (fail) throw new Error("ERR24: Unexpected error: " + conv_string(fail));
+    if (is_args_exception(args)) {
+        const exc = get_arg(args, 0);
+        throw marshal_exception_to_js(exc);
+    }
 }
 
 export const exportsByAssembly: Map<string, any> = new Map();
@@ -200,11 +169,39 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
     scope[`${methodname}.${signature_hash}`] = fn;
 }
 
-export async function mono_wasm_get_assembly_exports(assembly: string): Promise<any> {
-    const asm = assembly_load(assembly);
-    if (!asm)
-        throw new Error("Could not find assembly: " + assembly);
-    cwraps.mono_wasm_runtime_run_module_cctor(asm);
+export function mono_wasm_get_assembly_exports(assembly: string): Promise<any> {
+    const result = exportsByAssembly.get(assembly);
+    if (!result) {
+        const asm = assembly_load(assembly);
+        if (!asm)
+            throw new Error("Could not find assembly: " + assembly);
+        cwraps.mono_wasm_runtime_run_module_cctor(asm);
+    }
 
     return exportsByAssembly.get(assembly) || {};
+}
+
+export function parseFQN(fqn: string)
+    : { assembly: string, namespace: string, classname: string, methodname: string } {
+    const assembly = fqn.substring(fqn.indexOf("[") + 1, fqn.indexOf("]")).trim();
+    fqn = fqn.substring(fqn.indexOf("]") + 1).trim();
+
+    const methodname = fqn.substring(fqn.indexOf(":") + 1);
+    fqn = fqn.substring(0, fqn.indexOf(":")).trim();
+
+    let namespace = "";
+    let classname = fqn;
+    if (fqn.indexOf(".") != -1) {
+        const idx = fqn.lastIndexOf(".");
+        namespace = fqn.substring(0, idx);
+        classname = fqn.substring(idx + 1);
+    }
+
+    if (!assembly.trim())
+        throw new Error("No assembly name specified " + fqn);
+    if (!classname.trim())
+        throw new Error("No class name specified " + fqn);
+    if (!methodname.trim())
+        throw new Error("No method name specified " + fqn);
+    return { assembly, namespace, classname, methodname };
 }

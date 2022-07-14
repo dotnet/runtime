@@ -1,7 +1,7 @@
 import { ExitStatus, INTERNAL, Module, quit, runtimeHelpers } from "./imports";
-import { mono_call_assembly_entry_point } from "./method-calls";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args, runtime_is_initialized_reject } from "./startup";
+import { mono_call_assembly_entry_point } from "./legacy/method-calls";
 
 export async function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void> {
     try {

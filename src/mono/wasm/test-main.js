@@ -514,7 +514,8 @@ const App = {
 
         const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
         try {
-            return App.INTERNAL.call_static_method(fqn, args || [], signature);
+            const method = App.BINDING.bind_static_method(fqn, signature);
+            return method.apply(null, args || []);
         } catch (exc) {
             console.error("exception thrown in", fqn);
             throw exc;

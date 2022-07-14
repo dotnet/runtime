@@ -61,72 +61,7 @@ declare interface EmscriptenModule {
 }
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
-/**
- * Allocates a block of memory that can safely contain pointers into the managed heap.
- * The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
- * Once you are done using the root buffer, you must call its release() method.
- * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
- */
-declare function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer;
-/**
- * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
- * Releasing this root will not de-allocate the root space. You still need to call .release().
- */
-declare function mono_wasm_new_external_root<T extends MonoObject>(address: VoidPtr | MonoObjectRef): WasmRoot<T>;
-/**
- * Allocates temporary storage for a pointer into the managed heap.
- * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
- * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
- * The result object has get() and set(value) methods, along with a .value property.
- * When you are done using the root you must call its .release() method.
- */
-declare function mono_wasm_new_root<T extends MonoObject>(value?: T | undefined): WasmRoot<T>;
-/**
- * Releases 1 or more root or root buffer objects.
- * Multiple objects may be passed on the argument list.
- * 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
- *  even if you are not sure all of your roots have been created yet.
- * @param {... WasmRoot} roots
- */
-declare function mono_wasm_release_roots(...args: WasmRoot<any>[]): void;
-declare class WasmRootBuffer {
-    private __count;
-    private length;
-    private __offset;
-    private __offset32;
-    private __handle;
-    private __ownsAllocation;
-    constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string);
-    _throw_index_out_of_range(): void;
-    _check_in_range(index: number): void;
-    get_address(index: number): MonoObjectRef;
-    get_address_32(index: number): number;
-    get(index: number): ManagedPointer;
-    set(index: number, value: ManagedPointer): ManagedPointer;
-    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void;
-    _unsafe_get(index: number): number;
-    _unsafe_set(index: number, value: ManagedPointer | NativePointer): void;
-    clear(): void;
-    release(): void;
-    toString(): string;
-}
-interface WasmRoot<T extends MonoObject> {
-    get_address(): MonoObjectRef;
-    get_address_32(): number;
-    get address(): MonoObjectRef;
-    get(): T;
-    set(value: T): T;
-    get value(): T;
-    set value(value: T);
-    copy_from_address(source: MonoObjectRef): void;
-    copy_to_address(destination: MonoObjectRef): void;
-    copy_from(source: WasmRoot<T>): void;
-    copy_to(destination: WasmRoot<T>): void;
-    valueOf(): T;
-    clear(): void;
-    release(): void;
-    toString(): string;
-}
+declare function mono_wasm_runtime_ready(): void;
 
 interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject";
@@ -242,6 +177,19 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
+interface DotnetPublicAPI {
+    MONO: MONOType;
+    BINDING: BINDINGType;
+    INTERNAL: any;
+    EXPORTS: any;
+    IMPORTS: any;
+    Module: EmscriptenModule;
+    RuntimeId: number;
+    RuntimeBuildInfo: {
+        ProductVersion: string;
+        Configuration: string;
+    };
+}
 
 declare type EventPipeSessionID = bigint;
 interface EventPipeSession {
@@ -286,95 +234,74 @@ interface Diagnostics {
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 
-declare function mono_wasm_runtime_ready(): void;
-
-declare function mono_wasm_setenv(name: string, value: string): void;
-declare function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError | undefined): Promise<void>;
-declare function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean;
-/**
- * Loads the mono config file (typically called mono-config.json) asynchroniously
- * Note: the run dependencies are so emsdk actually awaits it in order.
- *
- * @param {string} configFilePath - relative path to the config file
- * @throws Will throw an error if the config file loading fails
- */
-declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
-
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
 
 /**
- * @deprecated Not GC or thread safe
+ * Allocates a block of memory that can safely contain pointers into the managed heap.
+ * The result object has get(index) and set(index, value) methods that can be used to retrieve and store managed pointers.
+ * Once you are done using the root buffer, you must call its release() method.
+ * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
  */
-declare function conv_string(mono_obj: MonoString): string | null;
-declare function conv_string_root(root: WasmRoot<MonoString>): string | null;
-declare function js_string_to_mono_string_root(string: string, result: WasmRoot<MonoString>): void;
+declare function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer;
 /**
- * @deprecated Not GC or thread safe
+ * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
+ * Releasing this root will not de-allocate the root space. You still need to call .release().
  */
-declare function js_string_to_mono_string(string: string): MonoString;
-
+declare function mono_wasm_new_external_root<T extends MonoObject>(address: VoidPtr | MonoObjectRef): WasmRoot<T>;
 /**
- * @deprecated Not GC or thread safe. For blazor use only
+ * Allocates temporary storage for a pointer into the managed heap.
+ * Pointers stored here will be visible to the GC, ensuring that the object they point to aren't moved or collected.
+ * If you already have a managed pointer you can pass it as an argument to initialize the temporary storage.
+ * The result object has get() and set(value) methods, along with a .value property.
+ * When you are done using the root you must call its .release() method.
  */
-declare function js_to_mono_obj(js_obj: any): MonoObject;
-declare function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void;
-declare function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void;
+declare function mono_wasm_new_root<T extends MonoObject>(value?: T | undefined): WasmRoot<T>;
 /**
- * @deprecated Not GC or thread safe
+ * Releases 1 or more root or root buffer objects.
+ * Multiple objects may be passed on the argument list.
+ * 'undefined' may be passed as an argument so it is safe to call this method from finally blocks
+ *  even if you are not sure all of your roots have been created yet.
+ * @param {... WasmRoot} roots
  */
-declare function js_typed_array_to_array(js_obj: any): MonoArray;
-
-declare function unbox_mono_obj(mono_obj: MonoObject): any;
-declare function unbox_mono_obj_root(root: WasmRoot<any>): any;
-declare function mono_array_to_js_array(mono_array: MonoArray): any[] | null;
-declare function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null;
-
-declare function mono_bind_static_method(fqn: string, signature?: string): Function;
-declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string): number;
-
-declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
-
-declare type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
-declare type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
-declare function setB32(offset: _MemOffset, value: number | boolean): void;
-declare function setU8(offset: _MemOffset, value: number): void;
-declare function setU16(offset: _MemOffset, value: number): void;
-declare function setU32(offset: _MemOffset, value: _NumberOrPointer): void;
-declare function setI8(offset: _MemOffset, value: number): void;
-declare function setI16(offset: _MemOffset, value: number): void;
-declare function setI32(offset: _MemOffset, value: number): void;
-/**
- * Throws for values which are not 52 bit integer. See Number.isSafeInteger()
- */
-declare function setI52(offset: _MemOffset, value: number): void;
-/**
- * Throws for values which are not 52 bit integer or are negative. See Number.isSafeInteger().
- */
-declare function setU52(offset: _MemOffset, value: number): void;
-declare function setI64Big(offset: _MemOffset, value: bigint): void;
-declare function setF32(offset: _MemOffset, value: number): void;
-declare function setF64(offset: _MemOffset, value: number): void;
-declare function getB32(offset: _MemOffset): boolean;
-declare function getU8(offset: _MemOffset): number;
-declare function getU16(offset: _MemOffset): number;
-declare function getU32(offset: _MemOffset): number;
-declare function getI8(offset: _MemOffset): number;
-declare function getI16(offset: _MemOffset): number;
-declare function getI32(offset: _MemOffset): number;
-/**
- * Throws for Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
- */
-declare function getI52(offset: _MemOffset): number;
-/**
- * Throws for 0 > value > Number.MAX_SAFE_INTEGER
- */
-declare function getU52(offset: _MemOffset): number;
-declare function getI64Big(offset: _MemOffset): bigint;
-declare function getF32(offset: _MemOffset): number;
-declare function getF64(offset: _MemOffset): number;
-
-declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
-declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
+declare function mono_wasm_release_roots(...args: WasmRoot<any>[]): void;
+declare class WasmRootBuffer {
+    private __count;
+    private length;
+    private __offset;
+    private __offset32;
+    private __handle;
+    private __ownsAllocation;
+    constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string);
+    _throw_index_out_of_range(): void;
+    _check_in_range(index: number): void;
+    get_address(index: number): MonoObjectRef;
+    get_address_32(index: number): number;
+    get(index: number): ManagedPointer;
+    set(index: number, value: ManagedPointer): ManagedPointer;
+    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void;
+    _unsafe_get(index: number): number;
+    _unsafe_set(index: number, value: ManagedPointer | NativePointer): void;
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
+interface WasmRoot<T extends MonoObject> {
+    get_address(): MonoObjectRef;
+    get_address_32(): number;
+    get address(): MonoObjectRef;
+    get(): T;
+    set(value: T): T;
+    get value(): T;
+    set value(value: T);
+    copy_from_address(source: MonoObjectRef): void;
+    copy_to_address(destination: MonoObjectRef): void;
+    copy_from(source: WasmRoot<T>): void;
+    copy_to(destination: WasmRoot<T>): void;
+    valueOf(): T;
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
 
 interface IDisposable {
     dispose(): void;
@@ -419,7 +346,136 @@ interface IMemoryView {
 
 declare function mono_wasm_get_assembly_exports(assembly: string): Promise<any>;
 
-declare const MONO: {
+declare type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
+declare type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
+declare function setB32(offset: _MemOffset, value: number | boolean): void;
+declare function setU8(offset: _MemOffset, value: number): void;
+declare function setU16(offset: _MemOffset, value: number): void;
+declare function setU32(offset: _MemOffset, value: _NumberOrPointer): void;
+declare function setI8(offset: _MemOffset, value: number): void;
+declare function setI16(offset: _MemOffset, value: number): void;
+declare function setI32(offset: _MemOffset, value: number): void;
+/**
+ * Throws for values which are not 52 bit integer. See Number.isSafeInteger()
+ */
+declare function setI52(offset: _MemOffset, value: number): void;
+/**
+ * Throws for values which are not 52 bit integer or are negative. See Number.isSafeInteger().
+ */
+declare function setU52(offset: _MemOffset, value: number): void;
+declare function setI64Big(offset: _MemOffset, value: bigint): void;
+declare function setF32(offset: _MemOffset, value: number): void;
+declare function setF64(offset: _MemOffset, value: number): void;
+declare function getB32(offset: _MemOffset): boolean;
+declare function getU8(offset: _MemOffset): number;
+declare function getU16(offset: _MemOffset): number;
+declare function getU32(offset: _MemOffset): number;
+declare function getI8(offset: _MemOffset): number;
+declare function getI16(offset: _MemOffset): number;
+declare function getI32(offset: _MemOffset): number;
+/**
+ * Throws for Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
+ */
+declare function getI52(offset: _MemOffset): number;
+/**
+ * Throws for 0 > value > Number.MAX_SAFE_INTEGER
+ */
+declare function getU52(offset: _MemOffset): number;
+declare function getI64Big(offset: _MemOffset): bigint;
+declare function getF32(offset: _MemOffset): number;
+declare function getF64(offset: _MemOffset): number;
+declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
+
+declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
+declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
+
+declare function mono_wasm_setenv(name: string, value: string): void;
+declare function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError | undefined): Promise<void>;
+declare function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean;
+/**
+ * Loads the mono config file (typically called mono-config.json) asynchroniously
+ * Note: the run dependencies are so emsdk actually awaits it in order.
+ *
+ * @param {string} configFilePath - relative path to the config file
+ * @throws Will throw an error if the config file loading fails
+ */
+declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
+
+/**
+ * @deprecated Not GC or thread safe
+ */
+declare function conv_string(mono_obj: MonoString): string | null;
+declare function conv_string_root(root: WasmRoot<MonoString>): string | null;
+declare function js_string_to_mono_string_root(string: string, result: WasmRoot<MonoString>): void;
+/**
+ * @deprecated Not GC or thread safe
+ */
+declare function js_string_to_mono_string(string: string): MonoString;
+
+declare function unbox_mono_obj(mono_obj: MonoObject): any;
+declare function unbox_mono_obj_root(root: WasmRoot<any>): any;
+declare function mono_array_to_js_array(mono_array: MonoArray): any[] | null;
+declare function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null;
+
+/**
+ * @deprecated Not GC or thread safe. For blazor use only
+ */
+declare function js_to_mono_obj(js_obj: any): MonoObject;
+declare function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void;
+declare function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void;
+/**
+ * @deprecated Not GC or thread safe
+ */
+declare function js_typed_array_to_array(js_obj: any): MonoArray;
+
+declare function mono_bind_static_method(fqn: string, signature?: string): Function;
+declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string): number;
+
+declare type BINDINGType = {
+    bind_static_method: typeof mono_bind_static_method;
+    call_assembly_entry_point: typeof mono_call_assembly_entry_point;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    mono_obj_array_new: (size: number) => MonoArray;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    mono_obj_array_set: (array: MonoArray, idx: number, obj: MonoObject) => void;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    js_string_to_mono_string: typeof js_string_to_mono_string;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    js_typed_array_to_array: typeof js_typed_array_to_array;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    mono_array_to_js_array: typeof mono_array_to_js_array;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    js_to_mono_obj: typeof js_to_mono_obj;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    conv_string: typeof conv_string;
+    /**
+     * @deprecated Not GC or thread safe
+     */
+    unbox_mono_obj: typeof unbox_mono_obj;
+    mono_obj_array_new_ref: (size: number, result: MonoObjectRef) => void;
+    mono_obj_array_set_ref: (array: MonoObjectRef, idx: number, obj: MonoObjectRef) => void;
+    js_string_to_mono_string_root: typeof js_string_to_mono_string_root;
+    js_typed_array_to_array_root: typeof js_typed_array_to_array_root;
+    js_to_mono_obj_root: typeof js_to_mono_obj_root;
+    conv_string_root: typeof conv_string_root;
+    unbox_mono_obj_root: typeof unbox_mono_obj_root;
+    mono_array_root_to_js_array: typeof mono_array_root_to_js_array;
+};
+declare type MONOType = {
     mono_wasm_setenv: typeof mono_wasm_setenv;
     mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
     mono_wasm_load_icu_data: typeof mono_wasm_load_icu_data;
@@ -464,69 +520,6 @@ declare const MONO: {
     getF64: typeof getF64;
     diagnostics: Diagnostics;
 };
-declare type MONOType = typeof MONO;
-declare const BINDING: {
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    mono_obj_array_new: (size: number) => MonoArray;
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    mono_obj_array_set: (array: MonoArray, idx: number, obj: MonoObject) => void;
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    js_string_to_mono_string: typeof js_string_to_mono_string;
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    js_typed_array_to_array: typeof js_typed_array_to_array;
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    mono_array_to_js_array: typeof mono_array_to_js_array;
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    js_to_mono_obj: typeof js_to_mono_obj;
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    conv_string: typeof conv_string;
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    unbox_mono_obj: typeof unbox_mono_obj;
-    /**
-     * @deprecated Renamed to conv_string_root
-     */
-    conv_string_rooted: typeof conv_string_root;
-    mono_obj_array_new_ref: (size: number, result: MonoObjectRef) => void;
-    mono_obj_array_set_ref: (array: MonoObjectRef, idx: number, obj: MonoObjectRef) => void;
-    js_string_to_mono_string_root: typeof js_string_to_mono_string_root;
-    js_typed_array_to_array_root: typeof js_typed_array_to_array_root;
-    js_to_mono_obj_root: typeof js_to_mono_obj_root;
-    conv_string_root: typeof conv_string_root;
-    unbox_mono_obj_root: typeof unbox_mono_obj_root;
-    mono_array_root_to_js_array: typeof mono_array_root_to_js_array;
-    bind_static_method: typeof mono_bind_static_method;
-    call_assembly_entry_point: typeof mono_call_assembly_entry_point;
-};
-declare type BINDINGType = typeof BINDING;
-interface DotnetPublicAPI {
-    MONO: typeof MONO;
-    BINDING: typeof BINDING;
-    INTERNAL: any;
-    EXPORTS: any;
-    IMPORTS: any;
-    Module: EmscriptenModule;
-    RuntimeId: number;
-    RuntimeBuildInfo: {
-        ProductVersion: string;
-        Configuration: string;
-    };
-}
 
 declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: DotnetPublicAPI) => DotnetModuleConfig)): Promise<DotnetPublicAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;

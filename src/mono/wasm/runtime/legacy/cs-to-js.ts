@@ -1,26 +1,19 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roots";
-import {
-    GCHandle, JSHandleDisposed, MarshalError, MarshalType, MonoArray,
-    MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
-    MonoType, MonoTypeNull, MonoObjectRef, MonoStringRef, is_nullish
-} from "./types";
-import { runtimeHelpers } from "./imports";
-import { conv_string_root } from "./strings";
-import corebindings from "./corebindings";
-import cwraps from "./cwraps";
-import { get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy, _lookup_js_owned_object } from "./gc-handles";
-import { mono_method_get_call_signature_ref, call_method_ref, wrap_error_root } from "./method-calls";
+import { _are_promises_supported, create_cancelable_promise } from "../cancelable-promise";
+import cwraps from "../cwraps";
+import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../gc-handles";
+import { runtimeHelpers } from "../imports";
+import { wrap_error_root } from "../invoke-js";
+import { ManagedObject } from "../marshal";
+import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
+import { WasmRoot, mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
+import { conv_string_root } from "../strings";
+import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish } from "../types";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
+import { legacyManagedExports } from "./corebindings";
 import { js_to_mono_obj_root } from "./js-to-cs";
-import { _are_promises_supported, create_cancelable_promise } from "./cancelable-promise";
-import { getU32, getI32, getF32, getF64 } from "./memory";
-import { Int32Ptr, VoidPtr } from "./types/emscripten";
-import { ManagedObject } from "./marshal";
+import { mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
-const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
 
 // this is only used from Blazor
 export function unbox_mono_obj(mono_obj: MonoObject): any {
@@ -37,7 +30,7 @@ export function unbox_mono_obj(mono_obj: MonoObject): any {
 
 function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     // we don't need in-flight reference as we already have it rooted here
-    const js_handle = corebindings._get_cs_owned_object_js_handle_ref(root.address, 0);
+    const js_handle = legacyManagedExports._get_cs_owned_object_js_handle_ref(root.address, 0);
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     return js_obj;
 }
@@ -74,11 +67,11 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.ARRAY_DOUBLE:
             throw new Error("Marshaling of primitive arrays are not supported.");
         case <MarshalType>20: // clr .NET DateTime
-            return new Date(corebindings._get_date_value_ref(root.address));
+            return new Date(legacyManagedExports._get_date_value_ref(root.address));
         case <MarshalType>21: // clr .NET DateTimeOffset
-            return corebindings._object_to_string_ref(root.address);
+            return legacyManagedExports._object_to_string_ref(root.address);
         case MarshalType.URI:
-            return corebindings._object_to_string_ref(root.address);
+            return legacyManagedExports._object_to_string_ref(root.address);
         case MarshalType.SAFEHANDLE:
             return _unbox_cs_owned_root_as_js_object(root);
         case MarshalType.VOID:
@@ -146,7 +139,7 @@ export function mono_array_to_js_array(mono_array: MonoArray): any[] | null {
 }
 
 function is_nested_array_ref(ele: WasmRoot<MonoObject>) {
-    return corebindings._is_simple_array_ref(ele.address);
+    return legacyManagedExports._is_simple_array_ref(ele.address);
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -181,30 +174,23 @@ export function _wrap_delegate_root_as_function(root: WasmRoot<MonoObject>): Fun
         return null;
 
     // get strong reference to the Delegate
-    const gc_handle = corebindings._get_js_owned_object_gc_handle_ref(root.address);
+    const gc_handle = legacyManagedExports._get_js_owned_object_gc_handle_ref(root.address);
     return _wrap_delegate_gc_handle_as_function(gc_handle);
 }
 
-export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_listener_callback?: () => void): Function {
+export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle): Function {
     // see if we have js owned instance for this gc_handle already
     let result = _lookup_js_owned_object(gc_handle);
 
+
     // If the function for this gc_handle was already collected (or was never created)
     if (!result) {
+
         // note that we do not implement function/delegate roundtrip
         result = function (...args: any[]) {
-            const delegateRoot = mono_wasm_new_root<MonoObject>();
-            get_js_owned_object_by_gc_handle_ref(gc_handle, delegateRoot.address);
-            try {
-                // FIXME: Pass delegateRoot by-ref
-                const res = call_method_ref(result[delegate_invoke_symbol], delegateRoot, result[delegate_invoke_signature_symbol], args);
-                if (after_listener_callback) {
-                    after_listener_callback();
-                }
-                return res;
-            } finally {
-                delegateRoot.release();
-            }
+            assert_not_disposed(result);
+            const boundMethod = result[delegate_invoke_symbol];
+            return boundMethod(...args);
         };
 
         // bind the method
@@ -212,20 +198,21 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
         get_js_owned_object_by_gc_handle_ref(gc_handle, delegateRoot.address);
         try {
             if (typeof result[delegate_invoke_symbol] === "undefined") {
-                result[delegate_invoke_symbol] = cwraps.mono_wasm_get_delegate_invoke_ref(delegateRoot.address);
+                const method = cwraps.mono_wasm_get_delegate_invoke_ref(delegateRoot.address);
+                const signature = mono_method_get_call_signature_ref(method, delegateRoot);
+                const js_method = mono_bind_method(method, signature, true);
+                result[delegate_invoke_symbol] = js_method.bind({ this_arg_gc_handle: gc_handle });
                 if (!result[delegate_invoke_symbol]) {
                     throw new Error("System.Delegate Invoke method can not be resolved.");
                 }
-            }
-
-            if (typeof result[delegate_invoke_signature_symbol] === "undefined") {
-                result[delegate_invoke_signature_symbol] = mono_method_get_call_signature_ref(result[delegate_invoke_symbol], delegateRoot);
             }
         } finally {
             delegateRoot.release();
         }
 
         setup_managed_proxy(result, gc_handle);
+    } else {
+        assert_not_disposed(result);
     }
 
     return result;
@@ -288,7 +275,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
         throw new Error("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
     // get strong reference to Task
-    const gc_handle = corebindings._get_js_owned_object_gc_handle_ref(root.address);
+    const gc_handle = legacyManagedExports._get_js_owned_object_gc_handle_ref(root.address);
 
     // see if we have js owned instance for this gc_handle already
     let result = _lookup_js_owned_object(gc_handle);
@@ -304,7 +291,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
         result = promise;
 
         // register C# side of the continuation
-        corebindings._setup_js_cont_ref(root.address, promise_control);
+        legacyManagedExports._setup_js_cont_ref(root.address, promise_control);
 
         setup_managed_proxy(result, gc_handle);
     }
@@ -319,7 +306,7 @@ export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): a
 
     // this could be JSObject proxy of a js native object
     // we don't need in-flight reference as we already have it rooted here
-    const js_handle = corebindings._try_get_cs_owned_object_js_handle_ref(root.address, 0);
+    const js_handle = legacyManagedExports._try_get_cs_owned_object_js_handle_ref(root.address, 0);
     if (js_handle) {
         if (js_handle === JSHandleDisposed) {
             throw new Error("Cannot access a disposed JSObject at " + root.value);
@@ -329,7 +316,7 @@ export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): a
     // otherwise this is C# only object
 
     // get strong reference to Object
-    const gc_handle = corebindings._get_js_owned_object_gc_handle_ref(root.address);
+    const gc_handle = legacyManagedExports._get_js_owned_object_gc_handle_ref(root.address);
 
     // see if we have js owned instance for this gc_handle already
     let result = _lookup_js_owned_object(gc_handle);
@@ -338,11 +325,19 @@ export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): a
     if (is_nullish(result)) {
         result = new ManagedObject();
 
-        // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
-        result[js_owned_gc_handle_symbol] = gc_handle;
-
         setup_managed_proxy(result, gc_handle);
     }
 
     return result;
 }
+
+export function get_js_owned_object_by_gc_handle_ref(gc_handle: GCHandle, result: MonoObjectRef): void {
+    if (!gc_handle) {
+        setI32_unchecked(result, 0);
+        return;
+    }
+    // this is always strong gc_handle
+    legacyManagedExports._get_js_owned_object_by_gc_handle_ref(gc_handle, result);
+}
+
+

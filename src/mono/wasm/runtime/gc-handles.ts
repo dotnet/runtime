@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import corebindings from "./corebindings";
-import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull, MonoObjectRef, mono_assert } from "./types";
-import { setI32_unchecked } from "./memory";
+import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull, mono_assert } from "./types";
 import { create_weak_ref } from "./weak-ref";
+import { javaScriptExports } from "./managed-exports";
 
 const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
 let _js_owned_object_registry: FinalizationRegistry<any>;
@@ -29,16 +28,6 @@ export function mono_wasm_get_jsobj_from_js_handle(js_handle: JSHandle): any {
     if (js_handle !== JSHandleNull && js_handle !== JSHandleDisposed)
         return _cs_owned_objects_by_js_handle[<any>js_handle];
     return null;
-}
-
-// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal gc_handle, so that it would not get collected during transition to the managed stack.
-// its InFlight gc_handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
-export function get_cs_owned_object_by_js_handle_ref(js_handle: JSHandle, should_add_in_flight: boolean, result: MonoObjectRef): void {
-    if (js_handle === JSHandleNull || js_handle === JSHandleDisposed) {
-        setI32_unchecked(result, 0);
-        return;
-    }
-    corebindings._get_cs_owned_object_by_js_handle_ref(js_handle, should_add_in_flight ? 1 : 0, result);
 }
 
 export function get_js_obj(js_handle: JSHandle): any {
@@ -116,7 +105,7 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
         }
     }
     if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle)) {
-        corebindings._release_js_owned_object_by_gc_handle(gc_handle);
+        javaScriptExports._release_js_owned_object_by_gc_handle(gc_handle);
     }
 }
 
@@ -141,13 +130,4 @@ export function _lookup_js_owned_object(gc_handle: GCHandle): any {
         // TODO: are there race condition consequences ?
     }
     return null;
-}
-
-export function get_js_owned_object_by_gc_handle_ref(gc_handle: GCHandle, result: MonoObjectRef): void {
-    if (!gc_handle) {
-        setI32_unchecked(result, 0);
-        return;
-    }
-    // this is always strong gc_handle
-    corebindings._get_js_owned_object_by_gc_handle_ref(gc_handle, result);
 }

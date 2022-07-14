@@ -1,27 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { WasmRoot, WasmRootBuffer, mono_wasm_new_root, mono_wasm_new_external_root } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, VoidPtrNull, MonoType, MarshalType, mono_assert } from "./types";
-import { BINDING, Module, runtimeHelpers } from "./imports";
-import { js_to_mono_enum, js_to_mono_obj_root, _js_to_mono_uri_root } from "./js-to-cs";
-import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
-import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
-import {
-    _create_temp_frame, _zero_region,
-    getI32, getU32, getF32, getF64,
-    setI32, setU32, setF32, setF64, setI52, setU52,
-    setB32, getB32, setI32_unchecked, setU32_unchecked
-} from "./memory";
-import {
-    _handle_exception_for_call, _teardown_after_call
-} from "./method-calls";
-import cwraps, { wrap_c_function } from "./cwraps";
-import { VoidPtr } from "./types/emscripten";
+import cwraps from "../cwraps";
+import { runtimeHelpers, BINDING, Module } from "../imports";
+import { parseFQN } from "../invoke-cs";
+import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
+import { WasmRoot, mono_wasm_new_external_root, mono_wasm_new_root, WasmRootBuffer } from "../roots";
+import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root, conv_string_root } from "../strings";
+import { MonoMethod, MonoObject, MonoType, MonoClass, mono_assert, VoidPtrNull, MarshalType, MonoString, MonoObjectNull } from "../types";
+import { VoidPtr } from "../types/emscripten";
+import { legacyManagedExports } from "./corebindings";
+import { get_js_owned_object_by_gc_handle_ref, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
+import { js_to_mono_obj_root, _js_to_mono_uri_root, js_to_mono_enum } from "./js-to-cs";
+import { _teardown_after_call } from "./method-calls";
 
+
+const escapeRE = /[^A-Za-z0-9_$]/g;
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
-
+const boundMethodsByMethod: Map<string, Function> = new Map();
 
 export function _get_type_name(typePtr: MonoType): string {
     if (!typePtr)
@@ -40,23 +37,6 @@ export function _get_class_name(classPtr: MonoClass): string {
         return "<null>";
     return cwraps.mono_wasm_get_type_name(cwraps.mono_wasm_class_get_type(classPtr));
 }
-
-export function find_method(klass: MonoClass, name: string, n: number): MonoMethod {
-    return cwraps.mono_wasm_assembly_find_method(klass, name, n);
-}
-
-export function get_method(method_name: string): MonoMethod {
-    const res = find_method(runtimeHelpers.runtime_interop_exports_class, method_name, -1);
-    if (!res)
-        throw "Can't find method " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + ":" + method_name;
-    return res;
-}
-
-export function bind_runtime_method(method_name: string, signature: string): Function {
-    const method = get_method(method_name);
-    return mono_bind_method(method, null, signature, "BINDINGS_" + method_name);
-}
-
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _create_named_function(name: string, argumentNames: string[], body: string, closure: any): Function {
@@ -399,9 +379,19 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: null, args_marshal: string/*ArgsMarshalString*/, friendly_name: string): Function {
+
+export function mono_bind_method(method: MonoMethod, args_marshal: string/*ArgsMarshalString*/, has_this_arg: boolean, friendly_name?: string): Function {
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
+
+    const key = `managed_${method}_${args_marshal}`;
+    let result = boundMethodsByMethod.get(key);
+    if (result) {
+        return result;
+    }
+    if (!friendly_name) {
+        friendly_name = key;
+    }
 
     let converter: Converter | null = null;
     if (typeof (args_marshal) === "string") {
@@ -419,17 +409,19 @@ export function mono_bind_method(method: MonoMethod, this_arg: null, args_marsha
         scratchRootBuffer: null,
         scratchBuffer: VoidPtrNull,
         scratchResultRoot: mono_wasm_new_root(),
-        scratchExceptionRoot: mono_wasm_new_root()
+        scratchExceptionRoot: mono_wasm_new_root(),
+        scratchThisArgRoot: mono_wasm_new_root()
     };
     const closure: any = {
         Module,
         mono_wasm_new_root,
+        get_js_owned_object_by_gc_handle_ref,
         _create_temp_frame,
         _handle_exception_for_call,
         _teardown_after_call,
-        mono_wasm_try_unbox_primitive_and_get_type_ref: wrap_c_function("mono_wasm_try_unbox_primitive_and_get_type_ref"),
+        mono_wasm_try_unbox_primitive_and_get_type_ref: cwraps.mono_wasm_try_unbox_primitive_and_get_type_ref,
         _unbox_mono_obj_root_with_known_nonprimitive_type,
-        invoke_method_ref: wrap_c_function("mono_wasm_invoke_method_ref"),
+        invoke_method_ref: cwraps.mono_wasm_invoke_method_ref,
         method,
         token,
         unbox_buffer,
@@ -449,13 +441,16 @@ export function mono_bind_method(method: MonoMethod, this_arg: null, args_marsha
     const argumentNames = [];
     const body = [
         "_create_temp_frame();",
-        "let resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot, sp = stackSave();",
+        "let resultRoot = token.scratchResultRoot, exceptionRoot = token.scratchExceptionRoot, thisArgRoot = token.scratchThisArgRoot , sp = stackSave();",
         "token.scratchResultRoot = null;",
         "token.scratchExceptionRoot = null;",
+        "token.scratchThisArgRoot = null;",
         "if (resultRoot === null)",
         "	resultRoot = mono_wasm_new_root ();",
         "if (exceptionRoot === null)",
         "	exceptionRoot = mono_wasm_new_root ();",
+        "if (thisArgRoot === null)",
+        "	thisArgRoot = mono_wasm_new_root ();",
         ""
     ];
 
@@ -503,8 +498,18 @@ export function mono_bind_method(method: MonoMethod, this_arg: null, args_marsha
     // The end result is that bound method invocations don't always allocate, so no more nursery GCs. Yay! -kg
     body.push(
         "",
-        "invoke_method_ref (method, 0, buffer, exceptionRoot.address, resultRoot.address);",
-        `_handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, sp);`,
+        "",
+        "",
+    );
+    if (has_this_arg) {
+        body.push("get_js_owned_object_by_gc_handle_ref(this.this_arg_gc_handle, thisArgRoot.address);");
+        body.push("invoke_method_ref (method, thisArgRoot.address, buffer, exceptionRoot.address, resultRoot.address);");
+    } else {
+        body.push("invoke_method_ref (method, 0, buffer, exceptionRoot.address, resultRoot.address);");
+    }
+
+    body.push(
+        `_handle_exception_for_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, thisArgRoot, sp);`,
         "",
         "let resultPtr = resultRoot.value, result = undefined;"
     );
@@ -549,24 +554,20 @@ export function mono_bind_method(method: MonoMethod, this_arg: null, args_marsha
         throw new Error("No converter");
     }
 
-    if (friendly_name) {
-        const escapeRE = /[^A-Za-z0-9_$]/g;
-        friendly_name = friendly_name.replace(escapeRE, "_");
-    }
+    let displayName = friendly_name.replace(escapeRE, "_");
 
-    let displayName = friendly_name || ("clr_" + method);
-
-    if (this_arg)
-        displayName += "_this" + this_arg;
+    if (has_this_arg)
+        displayName += "_this";
 
     body.push(
-        `_teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, sp);`,
+        `_teardown_after_call (${converterKey}, token, buffer, resultRoot, exceptionRoot, thisArgRoot, sp);`,
         "return result;"
     );
 
     const bodyJs = body.join("\r\n");
 
-    const result = _create_named_function(displayName, argumentNames, bodyJs, closure);
+    result = _create_named_function(displayName, argumentNames, bodyJs, closure);
+    boundMethodsByMethod.set(key, result);
 
     return result;
 }
@@ -639,4 +640,51 @@ export type BoundMethodToken = {
     scratchBuffer: VoidPtr;
     scratchResultRoot: WasmRoot<MonoObject>;
     scratchExceptionRoot: WasmRoot<MonoObject>;
+    scratchThisArgRoot: WasmRoot<MonoObject>;
+}
+
+function _handle_exception_for_call(
+    converter: Converter | undefined, token: BoundMethodToken | null,
+    buffer: VoidPtr, resultRoot: WasmRoot<MonoString>,
+    exceptionRoot: WasmRoot<MonoObject>,
+    thisArgRoot: WasmRoot<MonoObject>,
+    sp: VoidPtr
+): void {
+    const exc = _convert_exception_for_method_call(resultRoot, exceptionRoot);
+    if (!exc)
+        return;
+
+    _teardown_after_call(converter, token, buffer, resultRoot, exceptionRoot, thisArgRoot, sp);
+    throw exc;
+}
+
+function _convert_exception_for_method_call(result: WasmRoot<MonoString>, exception: WasmRoot<MonoObject>) {
+    if (exception.value === MonoObjectNull)
+        return null;
+
+    const msg = conv_string_root(result);
+    const err = new Error(msg!); //the convention is that invoke_method ToString () any outgoing exception
+    // console.warn (`error ${msg} at location ${err.stack});
+    return err;
+}
+
+export function mono_method_resolve(fqn: string): MonoMethod {
+    const { assembly, namespace, classname, methodname } = parseFQN(fqn);
+
+    const asm = cwraps.mono_wasm_assembly_load(assembly);
+    if (!asm)
+        throw new Error("Could not find assembly: " + assembly);
+
+    const klass = cwraps.mono_wasm_assembly_find_class(asm, namespace, classname);
+    if (!klass)
+        throw new Error("Could not find class: " + namespace + ":" + classname + " in assembly " + assembly);
+
+    const method = cwraps.mono_wasm_assembly_find_method(klass, methodname, -1);
+    if (!method)
+        throw new Error("Could not find method: " + methodname);
+    return method;
+}
+
+export function mono_method_get_call_signature_ref(method: MonoMethod, mono_obj?: WasmRoot<MonoObject>): string/*ArgsMarshalString*/ {
+    return legacyManagedExports._get_call_sig_ref(method, mono_obj ? mono_obj.address : runtimeHelpers._null_root.address);
 }
