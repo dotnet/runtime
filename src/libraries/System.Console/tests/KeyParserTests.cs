@@ -566,6 +566,37 @@ public class GNOMETerminalData : TerminalData
             yield return (new byte[] { 27, 91, 51, 59, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
             yield return (new byte[] { 27, 91, 51, 59, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
             yield return (new byte[] { 27, 91, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
+            // Numeric Keypad
+            yield return (new byte[] { 48 }, new ConsoleKeyInfo('0', ConsoleKey.D0, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 51 }, new ConsoleKeyInfo('3', ConsoleKey.D3, false, false, false));
+            yield return (new byte[] { 52 }, new ConsoleKeyInfo('4', ConsoleKey.D4, false, false, false));
+            yield return (new byte[] { 53 }, new ConsoleKeyInfo('5', ConsoleKey.D5, false, false, false));
+            yield return (new byte[] { 54 }, new ConsoleKeyInfo('6', ConsoleKey.D6, false, false, false));
+            yield return (new byte[] { 55 }, new ConsoleKeyInfo('7', ConsoleKey.D7, false, false, false));
+            yield return (new byte[] { 56 }, new ConsoleKeyInfo('8', ConsoleKey.D8, false, false, false));
+            yield return (new byte[] { 57 }, new ConsoleKeyInfo('9', ConsoleKey.D9, false, false, false));
+            yield return (new byte[] { 47 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false));
+            yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
+            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            // Num Lock toggle
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 79, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // Down Arrow
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // Page Down
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // Left Arrow
+            yield return (new byte[] { 27, 79, 69 }, new ConsoleKeyInfo(default, ConsoleKey.NoName, false, false, false)); // Begin (5)
+            yield return (new byte[] { 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // Right Arrow
+            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // Up Arrow
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // Page Up
+            yield return (new byte[] { 27, 79, 111 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false)); // / (divide sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 106 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 109 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 107 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
         }
     }
 }
@@ -703,6 +734,36 @@ public class XTermData : TerminalData
             yield return (new byte[] { 27, 91, 51, 59, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
             yield return (new byte[] { 27, 91, 51, 59, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
             yield return (new byte[] { 27, 91, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
+            // Numeric Keypad
+            yield return (new byte[] { 48 }, new ConsoleKeyInfo('0', ConsoleKey.D0, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 51 }, new ConsoleKeyInfo('3', ConsoleKey.D3, false, false, false));
+            yield return (new byte[] { 52 }, new ConsoleKeyInfo('4', ConsoleKey.D4, false, false, false));
+            yield return (new byte[] { 53 }, new ConsoleKeyInfo('5', ConsoleKey.D5, false, false, false));
+            yield return (new byte[] { 54 }, new ConsoleKeyInfo('6', ConsoleKey.D6, false, false, false));
+            yield return (new byte[] { 55 }, new ConsoleKeyInfo('7', ConsoleKey.D7, false, false, false));
+            yield return (new byte[] { 56 }, new ConsoleKeyInfo('8', ConsoleKey.D8, false, false, false));
+            yield return (new byte[] { 57 }, new ConsoleKeyInfo('9', ConsoleKey.D9, false, false, false));
+            yield return (new byte[] { 47 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false));
+            yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
+            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 79, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // Down Arrow
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // Page Down
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // Left Arrow
+            yield return (new byte[] { 27, 79, 69 }, new ConsoleKeyInfo(default, ConsoleKey.NoName, false, false, false)); // Begin (5)
+            yield return (new byte[] { 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // Right Arrow
+            yield return (new byte[] { 27, 79, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // Up Arrow
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // Page Up
+            yield return (new byte[] { 27, 79, 111 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false)); // / (divide sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 106 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 109 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 107 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
         }
     }
 }
@@ -741,6 +802,35 @@ public class LinuxConsole : TerminalData
             yield return (new byte[] { 27, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // RightArrow
             yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
             yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            // Numeric Keypad
+            yield return (new byte[] { 48 }, new ConsoleKeyInfo('0', ConsoleKey.D0, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 51 }, new ConsoleKeyInfo('3', ConsoleKey.D3, false, false, false));
+            yield return (new byte[] { 52 }, new ConsoleKeyInfo('4', ConsoleKey.D4, false, false, false));
+            yield return (new byte[] { 53 }, new ConsoleKeyInfo('5', ConsoleKey.D5, false, false, false));
+            yield return (new byte[] { 54 }, new ConsoleKeyInfo('6', ConsoleKey.D6, false, false, false));
+            yield return (new byte[] { 55 }, new ConsoleKeyInfo('7', ConsoleKey.D7, false, false, false));
+            yield return (new byte[] { 56 }, new ConsoleKeyInfo('8', ConsoleKey.D8, false, false, false));
+            yield return (new byte[] { 57 }, new ConsoleKeyInfo('9', ConsoleKey.D9, false, false, false));
+            yield return (new byte[] { 47 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false));
+            yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
+            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 91, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 91, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // Down Arrow
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // Page Down
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // Left Arrow
+            yield return (new byte[] { 27, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // Right Arrow
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 91, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // Up Arrow
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // Page Up
+            yield return (new byte[] { 47 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false)); // / (divide sign using Numeric Keypad))
+            yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
+            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
         }
     }
 }
@@ -1020,6 +1110,36 @@ public class RxvtUnicode : TerminalData
             yield return (new byte[] { 27, 91, 51, 64 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
             yield return (new byte[] { 27, 27, 91, 51, 36 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
             yield return (new byte[] { 27, 27, 91, 51, 64 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
+            // Numeric Keypad
+            yield return (new byte[] { 48 }, new ConsoleKeyInfo('0', ConsoleKey.D0, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 51 }, new ConsoleKeyInfo('3', ConsoleKey.D3, false, false, false));
+            yield return (new byte[] { 52 }, new ConsoleKeyInfo('4', ConsoleKey.D4, false, false, false));
+            yield return (new byte[] { 53 }, new ConsoleKeyInfo('5', ConsoleKey.D5, false, false, false));
+            yield return (new byte[] { 54 }, new ConsoleKeyInfo('6', ConsoleKey.D6, false, false, false));
+            yield return (new byte[] { 55 }, new ConsoleKeyInfo('7', ConsoleKey.D7, false, false, false));
+            yield return (new byte[] { 56 }, new ConsoleKeyInfo('8', ConsoleKey.D8, false, false, false));
+            yield return (new byte[] { 57 }, new ConsoleKeyInfo('9', ConsoleKey.D9, false, false, false));
+            yield return (new byte[] { 47 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false));
+            yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
+            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 79, 112 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 79, 110 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 79, 113 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 79, 114 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // Down Arrow
+            yield return (new byte[] { 27, 79, 115 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // Page Down
+            yield return (new byte[] { 27, 79, 116 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // Left Arrow
+            yield return (new byte[] { 27, 79, 117 }, new ConsoleKeyInfo(default, ConsoleKey.NoName, false, false, false)); // Begin (5)
+            yield return (new byte[] { 27, 79, 118 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // Right Arrow
+            yield return (new byte[] { 27, 79, 119 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 79, 120 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // Up Arrow
+            yield return (new byte[] { 27, 79, 121 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // Page Up
+            yield return (new byte[] { 27, 79, 111 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false)); // / (divide sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 106 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 109 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 107 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
         }
     }
 }
@@ -1130,6 +1250,36 @@ public class TmuxData : TerminalData
             yield return (new byte[] { 27, 91, 51, 59, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, false, true)); // Ctrl+Shift+Delete
             yield return (new byte[] { 27, 91, 51, 59, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, false)); // Alt+Shift+Delete
             yield return (new byte[] { 27, 91, 51, 59, 56, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, true, true, true)); // Ctrl+Alt+Shift+Delete
+            // Numeric Keypad
+            yield return (new byte[] { 48 }, new ConsoleKeyInfo('0', ConsoleKey.D0, false, false, false));
+            yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
+            yield return (new byte[] { 50 }, new ConsoleKeyInfo('2', ConsoleKey.D2, false, false, false));
+            yield return (new byte[] { 51 }, new ConsoleKeyInfo('3', ConsoleKey.D3, false, false, false));
+            yield return (new byte[] { 52 }, new ConsoleKeyInfo('4', ConsoleKey.D4, false, false, false));
+            yield return (new byte[] { 53 }, new ConsoleKeyInfo('5', ConsoleKey.D5, false, false, false));
+            yield return (new byte[] { 54 }, new ConsoleKeyInfo('6', ConsoleKey.D6, false, false, false));
+            yield return (new byte[] { 55 }, new ConsoleKeyInfo('7', ConsoleKey.D7, false, false, false));
+            yield return (new byte[] { 56 }, new ConsoleKeyInfo('8', ConsoleKey.D8, false, false, false));
+            yield return (new byte[] { 57 }, new ConsoleKeyInfo('9', ConsoleKey.D9, false, false, false));
+            yield return (new byte[] { 47 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false));
+            yield return (new byte[] { 42 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false));
+            yield return (new byte[] { 45 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false));
+            yield return (new byte[] { 43 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false));
+            yield return (new byte[] { 27, 91, 50, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Insert, false, false, false)); // Insert
+            yield return (new byte[] { 27, 91, 51, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Delete, false, false, false)); // Delete
+            yield return (new byte[] { 27, 91, 52, 126 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 79, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // Down Arrow
+            yield return (new byte[] { 27, 91, 54, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // Page Down
+            yield return (new byte[] { 27, 79, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // Left Arrow
+            yield return (new byte[] { 27, 79, 69 }, new ConsoleKeyInfo(default, ConsoleKey.NoName, false, false, false)); // Begin (5)
+            yield return (new byte[] { 27, 79, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // Right Arrow
+            yield return (new byte[] { 27, 91, 49, 126 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 79, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // Up Arrow
+            yield return (new byte[] { 27, 91, 53, 126 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // Page Up
+            yield return (new byte[] { 27, 79, 111 }, new ConsoleKeyInfo('/', ConsoleKey.Divide, false, false, false)); // / (divide sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 106 }, new ConsoleKeyInfo('*', ConsoleKey.Multiply, false, false, false)); // * (multiply sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 109 }, new ConsoleKeyInfo('-', ConsoleKey.Subtract, false, false, false)); // - (minus sign using Numeric Keypad))
+            yield return (new byte[] { 27, 79, 107 }, new ConsoleKeyInfo('+', ConsoleKey.Add, false, false, false)); // + (plus sign using Numeric Keypad))
         }
     }
 }

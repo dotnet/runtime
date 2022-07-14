@@ -84,7 +84,7 @@ internal static class KeyParser
                 // Example: "^[[a" is Shift+UpArrow for rxvt and Shift+F3 for SCO.
                 if (input[1] == 'O'|| terminalFormatStrings.IsRxvtTerm)
                 {
-                    key = MapKeyIdOXterm(input[2]); // fallback to well known mappings
+                    key = MapKeyIdOXterm(input[2], terminalFormatStrings.IsRxvtTerm); // fallback to well known mappings
 
                     if (key != default)
                     {
@@ -107,7 +107,15 @@ internal static class KeyParser
                     return false; // it was not a known sequence
                 }
             }
-            character = key == ConsoleKey.Enter ? '\r' : default; // "^[OM" should produce new line character (was not previously mapped this way)
+            character = key switch
+            {
+                ConsoleKey.Enter => '\r', // "^[OM" should produce new line character (was not previously mapped this way)
+                ConsoleKey.Add => '+',
+                ConsoleKey.Subtract => '-',
+                ConsoleKey.Divide => '/',
+                ConsoleKey.Multiply => '*',
+                _ => default
+            };
             startIndex += MinimalSequenceLength;
             return true;
         }
@@ -170,7 +178,7 @@ internal static class KeyParser
 
         key = input[SequencePrefixLength + digitCount + 2] is VtSequenceEndTag
             ? MapEscapeSequenceNumber(byte.Parse(input.Slice(SequencePrefixLength, digitCount)))
-            : MapKeyIdOXterm(input[SequencePrefixLength + digitCount + 2]);
+            : MapKeyIdOXterm(input[SequencePrefixLength + digitCount + 2], terminalFormatStrings.IsRxvtTerm);
 
         if (key != default)
         {
@@ -195,25 +203,37 @@ internal static class KeyParser
         }
 
         // maps "^[O{character}" for all Terminals and "^[[{character}" for rxvt Terminals
-        static ConsoleKey MapKeyIdOXterm(char character)
+        static ConsoleKey MapKeyIdOXterm(char character, bool isRxvt)
             => character switch
             {
-                'A' or 'a' => ConsoleKey.UpArrow,
-                'B' or 'b' => ConsoleKey.DownArrow,
-                'C' or 'c' => ConsoleKey.RightArrow,
-                'D' or 'd' => ConsoleKey.LeftArrow,
-                'F' or 'w' => ConsoleKey.End,
+                'A' or 'a' or 'x' => ConsoleKey.UpArrow, // lowercase used by rxvt
+                'B' or 'b' or 'r' => ConsoleKey.DownArrow, // lowercase used by rxv
+                'C' or 'c' or 'v' => ConsoleKey.RightArrow, // lowercase used by rxv
+                'D' or 'd' or 't' => ConsoleKey.LeftArrow, // lowercase used by rxv
+                'E' => ConsoleKey.NoName, // ^[OE maps to Begin, but we don't have such Key. To reproduce press Num5.
+                'F' or 'q' => ConsoleKey.End,
                 'H' => ConsoleKey.Home,
+                'j' => ConsoleKey.Multiply, // used by both xterm and rxvt
+                'k' => ConsoleKey.Add, // used by both xterm and rxvt
+                'm' => ConsoleKey.Subtract, // used by both xterm and rxvt
+                'n' => ConsoleKey.Delete, // rxvt
+                'o' => ConsoleKey.Divide, // used by both xterm and rxvt
                 'P' => ConsoleKey.F1,
+                'p' => ConsoleKey.Insert, // rxvt
                 'Q' => ConsoleKey.F2,
                 'R' => ConsoleKey.F3,
                 'S' => ConsoleKey.F4,
+                's' => ConsoleKey.PageDown, // rxvt
                 'T' => ConsoleKey.F5, // VT 100+
                 'U' => ConsoleKey.F6, // VT 100+
+                'u' => ConsoleKey.NoName, // it should be Begin, but we don't have such (press Num5 in rxvt to reproduce)
                 'V' => ConsoleKey.F7, // VT 100+
                 'W' => ConsoleKey.F8, // VT 100+
+                'w' when isRxvt => ConsoleKey.Home,
+                'w' when !isRxvt => ConsoleKey.End,
                 'X' => ConsoleKey.F9, // VT 100+
                 'Y' => ConsoleKey.F10, // VT 100+
+                'y' => ConsoleKey.PageUp, // rxvt
                 'Z' => ConsoleKey.F11, // VT 100+
                 '[' => ConsoleKey.F12, // VT 100+
                 _ => default
