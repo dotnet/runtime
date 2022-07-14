@@ -33,9 +33,11 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task AssertProtocolErrorAsync(long errorCode, Func<Task> task)
         {
-            HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(task);
-            _output.WriteLine(outerEx.InnerException.Message);
+            Exception outerEx = await Assert.ThrowsAnyAsync<Exception>(task);
+            _output.WriteLine(outerEx.ToString());
+            Assert.IsType<HttpRequestException>(outerEx.InnerException);
             HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
+            _output.WriteLine(protocolEx.Message);
             Assert.Equal(errorCode, protocolEx.ErrorCode);
         }
 
@@ -321,8 +323,8 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
                 await connection.CloseAsync(GeneralProtocolError);
             });
@@ -354,8 +356,8 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
                 await stream.AbortAndWaitForShutdownAsync(GeneralProtocolError);
             });
