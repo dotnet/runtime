@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class PhysicalAddressTest
     {
         [Fact]

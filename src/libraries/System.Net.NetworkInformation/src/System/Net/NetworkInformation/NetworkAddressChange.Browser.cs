@@ -11,6 +11,7 @@ using System.Threading;
 
 namespace System.Net.NetworkInformation
 {
+    // Browser implementation of NetworkChange
     public partial class NetworkChange
     {
         private static event NetworkAvailabilityChangedEventHandler? s_networkAvailabilityChanged;
