@@ -48,11 +48,11 @@ namespace System
             try
             {
                 action(span);
-                Assert.False(true, "Expected exception: " + typeof(E));
+                Assert.False(true, $"Expected exception: {typeof(E)}");
             }
             catch (Exception ex)
             {
-                Assert.True(ex is E, "Wrong exception thrown: Expected " + typeof(E) + ": Actual: " + ex.GetType());
+                Assert.True(ex is E, $"Wrong exception thrown. Expected: {typeof(E)} Actual: {ex.GetType()}");
             }
         }
 
@@ -109,11 +109,11 @@ namespace System
             try
             {
                 action(span);
-                Assert.False(true, "Expected exception: " + typeof(E));
+                Assert.False(true, $"Expected exception: {typeof(E)}");
             }
             catch (Exception ex)
             {
-                Assert.True(ex is E, "Wrong exception thrown: Expected " + typeof(E) + ": Actual: " + ex.GetType());
+                Assert.True(ex is E, $"Wrong exception thrown. Expected: {typeof(E)} Actual: {ex.GetType()}");
             }
         }
 
