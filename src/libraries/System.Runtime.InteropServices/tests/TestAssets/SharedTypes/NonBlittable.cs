@@ -428,8 +428,7 @@ namespace SharedTypes
 
             numElements = managed.Count;
 
-            // Always allocate at least one byte when the list is zero-length.
-            int spaceRequired = Math.Max(checked(sizeof(TUnmanagedElement) * numElements), 1);
+            int spaceRequired = checked(sizeof(TUnmanagedElement) * numElements);
             if (spaceRequired > buffer.Length)
                 throw new InvalidOperationException();
 

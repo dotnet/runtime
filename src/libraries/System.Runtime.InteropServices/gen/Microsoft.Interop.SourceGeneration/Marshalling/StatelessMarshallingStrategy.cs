@@ -305,7 +305,8 @@ namespace Microsoft.Interop
                 yield break;
 
             if (_shape.HasFlag(MarshallerShape.ToUnmanaged)
-                && !(_shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && MarshallerHelpers.CanUseCallerAllocatedBuffer(info, context)))
+                && !(_shape.HasFlag(MarshallerShape.CallerAllocatedBuffer)
+                    && MarshallerHelpers.CanUseCallerAllocatedBuffer(info, context)))
             {
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
                 string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
