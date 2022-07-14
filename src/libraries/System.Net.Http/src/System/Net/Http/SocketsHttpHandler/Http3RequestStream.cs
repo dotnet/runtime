@@ -245,7 +245,7 @@ namespace System.Net.Http
 
                     default:
                         // Our stream was reset.
-                        throw new HttpRequestException(SR.net_http_client_execution_error, HttpProtocolException.CreateHttp3StreamException(code));
+                        throw new HttpRequestException(SR.net_http_client_execution_error, _connection.AbortException ?? HttpProtocolException.CreateHttp3StreamException(code));
                 }
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
