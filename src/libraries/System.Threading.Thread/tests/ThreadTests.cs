@@ -158,7 +158,7 @@ namespace System.Threading.Threads.Tests
                 };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotMobile))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.HasHostExecutable))]
         [InlineData("STAMain.exe", "GetApartmentStateTest")]
         [InlineData("STAMain.exe", "SetApartmentStateTest")]
         [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test0")]
@@ -915,6 +915,7 @@ namespace System.Threading.Threads.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void InterruptTest()
         {
             // Interrupting a thread that is not blocked does not do anything, but once the thread starts blocking, it gets
