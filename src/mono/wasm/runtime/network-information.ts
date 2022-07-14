@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-export function network_wasm_online(): boolean {
+export function network_wasm_is_online(): boolean {
     return globalThis.navigator && globalThis.navigator.onLine;
 }
 
@@ -31,6 +31,6 @@ export function network_wasm_remove_change_listener(): void {
 
 function network_wasm_available_changed() {
     if (change_listener) {
-        change_listener(network_wasm_online());
+        change_listener(network_wasm_is_online());
     }
 }
