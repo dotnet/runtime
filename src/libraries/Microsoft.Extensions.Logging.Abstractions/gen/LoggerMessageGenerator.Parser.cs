@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging.Generators
     {
         internal class Parser
         {
-            private const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
+            internal const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
