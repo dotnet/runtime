@@ -89,27 +89,24 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
         }
 
-        internal override void LateAddProperties()
-        {
-            AddPropertiesUsingSourceGenInfo();
-        }
-
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            JsonSerializerContext? context = Options.SerializerContext;
             JsonParameterInfoValues[] array;
             if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolver, Type);
                 return null!;
             }
 
             return array;
         }
 
-        internal void AddPropertiesUsingSourceGenInfo()
+        internal override void LateAddProperties()
         {
-            if (PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            Debug.Assert(!IsConfigured);
+            Debug.Assert(PropertyCache is null);
+
+            if (Kind != JsonTypeInfoKind.Object)
             {
                 return;
             }
@@ -129,13 +126,13 @@ namespace System.Text.Json.Serialization.Metadata
                     return;
                 }
 
-                if (SerializeHandler != null && Options.SerializerContext?.CanUseSerializationLogic == true)
+                if (SerializeHandler != null && context?.CanUseSerializationLogic == true)
                 {
                     ThrowOnDeserialize = true;
                     return;
                 }
 
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
                 return;
             }
 
@@ -151,8 +148,8 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (hasJsonInclude)
                     {
-                        Debug.Assert(jsonPropertyInfo.ClrName != null, "ClrName is not set by source gen");
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName, jsonPropertyInfo.DeclaringType);
+                        Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
                     }
 
                     continue;
@@ -160,17 +157,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (jsonPropertyInfo.MemberType == MemberTypes.Field && !hasJsonInclude && !Options.IncludeFields)
                 {
-                    continue;
-                }
-
-                if (jsonPropertyInfo.SrcGen_IsExtensionData)
-                {
-                    if (ExtensionDataProperty != null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
-                    }
-
-                    ExtensionDataProperty = jsonPropertyInfo;
                     continue;
                 }
 

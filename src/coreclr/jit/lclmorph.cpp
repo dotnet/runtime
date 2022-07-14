@@ -292,6 +292,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     enum class IndirTransform
     {
         None,
+        Nop,
         LclVar,
         LclFld
     };
@@ -458,7 +459,12 @@ public:
                     assert(TopValue(1).Node() == node);
                     assert(TopValue(0).Node() == node->AsField()->GetFldObj());
 
-                    if (!TopValue(1).Field(TopValue(0), node->AsField(), m_compiler))
+                    if (node->AsField()->IsVolatile())
+                    {
+                        // Volatile indirections must not be removed so the address, if any, must be escaped.
+                        EscapeValue(TopValue(0), node);
+                    }
+                    else if (!TopValue(1).Field(TopValue(0), node->AsField(), m_compiler))
                     {
                         // Either the address comes from a location value (e.g. FIELD(IND(...)))
                         // or the field offset has overflowed.
@@ -479,10 +485,9 @@ public:
                 assert(TopValue(1).Node() == node);
                 assert(TopValue(0).Node() == node->gtGetOp1());
 
-                if ((node->gtFlags & GTF_IND_VOLATILE) != 0)
+                if (node->AsIndir()->IsVolatile())
                 {
-                    // Volatile indirections must not be removed so the address,
-                    // if any, must be escaped.
+                    // Volatile indirections must not be removed so the address, if any, must be escaped.
                     EscapeValue(TopValue(0), node);
                 }
                 else if (!TopValue(1).Indir(TopValue(0)))
@@ -710,9 +715,11 @@ private:
             unsigned   indirSize = GetIndirSize(node, user);
             bool       isWide;
 
-            if (indirSize == 0)
+            if ((indirSize == 0) || ((val.Offset() + indirSize) > UINT16_MAX))
             {
                 // If we can't figure out the indirection size then treat it as a wide indirection.
+                // Additionally, treat indirections with large offsets as wide: local field nodes
+                // and the emitter do not support them.
                 isWide = true;
             }
             else
@@ -800,7 +807,7 @@ private:
                 case GT_LCL_VAR:
                     return m_compiler->lvaGetDesc(indir->AsLclVar())->lvExactSize;
                 case GT_LCL_FLD:
-                    return genTypeSize(indir->TypeGet());
+                    return indir->AsLclFld()->GetSize();
                 default:
                     break;
             }
@@ -885,23 +892,22 @@ private:
 
         ClassLayout*   indirLayout = nullptr;
         IndirTransform transform   = SelectLocalIndirTransform(val, user, &indirLayout);
-
-        if (transform == IndirTransform::None)
-        {
-            return;
-        }
-
-        GenTree*             indir        = val.Node();
-        GenTreeLclVarCommon* lclNode      = nullptr;
-        GenTreeFlags         lclNodeFlags = GTF_EMPTY;
+        GenTree*       indir       = val.Node();
 
         switch (transform)
         {
+            case IndirTransform::None:
+                // TODO-ADDR: eliminate all such cases.
+                return;
+
+            case IndirTransform::Nop:
+                indir->gtBashToNOP();
+                INDEBUG(m_stmtModified = true);
+                return;
+
             case IndirTransform::LclVar:
                 indir->ChangeOper(GT_LCL_VAR);
                 indir->AsLclVar()->SetLclNum(val.LclNum());
-
-                lclNode = indir->AsLclVarCommon();
                 break;
 
             case IndirTransform::LclFld:
@@ -910,26 +916,23 @@ private:
                 indir->AsLclFld()->SetLclOffs(val.Offset());
                 indir->AsLclFld()->SetLayout(indirLayout);
 
-                lclNode = indir->AsLclVarCommon();
+                // Promoted locals aren't currently handled here so partial access can't be
+                // later be transformed into a LCL_VAR and the variable cannot be enregistered.
+                m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
                 break;
 
             default:
                 unreached();
         }
 
-        if (transform != IndirTransform::LclVar)
-        {
-            // Promoted struct vars aren't currently handled here so partial access can't be
-            // later transformed into a LCL_VAR and the variable cannot be enregistered.
-            m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
-        }
+        GenTreeLclVarCommon* lclNode      = indir->AsLclVarCommon();
+        GenTreeFlags         lclNodeFlags = GTF_EMPTY;
 
-        if ((user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
+        if (user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == lclNode))
         {
-            indir->gtFlags |= GTF_DONT_CSE;
-            lclNodeFlags |= GTF_VAR_DEF;
+            lclNodeFlags |= (GTF_VAR_DEF | GTF_DONT_CSE);
 
-            unsigned lhsSize = indir->TypeIs(TYP_STRUCT) ? indirLayout->GetSize() : genTypeSize(indir);
+            unsigned lhsSize = lclNode->TypeIs(TYP_STRUCT) ? indirLayout->GetSize() : genTypeSize(lclNode);
             unsigned lclSize = m_compiler->lvaLclExactSize(val.LclNum());
             if (lhsSize != lclSize)
             {
@@ -958,22 +961,14 @@ private:
     IndirTransform SelectLocalIndirTransform(const Value& val, GenTree* user, ClassLayout** pStructLayout)
     {
         GenTree* indir = val.Node();
-        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
 
-        if (val.Offset() > UINT16_MAX)
-        {
-            // TODO-ADDR: We can't use LCL_FLD because the offset is too large but we should
-            // transform the tree into IND(ADD(LCL_VAR_ADDR, offset)) instead of leaving this
-            // this to fgMorphField.
-            return IndirTransform::None;
-        }
+        // We don't expect indirections that cannot be turned into local nodes here.
+        assert(val.Offset() <= UINT16_MAX);
+        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD) && ((indir->gtFlags & GTF_IND_VOLATILE) == 0));
 
-        if (indir->OperIs(GT_FIELD) ? indir->AsField()->IsVolatile() : indir->AsIndir()->IsVolatile())
+        if (IsUnused(indir, user))
         {
-            // TODO-ADDR: We shouldn't remove the indir because it's volatile but we should
-            // transform the tree into IND(LCL_VAR|FLD_ADDR) instead of leaving this to
-            // fgMorphField.
-            return IndirTransform::None;
+            return IndirTransform::Nop;
         }
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
@@ -990,7 +985,7 @@ private:
             return IndirTransform::None;
         }
 
-        if (varDsc->lvPromoted || varDsc->lvIsStructField)
+        if (varDsc->lvPromoted)
         {
             // TODO-ADDR: For now we ignore promoted variables, they require additional
             // changes in subsequent phases.
@@ -1012,18 +1007,16 @@ private:
             return IndirTransform::None;
         }
 
-        if (indir->OperIs(GT_IND))
+        if (indir->OperIs(GT_IND)) // IND<struct>
         {
-            // Skip TYP_STRUCT IND nodes, it's not clear what we can do with them.
-            // Normally these should appear only as sources of variable sized copy block
-            // operations (DYN_BLK) so it probably doesn't make much sense to try to
-            // convert these to local nodes.
+            // TODO-ADDR: add this case to the "don't expect" assert above; it requires updating
+            // "cpblk" import to not create such nodes for block copies of known size.
             return IndirTransform::None;
         }
 
-        if ((user == nullptr) || !user->OperIs(GT_ASG, GT_CALL, GT_RETURN))
+        if (!user->OperIs(GT_ASG, GT_CALL, GT_RETURN))
         {
-            // TODO-ADDR: remove unused indirections.
+            // TODO-ADDR: define the contract for "COMMA(..., LCL<struct>)".
             return IndirTransform::None;
         }
 
@@ -1042,56 +1035,12 @@ private:
             indirLayout = indir->AsBlk()->GetLayout();
         }
 
-        // How does the "indir" match the underlying location?
-        //
-        enum class StructMatch
-        {
-            Compatible,
-            Partial
-        };
-
-        // We're only processing TYP_STRUCT variables now.
-        assert(varDsc->GetLayout() != nullptr);
-
-        StructMatch match = StructMatch::Partial;
-        if ((val.Offset() == 0) && ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
-        {
-            match = StructMatch::Compatible;
-        }
-
-        // Current matrix of matches/users/types:
-        //
-        // |------------|---------|---------|---------|
-        // | STRUCT     | CALL(*) | ASG     | RETURN  |
-        // |------------|---------|---------|---------|
-        // | Compatible | LCL_VAR | LCL_VAR | LCL_VAR |
-        // | Partial    | LCL_FLD | LCL_FLD | LCL_FLD |
-        // |------------|---------|---------|---------|
-        //
-        // * - On XArch/Arm64/LA only.
-        //
-        // |------------|------|------|--------|----------|
-        // | SIMD       | CALL | ASG  | RETURN | HWI/SIMD |
-        // |------------|------|------|--------|----------|
-        // | Compatible | None | None | None   | None     |
-        // | Partial    | None | None | None   | None     |
-        // |------------|------|------|--------|----------|
-        //
-        // TODO-ADDR: delete all the "None" entries and always
-        // transform local nodes into LCL_VAR or LCL_FLD.
-
-        assert(indir->TypeIs(TYP_STRUCT) && user->OperIs(GT_ASG, GT_CALL, GT_RETURN));
-
         *pStructLayout = indirLayout;
 
-        if (user->IsCall())
-        {
-#ifdef TARGET_ARM
-            return IndirTransform::None;
-#endif // TARGET_ARM
-        }
+        // We're only processing TYP_STRUCT uses and variables now.
+        assert(indir->TypeIs(TYP_STRUCT) && (varDsc->GetLayout() != nullptr));
 
-        if (match == StructMatch::Compatible)
+        if ((val.Offset() == 0) && ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
         {
             return IndirTransform::LclVar;
         }
@@ -1225,6 +1174,22 @@ private:
                     varDsc->lvRefCntWtd(RCS_EARLY), varDsc->lvRefCntWtd(RCS_EARLY) + 1, lclNum);
             varDsc->incLvRefCntWtd(1, RCS_EARLY);
         }
+    }
+
+    //------------------------------------------------------------------------
+    // IsUnused: is the given node unused?
+    //
+    // Arguments:
+    //    node - the node in question
+    //    user - "node"'s user
+    //
+    // Return Value:
+    //    If "node" is a root of the statement, or the first operand of a comma,
+    //    "true", otherwise, "false".
+    //
+    static bool IsUnused(GenTree* node, GenTree* user)
+    {
+        return (user == nullptr) || (user->OperIs(GT_COMMA) && (user->AsOp()->gtGetOp1() == node));
     }
 };
 

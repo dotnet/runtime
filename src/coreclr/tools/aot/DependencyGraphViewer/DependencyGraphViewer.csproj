@@ -1,11 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>Exe</OutputType>
     <RootNamespace>DependencyLogViewer</RootNamespace>
-
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
@@ -13,5 +12,6 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
       <Version>$(TraceEventVersion)</Version>
     </PackageReference>
+    <Compile Remove="Tests/*.cs" />
   </ItemGroup>
 </Project>

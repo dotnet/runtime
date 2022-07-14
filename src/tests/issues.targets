@@ -67,6 +67,9 @@
          <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetUnix/*">
             <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
+            <Issue>https://github.com/dotnet/runtime/issues/10478</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets  on CoreCLR Runtime -->
@@ -524,6 +527,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
+            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
@@ -1454,6 +1460,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
             <Issue>https://github.com/dotnet/runtime/issues/61693</Issue>
         </ExcludeList>
@@ -1509,6 +1518,9 @@
 
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/Structs/IncompatibleOverride/**">
             <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/RegressionTests/GitHub_71319/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71910</Issue>
         </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/HwiOp/CompareVectorWithZero/**">

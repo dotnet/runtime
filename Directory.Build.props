@@ -115,7 +115,7 @@
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
     <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
-    <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</ILAsmToolPath>
+    <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</ILAsmToolPath>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
@@ -279,7 +279,7 @@
     <PackageReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</PackageReleaseNotes>
     <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
     <!-- Keep it in sync with PRERELEASE in eng/native/configureplatform.cmake -->
-    <IsPrerelease>true</IsPrerelease>
+    <IsPrerelease>false</IsPrerelease>
     <IsPrivateAssembly>$(MSBuildProjectName.Contains('Private'))</IsPrivateAssembly>
     <!-- Private packages should not be stable -->
     <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(IsPrivateAssembly)">true</SuppressFinalPackageVersion>

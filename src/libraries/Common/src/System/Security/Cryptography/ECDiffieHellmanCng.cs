@@ -20,8 +20,16 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public ECDiffieHellmanCng(ECCurve curve)
         {
-            // GenerateKey will already do all of the validation we need.
-            GenerateKey(curve);
+            try
+            {
+                // GenerateKey will already do all of the validation we need.
+                GenerateKey(curve);
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
         }
 
         public override int KeySize

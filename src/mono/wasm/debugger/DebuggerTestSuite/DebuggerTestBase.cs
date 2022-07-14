@@ -458,7 +458,7 @@ namespace DebuggerTests
             // This will run all the tests until it hits the bp
             await Evaluate("window.setTimeout(function() { invoke_run_all (); }, 1);");
             var wait_res = await WaitFor(Inspector.PAUSE);
-            AssertLocation(wait_res, "locals_inner");
+            AssertLocation(wait_res, "DebuggerTest.locals_inner");
             return wait_res;
         }
 
@@ -1255,6 +1255,7 @@ namespace DebuggerTests
                 pdb_base64 = Convert.ToBase64String(bytes);
             }
 
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             var load_assemblies = JObject.FromObject(new
             {
                 expression = $"{{ let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}'; invoke_static_method('[debugger-test] LoadDebuggerTestALC:LoadLazyAssemblyInALC', asm_b64, pdb_b64); }}"
@@ -1263,7 +1264,8 @@ namespace DebuggerTests
             Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
 
             Assert.True(load_assemblies_res.IsOk);
-            Thread.Sleep(1000);
+            await bpResolved;
+
             var run_method = JObject.FromObject(new
             {
                 expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] LoadDebuggerTestALC:RunMethodInALC', '" + type_name + "',  '" + method_name + "'); }, 1);"
@@ -1413,6 +1415,17 @@ namespace DebuggerTests
             var res = await cli.SendCommand("DotnetDebugger.justMyCode", req, token);
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
+        }
+
+        internal async Task CheckEvaluateFail(string id, params (string expression, string message)[] args)
+        {
+            foreach (var arg in args)
+            {
+                (_, Result _res) = await EvaluateOnCallFrame(id, arg.expression, expect_ok: false).ConfigureAwait(false);
+                // different response structure for Chrome and Firefox:
+                string errorMessage = _res.Error["preview"] == null ? _res.Error["result"]?["description"]?.Value<string>() : _res.Error["preview"]?["message"]?.Value<string>();
+                AssertEqual(arg.message, errorMessage, $"Expression '{arg.expression}' - wrong error message");
+            }
         }
     }
 

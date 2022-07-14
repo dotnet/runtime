@@ -567,18 +567,106 @@ namespace System.Net.Security
             return GssUnwrap(gssContext, out _, buffer);
         }
 
-        internal static unsafe int Unwrap(SafeDeleteContext securityContext, Span<byte> buffer, out int newOffset, out bool wasConfidential)
+        internal static NegotiateAuthenticationStatusCode Unwrap(
+            SafeDeleteContext securityContext,
+            ReadOnlySpan<byte> input,
+            IBufferWriter<byte> outputWriter,
+            out bool isEncrypted)
         {
             SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
-            newOffset = 0;
-            return GssUnwrap(gssContext, out wasConfidential, buffer);
+            Interop.NetSecurityNative.GssBuffer decryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
+            try
+            {
+                Interop.NetSecurityNative.Status minorStatus;
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, gssContext, out isEncrypted, input, ref decryptedBuffer);
+                if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                {
+                    return status switch
+                    {
+                        Interop.NetSecurityNative.Status.GSS_S_BAD_SIG => NegotiateAuthenticationStatusCode.MessageAltered,
+                        _ => NegotiateAuthenticationStatusCode.InvalidToken
+                    };
+                }
+
+                decryptedBuffer.Span.CopyTo(outputWriter.GetSpan(decryptedBuffer.Span.Length));
+                outputWriter.Advance(decryptedBuffer.Span.Length);
+                return NegotiateAuthenticationStatusCode.Completed;
+            }
+            finally
+            {
+                decryptedBuffer.Dispose();
+            }
         }
 
-        internal static unsafe int Wrap(SafeDeleteContext securityContext, ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, bool isConfidential)
+        internal static NegotiateAuthenticationStatusCode UnwrapInPlace(
+            SafeDeleteContext securityContext,
+            Span<byte> input,
+            out int unwrappedOffset,
+            out int unwrappedLength,
+            out bool isEncrypted)
         {
             SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
-            output = GssWrap(gssContext, ref isConfidential, buffer);
-            return output.Length;
+            Interop.NetSecurityNative.GssBuffer decryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
+            try
+            {
+                Interop.NetSecurityNative.Status minorStatus;
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.UnwrapBuffer(out minorStatus, gssContext, out isEncrypted, input, ref decryptedBuffer);
+                if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                {
+                    unwrappedOffset = 0;
+                    unwrappedLength = 0;
+                    return status switch
+                    {
+                        Interop.NetSecurityNative.Status.GSS_S_BAD_SIG => NegotiateAuthenticationStatusCode.MessageAltered,
+                        _ => NegotiateAuthenticationStatusCode.InvalidToken
+                    };
+                }
+
+                decryptedBuffer.Span.CopyTo(input);
+                unwrappedOffset = 0;
+                unwrappedLength = decryptedBuffer.Span.Length;
+                return NegotiateAuthenticationStatusCode.Completed;
+            }
+            finally
+            {
+                decryptedBuffer.Dispose();
+            }
+        }
+
+        internal static NegotiateAuthenticationStatusCode Wrap(
+            SafeDeleteContext securityContext,
+            ReadOnlySpan<byte> input,
+            IBufferWriter<byte> outputWriter,
+            bool requestEncryption,
+            out bool isEncrypted)
+        {
+            SafeGssContextHandle gssContext = ((SafeDeleteNegoContext)securityContext).GssContext!;
+            Interop.NetSecurityNative.GssBuffer encryptedBuffer = default;
+            try
+            {
+                Interop.NetSecurityNative.Status minorStatus;
+                bool encrypt = requestEncryption;
+                Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.WrapBuffer(
+                    out minorStatus,
+                    gssContext,
+                    ref encrypt,
+                    input,
+                    ref encryptedBuffer);
+                isEncrypted = encrypt;
+                if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                {
+                    return NegotiateAuthenticationStatusCode.GenericFailure;
+                }
+
+                encryptedBuffer.Span.CopyTo(outputWriter.GetSpan(encryptedBuffer.Span.Length));
+                outputWriter.Advance(encryptedBuffer.Span.Length);
+                return NegotiateAuthenticationStatusCode.Completed;
+            }
+            finally
+            {
+                encryptedBuffer.Dispose();
+            }
+
         }
     }
 }

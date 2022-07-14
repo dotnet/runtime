@@ -24,7 +24,7 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
-    <Compile Include="..\..\src\System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="..\..\src\System\Threading\StackHelper.cs" Link="Production\StackHelper.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCaseEquivalences.Data.cs" Link="Production\RegexCaseEquivalences.Data.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexCaseEquivalences.cs" Link="Production\RegexCaseEquivalences.cs" />
@@ -51,7 +51,7 @@
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\CharKind.cs" Link="Production\CharKind.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\CharSetSolver.cs" Link="Production\CharSetSolver.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DerivativeEffect.cs" Link="Production\DerivativeEffect.cs" />
-    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DfaMatchingState.cs" Link="Production\DfaMatchingState.cs" />
+    <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\MatchingState.cs" Link="Production\MatchingState.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\DoublyLinkedList.cs" Link="Production\DoublyLinkedList.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\ISolver.cs" Link="Production\ISolver.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\Symbolic\MintermGenerator.cs" Link="Production\MintermGenerator.cs" />

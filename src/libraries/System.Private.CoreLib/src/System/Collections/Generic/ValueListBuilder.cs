@@ -44,9 +44,12 @@ namespace System.Collections.Generic
         public void Append(T item)
         {
             int pos = _pos;
-            if ((uint)pos < (uint)_span.Length)
+
+            // Workaround for https://github.com/dotnet/runtime/issues/72004
+            Span<T> span = _span;
+            if ((uint)pos < (uint)span.Length)
             {
-                _span[pos] = item;
+                span[pos] = item;
                 _pos = pos + 1;
             }
             else

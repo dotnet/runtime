@@ -1869,9 +1869,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         impSpillCliqueSuccMembers = JitExpandArray<BYTE>(getAllocator());
 
         new (&genIPmappings, jitstd::placement_t()) jitstd::list<IPmappingDsc>(getAllocator(CMK_DebugInfo));
-#ifdef DEBUG
-        new (&genPreciseIPmappings, jitstd::placement_t()) jitstd::list<PreciseIPMapping>(getAllocator(CMK_DebugOnly));
-#endif
+        new (&genRichIPmappings, jitstd::placement_t()) jitstd::list<RichIPMapping>(getAllocator(CMK_DebugOnly));
 
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();
 
@@ -1935,11 +1933,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_nodeTestData      = nullptr;
     m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;
 #endif
-    m_switchDescMap      = nullptr;
-    m_blockToEHPreds     = nullptr;
-    m_fieldSeqStore      = nullptr;
-    m_zeroOffsetFieldMap = nullptr;
-    m_refAnyClass        = nullptr;
+    m_switchDescMap  = nullptr;
+    m_blockToEHPreds = nullptr;
+    m_fieldSeqStore  = nullptr;
+    m_refAnyClass    = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {
         m_memorySsaMap[memoryKind] = nullptr;
@@ -2820,6 +2817,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
+    opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2991,6 +2990,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
+        }
+
+        // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
+        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specfied by
+        // JitEarlyExpandMDArraysFilter.
+        if (JitConfig.JitEarlyExpandMDArrays() == 0)
+        {
+            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodName, info.compClassName,
+                                                                  &info.compMethodInfo->args))
+            {
+                opts.compJitEarlyExpandMDArrays = true;
+            }
         }
     }
 
@@ -4839,6 +4850,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks();
 #endif
 
+    // Morph multi-dimensional array operations.
+    // (Consider deferring all array operation morphing, including single-dimensional array ops,
+    // from global morph to here, so cloning doesn't have to deal with morphed forms.)
+    //
+    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);
+
     // Create the variable table (and compute variable ref counts)
     //
     DoPhase(this, PHASE_MARK_LOCAL_VARS, &Compiler::lvaMarkLocalVars);
@@ -4878,6 +4895,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doLoopHoisting  = true;
         bool doCopyProp      = true;
         bool doBranchOpt     = true;
+        bool doCse           = true;
         bool doAssertionProp = true;
         bool doRangeAnalysis = true;
         int  iterations      = 1;
@@ -4889,6 +4907,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doLoopHoisting  = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp      = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doBranchOpt     = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
+        doCse           = doValueNum;
         doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
 
@@ -4905,6 +4924,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Build up SSA form for the IR
                 //
                 DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
+            }
+            else
+            {
+                // At least do local var liveness; lowering depends on this.
+                fgLocalVarLiveness();
             }
 
             if (doEarlyProp)
@@ -4940,9 +4964,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
-            // Remove common sub-expressions
-            //
-            DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+            if (doCse)
+            {
+                // Remove common sub-expressions
+                //
+                DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+            }
 
             if (doAssertionProp)
             {
@@ -9608,11 +9635,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
                         break;
 
-                    case GTF_ICON_FIELD_OFF:
-
-                        chars += printf("[ICON_FIELD_OFF]");
-                        break;
-
                     default:
                         assert(!"a forgotten handle flag");
                         break;
@@ -9834,7 +9856,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 #endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
-            if (tree->OperIsIndirOrArrLength())
+            if (tree->OperIsIndirOrArrMetaData())
             {
                 chars += printf("[IND_NONFAULTING]");
             }
@@ -9972,16 +9994,21 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 {
-    if (varTypeIsArithmetic(tree))
+    static const var_types s_typesBySize[] = {TYP_UNDEF, TYP_BYTE,  TYP_SHORT, TYP_UNDEF, TYP_INT,
+                                              TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_LONG};
+
+    if (!varTypeIsStruct(tree))
     {
 #if defined(TARGET_XARCH)
         // Just an optimization for XARCH - smaller mov
-        if (varTypeIsLong(tree))
+        if (genTypeSize(tree) == 8)
         {
             return TYP_INT;
         }
 #endif
-        return tree->TypeGet();
+
+        assert((genTypeSize(tree) < ARRAY_SIZE(s_typesBySize)) && (s_typesBySize[genTypeSize(tree)] != TYP_UNDEF));
+        return s_typesBySize[genTypeSize(tree)];
     }
     // for the rest: probe a single byte to avoid potential AVEs
     return TYP_BYTE;

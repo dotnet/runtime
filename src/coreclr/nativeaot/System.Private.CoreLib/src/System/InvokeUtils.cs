@@ -525,10 +525,7 @@ namespace System
             {
                 if (paramType == DynamicInvokeParamType.Ref)
                 {
-                    if (nullableCopyBackObjects == null)
-                    {
-                        nullableCopyBackObjects = new object[parameters.Length];
-                    }
+                    nullableCopyBackObjects ??= new object[parameters.Length];
 
                     nullableCopyBackObjects[index] = finalObjectToReturn;
                     parameters[index] = null;
@@ -569,18 +566,28 @@ namespace System
 
             Debug.Assert(argSetupState.parameters != null);
             object? incomingParam = argSetupState.parameters[index];
+            bool nullable = type.ToEETypePtr().IsNullable;
 
             // Handle default parameters
             if ((incomingParam == System.Reflection.Missing.Value) && paramType == DynamicInvokeParamType.In)
             {
                 incomingParam = GetDefaultValue(argSetupState.targetMethodOrDelegate, type, index);
+                if (incomingParam != null && nullable)
+                {
+                    // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
+                    // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
+                    EETypePtr nullableType = type.ToEETypePtr().NullableType;
+                    if (nullableType.IsEnum)
+                    {
+                        incomingParam = Enum.ToObject(Type.GetTypeFromEETypePtr(nullableType), incomingParam);
+                    }
+                }
 
                 // The default value is captured into the parameters array
                 argSetupState.parameters[index] = incomingParam;
             }
 
             RuntimeTypeHandle widenAndCompareType = type;
-            bool nullable = type.ToEETypePtr().IsNullable;
             if (nullable)
             {
                 widenAndCompareType = new RuntimeTypeHandle(type.ToEETypePtr().NullableType);
@@ -657,10 +664,7 @@ namespace System
                         {
                             // Since this not a by-ref parameter, we don't want to bash the original user-owned argument array but the rules of DynamicInvokeParamHelperCore() require
                             // that we return non-value types as the "index"th element in an array. Thus, create an on-demand throwaway array just for this purpose.
-                            if (argSetupState.customBinderProvidedParameters == null)
-                            {
-                                argSetupState.customBinderProvidedParameters = new object[argSetupState.parameters.Length];
-                            }
+                            argSetupState.customBinderProvidedParameters ??= new object[argSetupState.parameters.Length];
                             argSetupState.customBinderProvidedParameters[index] = incomingParam;
                             return argSetupState.customBinderProvidedParameters;
                         }

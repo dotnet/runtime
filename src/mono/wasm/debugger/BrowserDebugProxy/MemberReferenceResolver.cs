@@ -77,53 +77,73 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> parts, CancellationToken token)
+        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> expressionParts, CancellationToken token)
         {
-            string classNameToFind = "";
             var store = await proxy.LoadStore(sessionId, false, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
             if (methodInfo == null)
                 return (null, null);
 
-            int typeId = -1;
-            for (int i = 0; i < parts.Count; i++)
+            string[] parts = expressionParts.ToArray();
+
+            string fullName = methodInfo.IsAsync == 0 ? methodInfo.TypeInfo.FullName : StripAsyncPartOfFullName(methodInfo.TypeInfo.FullName);
+            string[] fullNameParts = fullName.Split(".", StringSplitOptions.TrimEntries).ToArray();
+            for (int i = 0; i < fullNameParts.Length; i++)
             {
-                string part = parts[i];
+                string[] fullNamePrefix = fullNameParts[..^i];
+                var (memberObject, remaining) = await FindStaticMemberMatchingParts(parts, fullNamePrefix);
+                if (memberObject != null)
+                    return (memberObject, remaining);
+            }
+            return await FindStaticMemberMatchingParts(parts);
 
-                if (typeId != -1)
+            async Task<(JObject, ArraySegment<string>)> FindStaticMemberMatchingParts(string[] parts, string[] fullNameParts = null)
+            {
+                string classNameToFind = fullNameParts == null ? "" : string.Join(".", fullNameParts);
+                int typeId = -1;
+                for (int i = 0; i < parts.Length; i++)
                 {
-                    JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
-                    if (memberObject != null)
+                    if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
                     {
-                        ArraySegment<string> remaining = null;
-                        if (i < parts.Count - 1)
-                            remaining = parts[i..];
+                        typeId = await FindStaticTypeId(methodInfo.TypeInfo.Namespace + "." + classNameToFind);
+                        if (typeId != -1)
+                            continue;
+                    }
+                    typeId = await FindStaticTypeId(classNameToFind);
 
-                        return (memberObject, remaining);
+                    string part = parts[i];
+                    if (typeId != -1)
+                    {
+                        JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
+                        if (memberObject != null)
+                        {
+                            ArraySegment<string> remaining = null;
+                            if (i < parts.Length - 1)
+                                remaining = parts[i..];
+                            return (memberObject, remaining);
+                        }
+
+                        // Didn't find a member named `part` in `typeId`.
+                        // Could be a nested type. Let's continue the search
+                        // with `part` added to the type name
+
+                        typeId = -1;
                     }
 
-                    // Didn't find a member named `part` in `typeId`.
-                    // Could be a nested type. Let's continue the search
-                    // with `part` added to the type name
-
-                    typeId = -1;
+                    if (classNameToFind.Length > 0)
+                        classNameToFind += ".";
+                    classNameToFind += part;
                 }
-
-                if (classNameToFind.Length > 0)
-                    classNameToFind += ".";
-                classNameToFind += part;
-
-                if (!string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace))
-                {
-                    typeId = await FindStaticTypeId(methodInfo?.TypeInfo?.Namespace + "." + classNameToFind);
-                    if (typeId != -1)
-                        continue;
-                }
-                typeId = await FindStaticTypeId(classNameToFind);
+                return (null, null);
             }
 
-            return (null, null);
+            // async function full name has a form: namespaceName.<currentFrame'sMethodName>d__integer
+            static string StripAsyncPartOfFullName(string fullName)
+                => fullName.IndexOf(".<") is int index && index < 0
+                    ? fullName
+                    : fullName.Substring(0, index);
+
 
             async Task<JObject> FindStaticMemberInType(string classNameToFind, string name, int typeId)
             {
@@ -138,11 +158,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         isInitialized = await context.SdbAgent.TypeInitialize(typeId, token);
                     }
-                    var staticFieldValue = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
-                    var valueRet = await GetValueFromObject(staticFieldValue, token);
-                    // we need the full name here
-                    valueRet["className"] = classNameToFind;
-                    return valueRet;
+                    try
+                    {
+                        var staticFieldValue = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
+                        var valueRet = await GetValueFromObject(staticFieldValue, token);
+                        // we need the full name here
+                        valueRet["className"] = classNameToFind;
+                        return valueRet;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, $"Failed to get value of field {field.Name} on {classNameToFind} " +
+                            $"because {field.Name} is not a static member of {classNameToFind}.");
+                    }
+                    return null;
                 }
 
                 var methodId = await context.SdbAgent.GetPropertyMethodIdByName(typeId, name, token);
@@ -150,8 +179,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     using var commandParamsObjWriter = new MonoBinaryWriter();
                     commandParamsObjWriter.Write(0); //param count
-                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
-                    return await GetValueFromObject(retMethod, token);
+                    try
+                    {
+                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
+                        return await GetValueFromObject(retMethod, token);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, $"Failed to invoke getter of id={methodId} on {classNameToFind}.{name} " +
+                            $"because {name} is not a static member of {classNameToFind}.");
+                    }
                 }
                 return null;
             }

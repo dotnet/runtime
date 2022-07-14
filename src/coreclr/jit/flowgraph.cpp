@@ -2922,7 +2922,7 @@ PhaseStatus Compiler::fgFindOperOrder()
 // and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
-//    Lowers GT_ARR_LENGTH, GT_BOUNDS_CHECK.
+//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
 //
 //    For target ABIs with fixed out args area, computes upper bound on
 //    the size of this area from the calls in the IR.
@@ -2948,18 +2948,43 @@ void Compiler::fgSimpleLowering()
             switch (tree->OperGet())
             {
                 case GT_ARR_LENGTH:
+                case GT_MDARR_LENGTH:
+                case GT_MDARR_LOWER_BOUND:
                 {
-                    GenTreeArrLen* arrLen = tree->AsArrLen();
-                    GenTree*       arr    = arrLen->AsArrLen()->ArrRef();
-                    GenTree*       add;
-                    GenTree*       con;
+                    GenTree* arr       = tree->AsArrCommon()->ArrRef();
+                    int      lenOffset = 0;
 
-                    /* Create the expression "*(array_addr + ArrLenOffs)" */
+                    switch (tree->OperGet())
+                    {
+                        case GT_ARR_LENGTH:
+                        {
+                            lenOffset = tree->AsArrLen()->ArrLenOffset();
+                            noway_assert(lenOffset == OFFSETOF__CORINFO_Array__length ||
+                                         lenOffset == OFFSETOF__CORINFO_String__stringLen);
+                            break;
+                        }
+
+                        case GT_MDARR_LENGTH:
+                            lenOffset = (int)eeGetMDArrayLengthOffset(tree->AsMDArr()->Rank(), tree->AsMDArr()->Dim());
+                            break;
+
+                        case GT_MDARR_LOWER_BOUND:
+                            lenOffset =
+                                (int)eeGetMDArrayLowerBoundOffset(tree->AsMDArr()->Rank(), tree->AsMDArr()->Dim());
+                            break;
+
+                        default:
+                            unreached();
+                    }
+
+                    // Create the expression `*(array_addr + lenOffset)`
+
+                    GenTree* addr;
 
                     noway_assert(arr->gtNext == tree);
 
-                    noway_assert(arrLen->ArrLenOffset() == OFFSETOF__CORINFO_Array__length ||
-                                 arrLen->ArrLenOffset() == OFFSETOF__CORINFO_String__stringLen);
+                    JITDUMP("Lower %s:\n", GenTree::OpName(tree->OperGet()));
+                    DISPRANGE(LIR::ReadOnlyRange(arr, tree));
 
                     if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
                     {
@@ -2968,20 +2993,21 @@ void Compiler::fgSimpleLowering()
                         // an invariant where there is no sum of two constants node, so
                         // let's simply return an indirection of NULL.
 
-                        add = arr;
+                        addr = arr;
                     }
                     else
                     {
-                        con = gtNewIconNode(arrLen->ArrLenOffset(), TYP_I_IMPL);
-                        add = gtNewOperNode(GT_ADD, TYP_REF, arr, con);
-
-                        range.InsertAfter(arr, con, add);
+                        GenTree* con = gtNewIconNode(lenOffset, TYP_I_IMPL);
+                        addr         = gtNewOperNode(GT_ADD, TYP_BYREF, arr, con);
+                        range.InsertAfter(arr, con, addr);
                     }
 
                     // Change to a GT_IND.
                     tree->ChangeOperUnchecked(GT_IND);
+                    tree->AsOp()->gtOp1 = addr;
 
-                    tree->AsOp()->gtOp1 = add;
+                    JITDUMP("After Lower %s:\n", GenTree::OpName(tree->OperGet()));
+                    DISPRANGE(LIR::ReadOnlyRange(arr, tree));
                     break;
                 }
 
