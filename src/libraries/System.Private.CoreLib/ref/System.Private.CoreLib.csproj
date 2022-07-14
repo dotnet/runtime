@@ -17,6 +17,10 @@
     <DefineConstants>$(DefineConstants);HIDE_URI_TYPES</DefineConstants>
     <DefineConstants>$(DefineConstants);HIDE_CONTRACT_TYPES</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- disable binplacing since the System.Private.CoreLib reference assembly is internal to our build and shouldn't be exposed in ref packs -->
+    <DisableBinPlaceAssembly>true</DisableBinPlaceAssembly>
+  </PropertyGroup>
   <ItemGroup>
     <!-- contracts where all types were moved to CoreLib, these are used both here and in the contract assemblies and are generated -->
     <Compile Include="contracts\Microsoft.Win32.Primitives.cs" />
