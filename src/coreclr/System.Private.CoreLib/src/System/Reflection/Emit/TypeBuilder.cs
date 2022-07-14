@@ -697,12 +697,12 @@ namespace System.Reflection.Emit
 
         internal void CreateGlobalModuleType()
         {
-            if (m_isHiddenGlobalType)
+            if (!m_isHiddenGlobalType)
             {
-                Debug.Assert(CreateTypeImpl() == null);
+                throw new NotSupportedException(SR.NotSupported_DynamicModule);
             }
 
-            throw new NotSupportedException(SR.NotSupported_DynamicModule);
+            Debug.Assert(CreateTypeImpl() == null);
         }
 
         #endregion
