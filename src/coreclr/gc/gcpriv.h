@@ -419,8 +419,10 @@ enum gc_oh_num
     soh = 0,
     loh = 1,
     poh = 2,
-    none = 3,
-    total_oh_count = 4
+    free = 3,
+    none = 4,
+    total_oh_count = 3,
+    total_bucket_count = 5
 };
 
 gc_oh_num gen_to_oh (int gen);
@@ -1296,7 +1298,7 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
+    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t& total_committed);
     PER_HEAP
     void verify_regions (bool can_verify_gen_num, bool concurrent_p);
     PER_HEAP_ISOLATED
@@ -3803,7 +3805,7 @@ public:
     gen_to_condemn_tuning gen_to_condemn_reasons;
 
     PER_HEAP
-    size_t etw_allocation_running_amount[gc_oh_num::total_oh_count - 1];
+    size_t etw_allocation_running_amount[gc_oh_num::total_oh_count];
 
     PER_HEAP
     uint64_t total_alloc_bytes_soh;
@@ -4007,7 +4009,7 @@ public:
     size_t heap_hard_limit;
 
     PER_HEAP_ISOLATED
-    size_t heap_hard_limit_oh[total_oh_count - 1];
+    size_t heap_hard_limit_oh[gc_oh_num::total_oh_count];
 
     PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;
@@ -4016,7 +4018,14 @@ public:
     size_t current_total_committed;
 
     PER_HEAP_ISOLATED
-    size_t committed_by_oh[total_oh_count];
+    size_t committed_by_oh[gc_oh_num::total_bucket_count];
+
+#ifdef _DEBUG
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP
+    size_t committed_by_oh_per_heap[gc_oh_num::total_oh_count];
+#endif
+#endif
 
     // This is what GC uses for its own bookkeeping.
     PER_HEAP_ISOLATED
@@ -4818,7 +4827,7 @@ protected:
     size_t num_provisional_triggered;
 
     PER_HEAP
-    size_t allocated_since_last_gc[gc_oh_num::total_oh_count - 1];
+    size_t allocated_since_last_gc[gc_oh_num::total_oh_count];
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED

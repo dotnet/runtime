@@ -2198,7 +2198,7 @@ CLRCriticalSection gc_heap::check_commit_cs;
 
 size_t      gc_heap::current_total_committed = 0;
 
-size_t      gc_heap::committed_by_oh[total_oh_count] = {0, 0, 0, 0};
+size_t      gc_heap::committed_by_oh[gc_oh_num::total_bucket_count] = {0, 0, 0, 0, 0};
 
 size_t      gc_heap::current_total_committed_bookkeeping = 0;
 
@@ -2275,7 +2275,7 @@ uint64_t    gc_heap::entry_available_physical_mem = 0;
 
 size_t      gc_heap::heap_hard_limit = 0;
 
-size_t      gc_heap::heap_hard_limit_oh[total_oh_count - 1] = {0, 0, 0};
+size_t      gc_heap::heap_hard_limit_oh[gc_oh_num::total_oh_count] = {0, 0, 0};
 
 #ifdef USE_REGIONS
 size_t      gc_heap::regions_range = 0;
@@ -2370,7 +2370,7 @@ oom_history gc_heap::oomhist_per_heap[max_oom_history_count];
 
 fgm_history gc_heap::fgm_result;
 
-size_t      gc_heap::allocated_since_last_gc[gc_oh_num::total_oh_count - 1];
+size_t      gc_heap::allocated_since_last_gc[gc_oh_num::total_oh_count];
 
 BOOL        gc_heap::ro_segments_in_range;
 
@@ -2412,7 +2412,7 @@ uint8_t*    gc_heap::last_gen1_pin_end;
 
 gen_to_condemn_tuning gc_heap::gen_to_condemn_reasons;
 
-size_t      gc_heap::etw_allocation_running_amount[gc_oh_num::total_oh_count - 1];
+size_t      gc_heap::etw_allocation_running_amount[gc_oh_num::total_oh_count];
 
 uint64_t    gc_heap::total_alloc_bytes_soh = 0;
 
@@ -6815,6 +6815,8 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
     assert (heap_hard_limit == 0);
 #endif //!HOST_64BIT
 
+    dprintf(3, ("commit-accounting:  commit in %d [%Ix, %Ix) for heap %d", oh, address, ((uint8_t*)address + size), h_number));
+
     if (heap_hard_limit)
     {
         check_commit_cs.Enter();
@@ -6839,6 +6841,13 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
 
         if (!exceeded_p)
         {
+#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+            if (oh < gc_oh_num::free)
+            {
+                assert (h_number != -1);
+                g_heaps[h_number]->committed_by_oh_per_heap[oh] += size;
+            }
+#endif // _DEBUG && MULTIPLE_HEAPS
             committed_by_oh[oh] += size;
             current_total_committed += size;
             if (h_number < 0)
@@ -6867,7 +6876,14 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
     {
         check_commit_cs.Enter();
         committed_by_oh[oh] -= size;
-
+#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+            if (oh < gc_oh_num::free)
+            {
+                assert (h_number != -1);
+                assert (g_heaps[h_number]->committed_by_oh_per_heap[oh] >= size);
+                g_heaps[h_number]->committed_by_oh_per_heap[oh] -= size;
+            }
+#endif // _DEBUG && MULTIPLE_HEAPS
         dprintf (1, ("commit failed, updating %Id to %Id",
                 current_total_committed, (current_total_committed - size)));
         current_total_committed -= size;
@@ -6887,10 +6903,21 @@ bool gc_heap::virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_
 
     bool decommit_succeeded_p = GCToOSInterface::VirtualDecommit (address, size);
 
+    dprintf(3, ("commit-accounting:  decommit in %d [%Ix, %Ix) for heap %d", oh, address, ((uint8_t*)address + size), h_number));
+
     if (decommit_succeeded_p && heap_hard_limit)
     {
         check_commit_cs.Enter();
+        assert (committed_by_oh[oh] >= size);
         committed_by_oh[oh] -= size;
+#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+        if (oh < gc_oh_num::free)
+        {
+            assert (h_number != -1);
+            assert (g_heaps[h_number]->committed_by_oh_per_heap[oh] >= size);
+            g_heaps[h_number]->committed_by_oh_per_heap[oh] -= size;
+        }
+#endif // _DEBUG && MULTIPLE_HEAPS
         current_total_committed -= size;
         if (h_number < 0)
             current_total_committed_bookkeeping -= size;
@@ -11117,6 +11144,24 @@ void gc_heap::clear_region_info (heap_segment* region)
 // REGIONS PERF TODO: should decommit if needed.
 void gc_heap::return_free_region (heap_segment* region)
 {
+    gc_oh_num oh = heap_segment_oh (region);
+    dprintf(3, ("commit-accounting:  from %d to free [%Ix, %Ix) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
+    if (heap_hard_limit_oh[soh])
+    {
+        size_t committed = heap_segment_committed (region) - get_region_start (region);
+        if (committed > 0)
+        {
+            check_commit_cs.Enter();
+            assert (committed_by_oh[oh] >= committed);
+            committed_by_oh[oh] -= committed;
+            committed_by_oh[free] += committed;
+#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+            assert (committed_by_oh_per_heap[oh] >= committed);
+            committed_by_oh_per_heap[oh] -= committed;
+#endif // _DEBUG && MULTIPLE_HEAPS
+            check_commit_cs.Leave();
+        }
+    }
     clear_region_info (region);
 
     region_free_list::add_region_descending (region, free_regions);
@@ -11184,6 +11229,25 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
         init_heap_segment (region, __this, region_start,
                            (region_end - region_start),
                            gen_number);
+
+        gc_oh_num oh = gen_to_oh (gen_number);
+        dprintf(3, ("commit-accounting:  from free to %d [%Ix, %Ix) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
+        if (heap_hard_limit_oh[soh])
+        {
+            size_t committed = heap_segment_committed (region) - get_region_start (region);
+            if (committed > 0)
+            {
+                check_commit_cs.Enter();
+                committed_by_oh[oh] += committed;
+                assert (committed_by_oh[free] >= committed);
+                committed_by_oh[free] -= committed;
+#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
+                committed_by_oh_per_heap[oh] += committed;
+#endif // _DEBUG && MULTIPLE_HEAPS
+                check_commit_cs.Leave();
+            }
+        }
+
         dprintf (REGIONS_LOG, ("h%d GFR get region %Ix (%Ix-%Ix) for gen%d",
             heap_number, (size_t)region,
             region_start, region_end,
@@ -13746,13 +13810,21 @@ void gc_heap::add_saved_spinlock_info (
 }
 
 int
-gc_heap::init_gc_heap (int  h_number)
+gc_heap::init_gc_heap (int h_number)
 {
 #ifdef MULTIPLE_HEAPS
+#ifdef _DEBUG
+    for (int i = 0; i < gc_oh_num::total_oh_count; i++)
+    {
+        committed_by_oh_per_heap[i] = 0;
+    }
+#endif
+
+    g_heaps [h_number] = this;
 
     time_bgc_last = 0;
 
-    for (int oh_index = 0; oh_index < (gc_oh_num::total_oh_count - 1); oh_index++)
+    for (int oh_index = 0; oh_index < gc_oh_num::total_oh_count; oh_index++)
         allocated_since_last_gc[oh_index] = 0;
 
 #ifdef SPINLOCK_HISTORY
@@ -14002,7 +14074,7 @@ gc_heap::init_gc_heap (int  h_number)
     generation_of (loh_generation)->free_list_allocator = allocator(NUM_LOH_ALIST, BASE_LOH_ALIST_BITS, loh_alloc_list);
     generation_of (poh_generation)->free_list_allocator = allocator(NUM_POH_ALIST, BASE_POH_ALIST_BITS, poh_alloc_list);
 
-    for (int oh_index = 0; oh_index < (gc_oh_num::total_oh_count - 1); oh_index++)
+    for (int oh_index = 0; oh_index < gc_oh_num::total_oh_count; oh_index++)
         etw_allocation_running_amount[oh_index] = 0;
 
     total_alloc_bytes_soh = 0;
@@ -14060,8 +14132,6 @@ gc_heap::init_gc_heap (int  h_number)
 #ifdef MULTIPLE_HEAPS
     if (!create_gc_thread ())
         return 0;
-
-    g_heaps [heap_number] = this;
 
 #endif //MULTIPLE_HEAPS
 
@@ -22616,6 +22686,18 @@ heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
     assert (!heap_segment_read_only_p (region));
     dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
 
+    int old_oh = heap_segment_oh (region);
+    int old_heap = heap_segment_heap (region)->heap_number;
+    dprintf(3, ("commit-accounting:  from %d to temp [%Ix, %Ix) for heap %d", old_oh, get_region_start (region), heap_segment_committed (region), old_heap));
+
+#ifdef _DEBUG
+    size_t committed = heap_segment_committed (region) - get_region_start (region);
+    check_commit_cs.Enter();
+    assert (g_heaps[old_heap]->committed_by_oh_per_heap[old_oh] >= committed);
+    g_heaps[old_heap]->committed_by_oh_per_heap[old_oh] -= committed;
+    check_commit_cs.Leave();
+#endif // _DEBUG
+
     set_heap_for_contained_basic_regions (region, nullptr);
 
     return region;
@@ -22637,6 +22719,18 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
         generation_start_segment (gen) = region;
     }
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
+
+    int new_oh = gen_to_oh (gen_idx);
+    int new_heap = this->heap_number;
+    dprintf(3, ("commit-accounting:  from temp to %d [%Ix, %Ix) for heap %d", new_oh, get_region_start (region), heap_segment_committed (region), new_heap));
+
+#ifdef _DEBUG
+    size_t committed = heap_segment_committed (region) - get_region_start (region);
+    check_commit_cs.Enter();
+    assert (heap_segment_heap (region) == nullptr);
+    g_heaps[new_heap]->committed_by_oh_per_heap[new_oh] += committed;
+    check_commit_cs.Leave();
+#endif // _DEBUG
 
     set_heap_for_contained_basic_regions (region, this);
 }
@@ -29838,6 +29932,59 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 }
 #endif //FEATURE_EVENT_TRACE
 
+#if defined(_DEBUG) && defined(USE_REGIONS)
+                if (heap_hard_limit_oh[soh])
+                {
+                    size_t committed = 0;
+                    for (int i = 0; i < total_generation_count; i++)
+                    {
+                        int oh = i - max_generation;
+#ifdef MULTIPLE_HEAPS
+                        for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+                        {
+                            gc_heap* hp = gc_heap::g_heaps[hn];
+#else
+                        {
+                            gc_heap* hp = nullptr;
+#endif // MULTIPLE_HEAPS
+                            heap_segment* region = generation_start_segment (hp->generation_of (i));
+                            while (region)
+                            {
+                                committed += heap_segment_committed (region) - get_region_start (region);
+                                region = heap_segment_next (region);
+                            }
+
+                            if (oh == soh)
+                            {
+                                heap_segment* freeable = freeable_soh_segment;
+                                while (freeable)
+                                {
+                                    committed += (heap_segment_committed (freeable) - get_region_start (freeable));
+                                    freeable = heap_segment_next (freeable);
+                                }
+                            }
+                            else
+                            {
+                                heap_segment* freeable = freeable_uoh_segment;
+                                while (freeable)
+                                {
+                                    if (heap_segment_oh (freeable) == oh)
+                                    {
+                                        committed += (heap_segment_committed (freeable) - get_region_start (freeable));
+                                    }
+                                    freeable = heap_segment_next (freeable);
+                                }
+                            }
+                        }
+                        if (i >= max_generation)
+                        {
+                            assert (committed_by_oh[oh] == committed);
+                            committed = 0;
+                        }
+                    }
+                }
+#endif // _DEBUG && USE_REGIONS
+
 #ifdef MULTIPLE_HEAPS
                 //join all threads to make sure they are synchronized
                 dprintf(3, ("Restarting after Promotion granted"));
@@ -30558,7 +30705,8 @@ heap_segment* gc_heap::get_new_region (int gen_number, size_t size)
         heap_segment_next (generation_tail_region (gen)) = new_region;
         generation_tail_region (gen) = new_region;
 
-        verify_regions (gen_number, false, settings.concurrent);
+        size_t unused_total_committed;
+        verify_regions (gen_number, false, settings.concurrent, unused_total_committed);
     }
 
     return new_region;
@@ -39895,7 +40043,7 @@ bool gc_heap::decommit_step ()
             bool decommit_succeeded_p = false;
             if (!use_large_pages_p)
             {
-                decommit_succeeded_p = virtual_decommit(page_start, size, heap_segment_oh(region), 0);
+                decommit_succeeded_p = virtual_decommit(page_start, size, gc_oh_num::free, -1);
                 dprintf(REGIONS_LOG, ("decommitted region %Ix(%Ix-%Ix) (%Iu bytes) - success: %d",
                     region,
                     page_start,
@@ -43138,7 +43286,7 @@ gc_heap::verify_free_lists ()
     }
 }
 
-void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail)
+void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t& total_committed)
 {
 #ifdef USE_REGIONS
     // For the given generation, verify that
@@ -43157,6 +43305,7 @@ void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_
 
     while (seg_in_gen)
     {
+        total_committed += (heap_segment_committed (seg_in_gen) - get_region_start (seg_in_gen));
         if (can_verify_gen_num)
         {
             if (heap_segment_gen_num (seg_in_gen) != min (gen_number, max_generation))
@@ -43220,10 +43369,56 @@ inline bool is_user_alloc_gen (int gen_number)
 void gc_heap::verify_regions (bool can_verify_gen_num, bool concurrent_p)
 {
 #ifdef USE_REGIONS
+    size_t total_committed = 0;
     for (int i = 0; i < total_generation_count; i++)
     {
         bool can_verify_tail = (concurrent_p ? !is_user_alloc_gen (i) : true);
-        verify_regions (i, can_verify_gen_num, can_verify_tail);
+        verify_regions (i, can_verify_gen_num, can_verify_tail, total_committed);
+
+        if (can_verify_gen_num &&
+            can_verify_tail &&
+            (i >= max_generation) &&
+            (heap_hard_limit_oh[soh] > 0))
+        {
+            int oh = i - max_generation;
+            if (oh == soh)
+            {
+                heap_segment* freeable = freeable_soh_segment;
+                while (freeable)
+                {
+                    total_committed += (heap_segment_committed (freeable) - get_region_start (freeable));
+                    freeable = heap_segment_next (freeable);
+                }
+            }
+            else
+            {
+                heap_segment* freeable = freeable_uoh_segment;
+                while (freeable)
+                {
+                    if (heap_segment_oh (freeable) == oh)
+                    {
+                        total_committed += (heap_segment_committed (freeable) - get_region_start (freeable));
+                    }
+                    freeable = heap_segment_next (freeable);
+                }
+            }
+#ifdef MULTIPLE_HEAPS
+#ifdef _DEBUG
+            size_t total_accounted = committed_by_oh_per_heap[i - max_generation];
+#else
+            size_t total_accounted = total_committed;
+#endif
+#else
+            size_t total_accounted = committed_by_oh[i - max_generation];
+#endif
+            if (total_committed != total_accounted)
+            {
+                FATAL_GC_ERROR();
+            }
+            dprintf(3, ("commit-accounting:  checkpoint for %d for heap %d", oh, heap_number));
+            total_committed = 0;
+        }
+
     }
 #endif //USE_REGIONS
 }
