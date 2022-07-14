@@ -4663,7 +4663,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             // Tue, 03 Jan 2017 08:08:05 GMT
 
             // The format is exactly 29 characters.
-            if ((uint)source.Length != 29)
+            if (source.Length != 29)
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -4860,7 +4860,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             // 2017-06-12T05:30:45.7680000-7:00   (special-case of one-digit offset hour)
             // 2017-06-12T05:30:45.7680000-07:00
 
-            if ((uint)source.Length < 27 ||
+            if (source.Length < 27 ||
                 source[4] != '-' ||
                 source[7] != '-' ||
                 source[10] != 'T' ||
@@ -4981,7 +4981,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
-            if ((uint)source.Length > 27)
+            if (source.Length > 27)
             {
                 char offsetChar = source[27];
                 switch (offsetChar)
@@ -4999,7 +4999,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     case '-':
                         int offsetHours, colonIndex;
 
-                        if ((uint)source.Length == 33)
+                        if (source.Length == 33)
                         {
                             uint oh1 = (uint)(source[28] - '0'), oh2 = (uint)(source[29] - '0');
 
@@ -5012,7 +5012,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                             offsetHours = (int)(oh1 * 10 + oh2);
                             colonIndex = 30;
                         }
-                        else if ((uint)source.Length == 32) // special-case allowed for compat: only one offset hour digit
+                        else if (source.Length == 32) // special-case allowed for compat: only one offset hour digit
                         {
                             offsetHours = source[28] - '0';
 

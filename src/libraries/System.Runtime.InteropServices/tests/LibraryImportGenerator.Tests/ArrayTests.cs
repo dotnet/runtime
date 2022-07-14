@@ -72,9 +72,30 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_values")]
             public static partial void DoubleValues([In, Out] IntStructWrapper[] array, int length);
 
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
-            [return:MarshalAs(UnmanagedType.U1)]
-            public static partial bool AndAllMembers(BoolStruct_V1[] pArray, int length);
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool AndAllMembers(BoolStruct[] pArray, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array_in")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool AndAllMembersIn(in BoolStruct[] pArray, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_ref")]
+            public static partial void NegateBools(
+                [MarshalUsing(CountElementName = "numValues")] ref BoolStruct[] boolStruct,
+                int numValues);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_out")]
+            public static partial void NegateBools(
+                BoolStruct[] boolStruct,
+                int numValues,
+                [MarshalUsing(CountElementName = "numValues")] out BoolStruct[] pBoolStructOut);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_return")]
+            [return: MarshalUsing(CountElementName = "numValues")]
+            public static partial BoolStruct[] NegateBools(
+                BoolStruct[] boolStruct,
+                int numValues);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
             [return: MarshalUsing(CountElementName = "numColumns")]
@@ -396,23 +417,67 @@ namespace LibraryImportGenerator.IntegrationTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void ArrayWithSimpleNonBlittableTypeMarshalling(bool result)
+        public void NonBlittableElementArray_ByValue(bool result)
         {
-            var boolValues = new[]
+            BoolStruct[] array = GetBoolStructsToAnd(result);
+            Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembers(array, array.Length));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void NonBlittableElementArray_In(bool result)
+        {
+            BoolStruct[] array = GetBoolStructsToAnd(result);
+            Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembersIn(array, array.Length));
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Ref()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            NativeExportsNE.Arrays.NegateBools(ref array, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Out()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            BoolStruct[] result;
+            NativeExportsNE.Arrays.NegateBools(array, array.Length, out result);
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Return()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            BoolStruct[] result = NativeExportsNE.Arrays.NegateBools(array, array.Length);
+            Assert.Equal(expected, result);
+        }
+
+        private static BoolStruct[] GetBoolStructsToAnd(bool result) => new BoolStruct[]
             {
-                new BoolStruct_V1
+                new BoolStruct
                 {
                     b1 = true,
                     b2 = true,
                     b3 = true,
                 },
-                new BoolStruct_V1
+                new BoolStruct
                 {
                     b1 = true,
                     b2 = true,
                     b3 = true,
                 },
-                new BoolStruct_V1
+                new BoolStruct
                 {
                     b1 = true,
                     b2 = true,
@@ -420,8 +485,36 @@ namespace LibraryImportGenerator.IntegrationTests
                 },
             };
 
-            Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembers(boolValues, boolValues.Length));
-        }
+        private static BoolStruct[] GetBoolStructsToNegate() => new BoolStruct[]
+            {
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = false,
+                    b3 = true
+                },
+                new BoolStruct
+                {
+                    b1 = false,
+                    b2 = true,
+                    b3 = false
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true
+                },
+                new BoolStruct
+                {
+                    b1 = false,
+                    b2 = false,
+                    b3 = false
+                }
+            };
+
+        private static BoolStruct[] GetNegatedBoolStructs(BoolStruct[] toNegate)
+            => toNegate.Select(b => new BoolStruct() { b1 = !b.b1, b2 = !b.b2, b3 = !b.b3 }).ToArray();
 
         [Fact]
         public void ArraysOfArrays()

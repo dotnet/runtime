@@ -601,11 +601,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         await SendEvent(sessionId, "", o, token);
 
                         Frame scope = context.CallStack.First<Frame>();
-
-                        var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
-                        JObject retValue = await resolver.Resolve(args?["text"]?.Value<string>(), token);
-                        if (retValue == null)
-                            retValue = await ExpressionEvaluator.CompileAndRunTheExpression(args?["text"]?.Value<string>(), resolver, logger, token);
+                        string expression = args?["text"]?.Value<string>();
                         var osend = JObject.FromObject(new
                         {
                             type = "evaluationResult",
@@ -614,23 +610,67 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                             input = args?["text"],
                             from = args["to"].Value<string>()
                         });
-                        if (retValue["type"].Value<string>() == "object")
+                        try
                         {
-                            osend["result"] = JObject.FromObject(new
+                            var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
+                            JObject retValue = await resolver.Resolve(expression, token);
+                            if (retValue == null)
+                                retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
+                            if (retValue["type"].Value<string>() == "object")
                             {
-                                type = retValue["type"],
-                                @class = retValue["className"],
-                                description = retValue["description"],
-                                actor = retValue["objectId"],
-                            });
+                                osend["result"] = JObject.FromObject(new
+                                {
+                                    type = retValue["type"],
+                                    @class = retValue["className"],
+                                    description = retValue["description"],
+                                    actor = retValue["objectId"],
+                                });
+                            }
+                            else
+                            {
+                                osend["result"] = retValue["value"];
+                                osend["resultType"] = retValue["type"];
+                                osend["resultDescription"] = retValue["description"];
+                            }
+                            await SendEvent(sessionId, "", osend, token);
                         }
-                        else
+                        catch (ReturnAsErrorException ree)
                         {
-                            osend["result"] = retValue["value"];
-                            osend["resultType"] = retValue["type"];
-                            osend["resultDescription"] = retValue["description"];
+                            osend["hasException"] = true;
+                            osend.Add("exception", JObject.FromObject(new
+                            {
+                                type = "object",
+                                @class = ree.Error.Value["result"]["className"],
+                                isError = true,
+                                preview = JObject.FromObject(new
+                                {
+                                    kind = "Error",
+                                    name = ree.Error.Value["result"]["className"],
+                                    message = ree.Error.Value["result"]["description"],
+                                    isError = true
+                                })
+                            }));
+                            await SendEvent(sessionId, "", osend, token);
                         }
-                        await SendEvent(sessionId, "", osend, token);
+                        catch (Exception e)
+                        {
+                            logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
+                            osend["hasException"] = true;
+                            osend.Add("exception", JObject.FromObject(new
+                            {
+                                type = "object",
+                                @class = "InternalError",
+                                isError = true,
+                                preview = JObject.FromObject(new
+                                {
+                                    kind = "Error",
+                                    name = "InternalError",
+                                    message = e.Message,
+                                    isError = true
+                                })
+                            }));
+                            await SendEvent(sessionId, "", osend, token);
+                        }
                     }
                     else
                     {
@@ -1003,4 +1043,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return true;
     }
 
+    internal override Task<DebugStore> LoadStore(SessionId sessionId, bool tryUseDebuggerProtocol, CancellationToken token)
+        => base.LoadStore(sessionId, false, token);
 }

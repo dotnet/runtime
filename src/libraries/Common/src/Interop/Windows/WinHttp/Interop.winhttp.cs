@@ -56,7 +56,7 @@ internal static partial class Interop
             uint modifiers);
 
 #if NET7_0_OR_GREATER
-        [ManagedToUnmanagedMarshallers(typeof(StringBuilder), InMarshaller = typeof(SimpleStringBufferMarshaller))]
+        [CustomMarshaller(typeof(StringBuilder), MarshalMode.ManagedToUnmanagedIn, typeof(SimpleStringBufferMarshaller))]
         private static unsafe class SimpleStringBufferMarshaller
         {
             public static void* ConvertToUnmanaged(StringBuilder builder)

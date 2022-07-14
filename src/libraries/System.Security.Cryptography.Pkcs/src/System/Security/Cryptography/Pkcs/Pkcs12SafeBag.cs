@@ -21,10 +21,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                if (_attributes == null)
-                {
-                    _attributes = new CryptographicAttributeObjectCollection();
-                }
+                _attributes ??= new CryptographicAttributeObjectCollection();
 
                 return _attributes;
             }
@@ -56,10 +53,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid GetBagId()
         {
-            if (_bagOid == null)
-            {
-                _bagOid = new Oid(_bagIdValue);
-            }
+            _bagOid ??= new Oid(_bagIdValue);
 
             return _bagOid.CopyOid();
         }

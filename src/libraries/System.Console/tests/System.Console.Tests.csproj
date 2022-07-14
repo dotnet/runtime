@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
+    <Compile Include="ConsoleStreamTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="ConsoleKeyInfoTests.cs" />
@@ -15,7 +16,6 @@
     <Compile Include="SetIn.cs" />
     <Compile Include="Color.cs" />
     <Compile Include="SetOut.cs" />
-    <Compile Include="NegativeTesting.cs" />
     <Compile Include="ConsoleEncoding.cs" />
     <Compile Include="SyncTextReader.cs" />
     <Compile Include="SyncTextWriter.cs" />
@@ -45,8 +45,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)TestData\**\*"
-          Link="%(RecursiveDir)%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest" />
+             Link="%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ConsoleEncoding.Windows.cs" />

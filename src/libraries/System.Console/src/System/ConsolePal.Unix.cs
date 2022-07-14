@@ -619,7 +619,7 @@ namespace System
                         }
 
                         // Otherwise, push it back into the reader's extra buffer.
-                        reader.AppendExtraBuffer(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
+                        reader.AppendExtraBuffer(new ReadOnlySpan<byte>(in b));
                     }
                 }
 
@@ -640,7 +640,7 @@ namespace System
                         }
                         else
                         {
-                            reader.AppendExtraBuffer(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
+                            reader.AppendExtraBuffer(new ReadOnlySpan<byte>(in b));
                         }
                     }
 
@@ -1088,7 +1088,7 @@ namespace System
             if (string.IsNullOrEmpty(value))
                 return;
 
-            Span<byte> data = stackalloc byte[0];
+            scoped Span<byte> data;
             if (value.Length <= 256) // except for extremely rare cases, ANSI escape strings are very short
             {
                 data = stackalloc byte[Encoding.UTF8.GetMaxByteCount(value.Length)];

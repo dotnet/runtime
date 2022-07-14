@@ -1317,10 +1317,7 @@ namespace System.Xml
             SchemaNotation? notation = null;
             if (!_schemaInfo.Notations.ContainsKey(notationName.Name))
             {
-                if (_undeclaredNotations != null)
-                {
-                    _undeclaredNotations.Remove(notationName.Name);
-                }
+                _undeclaredNotations?.Remove(notationName.Name);
                 notation = new SchemaNotation(notationName);
                 _schemaInfo.Notations.Add(notation.Name.Name, notation);
             }
@@ -1358,10 +1355,7 @@ namespace System.Xml
 
         private void AddUndeclaredNotation(string notationName)
         {
-            if (_undeclaredNotations == null)
-            {
-                _undeclaredNotations = new Dictionary<string, UndeclaredNotation>();
-            }
+            _undeclaredNotations ??= new Dictionary<string, UndeclaredNotation>();
             UndeclaredNotation un = new UndeclaredNotation(notationName, LineNo, LinePos - notationName.Length);
             UndeclaredNotation? loggedUn;
             if (_undeclaredNotations.TryGetValue(notationName, out loggedUn))
@@ -3421,10 +3415,7 @@ namespace System.Xml
         {
             Debug.Assert(_validate);
             IValidationEventHandling? eventHandling = _readerAdapterWithValidation!.ValidationEventHandling;
-            if (eventHandling != null)
-            {
-                eventHandling.SendEvent(e, severity);
-            }
+            eventHandling?.SendEvent(e, severity);
         }
 
         private static bool IsAttributeValueType(Token token)
@@ -3593,10 +3584,7 @@ namespace System.Xml
                     }
                     if (j > i + 1)
                     {
-                        if (norValue == null)
-                        {
-                            norValue = new StringBuilder(len);
-                        }
+                        norValue ??= new StringBuilder(len);
                         norValue.Append(value, startPos, i - startPos + 1);
                         startPos = j;
                         i = j - 1;

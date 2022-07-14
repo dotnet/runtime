@@ -38,6 +38,7 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
+        public static bool IsNotAndroidX86 => !(IsAndroid && IsX86Process);
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
@@ -204,8 +205,8 @@ namespace System
         public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
-        // Changed to `true` when linking
-        public static bool IsBuiltWithAggressiveTrimming => false;
+        // Changed to `true` when trimming
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.

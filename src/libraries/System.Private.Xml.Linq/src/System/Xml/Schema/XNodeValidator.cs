@@ -153,10 +153,7 @@ namespace System.Xml.Schema
 
         private void ReplaceSchemaInfo(XObject o, XmlSchemaInfo schemaInfo)
         {
-            if (schemaInfos == null)
-            {
-                schemaInfos = new Dictionary<XmlSchemaInfo, XmlSchemaInfo>(new XmlSchemaInfoEqualityComparer());
-            }
+            schemaInfos ??= new Dictionary<XmlSchemaInfo, XmlSchemaInfo>(new XmlSchemaInfoEqualityComparer());
             XmlSchemaInfo? si = o.Annotation<XmlSchemaInfo>();
             if (si != null)
             {

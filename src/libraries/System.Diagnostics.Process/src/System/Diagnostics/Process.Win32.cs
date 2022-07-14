@@ -265,18 +265,7 @@ namespace System.Diagnostics
             return true;
         }
 
-        public string MainWindowTitle
-        {
-            get
-            {
-                if (_mainWindowTitle == null)
-                {
-                    _mainWindowTitle = GetMainWindowTitle();
-                }
-
-                return _mainWindowTitle;
-            }
-        }
+        public string MainWindowTitle => _mainWindowTitle ??= GetMainWindowTitle();
 
         private bool IsRespondingCore()
         {
@@ -441,17 +430,14 @@ namespace System.Diagnostics
             foreach (Process p in GetProcesses())
             {
                 SafeProcessHandle h = SafeGetHandle(p);
-                if (!h.IsInvalid)
+                if (!h.IsInvalid && predicate(this, p))
                 {
-                    if (predicate(this, p))
-                    {
-                        results.Add((p, h));
-                    }
-                    else
-                    {
-                        p.Dispose();
-                        h.Dispose();
-                    }
+                    results.Add((p, h));
+                }
+                else
+                {
+                    p.Dispose();
+                    h.Dispose();
                 }
             }
 

@@ -44,7 +44,7 @@ namespace System.Net.Http
 
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
-        private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(() => CheckTls13Support());
+        private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support);
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;
@@ -261,12 +261,7 @@ namespace System.Net.Http
                     throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, "ClientCertificateOptions", "Manual"));
                 }
 
-                if (_clientCertificates == null)
-                {
-                    _clientCertificates = new X509Certificate2Collection();
-                }
-
-                return _clientCertificates;
+                return _clientCertificates ??= new X509Certificate2Collection();
             }
         }
 
@@ -538,18 +533,7 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<string, object> Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new Dictionary<string, object>();
-                }
-
-                return _properties;
-            }
-        }
+        public IDictionary<string, object> Properties => _properties ??= new Dictionary<string, object>();
         #endregion
 
         protected override void Dispose(bool disposing)
@@ -836,6 +820,7 @@ namespace System.Net.Http
                         {
                             int lastError = Marshal.GetLastWin32Error();
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
+
                             if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
                             {
                                 ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
@@ -1675,6 +1660,9 @@ namespace System.Net.Http
             {
                 int lastError = Marshal.GetLastWin32Error();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
+
+                handle.Dispose();
+
                 throw WinHttpException.CreateExceptionUsingError(lastError, nameOfCalledFunction);
             }
         }

@@ -20,15 +20,7 @@ namespace System.Xml
         private XmlDictionaryString[]? _strings;
         private int _nextId;
 
-        public static IXmlDictionary Empty
-        {
-            get
-            {
-                if (s_empty == null)
-                    s_empty = new EmptyDictionary();
-                return s_empty;
-            }
-        }
+        public static IXmlDictionary Empty => s_empty ??= new EmptyDictionary();
 
         public XmlDictionary()
         {

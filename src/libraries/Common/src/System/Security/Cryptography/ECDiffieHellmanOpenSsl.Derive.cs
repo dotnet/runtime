@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
                 hashAlgorithm,
                 secretPrepend,
                 secretAppend,
-                (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                DeriveSecretAgreement);
         }
 
         public override byte[] DeriveKeyFromHmac(
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
                 hmacKey,
                 secretPrepend,
                 secretAppend,
-                (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                DeriveSecretAgreement);
         }
 
         public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
                 otherPartyPublicKey,
                 prfLabel,
                 prfSeed,
-                (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                DeriveSecretAgreement);
         }
 
         /// <summary>
@@ -75,6 +75,7 @@ namespace System.Security.Cryptography
         private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
         {
             Debug.Assert(otherPartyPublicKey != null);
+            Debug.Assert(_key is not null); // Callers should validate prior.
 
             // Ensure that this ECDH object contains a private key by attempting a parameter export
             // which will throw an OpenSslCryptoException if no private key is available
@@ -143,7 +144,7 @@ namespace System.Security.Cryptography
                     secretLength = (int)secretLengthU;
 
                     // Indicate that secret can hold stackallocs from nested scopes
-                    Span<byte> secret = stackalloc byte[0];
+                    scoped Span<byte> secret;
 
                     // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
                     const int StackAllocMax = 66;

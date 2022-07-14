@@ -66,9 +66,7 @@ namespace System.Drawing {
 
                     // Parse 2 integer values.
                     //
-                    if (culture == null) {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
@@ -109,19 +107,17 @@ namespace System.Drawing {
                 if (destinationType == typeof(string)) {
                     Size size = (Size)value;
 
-                    if (culture == null) {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
-                    string[] args = new string[2];
-                    int nArg = 0;
 
                     // Note: ConvertToString will raise exception if value cannot be converted.
+                    return
+                        intConverter.ConvertToString(context, culture, size.Width) +
+                        sep +
+                        intConverter.ConvertToString(context, culture, size.Height);
                     args[nArg++] = intConverter.ConvertToString(context, culture, size.Width);
                     args[nArg++] = intConverter.ConvertToString(context, culture, size.Height);
-
-                    return string.Join(sep, args);
                 }
                 if (destinationType == typeof(InstanceDescriptor)) {
                     Size size = (Size)value;

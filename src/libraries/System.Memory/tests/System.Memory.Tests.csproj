@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
@@ -60,6 +60,7 @@
     <Compile Include="Span\CtorArray.cs" />
     <Compile Include="Span\CtorArrayIntInt.cs" />
     <Compile Include="Span\CtorPointerInt.cs" />
+    <Compile Include="Span\CtorRef.cs" />
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\EndsWith.byte.cs" />
     <Compile Include="Span\EndsWith.char.cs" />
@@ -137,6 +138,7 @@
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlySpan\CtorPointerInt.cs" />
+    <Compile Include="ReadOnlySpan\CtorRef.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.byte.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.long.cs" />

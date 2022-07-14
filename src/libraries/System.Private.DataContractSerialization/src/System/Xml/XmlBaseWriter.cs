@@ -97,10 +97,7 @@ namespace System.Xml
                 _attributeValue = null;
                 _attributeLocalName = null;
                 _nodeWriter.Close();
-                if (_signingWriter != null)
-                {
-                    _signingWriter.Close();
-                }
+                _signingWriter?.Close();
             }
         }
 
@@ -115,15 +112,7 @@ namespace System.Xml
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlWriterClosed));
         }
 
-        private static BinHexEncoding BinHexEncoding
-        {
-            get
-            {
-                if (_binhexEncoding == null)
-                    _binhexEncoding = new BinHexEncoding();
-                return _binhexEncoding;
-            }
-        }
+        private static BinHexEncoding BinHexEncoding => _binhexEncoding ??= new BinHexEncoding();
 
         public override string? XmlLang
         {
@@ -476,8 +465,7 @@ namespace System.Xml
             if (_writeState == WriteState.Attribute)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteCData", WriteState.ToString())));
 
-            if (text == null)
-                text = string.Empty;
+            text ??= string.Empty;
 
             if (text.Length > 0)
             {
@@ -511,8 +499,7 @@ namespace System.Xml
             Element element = EnterScope();
             if (ns == null)
             {
-                if (prefix == null)
-                    prefix = string.Empty;
+                prefix ??= string.Empty;
 
                 ns = _nsMgr.LookupNamespace(prefix);
 
@@ -562,8 +549,7 @@ namespace System.Xml
             Element element = EnterScope();
             if (ns == null)
             {
-                if (prefix == null)
-                    prefix = string.Empty;
+                prefix ??= string.Empty;
 
                 ns = _nsMgr.LookupNamespace(prefix);
 
@@ -843,8 +829,7 @@ namespace System.Xml
             if (IsClosed)
                 ThrowClosed();
             ArgumentException.ThrowIfNullOrEmpty(localName);
-            if (namespaceUri == null)
-                namespaceUri = string.Empty;
+            namespaceUri ??= string.Empty;
             string prefix = GetQualifiedNamePrefix(namespaceUri, null);
             if (prefix.Length != 0)
             {
@@ -861,8 +846,7 @@ namespace System.Xml
             ArgumentNullException.ThrowIfNull(localName);
             if (localName.Value.Length == 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.InvalidLocalNameEmpty, nameof(localName)));
-            if (namespaceUri == null)
-                namespaceUri = XmlDictionaryString.Empty;
+            namespaceUri ??= XmlDictionaryString.Empty;
             string prefix = GetQualifiedNamePrefix(namespaceUri.Value, namespaceUri);
 
             FlushBase64();
@@ -980,8 +964,7 @@ namespace System.Xml
             if (IsClosed)
                 ThrowClosed();
 
-            if (value == null)
-                value = string.Empty;
+            value ??= string.Empty;
 
             if (value.Length > 0 || _inList)
             {
@@ -1059,8 +1042,7 @@ namespace System.Xml
             if (IsClosed)
                 ThrowClosed();
 
-            if (value == null)
-                value = string.Empty;
+            value ??= string.Empty;
 
             if (value.Length > 0)
             {
@@ -1482,10 +1464,7 @@ namespace System.Xml
                 int totalByteCount = _trailByteCount + count;
                 int actualByteCount = totalByteCount - (totalByteCount % 3);
 
-                if (_trailBytes == null)
-                {
-                    _trailBytes = new byte[3];
-                }
+                _trailBytes ??= new byte[3];
 
                 if (actualByteCount >= 3)
                 {
@@ -1551,10 +1530,7 @@ namespace System.Xml
                 int totalByteCount = _trailByteCount + count;
                 int actualByteCount = totalByteCount - (totalByteCount % 3);
 
-                if (_trailBytes == null)
-                {
-                    _trailBytes = new byte[3];
-                }
+                _trailBytes ??= new byte[3];
 
                 if (actualByteCount >= 3)
                 {
@@ -1609,8 +1585,7 @@ namespace System.Xml
             if (Signing)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlCanonicalizationStarted));
             FlushElement();
-            if (_signingWriter == null)
-                _signingWriter = CreateSigningNodeWriter();
+            _signingWriter ??= CreateSigningNodeWriter();
             _signingWriter.SetOutput(_writer, stream, includeComments, inclusivePrefixes);
             _writer = _signingWriter;
             SignScope(_signingWriter.CanonicalWriter);

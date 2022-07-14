@@ -76,6 +76,7 @@ internal static partial class TermInfo
             if (fd.IsInvalid)
             {
                 // Don't throw in this case, as we'll be polling multiple locations looking for the file.
+                fd.Dispose();
                 fd = null;
                 return false;
             }

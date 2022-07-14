@@ -143,12 +143,7 @@ namespace System.Xml.Schema
             string? tns;
             foreach (XmlSchema? schema in _schemasToCompile.Values)
             {
-                tns = schema!.TargetNamespace;
-                if (tns == null)
-                {
-                    tns = string.Empty;
-                }
-
+                tns = schema!.TargetNamespace ?? string.Empty;
                 schemaInfo.TargetNamespaces[tns] = true;
             }
 
@@ -534,10 +529,7 @@ namespace System.Xml.Schema
                             {
                                 if (g.Members[j] != element)
                                 { //Exclude the head
-                                    if (newMembers == null)
-                                    {
-                                        newMembers = new ArrayList();
-                                    }
+                                    newMembers ??= new ArrayList();
                                     newMembers.Add(g.Members[j]);
                                 }
                             }
@@ -570,15 +562,8 @@ namespace System.Xml.Schema
 
             if (redefinedGroup.SelfReferenceCount == 0)
             {
-                if (baseGroup.CanonicalParticle == null)
-                {
-                    baseGroup.CanonicalParticle = CannonicalizeParticle(baseGroup.Particle, true);
-                }
-
-                if (redefinedGroup.CanonicalParticle == null)
-                {
-                    redefinedGroup.CanonicalParticle = CannonicalizeParticle(redefinedGroup.Particle, true);
-                }
+                baseGroup.CanonicalParticle ??= CannonicalizeParticle(baseGroup.Particle, true);
+                redefinedGroup.CanonicalParticle ??= CannonicalizeParticle(redefinedGroup.Particle, true);
 
                 CompileParticleElements(redefinedGroup.CanonicalParticle);
                 CompileParticleElements(baseGroup.CanonicalParticle);
@@ -610,10 +595,7 @@ namespace System.Xml.Schema
             else
             {
                 group.IsProcessing = true;
-                if (group.CanonicalParticle == null)
-                {
-                    group.CanonicalParticle = CannonicalizeParticle(group.Particle, true);
-                }
+                group.CanonicalParticle ??= CannonicalizeParticle(group.Particle, true);
                 Debug.Assert(group.CanonicalParticle != null);
                 group.IsProcessing = false; //Not enclosung in try -finally as cannonicalizeParticle will not throw exception
             }
@@ -1884,10 +1866,8 @@ namespace System.Xml.Schema
                 }
                 else if (skipEmptableOnly && !IsParticleEmptiable(baseParticle))
                 {
-                    if (_restrictionErrorMsg == null)
-                    { //If restriction failed on previous check, do not overwrite error
-                        _restrictionErrorMsg = SR.Sch_GroupBaseRestNotEmptiable;
-                    }
+                    //If restriction failed on previous check, do not overwrite error
+                    _restrictionErrorMsg ??= SR.Sch_GroupBaseRestNotEmptiable;
                     return false;
                 }
             }
@@ -2518,10 +2498,7 @@ namespace System.Xml.Schema
                         xa.SetAttributeType(DatatypeImplementation.AnySimpleType);
                     }
                     //} //Removed this here since the following should be done only if RefName is Empty
-                    if (decl.Datatype != null)
-                    {
-                        decl.Datatype.VerifySchemaValid(_notations, xa);
-                    }
+                    decl.Datatype?.VerifySchemaValid(_notations, xa);
                     SetDefaultFixed(xa, decl);
                 } //End of Else for !RefName.IsEmpty
 
@@ -2764,10 +2741,7 @@ namespace System.Xml.Schema
                     decl.IsNillable = xe.IsNillable;
                     decl.Block |= xe.BlockResolved;
                 }
-                if (decl.Datatype != null)
-                {
-                    decl.Datatype.VerifySchemaValid(_notations, xe);
-                }
+                decl.Datatype?.VerifySchemaValid(_notations, xe);
 
                 if (xe.DefaultValue != null || xe.FixedValue != null)
                 {

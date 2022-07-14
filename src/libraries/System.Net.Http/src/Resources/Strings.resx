@@ -168,6 +168,9 @@
   <data name="net_http_content_readonly_stream" xml:space="preserve">
     <value>The stream does not support writing.</value>
   </data>
+  <data name="net_http_content_writeonly_stream" xml:space="preserve">
+    <value>The stream does not support reading.</value>
+  </data>
   <data name="net_http_content_invalid_charset" xml:space="preserve">
     <value>The character set provided in ContentType is invalid. Cannot read content as string using an invalid character set.</value>
   </data>
@@ -563,5 +566,8 @@
   </data>
   <data name="net_http_chunk_too_large" xml:space="preserve">
     <value>The HTTP/1.1 response chunk was too large.</value>
+  </data>
+    <data name="net_unsupported_extended_connect" xml:space="preserve">
+    <value>Failed to establish web socket connection over HTTP/2 because extended CONNECT is not supported. Try to downgrade the request version to HTTP/1.1.</value>
   </data>
 </root>

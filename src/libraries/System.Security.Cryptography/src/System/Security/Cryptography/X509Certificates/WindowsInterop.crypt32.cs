@@ -133,8 +133,9 @@ internal static partial class Interop
         {
             if (!Interop.Crypt32.CertCreateCertificateChainEngine(ref config, out SafeChainEngineHandle chainEngineHandle))
             {
-                int errorCode = Marshal.GetLastWin32Error();
-                throw errorCode.ToCryptographicException();
+                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                chainEngineHandle.Dispose();
+                throw e;
             }
 
             return chainEngineHandle;

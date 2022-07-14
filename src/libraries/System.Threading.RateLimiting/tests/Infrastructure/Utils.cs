@@ -39,7 +39,7 @@ namespace System.Threading.RateLimiting.Tests
     {
         public override int GetAvailablePermits(T resourceID) => throw new NotImplementedException();
         protected override RateLimitLease AcquireCore(T resourceID, int permitCount) => throw new NotImplementedException();
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(T resourceID, int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(T resourceID, int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
     }
 
     internal sealed class TrackingRateLimiter : RateLimiter
@@ -52,7 +52,7 @@ namespace System.Threading.RateLimiting.Tests
 
         public int GetAvailablePermitsCallCount => _getAvailablePermitsCallCount;
         public int AcquireCallCount => _acquireCallCount;
-        public int WaitAsyncCallCount => _waitAsyncCallCount;
+        public int WaitAndAcquireAsyncCallCount => _waitAsyncCallCount;
         public int DisposeCallCount => _disposeCallCount;
         public int DisposeAsyncCallCount => _disposeAsyncCallCount;
 
@@ -70,7 +70,7 @@ namespace System.Threading.RateLimiting.Tests
             return new Lease();
         }
 
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken)
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
         {
             Interlocked.Increment(ref _waitAsyncCallCount);
             return new ValueTask<RateLimitLease>(new Lease());
@@ -139,7 +139,7 @@ namespace System.Threading.RateLimiting.Tests
 
         public override int GetAvailablePermits() => throw new NotImplementedException();
         protected override RateLimitLease AcquireCore(int permitCount) => throw new NotImplementedException();
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken) => throw new NotImplementedException();
     }
 
     internal sealed class CustomizableLimiter : RateLimiter
@@ -153,8 +153,8 @@ namespace System.Threading.RateLimiting.Tests
         public Func<int, RateLimitLease> AcquireCoreImpl { get; set; } = _ => new Lease();
         protected override RateLimitLease AcquireCore(int permitCount) => AcquireCoreImpl(permitCount);
 
-        public Func<int, CancellationToken, ValueTask<RateLimitLease>> WaitAsyncCoreImpl { get; set; } = (_, _) => new ValueTask<RateLimitLease>(new Lease());
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken) => WaitAsyncCoreImpl(permitCount, cancellationToken);
+        public Func<int, CancellationToken, ValueTask<RateLimitLease>> WaitAndAcquireAsyncCoreImpl { get; set; } = (_, _) => new ValueTask<RateLimitLease>(new Lease());
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken) => WaitAndAcquireAsyncCoreImpl(permitCount, cancellationToken);
 
         public Action<bool> DisposeImpl { get; set; } = _ => { };
         protected override void Dispose(bool disposing) => DisposeImpl(disposing);
@@ -183,8 +183,8 @@ namespace System.Threading.RateLimiting.Tests
         public Func<int, RateLimitLease> AcquireCoreImpl { get; set; } = _ => new Lease();
         protected override RateLimitLease AcquireCore(int permitCount) => AcquireCoreImpl(permitCount);
 
-        public Func<int, CancellationToken, ValueTask<RateLimitLease>> WaitAsyncCoreImpl { get; set; } = (_, _) => new ValueTask<RateLimitLease>(new Lease());
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken) => WaitAsyncCoreImpl(permitCount, cancellationToken);
+        public Func<int, CancellationToken, ValueTask<RateLimitLease>> WaitAndAcquireAsyncCoreImpl { get; set; } = (_, _) => new ValueTask<RateLimitLease>(new Lease());
+        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken) => WaitAndAcquireAsyncCoreImpl(permitCount, cancellationToken);
 
         public Func<ValueTask> DisposeAsyncCoreImpl { get; set; } = () => default;
         protected override ValueTask DisposeAsyncCore() => DisposeAsyncCoreImpl();

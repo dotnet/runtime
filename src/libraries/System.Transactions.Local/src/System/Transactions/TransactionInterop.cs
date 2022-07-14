@@ -24,10 +24,7 @@ namespace System.Transactions
         {
             ArgumentNullException.ThrowIfNull(transaction);
 
-            if (transaction.Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(transaction.Disposed, transaction);
 
             if (transaction._complete)
             {

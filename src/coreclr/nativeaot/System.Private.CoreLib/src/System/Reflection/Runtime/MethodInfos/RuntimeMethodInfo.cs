@@ -163,8 +163,7 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThroughAttribute]
         public sealed override object? Invoke(object? obj, BindingFlags invokeAttr, Binder binder, object?[]? parameters, CultureInfo culture)
         {
-            if (parameters == null)
-                parameters = Array.Empty<object>();
+            parameters ??= Array.Empty<object>();
             MethodInvoker methodInvoker = this.MethodInvoker;
             object? result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();

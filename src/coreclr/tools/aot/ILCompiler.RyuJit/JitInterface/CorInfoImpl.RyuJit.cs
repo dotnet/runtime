@@ -1306,7 +1306,7 @@ namespace Internal.JitInterface
 
             if (directCall && resolvedConstraint && pResult->exactContextNeedsRuntimeLookup)
             {
-                // We want to do a direct call to a shared method on a valuetype. We need to provide
+                // We want to do a direct call to a shared method on a type. We need to provide
                 // a generic context, but the JitInterface doesn't provide a way for us to do it from here.
                 // So we do the next best thing and ask RyuJIT to look up a fat pointer.
 
@@ -1315,8 +1315,8 @@ namespace Internal.JitInterface
                 pResult->nullInstanceCheck = !targetMethod.Signature.IsStatic;
 
                 // We have the canonical version of the method - find the runtime determined version.
-                // This is simplified because we know the method is on a valuetype.
-                Debug.Assert(targetMethod.OwningType.IsValueType);
+                // For now simplify it by assuming the resolved method is on the same type as the constraint.
+                Debug.Assert(targetMethod.OwningType.GetTypeDefinition() == constrainedType.GetTypeDefinition());
                 TypeDesc runtimeDeterminedConstrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
 
                 if (forceUseRuntimeLookup)

@@ -36,13 +36,7 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(bufferLength >= (s.Length + 1) * SystemMaxDBCSCharSize, "Insufficient buffer length passed to StringToAnsiString");
 
-            int convertedBytes;
-
-            fixed (char* pChar = s)
-            {
-                convertedBytes = Encoding.UTF8.GetBytes(pChar, s.Length, buffer, bufferLength);
-            }
-
+            int convertedBytes = Encoding.UTF8.GetBytes(s, new Span<byte>(buffer, bufferLength));
             buffer[convertedBytes] = 0;
 
             return convertedBytes;

@@ -1084,12 +1084,10 @@ namespace System.Numerics
             if (_bits is null)
                 return _sign;
 
-            int hash = _sign;
-            for (int iv = _bits.Length; --iv >= 0;)
-                hash = unchecked((int)CombineHash((uint)hash, _bits[iv]));
-            return hash;
-
-            static uint CombineHash(uint u1, uint u2) => ((u1 << 7) | (u1 >> 25)) ^ u2;
+            HashCode hash = default;
+            hash.AddBytes(MemoryMarshal.AsBytes(_bits.AsSpan()));
+            hash.Add(_sign);
+            return hash.ToHashCode();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -3821,6 +3819,9 @@ namespace System.Numerics
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static BigInteger IBinaryNumber<BigInteger>.AllBitsSet => MinusOne;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(BigInteger value) => value.IsPowerOfTwo;
 
@@ -3932,6 +3933,63 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
         static int INumberBase<BigInteger>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<BigInteger>.IsCanonical(BigInteger value) => true;
@@ -4066,7 +4124,11 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromChecked<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromChecked<TOther>(TOther value, out BigInteger result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out BigInteger result)
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -4179,7 +4241,11 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out BigInteger result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out BigInteger result)
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -4292,7 +4358,11 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out BigInteger result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out BigInteger result)
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -5121,7 +5191,7 @@ namespace System.Numerics
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
         public static BigInteger operator >>>(BigInteger value, int shiftAmount)
         {
             value.AssertValid();
