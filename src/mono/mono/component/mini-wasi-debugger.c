@@ -13,7 +13,8 @@ __attribute__((import_module("wasi_snapshot_preview1")))
 __attribute__((import_name("sock_accept")))
 int sock_accept(int fd, int fdflags, int* result_ptr);
 
-static long long timeInMilliseconds()
+static long long
+timeInMilliseconds()
 {
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
