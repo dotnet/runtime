@@ -50,6 +50,9 @@ namespace Mono.Linker.Dataflow
 		MultiValue GetValueForCustomAttributeArgument (CustomAttributeArgument argument)
 		{
 			if (argument.Type.Name == "Type") {
+				if (argument.Value is null)
+					return NullValue.Instance;
+
 				TypeDefinition? referencedType = ((TypeReference) argument.Value).ResolveToTypeDefinition (_context);
 				return referencedType == null
 					? UnknownValue.Instance
@@ -57,7 +60,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (argument.Type.MetadataType == MetadataType.String)
-				return new KnownStringValue ((string) argument.Value);
+				return argument.Value is null ? NullValue.Instance : new KnownStringValue ((string) argument.Value);
 
 			// We shouldn't have gotten a non-null annotation for this from GetParameterAnnotation
 			throw new InvalidOperationException ();
