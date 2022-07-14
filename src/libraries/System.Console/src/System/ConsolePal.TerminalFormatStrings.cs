@@ -83,7 +83,7 @@ internal static partial class ConsolePal
             CursorLeft = db.GetString(TermInfo.WellKnownStrings.CursorLeft);
             ClrEol = db.GetString(TermInfo.WellKnownStrings.ClrEol);
 
-            IsRxvtTerm = !string.IsNullOrEmpty(db.Term) && db.Term.IndexOf("rxvt", StringComparison.OrdinalIgnoreCase) >= 0;
+            IsRxvtTerm = !string.IsNullOrEmpty(db.Term) && db.Term.Contains("rxvt", StringComparison.OrdinalIgnoreCase);
             Title = GetTitle(db);
 
             Debug.WriteLineIf(db.GetString(TermInfo.WellKnownStrings.CursorPositionReport) != CursorPositionReport,
