@@ -37,7 +37,6 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine(outerEx.ToString());
             Assert.IsType<HttpRequestException>(outerEx);
             HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
-            _output.WriteLine(protocolEx.Message);
             Assert.Equal(errorCode, protocolEx.ErrorCode);
         }
 
@@ -381,7 +380,6 @@ namespace System.Net.Http.Functional.Tests
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
-
 
         [Fact]
         public async Task RequestSentResponseDisposed_ThrowsOnServer()

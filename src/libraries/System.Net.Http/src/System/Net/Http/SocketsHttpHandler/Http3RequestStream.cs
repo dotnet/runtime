@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Quic;
@@ -1188,21 +1189,29 @@ namespace System.Net.Http
             }
         }
 
+        [DoesNotReturn]
         private void HandleReadResponseContentException(Exception ex, CancellationToken cancellationToken)
         {
             switch (ex)
             {
-                case QuicException e when (e.QuicError == QuicError.StreamAborted || e.QuicError == QuicError.OperationAborted):
-                    // Peer or user aborted the stream
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+                case QuicException e when (e.QuicError == QuicError.StreamAborted):
+                    // Peer aborted the stream
+                    Debug.Assert(e.ApplicationErrorCode.HasValue);
+                    throw HttpProtocolException.CreateHttp3StreamException((Http3ErrorCode)e.ApplicationErrorCode.Value);
+
                 case QuicException e when (e.QuicError == QuicError.ConnectionAborted):
                     // Our connection was reset. Start aborting the connection.
-                    Exception abortException = _connection.Abort(ex);
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, abortException));
+                    Debug.Assert(e.ApplicationErrorCode.HasValue);
+                    HttpProtocolException exception = HttpProtocolException.CreateHttp3ConnectionException((Http3ErrorCode)e.ApplicationErrorCode.Value, SR.net_http_http3_connection_close);
+                    _connection.Abort(exception);
+                    throw exception;
+
                 case HttpProtocolException:
                     // A connection-level protocol error has occurred on our stream.
                     _connection.Abort(ex);
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+                    ExceptionDispatchInfo.Throw(ex); // Rethrow.
+                    return; // Never reached.
+
                 case OperationCanceledException oce when oce.CancellationToken == cancellationToken:
                     _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
