@@ -352,7 +352,6 @@ unsafe class ThisCallTest
         {
             delegate* unmanaged[Thiscall]<ThisCallNative.C*, CLong> fn = &GetWidthAsLong;
             CalliEmptyThisCall((delegate* unmanaged[Thiscall]<int>)fn);
-            Console.WriteLine("FAIL: thiscall fptr with no args should have failed");
             throw new Exception("FAIL: thiscall fptr with no args should have failed");
         }
         catch (InvalidProgramException)
@@ -363,7 +362,6 @@ unsafe class ThisCallTest
         try
         {
             PinvokeEmptyThisCall();
-            Console.WriteLine("FAIL: pinvoke thiscall with no args should have failed");
             throw new Exception("FAIL: pinvoke thiscall with no args should have failed");
         }
         catch (InvalidProgramException)
