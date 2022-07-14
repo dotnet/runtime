@@ -166,11 +166,13 @@ namespace System.Net.Quic.Tests
             static async Task MakeStreams(QuicConnection clientConnection, QuicConnection serverConnection)
             {
                 byte[] buffer = new byte[64];
-                QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
-                ValueTask writeTask = clientStream.WriteAsync("PING"u8.ToArray(), completeWrites: true);
-                ValueTask<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync();
-                await new Task[] { writeTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
-                QuicStream serverStream = acceptTask.Result;
+
+                using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                Task writeTask = clientStream.WriteAsync("PING"u8.ToArray(), completeWrites: true).AsTask();
+                Task<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync().AsTask();
+                await new Task[] { writeTask, acceptTask }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+
+                using QuicStream serverStream = acceptTask.Result;
                 await serverStream.ReadAsync(buffer);
             }
         }

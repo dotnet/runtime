@@ -74,31 +74,20 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     /// <summary>
     /// Optional parent safe handle, used to increment/decrement reference count with the lifetime of this instance.
     /// </summary>
-    private MsQuicSafeHandle? _parent;
+    private readonly MsQuicSafeHandle? _parent;
 
     public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> releaseAction, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
         : base(handle, releaseAction, safeHandleType)
     {
         _context = context;
-        _parent = parent;
-        if (_parent is not null)
+        if (parent is not null)
         {
-            bool release = false;
-            _parent.DangerousAddRef(ref release);
-            if (!release)
+            bool success = false;
+            parent.DangerousAddRef(ref success);
+            _parent = parent;
+            if (NetEventSource.Log.IsEnabled())
             {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Error(this, $"{this} {_parent} ref count not incremented");
-                }
-                _parent = null;
-            }
-            else
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(this, $"{this} {_parent} ref count incremented");
-                }
+                NetEventSource.Info(this, $"{this} {_parent} ref count incremented");
             }
         }
     }
