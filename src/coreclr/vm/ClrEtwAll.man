@@ -611,6 +611,7 @@
                     <bitMap name="RuntimeSkuMap">
                         <map value="0x1" message="$(string.RuntimePublisher.RuntimeSku.DesktopCLRMapMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.RuntimeSku.CoreCLRMapMessage)"/>
+                        <map value="0x4" message="$(string.RuntimePublisher.RuntimeSku.MonoMapMessage)"/>
                     </bitMap>
                     <bitMap name="ExceptionThrownFlagsMap">
                         <map value="0x1" message="$(string.RuntimePublisher.ExceptionThrown.HasInnerExceptionMapMessage)"/>
@@ -4309,6 +4310,7 @@
                     <bitMap name="RuntimeSkuMap">
                         <map value="0x1" message="$(string.RundownPublisher.RuntimeSku.DesktopCLRMapMessage)"/>
                         <map value="0x2" message="$(string.RundownPublisher.RuntimeSku.CoreCLRMapMessage)"/>
+                        <map value="0x4" message="$(string.RundownPublisher.RuntimeSku.MonoMapMessage)"/>
                     </bitMap>
                     <bitMap name="StartupFlagsMap">
                         <map value="0x000001" message="$(string.RundownPublisher.Startup.CONCURRENT_GCMapMessage)"/>
@@ -8678,6 +8680,7 @@
                 <string id="RuntimePublisher.StartupMode.OtherMapMessage" value="Other" />
                 <string id="RuntimePublisher.RuntimeSku.DesktopCLRMapMessage" value="DesktopClr" />
                 <string id="RuntimePublisher.RuntimeSku.CoreCLRMapMessage" value="CoreClr" />
+                <string id="RuntimePublisher.RuntimeSku.MonoMapMessage" value="Mono" />
                 <string id="RuntimePublisher.ExceptionThrown.HasInnerExceptionMapMessage" value="HasInnerException" />
                 <string id="RuntimePublisher.ExceptionThrown.NestedMapMessage" value="Nested" />
                 <string id="RuntimePublisher.ExceptionThrown.ReThrownMapMessage" value="ReThrown" />
@@ -8808,6 +8811,7 @@
                 <string id="RundownPublisher.StartupMode.OtherMapMessage" value="Other" />
                 <string id="RundownPublisher.RuntimeSku.DesktopCLRMapMessage" value="DesktopClr" />
                 <string id="RundownPublisher.RuntimeSku.CoreCLRMapMessage" value="CoreClr" />
+                <string id="RundownPublisher.RuntimeSku.MonoMapMessage" value="Mono" />
                 <string id="RundownPublisher.Startup.CONCURRENT_GCMapMessage" value="CONCURRENT_GC" />
                 <string id="RundownPublisher.Startup.LOADER_OPTIMIZATION_SINGLE_DOMAINMapMessage" value="LOADER_OPTIMIZATION_SINGLE_DOMAIN" />
                 <string id="RundownPublisher.Startup.LOADER_OPTIMIZATION_MULTI_DOMAINMapMessage" value="LOADER_OPTIMIZATION_MULTI_DOMAIN" />

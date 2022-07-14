@@ -500,6 +500,13 @@ namespace Microsoft.Interop.Analyzers
 
                 if (!hasCustomTypeMarshallerAttribute)
                 {
+                    if (ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(entryType))
+                    {
+                        // TEMPORARY: Don't analyze V2 analyzers in this method for now.
+                        // We'll add support soon, but for now just don't emit warnings to use the V1 marshaller design
+                        // when using the V2 design.
+                        return;
+                    }
                     context.ReportDiagnostic(
                         attributeData.CreateDiagnostic(
                             NativeTypeMustHaveCustomTypeMarshallerAttributeRule,

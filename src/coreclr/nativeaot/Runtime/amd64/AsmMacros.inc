@@ -395,7 +395,6 @@ endif ;; FEATURE_GC_STRESS
 EXTERN RhpGcAlloc                               : PROC
 EXTERN RhpValidateExInfoPop                     : PROC
 EXTERN RhDebugBreak                             : PROC
-EXTERN RhpWaitForSuspend2                       : PROC
 EXTERN RhpWaitForGC2                            : PROC
 EXTERN RhpReversePInvokeAttachOrTrapThread2     : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC

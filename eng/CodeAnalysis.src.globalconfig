@@ -275,7 +275,7 @@ dotnet_diagnostic.CA1724.severity = none
 dotnet_diagnostic.CA1725.severity = suggestion
 
 # CA1727: Use PascalCase for named placeholders
-dotnet_diagnostic.CA1727.severity = suggestion
+dotnet_diagnostic.CA1727.severity = warning
 
 # CA1802: Use literals where appropriate
 dotnet_diagnostic.CA1802.severity = warning
@@ -572,7 +572,7 @@ dotnet_diagnostic.CA2251.severity = warning
 dotnet_diagnostic.CA2252.severity = error
 
 # CA2253: Named placeholders should not be numeric values
-dotnet_diagnostic.CA2253.severity = none
+dotnet_diagnostic.CA2253.severity = warning
 
 # CA2254: Template should be a static expression
 dotnet_diagnostic.CA2254.severity = none

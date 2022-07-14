@@ -13,22 +13,6 @@ namespace System.Runtime
     [ReflectionBlocked]
     public static class TypeLoaderExports
     {
-        public static IntPtr GetThreadStaticsForDynamicType(int index)
-        {
-            IntPtr result = RuntimeImports.RhGetThreadLocalStorageForDynamicType(index, 0, 0);
-            if (result != IntPtr.Zero)
-                return result;
-
-            int numTlsCells;
-            int tlsStorageSize = RuntimeAugments.TypeLoaderCallbacks.GetThreadStaticsSizeForDynamicType(index, out numTlsCells);
-            result = RuntimeImports.RhGetThreadLocalStorageForDynamicType(index, tlsStorageSize, numTlsCells);
-
-            if (result == IntPtr.Zero)
-                throw new OutOfMemoryException();
-
-            return result;
-        }
-
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
         {
             EETypePtr pEEType = new EETypePtr(pEETypePtr);

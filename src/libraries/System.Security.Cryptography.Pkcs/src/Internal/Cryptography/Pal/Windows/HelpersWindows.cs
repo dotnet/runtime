@@ -485,7 +485,9 @@ namespace Internal.Cryptography.Pal.Windows
 
             for (int i = 0; i < pCryptAttribute->cValue; i++)
             {
-                byte[] encodedAttribute = pCryptAttribute->rgValue[i].ToByteArray();
+                // CreateBestPkcs9AttributeObjectAvailable is expected to create a copy of the data so that it has ownership
+                // of the underlying data.
+                ReadOnlySpan<byte> encodedAttribute = pCryptAttribute->rgValue[i].DangerousAsSpan();
                 AsnEncodedData attributeObject = PkcsHelpers.CreateBestPkcs9AttributeObjectAvailable(oid, encodedAttribute);
                 attributeCollection.Add(attributeObject);
             }

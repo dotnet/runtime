@@ -262,7 +262,7 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)]
             public bool AutoLoginIfChallenged;
 #if NET7_0_OR_GREATER
-            [CustomMarshaller(typeof(WINHTTP_AUTOPROXY_OPTIONS), Scenario.Default, typeof(Marshaller))]
+            [CustomMarshaller(typeof(WINHTTP_AUTOPROXY_OPTIONS), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {
                 public static Native ConvertToUnmanaged(WINHTTP_AUTOPROXY_OPTIONS managed) => new(managed);
