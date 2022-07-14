@@ -2220,7 +2220,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_68568/Runtime_68568/*">
             <Issue>Tests coreclr's handling of switches on natively sized integers</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/EmptyThisCall">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/EmptyThisCallTest/EmptyThisCallTest/*">
             <Issue>Tests that 'thiscall' with an empty signature results in InvalidProgramException, which is coreclr-only behavior</Issue>
         </ExcludeList>
     </ItemGroup>
