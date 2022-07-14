@@ -69,14 +69,14 @@ wasi_transport_connect (const char *socket_fd)
 	
 	while (!handshake_ok)
 	{
-        sock_accept (atoi(socket_fd), 4, &conn_fd);
-        int res = write (conn_fd, (const char*)"", 0);
-        if (conn_fd == -1 || res == -1)
-        {
-            sleep(1);
-            continue;
-        }
-        handshake_ok = mono_component_debugger ()->transport_handshake ();
+		sock_accept (atoi(socket_fd), 4, &conn_fd);
+		int res = write (conn_fd, (const char*)"", 0);
+		if (conn_fd == -1 || res == -1)
+		{
+			sleep(1);
+			continue;
+		}
+		handshake_ok = mono_component_debugger ()->transport_handshake ();
 	}
 	PRINT_DEBUG_MSG (1, "Accepted connection from client, socket fd=%d.\n", conn_fd);
 }
@@ -99,7 +99,7 @@ wasi_transport_close2 (void)
 static void 
 mono_wasi_start_debugger_thread (MonoError *error)
 {
-    	mono_debugger_agent_receive_and_process_command (FALSE);
+		mono_debugger_agent_receive_and_process_command (FALSE);
 	connection_wait = 250;
 }
 
