@@ -101,7 +101,6 @@ mono_wasi_start_debugger_thread (MonoError *error)
 {
     	mono_debugger_agent_receive_and_process_command (FALSE);
 	connection_wait = 250;
-	return;
 }
 
 static void
