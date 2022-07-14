@@ -758,7 +758,6 @@ mono_debugger_agent_init_internal (void)
 	cbs.handle_multiple_ss_requests = handle_multiple_ss_requests;
 
 	mono_de_init (&cbs);
-	
 	transport_init ();
 	
 	start_debugger_thread_func = start_debugger_thread;
