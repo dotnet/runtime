@@ -159,7 +159,7 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
         const part = parts[i];
         if (part != "") {
             let newscope = scope[part];
-            if (typeof (newscope) === "undefined") {
+            if (typeof newscope === "undefined") {
                 newscope = {};
                 scope[part] = newscope;
             }
@@ -185,7 +185,7 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
         const part = parts[i];
         if (part != "") {
             let newscope = scope[part];
-            if (!newscope) {
+            if (typeof newscope === "undefined") {
                 newscope = {};
                 scope[part] = newscope;
             }
