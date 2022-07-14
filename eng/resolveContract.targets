@@ -65,7 +65,7 @@
   <!-- Generate a .txt file with all public types of the project referenced by ProjectForGenAPIDocIdGeneration (e.g. System.Private.CoreLib or System.Private.Uri implementation assembly).
        This file is then later on passed to GenAPI as the list of types which should be "split out" with the conditional compilation logic. -->
   <Target Name="GenerateConditionalTypeList"
-          Condition="'@(ProjectReference->WithMetadataValue('Identity', '$(ProjectForGenAPIDocIdGeneration)'))' != '' and ('$(ContractTypesPartiallyMovedToCoreLib)' == 'true' or '$(ContractTypesPartiallyMovedToUri)' == 'true')">
+          Condition="'@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(ProjectForGenAPIDocIdGeneration)')) and ('$(ContractTypesPartiallyMovedToCoreLib)' == 'true' or '$(ContractTypesPartiallyMovedToUri)' == 'true')">
     <PropertyGroup>
       <!-- generate conditional compilation symbols to hide types implemented in contracts so we can include the .cs in the System.Private.CoreLib ref -->
       <GenAPIConditionalTypeList>$(IntermediateOutputPath)GenAPIConditionalTypeList.txt</GenAPIConditionalTypeList>
