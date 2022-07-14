@@ -23,7 +23,7 @@
       <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
                                    '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
     </ProjectReference>
-    <!-- If a CoreLib src/ref ProjectReference is present, make all P2P assets non transitive. -->
+    <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
     <ProjectReference Update="@(ProjectReference->WithMetadataValue('PrivateAssets', ''))"
                       PrivateAssets="all"
                       Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
@@ -87,7 +87,7 @@
 
   <Target Name="ReplaceCoreLibSrcWithRefAssemblyForCompilation"
           AfterTargets="FindReferenceAssembliesForReferences"
-          Condition="'@(_coreLibProjectReference)' != ''">
+          Condition="'$(CompileUsingReferenceAssemblies)' != 'true' and '@(_coreLibProjectReference)' != ''">
     <ItemGroup>
       <_resolvedCoreLibProjectReference Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)'))" />
       <ReferencePathWithRefAssemblies Remove="@(_resolvedCoreLibProjectReference)" />
