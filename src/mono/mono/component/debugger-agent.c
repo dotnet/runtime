@@ -10311,7 +10311,7 @@ bool mono_debugger_agent_receive_and_process_command (bool attach_failed)
 			command_set = (CommandSet)0;
 			command = 0;
 			dispose_vm ();
-#endif			
+#endif
 			break;
 		} else {
 			p = header;
