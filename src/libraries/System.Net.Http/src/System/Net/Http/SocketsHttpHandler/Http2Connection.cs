@@ -1924,13 +1924,13 @@ namespace System.Net.Http
 
             // Some frame types define bits differently.  Define them all here for simplicity.
 
-            EndStream = 0b00000001,
-            Ack = 0b00000001,
-            EndHeaders = 0b00000100,
-            Padded = 0b00001000,
-            Priority = 0b00100000,
+            EndStream =     0b00000001,
+            Ack =           0b00000001,
+            EndHeaders =    0b00000100,
+            Padded =        0b00001000,
+            Priority =      0b00100000,
 
-            ValidBits = 0b00101101
+            ValidBits =     0b00101101
         }
 
         private enum SettingId : ushort
