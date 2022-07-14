@@ -421,8 +421,7 @@ namespace System.Runtime.CompilerServices
 #endif
                 using (LockHolder.Hold(s_cctorGlobalLock))
                 {
-                    if (s_blockingRecords == null)
-                        s_blockingRecords = new BlockingRecord[Grow];
+                    s_blockingRecords ??= new BlockingRecord[Grow];
                     int found;
                     for (found = 0; found < s_nextBlockingRecordIndex; found++)
                     {

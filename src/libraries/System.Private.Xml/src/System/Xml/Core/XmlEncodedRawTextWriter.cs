@@ -766,9 +766,9 @@ namespace System.Xml
             {
                 _stream.Flush();
             }
-            else if (_writer != null)
+            else
             {
-                _writer.Flush();
+                _writer?.Flush();
             }
         }
 

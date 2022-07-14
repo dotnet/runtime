@@ -470,10 +470,8 @@ namespace System.Xml
                 _elementNodes = null;
             _nsMgr.Close();
             _bufferReader.Close();
-            if (_signingWriter != null)
-                _signingWriter.Close();
-            if (_attributeSorter != null)
-                _attributeSorter.Close();
+            _signingWriter?.Close();
+            _attributeSorter?.Close();
         }
 
         public sealed override int Depth

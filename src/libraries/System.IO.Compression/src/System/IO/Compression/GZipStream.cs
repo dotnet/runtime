@@ -123,7 +123,7 @@ namespace System.IO.Compression
             else
             {
                 CheckDeflateStream();
-                _deflateStream.WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                _deflateStream.WriteCore(new ReadOnlySpan<byte>(in value));
             }
         }
 

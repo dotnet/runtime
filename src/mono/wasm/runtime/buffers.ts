@@ -61,8 +61,8 @@ function typedarray_copy_to(typed_array: TypedArray, pinned_array: MonoArray, be
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
     //  is an object representing a chunk of data; it has no format to speak of, and offers no
     // mechanism for accessing its contents. In order to access the memory contained in a buffer,
-    // you need to use a view. A view provides a context — that is, a data type, starting offset,
-    // and number of elements — that turns the data into an actual typed array.
+    // you need to use a view. A view provides a context - that is, a data type, starting offset,
+    // and number of elements - that turns the data into an actual typed array.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
     if (has_backing_array_buffer(typed_array) && typed_array.BYTES_PER_ELEMENT) {
         // Some sanity checks of what is being asked of us
@@ -104,8 +104,8 @@ function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, 
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
     //  is an object representing a chunk of data; it has no format to speak of, and offers no
     // mechanism for accessing its contents. In order to access the memory contained in a buffer,
-    // you need to use a view. A view provides a context — that is, a data type, starting offset,
-    // and number of elements — that turns the data into an actual typed array.
+    // you need to use a view. A view provides a context - that is, a data type, starting offset,
+    // and number of elements - that turns the data into an actual typed array.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
     if (has_backing_array_buffer(typed_array) && typed_array.BYTES_PER_ELEMENT) {
         // Some sanity checks of what is being asked of us

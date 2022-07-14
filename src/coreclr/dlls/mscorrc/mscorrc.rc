@@ -336,8 +336,8 @@ BEGIN
     IDS_CLASSLOAD_NOTINTERFACE              "Could not load type '%1' from assembly '%2' because it attempts to implement a class as an interface."
     IDS_CLASSLOAD_VALUEINSTANCEFIELD        "Could not load the value type '%1' from assembly '%2' because it has an instance field of itself."
 
-    IDS_CLASSLOAD_BYREFLIKE_STATICFIELD     "A ByRef-like type cannot be used as the type for a static field."
-    IDS_CLASSLOAD_BYREFLIKE_INSTANCEFIELD   "A ByRef-like type cannot be used as the type for an instance field in a non-ByRef-like type."
+    IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_STATICFIELD    "A ByRef or ByRef-like type cannot be used as the type for a static field."
+    IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_INSTANCEFIELD  "A ByRef or ByRef-like type cannot be used as the type for an instance field in a non-ByRef-like type."
 
     IDS_CLASSLOAD_RANK_TOOLARGE             "'%1' from assembly '%2' has too many dimensions."
     IDS_CLASSLOAD_BAD_UNMANAGED_RVA         "Native method '%3' on type '%1' from assembly '%2' is not supported."

@@ -86,7 +86,6 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69944", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GenericMethod()
         {
             dynamic d = new TestDerivedClass();

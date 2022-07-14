@@ -263,10 +263,7 @@ namespace System.Formats.Asn1
                 byte[]? oldBytes = _buffer;
                 Array.Resize(ref _buffer, BlockSize * blocks);
 
-                if (oldBytes != null)
-                {
-                    oldBytes.AsSpan(0, _offset).Clear();
-                }
+                oldBytes?.AsSpan(0, _offset).Clear();
 #endif
 
 #if DEBUG
@@ -616,22 +613,6 @@ namespace System.Formats.Asn1
 
             Buffer.BlockCopy(tmp, 0, buffer, start, len);
             CryptoPool.Return(tmp, len);
-        }
-
-        internal static void Reverse(Span<byte> span)
-        {
-            int i = 0;
-            int j = span.Length - 1;
-
-            while (i < j)
-            {
-                byte tmp = span[i];
-                span[i] = span[j];
-                span[j] = tmp;
-
-                i++;
-                j--;
-            }
         }
 
         private static void CheckUniversalTag(Asn1Tag? tag, UniversalTagNumber universalTagNumber)

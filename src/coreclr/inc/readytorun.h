@@ -15,8 +15,8 @@
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
-#define READYTORUN_MAJOR_VERSION 0x0006
-#define READYTORUN_MINOR_VERSION 0x0003
+#define READYTORUN_MAJOR_VERSION 0x0007
+#define READYTORUN_MINOR_VERSION 0x0000
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x006
 
@@ -401,6 +401,10 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
+
+    // Array helpers for use with native ints
+    READYTORUN_HELPER_Stelem_Ref_I                = 0x113,
+    READYTORUN_HELPER_Ldelema_Ref_I               = 0x114,
 };
 
 #include "readytoruninstructionset.h"

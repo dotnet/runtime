@@ -537,7 +537,7 @@ namespace System.Data.OleDb
                             DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!;
                             int numberOfSupportedRestictions = -1;
                             // prepare colletion is called with the exact collection name so
-                            // we can do an exact string comparision here
+                            // we can do an exact string comparison here
                             foreach (DataRow row in metaDataCollectionsTable.Rows)
                             {
                                 string candidateCollectionName = ((string)row[DbMetaDataColumnNames.CollectionName, DataRowVersion.Current]);

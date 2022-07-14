@@ -60,8 +60,7 @@ namespace System
             type = type.UnderlyingSystemType;
             CreateInstanceCheckType(type);
 
-            if (args == null)
-                args = Array.Empty<object>();
+            args ??= Array.Empty<object>();
             int numArgs = args.Length;
 
             Type?[] argTypes = new Type[numArgs];
@@ -85,8 +84,7 @@ namespace System
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, type));
             }
 
-            if (binder == null)
-                binder = Type.DefaultBinder;
+            binder ??= Type.DefaultBinder;
 
             MethodBase invokeMethod = binder.BindToMethod(bindingAttr, matches.ToArray(), ref args, null, culture, null, out object? state);
             if (invokeMethod.GetParametersNoCopy().Length == 0)

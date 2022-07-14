@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = converter.TryRead(ref reader, info.PropertyType, info.Options!, ref state, out TArg? value);
 
-            arg = value == null && jsonParameterInfo.IgnoreDefaultValuesOnRead
+            arg = value == null && jsonParameterInfo.IgnoreNullTokensOnRead
                 ? (TArg?)info.DefaultValue! // Use default value specified on parameter, if any.
                 : value!;
 
@@ -78,11 +78,8 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            if (typeInfo.CreateObjectWithArgs == null)
-            {
-                typeInfo.CreateObjectWithArgs =
-                    options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
-            }
+            typeInfo.CreateObjectWithArgs ??=
+                options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
 
             var arguments = new Arguments<TArg0, TArg1, TArg2, TArg3>();
 

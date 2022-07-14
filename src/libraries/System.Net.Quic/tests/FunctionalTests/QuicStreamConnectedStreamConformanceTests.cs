@@ -54,7 +54,13 @@ namespace System.Net.Quic.Tests
             var listener = await QuicListener.ListenAsync(new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
+                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(new QuicServerConnectionOptions()
+                {
+                    DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeServer,
+                    DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeServer,
+                    ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                })
             });
 
             byte[] buffer = new byte[1] { 42 };
@@ -64,7 +70,7 @@ namespace System.Net.Quic.Tests
                 Task.Run(async () =>
                 {
                     connection1 = await listener.AcceptConnectionAsync();
-                    stream1 = await connection1.AcceptStreamAsync();
+                    stream1 = await connection1.AcceptInboundStreamAsync();
                     Assert.Equal(1, await stream1.ReadAsync(buffer));
                 }),
                 Task.Run(async () =>
@@ -73,11 +79,12 @@ namespace System.Net.Quic.Tests
                     {
                         connection2 = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
                         {
-                            RemoteEndPoint = listener.ListenEndPoint,
+                            DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeClient,
+                            DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeClient,
+                            RemoteEndPoint = listener.LocalEndPoint,
                             ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
                         });
-                        await connection2.ConnectAsync();
-                        stream2 = await connection2.OpenBidirectionalStreamAsync();
+                        stream2 = await connection2.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                         // OpenBidirectionalStream only allocates ID. We will force stream opening
                         // by Writing there and receiving data on the other side.
                         await stream2.WriteAsync(buffer);
@@ -90,7 +97,7 @@ namespace System.Net.Quic.Tests
                 }));
 
             // No need to keep the listener once we have connected connection and streams
-            listener.Dispose();
+            await listener.DisposeAsync();
 
             var result = new StreamPairWithOtherDisposables(stream1, stream2);
             result.Disposables.Add(connection1);
@@ -101,14 +108,17 @@ namespace System.Net.Quic.Tests
 
         private sealed class StreamPairWithOtherDisposables : StreamPair
         {
-            public readonly List<IDisposable> Disposables = new List<IDisposable>();
+            public readonly List<IAsyncDisposable> Disposables = new List<IAsyncDisposable>();
 
             public StreamPairWithOtherDisposables(Stream stream1, Stream stream2) : base(stream1, stream2) { }
 
             public override void Dispose()
             {
                 base.Dispose();
-                Disposables.ForEach(d => d.Dispose());
+                foreach (IAsyncDisposable disposable in Disposables)
+                {
+                    disposable.DisposeAsync().GetAwaiter().GetResult();
+                }
             }
         }
     }

@@ -9,7 +9,9 @@ namespace System.Numerics
     /// <summary>Defines a number type.</summary>
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     public interface INumber<TSelf>
-        : IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
+        : IComparable,
+          IComparable<TSelf>,
+          IComparisonOperators<TSelf, TSelf, bool>,
           IModulusOperators<TSelf, TSelf, TSelf>,
           INumberBase<TSelf>
         where TSelf : INumber<TSelf>
