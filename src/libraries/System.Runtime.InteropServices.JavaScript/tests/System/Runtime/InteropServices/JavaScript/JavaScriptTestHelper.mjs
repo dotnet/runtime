@@ -153,6 +153,16 @@ export function invoke1(arg1, name) {
     const JavaScriptTestHelper = globalThis.App.EXPORTS.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper
     const fn = JavaScriptTestHelper[name];
 
+    // console.log("invoke1:" + typeof fn);
+    // console.log("invoke1:" + fn.toString());
+    const res = fn(arg1);
+    // console.log(`invoke1: res ${res !== null ? typeof res : '<null>'}`)
+    return res;
+}
+
+export function invoke2(arg1, name) {
+    const JavaScriptTestHelperNoNamespace = globalThis.App.EXPORTS.JavaScriptTestHelperNoNamespace
+    const fn = JavaScriptTestHelperNoNamespace[name];
     //console.log("invoke1:" + fn.toString());
     const res = fn(arg1);
     // console.log(`invoke1: res ${res !== null ? typeof res : '<null>'}`)

@@ -17,11 +17,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("globalThis.console.log")]
         public static partial void Log([JSMarshalAs<JSType.String>] string message);
 
+        [JSImport("globalThis.window.location.toString")]
+        public static partial string NativeFunctionToString();
+
         [JSExport]
-        [return: JSMarshalAs<JSType.Discard>]
         public static void ConsoleWriteLine([JSMarshalAs<JSType.String>] string message)
         {
             Console.WriteLine(message);
+        }
+
+        [JSExport]
+        public static void Throw(string message)
+        {
+            throw new ArgumentException(message);
         }
 
         [JSExport]
@@ -233,6 +241,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.String>]
         internal static partial string invoke1_String([JSMarshalAs<JSType.String>] string value, [JSMarshalAs<JSType.String>] string name);
+        [JSImport("invoke2", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.String>]
+        internal static partial string invoke2_String([JSMarshalAs<JSType.String>] string value, [JSMarshalAs<JSType.String>] string name);
         [JSExport]
         [return: JSMarshalAs<JSType.String>]
         public static string EchoString([JSMarshalAs<JSType.String>] string arg1)
@@ -911,5 +922,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 Log("JavaScriptTestHelper.mjs imported");
             }
         }
+    }
+}
+
+public partial class JavaScriptTestHelperNoNamespace
+{
+    [System.Runtime.InteropServices.JavaScript.JSExport]
+    public static string EchoString(string message)
+    {
+        return message + "!";
     }
 }

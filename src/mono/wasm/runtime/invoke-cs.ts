@@ -157,13 +157,15 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
 
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
-        let newscope = scope[part];
-        if (!newscope) {
-            newscope = {};
-            scope[part] = newscope;
+        if (part != "") {
+            let newscope = scope[part];
+            if (!newscope) {
+                newscope = {};
+                scope[part] = newscope;
+            }
+            mono_assert(newscope, () => `${part} not found while looking up ${classname}`);
+            scope = newscope;
         }
-        mono_assert(newscope, () => `${part} not found while looking up ${classname}`);
-        scope = newscope;
     }
 
     if (!scope[methodname]) {
@@ -181,13 +183,15 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
     scope = assemblyScope;
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
-        let newscope = scope[part];
-        if (!newscope) {
-            newscope = {};
-            scope[part] = newscope;
+        if (part != "") {
+            let newscope = scope[part];
+            if (!newscope) {
+                newscope = {};
+                scope[part] = newscope;
+            }
+            mono_assert(newscope, () => `${part} not found while looking up ${classname}`);
+            scope = newscope;
         }
-        mono_assert(newscope, () => `${part} not found while looking up ${classname}`);
-        scope = newscope;
     }
 
     if (!scope[methodname]) {
