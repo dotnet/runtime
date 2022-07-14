@@ -41246,7 +41246,7 @@ void gc_heap::should_check_bgc_mark (heap_segment* seg,
         }
         else if (heap_segment_background_allocated (seg) == 0)
         {
-            dprintf (3, ("seg %Ix newly alloc during bgc"));
+            dprintf (3, ("seg %Ix newly alloc during bgc", seg));
         }
         else
         {
