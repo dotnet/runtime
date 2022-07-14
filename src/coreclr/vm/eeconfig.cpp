@@ -479,7 +479,7 @@ HRESULT EEConfig::sync()
 
     pReadyToRunExcludeList = NULL;
 #if defined(FEATURE_READYTORUN)
-    if (ReadyToRunInfo::IsReadyToRunEnabled())
+    if (g_pConfig->ReadyToRun())
     {
         NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunExcludeList, &wszReadyToRunExcludeList));
@@ -780,7 +780,7 @@ HRESULT EEConfig::sync()
 #endif
 
 #if defined(FEATURE_READYTORUN)
-    fReadyToRun = ReadyToRunInfo::IsReadyToRunEnabled();
+    fReadyToRun = g_pConfig->ReadyToRun();
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
