@@ -435,6 +435,11 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested, OutsideLockW
     _ASSERTE(m_pCrstDebug->OwnedByCurrentThread());
 #endif
 
+    // It is possible our caller allocated a bucket that we wind up not using. This holder ensures
+    // that it gets deleted.
+    NewHolder<PinnedHeapHandleBucket> pPreAllocatedBucket = outsideLockWork.GetPinnedHeapHandleBucket();
+    outsideLockWork = OutsideLockWorkPHHT();
+
     if (nRequested == 1 && m_cEmbeddedFree != 0)
     {
         // special casing singleton requests to look for slots that can be re-used
@@ -468,8 +473,6 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested, OutsideLockW
     // Retrieve the remaining number of handles in the bucket.
     DWORD NumRemainingHandlesInBucket = (m_pHead != NULL) ? m_pHead->GetNumRemainingHandles() : 0;
 
-    PinnedHeapHandleBucket* pPreAllocatedBucket = outsideLockWork.GetPinnedHeapHandleBucket();
-
     // create a new block if this request doesn't fit in the current block
     if (nRequested > NumRemainingHandlesInBucket)
     {
@@ -483,58 +486,33 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested, OutsideLockW
         }
 
         // create a new bucket for this allocation
-
         // We need a block big enough to hold the requested handles
         DWORD NewBucketSize = max(m_NextBucketSize, nRequested);
-        if(pPreAllocatedBucket != NULL)
-        {
-            // This is a retry of an earlier incomplete attempt at this operation.
-            // Our caller allocated a PinnedHeapHandleBucket for our use.
-            if(pPreAllocatedBucket->GetSize() != NewBucketSize || pPreAllocatedBucket->GetNext() != m_pHead)
-            {
-                // rare case: we must have raced with another thread which added a bucket between when
-                // we requested the outside lock work and now. Throw this bucket away and
-                // retry again with the updated info.
-                delete pPreAllocatedBucket;
-                pPreAllocatedBucket = NULL;
-            }
-            else
-            {
-                // common case: the pre-allocated bucket we requested in a previous attempt
-                // has the correct information because nothing has changed since then. We can use it
-                // and complete the operation.
-                m_pHead = pPreAllocatedBucket;
-                m_NextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
-                outsideLockWork = OutsideLockWorkPHHT();
-            }
-        }
 
-        
-        if (pPreAllocatedBucket == NULL)
+        if (pPreAllocatedBucket == NULL ||
+            pPreAllocatedBucket->GetSize() != NewBucketSize ||
+            pPreAllocatedBucket->GetNext() != m_pHead)
         {
             // common case: this is our first attempt at the operation and the caller didn't
             // give us a pre-allocated bucket.
             //
-            // rare case: our caller did give us a pre-allocated bucket but we deleted it above
-            // because it didn't have correct next pointer or bucket size.
+            // rare case: our caller did give us a pre-allocated bucket but it didn't have
+            // correct next pointer or bucket size.
             // 
             // Either way we need our caller to allocate a new bucket outside the lock and then
             // it will call back to retry this operation.
             outsideLockWork = OutsideLockWorkPHHT(m_pHead, NewBucketSize, m_pDomain);
             return NULL;
         }
-    }
-    else if(pPreAllocatedBucket != NULL)
-    {
-        // rare case: when we attempted this operation previously we didn't have enough handles to 
-        // satisfy the request and we asked our caller to retry after allocating a new bucket. However
-        // now the situation has changed and there are enough handles to satisfy the request without
-        // needing the new bucket allocated by the caller. We need to delete the bucket the caller
-        // allocated to avoid leaking memory and then allocate from the handles we already have.
-        delete pPreAllocatedBucket;
-        outsideLockWork = OutsideLockWorkPHHT();
-    }
 
+        _ASSERTE(pPreAllocatedBucket != NULL);
+        // common case: the pre-allocated bucket we requested in a previous attempt
+        // has the correct information because nothing has changed since then. We can use it
+        // and complete the operation.
+        pPreAllocatedBucket.SuppressRelease();
+        m_pHead = pPreAllocatedBucket;
+        m_NextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
+    }
 
     return m_pHead->AllocateHandles(nRequested);
 }
