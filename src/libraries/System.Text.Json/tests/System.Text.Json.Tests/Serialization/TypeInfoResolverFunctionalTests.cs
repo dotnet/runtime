@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -616,7 +615,7 @@ namespace System.Text.Json.Serialization.Tests
                 return ti;
             });
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
+            JsonSerializerOptions options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             options.IncludeFields = true;
             options.TypeInfoResolver = JsonTypeInfoResolver.Combine(resolver, options.TypeInfoResolver);
 
@@ -697,24 +696,25 @@ namespace System.Text.Json.Serialization.Tests
                 if (jsonTypeInfo.Kind == JsonTypeInfoKind.Object &&
                     type.GetCustomAttribute<DataContractAttribute>() is not null)
                 {
-                    jsonTypeInfo.Properties.Clear(); // TODO should not require clearing
+                    jsonTypeInfo.Properties.Clear();
 
-                    IEnumerable<(PropertyInfo propInfo, DataMemberAttribute attr)> properties = type
-                        .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                        .Where(propInfo => propInfo.GetCustomAttribute<IgnoreDataMemberAttribute>() is null)
-                        .Select(propInfo => (propInfo, attr: propInfo.GetCustomAttribute<DataMemberAttribute>()))
-                        .OrderBy(entry => entry.attr?.Order ?? 0);
-
-                    foreach ((PropertyInfo propertyInfo, DataMemberAttribute? attr) in properties)
+                    foreach (PropertyInfo propInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
                     {
-                        JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(propertyInfo.PropertyType, attr?.Name ?? propertyInfo.Name);
+                        if (propInfo.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null)
+                        {
+                            continue;
+                        }
+
+                        DataMemberAttribute? attr = propInfo.GetCustomAttribute<DataMemberAttribute>();
+                        JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(propInfo.PropertyType, attr?.Name ?? propInfo.Name);
+                        jsonPropertyInfo.Order = attr?.Order ?? 0;
                         jsonPropertyInfo.Get =
-                            propertyInfo.CanRead
-                            ? propertyInfo.GetValue
+                            propInfo.CanRead
+                            ? propInfo.GetValue
                             : null;
 
-                        jsonPropertyInfo.Set = propertyInfo.CanWrite
-                            ? propertyInfo.SetValue
+                        jsonPropertyInfo.Set = propInfo.CanWrite
+                            ? propInfo.SetValue
                             : null;
 
                         jsonTypeInfo.Properties.Add(jsonPropertyInfo);

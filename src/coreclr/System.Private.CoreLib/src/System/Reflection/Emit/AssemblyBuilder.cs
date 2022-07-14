@@ -261,9 +261,9 @@ namespace System.Reflection.Emit
         public override Assembly GetSatelliteAssembly(CultureInfo culture) =>
             InternalAssembly.GetSatelliteAssembly(culture, null);
 
-        /// <sumary>
+        /// <summary>
         /// Useful for binding to a very specific version of a satellite assembly
-        /// </sumary>
+        /// </summary>
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version) =>
             InternalAssembly.GetSatelliteAssembly(culture, version);
 

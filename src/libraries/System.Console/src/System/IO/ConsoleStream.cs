@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO
 {
@@ -26,7 +28,47 @@ namespace System.IO
             Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
-        public override void WriteByte(byte value) => Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+        public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(in value));
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateWrite(buffer, offset, count);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                Write(new ReadOnlySpan<byte>(buffer, offset, count));
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException(ex);
+            }
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ValidateCanWrite();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                Write(buffer.Span);
+                return ValueTask.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                return ValueTask.FromException(ex);
+            }
+        }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -37,8 +79,46 @@ namespace System.IO
         public override int ReadByte()
         {
             byte b = 0;
-            int result = Read(MemoryMarshal.CreateSpan(ref b, 1));
+            int result = Read(new Span<byte>(ref b));
             return result != 0 ? b : -1;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateRead(buffer, offset, count);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            try
+            {
+                return Task.FromResult(Read(new Span<byte>(buffer, offset, count)));
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException<int>(exception);
+            }
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ValidateCanRead();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
+            try
+            {
+                return ValueTask.FromResult(Read(buffer.Span));
+            }
+            catch (Exception exception)
+            {
+                return ValueTask.FromException<int>(exception);
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -62,10 +142,7 @@ namespace System.IO
             set => throw Error.GetSeekNotSupported();
         }
 
-        public override void Flush()
-        {
-            if (!CanWrite) throw Error.GetWriteNotSupported();
-        }
+        public override void Flush() { }
 
         public sealed override void SetLength(long value) => throw Error.GetSeekNotSupported();
 
@@ -74,7 +151,11 @@ namespace System.IO
         protected void ValidateRead(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
+            ValidateCanRead();
+        }
 
+        private void ValidateCanRead()
+        {
             if (!_canRead)
             {
                 throw Error.GetReadNotSupported();
@@ -84,7 +165,11 @@ namespace System.IO
         protected void ValidateWrite(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
+            ValidateCanWrite();
+        }
 
+        private void ValidateCanWrite()
+        {
             if (!_canWrite)
             {
                 throw Error.GetWriteNotSupported();

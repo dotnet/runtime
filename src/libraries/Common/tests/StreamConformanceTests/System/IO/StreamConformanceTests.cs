@@ -1306,6 +1306,31 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(AllSeekModes))]
+        public virtual async Task Seek_PastEnd_ReadReturns0(SeekMode mode)
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            const int Length = 512;
+
+            byte[] expected = RandomNumberGenerator.GetBytes(Length);
+            using Stream? stream = await CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            long pos = stream.Length + 10;
+            Assert.Equal(pos, Seek(mode, stream, pos));
+
+            Assert.Equal(0, stream.Read(new byte[1], 0, 1));
+            Assert.Equal(-1, stream.ReadByte());
+        }
+
+        [Theory]
+        [MemberData(nameof(AllSeekModes))]
         public virtual async Task Seek_ReadWrite_RoundtripsExpectedData(SeekMode mode)
         {
             if (!CanSeek)

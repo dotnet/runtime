@@ -547,7 +547,7 @@ namespace DebuggerTests
             // Chrome sends this one
             {
                 "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');",
-                "PropertyGettersTest",
+                "DebuggerTests.CallFunctionOnTest.PropertyGettersTest",
                 30,
                 12,
                 "function invokeGetter(arrayStr){ let result=this; const properties=JSON.parse(arrayStr); for(let i=0,n=properties.length;i<n;++i){ result=result[properties[i]]; } return result; }",
@@ -557,7 +557,7 @@ namespace DebuggerTests
             },
             {
                 "invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');",
-                "MoveNext",
+                "DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync",
                 38,
                 12,
                 "function invokeGetter(arrayStr){ let result=this; const properties=JSON.parse(arrayStr); for(let i=0,n=properties.length;i<n;++i){ result=result[properties[i]]; } return result; }",
@@ -569,7 +569,7 @@ namespace DebuggerTests
             // VSCode sends this one
             {
                 "invoke_static_method ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTest');",
-                "PropertyGettersTest",
+                "DebuggerTests.CallFunctionOnTest.PropertyGettersTest",
                 30,
                 12,
                 "function(e){return this[e]}",
@@ -579,7 +579,7 @@ namespace DebuggerTests
             },
             {
                 "invoke_static_method_async ('[debugger-test] DebuggerTests.CallFunctionOnTest:PropertyGettersTestAsync');",
-                "MoveNext",
+                "DebuggerTests.CallFunctionOnTest.PropertyGettersTestAsync",
                 38,
                 12,
                 "function(e){return this[e]}",
@@ -681,7 +681,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvokeInheritedAndPrivateGetters() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "InstanceMethod",
+            $"DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "DebuggerTests.GetPropertiesTests.DerivedClass.InstanceMethod",
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {

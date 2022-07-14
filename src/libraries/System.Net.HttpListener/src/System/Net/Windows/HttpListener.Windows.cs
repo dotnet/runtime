@@ -997,10 +997,7 @@ namespace System.Net
                                     }
                                     finally
                                     {
-                                        if (userContext != null)
-                                        {
-                                            userContext.Dispose();
-                                        }
+                                        userContext?.Dispose();
                                     }
                                 }
                                 else
@@ -1161,10 +1158,7 @@ namespace System.Net
                     Debug.Assert(disconnectResult != null);
                     disconnectResult!.Session = newContext;
 
-                    if (toClose != null)
-                    {
-                        toClose.CloseContext();
-                    }
+                    toClose?.CloseContext();
                 }
 
                 // Send the 401 here.
@@ -1232,10 +1226,7 @@ namespace System.Net
                 {
                     // Check if the connection got deleted while in this method, and clear out the hashtables if it did.
                     // In a nested finally because if this doesn't happen, we leak.
-                    if (disconnectResult != null)
-                    {
-                        disconnectResult.FinishOwningDisconnectHandling();
-                    }
+                    disconnectResult?.FinishOwningDisconnectHandling();
                 }
             }
         }
@@ -1734,6 +1725,7 @@ namespace System.Net
                         token = Interop.HttpApi.SafeLocalFreeChannelBinding.LocalAlloc(tokenSize);
                         if (token.IsInvalid)
                         {
+                            token.Dispose();
                             throw new OutOfMemoryException();
                         }
                         Marshal.Copy(blob, tokenOffset, token.DangerousGetHandle(), tokenSize);
@@ -1879,10 +1871,7 @@ namespace System.Net
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DisconnectResults {listener.DisconnectResults} removing for _connectionId: {_connectionId}");
                 listener.DisconnectResults.Remove(_connectionId);
-                if (_session != null)
-                {
-                    _session.CloseContext();
-                }
+                _session?.CloseContext();
 
                 // Clean up the identity. This is for scenarios where identity was not cleaned up before due to
                 // identity caching for unsafe ntlm authentication

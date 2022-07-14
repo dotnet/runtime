@@ -715,10 +715,7 @@ namespace System.Xml
             defattr.InnerXml = attdef.DefaultValueRaw;
             //during the expansion of the tree, the flag could be set to true, we need to set it back.
             XmlUnspecifiedAttribute? unspAttr = defattr as XmlUnspecifiedAttribute;
-            if (unspAttr != null)
-            {
-                unspAttr.SetSpecified(false);
-            }
+            unspAttr?.SetSpecified(false);
             return defattr;
         }
 

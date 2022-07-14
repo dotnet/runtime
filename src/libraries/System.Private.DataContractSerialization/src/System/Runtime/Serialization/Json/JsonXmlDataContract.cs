@@ -36,10 +36,7 @@ namespace System.Runtime.Serialization.Json
             {
                 xmlValue = dataContractSerializer.ReadObject(XmlDictionaryReader.CreateTextReader(memoryStream, quotas));
             }
-            if (context != null)
-            {
-                context.AddNewObject(xmlValue);
-            }
+            context?.AddNewObject(xmlValue);
             return xmlValue;
         }
 

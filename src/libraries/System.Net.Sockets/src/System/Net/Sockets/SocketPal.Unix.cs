@@ -88,6 +88,10 @@ namespace System.Net.Sockets
 
             socket = new SafeSocketHandle(fd, ownsHandle: true);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
+            if (socket.IsInvalid)
+            {
+                socket.Dispose();
+            }
 
             return errorCode;
         }

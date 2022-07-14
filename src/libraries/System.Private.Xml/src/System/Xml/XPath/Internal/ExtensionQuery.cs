@@ -30,10 +30,7 @@ namespace MS.Internal.Xml.XPath
 
         public override void Reset()
         {
-            if (_queryIterator != null)
-            {
-                _queryIterator.Reset();
-            }
+            _queryIterator?.Reset();
         }
 
         public override XPathNavigator? Current

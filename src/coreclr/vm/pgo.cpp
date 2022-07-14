@@ -152,6 +152,14 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
+
+void CallFClose(FILE* file)
+{
+    fclose(file);
+}
+
+typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
+
 void PgoManager::WritePgoData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
@@ -204,6 +212,8 @@ void PgoManager::WritePgoData()
         return;
     }
 
+    FILEHolder fileHolder(pgoDataFile);
+
     fprintf(pgoDataFile, s_FileHeaderString, pgoDataCount);
 
     EnumeratePGOHeaders([pgoDataFile](HeaderList *pgoData)
@@ -247,18 +257,18 @@ void PgoManager::WritePgoData()
                         break;
                     case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
                         {
-                            intptr_t typehandleData = *(intptr_t*)(data + entryOffset);
-                            TypeHandle th = TypeHandle::FromPtr((void*)typehandleData);
-                            if (th.IsNull())
+                            intptr_t thData = *(intptr_t*)(data + entryOffset);
+                            if (thData == 0)
                             {
                                 fprintf(pgoDataFile, s_TypeHandle, "NULL");
                             }
-                            else if (ICorJitInfo::IsUnknownHandle(typehandleData))
+                            else if (ICorJitInfo::IsUnknownHandle(thData))
                             {
                                 fprintf(pgoDataFile, s_TypeHandle, "UNKNOWN");
                             }
                             else
                             {
+                                TypeHandle th = TypeHandle::FromPtr((void*)thData);
                                 StackSString ss;
                                 TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
                                 if (ss.GetCount() > 8192)
@@ -274,18 +284,18 @@ void PgoManager::WritePgoData()
                         }
                     case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
                         {
-                            intptr_t methodHandleData = *(intptr_t*)(data + entryOffset);
-                            MethodDesc* md = reinterpret_cast<MethodDesc*>(methodHandleData);
-                            if (md == nullptr)
+                            intptr_t mdData = *(intptr_t*)(data + entryOffset);
+                            if (mdData == 0)
                             {
                                 fprintf(pgoDataFile, "MethodHandle: NULL\n");
                             }
-                            else if (ICorJitInfo::IsUnknownHandle(methodHandleData))
+                            else if (ICorJitInfo::IsUnknownHandle(mdData))
                             {
                                 fprintf(pgoDataFile, "MethodHandle: UNKNOWN\n");
                             }
                             else
                             {
+                                MethodDesc* md = reinterpret_cast<MethodDesc*>(mdData);
                                 SString garbage1, tMethodName, garbage2;
                                 md->GetMethodInfo(garbage1, tMethodName, garbage2);
                                 StackSString tTypeName;
@@ -319,7 +329,6 @@ void PgoManager::WritePgoData()
     });
 
     fprintf(pgoDataFile, s_FileTrailerString);
-    fclose(pgoDataFile);
 }
 #endif // DACCESS_COMPILE
 
@@ -364,6 +373,8 @@ void PgoManager::ReadPgoData()
     {
         return;
     }
+
+    FILEHolder fileHolder(pgoDataFile);
 
     char     buffer[16384];
     unsigned maxIndex = 0;

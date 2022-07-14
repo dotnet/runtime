@@ -674,11 +674,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     void genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingGen();
+    void genAddRichIPMappingHere(const DebugInfo& di);
+
+    void genReportRichDebugInfo();
+
+    void genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* tree);
 
 #ifdef DEBUG
-    void genDumpPreciseDebugInfo();
-    void genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first);
-    void genAddPreciseIPMappingHere(const DebugInfo& di);
+    void genReportRichDebugInfoToFile();
+    void genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first);
 #endif
 
     void genEnsureCodeEmitted(const DebugInfo& di);

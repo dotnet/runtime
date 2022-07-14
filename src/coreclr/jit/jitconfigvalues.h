@@ -187,14 +187,16 @@ CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, 
 
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                     // Dumps disassembly for specified method
-CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies"))    // Only show JitDisasm and related info for methods
-                                                                // from this semicolon-delimited list of assemblies.
-CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)        // Dump interleaved GC Info for any method disassembled.
-CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
-CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
-CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
+CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
+                                                             // from this semicolon-delimited list of assemblies.
+CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
+CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump interleaved debug info for any method
+                                                                       // disassembled.
+CONFIG_METHODSET(JitDump, W("JitDump"))                                // Dumps trees for specified method
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)                     // Dump tier0 requests
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1)        // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1)       // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
@@ -248,9 +250,6 @@ CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't d
 CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext order;  1 == bbNum order; 2 == bbID
                                                                  // order
 
-CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
-CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
-
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
@@ -272,6 +271,12 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
                                                                            // intrinsic classes
 
 #endif // defined(DEBUG)
+
+CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
+
+#ifdef DEBUG
+CONFIG_STRING(WriteRichDebugInfoFile, W("WriteRichDebugInfoFile")) // Write rich debug info in JSON format to this file
+#endif
 
 CONFIG_INTEGER(JitEarlyExpandMDArrays, W("JitEarlyExpandMDArrays"), 1) // Enable early expansion of multi-dimensional
                                                                        // array access

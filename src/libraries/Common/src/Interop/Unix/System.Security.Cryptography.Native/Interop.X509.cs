@@ -151,7 +151,9 @@ internal static partial class Interop
 
             if (store.IsInvalid)
             {
-                throw CreateOpenSslCryptographicException();
+                Exception e = CreateOpenSslCryptographicException();
+                store.Dispose();
+                throw e;
             }
 
             return store;
