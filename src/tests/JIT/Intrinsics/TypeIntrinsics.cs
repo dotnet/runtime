@@ -119,6 +119,8 @@ public partial class Program
         IsFalse(typeof(SimpleStruct).IsEnum);
         IsTrue (typeof(SimpleEnum).IsEnum);
 
+        IsTrue(typeof(GenericEnumClass<>).GetGenericArguments()[0].IsEnum);
+
         AreSame(Type.GetTypeCode(__reftype(default)),         TypeCode.Empty);
         AreSame(Type.GetTypeCode(null),                       TypeCode.Empty);
         AreSame(Type.GetTypeCode(typeof(void*)),              TypeCode.Object);
@@ -229,6 +231,11 @@ public partial class Program
             _errors++;
         }
     }
+}
+
+public class GenericEnumClass<T> where T : Enum
+{
+    public T field;
 }
 
 public struct GenericStruct<T>

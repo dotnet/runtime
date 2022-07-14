@@ -3397,6 +3397,7 @@ namespace System
         // This returns true for actual enum types only.
         internal unsafe bool IsActualEnum
         {
+            [Intrinsic]
             get
             {
                 TypeHandle th = GetNativeTypeHandle();

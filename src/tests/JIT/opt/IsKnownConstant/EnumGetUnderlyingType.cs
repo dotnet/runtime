@@ -52,6 +52,8 @@ public class Program
         AssertThrowsArgumentException(() => Enum.GetUnderlyingType(NoInline(typeof(object))));
         AssertThrowsArgumentNullException(() => Enum.GetUnderlyingType(NoInline(null)));
 
+        AssertThrowsArgumentException(() => Enum.GetUnderlyingType(typeof(GenericEnumClass<>).GetGenericArguments()[0])));
+
         return 100;
     }
 
@@ -63,6 +65,11 @@ public class Program
     public enum UIntEnum : uint {}
     public enum LongEnum : long {}
     public enum ULongEnum : ulong {}
+
+    public class GenericEnumClass<T> where T : Enum
+    {
+        public T field;
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type NoInline(Type type) => type;
