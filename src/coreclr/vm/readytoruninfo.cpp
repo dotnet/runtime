@@ -380,14 +380,6 @@ void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     }
 }
 
-BOOL ReadyToRunInfo::IsReadyToRunEnabled()
-{
-    WRAPPER_NO_CONTRACT;
-
-    static ConfigDWORD configReadyToRun;
-    return configReadyToRun.val(CLRConfig::EXTERNAL_ReadyToRun);
-}
-
 // A log file to record success/failure of R2R loads. s_r2rLogFile can have the following values:
 // -1: Logging not yet initialized.
 // NULL: Logging disabled.
@@ -414,7 +406,7 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         else
             r2rLogFile = NULL;
 
-        if (r2rLogFile != NULL && !ReadyToRunInfo::IsReadyToRunEnabled())
+        if (r2rLogFile != NULL && !g_pConfig->ReadyToRun())
         {
             fputs("Ready to Run not enabled.\n", r2rLogFile);
             fclose(r2rLogFile);
