@@ -263,7 +263,7 @@ namespace System.Net.Http
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                    _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.RequestCancelled);
                     throw new TaskCanceledException(ex.Message, ex, cancellationToken);
                 }
                 else
@@ -280,7 +280,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.InternalError);
                 if (ex is HttpRequestException)
                 {
                     throw;
@@ -401,7 +401,7 @@ namespace System.Net.Http
             }
             else
             {
-                _stream.Shutdown();
+                _stream.CompleteWrites();
             }
 
             if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
@@ -817,7 +817,7 @@ namespace System.Net.Http
             // https://tools.ietf.org/html/draft-ietf-quic-http-24#section-4.1.1
             if (headersLength > _headerBudgetRemaining)
             {
-                _stream.AbortWrite((long)Http3ErrorCode.ExcessiveLoad);
+                _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.ExcessiveLoad);
                 throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings._maxResponseHeadersLength * 1024L));
             }
 
@@ -1204,12 +1204,12 @@ namespace System.Net.Http
                     _connection.Abort(ex);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case OperationCanceledException oce when oce.CancellationToken == cancellationToken:
-                    _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
+                    _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
             }
 
-            _stream.AbortRead((long)Http3ErrorCode.InternalError);
+            _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.InternalError);
             throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
         }
 
@@ -1267,12 +1267,12 @@ namespace System.Net.Http
             // If the request body isn't completed, cancel it now.
             if (_requestContentLengthRemaining != 0) // 0 is used for the end of content writing, -1 is used for unknown Content-Length
             {
-                _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.RequestCancelled);
             }
             // If the response body isn't completed, cancel it now.
             if (_responseDataPayloadRemaining != -1) // -1 is used for EOF, 0 for consumed DATA frame payload before the next read
             {
-                _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
+                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.RequestCancelled);
             }
         }
 

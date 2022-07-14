@@ -159,6 +159,15 @@
   <data name="net_quic_timeout_use_gt_zero" xml:space="preserve">
     <value>Timeout can only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
   </data>
+  <data name="net_quic_unsupported_endpoint_type" xml:space="preserve">
+    <value>'{0}' in not supported remote endpoint type, expected IP or DNS endpoint."</value>
+  </data>
+  <data name="net_quic_not_null_not_empty_connection" xml:space="preserve">
+    <value>'{0}' must be specified and contain at least one item to establish the connection.</value>
+  </data>
+  <data name="net_quic_not_null_ceritifcate" xml:space="preserve">
+    <value>Server must provide a certificate in '{0}' or '{1}' or via '{2}' for the connection.</value>
+  </data>
   <data name="net_quic_timeout" xml:space="preserve">
     <value>Connection timed out waiting for a response from the peer.</value>
   </data>

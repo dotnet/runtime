@@ -16,12 +16,10 @@ namespace System.Net.WebSockets
 
         protected override bool ReleaseHandle()
         {
-            if (IsInvalid)
+            if (!IsInvalid)
             {
-                return true;
+                WebSocketProtocolComponent.WebSocketDeleteHandle(handle);
             }
-
-            WebSocketProtocolComponent.WebSocketDeleteHandle(handle);
             return true;
         }
     }

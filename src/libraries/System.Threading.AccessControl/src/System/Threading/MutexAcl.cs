@@ -130,6 +130,7 @@ namespace System.Threading
             int errorCode = Marshal.GetLastWin32Error();
             if (existingHandle.IsInvalid)
             {
+                existingHandle.Dispose();
                 return errorCode switch
                 {
                     Interop.Errors.ERROR_FILE_NOT_FOUND or Interop.Errors.ERROR_INVALID_NAME => OpenExistingResult.NameNotFound,

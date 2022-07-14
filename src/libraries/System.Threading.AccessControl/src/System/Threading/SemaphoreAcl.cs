@@ -67,6 +67,8 @@ namespace System.Threading
 
                 if (handle.IsInvalid)
                 {
+                    handle.Dispose();
+
                     if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     {
                         throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
@@ -143,6 +145,7 @@ namespace System.Threading
             int errorCode = Marshal.GetLastWin32Error();
             if (handle.IsInvalid)
             {
+                handle.Dispose();
                 return errorCode switch
                 {
                     Interop.Errors.ERROR_FILE_NOT_FOUND or Interop.Errors.ERROR_INVALID_NAME => OpenExistingResult.NameNotFound,

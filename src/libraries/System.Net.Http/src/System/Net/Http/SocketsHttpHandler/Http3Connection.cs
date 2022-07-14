@@ -210,7 +210,7 @@ namespace System.Net.Http
                     throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
-                requestStream!.StreamId = quicStream.StreamId;
+                requestStream!.StreamId = quicStream.Id;
 
                 bool goAway;
                 lock (SyncObj)
@@ -547,7 +547,7 @@ namespace System.Net.Http
                                 NetEventSource.Info(this, $"Ignoring server-initiated stream of unknown type {unknownStreamType}.");
                             }
 
-                            stream.AbortRead((long)Http3ErrorCode.StreamCreationError);
+                            stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.StreamCreationError);
                             stream.Dispose();
                             return;
                     }
