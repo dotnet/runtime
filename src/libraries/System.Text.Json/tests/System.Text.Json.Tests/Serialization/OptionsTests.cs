@@ -440,7 +440,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_JsonSerializerContext_GetConverter_FallsBackToReflectionConverter()
+        public static void Options_JsonSerializerContext_GetConverter_DoesNotFallBackToReflectionConverter()
         {
             RemoteExecutor.Invoke(static () =>
             {
@@ -451,12 +451,14 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(context.GetTypeInfo(typeof(MyClass)));
                 Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
 
-                // Root converters process-wide by calling a Serialize overload accepting options
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
+                // Root converters process-wide using a default options instance
+                var options = new JsonSerializerOptions();
+                JsonConverter converter = options.GetConverter(typeof(MyClass));
+                Assert.IsAssignableFrom<JsonConverter<MyClass>>(converter);
 
-                // We still can't resolve metadata for MyClass, but we can now resolve a converter using the rooted converters.
+                // We still can't resolve metadata for MyClass or get a converter using the rooted converters.
                 Assert.Null(context.GetTypeInfo(typeof(MyClass)));
-                Assert.IsAssignableFrom<JsonConverter<MyClass>>(context.Options.GetConverter(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
 
             }).Dispose();
         }

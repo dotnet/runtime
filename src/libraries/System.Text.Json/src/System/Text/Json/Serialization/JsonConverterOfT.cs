@@ -71,10 +71,7 @@ namespace System.Text.Json.Serialization
 
         internal sealed override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
         {
-            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
-            {
-                DefaultConverterForType = this
-            };
+            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options);
         }
 
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()

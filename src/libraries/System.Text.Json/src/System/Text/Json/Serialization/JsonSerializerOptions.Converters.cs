@@ -48,9 +48,9 @@ namespace System.Text.Json
 
             if (_typeInfoResolver is null)
             {
-                // Backward compatibility -- root the default reflection converters
+                // Backward compatibility -- root & query the default reflection converters
                 // but do not populate the TypeInfoResolver setting.
-                DefaultJsonTypeInfoResolver.RootDefaultInstance();
+                return DefaultJsonTypeInfoResolver.GetConverterForType(typeToConvert, this);
             }
 
             return GetConverterFromTypeInfo(typeToConvert);
@@ -61,11 +61,11 @@ namespace System.Text.Json
         /// </summary>
         internal JsonConverter GetConverterFromTypeInfo(Type typeToConvert)
         {
-            JsonConverter? converter;
+            JsonTypeInfo? jsonTypeInfo;
 
             if (IsLockedInstance)
             {
-                converter = GetCachingContext()?.GetOrAddJsonTypeInfo(typeToConvert)?.Converter;
+                jsonTypeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(typeToConvert);
             }
             else
             {
@@ -73,10 +73,15 @@ namespace System.Text.Json
                 // which means we need to go through TypeInfoResolver but without caching because that's the
                 // only place which will have correct converter for JsonSerializerContext and reflection
                 // based resolver. It will also work correctly for combined resolvers.
-                converter = GetTypeInfoNoCaching(typeToConvert)?.Converter;
+                jsonTypeInfo = GetTypeInfoNoCaching(typeToConvert);
             }
 
-            return converter ?? GetConverterFromListOrBuiltInConverter(typeToConvert);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(typeToConvert, TypeInfoResolver);
+            }
+
+            return jsonTypeInfo.Converter;
         }
 
         internal JsonConverter? GetConverterFromList(Type typeToConvert)
@@ -90,28 +95,6 @@ namespace System.Text.Json
             }
 
             return null;
-        }
-
-        internal JsonConverter GetConverterFromListOrBuiltInConverter(Type typeToConvert)
-        {
-            JsonConverter? converter = GetConverterFromList(typeToConvert);
-            return GetCustomOrBuiltInConverter(typeToConvert, converter);
-        }
-
-        internal JsonConverter GetCustomOrBuiltInConverter(Type typeToConvert, JsonConverter? converter)
-        {
-            // Attempt to get built-in converter.
-            converter ??= DefaultJsonTypeInfoResolver.GetBuiltInConverter(typeToConvert);
-            // Expand potential convert converter factory.
-            converter = ExpandConverterFactory(converter, typeToConvert);
-
-            if (!converter.TypeToConvert.IsInSubtypeRelationshipWith(typeToConvert))
-            {
-                ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), converter.TypeToConvert);
-            }
-
-            CheckConverterNullabilityIsSameAsPropertyType(converter, typeToConvert);
-            return converter;
         }
 
         [return: NotNullIfNotNull("converter")]

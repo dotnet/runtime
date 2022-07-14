@@ -54,20 +54,29 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, JsonConverter converter)
+        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, JsonConverter? converter)
         {
-            Debug.Assert(propertyType.IsInSubtypeRelationshipWith(converter.TypeToConvert));
+            Debug.Assert(converter is null || propertyType.IsInSubtypeRelationshipWith(converter.TypeToConvert));
 
-            if (converter.TypeToConvert == propertyType)
+            JsonPropertyInfo jsonPropertyInfo;
+
+            if (converter?.TypeToConvert == propertyType)
             {
                 // For the vast majority of use cases, the converter type matches the property type.
                 // Avoid reflection-based initialization by delegating JsonPropertyInfo<T> construction to the converter itself.
-                return converter.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+                jsonPropertyInfo = converter.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+            }
+            else
+            {
+                // We don't have a converter yet or the converter does not match the declared member type.
+                // Use reflection to instantiate the correct JsonPropertyInfo<T>
+                s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
+                MethodInfo factoryInfo = s_createJsonPropertyInfo.MakeGenericMethod(propertyType);
+                jsonPropertyInfo = (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
             }
 
-            s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-            MethodInfo factoryInfo = s_createJsonPropertyInfo.MakeGenericMethod(propertyType);
-            return (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
+            jsonPropertyInfo.DefaultConverterForType = converter;
+            return jsonPropertyInfo;
         }
 
         private static JsonPropertyInfo CreateJsonPropertyInfo<T>(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
