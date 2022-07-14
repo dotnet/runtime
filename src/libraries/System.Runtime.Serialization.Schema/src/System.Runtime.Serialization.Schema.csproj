@@ -1,17 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants)</DefineConstants>
-    <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-
     <IsTrimmable>false</IsTrimmable>
-
-    <!-- NOTE TODO smolloy - This probably should be true... but this package needs to be added to some nuget feed first. dotnet build fails
-          if it looks for a package listing and doesn't find one... presumably because we say this should be
-          published as a package? -->
-    <IsPackable>false</IsPackable>
+    <IsPackable>true</IsPackable>
+    <!-- TODO: Remove this setting when the package shipped with .NET 7. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Provides support for importing and exporting xsd schemas for DataContractSerializer.
 
 Commonly Used Types:
@@ -31,10 +26,6 @@ System.Runtime.Serialization.Schema.XsdDataContractImporter</PackageDescription>
     <Compile Include="System\Runtime\Serialization\Schema\XsdDataContractImporter.cs" />
   </ItemGroup>
 
-  <!-- NOTE TODO smolloy - Is this the right way to include CodeDom? Probably not. Feels like it should be a nuget dependency somehow.
-    But we want to bring in the package from this repo, not just any package.
-    Let's just do it this way for now and revisit once we've got all the rest of the heavy lifting done.
-  -->
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
   </ItemGroup>

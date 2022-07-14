@@ -1,25 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Runtime\Serialization\Schema\Import.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\Contracts.cs" />
     <Compile Include="System\Runtime\Serialization\Schema\Export.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="Expected.ImportedType.cs">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="Expected.ImportedType.cs" CopyToOutputDirectory="Always" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\src\System.Runtime.Serialization.Schema.csproj" />
-
-    <!-- NOTE TODO smolloy - Is this the right way to include CodeDom? Probably not. Feels like it should be a nuget dependency somehow.
-    But we want to bring in the package from this repo, not just any package.
-    Let's just do it this way for now and revisit once we've got all the rest of the heavy lifting done.
-    -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
   </ItemGroup>
 </Project>

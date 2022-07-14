@@ -1,16 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Schema.cs" />
   </ItemGroup>
 
-  <!-- NOTE TODO smolloy - Is this the right way to include CodeDom? Probably not. Feels like it should be a nuget dependency somehow.
-    But we want to bring in the package from this repo, not just any package.
-    Let's just do it this way for now and revisit once we've got all the rest of the heavy lifting done.
-  -->
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\ref\System.CodeDom.csproj" />
   </ItemGroup>
