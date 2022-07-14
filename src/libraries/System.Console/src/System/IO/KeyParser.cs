@@ -223,7 +223,14 @@ internal static class KeyParser
         static (ConsoleKey key, ConsoleModifiers modifiers) MapSCO(char character)
             => character switch
             {
+                'A' => (ConsoleKey.UpArrow, 0),
+                'B' => (ConsoleKey.DownArrow, 0),
+                'C' => (ConsoleKey.RightArrow, 0),
+                'D' => (ConsoleKey.LeftArrow, 0),
+                'F' => (ConsoleKey.End, 0),
+                'G' => (ConsoleKey.PageDown, 0),
                 'H' => (ConsoleKey.Home, 0),
+                'I' => (ConsoleKey.PageUp, 0),
                 _ when char.IsBetween(character, 'M', 'X') => (ConsoleKey.F1 + character - 'M', 0),
                 _ when char.IsBetween(character, 'Y', 'Z') => (ConsoleKey.F1 + character - 'Y', ConsoleModifiers.Shift),
                 _ when char.IsBetween(character, 'a', 'j') => (ConsoleKey.F3 + character - 'a', ConsoleModifiers.Shift),

@@ -152,6 +152,15 @@ public class KeyParserTests
                 // 4b: xterm-style bitmap does not work as expected in application mode
                 // as it produces same data as the setting above, so we don't test it
             }
+
+            // I was not able to find any SCO terminal other than PuTTy which allows to emulate it
+            foreach (TerminalData putty in new TerminalData[] { new PuTTYData_xterm(), new PuTTYData_linux() })
+            {
+                foreach ((byte[] bytes, ConsoleKeyInfo cki) in SCO.HomeKeys.Concat(SCO.ArrowKeys))
+                {
+                    yield return new object[] { putty, bytes, cki };
+                }
+            }
         }
     }
 
@@ -1528,5 +1537,29 @@ internal static class PuTTy
             // but PuTTy itself uses it for Ctrl+LeftArrow.
         }
     }
+}
 
+public static class SCO
+{
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> ArrowKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 65 }, new ConsoleKeyInfo(default, ConsoleKey.UpArrow, false, false, false)); // UpArrow
+            yield return (new byte[] { 27, 91, 66 }, new ConsoleKeyInfo(default, ConsoleKey.DownArrow, false, false, false)); // DownArrow
+            yield return (new byte[] { 27, 91, 67 }, new ConsoleKeyInfo(default, ConsoleKey.RightArrow, false, false, false)); // LeftArrow
+            yield return (new byte[] { 27, 91, 68 }, new ConsoleKeyInfo(default, ConsoleKey.LeftArrow, false, false, false)); // RightArrow
+        }
+    }
+
+    internal static IEnumerable<(byte[], ConsoleKeyInfo)> HomeKeys
+    {
+        get
+        {
+            yield return (new byte[] { 27, 91, 72 }, new ConsoleKeyInfo(default, ConsoleKey.Home, false, false, false)); // Home
+            yield return (new byte[] { 27, 91, 70 }, new ConsoleKeyInfo(default, ConsoleKey.End, false, false, false)); // End
+            yield return (new byte[] { 27, 91, 73 }, new ConsoleKeyInfo(default, ConsoleKey.PageUp, false, false, false)); // PageUp
+            yield return (new byte[] { 27, 91, 71 }, new ConsoleKeyInfo(default, ConsoleKey.PageDown, false, false, false)); // PageDown
+        }
+    }
 }
