@@ -52,7 +52,7 @@ public class Program
         AssertThrowsArgumentException(() => Enum.GetUnderlyingType(NoInline(typeof(object))));
         AssertThrowsArgumentNullException(() => Enum.GetUnderlyingType(NoInline(null)));
 
-        AssertThrowsArgumentException(() => Enum.GetUnderlyingType(typeof(GenericEnumClass<>).GetGenericArguments()[0])));
+        AssertThrowsArgumentException(() => Enum.GetUnderlyingType(typeof(GenericEnumClass<>).GetGenericArguments()[0]));
 
         return 100;
     }
