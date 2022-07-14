@@ -90,9 +90,6 @@
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
       <GenAPIFollowTypeForwards Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)' or '%(ProjectReference.Identity)' == '$(UriProject)'">true</GenAPIFollowTypeForwards>
-
-      <!-- for contracts where all types were moved to CoreLib we generate the ref .cs in the CoreLib directory for easier maintenance -->
-      <GenAPITargetPath Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)' and '$(ContractTypesPartiallyMovedToCoreLib)' != 'true'">$([MSBuild]::NormalizePath('$(CoreLibRefContractsDir)', '$(AssemblyName).cs'))</GenAPITargetPath>
     </PropertyGroup>
   </Target>
 

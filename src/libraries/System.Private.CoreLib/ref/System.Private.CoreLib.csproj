@@ -23,22 +23,22 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- contracts where all types were moved to CoreLib, these are used both here and in the contract assemblies and are generated -->
-    <Compile Include="contracts\Microsoft.Win32.Primitives.cs" />
-    <Compile Include="contracts\System.Diagnostics.Contracts.cs" />
-    <Compile Include="contracts\System.Diagnostics.Tracing.cs" />
-    <Compile Include="contracts\System.Diagnostics.Tracing.Counters.cs" />
-    <Compile Include="contracts\System.Numerics.Vectors.cs" />
-    <Compile Include="contracts\System.Reflection.Emit.ILGeneration.cs" />
-    <Compile Include="contracts\System.Reflection.Emit.Lightweight.cs" />
-    <Compile Include="contracts\System.Reflection.Emit.cs" />
-    <Compile Include="contracts\System.Reflection.Primitives.cs" />
-    <Compile Include="contracts\System.Runtime.Intrinsics.cs" />
-    <Compile Include="contracts\System.Runtime.Loader.cs" />
-    <Compile Include="contracts\System.Runtime.cs" />
-    <Compile Include="contracts\System.Text.Encoding.Extensions.cs" />
-    <Compile Include="contracts\System.Threading.Overlapped.cs" />
-    <Compile Include="contracts\System.Threading.ThreadPool.cs" />
-    <Compile Include="contracts\System.Threading.Thread.cs" />
+    <Compile Include="..\..\Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.cs" />
+    <Compile Include="..\..\System.Diagnostics.Contracts\ref\System.Diagnostics.Contracts.cs" />
+    <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.cs" />
+    <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.Counters.cs" />
+    <Compile Include="..\..\System.Numerics.Vectors\ref\System.Numerics.Vectors.cs" />
+    <Compile Include="..\..\System.Reflection.Emit.ILGeneration\ref\System.Reflection.Emit.ILGeneration.cs" />
+    <Compile Include="..\..\System.Reflection.Emit.Lightweight\ref\System.Reflection.Emit.Lightweight.cs" />
+    <Compile Include="..\..\System.Reflection.Emit\ref\System.Reflection.Emit.cs" />
+    <Compile Include="..\..\System.Reflection.Primitives\ref\System.Reflection.Primitives.cs" />
+    <Compile Include="..\..\System.Runtime.Intrinsics\ref\System.Runtime.Intrinsics.cs" />
+    <Compile Include="..\..\System.Runtime.Loader\ref\System.Runtime.Loader.cs" />
+    <Compile Include="..\..\System.Runtime\ref\System.Runtime.cs" />
+    <Compile Include="..\..\System.Text.Encoding.Extensions\ref\System.Text.Encoding.Extensions.cs" />
+    <Compile Include="..\..\System.Threading.Overlapped\ref\System.Threading.Overlapped.cs" />
+    <Compile Include="..\..\System.Threading.ThreadPool\ref\System.Threading.ThreadPool.cs" />
+    <Compile Include="..\..\System.Threading.Thread\ref\System.Threading.Thread.cs" />
   
     <!-- contracts where types were partially moved to CoreLib, these are used both here and in the contract assemblies and are generated -->
     <Compile Include="..\..\System.Collections.Concurrent\ref\System.Collections.Concurrent.cs" />

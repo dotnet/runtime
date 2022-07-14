@@ -256,7 +256,6 @@
   <PropertyGroup>
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
     <CoreLibRefDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'ref'))</CoreLibRefDir>
-    <CoreLibRefContractsDir>$([MSBuild]::NormalizeDirectory('$(CoreLibRefDir)', 'contracts'))</CoreLibRefContractsDir>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <CoreLibProject Condition="'$(RuntimeFlavor)' == 'Mono'">$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <CoreLibProject Condition="'$(UseNativeAotCoreLib)' == 'true'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'nativeaot', 'System.Private.CoreLib', 'src', 'System.Private.CoreLib.csproj'))</CoreLibProject>

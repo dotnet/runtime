@@ -3,7 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibRefContractsDir)System.Reflection.Primitives.cs" />
+    <Compile Include="System.Reflection.Primitives.cs" />
     <Compile Include="System.Reflection.Primitives.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -4,7 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibRefContractsDir)System.Text.Encoding.Extensions.cs" />
+    <Compile Include="System.Text.Encoding.Extensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
