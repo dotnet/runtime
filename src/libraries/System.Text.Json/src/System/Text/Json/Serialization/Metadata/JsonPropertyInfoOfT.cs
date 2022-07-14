@@ -205,9 +205,9 @@ namespace System.Text.Json.Serialization.Metadata
         private protected override void DetermineEffectiveConverter()
         {
             JsonConverter converter =
-                Options.ExpandConverterFactory(CustomConverter, PropertyType) ??
-                DefaultConverterForType ??
-                Options.GetConverterFromTypeInfo(PropertyType);
+                Options.ExpandConverterFactory(CustomConverter, PropertyType)
+                ?? DefaultConverterForType
+                ?? Options.GetConverterFromTypeInfo(PropertyType);
 
             TypedEffectiveConverter = converter is JsonConverter<T> typedConv ? typedConv : converter.CreateCastingConverter<T>();
             ConverterStrategy = TypedEffectiveConverter.ConverterStrategy;
