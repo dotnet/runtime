@@ -67,7 +67,7 @@ namespace ILCompiler.Compiler.Tests
             CompilationModuleGroup compilationGroup = new SingleFileCompilationModuleGroup();
 
             NativeAotILProvider ilProvider = new NativeAotILProvider();
-            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider);
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, Logger.Null);
 
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(compilationGroup, context,
                 new FullyBlockedMetadataBlockingPolicy(), new FullyBlockedManifestResourceBlockingPolicy(),

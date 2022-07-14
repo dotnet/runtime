@@ -13,34 +13,40 @@ namespace ILCompiler.Dataflow
 {
     sealed class CompilerGeneratedCallGraph
     {
-        readonly Dictionary<TypeSystemEntity, HashSet<TypeSystemEntity>> callGraph;
+        readonly Dictionary<TypeSystemEntity, HashSet<TypeSystemEntity>> _callGraph;
 
-        public CompilerGeneratedCallGraph() => callGraph = new Dictionary<TypeSystemEntity, HashSet<TypeSystemEntity>>();
+        public CompilerGeneratedCallGraph() => _callGraph = new Dictionary<TypeSystemEntity, HashSet<TypeSystemEntity>>();
 
         void TrackCallInternal(TypeSystemEntity fromMember, TypeSystemEntity toMember)
         {
-            if (!callGraph.TryGetValue(fromMember, out HashSet<TypeSystemEntity>? toMembers))
+            if (!_callGraph.TryGetValue(fromMember, out HashSet<TypeSystemEntity>? toMembers))
             {
                 toMembers = new HashSet<TypeSystemEntity>();
-                callGraph.Add(fromMember, toMembers);
+                _callGraph.Add(fromMember, toMembers);
             }
             toMembers.Add(toMember);
         }
 
         public void TrackCall(MethodDesc fromMethod, MethodDesc toMethod)
         {
+            Debug.Assert(fromMethod.IsTypicalMethodDefinition);
+            Debug.Assert(toMethod.IsTypicalMethodDefinition);
             Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(toMethod.Name));
             TrackCallInternal(fromMethod, toMethod);
         }
 
         public void TrackCall(MethodDesc fromMethod, DefType toType)
         {
+            Debug.Assert(fromMethod.IsTypicalMethodDefinition);
+            Debug.Assert(toType.IsTypeDefinition);
             Debug.Assert(CompilerGeneratedNames.IsStateMachineType(toType.Name));
             TrackCallInternal(fromMethod, toType);
         }
 
         public void TrackCall(DefType fromType, MethodDesc toMethod)
         {
+            Debug.Assert(fromType.IsTypeDefinition);
+            Debug.Assert(toMethod.IsTypicalMethodDefinition);
             Debug.Assert(CompilerGeneratedNames.IsStateMachineType(fromType.Name));
             Debug.Assert(CompilerGeneratedNames.IsLambdaOrLocalFunction(toMethod.Name));
             TrackCallInternal(fromType, toMethod);
@@ -54,7 +60,7 @@ namespace ILCompiler.Dataflow
             queue.Enqueue(start);
             while (queue.TryDequeue(out TypeSystemEntity? method))
             {
-                if (!callGraph.TryGetValue(method, out HashSet<TypeSystemEntity>? callees))
+                if (!_callGraph.TryGetValue(method, out HashSet<TypeSystemEntity>? callees))
                     continue;
 
                 foreach (var callee in callees)

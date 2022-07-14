@@ -16,6 +16,7 @@ using ILLink.Shared;
 
 using ILSequencePoint = Internal.IL.ILSequencePoint;
 using MethodIL = Internal.IL.MethodIL;
+using Internal.IL;
 
 namespace ILCompiler
 {
@@ -38,7 +39,7 @@ namespace ILCompiler
 
         public Logger(
             ILogWriter writer,
-            CompilerGeneratedState compilerGeneratedState,
+            ILProvider ilProvider,
             bool isVerbose,
             IEnumerable<int> suppressedWarnings,
             bool singleWarn,
@@ -46,7 +47,7 @@ namespace ILCompiler
             IEnumerable<string> singleWarnDisabledModules)
         {
             _logWriter = writer;
-            _compilerGeneratedState = compilerGeneratedState;
+            _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
             IsVerbose = isVerbose;
             _suppressedWarnings = new HashSet<int>(suppressedWarnings);
             _isSingleWarn = singleWarn;
@@ -54,18 +55,18 @@ namespace ILCompiler
             _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
         }
 
-        public Logger(TextWriter writer, CompilerGeneratedState compilerGeneratedState, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
-            : this(new TextLogWriter(writer), compilerGeneratedState, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules)
+        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
+            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules)
         {
         }
 
-        public Logger(ILogWriter writer, CompilerGeneratedState compilerGeneratedState, bool isVerbose)
-            : this(writer, compilerGeneratedState, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>())
+        public Logger(ILogWriter writer, ILProvider ilProvider, bool isVerbose)
+            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>())
         {
         }
 
-        public Logger(TextWriter writer, CompilerGeneratedState compilerGeneratedState, bool isVerbose)
-            : this(new TextLogWriter(writer), compilerGeneratedState, isVerbose)
+        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose)
+            : this(new TextLogWriter(writer), ilProvider, isVerbose)
         {
         }
 
@@ -157,12 +158,15 @@ namespace ILCompiler
                 return true;
 
             MethodDesc owningMethod;
-            while (_compilerGeneratedState?.TryGetOwningMethodForCompilerGeneratedMember(member, out owningMethod) == true)
+            if (_compilerGeneratedState != null)
             {
-                Debug.Assert(owningMethod != member);
-                if (IsSuppressed(code, owningMethod))
-                    return true;
-                member = owningMethod;
+                while (_compilerGeneratedState?.TryGetOwningMethodForCompilerGeneratedMember(member, out owningMethod) == true)
+                {
+                    Debug.Assert(owningMethod != member);
+                    if (IsSuppressed(code, owningMethod))
+                        return true;
+                    member = owningMethod;
+                }
             }
 
             return false;
@@ -294,12 +298,15 @@ namespace ILCompiler
                 return true;
 
             MethodDesc owningMethod;
-            while (_compilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember(originMember, out owningMethod))
+            if (_compilerGeneratedState != null)
             {
-                Debug.Assert(owningMethod != originMember);
-                if (owningMethod.IsInRequiresScope(requiresAttribute))
-                    return true;
-                originMember = owningMethod;
+                while (_compilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember(originMember, out owningMethod))
+                {
+                    Debug.Assert(owningMethod != originMember);
+                    if (owningMethod.IsInRequiresScope(requiresAttribute))
+                        return true;
+                    originMember = owningMethod;
+                }
             }
 
             return false;

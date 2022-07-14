@@ -61,9 +61,9 @@ namespace Mono.Linker.Dataflow
 			TrimAnalysisPatterns = new TrimAnalysisPatternStore (MultiValueLattice, context);
 		}
 
-		public override void InterproceduralScan (MethodDefinition method)
+		public override void InterproceduralScan (MethodBody methodBody)
 		{
-			base.InterproceduralScan (method);
+			base.InterproceduralScan (methodBody);
 
 			var reflectionMarker = new ReflectionMarker (_context, _markStep, enabled: true);
 			TrimAnalysisPatterns.MarkAndProduceDiagnostics (reflectionMarker, _markStep);

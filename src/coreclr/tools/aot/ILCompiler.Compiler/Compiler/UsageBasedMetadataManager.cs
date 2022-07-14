@@ -497,12 +497,7 @@ namespace ILCompiler
             {
                 if (FlowAnnotations.RequiresDataflowAnalysis(method))
                 {
-                    MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
-                    if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
-                    {
-                        dependencies = dependencies ?? new DependencyList();
-                        dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), "Method has annotated parameters");
-                    }
+                    AddDataflowDependencyIfNeeded(ref dependencies, factory, methodIL, "Method has annotated parameters");
                 }
 
                 if ((method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any)))
@@ -618,12 +613,7 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations, writtenField))
             {
-                MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
-                if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
-                {
-                    dependencies = dependencies ?? new DependencyList();
-                    dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), "Access to interesting field");
-                }
+                AddDataflowDependencyIfNeeded(ref dependencies, factory, methodIL, "Access to interesting field");
             }
 
             string reason = "Use of a field";
@@ -686,12 +676,7 @@ namespace ILCompiler
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations, calledMethod))
             {
-                MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
-                if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
-                {
-                    dependencies = dependencies ?? new DependencyList();
-                    dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), "Call to interesting method");
-                }
+                AddDataflowDependencyIfNeeded(ref dependencies, factory, methodIL, "Call to interesting method");
             }
         }
 
@@ -902,6 +887,16 @@ namespace ILCompiler
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
                 _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
                 reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts);
+        }
+
+        private void AddDataflowDependencyIfNeeded(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)
+        {
+            MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
+            if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);
+            }
         }
 
         private struct ReflectableEntityBuilder<T>

@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -78,14 +80,15 @@ namespace ILCompiler.Dataflow
                 index--;
             }
 
+            if (!method.Signature[index].IsByRef)
+                return ReferenceKind.None;
+
             // Parameter metadata index 0 is for return parameter
             foreach (var parameterMetadata in method.GetParameterMetadata())
             {
                 if (parameterMetadata.Index != index + 1)
                     continue;
 
-                if (!method.Signature[index].IsByRef)
-                    return ReferenceKind.None;
                 if (parameterMetadata.In)
                     return ReferenceKind.In;
                 if (parameterMetadata.Out)
@@ -108,7 +111,7 @@ namespace ILCompiler.Dataflow
                 MetadataType type => type.ContainingType,
                 PropertyPseudoDesc property => property.OwningType,
                 EventPseudoDesc @event => @event.OwningType,
-                _ => null
+                _ => throw new NotImplementedException("Unexpected type system entity")
             };
         }
     }

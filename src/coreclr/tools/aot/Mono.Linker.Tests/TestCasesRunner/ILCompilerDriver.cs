@@ -57,9 +57,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			ilProvider = new FeatureSwitchManager (ilProvider, options.FeatureSwitches);
 
-			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider);
-
-			Logger logger = new Logger (logWriter, compilerGeneratedState, isVerbose: true);
+			Logger logger = new Logger (logWriter, ilProvider, isVerbose: true);
+			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
 			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager (
 				compilationGroup,

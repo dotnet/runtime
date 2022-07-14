@@ -226,15 +226,17 @@ namespace Mono.Linker.Dataflow
 
 		// Scans the method as well as any nested functions (local functions or lambdas) and state machines
 		// reachable from it.
-		public virtual void InterproceduralScan (MethodDefinition startingMethod)
+		public virtual void InterproceduralScan (MethodBody startingMethodBody)
 		{
+			MethodDefinition startingMethod = startingMethodBody.Method;
+
 			// Note that the default value of a hoisted local will be MultiValueLattice.Top, not UnknownValue.Instance.
 			// This ensures that there are no warnings for the "unassigned state" of a parameter.
 			// Definite assignment should ensure that there is no way for this to be an analysis hole.
 			var interproceduralState = InterproceduralStateLattice.Top;
 
 			var oldInterproceduralState = interproceduralState.Clone ();
-			interproceduralState.TrackMethod (startingMethod);
+			interproceduralState.TrackMethod (startingMethodBody);
 
 			while (!interproceduralState.Equals (oldInterproceduralState)) {
 				oldInterproceduralState = interproceduralState.Clone ();
