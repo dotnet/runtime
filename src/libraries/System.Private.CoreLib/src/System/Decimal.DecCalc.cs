@@ -1533,7 +1533,7 @@ ReturnZero:
                 // The smallest non-zero decimal we can represent is 10^-28, which is just slightly more
                 // than 2^-93.  So a float with an exponent of -94 could just
                 // barely reach 0.5, but smaller exponents will always round to zero.
-                // This is a shortcut to catch doubles that are too small efficiently.
+                // This is a shortcut handle this edge case more efficiently.
                 //
                 if (input.Exponent < -94)
                 {
@@ -1570,7 +1570,7 @@ ReturnZero:
                     flags = SignMask;
                 }
 
-                (uint low, uint mid, uint high, uint scale) = Number.Dragon4DoubleToDecimal(input, 29, true);
+                (uint low, uint mid, uint high, uint scale) = Number.Dragon4DoubleToDecimal(input);
 
                 flags |= scale << ScaleShift;
 

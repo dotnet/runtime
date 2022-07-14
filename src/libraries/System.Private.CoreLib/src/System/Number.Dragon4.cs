@@ -100,7 +100,7 @@ namespace System
             number.DigitsCount = length;
         }
 
-        public static (uint low, uint mid, uint high, uint decimalScale) Dragon4DoubleToDecimal(double value, int cutoffNumber, bool isSignificantDigits) // TODO I don't think we need cutoff number, maybe even isSignificantDigits
+        public static (uint low, uint mid, uint high, uint decimalScale) Dragon4DoubleToDecimal(double value)
         {
             double v = double.IsNegative(value) ? -value : value;
 
@@ -123,7 +123,7 @@ namespace System
                 mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
-            Dragon4State state = Dragon4GetState(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
+            Dragon4State state = Dragon4GetState(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, 29); // cutoffNumber is arbitrary here, anything but -1
 
             // At this point, here is the state
             // scaledValue / scale =  value * 10 / 10^digitExponent
@@ -316,7 +316,7 @@ namespace System
             // require that the DoubleToNumber handle zero itself.
             Debug.Assert(mantissa != 0);
 
-            Dragon4State state = Dragon4GetState(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
+            Dragon4State state = Dragon4GetState(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber);
 
             // Compute the cutoff exponent (the exponent of the final digit to print).
             // Default to the maximum size of the output buffer.
@@ -562,7 +562,7 @@ namespace System
             return outputLen;
         }
 
-        private static unsafe Dragon4State Dragon4GetState(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits)
+        private static unsafe Dragon4State Dragon4GetState(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber)
         {
             // Compute the initial state in integral form such that
             //      value     = scaledValue / scale
