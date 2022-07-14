@@ -780,7 +780,7 @@ HRESULT EEConfig::sync()
 #endif
 
 #if defined(FEATURE_READYTORUN)
-    fReadyToRun = g_pConfig->ReadyToRun();
+    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
