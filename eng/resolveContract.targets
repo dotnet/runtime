@@ -73,13 +73,13 @@
       <GenAPIConditionalTypeListWrapOtherTypes Condition="'$(GenAPIConditionalTypeListWrapOtherTypes)' == ''">true</GenAPIConditionalTypeListWrapOtherTypes>
     </PropertyGroup>
     <ItemGroup>
-      <_genAPIResolvedCoreLibProjectReferenceDir Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)')->'%(RootDir)%(Directory)')" />
+      <_genAPILibPathForGenAPIDocIdGeneration Include="@(ReferencePath->'%(RootDir)%(Directory)'->Distinct())" />
       <_genAPIResolvedProjectForGenAPIDocIdGeneration Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(ProjectForGenAPIDocIdGeneration)'))" />
     </ItemGroup>
 
     <Microsoft.DotNet.GenAPI.GenAPITask
         Assembly="@(_genAPIResolvedProjectForGenAPIDocIdGeneration)"
-        LibPath="@(_genAPIResolvedCoreLibProjectReferenceDir)"
+        LibPath="@(_genAPILibPathForGenAPIDocIdGeneration)"
         WriterType="DocIds"
         DocIdKinds="Namespace, Type"
         OutputPath="$(GenAPIConditionalTypeList)" />
