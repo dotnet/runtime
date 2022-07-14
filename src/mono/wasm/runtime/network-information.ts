@@ -9,7 +9,7 @@ let change_listener: ((onLine: boolean) => void) | null = null;
 
 export function network_wasm_set_change_listener(listener: (onLine: boolean) => void): void {
     if (window) {
-        if (change_listener) {
+        if (!change_listener) {
             window.addEventListener("offline", network_wasm_available_changed);
             window.addEventListener("online", network_wasm_available_changed);
         }
@@ -20,7 +20,7 @@ export function network_wasm_set_change_listener(listener: (onLine: boolean) => 
 
 export function network_wasm_remove_change_listener(): void {
     if (window) {
-        if (!change_listener) {
+        if (change_listener) {
             window.removeEventListener("offline", network_wasm_available_changed);
             window.removeEventListener("online", network_wasm_available_changed);
         }
