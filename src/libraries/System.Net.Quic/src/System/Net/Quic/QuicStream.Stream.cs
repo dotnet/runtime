@@ -59,7 +59,7 @@ public partial class QuicStream : Stream
     }
 
     // Read boilerplate.
-    public override bool CanRead => Volatile.Read(ref _disposed) == 0 && _canRead;
+    public override bool CanRead => Volatile.Read(ref _disposed) == 0 && _canRead && !_receiveTcs.IsCompleted;
     public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         => TaskToApm.Begin(ReadAsync(buffer, offset, count, default), callback, state);
     public override int EndRead(IAsyncResult asyncResult)
@@ -108,7 +108,7 @@ public partial class QuicStream : Stream
     }
 
     // Write boilerplate.
-    public override bool CanWrite => Volatile.Read(ref _disposed) == 0 && _canWrite;
+    public override bool CanWrite => Volatile.Read(ref _disposed) == 0 && _canWrite && !_sendTcs.IsCompleted;
     public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         => TaskToApm.Begin(WriteAsync(buffer, offset, count, default), callback, state);
     public override void EndWrite(IAsyncResult asyncResult)
