@@ -241,6 +241,8 @@ HRESULT EEConfig::Init()
     fTieredPGO = false;
 #endif
 
+    fReadyToRun = false;
+
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     dwOSR_HitLimit = 10;
     dwOSR_CounterBump = 5000;
@@ -776,6 +778,8 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_PGO)
     fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
 #endif
+
+    fReadyToRun = ReadyToRunInfo::IsReadyToRunEnabled();
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     dwOSR_HitLimit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HitLimit);
