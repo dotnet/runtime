@@ -9,6 +9,8 @@ using System.Xml;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonDataContract
@@ -32,7 +34,7 @@ namespace System.Runtime.Serialization.Json
 
         protected DataContract TraditionalDataContract => _helper.TraditionalDataContract;
 
-        private Dictionary<XmlQualifiedName, DataContract>? KnownDataContracts => _helper.KnownDataContracts;
+        private DataContractDictionary? KnownDataContracts => _helper.KnownDataContracts;
 
         public static JsonReadWriteDelegates? GetGeneratedReadWriteDelegates(DataContract c)
         {
@@ -144,7 +146,7 @@ namespace System.Runtime.Serialization.Json
 
             private static readonly TypeHandleRef s_typeHandleRef = new TypeHandleRef();
             private static readonly Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
-            private Dictionary<XmlQualifiedName, DataContract>? _knownDataContracts;
+            private DataContractDictionary? _knownDataContracts;
             private readonly DataContract _traditionalDataContract;
             private readonly string _typeName;
 
@@ -156,7 +158,7 @@ namespace System.Runtime.Serialization.Json
                 _typeName = string.IsNullOrEmpty(traditionalDataContract.Namespace.Value) ? traditionalDataContract.Name.Value : string.Concat(traditionalDataContract.Name.Value, JsonGlobals.NameValueSeparatorString, XmlObjectSerializerWriteContextComplexJson.TruncateDefaultDataContractNamespace(traditionalDataContract.Namespace.Value));
             }
 
-            internal Dictionary<XmlQualifiedName, DataContract>? KnownDataContracts => _knownDataContracts;
+            internal DataContractDictionary? KnownDataContracts => _knownDataContracts;
 
             internal DataContract TraditionalDataContract => _traditionalDataContract;
 
@@ -283,7 +285,7 @@ namespace System.Runtime.Serialization.Json
                         while (collectionDataContract != null)
                         {
                             DataContract itemContract = collectionDataContract.ItemContract;
-                            _knownDataContracts ??= new Dictionary<XmlQualifiedName, DataContract>();
+                            _knownDataContracts ??= new DataContractDictionary();
 
                             _knownDataContracts.TryAdd(itemContract.StableName, itemContract);
 

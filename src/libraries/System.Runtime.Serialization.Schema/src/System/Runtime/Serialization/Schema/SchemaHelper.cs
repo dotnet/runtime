@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Xml.Schema;
+
 namespace System.Runtime.Serialization.Schema
 {
     internal enum DataContractType
@@ -51,6 +53,24 @@ namespace System.Runtime.Serialization.Schema
 
     internal static class SchemaHelper
     {
+        internal static void CompileSchemaSet(XmlSchemaSet schemaSet)
+        {
+            if (schemaSet.Contains(XmlSchema.Namespace))
+                schemaSet.Compile();
+            else
+            {
+                // Add base XSD schema with top level element named "schema"
+                XmlSchema xsdSchema = new XmlSchema();
+                xsdSchema.TargetNamespace = XmlSchema.Namespace;
+                XmlSchemaElement element = new XmlSchemaElement();
+                element.Name = Globals.SchemaLocalName;
+                element.SchemaType = new XmlSchemaComplexType();
+                xsdSchema.Items.Add(element);
+                schemaSet.Add(xsdSchema);
+                schemaSet.Compile();
+            }
+        }
+
         internal static bool IsTypeNullable(Type type)
         {
             return !type.IsValueType ||

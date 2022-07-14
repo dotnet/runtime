@@ -12,8 +12,8 @@ using System.Linq;
 using System.Xml;
 using System.Xml.Schema;
 
-using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
-using SchemaObjectDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using SchemaObjectDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
 
 namespace System.Runtime.Serialization
 {
@@ -23,8 +23,7 @@ namespace System.Runtime.Serialization
         private DataContractSet _dataContractSet;
         private XmlSchemaSet _schemaSet;
         private ICollection<XmlQualifiedName>? _typeNames;
-        private ICollection<XmlSchemaElement> _elements;
-        private XmlQualifiedName[] _elementTypeNames;
+        private ICollection<XmlSchemaElement>? _elements;
         private bool _importXmlDataType;
         private SchemaObjectDictionary _schemaObjects = null!;   // Not directly referenced. Always lazy initialized by property getter.
         private List<XmlSchemaRedefine> _redefineList = null!;   // Not directly referenced. Always lazy initialized by property getter.
@@ -32,19 +31,20 @@ namespace System.Runtime.Serialization
 
         private static Hashtable? s_serializationSchemaElements;
 
-        internal SchemaImporter(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement> elements, XmlQualifiedName[] elementTypeNames, DataContractSet dataContractSet, bool importXmlDataType)
+        internal SchemaImporter(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement>? elements, DataContractSet dataContractSet, bool importXmlDataType)
         {
             _dataContractSet = dataContractSet;
             _schemaSet = schemas;
             _typeNames = typeNames;
             _elements = elements;
-            _elementTypeNames = elementTypeNames;
             _importXmlDataType = importXmlDataType;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void Import()
+        internal void Import([NotNullIfNotNull("_elements")] out IList<XmlQualifiedName>? elementTypeNames)
         {
+            elementTypeNames = null!;
+
             if (!_schemaSet.Contains(Globals.SerializationNamespace))
             {
                 StringReader reader = new StringReader(Globals.SerializationSchema);
@@ -97,26 +97,26 @@ namespace System.Runtime.Serialization
                     ImportType(typeName);
                 }
 
-                if (_elements.Count > 0)
+                if (_elements?.Count > 0)
                 {
-                    int i = 0;
+                    elementTypeNames = new List<XmlQualifiedName>();
                     foreach (XmlSchemaElement element in _elements)
                     {
                         XmlQualifiedName typeName = element.SchemaTypeName;
                         if (typeName != null && typeName.Name.Length > 0)
                         {
-                            _elementTypeNames[i++] = ImportType(typeName).StableName;
+                            elementTypeNames.Add(ImportType(typeName).StableName);
                         }
                         else
                         {
                             XmlSchema? schema = SchemaHelper.GetSchemaWithGlobalElementDeclaration(element, _schemaSet);
                             if (schema == null)
                             {
-                                _elementTypeNames[i++] = ImportAnonymousElement(element, element.QualifiedName).StableName;
+                                elementTypeNames.Add(ImportAnonymousElement(element, element.QualifiedName).StableName);
                             }
                             else
                             {
-                                _elementTypeNames[i++] = ImportAnonymousGlobalElement(element, element.QualifiedName, schema.TargetNamespace).StableName;
+                                elementTypeNames.Add(ImportAnonymousGlobalElement(element, element.QualifiedName, schema.TargetNamespace).StableName);
                             }
                         }
                     }
@@ -218,7 +218,7 @@ namespace System.Runtime.Serialization
                     List<XmlSchemaType>? knownTypes = schemaObjectInfo._knownTypes;
                     if (knownTypes != null)
                     {
-                        Dictionary<XmlQualifiedName, DataContract> knownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
+                        DataContractDictionary knownDataContracts = new DataContractDictionary();
                         foreach (XmlSchemaType knownType in knownTypes)
                         {
                             // Expected: will throw exception if schema set contains types that are not supported
@@ -236,7 +236,7 @@ namespace System.Runtime.Serialization
 
         internal SchemaObjectDictionary CreateSchemaObjects()
         {
-            SchemaObjectDictionary schemaObjects = new Dictionary<XmlQualifiedName, SchemaObjectInfo>();
+            SchemaObjectDictionary schemaObjects = new SchemaObjectDictionary();
             ICollection schemaList = _schemaSet.Schemas();
             List<XmlSchemaType> knownTypesForObject = new List<XmlSchemaType>();
             schemaObjects.Add(SchemaExporter.AnytypeQualifiedName, new SchemaObjectInfo(null, null, null, knownTypesForObject));
@@ -494,8 +494,8 @@ namespace System.Runtime.Serialization
                 return ImportXmlDataType(typeName, type, isAnonymous);
             }
             Type? referencedType;
-            if (_dataContractSet.TryGetReferencedSingleType(typeName, dataContract, out referencedType)
-                || (string.IsNullOrEmpty(type.Name) && _dataContractSet.TryGetReferencedSingleType(ImportActualType(type.Annotation, typeName, typeName), dataContract, out referencedType)))
+            if (_dataContractSet.TryGetReferencedType(typeName, dataContract, out referencedType)
+                || (string.IsNullOrEmpty(type.Name) && _dataContractSet.TryGetReferencedType(ImportActualType(type.Annotation, typeName, typeName), dataContract, out referencedType)))
             {
                 if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(referencedType))
                 {
@@ -705,14 +705,6 @@ namespace System.Runtime.Serialization
                 xmlDataContract.XsdType = isAnonymous ? xsdType : null;
                 xmlDataContract.HasRoot = !IsXmlAnyElementType(xsdType as XmlSchemaComplexType);
             }
-            else
-            {
-                // NOTE TODO smolloy - I think this might be dead code. It doesn't appear like xsdType can be null in this method.
-                //Value type can be used by both nillable and non-nillable elements but reference type cannot be used by non nillable elements
-                xmlDataContract.IsValueType = true;
-                xmlDataContract.IsTypeDefinedOnImport = false;
-                xmlDataContract.HasRoot = true;
-            }
             if (!isAnonymous)
             {
                 bool isNullable;
@@ -734,7 +726,7 @@ namespace System.Runtime.Serialization
                 //check if the type is XElement
                 XmlQualifiedName xlinqTypeName = new XmlQualifiedName("XElement", "http://schemas.datacontract.org/2004/07/System.Xml.Linq");
                 Type? referencedType;
-                if (_dataContractSet.TryGetReferencedSingleType(xlinqTypeName, null, out referencedType)
+                if (_dataContractSet.TryGetReferencedType(xlinqTypeName, null, out referencedType)
                     && Globals.TypeOfIXmlSerializable.IsAssignableFrom(referencedType))
                 {
                     XmlDataContract xmlDataContract = new XmlDataContract(referencedType);
@@ -907,7 +899,7 @@ namespace System.Runtime.Serialization
                 DataContractDictionary? knownDataContracts = ancestorDataContract.KnownDataContracts;
                 if (knownDataContracts == null)
                 {
-                    knownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
+                    knownDataContracts = new DataContractDictionary();
                     ancestorDataContract.KnownDataContracts = knownDataContracts;
                 }
                 knownDataContracts.Add(dataContract.StableName, dataContract);

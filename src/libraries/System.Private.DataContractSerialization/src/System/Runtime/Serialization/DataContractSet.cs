@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Xml.Schema;
 
-using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
         private Dictionary<DataContract, object>? _processedContracts;
         private readonly ISerializationSurrogateProvider? _surrogateProvider;
         private readonly ISerializationExtendedSurrogateProvider? _extendedSurrogateProvider;
-        private Hashtable? _surrogateDataTable;
+        private Hashtable? _surrogateData;
         private DataContractDictionary? _knownTypesForObject;
         private readonly ICollection<Type>? _referencedTypes;
         private readonly ICollection<Type>? _referencedCollectionTypes;
@@ -55,12 +55,12 @@ namespace System.Runtime.Serialization
         }
 
         public DataContractDictionary Contracts =>
-            _contracts ??= new Dictionary<XmlQualifiedName, DataContract>();
+            _contracts ??= new DataContractDictionary();
 
-        public IDictionary<DataContract, object> ProcessedContracts =>
+        public Dictionary<DataContract, object> ProcessedContracts =>
             _processedContracts ??= new Dictionary<DataContract, object>();
 
-        private Hashtable SurrogateDataTable => _surrogateDataTable ??= new Hashtable();
+        public Hashtable SurrogateData => _surrogateData ??= new Hashtable();
 
         public DataContractDictionary? KnownTypesForObject
         {
@@ -155,7 +155,7 @@ namespace System.Runtime.Serialization
                                                     dataMember.MemberInfo,
                                                     memberDataContract.UnderlyingType);
                             if (customData != null)
-                                SurrogateDataTable.Add(dataMember, customData);
+                                SurrogateData.Add(dataMember, customData);
                         }
 
                         Add(memberDataContract.StableName, memberDataContract);
@@ -223,11 +223,11 @@ namespace System.Runtime.Serialization
 
             Type dcType = DataContractSurrogateCaller.GetDataContractType(_surrogateProvider, type);
             dataContract = DataContract.GetDataContract(dcType);
-            if (_extendedSurrogateProvider != null && !SurrogateDataTable.Contains(dataContract))
+            if (_extendedSurrogateProvider != null && !SurrogateData.Contains(dataContract))
             {
                 object? customData = DataContractSurrogateCaller.GetCustomDataToExport(_extendedSurrogateProvider, type, dcType);
                 if (customData != null)
-                    SurrogateDataTable.Add(dataContract, customData);
+                    SurrogateData.Add(dataContract, customData);
             }
 
             return dataContract;
@@ -406,38 +406,130 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public bool TryGetReferencedType(XmlQualifiedName stableName, DataContract? dataContract, [NotNullWhen(true)] out Type? type)
+        public Type? GetReferencedType(XmlQualifiedName stableName, DataContract dataContract, out DataContract? referencedContract, out object[]? genericParameters, bool? supportGenericTypes = null)
         {
-            if (dataContract == null)
-            {
-                if (TryGetReferencedCollectionType(stableName, null, out type))
-                    return true;
-                if (TryGetReferencedSingleType(stableName, null, out type))
-                {
-                    // enforce that collection types only be specified via ReferencedCollectionTypes
-                    if (CollectionDataContract.IsCollection(type))
-                    {
-                        type = null;
-                        return false;
-                    }
-                    return true;
-                }
-                return false;
-            }
-            else if (dataContract is CollectionDataContract)
-                return TryGetReferencedCollectionType(stableName, dataContract, out type);
-            else
-            {
-                if (dataContract is XmlDataContract xmlDataContract && xmlDataContract.IsAnonymous)
-                {
-                    stableName = SchemaImporter.ImportActualType(xmlDataContract.XsdType?.Annotation, stableName, dataContract.StableName);
-                }
-                return TryGetReferencedSingleType(stableName, dataContract, out type);
-            }
+            Type? type = GetReferencedTypeInternal(stableName, dataContract);
+            referencedContract = null;
+            genericParameters = null;
+
+            if (supportGenericTypes == null)
+                return type;
+
+            if (type != null && !type.IsGenericTypeDefinition && !type.ContainsGenericParameters)
+                return type;
+
+            if (dataContract.GenericInfo == null)
+                return null;
+
+            XmlQualifiedName genericStableName = dataContract.GenericInfo.GetExpandedStableName();
+            if (genericStableName != dataContract.StableName)
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericTypeNameMismatch, dataContract.StableName.Name, dataContract.StableName.Namespace, genericStableName.Name, genericStableName.Namespace)));
+
+            // This check originally came "here" in the old code. Its tempting to move it up with the GenericInfo check.
+            if (!supportGenericTypes.Value)
+                return null;
+
+            type = GetReferencedGenericTypeInternal(dataContract.GenericInfo, out referencedContract, out genericParameters);
+            return type;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal bool TryGetReferencedSingleType(XmlQualifiedName stableName, DataContract? dataContract, [NotNullWhen(true)] out Type? type)
+        private Type? GetReferencedGenericTypeInternal(GenericInfo genInfo, out DataContract? referencedContract, out object[]? genericParameters)
+        {
+            genericParameters = null;
+            referencedContract = null;
+
+            Type? type = GetReferencedTypeInternal(genInfo.StableName, null);
+
+            if (type == null)
+            {
+                if (genInfo.Parameters != null)
+                    return null;
+
+                referencedContract = GetDataContract(genInfo.StableName);
+                if (referencedContract != null && referencedContract.GenericInfo != null)
+                    referencedContract = null;
+
+                return null;    // No type, but maybe we found a suitable referenced contract?
+            }
+
+            // We've got a type. But its generic. So we need some parameter contracts.
+            // referencedContract is still null, but will be set if we can verify all parameters.
+            if (genInfo.Parameters != null)
+            {
+                bool enableStructureCheck = (type != Globals.TypeOfNullable);
+                genericParameters = new object[genInfo.Parameters.Count];
+                DataContract[] structureCheckContracts = new DataContract[genInfo.Parameters.Count];
+                for (int i = 0; i < genInfo.Parameters.Count; i++)
+                {
+                    GenericInfo paramInfo = genInfo.Parameters[i];
+                    XmlQualifiedName paramStableName = paramInfo.GetExpandedStableName();
+                    DataContract? paramContract = GetDataContract(paramStableName);
+
+                    if (paramContract != null)
+                    {
+                        genericParameters[i] = paramContract;
+                    }
+                    else
+                    {
+                        Type? paramType = GetReferencedGenericTypeInternal(paramInfo, out paramContract, out object[]? paramParameters);
+                        if (paramType != null)
+                        {
+                            genericParameters[i] = new Tuple<Type, object[]?>(paramType, paramParameters);
+                        }
+                        else
+                        {
+                            genericParameters[i] = paramContract!;
+                        }
+                    }
+
+                    structureCheckContracts[i] = paramContract!;    // This is ok. If it's null, we disable the use of this array in the next line.
+                    if (paramContract == null)
+                        enableStructureCheck = false;
+                }
+                if (enableStructureCheck)
+                    referencedContract = DataContract.GetDataContract(type).BindGenericParameters(structureCheckContracts);
+            }
+
+            return type;
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private Type? GetReferencedTypeInternal(XmlQualifiedName stableName, DataContract? dataContract)
+        {
+            Type? type;
+
+            if (dataContract == null)
+            {
+                if (TryGetReferencedCollectionType(stableName, null, out type))
+                    return type;
+                if (TryGetReferencedType(stableName, null, out type))
+                {
+                    // enforce that collection types only be specified via ReferencedCollectionTypes
+                    if (CollectionDataContract.IsCollection(type))
+                        return null;
+
+                    return type;
+                }
+            }
+            else if (dataContract is CollectionDataContract)
+            {
+                if (TryGetReferencedCollectionType(stableName, dataContract, out type))
+                    return type;
+            }
+            else
+            {
+                if (dataContract is XmlDataContract xmlDataContract && xmlDataContract.IsAnonymous)
+                    stableName = SchemaImporter.ImportActualType(xmlDataContract.XsdType?.Annotation, stableName, dataContract.StableName);
+
+                if (TryGetReferencedType(stableName, dataContract, out type))
+                    return type;
+            }
+            return null;
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal bool TryGetReferencedType(XmlQualifiedName stableName, DataContract? dataContract, [NotNullWhen(true)] out Type? type)
         {
             return TryGetReferencedType(stableName, dataContract, false/*useReferencedCollectionTypes*/, out type);
         }
@@ -501,12 +593,12 @@ namespace System.Runtime.Serialization
 
         internal object? GetSurrogateData(object key)
         {
-            return SurrogateDataTable[key];
+            return SurrogateData[key];
         }
 
         internal void SetSurrogateData(object key, object? surrogateData)
         {
-            SurrogateDataTable[key] = surrogateData;
+            SurrogateData[key] = surrogateData;
         }
 
         internal bool IsContractProcessed(DataContract dataContract)
@@ -524,11 +616,6 @@ namespace System.Runtime.Serialization
             return Contracts.GetEnumerator();
         }
 
-        public static void CompileSchemaSet(XmlSchemaSet schemaSet)
-        {
-            SchemaImporter.CompileSchemaSet(schemaSet);
-        }
-
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void ExportSchemaSet(XmlSchemaSet schemaSet)
         {
@@ -537,38 +624,18 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public void ImportSchemaSet(XmlSchemaSet schemaSet, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement> elements, XmlQualifiedName[] elementTypeNames /*filled on return*/, bool importXmlDataType)
+        public void ImportSchemaSet(XmlSchemaSet schemaSet, ICollection<XmlQualifiedName>? typeNames, bool importXmlDataType)
         {
-            SchemaImporter importer = new SchemaImporter(schemaSet, typeNames, elements, elementTypeNames, this, importXmlDataType);
-            importer.Import();
+            SchemaImporter importer = new SchemaImporter(schemaSet, typeNames, null, this, importXmlDataType);
+            importer.Import(out IList<XmlQualifiedName> _);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public Type? GetReferencedTypeOnImport(DataContract dataContract)
+        public IList<XmlQualifiedName> ImportSchemaSet(XmlSchemaSet schemaSet, ICollection<XmlSchemaElement> elements, bool importXmlDataType)
         {
-            ISerializationExtendedSurrogateProvider? dataContractSurrogate = SerializationExtendedSurrogateProvider;
-            Type? type = null;
-            if (dataContractSurrogate != null)
-            {
-                type = DataContractSurrogateCaller.GetReferencedTypeOnImport(
-                        dataContractSurrogate,
-                        dataContract.StableName.Name,
-                        dataContract.StableName.Namespace,
-                        GetSurrogateData(dataContract));
-            }
-            return type;
-        }
-
-        public bool TryGetSurrogateData(object key, out object? value)
-        {
-            if (SerializationExtendedSurrogateProvider != null)
-            {
-                value = GetSurrogateData(key);
-                return true;
-            }
-
-            value = null;
-            return false;
+            SchemaImporter importer = new SchemaImporter(schemaSet, Array.Empty<XmlQualifiedName>() /* Needs to be empty, not null for 'elements' to be used. */, elements, this, importXmlDataType);
+            importer.Import(out IList<XmlQualifiedName>? elementNames);
+            return elementNames!;   // Not null when we have provided non-null 'typeNames' and 'elements'
         }
     }
 }

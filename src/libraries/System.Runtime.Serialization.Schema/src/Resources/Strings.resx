@@ -157,9 +157,6 @@
   <data name="CLRNamespaceMappedMultipleTimes" xml:space="preserve">
     <value>CLR namespace '{2}' has already been mapped to data contract namespace '{0}'. It cannot be mapped to another data contract namespace '{1}'.</value>
   </data>
-  <data name="GenericTypeNameMismatch" xml:space="preserve">
-    <value>DataContract name '{0}' from namespace '{1}' does not match the generic name '{2}' from namespace '{3}'.</value>
-  </data>
   <data name="InvalidClrNameGeneratedForISerializable" xml:space="preserve">
     <value>ISerializable type with data contract name '{0}' in namespace '{1}' cannot be imported. The data contract name cannot be customized for ISerializable type and the generated name '{2}' does not match the expected name '{0}'. Check if the required name has been mapped to a different type or if it is an invalid CLR name which cannot be generated or if the type requires an outer type which is not present.</value>
   </data>

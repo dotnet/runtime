@@ -4,6 +4,7 @@
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 using System.Xml.Schema;
@@ -31,7 +32,6 @@ namespace System.Runtime.Serialization.Schema
         private DataContractSet? _dataContractSet;
 
         private static readonly XmlQualifiedName[] s_emptyTypeNameArray = Array.Empty<XmlQualifiedName>();
-        private static readonly XmlSchemaElement[] s_emptyElementArray = Array.Empty<XmlSchemaElement>();
         private XmlQualifiedName[] _singleTypeNameArray = null!;   // Not directly referenced. Always lazy initialized by property getter.
         private XmlSchemaElement[] _singleElementArray = null!;   // Not directly referenced. Always lazy initialized by property getter.
 
@@ -84,7 +84,7 @@ namespace System.Runtime.Serialization.Schema
             if (schemas == null)
                 throw ExceptionUtil.ThrowHelperError(new ArgumentNullException(nameof(schemas)));
 
-            InternalImport(schemas, null, s_emptyElementArray, s_emptyTypeNameArray);
+            InternalImport(schemas, null, null);
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace System.Runtime.Serialization.Schema
             if (typeNames == null)
                 throw ExceptionUtil.ThrowHelperError(new ArgumentNullException(nameof(typeNames)));
 
-            InternalImport(schemas, typeNames, s_emptyElementArray, s_emptyTypeNameArray);
+            InternalImport(schemas, typeNames, null);
         }
 
         /// <summary>
@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization.Schema
                 throw ExceptionUtil.ThrowHelperError(new ArgumentNullException(nameof(typeName)));
 
             SingleTypeNameArray[0] = typeName;
-            InternalImport(schemas, SingleTypeNameArray, s_emptyElementArray, s_emptyTypeNameArray);
+            InternalImport(schemas, SingleTypeNameArray, null);
         }
 
         /// <summary>
@@ -139,8 +139,9 @@ namespace System.Runtime.Serialization.Schema
                 throw ExceptionUtil.ThrowHelperError(new ArgumentNullException(nameof(element)));
 
             SingleElementArray[0] = element;
-            InternalImport(schemas, s_emptyTypeNameArray, SingleElementArray, SingleTypeNameArray /*filled on return*/);
-            return SingleTypeNameArray[0];
+            IList<XmlQualifiedName>? elementNames = InternalImport(schemas, s_emptyTypeNameArray, SingleElementArray);
+            Debug.Assert(elementNames != null && elementNames.Count > 0);
+            return elementNames[0];
         }
 
         /// <summary>
@@ -154,7 +155,7 @@ namespace System.Runtime.Serialization.Schema
             if (schemas == null)
                 throw ExceptionUtil.ThrowHelperError(new ArgumentNullException(nameof(schemas)));
 
-            return InternalCanImport(schemas, null, s_emptyElementArray, s_emptyTypeNameArray);
+            return InternalCanImport(schemas, null, null);
         }
 
         /// <summary>
@@ -172,7 +173,7 @@ namespace System.Runtime.Serialization.Schema
             if (typeNames == null)
                 throw ExceptionUtil.ThrowHelperError(new ArgumentNullException(nameof(typeNames)));
 
-            return InternalCanImport(schemas, typeNames, s_emptyElementArray, s_emptyTypeNameArray);
+            return InternalCanImport(schemas, typeNames, null);
         }
 
         /// <summary>
@@ -190,7 +191,7 @@ namespace System.Runtime.Serialization.Schema
             if (typeName == null)
                 throw ExceptionUtil.ThrowHelperError(new ArgumentNullException(nameof(typeName)));
 
-            return InternalCanImport(schemas, new XmlQualifiedName[] { typeName }, s_emptyElementArray, s_emptyTypeNameArray);
+            return InternalCanImport(schemas, new XmlQualifiedName[] { typeName }, null);
         }
 
         /// <summary>
@@ -209,7 +210,7 @@ namespace System.Runtime.Serialization.Schema
                 throw ExceptionUtil.ThrowHelperError(new ArgumentNullException(nameof(element)));
 
             SingleElementArray[0] = element;
-            return InternalCanImport(schemas, s_emptyTypeNameArray, SingleElementArray, SingleTypeNameArray);
+            return InternalCanImport(schemas, s_emptyTypeNameArray, SingleElementArray);
         }
 
         /// <summary>
@@ -303,15 +304,21 @@ namespace System.Runtime.Serialization.Schema
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private void InternalImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement> elements, XmlQualifiedName[] elementTypeNames/*filled on return*/)
+        private IList<XmlQualifiedName>? InternalImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement>? elements)
         {
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            IList<XmlQualifiedName>? elementTypeNames = null;
             try
             {
-                DataContractSet.ImportSchemaSet(schemas, typeNames, elements, elementTypeNames/*filled on return*/, ImportXmlDataType);
+                if (elements != null)
+                    elementTypeNames = DataContractSet.ImportSchemaSet(schemas, elements, ImportXmlDataType);
+                else
+                    DataContractSet.ImportSchemaSet(schemas, typeNames, ImportXmlDataType);
 
                 CodeExporter codeExporter = new CodeExporter(DataContractSet, Options, CodeCompileUnit);
                 codeExporter.Export();
+
+                return elementTypeNames;
             }
             catch
             {
@@ -329,12 +336,15 @@ namespace System.Runtime.Serialization.Schema
         }
 
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private bool InternalCanImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement> elements, XmlQualifiedName[] elementTypeNames)
+        private bool InternalCanImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement>? elements)
         {
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
             try
             {
-                DataContractSet.ImportSchemaSet(schemas, typeNames, elements, elementTypeNames/*filled on return*/, ImportXmlDataType);
+                if (elements != null)
+                    DataContractSet.ImportSchemaSet(schemas, elements, ImportXmlDataType);
+                else
+                    DataContractSet.ImportSchemaSet(schemas, typeNames, ImportXmlDataType);
                 return true;
             }
             catch (ArgumentException)

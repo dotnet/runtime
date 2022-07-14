@@ -10,7 +10,8 @@ using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using System.Xml;
-using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {

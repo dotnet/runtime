@@ -9,8 +9,6 @@ namespace System.Runtime.Serialization
     public abstract partial class DataContract
     {
         public virtual DataContract? BaseContract { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
-        public virtual DataContract BindGenericParameters(DataContract[] paramContracts, System.Collections.Generic.IDictionary<DataContract, DataContract> boundContracts) { throw null; }
         public virtual string? ContractType { get { throw null; } }
         internal DataContract(DataContractCriticalHelper helper) { }
         internal const System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes DataContractPreserveMemberTypes =
@@ -21,7 +19,6 @@ namespace System.Runtime.Serialization
             System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields |
             System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties;
         public static string EncodeLocalName(string localName) { throw null; }
-        public virtual GenericInfo? GenericInfo { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public virtual System.Xml.XmlQualifiedName GetArrayTypeName(bool isNullable) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
@@ -39,8 +36,8 @@ namespace System.Runtime.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public static bool IsTypeSerializable(Type type) { throw null; }
         public virtual bool IsValueType { get { throw null; } }
-        public virtual System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>? KnownDataContracts { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } set { throw null; } }
-        public virtual System.Collections.Generic.IList<DataMember>? Members { get { throw null; } }
+        public virtual System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>? KnownDataContracts { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } set { throw null; } }
+        public virtual System.Collections.Generic.List<DataMember>? Members { get { throw null; } }
         public virtual Type OriginalUnderlyingType { get { throw null; } }
         public virtual System.Xml.XmlQualifiedName StableName { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(DataContract.DataContractPreserveMemberTypes)]
@@ -122,8 +119,7 @@ namespace System.Runtime.Serialization
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public void Add(Type type) { throw null; }
-        public static void CompileSchemaSet(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
-        public System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract> Contracts { get { throw null; } }
+        public System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract> Contracts { get { throw null; } }
         public DataContractSet(ISerializationSurrogateProvider? dataContractSurrogate, System.Collections.Generic.ICollection<Type>? referencedTypes, System.Collections.Generic.ICollection<Type>? referencedCollectionTypes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContractSet(DataContractSet dataContractSet) { throw null; }
@@ -134,14 +130,14 @@ namespace System.Runtime.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public DataContract? GetDataContract(System.Xml.XmlQualifiedName key) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
-        public Type? GetReferencedTypeOnImport(DataContract dataContract) { throw null; }
+        public Type? GetReferencedType(System.Xml.XmlQualifiedName stableName, DataContract dataContract, out DataContract? referencedContract, out object[]? genericParameters, bool? supportGenericTypes = null) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
-        public void ImportSchemaSet(System.Xml.Schema.XmlSchemaSet schemaSet, System.Collections.Generic.ICollection<System.Xml.XmlQualifiedName>? typeNames, System.Collections.Generic.ICollection<System.Xml.Schema.XmlSchemaElement> elements, System.Xml.XmlQualifiedName[] elementTypeNames, bool importXmlDataType) { throw null; }
-        public System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, DataContract>? KnownTypesForObject { get { throw null; } }
-        public System.Collections.Generic.IDictionary<DataContract, object> ProcessedContracts { get { throw null; } }
+        public void ImportSchemaSet(System.Xml.Schema.XmlSchemaSet schemaSet, System.Collections.Generic.ICollection<System.Xml.XmlQualifiedName>? typeNames, bool importXmlDataType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
-        public bool TryGetReferencedType(System.Xml.XmlQualifiedName stableName, DataContract? dataContract, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Type? type) { throw null; }
-        public bool TryGetSurrogateData(object key, out object? value) { throw null; }
+        public System.Collections.Generic.IList<System.Xml.XmlQualifiedName> ImportSchemaSet(System.Xml.Schema.XmlSchemaSet schemaSet, System.Collections.Generic.ICollection<System.Xml.Schema.XmlSchemaElement> elements, bool importXmlDataType) { throw null; }
+        public System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>? KnownTypesForObject { get { throw null; } }
+        public System.Collections.Generic.Dictionary<DataContract, object> ProcessedContracts { get { throw null; } }
+        public System.Collections.Hashtable SurrogateData { get { throw null; } }
     }
     public sealed partial class DataMember
     {
@@ -161,14 +157,6 @@ namespace System.Runtime.Serialization
     public sealed partial class ExtensionDataObject
     {
         internal ExtensionDataObject() { }
-    }
-    public sealed partial class GenericInfo
-    {
-        internal GenericInfo() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
-        public System.Xml.XmlQualifiedName GetExpandedStableName() { throw null; }
-        public System.Collections.Generic.IList<GenericInfo>? Parameters { get { throw null; } }
-        public System.Xml.XmlQualifiedName StableName { get { throw null; } }
     }
     public partial interface IExtensibleDataObject
     {

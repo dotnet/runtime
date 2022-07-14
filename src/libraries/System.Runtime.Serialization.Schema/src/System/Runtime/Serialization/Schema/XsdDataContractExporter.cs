@@ -67,7 +67,7 @@ namespace System.Runtime.Serialization.Schema
             get
             {
                 XmlSchemaSet schemaSet = GetSchemaSet();
-                DataContractSet.CompileSchemaSet(schemaSet);
+                SchemaHelper.CompileSchemaSet(schemaSet);
                 return schemaSet;
             }
         }

@@ -12,7 +12,7 @@ using System.Security;
 using System.Threading;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -153,7 +153,7 @@ namespace System.Runtime.Serialization
 
         internal Type ItemType => _helper.ItemType;
 
-        public DataContract ItemContract
+        internal DataContract ItemContract
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _itemContract ?? _helper.ItemContract;
@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization
             set => _helper.ItemName = value;
         }
 
-        public XmlDictionaryString CollectionItemName => _collectionItemName;
+        internal XmlDictionaryString CollectionItemName => _collectionItemName;
 
         internal string? KeyName
         {
@@ -203,7 +203,7 @@ namespace System.Runtime.Serialization
 
         internal bool IsDictionary => KeyName != null;
 
-        public XmlDictionaryString? ChildElementNamespace
+        internal XmlDictionaryString? ChildElementNamespace
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
@@ -629,7 +629,7 @@ namespace System.Runtime.Serialization
                 set => _isConstructorCheckRequired = value;
             }
 
-            public XmlDictionaryString CollectionItemName => _collectionItemName;
+            internal XmlDictionaryString CollectionItemName => _collectionItemName;
 
             internal string? KeyName
             {
@@ -645,11 +645,11 @@ namespace System.Runtime.Serialization
 
             internal bool IsDictionary => KeyName != null;
 
-            public string? SerializationExceptionMessage => _serializationExceptionMessage;
+            internal string? SerializationExceptionMessage => _serializationExceptionMessage;
 
-            public string? DeserializationExceptionMessage => _deserializationExceptionMessage;
+            internal string? DeserializationExceptionMessage => _deserializationExceptionMessage;
 
-            public XmlDictionaryString? ChildElementNamespace
+            internal XmlDictionaryString? ChildElementNamespace
             {
                 get => _childElementNamespace;
                 set => _childElementNamespace = value;
@@ -1330,10 +1330,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override DataContract BindGenericParameters(DataContract[] paramContracts, IDictionary<DataContract, DataContract> boundContracts)
+        internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract>? boundContracts = null)
         {
             DataContract boundContract;
-            if (boundContracts.TryGetValue(this, out boundContract!))
+            if (boundContracts != null && boundContracts.TryGetValue(this, out boundContract!))
                 return boundContract;
 
             // NOTE TODO smolloy - this type-binding ('boundType') stuff is new. We did not do this in NetFx. We used to use default constructors and let the
@@ -1349,6 +1349,7 @@ namespace System.Runtime.Serialization
             Type boundType = type.MakeGenericType(paramTypes);
 
             CollectionDataContract boundCollectionContract = new CollectionDataContract(boundType);
+            boundContracts ??= new Dictionary<DataContract, DataContract>();
             boundContracts.Add(this, boundCollectionContract);
             boundCollectionContract.ItemContract = ItemContract.BindGenericParameters(paramContracts, boundContracts);
             boundCollectionContract.IsItemTypeNullable = !boundCollectionContract.ItemContract.IsValueType;

@@ -11,7 +11,7 @@ using System.Security;
 using System.Threading;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -20,11 +20,11 @@ namespace System.Runtime.Serialization
         internal const string ContractTypeString = nameof(ClassDataContract);
         public override string? ContractType => ContractTypeString;
 
-        public XmlDictionaryString[]? ContractNamespaces;
+        internal XmlDictionaryString[]? ContractNamespaces;
 
-        public XmlDictionaryString[]? MemberNames;
+        internal XmlDictionaryString[]? MemberNames;
 
-        public XmlDictionaryString[]? MemberNamespaces;
+        internal XmlDictionaryString[]? MemberNamespaces;
 
         private XmlDictionaryString?[]? _childElementNamespaces;
 
@@ -63,13 +63,13 @@ namespace System.Runtime.Serialization
             set => _helper.BaseClassContract = value;
         }
 
-        public override IList<DataMember>? Members
+        public override List<DataMember>? Members
         {
             get => _helper.Members;
             internal set => _helper.Members = value;
         }
 
-        public XmlDictionaryString?[]? ChildElementNamespaces
+        internal XmlDictionaryString?[]? ChildElementNamespaces
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
@@ -578,7 +578,7 @@ namespace System.Runtime.Serialization
             private static Type[]? s_serInfoCtorArgs;
 
             private ClassDataContract? _baseContract;
-            private IList<DataMember>? _members;
+            private List<DataMember>? _members;
             private MethodInfo? _onSerializing, _onSerialized;
             private MethodInfo? _onDeserializing, _onDeserialized;
             private MethodInfo? _extensionDataSetMethod;
@@ -599,9 +599,9 @@ namespace System.Runtime.Serialization
             private bool _hasDataContract;
             private bool _hasExtensionData;
 
-            public XmlDictionaryString[]? ContractNamespaces;
-            public XmlDictionaryString[]? MemberNames;
-            public XmlDictionaryString[]? MemberNamespaces;
+            internal XmlDictionaryString[]? ContractNamespaces;
+            internal XmlDictionaryString[]? MemberNames;
+            internal XmlDictionaryString[]? MemberNamespaces;
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal ClassDataContractCriticalHelper([DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
@@ -1132,7 +1132,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            internal IList<DataMember>? Members
+            internal List<DataMember>? Members
             {
                 get => _members;
                 set => _members = value;
@@ -1255,7 +1255,7 @@ namespace System.Runtime.Serialization
 
             internal XmlFormatClassReaderDelegate? XmlFormatReaderDelegate { get; set; }
 
-            public XmlDictionaryString?[]? ChildElementNamespaces { get; set; }
+            internal XmlDictionaryString?[]? ChildElementNamespaces { get; set; }
 
             private static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 
@@ -1292,7 +1292,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override DataContract BindGenericParameters(DataContract[] paramContracts, IDictionary<DataContract, DataContract> boundContracts)
+        internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract>? boundContracts = null)
         {
             Type type = UnderlyingType;
             if (!type.IsGenericType || !type.ContainsGenericParameters)
@@ -1300,7 +1300,7 @@ namespace System.Runtime.Serialization
 
             lock (this)
             {
-                if (boundContracts.TryGetValue(this, out DataContract? boundContract))
+                if (boundContracts != null && boundContracts.TryGetValue(this, out DataContract? boundContract))
                     return boundContract;
 
                 XmlQualifiedName stableName;
@@ -1341,6 +1341,7 @@ namespace System.Runtime.Serialization
                     boundType = type.MakeGenericType(paramTypes);
                 }
                 ClassDataContract boundClassContract = new ClassDataContract(boundType);
+                boundContracts ??= new Dictionary<DataContract, DataContract>();
                 boundContracts.Add(this, boundClassContract);
                 boundClassContract.StableName = CreateQualifiedName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(stableName.Name), new GenericNameProvider(DataContract.GetClrTypeFullName(UnderlyingType), genericParams)), stableName.Namespace);
                 if (BaseClassContract != null)

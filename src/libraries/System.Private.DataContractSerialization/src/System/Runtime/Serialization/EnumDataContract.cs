@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization
             get => _helper.BaseContract;
         }
 
-        public XmlQualifiedName BaseContractName
+        internal XmlQualifiedName BaseContractName
         {
             get => _helper.BaseContractName;
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -44,27 +44,27 @@ namespace System.Runtime.Serialization
         }
 
         [NotNull]
-        public override IList<DataMember>? Members
+        public override List<DataMember>? Members
         {
             get => _helper.Members;
             internal set => _helper.Members = value!;
         }
 
-        public IList<long>? Values
+        internal List<long>? Values
         {
             get => _helper.Values;
             set => _helper.Values = value;
         }
 
-        public bool IsFlags
+        internal bool IsFlags
         {
             get => _helper.IsFlags;
             set => _helper.IsFlags = value;
         }
 
-        public bool IsULong => _helper.IsULong;
+        internal bool IsULong => _helper.IsULong;
 
-        public XmlDictionaryString[]? ChildElementNames => _helper.ChildElementNames;
+        internal XmlDictionaryString[]? ChildElementNames => _helper.ChildElementNames;
 
         internal override bool CanContainReferences => false;
 
@@ -74,8 +74,8 @@ namespace System.Runtime.Serialization
             private static readonly Dictionary<XmlQualifiedName, Type> s_nameToType = new Dictionary<XmlQualifiedName, Type>();
 
             private DataContract _baseContract;
-            private IList<DataMember> _members;
-            private IList<long>? _values;
+            private List<DataMember> _members;
+            private List<long>? _values;
             private bool _isULong;
             private bool _isFlags;
             private readonly bool _hasDataContract;
@@ -169,13 +169,13 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            internal IList<DataMember> Members
+            internal List<DataMember> Members
             {
                 get => _members;
                 set => _members = value;
             }
 
-            internal IList<long>? Values
+            internal List<long>? Values
             {
                 get => _values;
                 set => _values = value;

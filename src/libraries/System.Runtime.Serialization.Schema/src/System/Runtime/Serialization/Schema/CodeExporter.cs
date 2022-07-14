@@ -18,7 +18,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-using DataContractDictionary = System.Collections.Generic.IDictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
 using ExceptionUtil = System.Runtime.Serialization.Schema.DiagnosticUtility.ExceptionUtility;
 
 namespace System.Runtime.Serialization.Schema
@@ -325,6 +325,40 @@ namespace System.Runtime.Serialization.Schema
             return new CodeTypeReference(type);
         }
 
+        private CodeTypeReference? GetCodeTypeReference(Type type, IList? parameters)
+        {
+            CodeTypeReference codeTypeReference = GetCodeTypeReference(type);
+
+            if (parameters != null)
+            {
+                foreach (var param in parameters)
+                {
+                    CodeTypeReference? paramTypeReference = null;
+                    bool isParamValueType = true;   // Default not important. It either gets set, or paramTypeReference stays null and we short circuit before referencing this value.
+
+                    if (param is DataContract paramContract)
+                    {
+                        paramTypeReference = GetCodeTypeReference(paramContract);
+                        isParamValueType = paramContract.IsValueType;
+                    }
+                    else if (param is Tuple<Type, object[]?> typeParameters)
+                    {
+                        paramTypeReference = GetCodeTypeReference(typeParameters.Item1, typeParameters.Item2);
+                        isParamValueType = (paramTypeReference != null && paramTypeReference.ArrayRank == 0); // only value type information we can get from CodeTypeReference
+                    }
+
+                    if (paramTypeReference == null)
+                        return null;
+                    if (type == typeof(Nullable<>) && !isParamValueType)
+                        return paramTypeReference;
+                    else
+                        codeTypeReference.TypeArguments.Add(paramTypeReference);
+                }
+            }
+
+            return codeTypeReference;
+        }
+
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         internal CodeTypeReference GetElementTypeReference(DataContract dataContract, bool isElementTypeNullable)
         {
@@ -425,8 +459,8 @@ namespace System.Runtime.Serialization.Schema
                                 type.TypeAttributes = TypeAttributes.Public;
                         }
 
-                        if (_dataContractSet.TryGetSurrogateData(dataContract, out object? surrogateData))
-                            type.UserData.Add(s_surrogateDataKey, surrogateData);
+                        if (_options?.SurrogateProvider != null)
+                            type.UserData.Add(s_surrogateDataKey, _dataContractSet.SurrogateData[dataContract]);
 
                         contractCodeDomInfo.TypeDeclaration = type;
                     }
@@ -507,8 +541,8 @@ namespace System.Runtime.Serialization.Schema
             if (typeReference != null)
                 return typeReference;
 
-            if (_dataContractSet.TryGetReferencedType(dataContract.StableName, dataContract, out Type? type)
-                && !type.IsGenericTypeDefinition && !type.ContainsGenericParameters)
+            Type? type = _dataContractSet.GetReferencedType(dataContract.StableName, dataContract, out DataContract? referencedContract, out object[]? parameters, SupportsGenericTypeReference);
+            if (type != null && !type.IsGenericTypeDefinition && !type.ContainsGenericParameters)
             {
                 if (dataContract is XmlDataContract xmlContract)
                 {
@@ -528,7 +562,7 @@ namespace System.Runtime.Serialization.Schema
                     }
                     throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.TypeMustBeIXmlSerializable, GetClrTypeFullName(type), GetClrTypeFullName(typeof(IXmlSerializable)), dataContract.StableName.Name, dataContract.StableName.Namespace)));
                 }
-                DataContract referencedContract = _dataContractSet.GetDataContract(type);
+                referencedContract = _dataContractSet.GetDataContract(type);
                 if (referencedContract.Equals(dataContract))
                 {
                     typeReference = GetCodeTypeReference(type);
@@ -537,19 +571,12 @@ namespace System.Runtime.Serialization.Schema
                 }
                 throw ExceptionUtil.ThrowHelperError(new InvalidOperationException(SR.Format(SR.ReferencedTypeDoesNotMatch, type.AssemblyQualifiedName, dataContract.StableName.Name, dataContract.StableName.Namespace)));
             }
-            else if (dataContract.GenericInfo != null)
+            else if (type != null)
             {
-                DataContract? referencedContract;
-                XmlQualifiedName genericStableName = dataContract.GenericInfo.GetExpandedStableName();
-                if (genericStableName != dataContract.StableName)
-                    throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericTypeNameMismatch, dataContract.StableName.Name, dataContract.StableName.Namespace, genericStableName.Name, genericStableName.Namespace)));
+                typeReference = GetCodeTypeReference(type, parameters);
 
-                typeReference = GetReferencedGenericType(dataContract.GenericInfo, out referencedContract);
                 if (referencedContract != null && !referencedContract.Equals(dataContract))
                 {
-                    // NOTE TODO smolloy - This is the 4.8 code... but feels like a bug? Looking at 'GetReferenceGenericType()'  it is possible to get return
-                    // a non-null 'referencedContract', but also null 'typeReference'.
-                    // For now... assert to get out of the way of compilation. But should we add a check here?
                     Debug.Assert(typeReference != null);
                     type = (Type?)typeReference.UserData[s_codeUserDataActualTypeKey];
                     throw ExceptionUtil.ThrowHelperError(new InvalidOperationException(SR.Format(SR.ReferencedTypeDoesNotMatch,
@@ -557,6 +584,12 @@ namespace System.Runtime.Serialization.Schema
                         referencedContract.StableName.Name,
                         referencedContract.StableName.Namespace)));
                 }
+
+                return typeReference;
+            }
+            else if (referencedContract != null)
+            {
+                typeReference = GetCodeTypeReference(referencedContract);
                 return typeReference;
             }
 
@@ -622,9 +655,7 @@ namespace System.Runtime.Serialization.Schema
             if (collectionContract.IsKeyValue(out _, out _, out _)
                 && SupportsGenericTypeReference)
             {
-                Type? type;
-                if (!_dataContractSet.TryGetReferencedType(GenericDictionaryName, GenericDictionaryContract, out type))
-                    type = typeof(Dictionary<,>);
+                Type? type = _dataContractSet.GetReferencedType(GenericDictionaryName, GenericDictionaryContract, out DataContract? _, out object[]? _) ?? typeof(Dictionary<,>);
 
                 // ItemContract - aka BaseContract - is never null for CollectionDataContract
                 DataContract? itemContract = collectionContract.BaseContract!.As(DataContractType.ClassDataContract);
@@ -652,12 +683,15 @@ namespace System.Runtime.Serialization.Schema
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         private bool TryGetReferencedListType(DataContract itemContract, bool isItemTypeNullable, out CodeTypeReference? typeReference)
         {
-            Type? type;
-            if (SupportsGenericTypeReference && _dataContractSet.TryGetReferencedType(GenericListName, GenericListContract, out type))
+            if (SupportsGenericTypeReference)
             {
-                typeReference = GetCodeTypeReference(type);
-                typeReference.TypeArguments.Add(GetElementTypeReference(itemContract, isItemTypeNullable)!);    // Lists have an item type
-                return true;
+                Type? type = _dataContractSet.GetReferencedType(GenericListName, GenericListContract, out DataContract? _, out object[]? _);
+                if (type != null)
+                {
+                    typeReference = GetCodeTypeReference(type);
+                    typeReference.TypeArguments.Add(GetElementTypeReference(itemContract, isItemTypeNullable)!);    // Lists have an item type
+                    return true;
+                }
             }
             typeReference = null;
             return false;
@@ -666,7 +700,7 @@ namespace System.Runtime.Serialization.Schema
         [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
         private CodeTypeReference? GetSurrogatedTypeReference(DataContract dataContract)
         {
-            Type? type = _dataContractSet.GetReferencedTypeOnImport(dataContract);
+            Type? type = GetReferencedTypeOnImport(dataContract);
             if (type != null)
             {
                 CodeTypeReference typeReference = GetCodeTypeReference(type);
@@ -676,66 +710,15 @@ namespace System.Runtime.Serialization.Schema
             return null;
         }
 
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
-        private CodeTypeReference? GetReferencedGenericType(GenericInfo genInfo, out DataContract? dataContract)
+        private Type? GetReferencedTypeOnImport(DataContract dataContract)
         {
-            dataContract = null;
-
-            if (!SupportsGenericTypeReference)
-                return null;
-
-            Type? type;
-            if (!_dataContractSet.TryGetReferencedType(genInfo.StableName, null, out type))
+            Type? type = null;
+            if (_options?.SurrogateProvider is ISerializationExtendedSurrogateProvider surrogateProvider)
             {
-                if (genInfo.Parameters != null)
-                    return null;
-                dataContract = _dataContractSet.GetDataContract(genInfo.StableName);
-                if (dataContract == null)
-                    return null;
-                if (dataContract.GenericInfo != null)
-                    return null;
-                return GetCodeTypeReference(dataContract);
+                if (DataContract.GetBuiltInDataContract(dataContract.StableName.Name, dataContract.StableName.Namespace) == null)
+                    type = surrogateProvider.GetReferencedTypeOnImport(dataContract.StableName.Name, dataContract.StableName.Namespace, _dataContractSet.SurrogateData[dataContract]);
             }
-
-            bool enableStructureCheck = (type != typeof(Nullable<>));
-            CodeTypeReference typeReference = GetCodeTypeReference(type);
-            typeReference.UserData.Add(s_codeUserDataActualTypeKey, type);
-            if (genInfo.Parameters != null)
-            {
-                DataContract[] paramContracts = new DataContract[genInfo.Parameters.Count];
-                for (int i = 0; i < genInfo.Parameters.Count; i++)
-                {
-                    GenericInfo paramInfo = genInfo.Parameters[i];
-                    XmlQualifiedName stableName = paramInfo.GetExpandedStableName();
-                    DataContract? paramContract = _dataContractSet.GetDataContract(stableName);
-
-                    CodeTypeReference? paramTypeReference;
-                    bool isParamValueType;
-                    if (paramContract != null)
-                    {
-                        paramTypeReference = GetCodeTypeReference(paramContract);
-                        isParamValueType = paramContract.IsValueType;
-                    }
-                    else
-                    {
-                        paramTypeReference = GetReferencedGenericType(paramInfo, out paramContract);
-                        isParamValueType = (paramTypeReference != null && paramTypeReference.ArrayRank == 0); // only value type information we can get from CodeTypeReference
-                    }
-                    paramContracts[i] = paramContract!; // Potentially tricky here. We could assign a null item here, and that's ok. We subsequently disable the structure check in that case. See note below.
-                    if (paramContract == null)
-                        enableStructureCheck = false;
-                    if (paramTypeReference == null)
-                        return null;
-                    if (type == typeof(Nullable<>) && !isParamValueType)
-                        return paramTypeReference;
-                    else
-                        typeReference.TypeArguments.Add(paramTypeReference);
-                }
-                // paramContracts could contain null values, but if it does, this structure check is disabled. So we know paramContracts has no null values if we go through with this call.
-                if (enableStructureCheck)
-                    dataContract = DataContract.GetDataContract(type).BindGenericParameters(paramContracts, new Dictionary<DataContract, DataContract>());
-            }
-            return typeReference;
+            return type;
         }
 
         private static bool NamespaceContainsType(CodeNamespace ns, string typeName)
@@ -876,7 +859,8 @@ namespace System.Runtime.Serialization.Schema
                     field.Attributes = MemberAttributes.Private;
 
                     CodeMemberProperty property = CreateProperty(memberType, propertyName, fieldName, dataMember.MemberTypeContract.IsValueType && SupportsDeclareValueTypes, raisePropertyChanged);
-                    if (_dataContractSet.TryGetSurrogateData(dataMember, out object? surrogateData))
+                    object? surrogateData = _dataContractSet.SurrogateData[dataMember];
+                    if (surrogateData != null)
                         property.UserData.Add(s_surrogateDataKey, surrogateData);
 
                     CodeAttributeDeclaration dataMemberAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(DataMemberAttribute)));
@@ -993,8 +977,7 @@ namespace System.Runtime.Serialization.Schema
 
             Debug.Assert(classDataContract.Is(DataContractType.ClassDataContract));
 
-            if (classDataContract.KnownDataContracts == null)
-                classDataContract.KnownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
+            classDataContract.KnownDataContracts ??= new DataContractDictionary();
 
             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in knownContracts)
             {
