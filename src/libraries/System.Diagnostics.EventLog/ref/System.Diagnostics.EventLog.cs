@@ -182,6 +182,8 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventBookmark
     {
         internal EventBookmark() { }
+        public string GetBookmarkXml() { throw null; }
+        public static EventBookmark Create(string bookmarkXml) { throw null; }
     }
     public sealed partial class EventKeyword
     {
