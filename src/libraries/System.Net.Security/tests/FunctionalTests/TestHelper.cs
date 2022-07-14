@@ -119,6 +119,7 @@ namespace System.Net.Security.Tests
                         {
                             store.Remove(cert);
                         }
+                        cert.Dispose();
                     }
                 }
             }
@@ -135,6 +136,7 @@ namespace System.Net.Security.Tests
                         {
                             store.Remove(cert);
                         }
+                        cert.Dispose();
                     }
                 }
             }
