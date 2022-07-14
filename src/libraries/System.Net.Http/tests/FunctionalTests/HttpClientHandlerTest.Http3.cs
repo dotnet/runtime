@@ -35,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Exception outerEx = await Assert.ThrowsAnyAsync<Exception>(task);
             _output.WriteLine(outerEx.ToString());
-            Assert.IsType<HttpRequestException>(outerEx.InnerException);
+            Assert.IsType<HttpRequestException>(outerEx);
             HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
             _output.WriteLine(protocolEx.Message);
             Assert.Equal(errorCode, protocolEx.ErrorCode);
@@ -354,12 +354,14 @@ namespace System.Net.Http.Functional.Tests
 
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
             Task serverTask = Task.Run(async () =>
             {
                 await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
-                await stream.AbortAndWaitForShutdownAsync(GeneralProtocolError);
+                stream.Abort(GeneralProtocolError);
+                await semaphore.WaitAsync();
             });
 
             Task clientTask = Task.Run(async () =>
@@ -374,6 +376,7 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 await AssertProtocolErrorAsync(GeneralProtocolError, () => client.SendAsync(request));
+                semaphore.Release();
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
