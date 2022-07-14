@@ -1208,9 +1208,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             if (JSHost.GlobalThis.HasProperty("window"))
             {
                 var actual = JavaScriptTestHelper.NativeFunctionToString();
-                Assert.IsType<string>(actual);
                 Assert.StartsWith("http", actual);
             }
+        }
+
+        [Fact]
+        public void JsImportInstanceMember()
+        {
+            var actual = JavaScriptTestHelper.MemberEcho("t-e-s-t");
+            Assert.StartsWith("t-e-s-t-w-i-t-h-i-n-s-t-a-n-c-e", actual);
+        }
+
+        [Fact]
+        public void JsImportReboundInstanceMember()
+        {
+            var actual = JavaScriptTestHelper.ReboundMemberEcho("t-e-s-t");
+            Assert.StartsWith("t-e-s-t-w-i-t-h-i-n-s-t-a-n-c-e", actual);
         }
 
         #endregion String
