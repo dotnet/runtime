@@ -3780,7 +3780,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	case SUSPEND_POLICY_NONE:
 		break;
 	case SUSPEND_POLICY_ALL:
-		 suspend_current_func ();
+		suspend_current_func ();
 		break;
 	case SUSPEND_POLICY_EVENT_THREAD:
 		NOT_IMPLEMENTED;
