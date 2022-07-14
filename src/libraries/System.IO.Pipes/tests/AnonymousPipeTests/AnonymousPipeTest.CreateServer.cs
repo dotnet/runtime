@@ -59,12 +59,13 @@ namespace System.IO.Pipes.Tests
         public static void InvalidPipeHandle_Throws()
         {
             using (AnonymousPipeServerStream dummyserver = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (dummyserver.ClientSafePipeHandle)
             {
                 AssertExtensions.Throws<ArgumentNullException>("serverSafePipeHandle", () => new AnonymousPipeServerStream(PipeDirection.Out, null, dummyserver.ClientSafePipeHandle));
 
                 AssertExtensions.Throws<ArgumentNullException>("clientSafePipeHandle", () => new AnonymousPipeServerStream(PipeDirection.Out, dummyserver.SafePipeHandle, null));
 
-                SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
+                using SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
                 AssertExtensions.Throws<ArgumentException>("serverSafePipeHandle", () => new AnonymousPipeServerStream(PipeDirection.Out, pipeHandle, dummyserver.ClientSafePipeHandle));
 
                 AssertExtensions.Throws<ArgumentException>("clientSafePipeHandle", () => new AnonymousPipeServerStream(PipeDirection.Out, dummyserver.SafePipeHandle, pipeHandle));

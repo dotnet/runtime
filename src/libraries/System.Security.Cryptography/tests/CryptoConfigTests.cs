@@ -7,6 +7,9 @@ using System.Text;
 using Test.Cryptography;
 using Xunit;
 
+// String factory methods are obsolete. Warning is disabled for the entire file as most tests exercise the obsolete methods
+#pragma warning disable SYSLIB0045
+
 namespace System.Security.Cryptography.Tests
 {
     public static class CryptoConfigTests
@@ -314,12 +317,13 @@ namespace System.Security.Cryptography.Tests
             VerifyStaticCreateResult(SHA384.Create(typeof(SHA384Managed).FullName), typeof(SHA384Managed));
             VerifyStaticCreateResult(SHA512.Create(typeof(SHA512Managed).FullName), typeof(SHA512Managed));
 #pragma warning restore SYSLIB0022 // Rijndael types are obsolete
-        }
 
-        private static void VerifyStaticCreateResult(object obj, Type expectedType)
-        {
-           Assert.NotNull(obj);
-           Assert.IsType(expectedType, obj);
+            static void VerifyStaticCreateResult(object obj, Type expectedType)
+            {
+                Assert.NotNull(obj);
+                Assert.IsType(expectedType, obj);
+                (obj as IDisposable)?.Dispose();
+            }
         }
 
         [Fact]

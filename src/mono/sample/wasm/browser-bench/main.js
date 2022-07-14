@@ -10,10 +10,11 @@ let setTasks;
 let getFullJsonResults;
 
 class MainApp {
-    init({ BINDING }) {
-        runBenchmark = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark");
-        setTasks = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks");
-        getFullJsonResults = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:GetFullJsonResults");
+    async init({ MONO }) {
+        const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Bench.Sample.dll");
+        runBenchmark = exports.Sample.Test.RunBenchmark;
+        setTasks = exports.Sample.Test.SetTasks;
+        getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
 
         var url = new URL(decodeURI(window.location));
         let tasks = url.searchParams.getAll('task');
@@ -45,7 +46,7 @@ class MainApp {
         });
     }
 
-    async PageShow() {
+    async pageShow() {
         try {
             await this.waitFor('pageshow');
         } finally {
@@ -53,7 +54,7 @@ class MainApp {
         }
     }
 
-    async ReachedManaged() {
+    async frameReachedManaged() {
         try {
             await this.waitFor('reached');
         } finally {
@@ -90,15 +91,17 @@ class MainApp {
 
 try {
     globalThis.mainApp = new MainApp();
+    globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
+    globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
-    const { BINDING } = await createDotnetRuntime(() => ({
+    const { MONO } = await createDotnetRuntime(() => ({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         onAbort: (error) => {
             wasm_exit(1, error);
         }
     }));
-    mainApp.init({ BINDING });
+    await mainApp.init({ MONO });
 }
 catch (err) {
     wasm_exit(1, err);

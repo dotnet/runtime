@@ -248,7 +248,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     };
 
     // The ArgDestination class represents a destination location of an argument.
-    internal class ArgDestination
+    internal readonly struct ArgDestination
     {
         /// <summary>
         /// Transition block context.
@@ -309,8 +309,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //  fieldBytes - size of the structure
         internal void ReportPointersFromStructInRegisters(TypeDesc type, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
-            // SPAN-TODO: GC reporting - https://github.com/dotnet/runtime/issues/7103
-
             Debug.Assert(IsStructPassedInRegs());
 
             int genRegDest = GetStructGenRegDestinationAddress();

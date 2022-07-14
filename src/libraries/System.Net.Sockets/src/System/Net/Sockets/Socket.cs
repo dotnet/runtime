@@ -1053,6 +1053,7 @@ namespace System.Net.Sockets
 
                 SocketsTelemetry.Log.AfterAccept(errorCode);
 
+                acceptedSocketHandle.Dispose();
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
@@ -1385,11 +1386,8 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = remoteEP;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            _rightEndPoint ??= remoteEP;
 
             return bytesTransferred;
         }
@@ -1834,11 +1832,9 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (socketException != null)

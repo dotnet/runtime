@@ -55,7 +55,10 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 Assert.Equal(128, keySizeLimits.MinSize);
                 Assert.Equal(256, keySizeLimits.MaxSize);
-                Assert.Equal(64, keySizeLimits.SkipSize);
+
+                // Browser's SubtleCrypto doesn't support AES-192
+                int expectedKeySkipSize = PlatformDetection.IsBrowser ? 128 : 64;
+                Assert.Equal(expectedKeySkipSize, keySizeLimits.SkipSize);
             }
         }
 
@@ -214,6 +217,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AES-192 is not supported on Browser")]
         public static void VerifyKeyGeneration_192()
         {
             using (Aes aes = AesFactory.Create())
@@ -257,8 +261,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void ValidateEncryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
+            using (ICryptoTransform encryptor = aes.CreateEncryptor())
             {
-                ValidateTransformProperties(aes, aes.CreateEncryptor());
+                ValidateTransformProperties(aes, encryptor);
             }
         }
 
@@ -267,8 +272,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void ValidateDecryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
+            using (ICryptoTransform decryptor = aes.CreateDecryptor())
             {
-                ValidateTransformProperties(aes, aes.CreateDecryptor());
+                ValidateTransformProperties(aes, decryptor);
             }
         }
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import "node/buffer"; // we use the Buffer type to type some of Emscripten's APIs
 import { bind_runtime_method } from "./method-binding";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
 
@@ -131,6 +132,9 @@ export const enum AssetBehaviours {
 
 export type RuntimeHelpers = {
     get_call_sig_ref: MonoMethod;
+    complete_task_method: MonoMethod;
+    create_task_method: MonoMethod;
+    call_delegate: MonoMethod;
     runtime_interop_namespace: string;
     runtime_interop_exports_classname: string;
     runtime_interop_exports_class: MonoClass;

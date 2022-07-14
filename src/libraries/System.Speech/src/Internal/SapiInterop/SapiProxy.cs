@@ -35,29 +35,11 @@ namespace System.Speech.Internal.SapiInterop
             }
         }
 
-        internal ISpRecognizer2 Recognizer2
-        {
-            get
-            {
-                if (_recognizer2 == null)
-                {
-                    _recognizer2 = (ISpRecognizer2)_recognizer;
-                }
-                return _recognizer2;
-            }
-        }
+        internal ISpRecognizer2 Recognizer2 =>
+            _recognizer2 ??= (ISpRecognizer2)_recognizer;
 
-        internal ISpeechRecognizer SapiSpeechRecognizer
-        {
-            get
-            {
-                if (_speechRecognizer == null)
-                {
-                    _speechRecognizer = (ISpeechRecognizer)_recognizer;
-                }
-                return _speechRecognizer;
-            }
-        }
+        internal ISpeechRecognizer SapiSpeechRecognizer =>
+            _speechRecognizer ??= (ISpeechRecognizer)_recognizer;
 
         #endregion
 

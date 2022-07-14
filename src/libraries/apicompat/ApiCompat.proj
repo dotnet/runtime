@@ -19,7 +19,7 @@
     <ApiCompatExcludeAttributesFile Include="ApiCompatBaselineExcludedAttributes.txt" />
   </ItemGroup>
 
-  <!-- For API comparision, ApiCompat needs both the inbox and the out-of-band assemblies plus the shims to be built. -->
+  <!-- For API comparison, ApiCompat needs both the inbox and the out-of-band assemblies plus the shims to be built. -->
   <ItemGroup>
     <ProjectReference Include="..\sfx-src.proj;
                                ..\oob-src.proj;
@@ -76,7 +76,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </ApiCompatTask>
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(NetCoreAppCurrent). If this breaking change is intentional, the ApiCompat baseline files can be updated by running 'dotnet build $(MSBuildThisFileFullPath) --no-incremental /p:UpdateBaselineFiles=true'." />
- 
+
     <!-- ApiCompat: NetCoreAppCurrent <-> NetCoreAppLatestStable -->
     <ApiCompatTask Contracts="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(NetCoreAppLatestStablePackageBaselineVersion)', 'ref', '$(NetCoreAppLatestStable)'))"
                    ExcludeAttributes="@(ApiCompatExcludeAttributesFile)"

@@ -12,6 +12,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,12 +41,12 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
 
                 (Http3LoopbackStream settingsStream, Http3LoopbackStream requestStream) = await connection.AcceptControlAndRequestStreamAsync();
 
-                using (settingsStream)
-                using (requestStream)
+                await using (settingsStream)
+                await using (requestStream)
                 {
                     Assert.False(settingsStream.CanWrite, "Expected unidirectional control stream.");
                     Assert.Equal(headerSizeLimit * 1024L, connection.MaxHeaderListSize);
@@ -80,14 +81,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequests_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 for (int i = 0; i < streamLimit + 1; ++i)
                 {
-                    using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                    await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     await stream.HandleRequestAsync();
                 }
             });
@@ -118,14 +119,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendStreamLimitRequestsConcurrently_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 for (int i = 0; i < streamLimit; ++i)
                 {
-                    using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                    await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     await stream.HandleRequestAsync();
                 }
             });
@@ -164,13 +165,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = streamLimit });
             var lastRequestContentStarted = new TaskCompletionSource();
 
             Task serverTask = Task.Run(async () =>
             {
                 // Read the first streamLimit requests, keep the streams open to make the last one wait.
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 var streams = new Http3LoopbackStream[streamLimit];
                 for (int i = 0; i < streamLimit; ++i)
                 {
@@ -182,7 +183,7 @@ namespace System.Net.Http.Functional.Tests
                 // Make the last request running independently.
                 var lastRequest = Task.Run(async () =>
                 {
-                    using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                    await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     await stream.HandleRequestAsync();
                 });
 
@@ -193,7 +194,7 @@ namespace System.Net.Http.Functional.Tests
                 for (int i = 0; i < streamLimit; ++i)
                 {
                     await streams[i].SendResponseAsync();
-                    streams[i].Dispose();
+                    await streams[i].DisposeAsync();
                     // After the first request is fully processed, the last request should unblock and get processed.
                     if (i == 0)
                     {
@@ -272,18 +273,18 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
                 await stream.SendFrameAsync(ReservedHttp2PriorityFrameId, new byte[8]);
 
-                QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () =>
+                QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () =>
                 {
                     await stream.HandleRequestAsync();
-                    using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                    await using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
                 });
 
-                Assert.Equal(UnexpectedFrameErrorCode, ex.ErrorCode);
+                Assert.Equal(UnexpectedFrameErrorCode, ex.ApplicationErrorCode);
             });
 
             Task clientTask = Task.Run(async () =>
@@ -312,8 +313,8 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 HttpRequestData request = await stream.ReadRequestDataAsync();
                 await stream.SendResponseHeadersAsync();
 
@@ -325,13 +326,13 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await stream.SendResponseBodyAsync(data, isFinal: false);
                     }
-                    catch (QuicStreamAbortedException)
+                    catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
                     {
                         hasFailed = true;
                         break;
                     }
                 }
-                Assert.True(hasFailed, $"Expected {nameof(QuicStreamAbortedException)}, instead ran successfully for {sw.Elapsed}");
+                Assert.True(hasFailed, $"Expected {nameof(QuicException)} with {nameof(QuicError.StreamAborted)}, instead ran successfully for {sw.Elapsed}");
             });
 
             Task clientTask = Task.Run(async () =>
@@ -370,8 +371,8 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 HttpRequestData request = await stream.ReadRequestDataAsync(false);
                 await stream.SendResponseHeadersAsync();
 
@@ -384,13 +385,13 @@ namespace System.Net.Http.Functional.Tests
                         var (frameType, payload) = await stream.ReadFrameAsync();
                         Assert.Equal(Http3LoopbackStream.DataFrame, frameType);
                     }
-                    catch (QuicStreamAbortedException)
+                    catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
                     {
                         hasFailed = true;
                         break;
                     }
                 }
-                Assert.True(hasFailed, $"Expected {nameof(QuicStreamAbortedException)}, instead ran successfully for {sw.Elapsed}");
+                Assert.True(hasFailed, $"Expected {nameof(QuicException)} with {nameof(QuicError.StreamAborted)}, instead ran successfully for {sw.Elapsed}");
             });
 
             Task clientTask = Task.Run(async () =>
@@ -435,10 +436,10 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 await stream.HandleRequestAsync();
-                using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
                 await stream2.HandleRequestAsync();
             });
 
@@ -478,8 +479,8 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
                 // Receive headers and unblock the client.
                 await stream.ReadRequestDataAsync(false);
@@ -527,7 +528,7 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 HttpRequestData request = await connection.ReadRequestDataAsync();
                 await connection.SendResponseAsync();
 
@@ -664,8 +665,8 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
                 HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
 
@@ -682,8 +683,8 @@ namespace System.Net.Http.Functional.Tests
                 // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
                 // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
-                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
-                Assert.Equal(268, ex.ErrorCode);
+                var ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal(268, ex.ApplicationErrorCode);
 
                 serverDone.Release();
             });
@@ -724,7 +725,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var ioe = Assert.IsType<IOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
-                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                    var qex = Assert.IsType<QuicException>(hre.InnerException);
+                    Assert.Equal(QuicError.OperationAborted, qex.QuicError);
                 }
 
                 clientDone.Release();
@@ -744,8 +746,8 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
                 HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
 
@@ -762,9 +764,9 @@ namespace System.Net.Http.Functional.Tests
                 // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
                 // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
-                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(20)));
+                QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(20)));
                 // exact error code depends on who won the race
-                Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ErrorCode}");
+                Assert.True(ex.ApplicationErrorCode == 268 /* cancellation */ || ex.ApplicationErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ApplicationErrorCode}");
 
                 serverDone.Release();
             });
@@ -797,7 +799,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var ioe = Assert.IsType<IOException>(ex);
                     var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
-                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                    var qex = Assert.IsType<QuicException>(hre.InnerException);
+                    Assert.Equal(QuicError.OperationAborted, qex.QuicError);
                 }
 
                 clientDone.Release();
@@ -826,7 +829,7 @@ namespace System.Net.Http.Functional.Tests
             Task serverTask = Task.Run(async () =>
             {
                 connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                 await stream.HandleRequestAsync();
             });
 
@@ -847,7 +850,7 @@ namespace System.Net.Http.Functional.Tests
 
             SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
             Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Fact]
@@ -877,7 +880,7 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
-                Assert.Contains("ALPN_NEG_FAILURE", ex.Message);
+                Assert.IsType<AuthenticationException>(ex.InnerException);
 
                 clientDone.Release();
             });
@@ -887,31 +890,10 @@ namespace System.Net.Http.Functional.Tests
 
         private SslApplicationProtocol ExtractMsQuicNegotiatedAlpn(Http3LoopbackConnection loopbackConnection)
         {
-            // TODO: rewrite after object structure change
-            // current structure:
-            // Http3LoopbackConnection -> private QuicConnection _connection
-            // QuicConnection -> private QuicConnectionProvider _provider (= MsQuicConnection)
-            // MsQuicConnection -> private SslApplicationProtocol _negotiatedAlpnProtocol
-
             FieldInfo quicConnectionField = loopbackConnection.GetType().GetField("_connection", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(quicConnectionField);
-            object quicConnection = quicConnectionField.GetValue(loopbackConnection);
-            Assert.NotNull(quicConnection);
-            Assert.Equal("QuicConnection", quicConnection.GetType().Name);
-
-            FieldInfo msQuicConnectionField = quicConnection.GetType().GetField("_provider", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(msQuicConnectionField);
-            object msQuicConnection = msQuicConnectionField.GetValue(quicConnection);
-            Assert.NotNull(msQuicConnection);
-            Assert.Equal("MsQuicConnection", msQuicConnection.GetType().Name);
-
-            FieldInfo alpnField = msQuicConnection.GetType().GetField("_negotiatedAlpnProtocol", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(alpnField);
-            object alpn = alpnField.GetValue(msQuicConnection);
-            Assert.NotNull(alpn);
-            Assert.IsType<SslApplicationProtocol>(alpn);
-
-            return (SslApplicationProtocol)alpn;
+            QuicConnection quicConnection = Assert.IsType<QuicConnection>(quicConnectionField.GetValue(loopbackConnection));
+            return quicConnection.NegotiatedApplicationProtocol;
         }
 
         [Theory]
@@ -924,7 +906,7 @@ namespace System.Net.Http.Functional.Tests
             Task serverTask = Task.Run(async () =>
             {
                 connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
-                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
                 HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
 
@@ -952,7 +934,7 @@ namespace System.Net.Http.Functional.Tests
 
             await serverTask;
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Theory]
@@ -1035,9 +1017,9 @@ namespace System.Net.Http.Functional.Tests
 
             await serverTask.WaitAsync(TimeSpan.FromSeconds(60));
 
-            serverStream.Dispose();
+            await serverStream.DisposeAsync();
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Fact]
@@ -1096,13 +1078,13 @@ namespace System.Net.Http.Functional.Tests
             await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
 
             // server receives cancellation
-            var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
-            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ErrorCode);
+            QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
+            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ApplicationErrorCode);
 
             Assert.NotNull(serverStream);
-            serverStream.Dispose();
+            await serverStream.DisposeAsync();
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Fact]
@@ -1161,13 +1143,13 @@ namespace System.Net.Http.Functional.Tests
             await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
 
             // server receives cancellation
-            var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
-            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ErrorCode);
+            QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => serverTask.WaitAsync(TimeSpan.FromSeconds(120)));
+            Assert.Equal(268 /*H3_REQUEST_CANCELLED (0x10C)*/, ex.ApplicationErrorCode);
 
             Assert.NotNull(serverStream);
-            serverStream.Dispose();
+            await serverStream.DisposeAsync();
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Fact]
@@ -1246,9 +1228,9 @@ namespace System.Net.Http.Functional.Tests
             await serverTask.WaitAsync(TimeSpan.FromSeconds(120));
 
             Assert.NotNull(serverStream);
-            serverStream.Dispose();
+            await serverStream.DisposeAsync();
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Theory]
@@ -1332,9 +1314,16 @@ namespace System.Net.Http.Functional.Tests
             await serverTask.WaitAsync(TimeSpan.FromSeconds(120));
 
             Assert.NotNull(serverStream);
-            serverStream.Dispose();
+            await serverStream.DisposeAsync();
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
+        }
+
+        private static async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
+        {
+            QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
+            Assert.Equal(expectedError, ex.QuicError);
+            return ex;
         }
 
         public static TheoryData<HttpStatusCode, bool> StatusCodesTestData()

@@ -163,14 +163,11 @@ namespace System.Resources.Extensions
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (typeName == null)
-            {
-                // Some resx-files are missing type information for binary-formatted resources.
-                // These would have previously been handled by deserializing once, capturing the type
-                // and reserializing when writing the resources.  We don't want to do that so instead
-                // we just omit the type.
-                typeName = UnknownObjectTypeName;
-            }
+            // Some resx-files are missing type information for binary-formatted resources.
+            // These would have previously been handled by deserializing once, capturing the type
+            // and reserializing when writing the resources.  We don't want to do that so instead
+            // we just omit the type.
+            typeName ??= UnknownObjectTypeName;
 
             AddResourceData(name, typeName, new ResourceDataRecord(SerializationFormat.BinaryFormatter, value));
 

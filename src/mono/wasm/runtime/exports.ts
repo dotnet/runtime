@@ -3,6 +3,7 @@
 
 import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
+import MonoWasmThreads from "consts:monoWasmThreads";
 
 import {
     mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root,
@@ -49,7 +50,6 @@ import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
     mono_wasm_get_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_get_object_property_ref,
-    mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_with_args_ref, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
@@ -66,14 +66,22 @@ import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { dynamic_import, get_global_this, get_property, get_typeof_property, has_property, mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, set_property } from "./invoke-js";
+import { mono_wasm_bind_cs_function, mono_wasm_get_assembly_exports } from "./invoke-cs";
+import { mono_wasm_marshal_promise } from "./marshal-to-js";
+import { ws_wasm_abort, ws_wasm_close, ws_wasm_create, ws_wasm_open, ws_wasm_receive, ws_wasm_send } from "./web-socket";
+import { http_wasm_abort_request, http_wasm_abort_response, http_wasm_create_abort_controler, http_wasm_fetch, http_wasm_fetch_bytes, http_wasm_get_response_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes, http_wasm_supports_streaming_response } from "./http";
 import { diagnostics } from "./diagnostics";
+import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import {
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
+    dotnet_browser_sign,
+    dotnet_browser_encrypt_decrypt,
+    dotnet_browser_derive_bits,
 } from "./crypto-worker";
-import { mono_wasm_cancel_promise_ref } from "./cancelable-promise";
-import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
+import { mono_wasm_pthread_on_pthread_attached, afterThreadInitTLS } from "./pthreads/worker";
+import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 
 const MONO = {
     // current "public" MONO API
@@ -90,6 +98,7 @@ const MONO = {
     mono_wasm_release_roots,
     mono_run_main,
     mono_run_main_and_exit,
+    mono_wasm_get_assembly_exports,
 
     // for Blazor's future!
     mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
@@ -184,14 +193,20 @@ export type BINDINGType = typeof BINDING;
 
 let exportedAPI: DotnetPublicAPI;
 
+// We need to replace some of the methods in the Emscripten PThreads support with our own
+type PThreadReplacements = {
+    loadWasmModuleToWorker: Function,
+    threadInitTLS: Function
+}
+
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
+    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isWorker: boolean, isShell: boolean, isWeb: boolean, isPThread: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any, marshaled_exports: any, marshaled_imports: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function, pthreadReplacements: PThreadReplacements | undefined | null },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -251,12 +266,25 @@ function initializeImportsAndExports(
     replacements.readAsync = readAsync_like;
     replacements.requireOut = module.imports.require;
     const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: Buffer) => {
+    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
         originalUpdateGlobalBufferAndViews(buffer);
         afterUpdateGlobalBufferAndViews(buffer);
     };
 
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
+
+    if (replacements.pthreadReplacements) {
+        const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
+        replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
+            originalLoadWasmModuleToWorker(worker, onFinishedLoading);
+            afterLoadWasmModuleToWorker(worker);
+        };
+        const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
+        replacements.pthreadReplacements.threadInitTLS = (): void => {
+            originalThreadInitTLS();
+            afterThreadInitTLS();
+        };
+    }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
         module.disableDotnet6Compatibility = imports.isESM;
@@ -330,6 +358,13 @@ export const __initializeImportsAndExports: any = initializeImportsAndExports; /
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
+const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
+    // mono-threads-wasm.c
+    mono_wasm_pthread_on_pthread_attached,
+};
+
+// the methods would be visible to EMCC linker
+// --- keep in sync with dotnet.cjs.lib.js ---
 export const __linker_exports: any = {
     // mini-wasm.c
     mono_set_timeout,
@@ -344,7 +379,6 @@ export const __linker_exports: any = {
     schedule_background_exec,
 
     // also keep in sync with driver.c
-    mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
@@ -362,12 +396,10 @@ export const __linker_exports: any = {
     mono_wasm_typed_array_copy_to_ref,
     mono_wasm_typed_array_from_ref,
     mono_wasm_typed_array_copy_from_ref,
-    mono_wasm_cancel_promise_ref,
-    mono_wasm_web_socket_open_ref,
-    mono_wasm_web_socket_send,
-    mono_wasm_web_socket_receive,
-    mono_wasm_web_socket_close_ref,
-    mono_wasm_web_socket_abort,
+    mono_wasm_bind_js_function,
+    mono_wasm_invoke_bound_function,
+    mono_wasm_bind_cs_function,
+    mono_wasm_marshal_promise,
 
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,
@@ -376,7 +408,12 @@ export const __linker_exports: any = {
     // pal_crypto_webworker.c
     dotnet_browser_can_use_subtle_crypto_impl,
     dotnet_browser_simple_digest_hash,
-    dotnet_browser_sign
+    dotnet_browser_sign,
+    dotnet_browser_encrypt_decrypt,
+    dotnet_browser_derive_bits,
+
+    // threading exports, if threading is enabled
+    ...mono_wasm_threads_exports,
 };
 
 const INTERNAL: any = {
@@ -415,6 +452,37 @@ const INTERNAL: any = {
     mono_wasm_change_debugger_log_level,
     mono_wasm_debugger_attached,
     mono_wasm_runtime_is_ready: <boolean>runtimeHelpers.mono_wasm_runtime_is_ready,
+
+    // interop
+    get_property,
+    set_property,
+    has_property,
+    get_typeof_property,
+    get_global_this,
+    get_dotnet_instance,
+    dynamic_import,
+
+    // BrowserWebSocket
+    mono_wasm_cancel_promise,
+    ws_wasm_create,
+    ws_wasm_open,
+    ws_wasm_send,
+    ws_wasm_receive,
+    ws_wasm_close,
+    ws_wasm_abort,
+
+    // BrowserHttpHandler
+    http_wasm_supports_streaming_response,
+    http_wasm_create_abort_controler,
+    http_wasm_abort_request,
+    http_wasm_abort_response,
+    http_wasm_fetch,
+    http_wasm_fetch_bytes,
+    http_wasm_get_response_header_names,
+    http_wasm_get_response_header_values,
+    http_wasm_get_response_bytes,
+    http_wasm_get_response_length,
+    http_wasm_get_streamed_response_bytes,
 };
 
 // this represents visibility in the javascript

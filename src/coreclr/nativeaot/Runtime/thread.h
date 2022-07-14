@@ -30,9 +30,6 @@ class Thread;
 #define TOP_OF_STACK_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-1)
 #define REDIRECTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
-#define DYNAMIC_TYPE_TLS_OFFSET_FLAG 0x80000000
-
-
 enum SyncRequestResult
 {
     TryAgain,
@@ -98,10 +95,6 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-
-    // Thread Statics Storage for dynamic types
-    uint32_t          m_numDynamicTypesTlsCells;
-    PTR_PTR_UInt8   m_pDynamicTypesTlsCells;
 
 };
 
@@ -200,9 +193,6 @@ public:
 
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
 
-    PTR_UInt8           AllocateThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset, uint32_t tlsStorageSize, uint32_t numTlsCells);
-
-    PTR_UInt8           GetThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset);
     PTR_UInt8           GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset);
 
     void                PushExInfo(ExInfo * pExInfo);
@@ -257,7 +247,6 @@ public:
     //
     // Managed/unmanaged interop transitions support APIs
     //
-    void WaitForSuspend();
     void WaitForGC(PInvokeTransitionFrame* pTransitionFrame);
 
     void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame);

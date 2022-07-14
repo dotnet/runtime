@@ -68,10 +68,7 @@ namespace System.Management
             finally
             {
                 // dispose of the key
-                if (s_switchesRegKey != null)
-                {
-                    s_switchesRegKey.Dispose();
-                }
+                s_switchesRegKey?.Dispose();
             }
 
             // if for any reason we cannot retrieve the value of the switch from the Registry,

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 #nullable enable
 
@@ -13,6 +14,9 @@ namespace DebuggerTests
 {
     public class HarnessTests : DebuggerTests
     {
+        public HarnessTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task TimedOutWaitingForInvalidBreakpoint()
         {

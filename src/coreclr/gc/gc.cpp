@@ -13115,6 +13115,10 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     {
         gc_can_use_concurrent = false;
     }
+
+    GCConfig::SetConcurrentGC(gc_can_use_concurrent);
+#else //BACKGROUND_GC
+    GCConfig::SetConcurrentGC(false);
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
 
@@ -14118,6 +14122,7 @@ gc_heap::init_gc_heap (int  h_number)
 #ifdef DOUBLY_LINKED_FL
     current_sweep_seg = 0;
 #endif //DOUBLY_LINKED_FL
+
 #endif //BACKGROUND_GC
 
 #ifdef GC_CONFIG_DRIVEN
@@ -18223,7 +18228,7 @@ BOOL gc_heap::should_set_bgc_mark_bit (uint8_t* o)
         return FALSE;
     }
 
-    // This is cheaper so I am doing this comparision first before having to get the seg for o.
+    // This is cheaper so I am doing this comparison first before having to get the seg for o.
     if (in_range_for_segment (o, current_sweep_seg))
     {
         // The current sweep seg could have free spaces beyond its background_allocated so we need
@@ -43855,11 +43860,6 @@ HRESULT GCHeap::Initialize()
     {
         gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&gc_heap::is_restricted_physical_mem);
     }
-
-#ifdef USE_REGIONS
-    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
-#endif //USE_REGIONS
-
 #ifdef HOST_64BIT
     gc_heap::heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
     gc_heap::heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
@@ -43948,12 +43948,36 @@ HRESULT GCHeap::Initialize()
         return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
     }
 
+#ifdef USE_REGIONS
+    gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
+    if (gc_heap::regions_range == 0)
+    {
+        if (gc_heap::heap_hard_limit)
+        {
+            gc_heap::regions_range = 2 * gc_heap::heap_hard_limit;
+        }
+        else
+        {
+            gc_heap::regions_range = max(((size_t)256 * 1024 * 1024 * 1024), (size_t)(2 * gc_heap::total_physical_mem));
+        }
+        gc_heap::regions_range = align_on_page(gc_heap::regions_range);
+    }
+    // TODO: Set config after config API is merged.
+#endif //USE_REGIONS
+
 #endif //HOST_64BIT
+    GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
+    GCConfig::SetGCHeapHardLimit(static_cast<int64_t>(gc_heap::heap_hard_limit));
+    GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
+    GCConfig::SetGCHeapHardLimitLOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[loh]));
+    GCConfig::SetGCHeapHardLimitPOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[poh]));
 
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
 
 #ifdef MULTIPLE_HEAPS
+
+    GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
 
@@ -43964,6 +43988,7 @@ HRESULT GCHeap::Initialize()
     }
 
     const AffinitySet* process_affinity_set = GCToOSInterface::SetGCThreadsAffinitySet(config_affinity_mask, &config_affinity_set);
+    GCConfig::SetGCHeapAffinitizeMask(static_cast<int64_t>(config_affinity_mask));
 
     if (process_affinity_set->IsEmpty())
     {
@@ -44100,6 +44125,8 @@ HRESULT GCHeap::Initialize()
     }
 #endif //!USE_REGIONS
 
+    GCConfig::SetHeapCount(static_cast<int64_t>(nhp));
+
 #ifdef USE_REGIONS
     // REGIONS TODO:
     // soh_segment_size is used by a few places, I'm setting it temporarily and will
@@ -44224,8 +44251,11 @@ HRESULT GCHeap::Initialize()
     dynamic_data* gen0_dd = hp->dynamic_data_of (0);
     gc_heap::min_gen0_balance_delta = (dd_min_size (gen0_dd) >> 3);
 
+    bool can_use_cpu_groups = GCToOSInterface::CanEnableGCCPUGroups();
+    GCConfig::SetGCCpuGroup(can_use_cpu_groups);
+
 #ifdef HEAP_BALANCE_INSTRUMENTATION
-    cpu_group_enabled_p = GCToOSInterface::CanEnableGCCPUGroups();
+    cpu_group_enabled_p = can_use_cpu_groups;
 
     if (!GCToOSInterface::GetNumaInfo (&total_numa_nodes_on_machine, &procs_per_numa_node))
     {
@@ -44536,13 +44566,13 @@ Object * GCHeap::NextObj (Object * object)
 
     // We still want to verify nextobj that lands between heap_segment_allocated and alloc_allocated
     // on the ephemeral segment. In regions these 2 could be changed by another thread so we need
-    // to make sure they are still in sync by the time we check. If they are not in sync, we just 
+    // to make sure they are still in sync by the time we check. If they are not in sync, we just
     // bail which means we don't validate the next object during that small window and that's fine.
     //
-    // We also miss validating nextobj if it's in the segment that just turned into the new ephemeral 
+    // We also miss validating nextobj if it's in the segment that just turned into the new ephemeral
     // segment since we saved which is also a very small window and again that's fine.
-    if ((nextobj >= heap_segment_allocated (hs)) && 
-        ((hs != saved_ephemeral_heap_segment) || 
+    if ((nextobj >= heap_segment_allocated (hs)) &&
+        ((hs != saved_ephemeral_heap_segment) ||
          !in_range_for_segment(saved_alloc_allocated, saved_ephemeral_heap_segment) ||
          (nextobj >= saved_alloc_allocated)))
     {
@@ -46424,6 +46454,11 @@ void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
 int64_t GCHeap::GetTotalPauseDuration()
 {
     return (int64_t)(gc_heap::total_suspended_time * 10);
+}
+
+void GCHeap::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
+{
+    GCConfig::EnumerateConfigurationValues(context, configurationValueFunc);
 }
 
 uint32_t GCHeap::GetMemoryLoad()

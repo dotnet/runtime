@@ -119,10 +119,7 @@ namespace System.Xml.Xsl.XsltOld
             // As we mentioned we need to invert all lists.
             foreach (AttributeSetAction attSet in _attributeSetTable.Values)
             {
-                if (attSet.containedActions != null)
-                {
-                    attSet.containedActions.Reverse();
-                }
+                attSet.containedActions?.Reverse();
             }
 
             //  ensures there are no cycles in the attribute-sets use dfs marking method

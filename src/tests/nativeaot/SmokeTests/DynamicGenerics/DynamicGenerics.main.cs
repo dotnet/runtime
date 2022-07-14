@@ -72,7 +72,7 @@ new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestSortWithComparer",
 #endif
 //new CoreFXTestLibrary.Internal.TestInfo("RdExperienceTests.TestRdExperience", () => global::RdExperienceTests.TestRdExperience(), null),
 new CoreFXTestLibrary.Internal.TestInfo("StaticsTests.TestStatics", () => global::StaticsTests.TestStatics(), null),
-//new CoreFXTestLibrary.Internal.TestInfo("ThreadLocalStatics.TLSTesting.ThreadLocalStatics_Test", () => global::ThreadLocalStatics.TLSTesting.ThreadLocalStatics_Test(), null),
+new CoreFXTestLibrary.Internal.TestInfo("ThreadLocalStatics.TLSTesting.ThreadLocalStatics_Test", () => global::ThreadLocalStatics.TLSTesting.ThreadLocalStatics_Test(), null),
 #if UNIVERSAL_GENERICS
 new CoreFXTestLibrary.Internal.TestInfo("UnivConstCalls.Test.TestRefTypeCallsOnNonGenClass", () => global::UnivConstCalls.Test.TestRefTypeCallsOnNonGenClass(), null),
 new CoreFXTestLibrary.Internal.TestInfo("UnivConstCalls.Test.TestUSCCallsOnNonGenStruct", () => global::UnivConstCalls.Test.TestUSCCallsOnNonGenStruct(), null),

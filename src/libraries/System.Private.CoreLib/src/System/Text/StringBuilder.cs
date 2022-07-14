@@ -1052,10 +1052,10 @@ namespace System.Text
             int nextCharIndex = m_ChunkLength;
             char[] chars = m_ChunkChars;
 
-            if ((uint)chars.Length > (uint)nextCharIndex)
+            if ((uint)nextCharIndex < (uint)chars.Length)
             {
                 chars[nextCharIndex] = value;
-                m_ChunkLength++;
+                m_ChunkLength = nextCharIndex + 1;
             }
             else
             {

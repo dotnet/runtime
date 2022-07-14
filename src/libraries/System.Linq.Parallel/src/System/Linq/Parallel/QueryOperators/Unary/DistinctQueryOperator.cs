@@ -270,10 +270,7 @@ namespace System.Linq.Parallel
                 Debug.Assert(_source != null);
                 _source.Dispose();
 
-                if (_hashLookupEnumerator != null)
-                {
-                    _hashLookupEnumerator.Dispose();
-                }
+                _hashLookupEnumerator?.Dispose();
             }
         }
     }

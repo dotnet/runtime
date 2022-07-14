@@ -1101,6 +1101,11 @@ private static {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}
             {
                 string contextTypeRef = _currentContext.ContextTypeRef;
                 string contextTypeName = _currentContext.ContextType.Name;
+                int backTickIndex = contextTypeName.IndexOf('`');
+                if (backTickIndex != -1)
+                {
+                    contextTypeName = contextTypeName.Substring(0, backTickIndex);
+                }
 
                 StringBuilder sb = new();
 
