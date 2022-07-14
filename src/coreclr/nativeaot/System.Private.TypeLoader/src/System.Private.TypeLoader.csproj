@@ -7,6 +7,7 @@
     <DefineConstants Condition="'$(GVM_RESOLUTION_TRACE)' != ''">GVM_RESOLUTION_TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(CCCONVERTER_TRACE)' != ''">CCCONVERTER_TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />

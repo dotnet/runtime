@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+  </PropertyGroup>
+
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
   </ItemGroup>

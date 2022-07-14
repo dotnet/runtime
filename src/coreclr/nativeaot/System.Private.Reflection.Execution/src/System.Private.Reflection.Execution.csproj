@@ -6,6 +6,7 @@
 
   <PropertyGroup>
     <NativeFormatCommonPath>$(CompilerCommonPath)\Internal\NativeFormat</NativeFormatCommonPath>
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />

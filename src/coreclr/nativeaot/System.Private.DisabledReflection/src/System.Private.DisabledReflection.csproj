@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
   </ItemGroup>
