@@ -126,7 +126,9 @@ namespace System.Security.Cryptography
                 parameters.Y, parameters.Y.Length,
                 parameters.X, parameters.X != null ? parameters.X.Length : 0))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                key.Dispose();
+                throw e;
             }
 
             SetKey(key);
@@ -165,12 +167,7 @@ namespace System.Security.Cryptography
         {
             if (_key != null && _key.IsValueCreated)
             {
-                SafeDsaHandle handle = _key.Value;
-
-                if (handle != null)
-                {
-                    handle.Dispose();
-                }
+                _key.Value?.Dispose();
             }
         }
 
@@ -188,7 +185,9 @@ namespace System.Security.Cryptography
 
             if (!Interop.Crypto.DsaGenerateKey(out key, KeySize))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                key.Dispose();
+                throw e;
             }
 
             return key;

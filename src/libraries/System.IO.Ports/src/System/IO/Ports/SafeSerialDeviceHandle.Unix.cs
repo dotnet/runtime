@@ -23,6 +23,8 @@ namespace System.IO.Ports
 
             if (handle.IsInvalid)
             {
+                handle.Dispose();
+
                 // exception type is matching Windows
                 throw new UnauthorizedAccessException(
                     SR.Format(SR.UnauthorizedAccess_IODenied_Port, portName),

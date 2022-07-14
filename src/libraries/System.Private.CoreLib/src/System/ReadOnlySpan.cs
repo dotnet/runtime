@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
@@ -20,6 +21,9 @@ namespace System
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     [NonVersionable]
+#pragma warning disable SYSLIB1056 // Specified native type is invalid
+    [NativeMarshalling(typeof(ReadOnlySpanMarshaller<,>))]
+#pragma warning restore SYSLIB1056 // Specified native type is invalid
     public readonly ref struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>

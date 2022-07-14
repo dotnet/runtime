@@ -1089,6 +1089,67 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.NotNull, item3Info.ElementType!.ReadState);
             Assert.Equal(NullabilityState.NotNull, item3Info.ElementType.WriteState);
         }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArguments()
+        {
+            Type type = typeof(TypeWithPropertiesNestingItsGenericTypeArgument<int>);
+
+            NullabilityInfo shallow1Info = nullabilityContext.Create(type.GetProperty("Shallow1")!);
+            NullabilityInfo deep1Info = nullabilityContext.Create(type.GetProperty("Deep1")!);
+            NullabilityInfo deep2Info = nullabilityContext.Create(type.GetProperty("Deep2")!);
+            NullabilityInfo deep3Info = nullabilityContext.Create(type.GetProperty("Deep3")!);
+            NullabilityInfo deep4Info = nullabilityContext.Create(type.GetProperty("Deep4")!);
+            NullabilityInfo deep5Info = nullabilityContext.Create(type.GetProperty("Deep5")!);
+
+            //public Tuple<T>? Shallow1 { get; set; }
+            NullabilityInfo info = shallow1Info;
+            Assert.Equal(1, info.GenericTypeArguments.Length);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[0].ReadState);
+
+            //public Tuple<Tuple<T>>? Deep1 { get; set; }
+            info = deep1Info;
+            Assert.Equal(1, info.GenericTypeArguments.Length);
+            Assert.Equal(1, info.GenericTypeArguments[0].GenericTypeArguments.Length);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[0].ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[0].GenericTypeArguments[0].ReadState);
+
+            //public Tuple<Tuple<T>, int>? Deep2 { get; set; }
+            info = deep2Info;
+            Assert.Equal(2, info.GenericTypeArguments.Length);
+            Assert.Equal(1, info.GenericTypeArguments[0].GenericTypeArguments.Length);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[0].ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[1].ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[0].GenericTypeArguments[0].ReadState);
+
+            //public Tuple<int?, Tuple<T>>? Deep3 { get; set; }
+            info = deep3Info;
+            Assert.Equal(2, info.GenericTypeArguments.Length);
+            Assert.Equal(1, info.GenericTypeArguments[1].GenericTypeArguments.Length);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[0].ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[1].ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[1].GenericTypeArguments[0].ReadState);
+
+            //public Tuple<int, int?, Tuple<T>>? Deep4 { get; set; }
+            info = deep4Info;
+            Assert.Equal(3, info.GenericTypeArguments.Length);
+            Assert.Equal(1, info.GenericTypeArguments[2].GenericTypeArguments.Length);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[0].ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[1].ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[2].ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[2].GenericTypeArguments[0].ReadState);
+
+            //public Tuple<int, int, Tuple<T, int>?>? Deep5 { get; set; }
+            info = deep5Info;
+            Assert.Equal(3, info.GenericTypeArguments.Length);
+            Assert.Equal(2, info.GenericTypeArguments[2].GenericTypeArguments.Length);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[0].ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[1].ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[2].ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[2].GenericTypeArguments[0].ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[2].GenericTypeArguments[1].ReadState);
+        }
     }
 
 #pragma warning disable CS0649, CS0067, CS0414
@@ -1347,5 +1408,15 @@ namespace System.Reflection.Tests
             : base(item1, item2, item3)
         {
         }
+    }
+
+    public class TypeWithPropertiesNestingItsGenericTypeArgument<T>
+    {
+        public Tuple<T>? Shallow1 { get; set; }
+        public Tuple<Tuple<T>>? Deep1 { get; set; }
+        public Tuple<Tuple<T>, int>? Deep2 { get; set; }
+        public Tuple<int?, Tuple<T>>? Deep3 { get; set; }
+        public Tuple<int, int?, Tuple<T?>>? Deep4 { get; set; }
+        public Tuple<int, int, Tuple<T, int>?>? Deep5 { get; set; }
     }
 }

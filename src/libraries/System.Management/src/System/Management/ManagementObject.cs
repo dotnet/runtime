@@ -795,8 +795,7 @@ namespace System.Management
                 }
                 finally
                 {
-                    if (securityHandler != null)
-                        securityHandler.Reset();
+                    securityHandler?.Reset();
                 }
             }
         }
@@ -915,8 +914,7 @@ namespace System.Management
                                             sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1066,8 +1064,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             //Create collection object
@@ -1299,8 +1296,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             //Create collection object
@@ -1406,8 +1402,7 @@ namespace System.Management
                                                         sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1514,8 +1509,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
                     Marshal.FreeHGlobal(ppwbemCallResult);
@@ -1654,8 +1648,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1814,8 +1807,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
                     Marshal.FreeHGlobal(ppwbemCallResult);
@@ -1913,8 +1905,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1989,8 +1980,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
         }
 
@@ -2048,8 +2038,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -2322,8 +2311,7 @@ namespace System.Management
                 }
                 finally
                 {
-                    if (securityHandler != null)
-                        securityHandler.Reset();
+                    securityHandler?.Reset();
                 }
             }
 
@@ -2383,8 +2371,7 @@ namespace System.Management
                     inParams,
                     sink.Stub);
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -2670,8 +2657,7 @@ namespace System.Management
                         }
                         finally
                         {
-                            if (securityHandler != null)
-                                securityHandler.Reset();
+                            securityHandler?.Reset();
                         }
                     }
                 }

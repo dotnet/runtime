@@ -24,9 +24,50 @@ namespace System.Text.Json
         private volatile JsonTypeInfo? _lastTypeInfo;
 
         /// <summary>
+        /// Gets the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <param name="type">The type to resolve contract metadata for.</param>
+        /// <returns>The contract metadata resolved for <paramref name="type"/>.</returns>
+        /// <remarks>
+        /// Returned metadata can be downcast to <see cref="JsonTypeInfo{T}"/> and used with the relevant <see cref="JsonSerializer"/> overloads.
+        ///
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public JsonTypeInfo GetTypeInfo(Type type)
+        {
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
+            }
+
+            if (JsonTypeInfo.IsInvalidForSerialization(type))
+            {
+                ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
+            }
+
+            JsonTypeInfo? typeInfo;
+            if (IsLockedInstance)
+            {
+                typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
+                typeInfo?.EnsureConfigured();
+            }
+            else
+            {
+                typeInfo = GetTypeInfoNoCaching(type);
+            }
+
+            if (typeInfo is null)
+            {
+                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
+            }
+
+            return typeInfo;
+        }
+
+        /// <summary>
         /// This method returns configured non-null JsonTypeInfo
         /// </summary>
-        internal JsonTypeInfo GetJsonTypeInfoCached(Type type)
+        internal JsonTypeInfo GetTypeInfoCached(Type type)
         {
             JsonTypeInfo? typeInfo = null;
 
@@ -37,7 +78,7 @@ namespace System.Text.Json
 
             if (typeInfo == null)
             {
-                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type);
+                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
                 return null;
             }
 
@@ -45,7 +86,7 @@ namespace System.Text.Json
             return typeInfo;
         }
 
-        internal bool TryGetJsonTypeInfoCached(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
+        internal bool TryGetTypeInfoCached(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
             if (_cachingContext == null)
             {
@@ -61,13 +102,13 @@ namespace System.Text.Json
         /// This has an LRU cache that is intended only for public API calls that specify the root type.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal JsonTypeInfo GetJsonTypeInfoForRootType(Type type)
+        internal JsonTypeInfo GetTypeInfoForRootType(Type type)
         {
             JsonTypeInfo? jsonTypeInfo = _lastTypeInfo;
 
             if (jsonTypeInfo?.Type != type)
             {
-                jsonTypeInfo = GetJsonTypeInfoCached(type);
+                jsonTypeInfo = GetTypeInfoCached(type);
                 _lastTypeInfo = jsonTypeInfo;
             }
 

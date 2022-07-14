@@ -200,12 +200,9 @@ namespace System.Net.Http
         public override bool CheckUsabilityOnScavenge()
         {
             // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
-            if (_readAheadTask is null)
-            {
 #pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
-                _readAheadTask = ReadAheadWithZeroByteReadAsync();
+            _readAheadTask ??= ReadAheadWithZeroByteReadAsync();
 #pragma warning restore CA2012
-            }
 
             // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
             return !_readAheadTask.Value.IsCompleted;
