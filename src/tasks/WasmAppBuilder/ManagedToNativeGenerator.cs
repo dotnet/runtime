@@ -34,6 +34,8 @@ public class ManagedToNativeGenerator : Task
     [Required, NotNull]
     public string? InterpToNativeOutputPath { get; set; }
 
+    public bool UnsupportedInteropSignatureAsWarning { get; set; }
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -65,8 +67,8 @@ public class ManagedToNativeGenerator : Task
 
     private void ExecuteInternal()
     {
-        var pinvoke = new PInvokeTableGenerator(Log);
-        var icall = new IcallTableGenerator(Log);
+        var pinvoke = new PInvokeTableGenerator(Log, UnsupportedInteropSignatureAsWarning);
+        var icall = new IcallTableGenerator(Log, UnsupportedInteropSignatureAsWarning);
 
         IEnumerable<string> cookies = Enumerable.Concat(
             pinvoke.Generate(PInvokeModules, Assemblies!, PInvokeOutputPath!),

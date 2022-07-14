@@ -23,8 +23,13 @@ internal sealed class IcallTableGenerator
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass>();
 
     private TaskLoggingHelper Log { get; set; }
+    private bool UnsupportedInteropSignatureAsWarning { get; set; }
 
-    public IcallTableGenerator(TaskLoggingHelper log) => Log = log;
+    public IcallTableGenerator(TaskLoggingHelper log, bool unsupportedInteropSignatureAsWarning)
+    {
+        Log = log;
+        UnsupportedInteropSignatureAsWarning = unsupportedInteropSignatureAsWarning;
+    }
 
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
@@ -152,7 +157,11 @@ internal sealed class IcallTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                Log.LogWarning($"Could not get icall, or callbacks for method {method.Name}: {ex.Message}");
+                if (UnsupportedInteropSignatureAsWarning)
+                    Log.LogWarning($"Could not get icall, or callbacks for method {method.Name}: {ex.Message} To suppress this warning, use WasmUnsupportedInteropSignatureAsWarning=false.");
+                else
+                    Log.LogMessage(MessageImportance.Normal, $"Could not get icall, or callbacks for method {method.Name}: {ex.Message}");
+
                 continue;
             }
 
@@ -222,7 +231,7 @@ internal sealed class IcallTableGenerator
                 throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
             }
 
-            Log.LogMessage(MessageImportance.Normal, $"[icall] Adding signature {signature} for method '{type.FullName}.{method.Name}'");
+            Log.LogMessage(MessageImportance.Low, $"Adding icall signature {signature} for method '{type.FullName}.{method.Name}'");
             _signatures.Add(signature);
         }
     }

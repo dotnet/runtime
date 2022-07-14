@@ -16,8 +16,13 @@ internal sealed class PInvokeTableGenerator
     private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
 
     private TaskLoggingHelper Log { get; set; }
+    private bool UnsupportedInteropSignatureAsWarning { get; set; }
 
-    public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
+    public PInvokeTableGenerator(TaskLoggingHelper log, bool unsupportedInteropSignatureAsWarning)
+    {
+        Log = log;
+        UnsupportedInteropSignatureAsWarning = unsupportedInteropSignatureAsWarning;
+    }
 
     public IEnumerable<string> Generate(string[] pinvokeModules, string[] assemblies, string outputPath)
     {
@@ -71,7 +76,10 @@ internal sealed class PInvokeTableGenerator
             }
             catch (Exception ex) when (ex is not LogAsErrorException)
             {
-                Log.LogWarning($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");
+                if (UnsupportedInteropSignatureAsWarning)
+                    Log.LogWarning($"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message} To suppress this warning, use WasmUnsupportedInteropSignatureAsWarning=false.");
+                else
+                    Log.LogMessage(MessageImportance.Normal, $"Could not get pinvoke, or callbacks for method {method.Name}: {ex.Message}");
             }
         }
 
@@ -90,7 +98,7 @@ internal sealed class PInvokeTableGenerator
                     throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
                 }
 
-                Log.LogMessage(MessageImportance.Normal, $"[pinvoke] Adding signature {signature} for method '{type.FullName}.{method.Name}'");
+                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
                 signatures.Add(signature);
             }
 

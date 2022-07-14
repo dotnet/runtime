@@ -276,6 +276,8 @@
     </ItemGroup>
 
     <PropertyGroup>
+      <WasmUnsupportedInteropSignatureAsWarning Condition="'$(WasmUnsupportedInteropSignatureAsWarning)' == ''">true</WasmUnsupportedInteropSignatureAsWarning>
+
       <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
       <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidDir)lib\net7.0\mscorlib.dll</_MscorlibPath>
     </PropertyGroup>
@@ -296,7 +298,8 @@
       IcallOutputPath="$(_WasmICallTablePath)"
       PInvokeModules="@(_WasmPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
-      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)">
+      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
+      UnsupportedInteropSignatureAsWarning="$(WasmUnsupportedInteropSignatureAsWarning)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
