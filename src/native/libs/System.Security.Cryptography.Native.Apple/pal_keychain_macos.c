@@ -262,6 +262,11 @@ static bool IsCertInKeychain(CFTypeRef needle, SecKeychainRef haystack)
     {
         ret = false;
     }
+    
+    if (result != NULL)
+    {
+        CFRelease(result);
+    }
 
     CFRelease(itemMatch);
     CFRelease(searchList);

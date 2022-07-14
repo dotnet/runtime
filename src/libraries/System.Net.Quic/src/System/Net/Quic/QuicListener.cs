@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Quic.Implementations.MsQuic;
-using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -12,6 +10,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Quic;
+using static System.Net.Quic.MsQuicHelpers;
 using static Microsoft.Quic.MsQuic;
 
 using NEW_CONNECTION_DATA = Microsoft.Quic.QUIC_LISTENER_EVENT._Anonymous_e__Union._NEW_CONNECTION_e__Struct;
@@ -52,20 +51,13 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
 
         // Validate and fill in defaults for the options.
-        if (options.ApplicationProtocols.Count <= 0)
-        {
-            throw new ArgumentException($"Expected at least one item in '{nameof(QuicListenerOptions.ApplicationProtocols)}' to start the listener.", nameof(options));
-        }
-        if (options.ListenBacklog == 0)
-        {
-            options.ListenBacklog = 512;
-        }
+        options.Validate(nameof(options));
 
         QuicListener listener = new QuicListener(options);
 
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(listener, $"Listener listens on {listener.LocalEndPoint}");
+            NetEventSource.Info(listener, $"{listener} Listener listens on {listener.LocalEndPoint}");
         }
 
         return ValueTask.FromResult(listener);
@@ -103,13 +95,17 @@ public sealed partial class QuicListener : IAsyncDisposable
 
     public override string ToString() => _handle.ToString();
 
+    /// <summary>
+    /// Initializes and starts a new instance of a <see cref="QuicListener" />.
+    /// </summary>
+    /// <param name="options">Options to start the listener.</param>
     private unsafe QuicListener(QuicListenerOptions options)
     {
         GCHandle context = GCHandle.Alloc(this, GCHandleType.Weak);
         try
         {
             QUIC_HANDLE* handle;
-            ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerOpen(
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ListenerOpen(
                 MsQuicApi.Api.Registration.QuicHandle,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
@@ -138,7 +134,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Using the Unspecified family makes MsQuic handle connections from all IP addresses.
             address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
         }
-        ThrowIfFailure(MsQuicApi.Api.ApiTable->ListenerStart(
+        ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ListenerStart(
             _handle.QuicHandle,
             alpnBuffers.Buffers,
             (uint)alpnBuffers.Count,
@@ -146,7 +142,8 @@ public sealed partial class QuicListener : IAsyncDisposable
             "ListenerStart failed");
 
         // Get the actual listening endpoint.
-        LocalEndPoint = MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS, options.ListenEndPoint.AddressFamily);
+        address = GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS);
+        LocalEndPoint = address.ToIPEndPoint(options.ListenEndPoint.AddressFamily);
     }
 
     /// <summary>
@@ -156,7 +153,6 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// Note that <see cref="QuicListener" /> doesn't have a mechanism to report inbound connections that fail the handshake process.
     /// Such connections are only logged by the listener and never surfaced on the outside.
     /// </remarks>
-    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A task that will contain a fully connected <see cref="QuicConnection" /> which successfully finished the handshake and is ready to be used.</returns>
     public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
     {
@@ -196,7 +192,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             return QUIC_STATUS_CONNECTION_REFUSED;
         }
 
-        QuicConnection connection = new QuicConnection(new MsQuicConnection(data.Connection, data.Info));
+        QuicConnection connection = new QuicConnection(data.Connection, data.Info);
         SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
         // Kicks off the rest of the handshake in the background.
@@ -231,7 +227,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(null, $"Received event {listenerEvent->Type}");
+                NetEventSource.Error(null, $"Received event {listenerEvent->Type} while listener is already disposed");
             }
             return QUIC_STATUS_INVALID_STATE;
         }
@@ -241,7 +237,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Process the event.
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(instance, $"Received event {listenerEvent->Type}");
+                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type}");
             }
             return instance.HandleListenerEvent(ref *listenerEvent);
         }
@@ -249,7 +245,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Error(instance, $"Exception while processing event {listenerEvent->Type}: {ex}");
+                NetEventSource.Error(instance, $"{instance} Exception while processing event {listenerEvent->Type}: {ex}");
             }
             return QUIC_STATUS_INTERNAL_ERROR;
         }
@@ -275,11 +271,12 @@ public sealed partial class QuicListener : IAsyncDisposable
             }
         }
 
+        // Wait for STOP_COMPLETE, the last event, so that all resources can be safely released.
         await valueTask.ConfigureAwait(false);
         _handle.Dispose();
 
         // Flush the queue and dispose all remaining connections.
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
         while (_acceptQueue.Reader.TryRead(out PendingConnection? pendingConnection))
         {
             await pendingConnection.DisposeAsync().ConfigureAwait(false);

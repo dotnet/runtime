@@ -78,6 +78,14 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal SafeNCryptKeyHandle HandleNoDuplicate
+        {
+            get
+            {
+                return _keyHandle;
+            }
+        }
+
         /// <summary>
         ///     Is this key ephemeral or persisted
         /// </summary>

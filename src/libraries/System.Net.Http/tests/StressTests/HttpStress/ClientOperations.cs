@@ -312,31 +312,11 @@ namespace HttpStress
                             }
                         }
 
-                        // TODO: change when HttpProtocolException gets implemented for HTTP/3
-                        if (ctx.HttpVersion == HttpVersion.Version30)
+                        if (ctx.HttpVersion == HttpVersion.Version30 &&
+                            e is HttpProtocolException protocolException &&
+                            protocolException.ErrorCode == 258) // 258 = H3_INTERNAL_ERROR (0x102)
                         {
-                            // HTTP/3 exception nesting:
-                            // HttpRequestException->IOException->HttpRequestException->QuicStreamAbortedException
-                            // HttpRequestException->QuicStreamAbortedException
-
-                            if (e is IOException && e.InnerException is HttpRequestException)
-                            {
-                                e = e.InnerException;
-                            }
-
-                            if (e is HttpRequestException)
-                            {
-                                string? name = e.InnerException?.GetType().Name;
-                                switch (name)
-                                {
-                                    case "QuicStreamAbortedException":
-                                        if (e.InnerException?.Message?.Equals("Stream aborted by peer (258).") ?? false) // 258 = H3_INTERNAL_ERROR (0x102)
-                                        {
-                                            return;
-                                        }
-                                        break;
-                                }
-                            }
+                            return;
                         }
 
                         throw;
@@ -516,9 +496,9 @@ namespace HttpStress
                 int divergentIndex =
                     Enumerable
                         .Zip(actualContent, expectedContent)
-                        .Select((x,i) => (x.First, x.Second, i))
+                        .Select((x, i) => (x.First, x.Second, i))
                         .Where(x => x.First != x.Second)
-                        .Select(x => (int?) x.i)
+                        .Select(x => (int?)x.i)
                         .FirstOrDefault()
                         .GetValueOrDefault(Math.Min(actualContent.Length, expectedContent.Length));
 

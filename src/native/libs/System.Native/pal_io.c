@@ -1672,6 +1672,19 @@ int32_t SystemNative_LChflags(const char* path, uint32_t flags)
 #endif
 }
 
+int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags)
+{
+#if HAVE_LCHFLAGS
+    int32_t result;
+    while ((result = fchflags(ToFileDescriptor(fd), flags)) < 0 && errno == EINTR);
+    return result;
+#else
+    (void)fd, (void)flags;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 {
 #if HAVE_LCHFLAGS

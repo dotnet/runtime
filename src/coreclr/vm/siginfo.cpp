@@ -112,7 +112,7 @@ DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_ARRAY,          TARGET_POINTER_SIZE,  TYPE_GC
 
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_GENERICINST,    -1,                   TYPE_GC_OTHER, 0)
 
-DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_TYPEDBYREF,     TARGET_POINTER_SIZE*2,TYPE_GC_BYREF, 0)
+DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_TYPEDBYREF,     TARGET_POINTER_SIZE*2,TYPE_GC_OTHER, 0)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED, -1,           TYPE_GC_NONE,  0)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_I,              TARGET_POINTER_SIZE,  TYPE_GC_NONE,  1)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_U,              TARGET_POINTER_SIZE,  TYPE_GC_NONE,  1)
@@ -133,13 +133,6 @@ unsigned GetSizeForCorElementType(CorElementType etyp)
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
         return gElementTypeInfo[etyp].m_cbSize;
-}
-
-const ElementTypeInfo* GetElementTypeInfo(CorElementType etyp)
-{
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
-        return &gElementTypeInfo[etyp];
 }
 
 #ifndef DACCESS_COMPILE
@@ -2373,6 +2366,11 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
             if (pthValueType != NULL)
                 *pthValueType = th;
         }
+    }
+    else if (type == ELEMENT_TYPE_TYPEDBYREF)
+    {
+        if (pthValueType != NULL)
+            *pthValueType = TypeHandle(g_TypedReferenceMT);
     }
 
     return(type);
@@ -5120,7 +5118,7 @@ VOID MetaSig::GcScanRoots(ArgDestination *pValue,
             // for value classes describes the state of the instance in its boxed
             // state.  Here we are dealing with an unboxed instance, so we must adjust
             // the object size and series offsets appropriately.
-            _ASSERTE(etype == ELEMENT_TYPE_VALUETYPE);
+            _ASSERTE(etype == ELEMENT_TYPE_VALUETYPE || etype == ELEMENT_TYPE_TYPEDBYREF);
             {
                 PTR_MethodTable pMT = thValueType.AsMethodTable();
 

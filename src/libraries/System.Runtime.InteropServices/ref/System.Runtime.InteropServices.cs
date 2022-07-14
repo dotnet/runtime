@@ -2200,72 +2200,6 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { throw null; }
         }
     }
-
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class)]
-    public sealed partial class ContiguousCollectionMarshallerAttribute : System.Attribute
-    {
-    }
-
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true)]
-    public sealed partial class CustomMarshallerAttribute : System.Attribute
-    {
-        public CustomMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.MarshalMode marshalMode, System.Type marshallerType) { }
-        public System.Type ManagedType { get { throw null; } }
-        public System.Runtime.InteropServices.Marshalling.MarshalMode MarshalMode { get { throw null; } }
-        public System.Type MarshallerType { get { throw null; } }
-        public struct GenericPlaceholder
-        {
-        }
-    }
-
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
-    public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
-    {
-        public CustomTypeMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind marshallerKind = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.Value) { }
-        public System.Type ManagedType { get { throw null; } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind MarshallerKind { get { throw null; } }
-        public int BufferSize { get { throw null; } set { } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerDirection Direction { get { throw null; } set { } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures Features { get { throw null; } set { } }
-        public struct GenericPlaceholder
-        {
-        }
-    }
-    [System.FlagsAttribute]
-    public enum CustomTypeMarshallerDirection
-    {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        None = 0,
-        In = 0x1,
-        Out = 0x2,
-        Ref = In | Out,
-    }
-    [System.FlagsAttribute]
-    public enum CustomTypeMarshallerFeatures
-    {
-        None = 0,
-        UnmanagedResources = 0x1,
-        CallerAllocatedBuffer = 0x2,
-        TwoStageMarshalling = 0x4
-    }
-    public enum CustomTypeMarshallerKind
-    {
-        Value,
-        LinearCollection
-    }
-    public enum MarshalMode
-    {
-        Default = 0,
-        ManagedToUnmanagedIn = 1,
-        ManagedToUnmanagedRef = 2,
-        ManagedToUnmanagedOut = 3,
-        UnmanagedToManagedIn = 4,
-        UnmanagedToManagedRef = 5,
-        UnmanagedToManagedOut = 6,
-        ElementIn = 7,
-        ElementRef = 8,
-        ElementOut = 9
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute
     {
@@ -2276,12 +2210,6 @@ namespace System.Runtime.InteropServices.Marshalling
         public int ConstantElementCount { get { throw null; } set { } }
         public int ElementIndirectionDepth { get { throw null; } set { } }
         public const string ReturnsCountValue = "return-value";
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
-    public sealed partial class NativeMarshallingAttribute : System.Attribute
-    {
-        public NativeMarshallingAttribute(System.Type nativeType) { }
-        public System.Type NativeType { get { throw null; } }
     }
     [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),

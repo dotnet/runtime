@@ -229,8 +229,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (innerType.ToDisplayString() != TypeNames.CustomTypeMarshallerAttributeGenericPlaceholder
-                && innerType.ToDisplayString() != TypeNames.CustomMarshallerAttributeGenericPlaceholder)
+            if (innerType.ToDisplayString() != TypeNames.CustomMarshallerAttributeGenericPlaceholder)
             {
                 return managedType;
             }
@@ -358,7 +357,7 @@ namespace Microsoft.Interop
                 if (mode != MarshalMode.Default && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
                     return null;
 
-                if (isLinearCollectionMarshaller)
+                if (isLinearCollectionMarshaller && methods.ManagedValuesSource is not null)
                 {
                     // Element type is the type parameter of the ReadOnlySpan returned by GetManagedValuesSource
                     collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesSource.ReturnType).TypeArguments[0];
@@ -383,13 +382,19 @@ namespace Microsoft.Interop
 
                 if (isLinearCollectionMarshaller)
                 {
-                    // Native type is the first parameter of GetUnmanagedValuesSource
-                    nativeType = methods.UnmanagedValuesSource.Parameters[0].Type;
+                    if (nativeType is null && methods.UnmanagedValuesSource is not null)
+                    {
+                        // Native type is the first parameter of GetUnmanagedValuesSource
+                        nativeType = methods.UnmanagedValuesSource.Parameters[0].Type;
+                    }
 
-                    // Element type is the type parameter of the Span returned by GetManagedValuesDestination
-                    collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
+                    if (collectionElementType is null && methods.ManagedValuesDestination is not null)
+                    {
+                        // Element type is the type parameter of the Span returned by GetManagedValuesDestination
+                        collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
+                    }
                 }
-                else
+                else if (nativeType is null)
                 {
                     // Native type is the first parameter of ConvertToManaged or ConvertToManagedFinally
                     if (methods.ToManagedFinally is not null)
@@ -458,7 +463,7 @@ namespace Microsoft.Interop
                     nativeType = methods.ToUnmanaged.ReturnType;
                 }
 
-                if (isLinearCollectionMarshaller)
+                if (isLinearCollectionMarshaller && methods.ManagedValuesSource is not null)
                 {
                     // Element type is the type parameter of the ReadOnlySpan returned by GetManagedValuesSource
                     collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesSource.ReturnType).TypeArguments[0];
@@ -476,7 +481,7 @@ namespace Microsoft.Interop
                     nativeType = methods.FromUnmanaged.Parameters[0].Type;
                 }
 
-                if (isLinearCollectionMarshaller && collectionElementType is null)
+                if (isLinearCollectionMarshaller && collectionElementType is null && methods.ManagedValuesDestination is not null)
                 {
                     // Element type is the type parameter of the Span returned by GetManagedValuesDestination
                     collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
