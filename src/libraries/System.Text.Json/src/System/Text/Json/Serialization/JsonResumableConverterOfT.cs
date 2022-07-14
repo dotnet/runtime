@@ -10,8 +10,13 @@ namespace System.Text.Json.Serialization
     /// <typeparam name="T"></typeparam>
     internal abstract class JsonResumableConverter<T> : JsonConverter<T>
     {
-        public sealed override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options!!)
+        public sealed override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
+
             // Bridge from resumable to value converters.
 
             ReadStack state = default;
@@ -20,8 +25,13 @@ namespace System.Text.Json.Serialization
             return value;
         }
 
-        public sealed override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options!!)
+        public sealed override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
+
             // Bridge from resumable to value converters.
 
             WriteStack state = default;

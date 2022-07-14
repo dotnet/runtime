@@ -41,7 +41,7 @@ namespace Internal.Runtime.TypeLoader
 
         private class NamedTypeRuntimeTypeHandleToMetadataHashtable : LockFreeReaderHashtable<RuntimeTypeHandle, NamedTypeLookupResult>
         {
-            protected unsafe override int GetKeyHashCode(RuntimeTypeHandle key)
+            protected override unsafe int GetKeyHashCode(RuntimeTypeHandle key)
             {
                 return (int)key.ToEETypePtr()->HashCode;
             }
@@ -50,7 +50,7 @@ namespace Internal.Runtime.TypeLoader
                 return key.Equals(value.RuntimeTypeHandle);
             }
 
-            protected unsafe override int GetValueHashCode(NamedTypeLookupResult value)
+            protected override unsafe int GetValueHashCode(NamedTypeLookupResult value)
             {
                 return value.RuntimeTypeHandleHashcode;
             }
@@ -122,7 +122,7 @@ namespace Internal.Runtime.TypeLoader
                 return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
             }
 
-            protected unsafe override int GetKeyHashCode(QTypeDefinition key)
+            protected override unsafe int GetKeyHashCode(QTypeDefinition key)
             {
                 return key.Token.GetHashCode() ^ _rotl(key.Reader.GetHashCode(), 8);
             }
@@ -132,7 +132,7 @@ namespace Internal.Runtime.TypeLoader
                        key.Reader.Equals(value.QualifiedTypeDefinition.Reader);
             }
 
-            protected unsafe override int GetValueHashCode(NamedTypeLookupResult value)
+            protected override unsafe int GetValueHashCode(NamedTypeLookupResult value)
             {
                 return value.QualifiedTypeDefinition.Token.GetHashCode() ^ _rotl(value.QualifiedTypeDefinition.Reader.GetHashCode(), 8);
             }
@@ -243,7 +243,7 @@ namespace Internal.Runtime.TypeLoader
         ///    metadataReader + typeDefHandle  - a valid metadata reader + typeDefinitionHandle where "metadataReader" is one
         ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
         ///
-        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the Project N pay-for-play design
+        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
         /// guarantees that any type enabled for metadata also has a RuntimeTypeHandle underneath.
         /// </summary>
         /// <param name="qTypeDefinition">TypeDef handle for the type to look up</param>

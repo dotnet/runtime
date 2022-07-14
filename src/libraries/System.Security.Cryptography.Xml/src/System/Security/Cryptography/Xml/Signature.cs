@@ -62,13 +62,8 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfo KeyInfo
         {
-            get
-            {
-                if (_keyInfo == null)
-                    _keyInfo = new KeyInfo();
-                return _keyInfo;
-            }
-            set { _keyInfo = value; }
+            get => _keyInfo ??= new KeyInfo();
+            set => _keyInfo = value;
         }
 
         public IList ObjectList
@@ -133,8 +128,13 @@ namespace System.Security.Cryptography.Xml
             return signatureElement;
         }
 
-        public void LoadXml(XmlElement value!!)
+        public void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             // Signature
             XmlElement signatureElement = value;
             if (!signatureElement.LocalName.Equals("Signature"))

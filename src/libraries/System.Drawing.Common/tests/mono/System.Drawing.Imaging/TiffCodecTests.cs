@@ -65,7 +65,6 @@ namespace MonoTests.System.Drawing.Imaging
 
         /* Checks bitmap features on a known 32bbp bitmap */
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         public void Bitmap32bitsPixelFormat()
         {
             string sInFile = Helpers.GetTestBitmapPath("almogaver32bits.tif");

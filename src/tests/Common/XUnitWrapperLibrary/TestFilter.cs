@@ -140,7 +140,7 @@ public class TestFilter
 
     public bool ShouldRunTest(string fullyQualifiedName, string displayName, string[]? traits = null)
     {
-        if (_testExclusionList is not null && _testExclusionList.Contains(displayName))
+        if (_testExclusionList is not null && _testExclusionList.Contains(displayName.Replace("\\", "/")))
         {
             return false;
         }

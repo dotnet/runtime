@@ -366,7 +366,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (array == null)
                 {
-                    throw new ArgumentNullException(nameof(array));
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 }
                 if (arrayIndex < 0)
                 {

@@ -69,7 +69,7 @@ namespace System.IO
         /// </summary>
         internal static bool IsValidDriveChar(char value)
         {
-            return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
+            return (uint)((value | 0x20) - 'a') <= (uint)('z' - 'a');
         }
 
         internal static bool EndsWithPeriodOrSpace(string? path)

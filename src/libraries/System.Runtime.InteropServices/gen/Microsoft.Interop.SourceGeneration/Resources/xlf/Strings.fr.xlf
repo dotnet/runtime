@@ -12,6 +12,11 @@
         <target state="translated">La valeur « SizeParamIndex » dans « MarshalAsAttribute » est hors limites.</target>
         <note />
       </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Le paramètre spécifié doit être marshalé de managé à non managé et non managé à managé, mais le type marshaleur « {0} » ne le prend pas en charge.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
         <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
         <target state="translated">Les attributs « BlittableTypeAttribute » et « NativeMarstribuingAttribute » s’excluent mutuellement.</target>
@@ -92,19 +97,39 @@
         <target state="translated">Les attributs « [In] » et « [Out] » fournis sur ce paramètre ne sont pas pris en charge sur ce paramètre.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Le paramètre spécifié doit être marshalé de managé à non managé, mais le type marshaleur « {0} » ne le prend pas en charge.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">Le type de point d’entrée marshaleur '{0}' pour le type managé '{1}' doit avoir une arité supérieure au type managé.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStatic">
+        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
+        <target state="translated">Le type marshaleur « {0} » pour le type managé « {1} » doit être statique.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
         <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
         <target state="translated">Le marshaling bool sans informations de marshaling explicite n’est pas pris en charge. Spécifiez « MarshalUsingAttribute » ou « MarshalAsAttribute ».</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallingCharAsSpecifiedCharSetNotSupported">
-        <source>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="translated">Le marshaling de char avec « CharSet.{0} » n’est pas pris en charge. Convertissez plutôt manuellement le type de caractère en représentation d’octet souhaitée et passez au P/Invoke généré par la source.</target>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">Le marshaling de char avec « StringMarshalling.{0} » n’est pas pris en charge. Convertissez plutôt manuellement le type de caractère en représentation d’octet souhaitée et passez au P/Invoke généré par la source.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">Le marshaling de caractère avec « StringMarshalling.Custom » n’est pas pris en charge. Pour utiliser un marshaleur de type personnalisé, spécifiez « MarshalUsingAttribute ».</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify either 'LibraryImportAttribute.CharSet' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Le marshaling d’une chaîne ou d’un caractère sans information de marshaling explicite n’est pas pris en charge. Spécifiez « LibraryImportAttribute.CharSet » ou « MarshalAsAttribute ».</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Le marshaling de chaîne ou de char sans informations de marshaling explicites n’est pas pris en charge. Spécifiez « LibraryImportAttribute.StringMars streaming », « LibraryImportAttribute.StringMars streamingCustomType », « MarshalUsingAttribute » ou « MarshalAsAttribute ».</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
@@ -123,8 +148,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
-        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">Le marshaling du runtime doit être désactivé dans ce projet en appliquant « System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute » à l’assembly pour activer le marshaling de ce type.</target>
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">Le marshaling du runtime doit être désactivé dans ce projet en appliquant « System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute » à l’assembly pour activer le marshaling de ce type.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
@@ -137,9 +162,14 @@
         <target state="translated">Le type spécifié n’est pas prise en charge par les P/Invokes générés par la source.</target>
         <note />
       </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Le paramètre spécifié doit être marshalé de non managé à managé, mais le type marshaleur « {0} » ne le prend pas en charge.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
+        <target state="translated">Le type « {0} » spécifie qu’il prend en charge le marshaling «In» avec la fonctionnalité «CallerAllocatedBuffer» pour « {1} » mais ne fournit pas de constructeur à un paramètre qui accepte un « {1} » et « Span » d’un type « non géré » comme paramètres.</target>
         <note />
       </trans-unit>
     </body>

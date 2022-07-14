@@ -9,14 +9,20 @@ namespace System.Text.RegularExpressions
     {
         private readonly ScanDelegate _scanMethod;
         /// <summary>This field will only be set if the pattern contains backreferences and has RegexOptions.IgnoreCase</summary>
-        private readonly TextInfo? _textInfo;
+        private readonly CultureInfo? _culture;
+
+#pragma warning disable CA1823 // Avoid unused private fields. Justification: Used via reflection to cache the Case behavior if needed.
+#pragma warning disable CS0169
+        private RegexCaseBehavior _caseBehavior;
+#pragma warning restore CS0169
+#pragma warning restore CA1823
 
         internal delegate void ScanDelegate(RegexRunner runner, ReadOnlySpan<char> text);
 
         public CompiledRegexRunner(ScanDelegate scan, CultureInfo? culture)
         {
             _scanMethod = scan;
-            _textInfo = culture?.TextInfo;
+            _culture = culture;
         }
 
         protected internal override void Scan(ReadOnlySpan<char> text)

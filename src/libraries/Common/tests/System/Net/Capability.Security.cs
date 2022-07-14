@@ -10,7 +10,7 @@ namespace System.Net.Test.Common
     {
         // Thumbprint for CN = NDX Test Root CA.
         // The certificate is part of the chain at
-        // https://github.com/dotnet/runtime-assets/blob/master/System.Net.TestData/contoso.com.p7b
+        // https://github.com/dotnet/runtime-assets/blob/main/src/System.Net.TestData/TestData/contoso.com.p7b
         private const string CARootThumbprint = "3B279AD43D6DD459268D3F3A3D72DAAD4BF4D9C6";
 
         private static Lazy<bool> s_trustedCertificateSupport =

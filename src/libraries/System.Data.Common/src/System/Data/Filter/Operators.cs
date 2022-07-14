@@ -3,10 +3,8 @@
 
 namespace System.Data
 {
-    internal sealed class Operators
+    internal static class Operators
     {
-        private Operators() { /* prevent utility class from being insantiated*/ }
-
         internal const int Noop = 0;
 
         /* Unary operations */

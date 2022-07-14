@@ -45,18 +45,7 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyDistinguishedName = distinguishedName;
         }
 
-        public string Name
-        {
-            get
-            {
-                string? name = _lazyDistinguishedName;
-                if (name == null)
-                {
-                    name = _lazyDistinguishedName = Decode(X500DistinguishedNameFlags.Reversed);
-                }
-                return name;
-            }
-        }
+        public string Name => _lazyDistinguishedName ??= Decode(X500DistinguishedNameFlags.Reversed);
 
         public string Decode(X500DistinguishedNameFlags flag)
         {
@@ -69,8 +58,10 @@ namespace System.Security.Cryptography.X509Certificates
             return X509Pal.Instance.X500DistinguishedNameFormat(RawData, multiLine);
         }
 
-        private static byte[] Encode(string distinguishedName!!, X500DistinguishedNameFlags flags)
+        private static byte[] Encode(string distinguishedName, X500DistinguishedNameFlags flags)
         {
+            ArgumentNullException.ThrowIfNull(distinguishedName);
+
             ThrowIfInvalid(flags);
 
             return X509Pal.Instance.X500DistinguishedNameEncode(distinguishedName, flags);

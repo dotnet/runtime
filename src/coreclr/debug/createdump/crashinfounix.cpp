@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+int g_readProcessMemoryErrno = 0;
+
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
 bool
@@ -14,7 +16,17 @@ CrashInfo::Initialize()
     m_fd = open(memPath, O_RDONLY);
     if (m_fd == -1)
     {
-        printf_error("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
+        int err = errno;
+        const char* message = "Problem accessing memory";
+        if (err == EPERM || err == EACCES)
+        {
+            message = "The process or container does not have permissions or access";
+        }
+        else if (err == ENOENT)
+        {
+            message = "Invalid process id";
+        }
+        printf_error("%s: open(%s) FAILED %s (%d)\n", message, memPath, strerror(err), err);
         return false;
     }
     // Get the process info
@@ -58,7 +70,7 @@ CrashInfo::EnumerateAndSuspendThreads()
     DIR* taskDir = opendir(taskPath);
     if (taskDir == nullptr)
     {
-        printf_error("opendir(%s) FAILED %s\n", taskPath, strerror(errno));
+        printf_error("Problem enumerating threads: opendir(%s) FAILED %s (%d)\n", taskPath, strerror(errno), errno);
         return false;
     }
 
@@ -76,7 +88,7 @@ CrashInfo::EnumerateAndSuspendThreads()
             }
             else
             {
-                printf_error("ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
+                printf_error("Problem suspending threads: ptrace(ATTACH, %d) FAILED %s (%d)\n", tid, strerror(errno), errno);
                 closedir(taskDir);
                 return false;
             }
@@ -102,7 +114,7 @@ CrashInfo::GetAuxvEntries()
     int fd = open(auxvPath, O_RDONLY, 0);
     if (fd == -1)
     {
-        printf_error("open(%s) FAILED %s\n", auxvPath, strerror(errno));
+        printf_error("Problem reading aux info: open(%s) FAILED %s (%d)\n", auxvPath, strerror(errno), errno);
         return false;
     }
     bool result = false;
@@ -131,7 +143,7 @@ CrashInfo::GetAuxvEntries()
 // Get the module mappings for the core dump NT_FILE notes
 //
 bool
-CrashInfo::EnumerateModuleMappings()
+CrashInfo::EnumerateMemoryRegions()
 {
     // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says
     // about a library we are looking for. This file looks something like this:
@@ -159,7 +171,7 @@ CrashInfo::EnumerateModuleMappings()
     FILE* mapsFile = fopen(mapPath, "r");
     if (mapsFile == nullptr)
     {
-        printf_error("fopen(%s) FAILED %s\n", mapPath, strerror(errno));
+        printf_error("Problem reading maps file: fopen(%s) FAILED %s (%d)\n", mapPath, strerror(errno), errno);
         return false;
     }
     // linuxGateAddress is the beginning of the kernel's mapping of
@@ -207,6 +219,7 @@ CrashInfo::EnumerateModuleMappings()
             if (moduleName != nullptr && *moduleName == '/')
             {
                 m_moduleMappings.insert(memoryRegion);
+                m_cbModuleMappings += memoryRegion.Size();
             }
             else
             {
@@ -214,7 +227,7 @@ CrashInfo::EnumerateModuleMappings()
             }
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
             {
-                InsertMemoryBackedRegion(memoryRegion);
+                InsertMemoryRegion(memoryRegion);
             }
             free(moduleName);
             free(permissions);
@@ -223,7 +236,7 @@ CrashInfo::EnumerateModuleMappings()
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings:\n");
+        TRACE("Module mappings (%06llx):\n", m_cbModuleMappings / PAGE_SIZE);
         for (const MemoryRegion& region : m_moduleMappings)
         {
             region.Trace();
@@ -290,9 +303,9 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
             if (PopulateForSymbolLookup(baseAddress))
             {
                 uint64_t symbolOffset;
-                if (!TryLookupSymbol("g_dacTable", &symbolOffset))
+                if (!TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolOffset))
                 {
-                    TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+                    TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
                 }
             }
         }
@@ -381,7 +394,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         *read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
     }
 
-    if (!m_canUseProcVmReadSyscall || (*read == (size_t)-1 && errno == EPERM))
+    if (!m_canUseProcVmReadSyscall || (*read == (size_t)-1 && (errno == EPERM || errno == ENOSYS)))
 #endif
     {
         // If we've failed, avoid going through expensive syscalls
@@ -394,8 +407,9 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
 
     if (*read == (size_t)-1)
     {
-        int readErrno = errno;
-        TRACE_VERBOSE("ReadProcessMemory FAILED, addr: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", address, size, readErrno, strerror(readErrno));
+        // Preserve errno for the ELF dump writer call
+        g_readProcessMemoryErrno = errno;
+        TRACE_VERBOSE("ReadProcessMemory FAILED addr: %" PRIA PRIx " size: %zu error: %s (%d)\n", address, size, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
         return false;
     }
     return true;
@@ -413,7 +427,7 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
     FILE *statusFile = fopen(statusPath, "r");
     if (statusFile == nullptr)
     {
-        printf_error("GetStatus fopen(%s) FAILED\n", statusPath);
+        printf_error("GetStatus fopen(%s) FAILED %s (%d)\n", statusPath, strerror(errno), errno);
         return false;
     }
 

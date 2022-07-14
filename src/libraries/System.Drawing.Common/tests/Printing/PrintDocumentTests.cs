@@ -37,7 +37,6 @@ namespace System.Drawing.Printing.Tests
             }
         };
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void Ctor_Default_Success()
         {
@@ -49,7 +48,6 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void DefaultPageSettings_SetValue_ReturnsExpected()
         {
@@ -65,7 +63,6 @@ namespace System.Drawing.Printing.Tests
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30221")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         public void DefaultPageSettings_Null_ReturnsExpected()
         {
             using (var document = new PrintDocument())
@@ -87,7 +84,6 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DocumentName_Null_ReturnsExpected()
         {
@@ -110,7 +106,6 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PrintController_SetValue_ReturnsExpected()
         {
@@ -125,7 +120,6 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void PrinterSettings_SetValue_ReturnsExpected()
         {
@@ -149,7 +143,6 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void BeginPrint_SetValue_ReturnsExpected()
         {
@@ -170,7 +163,6 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26428")]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void EndPrint_SetValue_ReturnsExpected()
@@ -192,7 +184,6 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26428")]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void PrintPage_SetValue_ReturnsExpected()
@@ -214,7 +205,6 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void QueryPageSettings_SetValue_ReturnsExpected()
         {

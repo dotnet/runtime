@@ -1002,6 +1002,8 @@ private:
 #else
         static const int MaxNumFPRegArgSlots = 4;
 #endif
+#elif defined(HOST_LOONGARCH64)
+        static const int MaxNumFPRegArgSlots = 8;
 #endif
 
         ~ArgState()
@@ -1772,8 +1774,6 @@ private:
     void DoStringLength();
     void DoStringGetChar();
     void DoGetTypeFromHandle();
-    void DoByReferenceCtor();
-    void DoByReferenceValue();
     void DoSIMDHwAccelerated();
     void DoGetIsSupported();
 
@@ -2061,6 +2061,8 @@ unsigned short Interpreter::NumberOfIntegerRegArgs()
 #elif defined(HOST_ARM)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
 #elif defined(HOST_ARM64)
+unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
+#elif defined(HOST_LOONGARCH64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #else
 #error Unsupported architecture.

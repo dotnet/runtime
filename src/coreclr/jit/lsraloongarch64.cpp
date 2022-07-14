@@ -26,7 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 
 //------------------------------------------------------------------------
-// BuildNode: Build the RefPositions for for a node
+// BuildNode: Build the RefPositions for a node
 //
 // Arguments:
 //    treeNode - the node of interest
@@ -120,7 +120,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-        case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
             srcCount = 0;
@@ -163,7 +162,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_COMMA:
         case GT_QMARK:
         case GT_COLON:
-        case GT_CLS_VAR:
         case GT_ADDR:
             srcCount = 0;
             assert(dstCount == 0);
@@ -273,6 +271,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROR:
             srcCount = BuildBinaryUses(tree->AsOp());
+            buildInternalRegisterUses();
             assert(dstCount == 1);
             BuildDef(tree);
             break;
@@ -597,7 +596,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 0);
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree))
+            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -873,14 +872,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             assert(argNode->isContained());
 
-            // There could be up to 2-4 PUTARG_REGs in the list (3 or 4 can only occur for HFAs)
+            // There could be up to 2 PUTARG_REGs in the list.
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
 #ifdef DEBUG
                 assert(use.GetNode()->OperIs(GT_PUTARG_REG));
-                assert(use.GetNode()->GetRegNum() == argReg);
-                // Update argReg for the next putarg_reg (if any)
-                argReg = genRegArgNext(argReg);
 #endif
                 BuildUse(use.GetNode(), genRegMask(use.GetNode()->GetRegNum()));
                 srcCount++;
@@ -918,12 +914,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // because the code generator doesn't actually consider it live,
     // so it can't be spilled.
 
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* argNode = arg.GetEarlyNode();
 
         // Skip arguments that have been moved to the Late Arg list
-        if ((argNode->gtFlags & GTF_LATE_ARG) == 0)
+        if (arg.GetLateNode() == nullptr)
         {
 #if FEATURE_ARG_SPLIT
             // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they

@@ -93,15 +93,15 @@ file_fast_serialize_func (void *object, FastSerializer *fast_serializer)
 	EP_ASSERT (fast_serializer != NULL);
 
 	EventPipeFile *file = (EventPipeFile *)object;
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->file_open_system_time, sizeof (file->file_open_system_time));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->file_open_timestamp, sizeof (file->file_open_timestamp));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->timestamp_frequency, sizeof (file->timestamp_frequency));
+	ep_fast_serializer_write_system_time (fast_serializer, &file->file_open_system_time);
+	ep_fast_serializer_write_timestamp (fast_serializer, file->file_open_timestamp);
+	ep_fast_serializer_write_int64_t (fast_serializer, file->timestamp_frequency);
 
 	// the beginning of V3
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->pointer_size, sizeof (file->pointer_size));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->current_process_id, sizeof (file->current_process_id));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->number_of_processors, sizeof (file->number_of_processors));
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&file->sampling_rate_in_ns, sizeof (file->sampling_rate_in_ns));
+	ep_fast_serializer_write_uint32_t (fast_serializer, file->pointer_size);
+	ep_fast_serializer_write_uint32_t (fast_serializer, file->current_process_id);
+	ep_fast_serializer_write_uint32_t (fast_serializer, file->number_of_processors);
+	ep_fast_serializer_write_uint32_t (fast_serializer, file->sampling_rate_in_ns);
 }
 
 static
@@ -152,7 +152,7 @@ file_get_stack_id (
 	EP_ASSERT (file->stack_block != NULL);
 
 	uint32_t stack_id = 0;
-	EventPipeStackContents *stack_contents = ep_event_instance_get_stack_contents_ref (event_instance);
+	EventPipeStackContentsInstance *stack_contents = ep_event_instance_get_stack_contents_instance_ref (event_instance);
 	EventPipeStackBlock *stack_block = file->stack_block;
 	ep_rt_stack_hash_map_t *stack_hash = &file->stack_hash;
 	StackHashEntry *entry = NULL;
@@ -540,13 +540,13 @@ ep_stack_hash_entry_get_key (StackHashEntry *stack_hash_entry)
 
 StackHashEntry *
 ep_stack_hash_entry_alloc (
-	const EventPipeStackContents *stack_contents,
+	const EventPipeStackContentsInstance *stack_contents,
 	uint32_t id,
 	uint32_t hash)
 {
 	EP_ASSERT (stack_contents != NULL);
 
-	uint32_t stack_size = ep_stack_contents_get_size (stack_contents);
+	uint32_t stack_size = ep_stack_contents_instance_get_size (stack_contents);
 	StackHashEntry *entry = (StackHashEntry *)ep_rt_byte_array_alloc (offsetof (StackHashEntry, stack_bytes) + stack_size);
 	ep_raise_error_if_nok (entry != NULL);
 
@@ -554,7 +554,7 @@ ep_stack_hash_entry_alloc (
 	entry->key.hash = hash;
 	entry->key.stack_size_in_bytes = stack_size;
 	entry->key.stack_bytes = entry->stack_bytes;
-	memcpy (entry->stack_bytes, ep_stack_contents_get_pointer (stack_contents), stack_size);
+	memcpy (entry->stack_bytes, ep_stack_contents_instance_get_pointer (stack_contents), stack_size);
 
 ep_on_exit:
 	return entry;
@@ -593,13 +593,13 @@ hash_bytes (const uint8_t *data, size_t data_len)
 StackHashKey *
 ep_stack_hash_key_init (
 	StackHashKey *key,
-	const EventPipeStackContents *stack_contents)
+	const EventPipeStackContentsInstance *stack_contents)
 {
 	EP_ASSERT (key != NULL);
 	EP_ASSERT (stack_contents != NULL);
 
-	key->stack_bytes = ep_stack_contents_get_pointer (stack_contents);
-	key->stack_size_in_bytes = ep_stack_contents_get_size (stack_contents);
+	key->stack_bytes = ep_stack_contents_instance_get_pointer (stack_contents);
+	key->stack_size_in_bytes = ep_stack_contents_instance_get_size (stack_contents);
 	key->hash = hash_bytes (key->stack_bytes, key->stack_size_in_bytes);
 
 	return key;

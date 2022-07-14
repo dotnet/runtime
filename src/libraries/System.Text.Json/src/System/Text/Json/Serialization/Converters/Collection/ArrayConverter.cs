@@ -53,6 +53,8 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
+                    state.Current.EndCollectionElement();
+
                     if (ShouldFlush(writer, ref state))
                     {
                         state.Current.EnumeratorIndex = ++index;

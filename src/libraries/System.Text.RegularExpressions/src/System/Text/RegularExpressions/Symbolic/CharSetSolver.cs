@@ -22,8 +22,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>This instance is shared amongst all CharSetSolver instances and is accessed in a thread-safe manner.</remarks>
         private static BDD? s_nonAscii;
 
-        /// <summary>Generator for minterms, lazily initialized on first use.</summary>
-        private MintermGenerator<BDD>? _mintermGenerator;
         /// <summary>Cache of BDD instances created by this solver.</summary>
         /// <remarks>
         /// Cache of BDD instances created by this solver: two BDDs with the same ordinal and identical children references
@@ -43,11 +41,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Gets a BDD that contains every non-ASCII character.</summary>
         public BDD NonAscii =>
             s_nonAscii ??
-            Interlocked.CompareExchange(ref s_nonAscii, CreateSetFromRange('\x80', '\uFFFF'), null) ??
+            Interlocked.CompareExchange(ref s_nonAscii, CreateBDDFromRange('\x80', '\uFFFF'), null) ??
             s_nonAscii;
 
         /// <summary>Creates a BDD that contains only the specified character.</summary>
-        public BDD CreateFromChar(char c)
+        public BDD CreateBDDFromChar(char c)
         {
             BDD?[] ascii = s_asciiCache;
             if (c < (uint)ascii.Length)
@@ -76,28 +74,27 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        /// <summary>Identity function for <paramref name="set"/>, since <paramref name="set"/> is already a <see cref="BDD"/>.</summary>
+        public BDD ConvertFromBDD(BDD set, CharSetSolver _) => set;
+
+        /// <summary>Returns null, as minterms are not relevant to <see cref="CharSetSolver"/>.</summary>
+        BDD[]? ISolver<BDD>.GetMinterms() => null;
+
 #if DEBUG
+        /// <summary>Identity function for <paramref name="set"/>, since <paramref name="set"/> is already a <see cref="BDD"/>.</summary>
+        public BDD ConvertToBDD(BDD set, CharSetSolver _) => set;
+
         /// <summary>Creates a BDD that contains all of the characters in each range.</summary>
-        internal BDD CreateSetFromRanges(List<(char Lower, char Upper)> ranges)
+        internal BDD CreateBDDFromRanges(List<(char Lower, char Upper)> ranges)
         {
             BDD bdd = Empty;
             foreach ((char Lower, char Upper) range in ranges)
             {
-                bdd = Or(bdd, CreateSetFromRange(range.Lower, range.Upper));
+                bdd = Or(bdd, CreateBDDFromRange(range.Lower, range.Upper));
             }
 
             return bdd;
         }
-#endif
-
-        /// <summary>Identity function for <paramref name="set"/>, since <paramref name="set"/> is already a <see cref="BDD"/>.</summary>
-        public BDD ConvertFromBDD(BDD set, CharSetSolver _) => set;
-
-        /// <summary>Identity function for <paramref name="set"/>, since <paramref name="set"/> is already a <see cref="BDD"/>.</summary>
-        public BDD ConvertToBDD(BDD set, CharSetSolver _) => set;
-
-        /// <summary>Returns null, as minterms are not relevant to <see cref="CharSetSolver"/>.</summary>
-        BDD[]? ISolver<BDD>.GetMinterms() => null;
 
         /// <summary>Formats the contents of the specified set for human consumption.</summary>
         string ISolver<BDD>.PrettyPrint(BDD characterClass, CharSetSolver solver) => PrettyPrint(characterClass);
@@ -154,6 +151,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             return RegexCharClass.DescribeSet(rcc.ToStringClass());
         }
+#endif
 
         /// <summary>Unions two <see cref="BDD"/>s to produce a new <see cref="BDD"/>.</summary>
         public BDD Or(BDD set1, BDD set2) => ApplyBinaryOp(BooleanOperation.Or, set1, set2);
@@ -298,23 +296,19 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Gets whether the set contains no values.</summary>
         public bool IsEmpty(BDD set) => set == Empty;
 
-        /// <summary>Generate all non-overlapping Boolean combinations of a set of BDDs.</summary>
-        public List<BDD> GenerateMinterms(HashSet<BDD> sets) =>
-            (_mintermGenerator ??= new(this)).GenerateMinterms(sets);
-
         /// <summary>
         /// Create a <see cref="BDD"/> representing the set of values in the range
         /// from <paramref name="lower"/> to <paramref name="upper"/>, inclusive.
         /// </summary>
-        public BDD CreateSetFromRange(char lower, char upper)
+        public BDD CreateBDDFromRange(char lower, char upper)
         {
             const int MaxBit = 15; // most significant bit of a 16-bit char
             return
                 upper < lower ? Empty :
-                upper == lower ? CreateFromChar(lower) :
-                CreateSetFromRangeImpl(lower, upper, MaxBit);
+                upper == lower ? CreateBDDFromChar(lower) :
+                CreateBDDFromRangeImpl(lower, upper, MaxBit);
 
-            BDD CreateSetFromRangeImpl(uint lower, uint upper, int maxBit)
+            BDD CreateBDDFromRangeImpl(uint lower, uint upper, int maxBit)
             {
                 // Mask with 1 at position of maxBit
                 uint mask = 1u << maxBit;
@@ -340,21 +334,21 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (upperMasked == 0)
                 {
                     // Highest value in range doesn't have maxBit set, so the one branch is empty
-                    BDD zero = CreateSetFromRangeImpl(lower, upper, maxBit - 1);
+                    BDD zero = CreateBDDFromRangeImpl(lower, upper, maxBit - 1);
                     return GetOrCreateBDD(maxBit, Empty, zero);
                 }
                 else if (lowerMasked == mask)
                 {
                     // Lowest value in range has maxBit set, so the zero branch is empty
-                    BDD one = CreateSetFromRangeImpl(lower & ~mask, upper & ~mask, maxBit - 1);
+                    BDD one = CreateBDDFromRangeImpl(lower & ~mask, upper & ~mask, maxBit - 1);
                     return GetOrCreateBDD(maxBit, one, Empty);
                 }
                 else // Otherwise the range straddles (1<<maxBit) and thus both cases need to be considered
                 {
                     // If zero then less significant bits are from lower bound to maximum value with maxBit-1 bits
-                    BDD zero = CreateSetFromRangeImpl(lower, mask - 1, maxBit - 1);
+                    BDD zero = CreateBDDFromRangeImpl(lower, mask - 1, maxBit - 1);
                     // If one then less significant bits are from zero to the upper bound with maxBit stripped away
-                    BDD one = CreateSetFromRangeImpl(0, upper & ~mask, maxBit - 1);
+                    BDD one = CreateBDDFromRangeImpl(0, upper & ~mask, maxBit - 1);
                     return GetOrCreateBDD(maxBit, one, zero);
                 }
             }

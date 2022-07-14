@@ -9,7 +9,7 @@
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <UseLiveBuiltDotNetHost Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6'">true</UseLiveBuiltDotNetHost>
+    <UseLiveBuiltDotNetHost Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'ppc64le' or '$(TargetArchitecture)' == 'armv6' or '$(TargetsLinuxBionic)' == 'true'">true</UseLiveBuiltDotNetHost>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -40,8 +40,6 @@
           Condition="'$(TestNativeAot)' != 'true'">
     <PropertyGroup>
       <UseHardlink>true</UseHardlink>
-      <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
-      <UseHardlink Condition="$(PackageRID.StartsWith('freebsd'))">false</UseHardlink>
     </PropertyGroup>
 
     <!-- We do not need apphost.exe.

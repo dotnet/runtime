@@ -10,7 +10,4 @@
     <DefineConstants>$(DefineConstants);LIBRARYIMPORT_GENERATOR_TEST</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/ArrayMarshaller.cs" Link="ArrayMarshaller.cs" />
-  </ItemGroup>
 </Project>

@@ -13,23 +13,19 @@ namespace Microsoft.Interop.Analyzers
         /// </summary>
         public static class Ids
         {
-            public const string Prefix = "DLLIMPORTGENANALYZER";
+            public const string Prefix = "SYSLIB";
 
             // Migration from DllImport to LibraryImport
-            public const string ConvertToLibraryImport = Prefix + "001";
+            public const string ConvertToLibraryImport = Prefix + "1054";
 
-            // ManualTypeMarshalling
-            public const string MarshallerTypeMustSpecifyManagedType = Prefix + "002";
-            public const string CustomTypeMarshallerAttributeMustBeValid = Prefix + "003";
-            public const string InvalidNativeType = Prefix + "004";
-            public const string GetPinnableReferenceReturnTypeBlittable = Prefix + "005";
-            public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "006";
-            public const string CustomMarshallerTypeMustSupportDirection = Prefix + "007";
-            public const string ProvidedMethodsNotSpecifiedInShape = Prefix + "008";
-            public const string MissingAllocatingMarshallingFallback = Prefix + "009";
-            public const string CallerAllocConstructorMustHaveBufferSize = Prefix + "010";
-            public const string InvalidSignaturesInMarshallerShape = Prefix + "011";
-            public const string MarshallerGetPinnableReferenceRequiresTwoStageMarshalling = Prefix + "012";
+            // CustomTypeMarshaller
+            public const string InvalidCustomTypeMarshallerAttributeUsage = Prefix + "1055";
+            public const string InvalidNativeType = Prefix + "1056";
+            public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "1057";
+            public const string ProvidedMethodsNotSpecifiedInFeatures = Prefix + "1058";
+            public const string MissingAllocatingMarshallingFallback = Prefix + "1059";
+            public const string CallerAllocConstructorMustHaveBufferSize = Prefix + "1060";
+            public const string InvalidSignaturesInMarshallerShape = Prefix + "1061";
         }
 
         internal static LocalizableResourceString GetResourceString(string resourceName)

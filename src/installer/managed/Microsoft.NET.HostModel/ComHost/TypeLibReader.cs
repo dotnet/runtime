@@ -12,7 +12,7 @@ namespace Microsoft.NET.HostModel.ComHost
     /// We do the reading ourselves instead of calling into the OS so we don't have to worry about the type library's
     /// dependencies being discoverable on disk.
     /// </summary>
-    internal class TypeLibReader
+    internal sealed class TypeLibReader
     {
         private byte[] tlbBytes;
 

@@ -510,38 +510,7 @@ typedef DECLSPEC_ALIGN(16) struct {
     //
     // Floating Point Registers
     //
-    DWORD64 F0;
-    DWORD64 F1;
-    DWORD64 F2;
-    DWORD64 F3;
-    DWORD64 F4;
-    DWORD64 F5;
-    DWORD64 F6;
-    DWORD64 F7;
-    DWORD64 F8;
-    DWORD64 F9;
-    DWORD64 F10;
-    DWORD64 F11;
-    DWORD64 F12;
-    DWORD64 F13;
-    DWORD64 F14;
-    DWORD64 F15;
-    DWORD64 F16;
-    DWORD64 F17;
-    DWORD64 F18;
-    DWORD64 F19;
-    DWORD64 F20;
-    DWORD64 F21;
-    DWORD64 F22;
-    DWORD64 F23;
-    DWORD64 F24;
-    DWORD64 F25;
-    DWORD64 F26;
-    DWORD64 F27;
-    DWORD64 F28;
-    DWORD64 F29;
-    DWORD64 F30;
-    DWORD64 F31;
+    ULONGLONG F[32];
 } DT_CONTEXT;
 
 #else

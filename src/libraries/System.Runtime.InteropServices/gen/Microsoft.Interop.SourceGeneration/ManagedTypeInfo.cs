@@ -45,7 +45,15 @@ namespace Microsoft.Interop
             {
                 return new DelegateTypeInfo(typeName, diagonsticFormattedName);
             }
-            return new SimpleManagedTypeInfo(typeName, diagonsticFormattedName);
+            if (type.TypeKind == TypeKind.TypeParameter)
+            {
+                return new TypeParameterTypeInfo(typeName, diagonsticFormattedName);
+            }
+            if (type.IsValueType)
+            {
+                return new ValueTypeInfo(typeName, diagonsticFormattedName, type.IsRefLikeType);
+            }
+            return new ReferenceTypeInfo(typeName, diagonsticFormattedName);
         }
     }
 
@@ -54,6 +62,8 @@ namespace Microsoft.Interop
         public static readonly SpecialTypeInfo Byte = new("byte", "byte", SpecialType.System_Byte);
         public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
+        public static readonly SpecialTypeInfo String = new("string", "string", SpecialType.System_String);
+        public static readonly SpecialTypeInfo Boolean = new("bool", "bool", SpecialType.System_Boolean);
 
         public bool Equals(SpecialTypeInfo? other)
         {
@@ -74,5 +84,9 @@ namespace Microsoft.Interop
 
     public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
-    public sealed record SimpleManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record TypeParameterTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+
+    public sealed record ValueTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsByRefLike) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+
+    public sealed record ReferenceTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 }

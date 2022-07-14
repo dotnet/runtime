@@ -91,7 +91,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     }
 #endif
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(HOST_LOONGARCH64)
     // ...or it fits into two registers.
     if (hasRetBuff && getClassSize(methInfo->args.retTypeClass) <= 2 * sizeof(void*))
     {
@@ -534,6 +534,9 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
         // On ARM, args are pushed in *reverse* order.  So we will create an offset relative to the address
         // of the first stack arg; later, we will add the size of the non-stack arguments.
         ClrSafeInt<short> offset(callerArgStackSlots);
+#elif defined(HOST_LOONGARCH64)
+        callerArgStackSlots += numSlots;
+        ClrSafeInt<short> offset(-callerArgStackSlots);
 #endif
         offset *= static_cast<short>(sizeof(void*));
         _ASSERTE(!offset.IsOverflow());
@@ -676,6 +679,19 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
 
     _ASSERTE(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
     _ASSERTE(!twoSlotAlign);
+    argIsReg[canonIndex] = ARS_FloatReg;
+
+    argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        fpArgsUsed |= (0x1 << (numFPRegArgSlots + i));
+    }
+    numFPRegArgSlots += numSlots;
+
+#elif defined(HOST_LOONGARCH64)
+
+    assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
+    assert(!twoSlotAlign);
     argIsReg[canonIndex] = ARS_FloatReg;
 
     argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
@@ -882,7 +898,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // x8 through x15 are scratch registers on ARM64.
         IntReg x8 = IntReg(8);
         IntReg x9 = IntReg(9);
-#else
 #error unsupported platform
 #endif
     }
@@ -1110,7 +1125,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_ARM)
                     // LONGS have 2-reg alignment; inc reg if necessary.
                     argState.AddArg(k, 2, /*noReg*/false, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
                     argState.AddArg(k);
 #else
 #error unknown platform
@@ -1123,7 +1138,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 1, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 1, /*twoSlotAlign*/false);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1136,7 +1151,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 2, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 2, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1177,6 +1192,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #endif
                                     );
                         }
+#elif defined(HOST_LOONGARCH64)
+                        argState.AddArg(k, static_cast<short>(szSlots));
 #else
 #error unknown platform
 #endif
@@ -1229,6 +1246,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             unsigned short stackArgBaseOffset = (2 + argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*);
 #elif defined(HOST_AMD64)
             unsigned short stackArgBaseOffset = (argState.numRegArgs) * sizeof(void*);
+#elif defined(HOST_LOONGARCH64)
+            // See StubLinkerCPU::EmitProlog for the layout of the stack
+            unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
+            unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
 #else
 #error unsupported platform
 #endif
@@ -1277,6 +1298,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     X86Reg argRegs[] = { kECX, kEDX, kR8, kR9 };
                     if (!jmpCall) { sl.X86EmitIndexRegStoreRSP(regArgsFound * sizeof(void*), argRegs[regArgsFound - 1]); }
                     argState.argOffsets[k] = (regArgsFound - 1) * sizeof(void*);
+#elif defined(HOST_LOONGARCH64)
+                    argState.argOffsets[k] += intRegArgBaseOffset;
 #else
 #error unsupported platform
 #endif
@@ -1589,6 +1612,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
         sl.EmitEpilog();
 
+#elif defined(HOST_LOONGARCH64)
+        assert(!"unimplemented on LOONGARCH yet");
 
 #else
 #error unsupported platform
@@ -6280,6 +6305,9 @@ void Interpreter::MkRefany()
 #elif defined(HOST_ARM64)
     tbr = NULL;
     NYI_INTERP("Unimplemented code: MkRefAny");
+#elif defined(HOST_LOONGARCH64)
+    tbr = NULL;
+    NYI_INTERP("Unimplemented code: MkRefAny on LOONGARCH");
 #else
 #error "unsupported platform"
 #endif
@@ -6893,7 +6921,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
     case CORINFO_TYPE_NATIVEINT:
@@ -6950,7 +6978,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
     case CORINFO_TYPE_LONG:
@@ -6987,7 +7015,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7009,12 +7037,12 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
 
@@ -7056,7 +7084,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7098,7 +7126,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7141,7 +7169,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
 
@@ -9149,14 +9177,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
-        case NI_System_ByReference_ctor:
-            DoByReferenceCtor();
-            didIntrinsic = true;
-            break;
-        case NI_System_ByReference_get_Value:
-            DoByReferenceValue();
-            didIntrinsic = true;
-            break;
 #if INTERP_ILSTUBS
         case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
@@ -9423,6 +9443,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // ARM64TODO: Verify that the following statement is correct for ARM64.
     unsigned totalArgSlots = nSlots + HFAReturnArgSlots;
 #elif defined(HOST_AMD64)
+    unsigned totalArgSlots = nSlots;
+#elif defined(HOST_LOONGARCH64)
     unsigned totalArgSlots = nSlots;
 #else
 #error "unsupported platform"
@@ -10720,74 +10742,6 @@ void Interpreter::DoGetTypeFromHandle()
 #endif // _DEBUG
 
     OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_CLASS));
-}
-
-void Interpreter::DoByReferenceCtor()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    // Note 'this' is not passed on the operand stack...
-    _ASSERTE(m_curStackHt > 0);
-    _ASSERTE(m_callThisArg != NULL);
-    unsigned valInd = m_curStackHt - 1;
-    CorInfoType valCit = OpStackTypeGet(valInd).ToCorInfoType();
-
-#ifdef _DEBUG
-    if (valCit != CORINFO_TYPE_BYREF)
-    {
-        VerificationError("ByReference<T>.ctor called with non-byref value.");
-    }
-#endif // _DEBUG
-
-#if INTERP_TRACING
-    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
-    {
-        fprintf(GetLogFile(), "    ByReference<T>.ctor -- intrinsic\n");
-    }
-#endif // INTERP_TRACING
-
-    GCX_FORBID();
-    void** thisPtr = reinterpret_cast<void**>(m_callThisArg);
-    void* val = OpStackGet<void*>(valInd);
-    *thisPtr = val;
-    m_curStackHt--;
-}
-
-void Interpreter::DoByReferenceValue()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    _ASSERTE(m_curStackHt > 0);
-    unsigned slot = m_curStackHt - 1;
-    CorInfoType thisCit = OpStackTypeGet(slot).ToCorInfoType();
-
-#ifdef _DEBUG
-    if (thisCit != CORINFO_TYPE_BYREF)
-    {
-        VerificationError("ByReference<T>.get_Value called with non-byref this");
-    }
-#endif // _DEBUG
-
-#if INTERP_TRACING
-    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
-    {
-        fprintf(GetLogFile(), "    ByReference<T>.getValue -- intrinsic\n");
-    }
-#endif // INTERP_TRACING
-
-    GCX_FORBID();
-    void** thisPtr = OpStackGet<void**>(slot);
-    void* value = *thisPtr;
-    OpStackSet<void*>(slot, value);
-    OpStackTypeSet(slot, InterpreterType(CORINFO_TYPE_BYREF));
 }
 
 void Interpreter::DoSIMDHwAccelerated()

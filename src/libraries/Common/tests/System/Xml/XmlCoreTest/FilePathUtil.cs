@@ -173,8 +173,10 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static void addStream(string filename, MemoryStream s!!)
+        public static void addStream(string filename, MemoryStream s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             if (null == filename)
                 return;
 

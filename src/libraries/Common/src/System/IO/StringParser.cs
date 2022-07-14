@@ -30,8 +30,10 @@ namespace System.IO
         /// <param name="buffer">The string to parse.</param>
         /// <param name="separator">The separator character used to separate subcomponents of <paramref name="buffer"/>.</param>
         /// <param name="skipEmpty">true if empty subcomponents should be skipped; false to treat them as valid entries.  Defaults to false.</param>
-        public StringParser(string buffer!!, char separator, bool skipEmpty = false)
+        public StringParser(string buffer, char separator, bool skipEmpty = false)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             _buffer = buffer;
             _separator = separator;
             _skipEmpty = skipEmpty;

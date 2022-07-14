@@ -97,9 +97,11 @@ namespace System
 
         // If the type provided is not a Nullable Type, return null.
         // Otherwise, returns the underlying type of the Nullable type
-        public static Type? GetUnderlyingType(Type nullableType!!)
+        public static Type? GetUnderlyingType(Type nullableType)
         {
-#if CORERT
+            ArgumentNullException.ThrowIfNull(nullableType);
+
+#if NATIVEAOT
             // This is necessary to handle types without reflection metadata
             if (nullableType.TryGetEEType(out EETypePtr nullableEEType))
             {

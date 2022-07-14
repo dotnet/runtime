@@ -157,8 +157,10 @@ namespace System
         public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetConstructor(bindingAttr, binder, CallingConventions.Any, types, modifiers);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types!!, ParameterModifier[]? modifiers)
+        public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
                 ArgumentNullException.ThrowIfNull(types[i], nameof(types));
@@ -236,8 +238,10 @@ namespace System
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "This is finding the MemberInfo with the same MetadataToken as specified MemberInfo. If the specified MemberInfo " +
                             "exists and wasn't trimmed, then the current Type's MemberInfo couldn't have been trimmed.")]
-        public virtual MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member!!)
+        public virtual MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
+            ArgumentNullException.ThrowIfNull(member);
+
             const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             foreach (MemberInfo myMemberInfo in GetMembers(all))
             {
@@ -260,8 +264,10 @@ namespace System
         public MethodInfo? GetMethod(string name) => GetMethod(name, Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public MethodInfo? GetMethod(string name!!, BindingFlags bindingAttr)
+        public MethodInfo? GetMethod(string name, BindingFlags bindingAttr)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetMethodImpl(name, bindingAttr, null, CallingConventions.Any, null, null);
         }
 
@@ -293,8 +299,11 @@ namespace System
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, bindingAttr, binder, CallingConventions.Any, types, modifiers);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public MethodInfo? GetMethod(string name!!, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types!!, ParameterModifier[]? modifiers)
+        public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
                 ArgumentNullException.ThrowIfNull(types[i], nameof(types));
@@ -315,8 +324,10 @@ namespace System
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, bindingAttr, binder, CallingConventions.Any, types, modifiers);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public MethodInfo? GetMethod(string name!!, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
+        public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (genericParameterCount < 0)
                 throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(genericParameterCount));
             ArgumentNullException.ThrowIfNull(types);
@@ -352,16 +363,20 @@ namespace System
         public PropertyInfo? GetProperty(string name) => GetProperty(name, Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        public PropertyInfo? GetProperty(string name!!, BindingFlags bindingAttr)
+        public PropertyInfo? GetProperty(string name, BindingFlags bindingAttr)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetPropertyImpl(name, bindingAttr, null, null, null, null);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't recognize GetPropertyImpl(BindingFlags.Public) but this is what the body is doing")]
-        public PropertyInfo? GetProperty(string name!!, Type? returnType)
+        public PropertyInfo? GetProperty(string name, Type? returnType)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetPropertyImpl(name, Type.DefaultLookup, null, returnType, null, null);
         }
 
@@ -375,8 +390,11 @@ namespace System
         public PropertyInfo? GetProperty(string name, Type? returnType, Type[] types, ParameterModifier[]? modifiers) => GetProperty(name, Type.DefaultLookup, null, returnType, types, modifiers);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        public PropertyInfo? GetProperty(string name!!, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[] types!!, ParameterModifier[]? modifiers)
+        public PropertyInfo? GetProperty(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[] types, ParameterModifier[]? modifiers)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             return GetPropertyImpl(name, bindingAttr, binder, returnType, types, modifiers);
         }
 
@@ -399,13 +417,17 @@ namespace System
         public virtual MemberInfo[] GetDefaultMembers() => throw NotImplemented.ByDesign;
 
         public virtual RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
-        public static RuntimeTypeHandle GetTypeHandle(object o!!)
+        public static RuntimeTypeHandle GetTypeHandle(object o)
         {
+            ArgumentNullException.ThrowIfNull(o);
+
             return o.GetType().TypeHandle;
         }
 
-        public static Type[] GetTypeArray(object[] args!!)
+        public static Type[] GetTypeArray(object[] args)
         {
+            ArgumentNullException.ThrowIfNull(args);
+
             Type[] cls = new Type[args.Length];
             for (int i = 0; i < cls.Length; i++)
             {

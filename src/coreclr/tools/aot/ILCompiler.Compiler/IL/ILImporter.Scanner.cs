@@ -31,7 +31,7 @@ namespace Internal.IL
         private DependencyList _dependencies = new DependencyList();
 
         private readonly byte[] _ilBytes;
-        
+
         private class BasicBlock
         {
             // Common fields
@@ -82,7 +82,7 @@ namespace Internal.IL
 
             _compilation = compilation;
             _factory = (ILScanNodeFactory)compilation.NodeFactory;
-            
+
             _ilBytes = methodIL.GetILBytes();
 
             _canonMethodIL = methodIL;
@@ -149,7 +149,7 @@ namespace Internal.IL
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnter), reason);
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExit), reason);
                 }
-                
+
             }
 
             FindBasicBlocks();
@@ -264,6 +264,8 @@ namespace Internal.IL
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
             _compilation.TypeSystemContext.EnsureLoadableMethod(method);
+            if ((method.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
+                ThrowHelper.ThrowBadImageFormatException();
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, method);
 
@@ -370,11 +372,6 @@ namespace Internal.IL
                     return;
                 }
 
-                if (method.OwningType.IsByReferenceOfT && (method.IsConstructor || method.Name == "get_Value"))
-                {
-                    return;
-                }
-
                 if (IsEETypePtrOf(method))
                 {
                     if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
@@ -414,17 +411,18 @@ namespace Internal.IL
                     // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
                     directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrained, method);
                 }
-                
+
                 if (directMethod != null)
                 {
                     // Either
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
-                    // OR 3. we have have resolved to an instantiating stub
+                    // OR 3. we have resolved to an instantiating stub
 
                     methodAfterConstraintResolution = directMethod;
 
-                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface
+                        || methodAfterConstraintResolution.Signature.IsStatic);
                     resolvedConstraint = true;
 
                     exactType = constrained;
@@ -628,7 +626,7 @@ namespace Internal.IL
                             else
                                 _dependencies.Add(_factory.ConstructedTypeSymbol(_constrained), reason);
                         }
-                        
+
                         if (referencingArrayAddressMethod && !_isReadOnly)
                         {
                             // Address method is special - it expects an instantiation argument, unless a readonly prefix was applied.
@@ -768,7 +766,7 @@ namespace Internal.IL
         {
             ImportCall(opCode, token);
         }
-        
+
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
             ImportFallthrough(target);
@@ -848,7 +846,7 @@ namespace Internal.IL
             }
             else
             {
-                _dependencies.Add(_factory.ConstructedTypeSymbol(type), reason);
+                _dependencies.Add(_factory.MaximallyConstructableType(type), reason);
             }
         }
 
@@ -974,8 +972,9 @@ namespace Internal.IL
         private void ImportFieldAccess(int token, bool isStatic, string reason)
         {
             var field = (FieldDesc)_methodIL.GetObject(token);
+            var canonField = (FieldDesc)_canonMethodIL.GetObject(token);
 
-            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, field);
+            _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
             // Covers both ldsfld/ldsflda and ldfld/ldflda with a static field
             if (isStatic || field.IsStatic)
@@ -1071,11 +1070,11 @@ namespace Internal.IL
 
             if (type.IsNullable)
             {
-                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box), reason);
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box_Nullable), reason);
             }
             else
             {
-                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box_Nullable), reason);
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box), reason);
             }
         }
 
@@ -1165,7 +1164,7 @@ namespace Internal.IL
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
                     }
-                    break;                    
+                    break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
                     if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
@@ -1190,7 +1189,7 @@ namespace Internal.IL
 
         private int ReadILTokenAt(int ilOffset)
         {
-            return (int)(_ilBytes[ilOffset] 
+            return (int)(_ilBytes[ilOffset]
                 + (_ilBytes[ilOffset + 1] << 8)
                 + (_ilBytes[ilOffset + 2] << 16)
                 + (_ilBytes[ilOffset + 3] << 24));

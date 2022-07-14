@@ -130,8 +130,10 @@ namespace System.Reflection.Emit
 
         #region Internal Members
 
-        internal void CreateMethodBodyHelper(ILGenerator il!!)
+        internal void CreateMethodBodyHelper(ILGenerator il)
         {
+            ArgumentNullException.ThrowIfNull(il);
+
             // Sets the IL of the method.  An ILGenerator is passed as an argument and the method
             // queries this instance to get all of the information which it needs.
 
@@ -307,7 +309,7 @@ namespace System.Reflection.Emit
         {
             if (m_ilGenerator != null)
             {
-                return m_ilGenerator.GetMaxStackSize() + ExceptionHandlerCount;
+                return m_ilGenerator.GetMaxStackSize();
             }
             else
             {
@@ -320,8 +322,6 @@ namespace System.Reflection.Emit
         {
             return m_exceptions;
         }
-
-        internal int ExceptionHandlerCount => m_exceptions != null ? m_exceptions.Length : 0;
 
         internal static int CalculateNumberOfExceptions(__ExceptionInfo[]? excp)
         {
@@ -514,8 +514,10 @@ namespace System.Reflection.Emit
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArguments);
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names!!)
+        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
+            ArgumentNullException.ThrowIfNull(names);
+
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
@@ -548,7 +550,7 @@ namespace System.Reflection.Emit
             // will overflow the stack when there are many methods on the same type (10000 in my experiment).
             // The change also introduced race conditions. Before the code change GetToken is called from
             // the MethodBuilder .ctor which is protected by lock(ModuleBuilder.SyncRoot). Now it
-            // could be called more than once on the the same method introducing duplicate (invalid) tokens.
+            // could be called more than once on the same method introducing duplicate (invalid) tokens.
             // I don't fully understand this change. So I will keep the logic and only fix the recursion and
             // the race condition.
 
@@ -612,15 +614,11 @@ namespace System.Reflection.Emit
 
         public void SetParameters(params Type[] parameterTypes)
         {
-            AssemblyBuilder.CheckContext(parameterTypes);
-
             SetSignature(null, null, null, parameterTypes, null, null);
         }
 
         public void SetReturnType(Type? returnType)
         {
-            AssemblyBuilder.CheckContext(returnType);
-
             SetSignature(returnType, null, null, null, null, null);
         }
 
@@ -632,11 +630,6 @@ namespace System.Reflection.Emit
             // But we cannot because that would be a breaking change from V2.
             if (m_token != 0)
                 return;
-
-            AssemblyBuilder.CheckContext(returnType);
-            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
-            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
 
             ThrowIfGeneric();
 
@@ -727,8 +720,11 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
             ThrowIfGeneric();
 
             TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
@@ -739,8 +735,10 @@ namespace System.Reflection.Emit
                 ParseCA(con);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
             ThrowIfGeneric();
 
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataToken);

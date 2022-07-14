@@ -115,7 +115,7 @@ namespace System.Net
 
         public CookieCollection Cookies
         {
-            get => _cookies ?? (_cookies = new CookieCollection());
+            get => _cookies ??= new CookieCollection();
             set => _cookies = value;
         }
 
@@ -161,17 +161,9 @@ namespace System.Net
         {
             get
             {
-                if (_statusDescription == null)
-                {
-                    // if the user hasn't set this, generated on the fly, if possible.
-                    // We know this one is safe, no need to verify it as in the setter.
-                    _statusDescription = HttpStatusDescription.Get(StatusCode);
-                }
-                if (_statusDescription == null)
-                {
-                    _statusDescription = string.Empty;
-                }
-                return _statusDescription;
+                // if the user hasn't set this, generate on the fly, if possible.
+                // We know this one is safe, no need to verify it as in the setter.
+                return _statusDescription ??= HttpStatusDescription.Get(StatusCode) ?? string.Empty;
             }
             set
             {
@@ -205,8 +197,10 @@ namespace System.Net
             Headers.Add(name, value);
         }
 
-        public void AppendCookie(Cookie cookie!!)
+        public void AppendCookie(Cookie cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
         }
@@ -268,8 +262,10 @@ namespace System.Net
             StatusDescription = HttpStatusDescription.Get(StatusCode)!;
         }
 
-        public void SetCookie(Cookie cookie!!)
+        public void SetCookie(Cookie cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             Cookie newCookie = cookie.Clone();
             int added = Cookies.InternalAdd(newCookie, true);
 

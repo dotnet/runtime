@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
 
-        internal override JsonPropertyInfo CreateJsonPropertyInfo()
+        internal override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
         {
             Debug.Fail("We should never get here.");
 
@@ -65,13 +65,24 @@ namespace System.Text.Json.Serialization
                     break;
             }
 
-            return converter!;
+            return converter;
         }
 
         internal sealed override object ReadCoreAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
             ref ReadStack state)
+        {
+            Debug.Fail("We should never get here.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override bool OnTryReadAsObject(
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            ref ReadStack state,
+            out object? value)
         {
             Debug.Fail("We should never get here.");
 
@@ -121,6 +132,12 @@ namespace System.Text.Json.Serialization
             Debug.Fail("We should never get here.");
 
             throw new InvalidOperationException();
+        }
+
+        internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
+        {
+            ThrowHelper.ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(typeof(TTarget), this);
+            return null!;
         }
     }
 }

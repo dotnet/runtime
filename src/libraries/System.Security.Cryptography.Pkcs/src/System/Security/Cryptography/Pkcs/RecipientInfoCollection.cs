@@ -54,8 +54,13 @@ namespace System.Security.Cryptography.Pkcs
             return ((RecipientInfoCollection)this).GetEnumerator();
         }
 
-        public void CopyTo(Array array!!, int index)
+        public void CopyTo(Array array, int index)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
@@ -69,8 +74,13 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void CopyTo(RecipientInfo[] array!!, int index)
+        public void CopyTo(RecipientInfo[] array, int index)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             _recipientInfos.CopyTo(array, index);

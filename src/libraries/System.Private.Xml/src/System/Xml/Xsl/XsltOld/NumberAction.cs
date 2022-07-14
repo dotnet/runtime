@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.XsltOld
 {
-    internal class NumberAction : ContainerAction
+    internal sealed class NumberAction : ContainerAction
     {
         internal sealed class FormatInfo
         {
@@ -509,11 +509,6 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (groupingSep != null)
             {
-                if (groupingSep.Length > 1)
-                {
-                    // It is a breaking change to throw an exception, SQLBUDT 324367
-                    //throw XsltException.Create(SR.Xslt_CharAttribute, "grouping-separator");
-                }
                 numberingFormat.setGroupingSeparator(groupingSep);
             }
             if (0 < cFormats)

@@ -77,8 +77,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public int Add(ActiveDirectorySchemaClass schemaClass!!)
+        public int Add(ActiveDirectorySchemaClass schemaClass)
         {
+            ArgumentNullException.ThrowIfNull(schemaClass);
+
             if (!schemaClass.isBound)
             {
                 throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, schemaClass.Name));
@@ -94,8 +96,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public void AddRange(ActiveDirectorySchemaClass[] schemaClasses!!)
+        public void AddRange(ActiveDirectorySchemaClass[] schemaClasses)
         {
+            ArgumentNullException.ThrowIfNull(schemaClasses);
+
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
                 if (schemaClass == null)
@@ -110,8 +114,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public void AddRange(ActiveDirectorySchemaClassCollection schemaClasses!!)
+        public void AddRange(ActiveDirectorySchemaClassCollection schemaClasses)
         {
+            ArgumentNullException.ThrowIfNull(schemaClasses);
+
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
                 if (schemaClass == null)
@@ -127,8 +133,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public void AddRange(ReadOnlyActiveDirectorySchemaClassCollection schemaClasses!!)
+        public void AddRange(ReadOnlyActiveDirectorySchemaClassCollection schemaClasses)
         {
+            ArgumentNullException.ThrowIfNull(schemaClasses);
+
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
                 if (schemaClass == null)
@@ -144,8 +152,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public void Remove(ActiveDirectorySchemaClass schemaClass!!)
+        public void Remove(ActiveDirectorySchemaClass schemaClass)
         {
+            ArgumentNullException.ThrowIfNull(schemaClass);
+
             if (!schemaClass.isBound)
             {
                 throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, schemaClass.Name));
@@ -163,8 +173,10 @@ namespace System.DirectoryServices.ActiveDirectory
             throw new ArgumentException(SR.Format(SR.NotFoundInCollection, schemaClass), nameof(schemaClass));
         }
 
-        public void Insert(int index, ActiveDirectorySchemaClass schemaClass!!)
+        public void Insert(int index, ActiveDirectorySchemaClass schemaClass)
         {
+            ArgumentNullException.ThrowIfNull(schemaClass);
+
             if (!schemaClass.isBound)
             {
                 throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, schemaClass.Name));
@@ -180,8 +192,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public bool Contains(ActiveDirectorySchemaClass schemaClass!!)
+        public bool Contains(ActiveDirectorySchemaClass schemaClass)
         {
+            ArgumentNullException.ThrowIfNull(schemaClass);
+
             if (!schemaClass.isBound)
             {
                 throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, schemaClass.Name));
@@ -204,8 +218,10 @@ namespace System.DirectoryServices.ActiveDirectory
             List.CopyTo(schemaClasses, index);
         }
 
-        public int IndexOf(ActiveDirectorySchemaClass schemaClass!!)
+        public int IndexOf(ActiveDirectorySchemaClass schemaClass)
         {
+            ArgumentNullException.ThrowIfNull(schemaClass);
+
             if (!schemaClass.isBound)
             {
                 throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, schemaClass.Name));
@@ -227,10 +243,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 try
                 {
@@ -252,10 +265,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 try
                 {
@@ -274,10 +284,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 // because this collection can contain values from the superior classes,
                 // these values would not exist in the classEntry
@@ -316,8 +323,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnValidate(object value!!)
+        protected override void OnValidate(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!(value is ActiveDirectorySchemaClass))
             {
                 throw new ArgumentException(null, nameof(value));

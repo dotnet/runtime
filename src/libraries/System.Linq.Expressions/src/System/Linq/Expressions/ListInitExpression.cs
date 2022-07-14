@@ -119,8 +119,8 @@ namespace System.Linq.Expressions
         [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, IEnumerable<Expression> initializers)
         {
-            ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
-            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
+            ArgumentNullException.ThrowIfNull(newExpression);
+            ArgumentNullException.ThrowIfNull(initializers);
 
             ReadOnlyCollection<Expression> initializerlist = initializers.ToReadOnly();
             if (initializerlist.Count == 0)
@@ -159,8 +159,8 @@ namespace System.Linq.Expressions
             {
                 return ListInit(newExpression, initializers);
             }
-            ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
-            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
+            ArgumentNullException.ThrowIfNull(newExpression);
+            ArgumentNullException.ThrowIfNull(initializers);
 
             ReadOnlyCollection<Expression> initializerlist = initializers.ToReadOnly();
             ElementInit[] initList = new ElementInit[initializerlist.Count];
@@ -201,8 +201,8 @@ namespace System.Linq.Expressions
         /// </remarks>
         public static ListInitExpression ListInit(NewExpression newExpression, IEnumerable<ElementInit> initializers)
         {
-            ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
-            ContractUtils.RequiresNotNull(initializers, nameof(initializers));
+            ArgumentNullException.ThrowIfNull(newExpression);
+            ArgumentNullException.ThrowIfNull(initializers);
             ReadOnlyCollection<ElementInit> initializerlist = initializers.ToReadOnly();
             ValidateListInitArgs(newExpression.Type, initializerlist, nameof(newExpression));
             return new ListInitExpression(newExpression, initializerlist);

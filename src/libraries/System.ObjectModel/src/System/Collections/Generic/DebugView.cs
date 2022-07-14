@@ -9,8 +9,10 @@ namespace System.Collections.Generic
     {
         private readonly ICollection<T> _collection;
 
-        public CollectionDebugView(ICollection<T> collection!!)
+        public CollectionDebugView(ICollection<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _collection = collection;
         }
 

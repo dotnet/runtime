@@ -53,7 +53,7 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 //                                      SSA
 // =================================================================================
 
-void Compiler::fgSsaBuild()
+PhaseStatus Compiler::fgSsaBuild()
 {
     // If this is not the first invocation, reset data structures for SSA.
     if (fgSsaPassesCompleted > 0)
@@ -68,13 +68,7 @@ void Compiler::fgSsaBuild()
     JitTestCheckSSA();
 #endif // DEBUG
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        JITDUMP("\nAfter fgSsaBuild:\n");
-        fgDispBasicBlocks(/*dumpTrees*/ true);
-    }
-#endif // DEBUG
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 void Compiler::fgResetForSsa()
@@ -739,10 +733,6 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
         if (lhs->OperIs(GT_IND, GT_OBJ, GT_BLK))
         {
             lhs->gtFlags |= GTF_IND_ASG_LHS;
-        }
-        else if (lhs->OperIs(GT_CLS_VAR))
-        {
-            lhs->gtFlags |= GTF_CLS_VAR_ASG_LHS;
         }
     }
 

@@ -243,8 +243,10 @@ namespace System.Xml
         }
 
         // Writes out the specified value.
-        public virtual void WriteValue(object value!!)
+        public virtual void WriteValue(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             WriteString(XmlUntypedConverter.Untyped.ToString(value, null));
         }
 
@@ -311,8 +313,10 @@ namespace System.Xml
         // XmlReader Helper Methods
 
         // Writes out all the attributes found at the current position in the specified XmlReader.
-        public virtual void WriteAttributes(XmlReader reader!!, bool defattr)
+        public virtual void WriteAttributes(XmlReader reader, bool defattr)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (reader.NodeType is XmlNodeType.Element or XmlNodeType.XmlDeclaration)
             {
                 if (reader.MoveToFirstAttribute())
@@ -354,8 +358,10 @@ namespace System.Xml
 
         // Copies the current node from the given reader to the writer (including child nodes), and if called on an element moves the XmlReader
         // to the corresponding end element.
-        public virtual void WriteNode(XmlReader reader!!, bool defattr)
+        public virtual void WriteNode(XmlReader reader, bool defattr)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             bool canReadChunk = reader.CanReadValueChunk;
             int d = reader.NodeType == XmlNodeType.None ? -1 : reader.Depth;
             do
@@ -416,8 +422,10 @@ namespace System.Xml
         }
 
         // Copies the current node from the given XPathNavigator to the writer (including child nodes).
-        public virtual void WriteNode(XPathNavigator navigator!!, bool defattr)
+        public virtual void WriteNode(XPathNavigator navigator, bool defattr)
         {
+            ArgumentNullException.ThrowIfNull(navigator);
+
             int iLevel = 0;
 
             navigator = navigator.Clone();
@@ -605,8 +613,10 @@ namespace System.Xml
         // Static methods for creating writers
         //
         // Creates an XmlWriter for writing into the provided file.
-        public static XmlWriter Create(string outputFileName!!)
+        public static XmlWriter Create(string outputFileName)
         {
+            ArgumentNullException.ThrowIfNull(outputFileName);
+
             // Avoid using XmlWriter.Create(string, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
             var fs = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.Read);
@@ -631,8 +641,10 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided stream.
-        public static XmlWriter Create(Stream output!!)
+        public static XmlWriter Create(Stream output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             // Avoid using XmlWriter.Create(Stream, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
             XmlWriterSettings settings = XmlWriterSettings.s_defaultWriterSettings;
@@ -648,8 +660,10 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided TextWriter.
-        public static XmlWriter Create(TextWriter output!!)
+        public static XmlWriter Create(TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             // Avoid using XmlWriter.Create(TextWriter, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
             XmlWriterSettings settings = XmlWriterSettings.s_defaultWriterSettings;
@@ -665,16 +679,20 @@ namespace System.Xml
         }
 
         // Creates an XmlWriter for writing into the provided StringBuilder.
-        public static XmlWriter Create(StringBuilder output!!)
+        public static XmlWriter Create(StringBuilder output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             // Avoid using XmlWriter.Create(StringBuilder, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.
             return Create(new StringWriter(output, CultureInfo.InvariantCulture));
         }
 
         // Creates an XmlWriter for writing into the provided StringBuilder with the specified settings.
-        public static XmlWriter Create(StringBuilder output!!, XmlWriterSettings? settings)
+        public static XmlWriter Create(StringBuilder output, XmlWriterSettings? settings)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             settings ??= XmlWriterSettings.s_defaultWriterSettings;
             return settings.CreateWriter(new StringWriter(output, CultureInfo.InvariantCulture));
         }

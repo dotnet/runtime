@@ -18,10 +18,15 @@ namespace System.Text.Json
         {
             using JsonDocument expectedDom = JsonDocument.Parse(expected);
             using JsonDocument actualDom = JsonDocument.Parse(actual);
-            AssertJsonEqual(expectedDom.RootElement, actualDom.RootElement, new());
+            AssertJsonEqual(expectedDom.RootElement, actualDom.RootElement);
         }
 
-        private static void AssertJsonEqual(JsonElement expected, JsonElement actual, Stack<object> path)
+        public static void AssertJsonEqual(JsonElement expected, JsonElement actual)
+        {
+            AssertJsonEqualCore(expected, actual, new());
+        }
+
+        private static void AssertJsonEqualCore(JsonElement expected, JsonElement actual, Stack<object> path)
         {
             JsonValueKind valueKind = expected.ValueKind;
             AssertTrue(passCondition: valueKind == actual.ValueKind);
@@ -54,7 +59,7 @@ namespace System.Text.Json
                     foreach (string name in expectedProperties)
                     {
                         path.Push(name);
-                        AssertJsonEqual(expected.GetProperty(name), actual.GetProperty(name), path);
+                        AssertJsonEqualCore(expected.GetProperty(name), actual.GetProperty(name), path);
                         path.Pop();
                     }
                     break;
@@ -67,7 +72,7 @@ namespace System.Text.Json
                     {
                         AssertTrue(passCondition: actualEnumerator.MoveNext(), "Actual array contains fewer elements.");
                         path.Push(i++);
-                        AssertJsonEqual(expectedEnumerator.Current, actualEnumerator.Current, path);
+                        AssertJsonEqualCore(expectedEnumerator.Current, actualEnumerator.Current, path);
                         path.Pop();
                     }
 

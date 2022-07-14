@@ -384,49 +384,6 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* byrefParameters, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            Exception? exc;
-            object? o;
-
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
-                catch (OverflowException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                try
-                {
-                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
-            }
-
-            if (exc != null)
-                throw exc;
-
-            return o;
-        }
-
         public override RuntimeMethodHandle MethodHandle
         {
             get
@@ -662,8 +619,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(Type[] methodInstantiation)
         {
-            if (methodInstantiation == null)
-                throw new ArgumentNullException(nameof(methodInstantiation));
+            ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException("not a generic method definition");
@@ -858,43 +814,6 @@ namespace System.Reflection
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* byrefParameters, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            Exception exc;
-            object? o;
-
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
-                }
-                catch (MethodAccessException)
-                {
-                    throw;
-                }
-                catch (OverflowException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
-            }
-
-            if (exc != null)
-                throw exc;
-
-            return obj == null ? o : null;
-        }
 
         public override RuntimeMethodHandle MethodHandle
         {

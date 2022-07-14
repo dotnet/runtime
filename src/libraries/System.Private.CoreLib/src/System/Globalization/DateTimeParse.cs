@@ -454,8 +454,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        internal static bool IsDigit(char ch) => (uint)(ch - '0') <= 9;
-
         /*=================================ParseFraction==========================
         **Action: Starting at the str.Index, which should be a decimal symbol.
         ** if the current character is a digit, parse the remaining
@@ -473,8 +471,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             double decimalBase = 0.1;
             int digits = 0;
             char ch;
-            while (str.GetNext()
-                   && IsDigit(ch = str.m_current))
+            while (str.GetNext() && char.IsAsciiDigit(ch = str.m_current))
             {
                 result += (ch - '0') * decimalBase;
                 decimalBase *= 0.1;
@@ -1230,14 +1227,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
             else if (ch == '\0')
             {
-                for (int i = str.Index; i < str.Length; i++)
+                // Nulls are only valid if they are the only trailing character
+                if (str.Value.Slice(str.Index + 1).IndexOfAnyExcept('\0') >= 0)
                 {
-                    if (str.Value[i] != '\0')
-                    {
-                        // Nulls are only valid if they are the only trailing character
-                        return false;
-                    }
+                    return false;
                 }
+
                 // Move to the end of the string
                 str.Index = str.Length;
                 return true;
@@ -2958,9 +2953,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         private static bool ParseISO8601(ref DateTimeRawInfo raw, ref __DTString str, DateTimeStyles styles, ref DateTimeResult result)
         {
-            if (raw.year < 0 || raw.GetNumber(0) < 0 || raw.GetNumber(1) < 0)
-            {
-            }
             str.Index--;
             int second = 0;
             double partSecond = 0;
@@ -4671,7 +4663,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             // Tue, 03 Jan 2017 08:08:05 GMT
 
             // The format is exactly 29 characters.
-            if ((uint)source.Length != 29)
+            if (source.Length != 29)
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -4868,7 +4860,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             // 2017-06-12T05:30:45.7680000-7:00   (special-case of one-digit offset hour)
             // 2017-06-12T05:30:45.7680000-07:00
 
-            if ((uint)source.Length < 27 ||
+            if (source.Length < 27 ||
                 source[4] != '-' ||
                 source[7] != '-' ||
                 source[10] != 'T' ||
@@ -4989,7 +4981,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
-            if ((uint)source.Length > 27)
+            if (source.Length > 27)
             {
                 char offsetChar = source[27];
                 switch (offsetChar)
@@ -5007,7 +4999,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     case '-':
                         int offsetHours, colonIndex;
 
-                        if ((uint)source.Length == 33)
+                        if (source.Length == 33)
                         {
                             uint oh1 = (uint)(source[28] - '0'), oh2 = (uint)(source[29] - '0');
 
@@ -5020,7 +5012,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                             offsetHours = (int)(oh1 * 10 + oh2);
                             colonIndex = 30;
                         }
-                        else if ((uint)source.Length == 32) // special-case allowed for compat: only one offset hour digit
+                        else if (source.Length == 32) // special-case allowed for compat: only one offset hour digit
                         {
                             offsetHours = source[28] - '0';
 
@@ -5332,7 +5324,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
 
         Start:
-            if (DateTimeParse.IsDigit(m_current))
+            if (char.IsAsciiDigit(m_current))
             {
                 // This is a digit.
                 tokenValue = m_current - '0';
@@ -5382,7 +5374,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     {
                         tokenType = tempType;
                         tokenValue = tempValue;
-                        // This is a token, so the Index has been advanced propertly in DTFI.Tokenizer().
+                        // This is a token, so the Index has been advanced properly in DTFI.Tokenizer().
                     }
                     else
                     {
@@ -5423,7 +5415,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Reach the end of the string.
                 return TokenType.SEP_End;
             }
-            if (!DateTimeParse.IsDigit(m_current))
+            if (!char.IsAsciiDigit(m_current))
             {
                 // Not a digit.  Tokenize it.
                 bool found = dtfi.Tokenize(TokenType.SeparatorTokenMask, out tokenType, out _, ref this);
@@ -5629,7 +5621,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool GetNextDigit() =>
             ++Index < Length &&
-            DateTimeParse.IsDigit(Value[Index]);
+            char.IsAsciiDigit(Value[Index]);
 
         //
         // Get the current character.
@@ -5646,7 +5638,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal int GetDigit()
         {
             Debug.Assert(Index >= 0 && Index < Length, "Index >= 0 && Index < len");
-            Debug.Assert(DateTimeParse.IsDigit(Value[Index]), "IsDigit(Value[Index])");
+            Debug.Assert(char.IsAsciiDigit(Value[Index]), "IsDigit(Value[Index])");
             return Value[Index] - '0';
         }
 
@@ -5776,26 +5768,17 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 DTSubStringType currentType;
                 char ch = Value[Index + sub.length];
-                if (ch >= '0' && ch <= '9')
-                {
-                    currentType = DTSubStringType.Number;
-                }
-                else
-                {
-                    currentType = DTSubStringType.Other;
-                }
+                currentType = char.IsAsciiDigit(ch) ? DTSubStringType.Number : DTSubStringType.Other;
 
                 if (sub.length == 0)
                 {
                     sub.type = currentType;
                 }
-                else
+                else if (sub.type != currentType)
                 {
-                    if (sub.type != currentType)
-                    {
-                        break;
-                    }
+                    break;
                 }
+
                 sub.length++;
                 if (currentType == DTSubStringType.Number)
                 {

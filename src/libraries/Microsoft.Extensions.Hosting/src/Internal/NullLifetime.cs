@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     /// <summary>
     /// Minimalistic lifetime that does nothing.
     /// </summary>
-    internal class NullLifetime : IHostLifetime
+    internal sealed class NullLifetime : IHostLifetime
     {
         public Task WaitForStartAsync(CancellationToken cancellationToken)
         {

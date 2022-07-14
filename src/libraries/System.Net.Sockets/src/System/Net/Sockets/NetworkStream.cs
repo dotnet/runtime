@@ -41,8 +41,10 @@ namespace System.Net.Sockets
         {
         }
 
-        public NetworkStream(Socket socket!!, FileAccess access, bool ownsSocket)
+        public NetworkStream(Socket socket, FileAccess access, bool ownsSocket)
         {
+            ArgumentNullException.ThrowIfNull(socket);
+
             if (!socket.Blocking)
             {
                 // Stream.Read*/Write* are incompatible with the semantics of non-blocking sockets, and
@@ -539,7 +541,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             bool canRead = CanRead; // Prevent race with Dispose.
             ThrowIfDisposed();
@@ -599,7 +601,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             bool canWrite = CanWrite; // Prevent race with Dispose.
             ThrowIfDisposed();

@@ -23,6 +23,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+
         private class FinalizingProcess : Process
         {
             public static volatile bool WasFinalized;
@@ -1205,6 +1209,21 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
+        public void GetProcessesByName_NullEmpty_ReturnsAllProcesses(string name)
+        {
+            Process currentProcess = Process.GetCurrentProcess();
+            Process[] processes = Process.GetProcessesByName(name);
+
+            int expectedCount = (PlatformDetection.IsMobile) ? 1 : 2;
+
+            Assert.Contains(processes, process => process.ProcessName == currentProcess.ProcessName);
+            Assert.InRange(processes.Length, expectedCount, int.MaxValue); // should contain current process and some number of additional processes
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void GetProcessesByName_ProcessName_ReturnsExpected()
@@ -1214,18 +1233,21 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(currentProcess.ProcessName);
             Assert.NotEmpty(currentProcess.ProcessName);
 
-            Process[] processes = Process.GetProcessesByName(currentProcess.ProcessName);
-            try
+            foreach (string processName in new[] { currentProcess.ProcessName, currentProcess.ProcessName.ToLowerInvariant(), currentProcess.ProcessName.ToUpperInvariant() })
             {
-                Assert.NotEmpty(processes);
-            }
-            catch (NotEmptyException)
-            {
-                throw new TrueException(PrintProcesses(currentProcess), false);
-            }
+                Process[] processes = Process.GetProcessesByName(processName);
+                try
+                {
+                    Assert.NotEmpty(processes);
+                }
+                catch (NotEmptyException)
+                {
+                    throw new TrueException(PrintProcesses(currentProcess), false);
+                }
 
-            Assert.All(processes, process => Assert.Equal(".", process.MachineName));
-            return;
+                Assert.All(processes, process => Assert.Equal(currentProcess.ProcessName, process.ProcessName));
+                Assert.All(processes, process => Assert.Equal(".", process.MachineName));
+            }
 
             // Outputs a list of active processes in case of failure: https://github.com/dotnet/runtime/issues/28874
             string PrintProcesses(Process currentProcess)
@@ -2175,7 +2197,7 @@ namespace System.Diagnostics.Tests
                 // Instead of using sleep directly, we wrap it with a script.
                 sleepPath = GetTestFilePath();
                 File.WriteAllText(sleepPath, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
-                ChMod(sleepPath, "744");
+                File.SetUnixFileMode(sleepPath, ExecutablePermissions);
             }
             else
             {

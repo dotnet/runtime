@@ -67,13 +67,8 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfo KeyInfo
         {
-            get
-            {
-                if (_keyInfo == null)
-                    _keyInfo = new KeyInfo();
-                return _keyInfo;
-            }
-            set { _keyInfo = value; }
+            get => _keyInfo ??= new KeyInfo();
+            set => _keyInfo = value;
         }
 
         public virtual EncryptionMethod EncryptionMethod
@@ -86,15 +81,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public virtual EncryptionPropertyCollection EncryptionProperties
-        {
-            get
-            {
-                if (_props == null)
-                    _props = new EncryptionPropertyCollection();
-                return _props;
-            }
-        }
+        public virtual EncryptionPropertyCollection EncryptionProperties => _props ??= new EncryptionPropertyCollection();
 
         public void AddProperty(EncryptionProperty ep)
         {
@@ -103,13 +90,7 @@ namespace System.Security.Cryptography.Xml
 
         public virtual CipherData CipherData
         {
-            get
-            {
-                if (_cipherData == null)
-                    _cipherData = new CipherData();
-
-                return _cipherData;
-            }
+            get => _cipherData ??= new CipherData();
             set
             {
                 if (value == null)

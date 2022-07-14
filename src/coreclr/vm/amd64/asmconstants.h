@@ -163,10 +163,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_wNumInterfaces
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pParentMethodTable
                     == offsetof(MethodTable, m_pParentMethodTable));
 
-#define               OFFSETOF__MethodTable__m_pWriteableData       DBG_FRE(0x28, 0x20)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pWriteableData
-                    == offsetof(MethodTable, m_pWriteableData));
-
 #define               OFFSETOF__MethodTable__m_pEEClass             DBG_FRE(0x30, 0x28)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pEEClass
                     == offsetof(MethodTable, m_pEEClass));
@@ -200,14 +196,6 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               MethodTable__enum_flag_ContainsPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
                     == MethodTable::enum_flag_ContainsPointers);
-
-#define               OFFSETOF__MethodTableWriteableData__m_dwFlags 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTableWriteableData__m_dwFlags
-                    == offsetof(MethodTableWriteableData, m_dwFlags));
-
-#define               MethodTableWriteableData__enum_flag_Unrestored 0x04
-ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__enum_flag_Unrestored
-                    == MethodTableWriteableData::enum_flag_Unrestored);
 
 #define               OFFSETOF__InterfaceInfo_t__m_pMethodTable  0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable

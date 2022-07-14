@@ -90,6 +90,14 @@ internal static partial class Interop
             return Interop.Crypt32.CryptDecodeObjectPointer(dwCertEncodingType, (IntPtr)lpszStructType, pbEncoded, cbEncoded, dwFlags, pvStructInfo, ref pcbStructInfo);
         }
 
+        public static unsafe bool CryptDecodeObjectPointer(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, ReadOnlySpan<byte> encoded, Interop.Crypt32.CryptDecodeObjectFlags dwFlags, void* pvStructInfo, ref int pcbStructInfo)
+        {
+            fixed (byte* pEncoded = encoded)
+            {
+                return Interop.Crypt32.CryptDecodeObjectPointer(dwCertEncodingType, (IntPtr)lpszStructType, pEncoded, encoded.Length, dwFlags, pvStructInfo, ref pcbStructInfo);
+            }
+        }
+
         public static unsafe bool CryptEncodeObject(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, void* pvStructInfo, byte[]? pbEncoded, ref int pcbEncoded)
         {
             return Interop.Crypt32.CryptEncodeObject(dwCertEncodingType, (IntPtr)lpszStructType, pvStructInfo, pbEncoded, ref pcbEncoded);
@@ -125,8 +133,9 @@ internal static partial class Interop
         {
             if (!Interop.Crypt32.CertCreateCertificateChainEngine(ref config, out SafeChainEngineHandle chainEngineHandle))
             {
-                int errorCode = Marshal.GetLastWin32Error();
-                throw errorCode.ToCryptographicException();
+                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                chainEngineHandle.Dispose();
+                throw e;
             }
 
             return chainEngineHandle;

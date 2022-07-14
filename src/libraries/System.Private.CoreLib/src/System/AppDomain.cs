@@ -90,8 +90,10 @@ namespace System
         }
 
         [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static AppDomain CreateDomain(string friendlyName!!)
+        public static AppDomain CreateDomain(string friendlyName)
         {
+            ArgumentNullException.ThrowIfNull(friendlyName);
+
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_AppDomains);
         }
 
@@ -99,8 +101,10 @@ namespace System
         public int ExecuteAssembly(string assemblyFile) => ExecuteAssembly(assemblyFile, null);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        public int ExecuteAssembly(string assemblyFile!!, string?[]? args)
+        public int ExecuteAssembly(string assemblyFile, string?[]? args)
         {
+            ArgumentNullException.ThrowIfNull(assemblyFile);
+
             string fullPath = Path.GetFullPath(assemblyFile);
             Assembly assembly = Assembly.LoadFile(fullPath);
             return ExecuteAssembly(assembly, args);
@@ -157,8 +161,10 @@ namespace System
             SR.AppDomain_Name + FriendlyName + Environment.NewLineConst + SR.AppDomain_NoContextPolicies;
 
         [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void Unload(AppDomain domain!!)
+        public static void Unload(AppDomain domain)
         {
+            ArgumentNullException.ThrowIfNull(domain);
+
             throw new CannotUnloadAppDomainException(SR.Arg_PlatformNotSupported);
         }
 
@@ -255,8 +261,10 @@ namespace System
             _principalPolicy = policy;
         }
 
-        public void SetThreadPrincipal(IPrincipal principal!!)
+        public void SetThreadPrincipal(IPrincipal principal)
         {
+            ArgumentNullException.ThrowIfNull(principal);
+
             // Set the principal while checking it has not been set previously.
             if (Interlocked.CompareExchange(ref _defaultPrincipal, principal, null) is not null)
             {
@@ -265,14 +273,18 @@ namespace System
         }
 
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
-        public ObjectHandle? CreateInstance(string assemblyName!!, string typeName)
+        public ObjectHandle? CreateInstance(string assemblyName, string typeName)
         {
+            ArgumentNullException.ThrowIfNull(assemblyName);
+
             return Activator.CreateInstance(assemblyName, typeName);
         }
 
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
-        public ObjectHandle? CreateInstance(string assemblyName!!, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
+        public ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
+            ArgumentNullException.ThrowIfNull(assemblyName);
+
             return Activator.CreateInstance(assemblyName,
                                             typeName,
                                             ignoreCase,
@@ -284,8 +296,10 @@ namespace System
         }
 
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
-        public ObjectHandle? CreateInstance(string assemblyName!!, string typeName, object?[]? activationAttributes)
+        public ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
         {
+            ArgumentNullException.ThrowIfNull(assemblyName);
+
             return Activator.CreateInstance(assemblyName, typeName, activationAttributes);
         }
 

@@ -23,10 +23,10 @@ namespace ILCompiler
         private readonly TypeSystemContext _context;
         private IReadOnlyCollection<ModuleDesc> _librariesWithInitializers;
 
-        public LibraryInitializers(TypeSystemContext context, IEnumerable<ModuleDesc> librariesWithInitalizers)
+        public LibraryInitializers(TypeSystemContext context, IEnumerable<ModuleDesc> librariesWithInitializers)
         {
             _context = context;
-            _librariesWithInitializers = new List<ModuleDesc>(librariesWithInitalizers);
+            _librariesWithInitializers = new List<ModuleDesc>(librariesWithInitializers);
         }
 
         public IReadOnlyCollection<MethodDesc> LibraryInitializerMethods
@@ -43,7 +43,7 @@ namespace ILCompiler
         private void InitLibraryInitializers()
         {
             Debug.Assert(_libraryInitializerMethods == null);
-            
+
             _libraryInitializerMethods = new List<MethodDesc>();
 
             foreach (var assembly in _librariesWithInitializers)

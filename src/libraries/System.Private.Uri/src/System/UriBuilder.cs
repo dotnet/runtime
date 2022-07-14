@@ -38,8 +38,10 @@ namespace System
             SetFieldsFromUri();
         }
 
-        public UriBuilder(Uri uri!!)
+        public UriBuilder(Uri uri)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+
             _uri = uri;
             SetFieldsFromUri();
         }

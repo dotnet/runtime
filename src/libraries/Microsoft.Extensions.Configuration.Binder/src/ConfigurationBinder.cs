@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -44,8 +45,10 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration!!, Action<BinderOptions>? configureOptions)
+        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
+            ThrowHelper.ThrowIfNull(configuration);
+
             object? result = configuration.Get(typeof(T), configureOptions);
             if (result == null)
             {
@@ -77,11 +80,13 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance if successful, null otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(
-            this IConfiguration configuration!!,
+            this IConfiguration configuration,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             Action<BinderOptions>? configureOptions)
         {
+            ThrowHelper.ThrowIfNull(configuration);
+
             var options = new BinderOptions();
             configureOptions?.Invoke(options);
             var bindingPoint = new BindingPoint();
@@ -115,8 +120,10 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="instance">The object to bind.</param>
         /// <param name="configureOptions">Configures the binder options.</param>
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
-        public static void Bind(this IConfiguration configuration!!, object? instance, Action<BinderOptions>? configureOptions)
+        public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
+            ThrowHelper.ThrowIfNull(configuration);
+
             if (instance != null)
             {
                 var options = new BinderOptions();
@@ -322,9 +329,10 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static void BindInstance(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type,
-            BindingPoint bindingPoint, IConfiguration config, BinderOptions options)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            BindingPoint bindingPoint,
+            IConfiguration config,
+            BinderOptions options)
         {
             // if binding IConfigurationSection, break early
             if (type == typeof(IConfigurationSection))
@@ -375,7 +383,7 @@ namespace Microsoft.Extensions.Configuration
                         return; // We are already done if binding to a new collection instance worked
                     }
 
-                    bindingPoint.SetValue(CreateInstance(type));
+                    bindingPoint.SetValue(CreateInstance(type, config, options));
                 }
 
                 // See if it's a Dictionary
@@ -401,23 +409,63 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        [RequiresUnreferencedCode("In case type is a Nullable<T>, cannot statically analyze what the underlying type is so its members may be trimmed.")]
-        private static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
+        [RequiresUnreferencedCode(
+            "In case type is a Nullable<T>, cannot statically analyze what the underlying type is so its members may be trimmed.")]
+        private static object CreateInstance(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
+                                        DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type,
+            IConfiguration config,
+            BinderOptions options)
         {
             Debug.Assert(!type.IsArray);
 
-            if (type.IsAbstract)
+            if (type.IsInterface || type.IsAbstract)
             {
                 throw new InvalidOperationException(SR.Format(SR.Error_CannotActivateAbstractOrInterface, type));
             }
 
-            if (!type.IsValueType)
+            ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+
+            bool hasParameterlessConstructor =
+                type.IsValueType || constructors.Any(ctor => ctor.GetParameters().Length == 0);
+
+            if (!type.IsValueType && constructors.Length == 0)
             {
-                bool hasDefaultConstructor = type.GetConstructors(DeclaredOnlyLookup).Any(ctor => ctor.IsPublic && ctor.GetParameters().Length == 0);
-                if (!hasDefaultConstructor)
+                throw new InvalidOperationException(SR.Format(SR.Error_MissingPublicInstanceConstructor, type));
+            }
+
+            if (constructors.Length > 1 && !hasParameterlessConstructor)
+            {
+                throw new InvalidOperationException(SR.Format(SR.Error_MultipleParameterizedConstructors, type));
+            }
+
+            if (constructors.Length == 1 && !hasParameterlessConstructor)
+            {
+                ConstructorInfo constructor = constructors[0];
+                ParameterInfo[] parameters = constructor.GetParameters();
+
+                if (!CanBindToTheseConstructorParameters(parameters, out string nameOfInvalidParameter))
                 {
-                    throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                    throw new InvalidOperationException(SR.Format(SR.Error_CannotBindToConstructorParameter, type, nameOfInvalidParameter));
                 }
+
+
+                List<PropertyInfo> properties = GetAllProperties(type);
+
+                if (!DoAllParametersHaveEquivalentProperties(parameters, properties, out string nameOfInvalidParameters))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, type, nameOfInvalidParameters));
+                }
+
+                object?[] parameterValues = new object?[parameters.Length];
+
+                for (int index = 0; index < parameters.Length; index++)
+                {
+                    parameterValues[index] = BindParameter(parameters[index], type, config, options);
+                }
+
+                return constructor.Invoke(parameterValues);
             }
 
             object? instance;
@@ -431,6 +479,46 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
+        }
+
+        private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
+            List<PropertyInfo> properties, out string missing)
+        {
+            HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
+            foreach (PropertyInfo prop in properties)
+            {
+                propertyNames.Add(prop.Name);
+            }
+
+            List<string> missingParameters = new();
+
+            foreach (ParameterInfo parameter in parameters)
+            {
+                string name = parameter.Name!;
+                if (!propertyNames.Contains(name))
+                {
+                    missingParameters.Add(name);
+                }
+            }
+
+            missing = string.Join(",", missingParameters);
+
+            return missing.Length == 0;
+        }
+
+        private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters, out string nameOfInvalidParameter)
+        {
+            nameOfInvalidParameter = string.Empty;
+            foreach (ParameterInfo p in constructorParameters)
+            {
+                if (p.IsOut || p.IsIn || p.ParameterType.IsByRef)
+                {
+                    nameOfInvalidParameter = p.Name!; // never null as we're not passed return value parameters: https://docs.microsoft.com/en-us/dotnet/api/system.reflection.parameterinfo.name?view=net-6.0#remarks
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
@@ -664,25 +752,71 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        private static List<PropertyInfo> GetAllProperties(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type)
+        private static List<PropertyInfo> GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             var allProperties = new List<PropertyInfo>();
 
-            Type? baseType = type;
-            do
+            Type baseType = type;
+            while (baseType != typeof(object))
             {
-                allProperties.AddRange(baseType!.GetProperties(DeclaredOnlyLookup));
-                baseType = baseType.BaseType;
+                PropertyInfo[] properties = baseType.GetProperties(DeclaredOnlyLookup);
+
+                foreach (PropertyInfo property in properties)
+                {
+                    // if the property is virtual, only add the base-most definition so
+                    // overriden properties aren't duplicated in the list.
+                    MethodInfo? setMethod = property.GetSetMethod(true);
+
+                    if (setMethod is null || !setMethod.IsVirtual || setMethod == setMethod.GetBaseDefinition())
+                    {
+                        allProperties.Add(property);
+                    }
+                }
+
+                baseType = baseType.BaseType!;
             }
-            while (baseType != typeof(object));
 
             return allProperties;
         }
 
-        private static string GetPropertyName(MemberInfo property!!)
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
+            BinderOptions options)
         {
+            string? parameterName = parameter.Name;
+
+            if (parameterName is null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.Error_ParameterBeingBoundToIsUnnamed, type));
+            }
+
+            var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
+
+            if (propertyBindingPoint.Value is null)
+            {
+                if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
+                {
+                    propertyBindingPoint.SetValue(defaultValue);
+                }
+                else
+                {
+                    throw new InvalidOperationException(SR.Format(SR.Error_ParameterHasNoMatchingConfig, type, parameterName));
+                }
+            }
+
+            BindInstance(
+                parameter.ParameterType,
+                propertyBindingPoint,
+                config.GetSection(parameterName),
+                options);
+
+            return propertyBindingPoint.Value;
+        }
+
+        private static string GetPropertyName(MemberInfo property)
+        {
+            ThrowHelper.ThrowIfNull(property);
+
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {

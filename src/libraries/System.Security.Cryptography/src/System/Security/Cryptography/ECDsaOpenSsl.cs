@@ -22,8 +22,10 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public ECDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle!!)
+        public ECDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
+            ArgumentNullException.ThrowIfNull(pkeyHandle);
+
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
@@ -73,6 +75,7 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the EC_KEY key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
+            ThrowIfDisposed();
             SafeEcKeyHandle currentKey = _key.Value;
             SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 

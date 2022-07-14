@@ -175,10 +175,7 @@ namespace System.Speech.Internal.SrgsParser
                 }
 
                 // Parse the token.
-                if (createTokens != null)
-                {
-                    createTokens(parent, sToken, pronunciation, display, reqConfidence);
-                }
+                createTokens?.Invoke(parent, sToken, pronunciation, display, reqConfidence);
             }
         }
 
@@ -1352,10 +1349,7 @@ namespace System.Speech.Internal.SrgsParser
                                         if (tag != null)
                                         {
                                             // The tag list is delayed as it might not be necessary
-                                            if (tags == null)
-                                            {
-                                                tags = new List<IPropertyTag>();
-                                            }
+                                            tags ??= new List<IPropertyTag>();
                                             tags.Add(tag);
                                         }
                                         break;

@@ -2773,7 +2773,7 @@ void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     // Only setting values for CORINFO_SIG_INFO things the EE seems to pay attention to... this is necessary since some of the values
-    // are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisons...
 
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap, &key.sigInst_classInstCount, &key.sigInst_classInst_Index);
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap, &key.sigInst_methInstCount, &key.sigInst_methInst_Index);
@@ -4777,8 +4777,11 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
     key.C = (DWORD)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (buffer != nullptr)
-        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferSize);
+    if (buffer != nullptr && length != -1)
+    {
+        int bufferRealSize = min(length, bufferSize) * sizeof(char16_t);
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
+    }
 
     DD value;
     value.A = (DWORD)length;
@@ -4816,11 +4819,14 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     {
         DD value = GetStringLiteral->Get(key);
         DEBUG_REP(dmpGetStringLiteral(key, value));
-        if (buffer != nullptr)
+        int srcBufferLength = (int)value.A;
+        if (buffer != nullptr && srcBufferLength > 0)
         {
-            memcpy(buffer, GetStringLiteral->GetBuffer(value.B), bufferSize * sizeof(char16_t));
+            char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
+            Assert(srcBuffer != nullptr);
+            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
         }
-        return (int)value.A;
+        return srcBufferLength;
     }
 }
 
@@ -5587,22 +5593,24 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                     printf("E %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount:
                     printf("T %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount:
                     printf("T %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
                     {
                         printf("[%u] %016llX ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
                     }
                     break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
+                case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
-                        // (N)umber, (L)ikelihood, (C)lass
-                        printf("N %u L %u C %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
+                        // (N)umber, (L)ikelihood, (H)andle
+                        printf("N %u L %u H %016llX", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
                     }
                     break;
                 default:
@@ -7065,11 +7073,13 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
-bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource)
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource)
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
+    hasMethodProfile = false;
     hasLikelyClass = false;
+    hasLikelyMethod = false;
 
     // Obtain the Method Info structure for this method
     CORINFO_METHOD_INFO  info;
@@ -7091,11 +7101,12 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes);
+                hasMethodProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
+                hasLikelyMethod |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod);
 
-                if (hasEdgeProfile && hasClassProfile && hasLikelyClass)
+                if (hasEdgeProfile && hasClassProfile && hasLikelyClass && hasLikelyMethod)
                 {
                     break;
                 }
@@ -7122,7 +7133,7 @@ MethodContext::Environment MethodContext::cloneEnvironment()
     return env;
 }
 
-// Check that there is a difference between the current enviroment variables maps and the prevEnv.
+// Check that there is a difference between the current environment variables maps and the prevEnv.
 bool MethodContext::WasEnvironmentChanged(const Environment& prevEnv)
 {
     if (!IsEnvironmentHeaderEqual(prevEnv))

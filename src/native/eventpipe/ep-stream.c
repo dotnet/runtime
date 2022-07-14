@@ -136,24 +136,22 @@ static
 void
 fast_serializer_write_serialization_type (
 	FastSerializer *fast_serializer,
-	FastSerializableObject *fast_serializable_ojbect)
+	FastSerializableObject *fast_serializable_object)
 {
-	EP_ASSERT (fast_serializable_ojbect != NULL);
+	EP_ASSERT (fast_serializable_object != NULL);
 
 	// Write the BeginObject tag.
-	ep_fast_serializer_write_tag (fast_serializer, fast_serializable_ojbect->is_private ? FAST_SERIALIZER_TAGS_BEGIN_PRIVATE_OBJECT : FAST_SERIALIZER_TAGS_BEGIN_OBJECT, NULL, 0);
+	ep_fast_serializer_write_tag (fast_serializer, fast_serializable_object->is_private ? FAST_SERIALIZER_TAGS_BEGIN_PRIVATE_OBJECT : FAST_SERIALIZER_TAGS_BEGIN_OBJECT, NULL, 0);
 
 	// Write a NullReferenceTag, which implies that the following fields belong to SerializationType.
 	ep_fast_serializer_write_tag (fast_serializer, FAST_SERIALIZER_TAGS_NULL_REFERENCE, NULL, 0);
 
 	// Write the SerializationType version fields.
-	int32_t serialization_type [2];
-	serialization_type [0] = fast_serializable_ojbect->object_version;
-	serialization_type [1] = fast_serializable_ojbect->min_reader_version;
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)serialization_type, sizeof (serialization_type));
+	ep_fast_serializer_write_int32_t (fast_serializer, fast_serializable_object->object_version);
+	ep_fast_serializer_write_int32_t (fast_serializer, fast_serializable_object->min_reader_version);
 
 	// Write the SerializationType TypeName field.
-	const ep_char8_t *type_name = ep_fast_serializable_object_get_type_name_vcall (fast_serializable_ojbect);
+	const ep_char8_t *type_name = ep_fast_serializable_object_get_type_name_vcall (fast_serializable_object);
 	if (type_name)
 		ep_fast_serializer_write_string (fast_serializer, type_name, (uint32_t)strlen (type_name));
 
@@ -225,6 +223,28 @@ ep_fast_serializer_write_buffer (
 }
 
 void
+ep_fast_serializer_write_system_time (
+	FastSerializer *fast_serializer,
+	const EventPipeSystemTime *system_time)
+{
+	EP_ASSERT (fast_serializer != NULL);
+	EP_ASSERT (system_time != NULL);
+
+#if BIGENDIAN
+	ep_fast_serializer_write_uint16_t (fast_serializer, system_time->year);
+	ep_fast_serializer_write_uint16_t (fast_serializer, system_time->month);
+	ep_fast_serializer_write_uint16_t (fast_serializer, system_time->day_of_week);
+	ep_fast_serializer_write_uint16_t (fast_serializer, system_time->day);
+	ep_fast_serializer_write_uint16_t (fast_serializer, system_time->hour);
+	ep_fast_serializer_write_uint16_t (fast_serializer, system_time->minute);
+	ep_fast_serializer_write_uint16_t (fast_serializer, system_time->second);
+	ep_fast_serializer_write_uint16_t (fast_serializer, system_time->milliseconds);
+#else
+	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)system_time, sizeof (*system_time));
+#endif
+}
+
+void
 ep_fast_serializer_write_object (
 	FastSerializer *fast_serializer,
 	FastSerializableObject *fast_serializable_ojbect)
@@ -249,7 +269,7 @@ ep_fast_serializer_write_string (
 	uint32_t contents_len)
 {
 	// Write the string length.
-	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)&contents_len, sizeof (contents_len));
+	ep_fast_serializer_write_uint32_t (fast_serializer, contents_len);
 
 	//Wirte the string contents.
 	ep_fast_serializer_write_buffer (fast_serializer, (const uint8_t *)contents, contents_len);
@@ -262,7 +282,7 @@ ep_fast_serializer_write_tag (
 	const uint8_t *payload,
 	uint32_t payload_len)
 {
-	uint8_t tag_as_byte = tag;
+	uint8_t tag_as_byte = (uint8_t)tag;
 	ep_fast_serializer_write_buffer (fast_serializer, &tag_as_byte, sizeof (tag_as_byte));
 	if (payload != NULL) {
 		EP_ASSERT (payload_len > 0);

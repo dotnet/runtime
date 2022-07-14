@@ -17,6 +17,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static new partial RSA Create();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new RSA? Create(string algName)
         {
@@ -162,8 +163,10 @@ namespace System.Security.Cryptography
         public virtual byte[] EncryptValue(byte[] rgb) =>
             throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
 
-        public byte[] SignData(byte[] data!!, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             return SignData(data, 0, data.Length, hashAlgorithm, padding);
         }
 
@@ -211,8 +214,10 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        public bool VerifyData(byte[] data!!, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm, padding);
         }
 
@@ -375,10 +380,12 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 password,
@@ -396,10 +403,12 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 ReadOnlySpan<char>.Empty,
@@ -654,28 +663,15 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyHelpers.ImportPem(input, label => {
-                if (label.SequenceEqual(PemLabels.RsaPrivateKey))
+            PemKeyHelpers.ImportPem(input, label =>
+                label switch
                 {
-                    return ImportRSAPrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
-                {
-                    return ImportPkcs8PrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.RsaPublicKey))
-                {
-                    return ImportRSAPublicKey;
-                }
-                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
-                {
-                    return ImportSubjectPublicKeyInfo;
-                }
-                else
-                {
-                    return null;
-                }
-            });
+                    PemLabels.RsaPrivateKey => ImportRSAPrivateKey,
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.RsaPublicKey => ImportRSAPublicKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
         }
 
         /// <summary>
@@ -848,7 +844,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.RsaPrivateKey, exported);
                 }
                 finally
                 {
@@ -879,7 +875,7 @@ namespace System.Security.Cryptography
         public string ExportRSAPublicKeyPem()
         {
             byte[] exported = ExportRSAPublicKey();
-            return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPublicKey, exported);
+            return PemEncoding.WriteString(PemLabels.RsaPublicKey, exported);
         }
 
         /// <summary>

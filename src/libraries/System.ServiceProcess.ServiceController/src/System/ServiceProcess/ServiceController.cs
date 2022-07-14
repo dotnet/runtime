@@ -638,6 +638,7 @@ namespace System.ServiceProcess
             if (databaseHandle.IsInvalid)
             {
                 Exception inner = new Win32Exception();
+                databaseHandle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.OpenSC, machineName), inner);
             }
 
@@ -652,10 +653,7 @@ namespace System.ServiceProcess
             }
 
             // get a handle to SCM with connect access and store it in serviceManagerHandle field.
-            if (_serviceManagerHandle == null)
-            {
-                _serviceManagerHandle = GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
-            }
+            _serviceManagerHandle ??= GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
         }
 
         /// <summary>
@@ -690,6 +688,7 @@ namespace System.ServiceProcess
             if (serviceHandle.IsInvalid)
             {
                 Exception inner = new Win32Exception();
+                serviceHandle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.OpenService, ServiceName, _machineName), inner);
             }
 
@@ -867,8 +866,10 @@ namespace System.ServiceProcess
         /// <summary>
         /// Starts a service in the machine specified.
         /// </summary>
-        public void Start(string[] args!!)
+        public void Start(string[] args)
         {
+            ArgumentNullException.ThrowIfNull(args);
+
             using SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_START);
             IntPtr[] argPtrs = new IntPtr[args.Length];
             int i = 0;

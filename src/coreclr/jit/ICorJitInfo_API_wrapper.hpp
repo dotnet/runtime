@@ -69,6 +69,15 @@ CorInfoInline WrapICorJitInfo::canInline(
     return temp;
 }
 
+void WrapICorJitInfo::beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    API_ENTER(beginInlining);
+    wrapHnd->beginInlining(inlinerHnd, inlineeHnd);
+    API_LEAVE(beginInlining);
+}
+
 void WrapICorJitInfo::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -958,6 +967,17 @@ void WrapICorJitInfo::setVars(
     API_LEAVE(setVars);
 }
 
+void WrapICorJitInfo::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
+{
+    API_ENTER(reportRichMappings);
+    wrapHnd->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+    API_LEAVE(reportRichMappings);
+}
+
 void* WrapICorJitInfo::allocateArray(
           size_t cBytes)
 {
@@ -1687,16 +1707,6 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
-    return temp;
-}
-
-bool WrapICorJitInfo::doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(doesFieldBelongToClass);
-    bool temp = wrapHnd->doesFieldBelongToClass(fldHnd, cls);
-    API_LEAVE(doesFieldBelongToClass);
     return temp;
 }
 

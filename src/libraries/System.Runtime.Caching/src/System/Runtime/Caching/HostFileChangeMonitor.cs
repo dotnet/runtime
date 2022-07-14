@@ -155,8 +155,13 @@ namespace System.Runtime.Caching
         public override string UniqueId { get { return _uniqueId; } }
         public override DateTimeOffset LastModified { get { return _lastModified; } }
 
-        public HostFileChangeMonitor(IList<string> filePaths!!)
+        public HostFileChangeMonitor(IList<string> filePaths)
         {
+            if (filePaths is null)
+            {
+                throw new ArgumentNullException(nameof(filePaths));
+            }
+
             if (filePaths.Count == 0)
             {
                 throw new ArgumentException(RH.Format(SR.Empty_collection, nameof(filePaths)));

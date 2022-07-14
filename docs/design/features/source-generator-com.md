@@ -85,7 +85,7 @@ As a result, to satisfy our first goal, we only need to provide basic support fo
 
 ### Checkpoint 2: COM-focused marshaller types
 
-Many COM APIs use types within the COM ecosystem to pass across the COM boundary.Many of these types, like `VARIANT`, `BSTR`, and `SAFEARRAY`, have built-in support in the runtime today. We should provide custom marshallers following the patterns defined in the custom type marshalling design in DllImportGenerator to implement these conversions. Users will be able to manually opt-into using them with the `MarshalUsingAttribute`.
+Many COM APIs use types within the COM ecosystem to pass across the COM boundary.Many of these types, like `VARIANT`, `BSTR`, and `SAFEARRAY`, have built-in support in the runtime today. We should provide custom marshallers following the patterns defined in the custom type marshalling design in LibraryImportGenerator to implement these conversions. Users will be able to manually opt-into using them with the `MarshalUsingAttribute`.
 
 We should also provide a marshaller that uses the generated `ComWrappers` type to easily enable marshalling a COM interface in method calls to another COM interface.
 
@@ -106,7 +106,7 @@ We do not plan on supporting `IDispatch` integration with C# `dynamic`, at least
 
 ### Checkpoint 5: .NET 6-compatible output
 
-A very important component of source generators is determining how to trigger them. For the DllImportGenerator, we trigger on a new attribute type, `LibraryImportAttribute`, that is applied in place of the previous `DllImportAttribute`. For the JSON source generator, the team decided to have developers define an empty `JsonSerializerContext`-derived class and add `JsonSerializableAttribute` attribute on that context type that each point to a type that the generated serialization context should support. Below are the potential API designs we considered. All options below would support the `GuidAttribute` attribute to specify an IID, the `InterfaceTypeAttribute` attribute with the `InterfaceIsIUnknown` member (and `InterfaceIsIDispatch` if Checkpoint 4 is achieved), and the `DispIdAttribute` for `IDispatch` scenarios. We selected Option 5 as it gives us the most flexibility to express the switches we want to express to the user without tying us down to legacy requirements or requiring additional metadata in basic scenarios.
+A very important component of source generators is determining how to trigger them. For the LibraryImportGenerator, we trigger on a new attribute type, `LibraryImportAttribute`, that is applied in place of the previous `DllImportAttribute`. For the JSON source generator, the team decided to have developers define an empty `JsonSerializerContext`-derived class and add `JsonSerializableAttribute` attribute on that context type that each point to a type that the generated serialization context should support. Below are the potential API designs we considered. All options below would support the `GuidAttribute` attribute to specify an IID, the `InterfaceTypeAttribute` attribute with the `InterfaceIsIUnknown` member (and `InterfaceIsIDispatch` if Checkpoint 4 is achieved), and the `DispIdAttribute` for `IDispatch` scenarios. We selected Option 5 as it gives us the most flexibility to express the switches we want to express to the user without tying us down to legacy requirements or requiring additional metadata in basic scenarios.
 
 #### Option 1: Annotated ComWrappers stub
 
@@ -219,7 +219,7 @@ Pros:
 Cons:
 
 - This design with the runtime wrapper object being defined internally makes using the same runtime wrapper object between multiple attributed `ComWrappers`-derived types difficult as the wrappers are completely distinct types, even within the same assembly.
-- This design causes difficulties with automatic integration with the "custom type marshalling" design used with DllImportGenerator as it becomes difficult to determine how to tie an interface to a ComWrappers that implements it.
+- This design causes difficulties with automatic integration with the "custom type marshalling" design used with LibraryImportGenerator as it becomes difficult to determine how to tie an interface to a ComWrappers that implements it.
   - What if two different `ComWrappers`-derived types have a `GenerateComWrappersForAttribute` that point to the same interface? Which one do we use for default marshalling?
 
 To expand on this problem with a concrete example, let's take the following code snippet:
@@ -250,7 +250,7 @@ How would the COM source generator know which `ComWrappers`-derived type to have
 
 #### Option 2: `GeneratedComImportAttribute` and `GeneratedComVisibleAttribute`
 
-Option 2 has more parallels to the designs of the DllImportGenerator and the proposed design for custom native type marshalling. The developer would use the `GeneratedComImportAttribute` or the `GeneratedComVisibleAttribute` on their defined interfaces, and the source generator would generate a `ComWrappers`-derived type that handles all of the annotated interfaces. The name of this `ComWrappers` type would be supplied by an analyzer config option, possibly provided through MSBuild.
+Option 2 has more parallels to the designs of the LibraryImportGenerator and the proposed design for custom native type marshalling. The developer would use the `GeneratedComImportAttribute` or the `GeneratedComVisibleAttribute` on their defined interfaces, and the source generator would generate a `ComWrappers`-derived type that handles all of the annotated interfaces. The name of this `ComWrappers` type would be supplied by an analyzer config option, possibly provided through MSBuild.
 
 ```csharp
 // UserProvided.cs
@@ -487,7 +487,7 @@ Cons:
 
 - Multiple attributes would be required to actually trigger the code generation, one on the interface and one on the `ComWrappers`-derived type. There would be more scenarios that require error diagnostics, as only applying one attribute of the pair would be an invalid scenario.
 - This design with the runtime wrapper object being defined internally makes using the same runtime wrapper object between multiple attributed `ComWrappers`-derived types difficult as the wrappers are completely distinct types, even within the same assembly.
-- This design causes difficulties with automatic integration with the "custom type marshalling" design used with DllImportGenerator as it becomes difficult to determine how to tie an interface to a ComWrappers that implements it.
+- This design causes difficulties with automatic integration with the "custom type marshalling" design used with LibraryImportGenerator as it becomes difficult to determine how to tie an interface to a ComWrappers that implements it.
   - What if two different `ComWrappers`-derived types have a `GenerateComWrappersForAttribute` that point to the same interface? Which one do we use for default marshalling?
 
 #### Option 4: Reuse built-in COM attributes with Generated `ComWrappers`-derived type
@@ -620,7 +620,7 @@ Cons:
 
 #### Option 5 (Selected Design): Only `GeneratedComInterfaceAttribute` attribute with Generated `ComWrappers`-derived type
 
-The built-in `ComImport` and `ComVisible` attributes have a lot of history and weird runtime behavior associated with them. Additionally the built-in `ComVisible` attribute actually takes a `bool` to determine if the applied to type is visible and it can be applied to methods as well to enable/disable COM visbility for the legacy automatic COM vtable generation that the .NET runtime has supported since .NET Framework 1.0. This option proposes introducing a single new attribute to cover the expected scenarios:
+The built-in `ComImport` and `ComVisible` attributes have a lot of history and weird runtime behavior associated with them. Additionally the built-in `ComVisible` attribute actually takes a `bool` to determine if the applied to type is visible and it can be applied to methods as well to enable/disable COM visibility for the legacy automatic COM vtable generation that the .NET runtime has supported since .NET Framework 1.0. This option proposes introducing a single new attribute to cover the expected scenarios:
 
 ```csharp
 [AttributeUsage(AttributeTargets.Interface)]

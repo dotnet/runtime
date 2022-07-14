@@ -1081,7 +1081,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/51679", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_DerivedTypeWithDifferentOverrides()
     {
@@ -4256,6 +4255,7 @@ public static partial class DataContractSerializerTests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/1417", TestPlatforms.OSX)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
     [Fact]
     public static void DCS_DeeplyLinkedData()
     {

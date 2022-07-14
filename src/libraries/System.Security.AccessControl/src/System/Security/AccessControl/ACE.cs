@@ -108,8 +108,10 @@ namespace System.Security.AccessControl
         // Marshal the ACE header into the given array starting at the given offset
         //
 
-        internal void MarshalHeader(byte[] binaryForm!!, int offset)
+        internal void MarshalHeader(byte[] binaryForm, int offset)
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             int Length = BinaryLength; // Invokes the most derived property
 
             if (offset < 0)
@@ -237,8 +239,10 @@ namespace System.Security.AccessControl
         // Sanity-check the ACE header (used by the unmarshaling logic)
         //
 
-        internal static void VerifyHeader(byte[] binaryForm!!, int offset)
+        internal static void VerifyHeader(byte[] binaryForm, int offset)
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
@@ -545,28 +549,19 @@ namespace System.Security.AccessControl
             }
 
             int thisLength = this.BinaryLength;
-            int aceLength = ace.BinaryLength;
 
-            if (thisLength != aceLength)
+            if (thisLength != ace.BinaryLength)
             {
                 return false;
             }
 
             byte[] array1 = new byte[thisLength];
-            byte[] array2 = new byte[aceLength];
-
             this.GetBinaryForm(array1, 0);
+
+            byte[] array2 = new byte[thisLength];
             ace.GetBinaryForm(array2, 0);
 
-            for (int i = 0; i < array1.Length; i++)
-            {
-                if (array1[i] != array2[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return array1.AsSpan().SequenceEqual(array2);
         }
 
         public sealed override int GetHashCode()
@@ -652,9 +647,11 @@ namespace System.Security.AccessControl
 
         #region Constructors
 
-        internal KnownAce(AceType type, AceFlags flags, int accessMask, SecurityIdentifier securityIdentifier!!)
+        internal KnownAce(AceType type, AceFlags flags, int accessMask, SecurityIdentifier securityIdentifier)
             : base(type, flags)
         {
+            ArgumentNullException.ThrowIfNull(securityIdentifier);
+
             //
             // The values are set by invoking the properties.
             //

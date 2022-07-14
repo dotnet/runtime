@@ -19,8 +19,13 @@ namespace System.ServiceModel.Syndication
         private string _outerName;
         private string _outerNamespace;
 
-        public SyndicationElementExtension(XmlReader xmlReader!!)
+        public SyndicationElementExtension(XmlReader xmlReader)
         {
+            if (xmlReader is null)
+            {
+                throw new ArgumentNullException(nameof(xmlReader));
+            }
+
             SyndicationFeedFormatter.MoveToStartElement(xmlReader);
             _outerName = xmlReader.LocalName;
             _outerNamespace = xmlReader.NamespaceURI;
@@ -50,29 +55,33 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension!!, XmlObjectSerializer dataContractSerializer)
+        public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
+            if (dataContractExtension is null)
+            {
+                throw new ArgumentNullException(nameof(dataContractExtension));
+            }
+
             if (outerName == string.Empty)
             {
                 throw new ArgumentException(SR.OuterNameOfElementExtensionEmpty, nameof(outerName));
             }
 
-            if (dataContractSerializer == null)
-            {
-                dataContractSerializer = new DataContractSerializer(dataContractExtension.GetType());
-            }
+            dataContractSerializer ??= new DataContractSerializer(dataContractExtension.GetType());
             _outerName = outerName;
             _outerNamespace = outerNamespace;
             _extensionData = dataContractExtension;
             _extensionDataWriter = new ExtensionDataWriter(_extensionData, dataContractSerializer, _outerName, _outerNamespace);
         }
 
-        public SyndicationElementExtension(object xmlSerializerExtension!!, XmlSerializer serializer)
+        public SyndicationElementExtension(object xmlSerializerExtension, XmlSerializer serializer)
         {
-            if (serializer == null)
+            if (xmlSerializerExtension is null)
             {
-                serializer = new XmlSerializer(xmlSerializerExtension.GetType());
+                throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
+
+            serializer ??= new XmlSerializer(xmlSerializerExtension.GetType());
             _extensionData = xmlSerializerExtension;
             _extensionDataWriter = new ExtensionDataWriter(_extensionData, serializer);
         }
@@ -113,8 +122,13 @@ namespace System.ServiceModel.Syndication
 
         public TExtension GetObject<TExtension>() => GetObject<TExtension>(new DataContractSerializer(typeof(TExtension)));
 
-        public TExtension GetObject<TExtension>(XmlObjectSerializer serializer!!)
+        public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
         {
+            if (serializer is null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
             if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
                 return (TExtension)_extensionData;
@@ -125,8 +139,13 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public TExtension GetObject<TExtension>(XmlSerializer serializer!!)
+        public TExtension GetObject<TExtension>(XmlSerializer serializer)
         {
+            if (serializer is null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
             if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
                 return (TExtension)_extensionData;
@@ -155,8 +174,13 @@ namespace System.ServiceModel.Syndication
             return reader;
         }
 
-        public void WriteTo(XmlWriter writer!!)
+        public void WriteTo(XmlWriter writer)
         {
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             if (_extensionDataWriter != null)
             {
                 _extensionDataWriter.WriteTo(writer);

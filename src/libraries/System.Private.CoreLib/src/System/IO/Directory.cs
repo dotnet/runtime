@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Enumeration;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -33,6 +34,23 @@ namespace System.IO
 
             return new DirectoryInfo(path, fullPath, isNormalized: true);
         }
+
+        /// <summary>
+        /// Creates all directories and subdirectories in the specified path with the specified permissions unless they already exist.
+        /// </summary>
+        /// <param name="path">The directory to create.</param>
+        /// <param name="unixCreateMode">Unix file mode used to create directories.</param>
+        /// <returns>An object that represents the directory at the specified path. This object is returned regardless of whether a directory at the specified path already exists.</returns>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is a zero-length string, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException">The caller attempts to use an invalid file mode.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path exceeds the system-defined maximum length.</exception>
+        /// <exception cref="T:System.IO.IOException"><paramref name="path" /> is a file.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">A component of the <paramref name="path" /> is not a directory.</exception>
+        [UnsupportedOSPlatform("windows")]
+        public static DirectoryInfo CreateDirectory(string path, UnixFileMode unixCreateMode)
+            => CreateDirectoryCore(path, unixCreateMode);
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
         public static bool Exists([NotNullWhen(true)] string? path)
@@ -152,11 +170,14 @@ namespace System.IO
             => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions)).ToArray();
 
         internal static IEnumerable<string> InternalEnumeratePaths(
-            string path!!,
-            string searchPattern!!,
+            string path,
+            string searchPattern,
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(searchPattern);
+
             FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
             return searchTarget switch
@@ -201,8 +222,10 @@ namespace System.IO
         public static IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
             => InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions);
 
-        public static string GetDirectoryRoot(string path!!)
+        public static string GetDirectoryRoot(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             string fullPath = Path.GetFullPath(path);
             string root = Path.GetPathRoot(fullPath)!;
 

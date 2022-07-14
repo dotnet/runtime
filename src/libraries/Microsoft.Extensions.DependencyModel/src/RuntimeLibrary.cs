@@ -87,9 +87,9 @@ namespace Microsoft.Extensions.DependencyModel
             string name,
             string version,
             string? hash,
-            IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups!!,
-            IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups!!,
-            IEnumerable<ResourceAssembly> resourceAssemblies!!,
+            IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups,
+            IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups,
+            IEnumerable<ResourceAssembly> resourceAssemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
             string? path,
@@ -105,6 +105,10 @@ namespace Microsoft.Extensions.DependencyModel
                   hashPath,
                   runtimeStoreManifestName)
         {
+            ThrowHelper.ThrowIfNull(runtimeAssemblyGroups);
+            ThrowHelper.ThrowIfNull(nativeLibraryGroups);
+            ThrowHelper.ThrowIfNull(resourceAssemblies);
+
             RuntimeAssemblyGroups = runtimeAssemblyGroups;
             ResourceAssemblies = resourceAssemblies.ToArray();
             NativeLibraryGroups = nativeLibraryGroups;

@@ -63,8 +63,11 @@ namespace System.Security.Cryptography
         /// Hydrate a public key from a blob
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob!!, CngKeyBlobFormat format!!)
+        public static ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob, CngKeyBlobFormat format)
         {
+            ArgumentNullException.ThrowIfNull(publicKeyBlob);
+            ArgumentNullException.ThrowIfNull(format);
+
             // Verify that the key can import successfully, because we did in the past.
             using (CngKey imported = CngKey.Import(publicKeyBlob, format))
             {
@@ -91,10 +94,7 @@ namespace System.Security.Cryptography
         /// <returns></returns>
         public CngKey Import()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(ECDiffieHellmanCngPublicKey));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
 #pragma warning disable SYSLIB0043 // ToByteArray is obsolete.
             return CngKey.Import(ToByteArray(), _curveName, BlobFormat);

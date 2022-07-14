@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Versioning;
 
 namespace System
@@ -22,7 +23,6 @@ namespace System
           IComparable,
           IComparable<Guid>,
           IEquatable<Guid>,
-          IComparisonOperators<Guid, Guid>,
           ISpanParsable<Guid>
     {
         public static readonly Guid Empty;
@@ -40,15 +40,15 @@ namespace System
         private readonly byte _k;  // Do not rename (binary serialization)
 
         // Creates a new guid from an array of bytes.
-        public Guid(byte[] b!!) :
-            this(new ReadOnlySpan<byte>(b))
+        public Guid(byte[] b) :
+            this(new ReadOnlySpan<byte>(b ?? throw new ArgumentNullException(nameof(b))))
         {
         }
 
         // Creates a new guid from a read-only span.
         public Guid(ReadOnlySpan<byte> b)
         {
-            if ((uint)b.Length != 16)
+            if (b.Length != 16)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
             }
@@ -90,8 +90,10 @@ namespace System
         }
 
         // Creates a new GUID initialized to the value represented by the arguments.
-        public Guid(int a, short b, short c, byte[] d!!)
+        public Guid(int a, short b, short c, byte[] d)
         {
+            ArgumentNullException.ThrowIfNull(d);
+
             if (d.Length != 8)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), nameof(d));
@@ -208,8 +210,10 @@ namespace System
         // The string must be of the form dddddddd-dddd-dddd-dddd-dddddddddddd. where
         // d is a hex digit. (That is 8 hex digits, followed by 4, then 4, then 4,
         // then 12) such as: "CA761232-ED42-11CE-BACD-00AA0057B223"
-        public Guid(string g!!)
+        public Guid(string g)
         {
+            ArgumentNullException.ThrowIfNull(g);
+
             var result = new GuidResult(GuidParseThrowStyle.All);
             bool success = TryParseGuid(g, ref result);
             Debug.Assert(success, "GuidParseThrowStyle.All means throw on all failures");
@@ -217,8 +221,11 @@ namespace System
             this = result.ToGuid();
         }
 
-        public static Guid Parse(string input!!) =>
-            Parse((ReadOnlySpan<char>)input);
+        public static Guid Parse(string input)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+            return Parse((ReadOnlySpan<char>)input);
+        }
 
         public static Guid Parse(ReadOnlySpan<char> input)
         {
@@ -255,8 +262,13 @@ namespace System
             }
         }
 
-        public static Guid ParseExact(string input!!, [StringSyntax(StringSyntaxAttribute.GuidFormat)] string format!!) =>
-            ParseExact((ReadOnlySpan<char>)input, (ReadOnlySpan<char>)format);
+        public static Guid ParseExact(string input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] string format)
+        {
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(format);
+
+            return ParseExact((ReadOnlySpan<char>)input, (ReadOnlySpan<char>)format);
+        }
 
         public static Guid ParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format)
         {
@@ -366,7 +378,7 @@ namespace System
         {
             // e.g. "{d85b1407-351d-4694-9392-03acc5870eb1}"
 
-            if ((uint)guidString.Length != 38 || guidString[0] != '{' || guidString[37] != '}')
+            if (guidString.Length != 38 || guidString[0] != '{' || guidString[37] != '}')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -379,7 +391,7 @@ namespace System
         {
             // e.g. "d85b1407-351d-4694-9392-03acc5870eb1"
 
-            if ((uint)guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
+            if (guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
             {
                 result.SetFailure(overflow: false, guidString.Length != 36 ? nameof(SR.Format_GuidInvLen) : nameof(SR.Format_GuidDashes));
                 return false;
@@ -465,7 +477,7 @@ namespace System
         {
             // e.g. "d85b1407351d4694939203acc5870eb1"
 
-            if ((uint)guidString.Length != 32)
+            if (guidString.Length != 32)
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -508,7 +520,7 @@ namespace System
         {
             // e.g. "(d85b1407-351d-4694-9392-03acc5870eb1)"
 
-            if ((uint)guidString.Length != 38 || guidString[0] != '(' || guidString[37] != ')')
+            if (guidString.Length != 38 || guidString[0] != '(' || guidString[37] != ')')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
                 return false;
@@ -535,7 +547,7 @@ namespace System
             guidString = EatAllWhitespace(guidString);
 
             // Check for leading '{'
-            if ((uint)guidString.Length == 0 || guidString[0] != '{')
+            if (guidString.Length == 0 || guidString[0] != '{')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));
                 return false;
@@ -723,14 +735,14 @@ namespace System
 
         private static bool TryParseHex(ReadOnlySpan<char> guidString, out uint result, ref bool overflow)
         {
-            if ((uint)guidString.Length > 0)
+            if (guidString.Length > 0)
             {
                 if (guidString[0] == '+')
                 {
                     guidString = guidString.Slice(1);
                 }
 
-                if ((uint)guidString.Length > 1 && guidString[0] == '0' && (guidString[1] | 0x20) == 'x')
+                if (guidString.Length > 1 && guidString[0] == '0' && (guidString[1] | 0x20) == 'x')
                 {
                     guidString = guidString.Slice(2);
                 }
@@ -858,6 +870,11 @@ namespace System
 
         private static bool EqualsCore(in Guid left, in Guid right)
         {
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in left))) == Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in right)));
+            }
+
             ref int rA = ref Unsafe.AsRef(in left._a);
             ref int rB = ref Unsafe.AsRef(in right._a);
 
@@ -1221,7 +1238,7 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1282,7 +1299,7 @@ namespace System
             return false;
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1343,7 +1360,7 @@ namespace System
             return true;
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1404,7 +1421,7 @@ namespace System
             return false;
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(Guid left, Guid right)
         {
             if (left._a != right._a)

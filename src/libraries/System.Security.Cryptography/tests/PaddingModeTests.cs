@@ -10,17 +10,16 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class PaddingModeTests
     {
         [Theory]
         [InlineData(PaddingMode.Zeros, 0, "", "")] // no block is added in this case!
-        [InlineData(PaddingMode.Zeros, 1,    "46785BDE46622B92FF7C8EBB91508A", "1BE8AA365A15D11FC7826B3A10602D09" )]
+        [InlineData(PaddingMode.Zeros, 1, "46785BDE46622B92FF7C8EBB91508A", "1BE8AA365A15D11FC7826B3A10602D09")]
         [InlineData(PaddingMode.Zeros, 13, "E505A2", "0A2E62938B03E5822EE251117A4CE066")]
-        [InlineData(PaddingMode.PKCS7, 1,    "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843")]
+        [InlineData(PaddingMode.PKCS7, 1, "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843")]
         [InlineData(PaddingMode.PKCS7, 13, "E505A2", "46785BDE46622B92FF7C8EBB91508A4D")]
         [InlineData(PaddingMode.PKCS7, 16, "", "D5450767BCC31793FE5065251B96B715")]
-        [InlineData(PaddingMode.ANSIX923, 1, "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843" )]
+        [InlineData(PaddingMode.ANSIX923, 1, "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843")]
         [InlineData(PaddingMode.ANSIX923, 13, "E505A2", "43B27D41A9FDE73CA5DB22C0FDA76CB1")]
         [InlineData(PaddingMode.ANSIX923, 16, "", "A3D32A3A9DCA71B6F961F5A8ED7E414F")]
         public static void ValidatePaddingMode_NonISO10126(PaddingMode paddingMode, int expectedPaddingSize, string plainTextStr, string expectedCipherStr)
@@ -31,7 +30,6 @@ namespace System.Security.Cryptography.Tests
             byte[] iv = "47d1e060ba3c8643f9f8b65feeda4b30".HexToByteArray();
 
             byte[] plainText = plainTextStr.HexToByteArray();
-            byte[] expectedCipher = expectedCipherStr == null ? Array.Empty<byte>() : expectedCipherStr.HexToByteArray();
 
             using (Aes a = Aes.Create())
             {

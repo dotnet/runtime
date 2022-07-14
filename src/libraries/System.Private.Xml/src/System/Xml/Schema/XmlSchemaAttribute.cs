@@ -60,14 +60,14 @@ namespace System.Xml.Schema
         public XmlQualifiedName RefName
         {
             get { return _refName; }
-            set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _refName = value ?? XmlQualifiedName.Empty; }
         }
 
         [XmlAttribute("type")]
         public XmlQualifiedName SchemaTypeName
         {
             get { return _typeName; }
-            set { _typeName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _typeName = value ?? XmlQualifiedName.Empty; }
         }
 
         [XmlElement("simpleType")]

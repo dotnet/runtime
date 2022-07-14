@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -46,17 +47,22 @@ namespace Microsoft.Interop
 
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
+            return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
+        }
+
+        public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, ExpressionSyntax? initializer)
+        {
             VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
-            if (initializeToDefault)
+            if (initializer is not null)
             {
                 decl = decl.WithInitializer(
                     EqualsValueClause(
-                        LiteralExpression(SyntaxKind.DefaultLiteralExpression)));
+                        initializer));
             }
 
             // <type> <identifier>;
             // or
-            // <type> <identifier> = default;
+            // <type> <identifier> = <initializer>;
             return LocalDeclarationStatement(
                 VariableDeclaration(
                     typeSyntax,
@@ -86,6 +92,41 @@ namespace Microsoft.Interop
             return spanElementTypeSyntax;
         }
 
+
+        // Marshal.SetLastSystemError(<errorCode>);
+        public static StatementSyntax CreateClearLastSystemErrorStatement(int errorCode) =>
+            ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("SetLastSystemError")),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode)))))));
+
+        // <lastError> = Marshal.GetLastSystemError();
+        public static StatementSyntax CreateGetLastSystemErrorStatement(string lastErrorIdentifier) =>
+            ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(lastErrorIdentifier),
+                    InvocationExpression(
+                        MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("GetLastSystemError")))));
+
+        // Marshal.SetLastPInvokeError(<lastError>);
+        public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
+            ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("SetLastPInvokeError")),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(IdentifierName(lastErrorIdentifier))))));
+
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "marshaller");
@@ -99,6 +140,16 @@ namespace Microsoft.Interop
         public static string GetNativeSpanIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "nativeSpan");
+        }
+
+        public static string GetNumElementsIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "numElements");
+        }
+
+        internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
         }
 
         /// <summary>
@@ -232,9 +283,12 @@ namespace Microsoft.Interop
                 {
                     yield return nestedCountElement;
                 }
-                foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
+                foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in nestedCollection.Marshallers.Modes)
                 {
-                    yield return nestedElements;
+                    foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
+                    {
+                        yield return nestedElements;
+                    }
                 }
             }
         }

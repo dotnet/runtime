@@ -675,8 +675,7 @@ StubManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     // Report the global list head.
-    DacEnumMemoryRegion(DacGlobalBase() +
-                        g_dacGlobals.StubManager__g_pFirstManager,
+    DacEnumMemoryRegion(DacGlobalValues()->StubManager__g_pFirstManager,
                         sizeof(TADDR));
 
     //
@@ -1828,7 +1827,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub))
         return TRUE;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg))
         return TRUE;
 #endif

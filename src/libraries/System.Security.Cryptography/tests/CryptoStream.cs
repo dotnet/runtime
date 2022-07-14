@@ -302,14 +302,16 @@ namespace System.Security.Cryptography.Tests
                 aes.Key = aes.IV = new byte[] { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, };
 
                 var memoryStream = new MemoryStream();
-                using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write, leaveOpen: true))
+                using (ICryptoTransform encryptor = aes.CreateEncryptor())
+                using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write, leaveOpen: true))
                 {
-                    cryptoStream.Write(Encoding.ASCII.GetBytes("Sample string that's bigger than cryptoAlg.BlockSize"));
+                    cryptoStream.Write("Sample string that's bigger than cryptoAlg.BlockSize"u8);
                     cryptoStream.FlushFinalBlock();
                 }
 
                 memoryStream.Position = 0;
-                using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
                 {
                     cryptoStream.ReadByte(); // Partially read the CryptoStream before disposing it.
                 }

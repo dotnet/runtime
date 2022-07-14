@@ -43,7 +43,7 @@ namespace System.Collections.Specialized
 
         protected NameObjectCollectionBase(IEqualityComparer? equalityComparer)
         {
-            _keyComparer = (equalityComparer == null) ? s_defaultComparer : equalityComparer;
+            _keyComparer = equalityComparer ?? s_defaultComparer;
             Reset();
         }
 
@@ -177,9 +177,9 @@ namespace System.Collections.Specialized
                     _entriesTable.Add(name, entry);
             }
             else
-            { // null key -- special case -- hashtable doesn't like null keys
-                if (_nullKeyEntry == null)
-                    _nullKeyEntry = entry;
+            {
+                // null key -- special case -- hashtable doesn't like null keys
+                _nullKeyEntry ??= entry;
             }
 
             // add entry to the list
@@ -275,7 +275,7 @@ namespace System.Collections.Specialized
         protected object? BaseGet(string? name)
         {
             NameObjectEntry? e = FindEntry(name);
-            return (e != null) ? e.Value : null;
+            return e?.Value;
         }
 
         /// <devdoc>
@@ -363,8 +363,10 @@ namespace System.Collections.Specialized
             }
         }
 
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
@@ -429,8 +431,12 @@ namespace System.Collections.Specialized
         ///    <para>Returns an array of the specified type containing
         ///       all the values in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
-        protected object?[] BaseGetAllValues(Type type!!)
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The API only works for reference type arguments and code for reference typed arrays is shareable.")]
+        protected object?[] BaseGetAllValues(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             int n = _entriesArray.Count;
             object?[] allValues = (object?[])Array.CreateInstance(type, n);
 
@@ -450,15 +456,7 @@ namespace System.Collections.Specialized
         /// <para>Returns a <see cref='System.Collections.Specialized.NameObjectCollectionBase.KeysCollection'/> instance containing
         ///    all the keys in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
-        public virtual KeysCollection Keys
-        {
-            get
-            {
-                if (_keys == null)
-                    _keys = new KeysCollection(this);
-                return _keys;
-            }
-        }
+        public virtual KeysCollection Keys => _keys ??= new KeysCollection(this);
 
         //
         // Simple entry class to allow substitution of values and indexed access to keys
@@ -592,8 +590,10 @@ namespace System.Collections.Specialized
                 }
             }
 
-            void ICollection.CopyTo(Array array!!, int index)
+            void ICollection.CopyTo(Array array, int index)
             {
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                 {
                     throw new ArgumentException(SR.Arg_MultiRank, nameof(array));

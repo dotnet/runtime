@@ -414,7 +414,7 @@ namespace System.Data
         /// <remarks>
         /// Arrays returned from this property will never contain <see langword="null" />.
         /// When setting this property, <see langword="null" /> indicates that the current column value
-        /// should be left as-is. <see cref="DBNull.Value" /> can be used to set the the value to null.
+        /// should be left as-is. <see cref="DBNull.Value" /> can be used to set the value to null.
         /// </remarks>
         public object?[] ItemArray
         {
@@ -732,7 +732,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRow.SetColumnError|API> {0}, column={1}, error='{2}'", _objectID, column.ObjectID, error);
             try
             {
-                if (_error == null) _error = new DataError();
+                _error ??= new DataError();
                 if (GetColumnError(column) != error)
                 {
                     _error.SetColumnError(column, error);
@@ -761,7 +761,7 @@ namespace System.Data
         public string GetColumnError(DataColumn column)
         {
             CheckColumn(column);
-            if (_error == null) _error = new DataError();
+            _error ??= new DataError();
             return _error.GetColumnError(column);
         }
 

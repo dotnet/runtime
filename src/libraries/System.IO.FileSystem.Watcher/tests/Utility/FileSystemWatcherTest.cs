@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
 using Xunit.Sdk;
@@ -33,7 +34,7 @@ namespace System.IO.Tests
         /// Watches the Changed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Changed event is thrown by the watcher.
         /// </summary>
-        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchChanged(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccurred, FileSystemEventHandler Handler) WatchChanged(FileSystemWatcher watcher, string[] expectedPaths = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
@@ -55,7 +56,7 @@ namespace System.IO.Tests
         /// Watches the Created WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Created event is thrown by the watcher.
         /// </summary>
-        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchCreated(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
+        public static (AutoResetEvent EventOccurred, FileSystemEventHandler Handler) WatchCreated(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
@@ -83,7 +84,7 @@ namespace System.IO.Tests
         /// Watches the Renamed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Renamed event is thrown by the watcher.
         /// </summary>
-        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchDeleted(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
+        public static (AutoResetEvent EventOccurred, FileSystemEventHandler Handler) WatchDeleted(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
             FileSystemEventHandler handler = (o, e) =>
@@ -108,7 +109,7 @@ namespace System.IO.Tests
         /// Watches the Renamed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Renamed event is thrown by the watcher.
         /// </summary>
-        public static (AutoResetEvent EventOccured, RenamedEventHandler Handler) WatchRenamed(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
+        public static (AutoResetEvent EventOccurred, RenamedEventHandler Handler) WatchRenamed(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
@@ -201,22 +202,64 @@ namespace System.IO.Tests
             }
         }
 
-        /// <summary>Invokes the specified test action with retry on failure (other than assertion failure).</summary>
-        /// <param name="action">The test action.</param>
-        /// <param name="maxAttempts">The maximum number of times to attempt to run the test.</param>
-        public static void ExecuteWithRetry(Action action, int maxAttempts = DefaultAttemptsForExpectedEvent)
+        // Pasted from RetryHelper.cs in order to force FSW tests to log retries to the Helix console.
+        // We don't want to do that for tests in general.
+        // Once we've gotten enough data, delete this and go back to the regular RetryHelper.
+        private static readonly Func<int, int> s_defaultBackoffFunc = i => Math.Min(i * 100, 60_000);
+        private static readonly Predicate<Exception> s_defaultRetryWhenFunc = _ => true;
+        private static readonly bool s_debug = Environment.GetEnvironmentVariable("DEBUG_RETRYHELPER") == "1";
+
+        /// <summary>Executes the <paramref name="test"/> action up to a maximum of <paramref name="maxAttempts"/> times.</summary>
+        /// <param name="maxAttempts">The maximum number of times to invoke <paramref name="test"/>.</param>
+        /// <param name="test">The test to invoke.</param>
+        /// <param name="backoffFunc">After a failure, invoked to determine how many milliseconds to wait before the next attempt.  It's passed the number of iterations attempted.</param>
+        /// <param name="retryWhen">Invoked to select the exceptions to retry on. If not set, any exception will trigger a retry.</param>
+        public static void Execute(Action test, int maxAttempts = 5, Func<int, int> backoffFunc = null, Predicate<Exception> retryWhen = null, [CallerMemberName] string? testName = null)
         {
-            for (int retry = 0; retry < maxAttempts; retry++)
+            // Validate arguments
+            if (maxAttempts < 1)
             {
+                throw new ArgumentOutOfRangeException(nameof(maxAttempts));
+            }
+            if (test == null)
+            {
+                throw new ArgumentNullException(nameof(test));
+            }
+
+            retryWhen ??= s_defaultRetryWhenFunc;
+
+            // Execute the test until it either passes or we run it maxAttempts times
+            var exceptions = new List<Exception>();
+            for (int i = 1; i <= maxAttempts; i++)
+            {
+                Exception lastException;
                 try
                 {
-                    action();
+                    test();
                     return;
                 }
-                catch (Exception e) when (!(e is XunitException) && retry < maxAttempts - 1)
+                catch (Exception e) when (retryWhen(e))
                 {
-                    Thread.Sleep(RetryDelayMilliseconds);
+                    lastException = e;
+                    exceptions.Add(e);
+                    if (i == maxAttempts)
+                    {
+                        throw new AggregateException(exceptions);
+                    }
                 }
+
+                if (PlatformDetection.IsInHelix || s_debug)
+                {
+                    // Dump into the console output so we can mine it
+                    Console.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
+                }
+
+                if (s_debug)
+                {
+                    Debug.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
+                }
+
+                Thread.Sleep((backoffFunc ?? s_defaultBackoffFunc)(i));
             }
         }
 
@@ -232,7 +275,7 @@ namespace System.IO.Tests
         public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForExpectedEventTimeout)
         {
             bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, expectedPath == null ? null : new string[] { expectedPath }, timeout);
-            Assert.False(result, "Expected Event occured");
+            Assert.False(result, "Expected Event occurred");
 
             if (cleanup != null)
                 cleanup();
@@ -250,8 +293,8 @@ namespace System.IO.Tests
         public static bool ExecuteAndVerifyEvents(FileSystemWatcher watcher, WatcherChangeTypes expectedEvents, Action action, bool assertExpected, string[] expectedPaths, int timeout)
         {
             bool result = true, verifyChanged = true, verifyCreated = true, verifyDeleted = true, verifyRenamed = true;
-            (AutoResetEvent EventOccured, FileSystemEventHandler Handler) changed = default, created = default, deleted = default;
-            (AutoResetEvent EventOccured, RenamedEventHandler Handler) renamed = default;
+            (AutoResetEvent EventOccurred, FileSystemEventHandler Handler) changed = default, created = default, deleted = default;
+            (AutoResetEvent EventOccurred, RenamedEventHandler Handler) renamed = default;
 
             if (verifyChanged = ((expectedEvents & WatcherChangeTypes.Changed) > 0))
                 changed = WatchChanged(watcher, expectedPaths);
@@ -269,7 +312,7 @@ namespace System.IO.Tests
             if (verifyChanged)
             {
                 bool Changed_expected = ((expectedEvents & WatcherChangeTypes.Changed) > 0);
-                bool Changed_actual = changed.EventOccured.WaitOne(timeout);
+                bool Changed_actual = changed.EventOccurred.WaitOne(timeout);
                 watcher.Changed -= changed.Handler;
                 result = Changed_expected == Changed_actual;
                 if (assertExpected)
@@ -280,7 +323,7 @@ namespace System.IO.Tests
             if (verifyCreated)
             {
                 bool Created_expected = ((expectedEvents & WatcherChangeTypes.Created) > 0);
-                bool Created_actual = created.EventOccured.WaitOne(verifyChanged ? SubsequentExpectedWait : timeout);
+                bool Created_actual = created.EventOccurred.WaitOne(verifyChanged ? SubsequentExpectedWait : timeout);
                 watcher.Created -= created.Handler;
                 result = result && Created_expected == Created_actual;
                 if (assertExpected)
@@ -291,7 +334,7 @@ namespace System.IO.Tests
             if (verifyDeleted)
             {
                 bool Deleted_expected = ((expectedEvents & WatcherChangeTypes.Deleted) > 0);
-                bool Deleted_actual = deleted.EventOccured.WaitOne(verifyChanged || verifyCreated ? SubsequentExpectedWait : timeout);
+                bool Deleted_actual = deleted.EventOccurred.WaitOne(verifyChanged || verifyCreated ? SubsequentExpectedWait : timeout);
                 watcher.Deleted -= deleted.Handler;
                 result = result && Deleted_expected == Deleted_actual;
                 if (assertExpected)
@@ -302,7 +345,7 @@ namespace System.IO.Tests
             if (verifyRenamed)
             {
                 bool Renamed_expected = ((expectedEvents & WatcherChangeTypes.Renamed) > 0);
-                bool Renamed_actual = renamed.EventOccured.WaitOne(verifyChanged || verifyCreated || verifyDeleted ? SubsequentExpectedWait : timeout);
+                bool Renamed_actual = renamed.EventOccurred.WaitOne(verifyChanged || verifyCreated || verifyDeleted ? SubsequentExpectedWait : timeout);
                 watcher.Renamed -= renamed.Handler;
                 result = result && Renamed_expected == Renamed_actual;
                 if (assertExpected)
@@ -465,7 +508,7 @@ namespace System.IO.Tests
         // Observe until an expected count of events is triggered, otherwise fail. Return all collected events.
         internal static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action)
         {
-            using var eventsOccured = new AutoResetEvent(false);
+            using var eventsOccurred = new AutoResetEvent(false);
             var eventsOrrures = 0;
 
             var events = new List<FiredEvent>();
@@ -488,7 +531,7 @@ namespace System.IO.Tests
             try
             {
                 action();
-                eventsOccured.WaitOne(new TimeSpan(0, 0, 5));
+                eventsOccurred.WaitOne(new TimeSpan(0, 0, 5));
             }
             finally
             {
@@ -512,7 +555,7 @@ namespace System.IO.Tests
                 events.Add(new FiredEvent(eventType, dir1, dir2));
                 if (Interlocked.Increment(ref eventsOrrures) == expectedEvents)
                 {
-                    eventsOccured.Set();
+                    eventsOccurred.Set();
                 }
             }
         }

@@ -7,8 +7,10 @@ namespace System.Collections.ObjectModel
 {
     internal static class CollectionHelpers
     {
-        internal static void ValidateCopyToArguments(int sourceCount, Array array!!, int index)
+        internal static void ValidateCopyToArguments(int sourceCount, Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));

@@ -94,8 +94,10 @@ namespace System.Security.Principal
             }
         }
 
-        public override IdentityReference Translate(Type targetType!!)
+        public override IdentityReference Translate(Type targetType)
         {
+            ArgumentNullException.ThrowIfNull(targetType);
+
             if (targetType == typeof(NTAccount))
             {
                 return this; // assumes that NTAccount objects are immutable
@@ -153,8 +155,10 @@ namespace System.Security.Principal
             return result;
         }
 
-        internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceAccounts!!, Type targetType, out bool someFailed)
+        internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceAccounts, Type targetType, out bool someFailed)
         {
+            ArgumentNullException.ThrowIfNull(sourceAccounts);
+
             if (targetType == typeof(SecurityIdentifier))
             {
                 return TranslateToSids(sourceAccounts, out someFailed);
@@ -196,8 +200,10 @@ namespace System.Security.Principal
         #region Private methods
 
 
-        private static unsafe IdentityReferenceCollection TranslateToSids(IdentityReferenceCollection sourceAccounts!!, out bool someFailed)
+        private static unsafe IdentityReferenceCollection TranslateToSids(IdentityReferenceCollection sourceAccounts, out bool someFailed)
         {
+            ArgumentNullException.ThrowIfNull(sourceAccounts);
+
             if (sourceAccounts.Count == 0)
             {
                 throw new ArgumentException(SR.Arg_EmptyCollection, nameof(sourceAccounts));

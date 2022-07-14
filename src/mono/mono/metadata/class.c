@@ -456,7 +456,6 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			MonoGenericClass *gclass = mono_class_get_generic_class (klass);
 			MonoGenericInst *inst = gclass->context.class_inst;
 			MonoTypeNameFormat nested_format;
-			int i;
 
 			nested_format = format == MONO_TYPE_NAME_FORMAT_FULL_NAME ?
 				MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED : format;
@@ -465,7 +464,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 				g_string_append_c (str, '<');
 			else
 				g_string_append_c (str, '[');
-			for (i = 0; i < inst->type_argc; i++) {
+			for (guint i = 0; i < inst->type_argc; i++) {
 				MonoType *t = inst->type_argv [i];
 
 				if (i)
@@ -485,13 +484,12 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		} else if (mono_class_is_gtd (klass) &&
 			   (format != MONO_TYPE_NAME_FORMAT_FULL_NAME) &&
 			   (format != MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)) {
-			int i;
 
 			if (format == MONO_TYPE_NAME_FORMAT_IL)
 				g_string_append_c (str, '<');
 			else
 				g_string_append_c (str, '[');
-			for (i = 0; i < mono_class_get_generic_container (klass)->type_argc; i++) {
+			for (int i = 0; i < mono_class_get_generic_container (klass)->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
 				g_string_append (str, mono_generic_container_get_param_info (mono_class_get_generic_container (klass), i)->name);
@@ -680,7 +678,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	switch (type->type) {
 	case MONO_TYPE_MVAR: {
 		MonoType *nt;
-		int num = mono_type_get_generic_param_num (type);
+		guint16 num = mono_type_get_generic_param_num (type);
 		MonoGenericInst *inst = context->method_inst;
 		if (!inst) {
 			if (!changed)
@@ -714,7 +712,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	}
 	case MONO_TYPE_VAR: {
 		MonoType *nt;
-		int num = mono_type_get_generic_param_num (type);
+		guint16 num = mono_type_get_generic_param_num (type);
 		MonoGenericInst *inst = context->class_inst;
 		if (!inst) {
 			if (!changed)
@@ -725,7 +723,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		MonoGenericParam *gparam = type->data.generic_param;
 		if (num >= inst->type_argc) {
 			const char *pname = mono_generic_param_name (gparam);
-			mono_error_set_bad_image (error, image, "VAR %d (%s) cannot be expanded in this context with %d instantiations",
+			mono_error_set_bad_image (error, image, "VAR %hu (%s) cannot be expanded in this context with %d instantiations",
 				num, pname ? pname : "", inst->type_argc);
 			return NULL;
 		}
@@ -870,7 +868,7 @@ inflate_generic_custom_modifiers (MonoImage *image, const MonoType *type, MonoGe
 {
 	MonoType *result = NULL;
 	g_assert (type->has_cmods);
-	int count = mono_type_custom_modifier_count (type);
+	guint8 count = mono_type_custom_modifier_count (type);
 	gboolean changed = FALSE;
 
 	/* Try not to blow up the stack. See comment on MONO_MAX_EXPECTED_CMODS. */
@@ -880,7 +878,7 @@ inflate_generic_custom_modifiers (MonoImage *image, const MonoType *type, MonoGe
 	memset (candidate_mods, 0, aggregate_size);
 	candidate_mods->count = count;
 
-	for (int i = 0; i < count; ++i) {
+	for (guint8 i = 0; i < count; ++i) {
 		gboolean required;
 		MonoType *cmod_old = mono_type_get_custom_modifier (type, i, &required, error);
 		goto_if_nok (error, leave);
@@ -894,7 +892,7 @@ inflate_generic_custom_modifiers (MonoImage *image, const MonoType *type, MonoGe
 
 	if (changed) {
 		/* if we're going to make a new type, fill in any modifiers that weren't affected by inflation with copies of the original values. */
-		for (int i = 0; i < count; ++i) {
+		for (guint8 i = 0; i < count; ++i) {
 			if (candidate_mods->modifiers [i].type == NULL) {
 				candidate_mods->modifiers [i].type = mono_metadata_type_dup (NULL, mono_type_get_custom_modifier (type, i, NULL, error));
 
@@ -921,7 +919,7 @@ inflate_generic_custom_modifiers (MonoImage *image, const MonoType *type, MonoGe
 	}
 
 leave:
-	for (int i = 0; i < count; ++i) {
+	for (guint8 i = 0; i < count; ++i) {
 		if (candidate_mods->modifiers [i].type)
 			mono_metadata_free_type (candidate_mods->modifiers [i].type);
 	}
@@ -1735,7 +1733,7 @@ mono_class_get_method_by_index (MonoClass *klass, int index)
 		mono_class_setup_methods (klass);
 		if (mono_class_has_failure (klass)) /*FIXME do proper error handling*/
 			return NULL;
-		g_assert (index >= 0 && index < mono_class_get_method_count (klass));
+		g_assert (index >= 0 && GINT_TO_UINT32(index) < mono_class_get_method_count (klass));
 		return m_class_get_methods (klass) [index];
 	}
 }
@@ -2541,8 +2539,8 @@ static int
 mono_field_get_index (MonoClassField *field)
 {
 	g_assert (!m_field_is_from_update (field));
-	int index = field - m_class_get_fields (m_field_get_parent (field));
-	g_assert (index >= 0 && index < mono_class_get_field_count (m_field_get_parent (field)));
+	int index = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
+	g_assert (index >= 0 && GINT_TO_UINT32(index) < mono_class_get_field_count (m_field_get_parent (field)));
 
 	return index;
 }
@@ -2594,9 +2592,9 @@ static int
 mono_property_get_index (MonoProperty *prop)
 {
 	MonoClassPropertyInfo *info = mono_class_get_property_info (prop->parent);
-	int index = prop - info->properties;
+	int index = GPTRDIFF_TO_INT (prop - info->properties);
 
-	g_assert (index >= 0 && index < info->count);
+	g_assert (index >= 0 && GINT_TO_UINT32(index) < info->count);
 
 	return index;
 }
@@ -2646,12 +2644,11 @@ guint32
 mono_class_get_event_token (MonoEvent *event)
 {
 	MonoClass *klass = event->parent;
-	int i;
 
 	while (klass) {
 		MonoClassEventInfo *info = mono_class_get_event_info (klass);
 		if (info) {
-			for (i = 0; i < info->count; ++i) {
+			for (guint32 i = 0; i < info->count; ++i) {
 				/* TODO: metadata-update: get tokens for added props, too */
 				g_assert (!m_event_is_from_update (&info->events[i]));
 				if (&info->events [i] == event)
@@ -3233,7 +3230,6 @@ search_modules (MonoImage *image, const char *name_space, const char *name, gboo
 	MonoTableInfo *file_table = &image->tables [MONO_TABLE_FILE];
 	MonoImage *file_image;
 	MonoClass *klass;
-	int i;
 
 	error_init (error);
 
@@ -3243,8 +3239,8 @@ search_modules (MonoImage *image, const char *name_space, const char *name, gboo
 	 * Note: image->modules contains the contents of the MODULEREF table, while
 	 * the real module list is in the FILE table.
 	 */
-	int rows = table_info_get_rows (file_table);
-	for (i = 0; i < rows; i++) {
+	guint32 rows = table_info_get_rows (file_table);
+	for (guint32 i = 0; i < rows; i++) {
 		guint32 cols [MONO_FILE_SIZE];
 		mono_metadata_decode_row (file_table, i, cols, MONO_FILE_SIZE);
 		if (cols [MONO_FILE_FLAGS] == FILE_CONTAINS_NO_METADATA)
@@ -3271,7 +3267,6 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	GHashTable *nspace_table = NULL;
 	MonoImage *loaded_image = NULL;
 	guint32 token = 0;
-	int i;
 	MonoClass *klass;
 	char *nested;
 	char buf [1024];
@@ -3285,7 +3280,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	g_hash_table_insert (visited_images, image, GUINT_TO_POINTER(1));
 
 	if ((nested = (char*)strchr (name, '/'))) {
-		int pos = nested - name;
+		int pos = GPTRDIFF_TO_INT (nested - name);
 		size_t len = strlen (name);
 		if (len > 1023)
 			return NULL;
@@ -3346,7 +3341,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 
 	if (!token && image_is_dynamic (image) && image->modules) {
 		/* Search modules as well */
-		for (i = 0; i < image->module_count; ++i) {
+		for (guint32 i = 0; i < image->module_count; ++i) {
 			MonoImage *module = image->modules [i];
 
 			if (case_sensitive)
@@ -4970,6 +4965,10 @@ mono_class_get_byref_type (MonoClass *klass)
 int
 mono_class_num_fields (MonoClass *klass)
 {
+	MonoImage *image = m_class_get_image (klass);
+	if (G_UNLIKELY (image->has_updates)) {
+		return mono_class_get_field_count (klass) + mono_metadata_update_get_num_fields_added (klass);
+	}
 	return mono_class_get_field_count (klass);
 }
 
@@ -4982,6 +4981,10 @@ mono_class_num_fields (MonoClass *klass)
 int
 mono_class_num_methods (MonoClass *klass)
 {
+	MonoImage *image = m_class_get_image (klass);
+	if (G_UNLIKELY (image->has_updates)) {
+		return mono_class_get_method_count (klass) + mono_metadata_update_get_num_methods_added (klass);
+	}
 	return mono_class_get_method_count (klass);
 }
 
@@ -6061,8 +6064,7 @@ get_generic_definition_class (MonoClass *klass)
 static gboolean
 can_access_instantiation (MonoClass *access_klass, MonoGenericInst *ginst)
 {
-	int i;
-	for (i = 0; i < ginst->type_argc; ++i) {
+	for (guint i = 0; i < ginst->type_argc; ++i) {
 		MonoType *type = ginst->type_argv[i];
 		switch (type->type) {
 		case MONO_TYPE_SZARRAY:
@@ -6476,7 +6478,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 	if (G_UNLIKELY (m_field_is_from_update (field))) {
 		field_idx = -1;
 	} else {
-		field_idx = field - m_class_get_fields (klass);
+		field_idx = GPTRDIFF_TO_INT (field - m_class_get_fields (klass));
 	}
 
 	error_init (error);
@@ -6548,7 +6550,7 @@ mono_field_resolve_flags (MonoClassField *field)
 	MonoClass *klass = m_field_get_parent (field);
 	MonoImage *image = m_class_get_image (klass);
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
-	int field_idx = field - m_class_get_fields (klass);
+	int field_idx = GPTRDIFF_TO_INT (field - m_class_get_fields (klass));
 
 	if (gtd) {
 		MonoClassField *gfield = &m_class_get_fields (gtd) [field_idx];

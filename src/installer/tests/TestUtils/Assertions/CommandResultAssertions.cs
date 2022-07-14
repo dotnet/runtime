@@ -69,7 +69,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> HaveStdOutMatching(string pattern, RegexOptions options = RegexOptions.None)
         {
-            Execute.Assertion.ForCondition(Regex.Match(Result.StdOut, pattern, options).Success)
+            Execute.Assertion.ForCondition(Regex.IsMatch(Result.StdOut, pattern, options))
                 .FailWithPreformatted($"Matching the command output failed. Pattern: '{pattern}'{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }
@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> HaveStdErrMatching(string pattern, RegexOptions options = RegexOptions.None)
         {
-            Execute.Assertion.ForCondition(Regex.Match(Result.StdErr, pattern, options).Success)
+            Execute.Assertion.ForCondition(Regex.IsMatch(Result.StdErr, pattern, options))
                 .FailWithPreformatted($"Matching the command error output failed. Pattern: '{pattern}'{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }

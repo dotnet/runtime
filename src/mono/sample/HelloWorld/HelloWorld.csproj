@@ -3,4 +3,36 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+
+  <UsingTask TaskName="MonoAOTCompiler"
+             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+
+  <Target Name="AOTCompileApp" Condition="'$(RunAOTCompilation)' == 'true'" AfterTargets="CopyFilesToPublishDirectory">
+    <PropertyGroup>
+      <_AotOutputType>Library</_AotOutputType>
+      <_AotLibraryFormat>Dylib</_AotLibraryFormat>
+      <UseAotDataFile>false</UseAotDataFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <AotInputAssemblies Include="$(PublishDir)\*.dll" />
+      <ReferenceAssembliesForPGO Include="$(PublishDir)\*.dll" />
+    </ItemGroup>
+
+    <MonoAOTCompiler
+      CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+      OutputType="$(_AotOutputType)"
+      LibraryFormat="$(_AotLibraryFormat)"
+      Assemblies="@(AotInputAssemblies)"
+      OutputDir="$(PublishDir)"
+      IntermediateOutputPath="$(IntermediateOutputPath)"
+      UseAotDataFile="$(UseAotDataFile)"
+      CacheFilePath="$(IntermediateOutputPath)aot_compiler_cache.json"
+      NetTracePath="$(NetTracePath)"
+      PgoBinaryPath="$(PgoBinaryPath)"
+      ReferenceAssembliesForPGO="@(ReferenceAssembliesForPGO)"
+      MibcProfilePath="$(MibcProfilePath)">
+      <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+  </Target>
 </Project>

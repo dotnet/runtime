@@ -478,7 +478,11 @@ namespace Internal.JitInterface
     }
     public enum CorInfoInline
     {
-        INLINE_PASS = 0,    // Inlining OK
+        INLINE_PASS = 0,   // Inlining OK
+        INLINE_PREJIT_SUCCESS = 1,   // Inline check for prejit checking usage succeeded
+        INLINE_CHECK_CAN_INLINE_SUCCESS = 2,   // JIT detected it is permitted to try to actually inline
+        INLINE_CHECK_CAN_INLINE_VMFAIL = 3,   // VM specified that inline must fail via the CanInline api
+
 
         // failures are negative
         INLINE_FAIL = -1,   // Inlining not OK for this case only
@@ -518,7 +522,7 @@ namespace Internal.JitInterface
         //     but need to insert a callout to the VM to ask during runtime
         //     whether to raise a verification or not (if the method is unverifiable).
         CORINFO_VERIFICATION_DONT_JIT = 3,    // Cannot skip verification during jit time,
-        //     but do not jit the method if is is unverifiable.
+        //     but do not jit the method if it is unverifiable.
     }
 
     public enum CorInfoInitClassResult
@@ -618,7 +622,7 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
         CORINFO_EH_CLAUSE_DUPLICATED = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by CoreRT ABI.)
+        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -815,7 +819,7 @@ namespace Internal.JitInterface
     {
         CORINFO_DESKTOP_ABI = 0x100,
         CORINFO_CORECLR_ABI = 0x200,
-        CORINFO_CORERT_ABI = 0x300,
+        CORINFO_NATIVEAOT_ABI = 0x300,
     }
 
     // For some highly optimized paths, the JIT must generate code that directly
@@ -1257,6 +1261,30 @@ namespace Internal.JitInterface
         public uint endOffset;
         public uint varNumber;
     };
+
+    public unsafe struct InlineTreeNode
+    {
+        // Method handle for inlinee (or root)
+        public CORINFO_METHOD_STRUCT_* Method;
+        // IL offset of IL instruction resulting in the inline
+        public uint ILOffset;
+        // Index of child in tree, 0 if no children
+        public uint Child;
+        // Index of sibling in tree, 0 if no sibling
+        public uint Sibling;
+    }
+
+    public struct RichOffsetMapping
+    {
+        // Offset in emitted code
+        public uint NativeOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        public uint Inlinee;
+        // IL offset of IL instruction in inlinee that this mapping was created from
+        public uint ILOffset;
+        // Source information about the IL instruction in the inlinee
+        public SourceTypes Source;
+    }
 
     // This enum is used for JIT to tell EE where this token comes from.
     // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or

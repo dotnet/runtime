@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         X64UnixTransitionBlock.Instance;
 
                 case TargetArchitecture.ARM:
-                    if (target.Abi == TargetAbi.CoreRTArmel)
+                    if (target.Abi == TargetAbi.NativeAotArmel)
                     {
                         return Arm32ElTransitionBlock.Instance;
                     }
@@ -205,22 +205,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     case CorElementType.ELEMENT_TYPE_SZARRAY:
                         pNumRegistersUsed++;
                         return true;
-#if PROJECTN
-                    case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                        {
-                            // On ProjectN valuetypes of integral size are passed enregistered
-                            int structSize = TypeHandle.GetElemSize(typ, thArgType);
-                            switch (structSize)
-                            {
-                                case 1:
-                                case 2:
-                                case 4:
-                                    pNumRegistersUsed++;
-                                    return true;
-                            }
-                            break;
-                        }
-#elif READYTORUN
                     case CorElementType.ELEMENT_TYPE_VALUETYPE:
                         if (IsTrivialPointerSizedStruct(thArgType))
                         {
@@ -228,7 +212,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             return true;
                         }
                         break;
-#endif
                 }
             }
 
@@ -462,11 +445,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             /// </summary>
             public override int GetRetBuffArgOffset(bool hasThis)
             {
-#if PROJECTN
-                return OffsetOfArgs;
-#else
                 return hasThis ? X86Constants.OffsetOfEdx : X86Constants.OffsetOfEcx;
-#endif
             }
 
             public override int StackElemSize(int parmSize, bool isValueType = false, bool isFloatHfa = false)

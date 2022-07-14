@@ -63,8 +63,12 @@ namespace System.Threading.Tasks
 
         /// <summary>Throws an argument exception for the invalid <paramref name="asyncResult"/>.</summary>
         [DoesNotReturn]
-        private static void ThrowArgumentException(IAsyncResult asyncResult!!) =>
-            throw new ArgumentException(null, nameof(asyncResult));
+        private static void ThrowArgumentException(IAsyncResult asyncResult)
+        {
+            throw asyncResult is null ?
+                new ArgumentNullException(nameof(asyncResult)) :
+                new ArgumentException(null, nameof(asyncResult));
+        }
 
         /// <summary>Provides a simple IAsyncResult that wraps a Task.</summary>
         /// <remarks>

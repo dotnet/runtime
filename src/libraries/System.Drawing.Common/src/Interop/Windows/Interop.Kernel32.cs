@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 #if NET7_0_OR_GREATER
-using System.Runtime.InteropServices.GeneratedMarshalling;
+using System.Runtime.InteropServices.Marshalling;
 #endif
 
 internal static partial class Interop

@@ -62,7 +62,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static void PartialEquals_ReturnsPrefixLength_ValueType()
+        public static void PartialEquals_ReturnsPrefixLength_Byte()
         {
             byte[] arr1 = new byte[] { 1, 2, 3, 4, 5 };
             byte[] arr2 = new byte[] { 1, 2, 3, 6, 7 };
@@ -76,6 +76,51 @@ namespace System.SpanTests
             Assert.Equal(3, MemoryExtensions.CommonPrefixLength((Span<byte>)arr1, arr2, null));
             Assert.Equal(3, MemoryExtensions.CommonPrefixLength((Span<byte>)arr1, arr2, EqualityComparer<byte>.Default));
             Assert.Equal(3, MemoryExtensions.CommonPrefixLength((Span<byte>)arr1, arr2, NonDefaultEqualityComparer<byte>.Instance));
+
+            // Vectorized code path
+            arr1 = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
+            arr2 = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 42, 15, 16, 17 };
+
+            Assert.Equal(13, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<byte>)arr1, arr2));
+            Assert.Equal(13, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<byte>)arr1, arr2, null));
+            Assert.Equal(13, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<byte>)arr1, arr2, EqualityComparer<byte>.Default));
+            Assert.Equal(13, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<byte>)arr1, arr2, NonDefaultEqualityComparer<byte>.Instance));
+
+            Assert.Equal(13, MemoryExtensions.CommonPrefixLength((Span<byte>)arr1, arr2));
+            Assert.Equal(13, MemoryExtensions.CommonPrefixLength((Span<byte>)arr1, arr2, null));
+            Assert.Equal(13, MemoryExtensions.CommonPrefixLength((Span<byte>)arr1, arr2, EqualityComparer<byte>.Default));
+            Assert.Equal(13, MemoryExtensions.CommonPrefixLength((Span<byte>)arr1, arr2, NonDefaultEqualityComparer<byte>.Instance));
+        }
+
+        [Fact]
+        public static void PartialEquals_ReturnsPrefixLength_ValueType()
+        {
+            int[] arr1 = new int[] { 1, 2, 3 };
+            int[] arr2 = new int[] { 1, 2, 6 };
+
+            Assert.Equal(2, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2));
+            Assert.Equal(2, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, null));
+            Assert.Equal(2, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, EqualityComparer<int>.Default));
+            Assert.Equal(2, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, NonDefaultEqualityComparer<int>.Instance));
+
+            Assert.Equal(2, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2));
+            Assert.Equal(2, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, null));
+            Assert.Equal(2, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, EqualityComparer<int>.Default));
+            Assert.Equal(2, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, NonDefaultEqualityComparer<int>.Instance));
+
+            // Vectorized code path
+            arr1 = new int[] { 1, 2, 3, 4, 5 };
+            arr2 = new int[] { 1, 2, 3, 6, 7 };
+
+            Assert.Equal(3, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2));
+            Assert.Equal(3, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, null));
+            Assert.Equal(3, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, EqualityComparer<int>.Default));
+            Assert.Equal(3, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, NonDefaultEqualityComparer<int>.Instance));
+
+            Assert.Equal(3, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2));
+            Assert.Equal(3, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, null));
+            Assert.Equal(3, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, EqualityComparer<int>.Default));
+            Assert.Equal(3, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, NonDefaultEqualityComparer<int>.Instance));
         }
 
         [Fact]

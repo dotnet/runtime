@@ -235,7 +235,7 @@ namespace System.Reflection.Tests
             AssemblyName an = new AssemblyName("MyAssemblyName");
             Assert.Null(an.CultureName);
         }
-
+#pragma warning disable SYSLIB0044 // AssemblyName.CodeBase .AssemblyName.EscapedCodeBase are obsolete
         [Fact]
         public void Verify_CodeBase()
         {
@@ -259,6 +259,7 @@ namespace System.Reflection.Tests
             n.CodeBase = @"file:///c:/program files/MyAssemblyName.dll";
             Assert.Equal(n.EscapedCodeBase, Uri.EscapeUriString(n.CodeBase));
         }
+#pragma warning restore SYSLIB0044
 
         [Fact]
         public static void Verify_HashAlgorithm()
@@ -294,22 +295,11 @@ namespace System.Reflection.Tests
         [Fact]
         public static void GetAssemblyName()
         {
-            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AssemblyName.GetAssemblyName(null));
-            AssertExtensions.Throws<ArgumentException>("path", null, () => AssemblyName.GetAssemblyName(string.Empty));
-            Assert.Throws<System.IO.FileNotFoundException>(() => AssemblyName.GetAssemblyName("IDontExist"));
-
-            using (var tempFile = new TempFile(Path.GetTempFileName(), 0)) // Zero-size file
+            if (!PlatformDetection.IsNativeAot)
             {
-                Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
+                Assembly a = typeof(AssemblyNameTests).Assembly;
+                Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
             }
-
-            using (var tempFile = new TempFile(Path.GetTempFileName(), 42))
-            {
-                Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-            }
-
-            Assembly a = typeof(AssemblyNameTests).Assembly;
-            Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
         }
 
         [Fact]
@@ -371,7 +361,7 @@ namespace System.Reflection.Tests
             Assert.Equal(assemblyName.Name.Length, assemblyName.FullName.IndexOf(','));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void EmptyFusionLog()
         {
             FileNotFoundException fnfe = Assert.Throws<FileNotFoundException>(() => Assembly.LoadFrom(@"\non\existent\file.dll"));

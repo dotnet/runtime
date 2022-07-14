@@ -37,11 +37,12 @@ public:
     explicit sdk_resolver(bool allow_prerelease = true);
     sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forward, bool allow_prerelease);
 
-    pal::string_t const& global_file_path() const;
+    const pal::string_t& global_file_path() const;
+
+    const fx_ver_t& get_requested_version() const;
 
     pal::string_t resolve(const pal::string_t& dotnet_root, bool print_errors = true) const;
 
-    void print_global_file_path();
     void print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *prefix) const;
 
     static sdk_resolver from_nearest_global_file(bool allow_prerelease = true);
@@ -62,7 +63,7 @@ private:
     bool resolve_sdk_path_and_version(const pal::string_t& dir, pal::string_t& sdk_path, fx_ver_t& resolved_version) const;
 
     pal::string_t global_file;
-    fx_ver_t version;
+    fx_ver_t requested_version;
     sdk_roll_forward_policy roll_forward;
     bool allow_prerelease;
 };

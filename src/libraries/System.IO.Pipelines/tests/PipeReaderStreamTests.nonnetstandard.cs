@@ -55,7 +55,7 @@ namespace System.IO.Pipelines.Tests
         [MemberData(nameof(ReadCalls))]
         public async Task ReadingFromPipeReaderStreamReadsFromUnderlyingPipeReader(ReadAsyncDelegate readAsync)
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var pipe = new Pipe();
             await pipe.Writer.WriteAsync(helloBytes);
             pipe.Writer.Complete();
@@ -73,7 +73,7 @@ namespace System.IO.Pipelines.Tests
         [MemberData(nameof(ReadCalls))]
         public async Task AsStreamReturnsPipeReaderStream(ReadAsyncDelegate readAsync)
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var pipe = new Pipe();
             await pipe.Writer.WriteAsync(helloBytes);
             pipe.Writer.Complete();
@@ -90,7 +90,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task ReadingWithSmallerBufferWorks()
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var pipe = new Pipe();
             await pipe.Writer.WriteAsync(helloBytes);
             pipe.Writer.Complete();

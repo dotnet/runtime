@@ -104,7 +104,7 @@ namespace System.Runtime.Caching
         }
 
         internal MemoryCacheEntry(string key,
-                                  object value!!,
+                                  object value,
                                   DateTimeOffset absExp,
                                   TimeSpan slidingExp,
                                   CacheItemPriority priority,
@@ -112,6 +112,11 @@ namespace System.Runtime.Caching
                                   CacheEntryRemovedCallback removedCallback,
                                   MemoryCache cache) : base(key)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             _utcCreated = DateTime.UtcNow;
             _value = value;
 
@@ -159,18 +164,10 @@ namespace System.Runtime.Caching
                 {
                     return;
                 }
-                if (_fields == null)
-                {
-                    _fields = new SeldomUsedFields();
-                }
-                if (_fields._cache == null)
-                {
-                    _fields._cache = cache;
-                }
-                if (_fields._dependents == null)
-                {
-                    _fields._dependents = new Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor>();
-                }
+
+                _fields ??= new SeldomUsedFields();
+                _fields._cache ??= cache;
+                _fields._dependents ??= new Dictionary<MemoryCacheEntryChangeMonitor, MemoryCacheEntryChangeMonitor>();
                 _fields._dependents[dependent] = dependent;
             }
         }
@@ -214,10 +211,7 @@ namespace System.Runtime.Caching
         {
             lock (this)
             {
-                if (_fields == null)
-                {
-                    _fields = new SeldomUsedFields();
-                }
+                _fields ??= new SeldomUsedFields();
                 _fields._updateSentinel = Tuple.Create(sentinelStore, sentinelEntry);
             }
         }
@@ -267,10 +261,7 @@ namespace System.Runtime.Caching
             {
                 foreach (MemoryCacheEntryChangeMonitor dependent in deps)
                 {
-                    if (dependent != null)
-                    {
-                        dependent.OnCacheEntryReleased();
-                    }
+                    dependent?.OnCacheEntryReleased();
                 }
             }
 

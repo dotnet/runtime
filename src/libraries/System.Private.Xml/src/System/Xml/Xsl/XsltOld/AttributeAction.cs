@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-
-    internal class AttributeAction : ContainerAction
+    internal sealed class AttributeAction : ContainerAction
     {
         private const int NameDone = 2;
 
@@ -34,7 +34,7 @@ namespace System.Xml.Xsl.XsltOld
             PrefixQName qname = new PrefixQName();
             qname.SetQName(name);
 
-            qname.Namespace = nsUri != null ? nsUri : manager!.ResolveXPathNamespace(qname.Prefix);
+            qname.Namespace = nsUri ?? manager!.ResolveXPathNamespace(qname.Prefix);
 
             if (qname.Prefix.StartsWith("xml", StringComparison.Ordinal))
             {

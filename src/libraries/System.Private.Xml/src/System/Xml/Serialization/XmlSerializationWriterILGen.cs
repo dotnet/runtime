@@ -1368,9 +1368,8 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls WritePrimitive")]
         private void WriteAttribute(SourceInfo source, AttributeAccessor attribute, string parent)
         {
-            if (attribute.Mapping is SpecialMapping)
+            if (attribute.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)attribute.Mapping;
                 if (special.TypeDesc!.Kind == TypeKind.Attribute || special.TypeDesc.CanBeAttributeValue)
                 {
                     System.Diagnostics.Debug.Assert(parent == "o" || parent == "p");
@@ -1613,9 +1612,13 @@ namespace System.Xml.Serialization
                     {
                         anyCount++;
                         if (element.Name != null && element.Name.Length > 0)
+                        {
                             namedAnys.Add(element);
-                        else if (unnamedAny == null)
-                            unnamedAny = element;
+                        }
+                        else
+                        {
+                            unnamedAny ??= element;
+                        }
                     }
                     else if (choice != null)
                     {
@@ -1864,9 +1867,8 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls Load")]
         private void WriteText(SourceInfo source, TextAccessor text)
         {
-            if (text.Mapping is PrimitiveMapping)
+            if (text.Mapping is PrimitiveMapping primitiveMapping)
             {
-                PrimitiveMapping mapping = (PrimitiveMapping)text.Mapping;
                 Type argType;
                 ilg.Ldarg(0);
                 if (text.Mapping is EnumMapping)
@@ -1875,7 +1877,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    WritePrimitiveValue(mapping.TypeDesc!, source, out argType);
+                    WritePrimitiveValue(primitiveMapping.TypeDesc!, source, out argType);
                 }
                 MethodInfo XmlSerializationWriter_WriteValue = typeof(XmlSerializationWriter).GetMethod(
                     "WriteValue",
@@ -1884,10 +1886,9 @@ namespace System.Xml.Serialization
                     )!;
                 ilg.Call(XmlSerializationWriter_WriteValue);
             }
-            else if (text.Mapping is SpecialMapping)
+            else if (text.Mapping is SpecialMapping specialMapping)
             {
-                SpecialMapping mapping = (SpecialMapping)text.Mapping;
-                switch (mapping.TypeDesc!.Kind)
+                switch (specialMapping.TypeDesc!.Kind)
                 {
                     case TypeKind.Node:
                         MethodInfo WriteTo = source.Type!.GetMethod(
@@ -1946,9 +1947,8 @@ namespace System.Xml.Serialization
                 }
                 ilg.EndIf();
             }
-            else if (element.Mapping is ArrayMapping)
+            else if (element.Mapping is ArrayMapping arrayMapping)
             {
-                ArrayMapping mapping = (ArrayMapping)element.Mapping;
                 if (element.IsUnbounded)
                 {
                     throw Globals.NotSupported("Unreachable: IsUnbounded is never set true!");
@@ -1956,15 +1956,15 @@ namespace System.Xml.Serialization
                 else
                 {
                     ilg.EnterScope();
-                    string fullTypeName = mapping.TypeDesc!.CSharpName;
-                    WriteArrayLocalDecl(fullTypeName, arrayName, source, mapping.TypeDesc);
+                    string fullTypeName = arrayMapping.TypeDesc!.CSharpName;
+                    WriteArrayLocalDecl(fullTypeName, arrayName, source, arrayMapping.TypeDesc);
                     if (element.IsNullable)
                     {
                         WriteNullCheckBegin(arrayName, element);
                     }
                     else
                     {
-                        if (mapping.TypeDesc.IsNullable)
+                        if (arrayMapping.TypeDesc.IsNullable)
                         {
                             ilg.Ldloc(ilg.GetLocal(arrayName));
                             ilg.Load(null);
@@ -1972,7 +1972,7 @@ namespace System.Xml.Serialization
                         }
                     }
                     WriteStartElement(name, ns, false);
-                    WriteArrayItems(mapping.ElementsSortedByDerivation!, null, null, mapping.TypeDesc, arrayName, null);
+                    WriteArrayItems(arrayMapping.ElementsSortedByDerivation!, null, null, arrayMapping.TypeDesc, arrayName, null);
                     WriteEndElement();
                     if (element.IsNullable)
                     {
@@ -1980,7 +1980,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        if (mapping.TypeDesc.IsNullable)
+                        if (arrayMapping.TypeDesc.IsNullable)
                         {
                             ilg.EndIf();
                         }
@@ -1992,27 +1992,26 @@ namespace System.Xml.Serialization
             {
                 WritePrimitive("WriteElementString", name, ns, element.Default, source, element.Mapping, false, true, element.IsNullable);
             }
-            else if (element.Mapping is PrimitiveMapping)
+            else if (element.Mapping is PrimitiveMapping primitiveMapping)
             {
-                PrimitiveMapping mapping = (PrimitiveMapping)element.Mapping;
-                if (mapping.TypeDesc == QnameTypeDesc)
-                    WriteQualifiedNameElement(name, ns, GetConvertedDefaultValue(source.Type, element.Default), source, element.IsNullable, mapping);
+                if (primitiveMapping.TypeDesc == QnameTypeDesc)
+                {
+                    WriteQualifiedNameElement(name, ns, GetConvertedDefaultValue(source.Type, element.Default), source, element.IsNullable, primitiveMapping);
+                }
                 else
                 {
-                    string suffixRaw = mapping.TypeDesc!.XmlEncodingNotRequired ? "Raw" : "";
+                    string suffixRaw = primitiveMapping.TypeDesc!.XmlEncodingNotRequired ? "Raw" : "";
                     WritePrimitive(element.IsNullable ? ("WriteNullableStringLiteral" + suffixRaw) : ("WriteElementString" + suffixRaw),
-                                   name, ns, GetConvertedDefaultValue(source.Type, element.Default), source, mapping, false, true, element.IsNullable);
+                                   name, ns, GetConvertedDefaultValue(source.Type, element.Default), source, primitiveMapping, false, true, element.IsNullable);
                 }
             }
-            else if (element.Mapping is StructMapping)
+            else if (element.Mapping is StructMapping structMapping)
             {
-                StructMapping mapping = (StructMapping)element.Mapping;
-
-                string? methodName = ReferenceMapping(mapping);
+                string? methodName = ReferenceMapping(structMapping);
 
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc!.Name));
+                if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, structMapping.TypeDesc!.Name));
 #endif
                 List<Type> argTypes = new List<Type>();
                 ilg.Ldarg(0);
@@ -2020,9 +2019,9 @@ namespace System.Xml.Serialization
                 argTypes.Add(typeof(string));
                 ilg.Ldstr(GetCSharpString(ns));
                 argTypes.Add(typeof(string));
-                source.Load(mapping.TypeDesc!.Type);
-                argTypes.Add(mapping.TypeDesc.Type!);
-                if (mapping.TypeDesc.IsNullable)
+                source.Load(structMapping.TypeDesc!.Type);
+                argTypes.Add(structMapping.TypeDesc.Type!);
+                if (structMapping.TypeDesc.IsNullable)
                 {
                     ilg.Ldc(element.IsNullable);
                     argTypes.Add(typeof(bool));
@@ -2565,13 +2564,10 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls Load")]
         internal static void WriteInstanceOf(SourceInfo source, Type type, CodeGenerator ilg)
         {
-            {
-                source.Load(typeof(object));
-                ilg.IsInst(type);
-                ilg.Load(null);
-                ilg.Cne();
-                return;
-            }
+            source.Load(typeof(object));
+            ilg.IsInst(type);
+            ilg.Load(null);
+            ilg.Cne();
         }
 
         [RequiresUnreferencedCode("calls Load")]
@@ -2597,29 +2593,17 @@ namespace System.Xml.Serialization
         }
         internal static void WriteArrayTypeCompare(string variable, Type arrayType, CodeGenerator ilg)
         {
-            {
-                Debug.Assert(arrayType != null);
-                Debug.Assert(ilg != null);
-                ilg.Ldloc(typeof(Type), variable);
-                ilg.Ldc(arrayType);
-                ilg.Ceq();
-                return;
-            }
+            Debug.Assert(arrayType != null);
+            Debug.Assert(ilg != null);
+            ilg.Ldloc(typeof(Type), variable);
+            ilg.Ldc(arrayType);
+            ilg.Ceq();
         }
 
         [return: NotNullIfNotNull("value")]
-        internal static string? GetQuotedCSharpString(string? value)
-        {
-            if (value == null)
-            {
-                return null;
-            }
-            StringBuilder writer = new StringBuilder();
-            writer.Append("@\"");
-            writer.Append(GetCSharpString(value));
-            writer.Append('"');
-            return writer.ToString();
-        }
+        internal static string? GetQuotedCSharpString(string? value) =>
+            value is null ? null :
+            $"@\"{GetCSharpString(value)}\"";
 
         [return: NotNullIfNotNull("value")]
         internal static string? GetCSharpString(string? value)
@@ -2628,35 +2612,66 @@ namespace System.Xml.Serialization
             {
                 return null;
             }
-            StringBuilder writer = new StringBuilder();
-            foreach (char ch in value)
+
+            // Find the first character to be escaped.
+            int i;
+            for (i = 0; i < value.Length; i++)
             {
+                if (value[i] is < (char)32 or '\"')
+                {
+                    break;
+                }
+            }
+
+            // If nothing needs to be escaped, return the original string.
+            if (i == value.Length)
+            {
+                return value;
+            }
+
+            var builder = new ValueStringBuilder(stackalloc char[128]);
+
+            // Copy over all text that needn't be escaped.
+            builder.Append(value.AsSpan(0, i));
+
+            // Process the remainder of the string, escaping each value that needs to be.
+            for (; i < value.Length; i++)
+            {
+                char ch = value[i];
+
                 if (ch < 32)
                 {
                     if (ch == '\r')
-                        writer.Append("\\r");
+                    {
+                        builder.Append("\\r");
+                    }
                     else if (ch == '\n')
-                        writer.Append("\\n");
+                    {
+                        builder.Append("\\n");
+                    }
                     else if (ch == '\t')
-                        writer.Append("\\t");
+                    {
+                        builder.Append("\\t");
+                    }
                     else
                     {
                         byte b = (byte)ch;
-                        writer.Append("\\x");
-                        writer.Append(HexConverter.ToCharUpper(b >> 4));
-                        writer.Append(HexConverter.ToCharUpper(b));
+                        builder.Append("\\x");
+                        builder.Append(HexConverter.ToCharUpper(b >> 4));
+                        builder.Append(HexConverter.ToCharUpper(b));
                     }
                 }
                 else if (ch == '\"')
                 {
-                    writer.Append("\"\"");
+                    builder.Append("\"\"");
                 }
                 else
                 {
-                    writer.Append(ch);
+                    builder.Append(ch);
                 }
             }
-            return writer.ToString();
+
+            return builder.ToString();
         }
     }
 }

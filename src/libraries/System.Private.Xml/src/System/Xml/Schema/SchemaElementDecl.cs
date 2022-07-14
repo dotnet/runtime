@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Collections.Generic;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-
     internal sealed class SchemaElementDecl : SchemaDeclBase, IDtdAttributeListInfo
     {
         private readonly Dictionary<XmlQualifiedName, SchemaAttDef> _attdefs = new Dictionary<XmlQualifiedName, SchemaAttDef>();
@@ -194,10 +194,7 @@ namespace System.Xml.Schema
             }
             if (attdef.Presence == SchemaDeclBase.Use.Default || attdef.Presence == SchemaDeclBase.Use.Fixed)
             { //Not adding RequiredFixed here
-                if (_defaultAttdefs == null)
-                {
-                    _defaultAttdefs = new List<IDtdDefaultAttributeInfo>();
-                }
+                _defaultAttdefs ??= new List<IDtdDefaultAttributeInfo>();
                 _defaultAttdefs.Add(attdef);
             }
         }

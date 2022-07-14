@@ -79,10 +79,7 @@ namespace System.ComponentModel
                         }
                     }
 
-                    if (_converter == null)
-                    {
-                        _converter = TypeDescriptor.GetConverter(PropertyType);
-                    }
+                    _converter ??= TypeDescriptor.GetConverter(PropertyType);
                 }
                 return _converter;
             }
@@ -122,12 +119,12 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        public virtual void AddValueChanged(object component!!, EventHandler handler!!)
+        public virtual void AddValueChanged(object component, EventHandler handler)
         {
-            if (_valueChangedHandlers == null)
-            {
-                _valueChangedHandlers = new Dictionary<object, EventHandler?>();
-            }
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
+
+            _valueChangedHandlers ??= new Dictionary<object, EventHandler?>();
 
             EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
             _valueChangedHandlers[component] = (EventHandler?)Delegate.Combine(h, handler);
@@ -282,10 +279,7 @@ namespace System.ComponentModel
 
                 // Now, if we failed to find it in our own attributes, go to the
                 // component descriptor.
-                if (editor == null)
-                {
-                    editor = TypeDescriptor.GetEditor(PropertyType, editorBaseType);
-                }
+                editor ??= TypeDescriptor.GetEditor(PropertyType, editorBaseType);
 
                 // Now, another slot in our editor cache for next time
                 if (_editorTypes == null)
@@ -391,8 +385,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        public virtual void RemoveValueChanged(object component!!, EventHandler handler!!)
+        public virtual void RemoveValueChanged(object component, EventHandler handler)
         {
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
+
             if (_valueChangedHandlers != null)
             {
                 EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);

@@ -54,23 +54,15 @@ namespace System.Xml
         {
         }
 
-        public void SetOutput(Stream stream!!, bool includeComments, string[]? inclusivePrefixes)
+        public void SetOutput(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
-            if (_writer == null)
-            {
-                _writer = new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
-            }
+            ArgumentNullException.ThrowIfNull(stream);
+
+            _writer ??= new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
             _writer.SetOutput(stream, false, null);
 
-            if (_elementStream == null)
-            {
-                _elementStream = new MemoryStream();
-            }
-
-            if (_elementWriter == null)
-            {
-                _elementWriter = new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
-            }
+            _elementStream ??= new MemoryStream();
+            _elementWriter ??= new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
             _elementWriter.SetOutput(_elementStream, false, null);
 
             if (_xmlnsAttributes == null)
@@ -118,10 +110,8 @@ namespace System.Xml
 
         public void Close()
         {
-            if (_writer != null)
-                _writer.Close();
-            if (_elementWriter != null)
-                _elementWriter.Close();
+            _writer?.Close();
+            _elementWriter?.Close();
             if (_elementStream != null && _elementStream.Length > 512)
                 _elementStream = null!;
             _elementBuffer = null;
@@ -141,8 +131,10 @@ namespace System.Xml
         {
         }
 
-        public void WriteComment(string value!!)
+        public void WriteComment(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             ThrowIfClosed();
             if (_includeComments)
             {
@@ -178,8 +170,11 @@ namespace System.Xml
             _xmlnsOffset = _scopes[_depth].xmlnsOffset;
         }
 
-        public void WriteStartElement(string prefix!!, string localName!!)
+        public void WriteStartElement(string prefix, string localName)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(localName);
+
             ThrowIfClosed();
             bool isRootElement = (_depth == 0);
 
@@ -336,8 +331,11 @@ namespace System.Xml
             _elementBuffer = null;
         }
 
-        public void WriteEndElement(string prefix!!, string localName!!)
+        public void WriteEndElement(string prefix, string localName)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(localName);
+
             ThrowIfClosed();
             _writer.WriteEndElement(prefix, localName);
             EndElement();
@@ -359,8 +357,11 @@ namespace System.Xml
         }
 
         [MemberNotNull(nameof(_xmlnsAttributes))]
-        public void WriteXmlnsAttribute(string prefix!!, string ns!!)
+        public void WriteXmlnsAttribute(string prefix, string ns)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(ns);
+
             ThrowIfClosed();
             if (prefix.Length > int.MaxValue - ns.Length)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(ns), SR.Format(SR.CombinedPrefixNSLength, int.MaxValue / maxBytesPerChar)));
@@ -418,8 +419,11 @@ namespace System.Xml
             AddXmlnsAttribute(ref xmlnsAttribute);
         }
 
-        public void WriteStartAttribute(string prefix!!, string localName!!)
+        public void WriteStartAttribute(string prefix, string localName)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(localName);
+
             ThrowIfClosed();
             _attribute.offset = _elementWriter.Position;
             _attribute.length = 0;
@@ -487,8 +491,10 @@ namespace System.Xml
             }
         }
 
-        public void WriteEscapedText(string value!!)
+        public void WriteEscapedText(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             ThrowIfClosed();
             // Skip all white spaces before the start of root element.
             if (_depth > 0)
@@ -504,8 +510,10 @@ namespace System.Xml
             }
         }
 
-        public void WriteEscapedText(byte[] chars!!, int offset, int count)
+        public void WriteEscapedText(byte[] chars, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > chars.Length)
@@ -581,8 +589,10 @@ namespace System.Xml
             }
         }
 
-        public void WriteText(string value!!)
+        public void WriteText(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.Length > 0)
             {
                 if (_inStartElement)

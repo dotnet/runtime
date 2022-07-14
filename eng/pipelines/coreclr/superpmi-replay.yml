@@ -11,6 +11,7 @@ pr:
   paths:
     include:
     - src/coreclr/jit/*
+    - src/coreclr/tools/superpmi/*
     exclude:
     - src/coreclr/inc/jiteeversionguid.h
 

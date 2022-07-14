@@ -168,7 +168,7 @@ namespace Internal.Runtime.TypeLoader
         ///    metadataReader + typeRefHandle  - a valid metadata reader + typeReferenceHandle where "metadataReader" is one
         ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
         ///
-        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the Project N pay-for-play design
+        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
         /// guarantees that any type that has a metadata TypeReference to it also has a RuntimeTypeHandle underneath.
         /// </summary>
         /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
@@ -191,7 +191,7 @@ namespace Internal.Runtime.TypeLoader
         ///    metadataReader + typeRefHandle  - a valid metadata reader + typeReferenceHandle where "metadataReader" is one
         ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
         ///
-        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the Project N pay-for-play design
+        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
         /// guarantees that any type that has a metadata TypeReference to it also has a RuntimeTypeHandle underneath.
         /// </summary>
         /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
@@ -417,7 +417,7 @@ namespace Internal.Runtime.TypeLoader
 
                     // what we have now is the base address of the non-gc statics of the type
                     // what we need is the cctor context, which is just before that
-                    ptr = ptr - sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+                    ptr -= sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
                     return (IntPtr)ptr;
                 }
@@ -702,8 +702,7 @@ namespace Internal.Runtime.TypeLoader
         public static unsafe bool TryGetMethodMethodNameAndSigFromVTableSlotForPregeneratedOrTemplateType(TypeSystemContext context, RuntimeTypeHandle type, int vtableSlot, out MethodNameAndSignature methodNameAndSig)
         {
             //
-            // NOTE: The semantics of the vtable slot and method declaring type in the VirtualInvokeMap table have slight differences between ProjectN and CoreRT ABIs.
-            // See comment in TryGetVirtualResolveData for more details.
+            // See comment in TryGetVirtualResolveData for more details on the semantics of the vtable slot and method declaring type in the VirtualInvokeMap table
             //
 
             int logicalSlot = vtableSlot;
@@ -785,7 +784,7 @@ namespace Internal.Runtime.TypeLoader
             externalReferences.InitializeCommonFixupsTable(module);
 
             //
-            // On CoreRT, the vtable entries for each instantiated type might not necessarily exist.
+            // The vtable entries for each instantiated type might not necessarily exist.
             // Example 1:
             //      If there's a call to Foo<string>.Method1 and a call to Foo<int>.Method2, Foo<string> will
             //      not have Method2 in its vtable and Foo<int> will not have Method1.
@@ -793,7 +792,7 @@ namespace Internal.Runtime.TypeLoader
             //      If there's a call to Foo<string>.Method1 and a call to Foo<object>.Method2, given that both
             //      of these instantiations share the same canonical form, Foo<__Canon> will have both method
             //      entries, and therefore Foo<string> and Foo<object> will have both entries too.
-            // For this reason, the entries that we write to the map in CoreRT will be based on the canonical form
+            // For this reason, the entries that we write to the map will be based on the canonical form
             // of the method's containing type instead of the open type definition.
             //
 
@@ -901,8 +900,7 @@ namespace Internal.Runtime.TypeLoader
             RuntimeTypeHandle declaringType, int logicalSlot, out MethodNameAndSignature methodNameAndSig)
         {
             //
-            // NOTE: The semantics of the vtable slot and method declaring type in the VirtualInvokeMap table have slight differences between ProjectN and CoreRT ABIs.
-            // See comment in TryGetVirtualResolveData for more details.
+            // See comment in TryGetVirtualResolveData for more details on the semantics of the vtable slot and method declaring type in the VirtualInvokeMap table
             //
 
             NativeReader invokeMapReader = GetNativeReaderForBlob(module, ReflectionMapBlob.VirtualInvokeMap);

@@ -81,7 +81,7 @@ namespace System.Net.NameResolution.Tests
         [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)    
+        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)
         {
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
         }
@@ -122,7 +122,7 @@ namespace System.Net.NameResolution.Tests
                 {
                     Assert.NotEqual(AddressFamily.InterNetworkV6, address.AddressFamily);
                 }
-            }   
+            }
         }
 
         [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
@@ -315,9 +315,10 @@ namespace System.Net.NameResolution.Tests
     [Collection(nameof(DisableParallelization))]
     public class GetHostEntryTest_Cancellation
     {
+        [Fact]
         [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
-        [Fact]
+        [SkipOnCoreClr("JitStress interferes with cancellation timing", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         public async Task DnsGetHostEntry_PostCancelledToken_Throws()
         {
             // Windows 7 name resolution is synchronous and does not respect cancellation.

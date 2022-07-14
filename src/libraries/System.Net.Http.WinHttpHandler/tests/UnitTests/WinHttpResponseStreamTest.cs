@@ -331,7 +331,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void Read_NoOffsetAndNotEndOfData_FillsBuffer()
         {
             Stream stream = MakeResponseStream();
-            byte[] testData = Encoding.UTF8.GetBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+            byte[] testData = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"u8.ToArray();
             TestServer.ResponseBody = testData;
 
             byte[] buffer = new byte[testData.Length];
@@ -348,7 +348,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void Read_UsingOffsetAndNotEndOfData_FillsBufferFromOffset()
         {
             Stream stream = MakeResponseStream();
-            byte[] testData = Encoding.UTF8.GetBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+            byte[] testData = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"u8.ToArray();
             TestServer.ResponseBody = testData;
 
             byte[] buffer = new byte[testData.Length];

@@ -115,16 +115,16 @@ namespace ILCompiler
                     totalEligibleTypes++;
                     if (item.IsPreinitialized)
                     {
-                        logger.Writer.WriteLine($"Preinitialized type '{item.Type}'");
+                        logger.LogMessage($"Preinitialized type '{item.Type}'");
                         totalPreinitializedTypes++;
                     }
                     else
                     {
-                        logger.Writer.WriteLine($"Could not preinitialize '{item.Type}': {item.FailureReason}");
+                        logger.LogMessage($"Could not preinitialize '{item.Type}': {item.FailureReason}");
                     }
                 }
 
-                logger.Writer.WriteLine($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
+                logger.LogMessage($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
             }
         }
 

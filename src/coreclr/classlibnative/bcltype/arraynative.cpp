@@ -936,44 +936,6 @@ Done: ;
 }
 FCIMPLEND
 
-FCIMPL2(Object*, ArrayNative::GetValue, ArrayBase* refThisUNSAFE, INT_PTR flattenedIndex)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-    } CONTRACTL_END;
-
-    BASEARRAYREF refThis(refThisUNSAFE);
-
-    TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
-
-    // Legacy behavior
-    if (arrayElementType.IsTypeDesc())
-    {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowRes(kNotSupportedException, W("NotSupported_Type"));
-    }
-
-    _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
-    void* pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
-    OBJECTREF Obj = NULL;
-
-    MethodTable* pElementTypeMT = arrayElementType.GetMethodTable();
-    if (pElementTypeMT->IsValueType())
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        Obj = pElementTypeMT->Box(pData);
-        HELPER_METHOD_FRAME_END();
-    }
-    else
-    {
-        Obj = ObjectToOBJECTREF(*((Object**)pData));
-    }
-
-    return OBJECTREFToObject(Obj);
-}
-FCIMPLEND
-
 FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex)
 {
     FCALL_CONTRACT;
@@ -983,12 +945,10 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
 
     TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
 
-    // Legacy behavior
+    // Legacy behavior (this handles pointers and function pointers)
     if (arrayElementType.IsTypeDesc())
     {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
+        FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
     }
 
     _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
@@ -1081,9 +1041,6 @@ FCIMPL2_IV(void, ArrayNative::InitializeArray, ArrayBase* pArrayRef, FCALLRuntim
     if (!pField->IsRVA())
         COMPlusThrow(kArgumentException);
 
-    // Report the RVA field to the logger.
-    g_IBCLogger.LogRVADataAccess(pField);
-
     // Note that we do not check that the field is actually in the PE file that is initializing
     // the array. Basically the data being published is can be accessed by anyone with the proper
     // permissions (C# marks these as assembly visibility, and thus are protected from outside
@@ -1160,9 +1117,6 @@ FCIMPL3_VVI(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structF
 
     DWORD totalSize = pField->LoadSize();
     DWORD targetTypeSize = targetTypeHandle.GetSize();
-
-    // Report the RVA field to the logger.
-    g_IBCLogger.LogRVADataAccess(pField);
 
     data = pField->GetStaticAddressHandle(NULL);
     _ASSERTE(data != NULL);

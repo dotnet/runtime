@@ -28,8 +28,10 @@ namespace System.Reflection.Metadata
         /// <para>The caller is responsible for keeping the assembly object alive while accessing the metadata blob.</para>
         /// </remarks>
         [CLSCompliant(false)] // out byte* blob
-        public static unsafe bool TryGetRawMetadata(this Assembly assembly!!, out byte* blob, out int length)
+        public static unsafe bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
         {
+            ArgumentNullException.ThrowIfNull(assembly);
+
             blob = null;
             length = 0;
 

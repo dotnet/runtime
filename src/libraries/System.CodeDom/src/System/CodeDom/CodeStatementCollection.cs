@@ -29,16 +29,26 @@ namespace System.CodeDom
 
         public int Add(CodeExpression value) => Add(new CodeExpressionStatement(value));
 
-        public void AddRange(CodeStatement[] value!!)
+        public void AddRange(CodeStatement[] value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(CodeStatementCollection value!!)
+        public void AddRange(CodeStatementCollection value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {

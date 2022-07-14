@@ -15,12 +15,7 @@ namespace System.Security.Cryptography
         public Oid(string oid)
         {
             // If we were passed the friendly name, retrieve the value String.
-            string? oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
-            if (oidValue == null)
-            {
-                oidValue = oid;
-            }
-            this.Value = oidValue;
+            this.Value = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false) ?? oid;
 
             _group = OidGroup.All;
         }
@@ -32,16 +27,20 @@ namespace System.Security.Cryptography
             _hasInitializedFriendlyName = friendlyName != null;
         }
 
-        public Oid(Oid oid!!)
+        public Oid(Oid oid)
         {
+            ArgumentNullException.ThrowIfNull(oid);
+
             _value = oid._value;
             _friendlyName = oid._friendlyName;
             _group = oid._group;
             _hasInitializedFriendlyName = oid._hasInitializedFriendlyName;
         }
 
-        public static Oid FromFriendlyName(string friendlyName!!, OidGroup group)
+        public static Oid FromFriendlyName(string friendlyName, OidGroup group)
         {
+            ArgumentNullException.ThrowIfNull(friendlyName);
+
             string? oidValue = OidLookup.ToOid(friendlyName, group, fallBackToAllGroups: false);
             if (oidValue == null)
                 throw new CryptographicException(SR.Cryptography_Oid_InvalidName);
@@ -49,8 +48,10 @@ namespace System.Security.Cryptography
             return new Oid(oidValue, friendlyName, group);
         }
 
-        public static Oid FromOidValue(string oidValue!!, OidGroup group)
+        public static Oid FromOidValue(string oidValue, OidGroup group)
         {
+            ArgumentNullException.ThrowIfNull(oidValue);
+
             string? friendlyName = OidLookup.ToFriendlyName(oidValue, group, fallBackToAllGroups: false);
             if (friendlyName == null)
                 throw new CryptographicException(SR.Cryptography_Oid_InvalidValue);

@@ -22,6 +22,11 @@
         <target state="translated">原生類型'{0}'必須在套用的 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' 上設定 'BufferSize' 字段，以指定通話者設定的緩衝區大小，因为它的建構函式採用通話者設定的 'Span&lt;byte&gt;'</target>
         <note />
       </trans-unit>
+      <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
+        <source>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</source>
+        <target state="translated">應在 'CustomTypeMarshallerAttribute' 上設定 'BufferSize'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
         <source>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</source>
         <target state="translated">支援使用通話者設定緩衝區從 Managed 到 native 的類型，也應支援從售管理到原生排列，因為無法使用通話者設定的緩衝區。</target>
@@ -84,7 +89,7 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
-        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</target>
+        <target state="translated">來源產生的 P/Invokes 不支援為 '{1}' 指定的值 '{0}'。如果需要指定值，請改用一般 'DllImport'。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -130,6 +135,11 @@
       <trans-unit id="ConvertToLibraryImportWithSuffix">
         <source>Convert to 'LibraryImport' with '{0}' suffix</source>
         <target state="translated">轉換為具有 '{0}'後綴的 'LibraryImport'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
+        <source>Marshaller type does not have the required shape</source>
+        <target state="translated">封送處理器類型沒有必要的圖形</target>
         <note />
       </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustSupportDirectionDescription">
@@ -209,7 +219,7 @@
       </trans-unit>
       <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
         <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="new">A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</target>
+        <target state="translated">封送處理器類型 '{0}' 支援以 'In' 方向進行封送處理，且 'TwoStageMarshalling' 功能必須提供傳回原生值的 'ToNativeValue' 執行個體方法</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
@@ -227,9 +237,24 @@
         <target state="translated">以 'LibraryImportAttribute' 標示時，方法'{0}'應為 'static'、'partial' 和非泛型。產生 P/Invoke 来源會忽略方法'{0}'。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
+        <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
+        <target state="translated">'CustomTypeMarshallerAttribute' 使用方式無效</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
         <source>Invalid 'LibraryImportAttribute' usage</source>
         <target state="translated">'LibraryImportAttribute' 使用方式無效</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidNativeTypeTitle">
+        <source>Specified native type is invalid</source>
+        <target state="translated">指定的原生類型無效</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
+        <source>Marshaller type has incompatible method signatures</source>
+        <target state="translated">封送處理器類型有不相容的方法簽章</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -352,6 +377,11 @@
         <target state="translated">類型 '{0}' 未在套用至類型的 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' 中指定受管理類型</target>
         <note />
       </trans-unit>
+      <trans-unit id="MissingAllocatingMarshallingFallbackTitle">
+        <source>Marshaller type does not support allocating constructor</source>
+        <target state="translated">封送處理器類型不支援配置建構函式</target>
+        <note />
+      </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
         <source>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
         <target state="translated">原生類型 '{0}' 必須是封閉式泛型或具有與受管理類型相同的泛型參數數目，因此發出的程式碼可以使用特定的具現化。</target>
@@ -412,6 +442,11 @@
         <target state="translated">封送處理器類型 '{0}'支援以 'Out' 方向使用 'TwoStageMarshalling' 功能進行排列，但未提供傳回 'void' 並接受一個參數的 'FromNativeValue' 實例方法。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ProvidedMethodsNotSpecifiedInFeaturesTitle">
+        <source>Marshaller type defines a well-known method without specifying support for the corresponding feature</source>
+        <target state="translated">封送處理器類型定義了已知的方法，但未指定對應功能的支援</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RefNativeValueUnsupportedDescription">
         <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
         <target state="translated">'Value' 屬性不得為 'ref' 或 'readonly ref' 屬性。</target>
@@ -425,21 +460,6 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">衍生自 'SafeHandle' 的抽象類型無法依參考排列。提供的類型必須是實體。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedDescription">
-        <source>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</source>
-        <target state="translated">未知的目标架構 v{0} 不支援產生 P/Invoke 来源。產生的来源將與其他架構不兼容。</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedMessage">
-        <source>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</source>
-        <target state="translated">'LibraryImportAttribute' 無法用于未知的目標架構 v{0} 上来源產生的 P/Invokes。</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedTitle">
-        <source>Current target framework is not supported by source-generated P/Invokes</source>
-        <target state="translated">来源產生的 P/Invokes 不支援目前的目標價構</target>
         <note />
       </trans-unit>
       <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
@@ -506,12 +526,12 @@
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
         <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</target>
+        <target state="translated">支援 'CallerAllocatedBuffer' 功能的 'Value'-kind 原生類型必須提供接受受管理類型的雙參數建構函示，以及以 'unmanaged' 類型的 'Span' 作為參數</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
-        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">類型 '{0}' 指定其支援使用 'CallerAllocatedBuffer' 功能為 '{1}' 的 'In' 封送處理，但不提供接受 '{1}' 的二參數構建函式，以及以 'unmanaged' 類型的 'Span' 作為參數</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInRequiresOneParameterConstructorDescription">

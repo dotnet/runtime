@@ -26,8 +26,13 @@ namespace System.Reflection.Metadata
         {
         }
 
-        public unsafe BlobContentId(byte[] id!!)
+        public unsafe BlobContentId(byte[] id)
         {
+            if (id is null)
+            {
+                Throw.ArgumentNull(nameof(id));
+            }
+
             if (id.Length != Size)
             {
                 throw new ArgumentException(SR.Format(SR.UnexpectedArrayLength, Size), nameof(id));
@@ -48,8 +53,13 @@ namespace System.Reflection.Metadata
             return FromHash(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(hashCode)!);
         }
 
-        public static BlobContentId FromHash(byte[] hashCode!!)
+        public static BlobContentId FromHash(byte[] hashCode)
         {
+            if (hashCode is null)
+            {
+                Throw.ArgumentNull(nameof(hashCode));
+            }
+
             const int minHashSize = 20;
 
             if (hashCode.Length < minHashSize)

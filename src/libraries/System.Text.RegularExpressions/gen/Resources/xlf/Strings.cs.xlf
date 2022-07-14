@@ -13,13 +13,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
-        <source>(?({0}) ) malformed.</source>
-        <target state="translated">Odkaz (?({0}) ) byl poškozen.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="AlternationHasMalformedReferenceNoPlaceholder">
-        <source>Alternation has malformed reference.</source>
-        <target state="translated">Alternace má nesprávně vytvořený odkaz.</target>
+        <source>Conditional alternation is missing a closing parenthesis after the group number {0}.</source>
+        <target state="translated">V podmíněné alternaci chybí pravá závorka za číslem skupiny {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
@@ -33,13 +28,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReference">
-        <source>(?({0}) ) reference to undefined group.</source>
-        <target state="translated">Odkaz na nedefinovanou skupinu (?({0}) ).</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="AlternationHasUndefinedReferenceNoPlaceholder">
-        <source>Alternation has a reference to undefined group.</source>
-        <target state="translated">Alternace obsahuje odkaz na nedefinovanou skupinu.</target>
+        <source>Conditional alternation refers to an undefined group number {0}.</source>
+        <target state="translated">Podmíněná alternace odkazuje na nedefinované číslo skupiny {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
@@ -102,16 +92,6 @@
         <target state="translated">Nedostatek šestnáctkových číslic.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Vnitřní chyba v modulu ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
-      <trans-unit id="InvalidEmptyArgument">
-        <source>Argument {0} cannot be zero-length.</source>
-        <target state="translated">Argument {0} nemůže mít nulovou délku.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Nerozpoznaný seskupovací konstrukt.</target>
@@ -148,8 +128,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
-        <target state="translated">RegexGenerator nemohl vygenerovat úplnou zdrojovou implementaci zadaného regulárního výrazu, protože možnost není podporovaná nebo je regulární výraz příliš složitý.  Implementace bude regulární výraz interpretovat za běhu.</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
+        <target state="translated">RegexGenerator nemohl vygenerovat úplnou zdrojovou implementaci pro zadaný regulární výraz z důvodu interního omezení.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
@@ -187,11 +167,6 @@
         <target state="translated">Vnořený kvantifikátor {0}.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NestedQuantifiersNotParenthesizedNoPlaceholder">
-        <source>Nested quantifier no parenthesized.</source>
-        <target state="translated">Vnořený kvantifikátor neobsahuje žádné závorky.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="NoResultOnFailed">
         <source>Result cannot be called on a failed Match.</source>
         <target state="translated">Výsledek nelze volat pro shodu, která se nezdařila.</target>
@@ -213,13 +188,13 @@
         <note />
       </trans-unit>
       <trans-unit id="QuantifierAfterNothing">
-        <source>Quantifier {x,y} following nothing.</source>
-        <target state="translated">Před kvantifikátorem {x,y} není nic uvedeno.</target>
+        <source>Quantifier '{0}' following nothing.</source>
+        <target state="translated">Kvantifikátor {0} za ničím nenásleduje.</target>
         <note />
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
-        <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="translated">Počty skupin digitalizace musí být menší nebo rovny hodnotě Int32.MaxValue.</target>
+        <source>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</source>
+        <target state="translated">Kvantifikátor a čísla skupin digitalizace musí být menší nebo rovny hodnotě Int32.MaxValue.</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
@@ -230,11 +205,6 @@
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
         <target state="translated">Metoda RegexGenerator musí být částečná, bez parametrů, negenerická, neabstraktní a musí vracet regulární výraz.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Chyba vzorku pro náhradu.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -252,29 +222,14 @@
         <target state="translated">Do rozsahu znaků nejde zahrnout třídu \\{0}.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ShorthandClassInCharacterRangeNoPlaceholder">
-        <source>Cannot include class in character range.</source>
-        <target state="translated">Do rozsahu znaků nejde zahrnout třídu.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UndefinedNamedReference">
         <source>Reference to undefined group name '{0}'.</source>
         <target state="translated">Odkaz na nedefinovaný název skupiny {0}.</target>
         <note />
       </trans-unit>
-      <trans-unit id="UndefinedNamedReferenceNoPlaceholder">
-        <source>Reference to undefined group name.</source>
-        <target state="translated">Odkaz na nedefinovaný název skupiny.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UndefinedNumberedReference">
         <source>Reference to undefined group number {0}.</source>
         <target state="translated">Odkaz na nedefinované číslo skupiny. Číslo skupiny: {0}.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UndefinedNumberedReferenceNoPlaceholder">
-        <source>Reference to undefined group number.</source>
-        <target state="translated">Odkaz na nedefinované číslo skupiny.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
@@ -297,11 +252,6 @@
         <target state="translated">Neznámá vlastnost {0}.</target>
         <note />
       </trans-unit>
-      <trans-unit id="UnrecognizedUnicodePropertyNoPlaceholder">
-        <source>Unknown property Unicode property.</source>
-        <target state="translated">Neznámá vlastnost Unicode vlastnosti.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnterminatedBracket">
         <source>Unterminated [] set.</source>
         <target state="translated">Nedokončená [] sada.</target>
@@ -310,6 +260,16 @@
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
         <target state="translated">Neukončený komentář (?#...).</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="translated">Pomocí regexGeneratorAttribute vygenerujte implementaci regulárního výrazu za kompilace.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="translated">Převod na RegexGenerator</target>
         <note />
       </trans-unit>
     </body>

@@ -135,8 +135,9 @@ namespace System.ComponentModel.DataAnnotations
         ///     Throws an ArgumentException of the validation context is null
         /// </summary>
         /// <param name="validationContext">The context to check</param>
-        private static void EnsureValidationContext(ValidationContext validationContext!!)
+        private static void EnsureValidationContext(ValidationContext validationContext)
         {
+            ArgumentNullException.ThrowIfNull(validationContext);
         }
 
         internal static bool IsPublic(PropertyInfo p) =>
@@ -200,10 +201,7 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     lock (_syncRoot)
                     {
-                        if (_propertyStoreItems == null)
-                        {
-                            _propertyStoreItems = CreatePropertyStoreItems();
-                        }
+                        _propertyStoreItems ??= CreatePropertyStoreItems();
                     }
                 }
 

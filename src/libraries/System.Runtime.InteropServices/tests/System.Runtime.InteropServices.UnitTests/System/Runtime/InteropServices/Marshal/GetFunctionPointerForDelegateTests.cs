@@ -92,8 +92,29 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("delegate", () => Marshal.GetFunctionPointerForDelegate(d));
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        public void GetFunctionPointerForDelegate_MarshalledOpenStaticDelegate()
+        {
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
+            Delegate original = targetMethod.CreateDelegate(typeof(NonGenericDelegate), null);
+            IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);
+            Assert.NotEqual(IntPtr.Zero, ptr);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        public void GetFunctionPointerForDelegate_MarshalledClosedStaticDelegate()
+        {
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
+            Delegate original = targetMethod.CreateDelegate(typeof(NoArgsDelegate), "value");
+            IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);
+            Assert.NotEqual(IntPtr.Zero, ptr);
+        }
+
         public delegate void GenericDelegate<T>(T t);
         public delegate void NonGenericDelegate(string t);
+        public delegate void NoArgsDelegate();
 
         private static void Method(string s) { }
     }

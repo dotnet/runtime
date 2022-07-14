@@ -94,8 +94,10 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
-        private static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers impl, object instance!!, CreateComInterfaceFlags flags, out IntPtr retValue)
+        private static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers impl, object instance, CreateComInterfaceFlags flags, out IntPtr retValue)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             return TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), impl.id, ObjectHandleOnStack.Create(ref instance), flags, out retValue);
         }
 
@@ -203,8 +205,10 @@ namespace System.Runtime.InteropServices
         ///
         /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
         /// </remarks>
-        public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper!!, IntPtr inner)
+        public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
         {
+            ArgumentNullException.ThrowIfNull(wrapper);
+
             object? obj;
             if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, inner, flags, wrapper, out obj))
                 throw new ArgumentNullException(nameof(externalComObject));
@@ -263,8 +267,10 @@ namespace System.Runtime.InteropServices
         /// Scenarios where this global instance may be used are:
         ///  * Object tracking via the <see cref="CreateComInterfaceFlags.TrackerSupport" /> and <see cref="CreateObjectFlags.TrackerObject" /> flags.
         /// </remarks>
-        public static void RegisterForTrackerSupport(ComWrappers instance!!)
+        public static void RegisterForTrackerSupport(ComWrappers instance)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForTrackerSupport, instance, null))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
@@ -292,8 +298,10 @@ namespace System.Runtime.InteropServices
         ///  * COM activation
         /// </remarks>
         [SupportedOSPlatform("windows")]
-        public static void RegisterForMarshalling(ComWrappers instance!!)
+        public static void RegisterForMarshalling(ComWrappers instance)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForMarshalling, instance, null))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);

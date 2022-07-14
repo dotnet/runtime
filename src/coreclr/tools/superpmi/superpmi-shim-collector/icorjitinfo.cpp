@@ -115,6 +115,13 @@ CorInfoInline interceptor_ICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /*
     return temp;
 }
 
+void interceptor_ICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                                     CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    mc->cr->AddCall("beginInlining");
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
 // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
 // JIT.
@@ -501,7 +508,7 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(CORINFO_CLAS
 // was truncated when copied to the buffer.
 //
 // Operation:
-// 
+//
 // On entry, `*pnBufLen` specifies the size of the buffer pointed to by `*ppBuf` as a count of characters.
 // There are two cases:
 // 1. If the size is zero, the function computes the length of the representation and returns that.
@@ -1158,6 +1165,16 @@ void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] meth
     mc->cr->AddCall("setVars");
     mc->cr->recSetVars(ftn, cVars, vars); // Since the EE frees, we've gotta record before its sent to the EE.
     original_ICorJitInfo->setVars(ftn, cVars, vars);
+}
+
+void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+                                          uint32_t                          numInlineTreeNodes,
+                                          ICorDebugInfo::RichOffsetMapping* mappings,
+                                          uint32_t                          numMappings)
+{
+    mc->cr->AddCall("reportRichMappings");
+    // TODO: record these mappings
+    original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
 /*-------------------------- Misc ---------------------------------------*/
@@ -1933,10 +1950,16 @@ bool interceptor_ICJI::logMsg(unsigned level, const char* fmt, va_list args)
 }
 
 // do an assert.  will return true if the code should retry (DebugBreak)
-// returns false, if the assert should be igored.
+// returns false, if the assert should be ignored.
 int interceptor_ICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
 {
     mc->cr->AddCall("doAssert");
+
+    m_compiler->finalizeAndCommitCollection(mc, CORJIT_INTERNALERROR, nullptr, 0);
+    // The following assert may not always fail fast, so make sure we do not
+    // save the collection twice if it throws an unwindable exception.
+    m_savedCollectionEarly = true;
+
     return original_ICorJitInfo->doAssert(szFile, iLine, szExpr);
 }
 
@@ -2027,14 +2050,4 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
 bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
-}
-
-bool interceptor_ICJI::doesFieldBelongToClass(
-    CORINFO_FIELD_HANDLE fldHnd,
-    CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("doesFieldBelongToClass");
-    bool result = original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
-    mc->recDoesFieldBelongToClass(fldHnd, cls, result);
-    return result;
 }

@@ -360,8 +360,10 @@ namespace System.Numerics
             }
         }
 
-        internal static BigInteger ParseBigInteger(string value!!, NumberStyles style, NumberFormatInfo info)
+        internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             return ParseBigInteger(value.AsSpan(), style, info);
         }
 
@@ -863,15 +865,15 @@ namespace System.Numerics
 
             int i = 0;
             char ch = format[i];
-            if (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z')
+            if (char.IsAsciiLetter(ch))
             {
                 i++;
                 int n = -1;
 
-                if (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                if (i < format.Length && char.IsAsciiDigit(format[i]))
                 {
                     n = format[i++] - '0';
-                    while (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                    while (i < format.Length && char.IsAsciiDigit(format[i]))
                     {
                         int temp = n * 10 + (format[i++] - '0');
                         if (temp < n)
@@ -1039,7 +1041,7 @@ namespace System.Numerics
                 for (int iuDst = 0; iuDst < cuDst; iuDst++)
                 {
                     Debug.Assert(rguDst[iuDst] < kuBase);
-                    ulong uuRes = NumericsHelpers.MakeUlong(rguDst[iuDst], uCarry);
+                    ulong uuRes = NumericsHelpers.MakeUInt64(rguDst[iuDst], uCarry);
                     rguDst[iuDst] = (uint)(uuRes % kuBase);
                     uCarry = (uint)(uuRes / kuBase);
                 }

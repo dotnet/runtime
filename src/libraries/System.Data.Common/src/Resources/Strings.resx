@@ -156,6 +156,8 @@
   <data name="Expr_InvalidTimeZoneRange" xml:space="preserve"><value>Provided range for time one exceeds total of 14 hours.</value></data>
   <data name="Expr_MismatchKindandTimeSpan" xml:space="preserve"><value>Kind property of provided DateTime argument, does not match 'hours' and 'minutes' arguments.</value></data>
   <data name="Expr_UnsupportedType" xml:space="preserve"><value>A DataColumn of type '{0}' does not support expression.</value></data>
+  <data name="Batch_NotSupportedOnDataSourceBatch" xml:space="preserve"><value>Connection and transaction access is not supported on batches created from DbDataSource.</value></data>
+  <data name="Command_NotSupportedOnDataSourceCommand" xml:space="preserve"><value>Connection and transaction access is not supported on commands created from DbDataSource.</value></data>
   <data name="Data_EnforceConstraints" xml:space="preserve"><value>Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.</value></data>
   <data name="Data_CannotModifyCollection" xml:space="preserve"><value>Collection itself is not modifiable.</value></data>
   <data name="Data_CaseInsensitiveNameConflict" xml:space="preserve"><value>The given name '{0}' matches at least two names in the collection object with different cases, but does not match either of them with the same case.</value></data>

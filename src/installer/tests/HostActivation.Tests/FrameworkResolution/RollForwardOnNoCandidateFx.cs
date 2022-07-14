@@ -440,7 +440,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         // Verifies that rollForwardOnNoCandidateFx and applyPatches settings correctly roll
-        // from a release version 4.0.0 the the closest minor version with the latest patch.
+        // from a release version 4.0.0 the closest minor version with the latest patch.
         [Theory] // rollForwardOnNoCandidateFx  applyPatches  resolvedFramework
         [InlineData(null,                       null,         "4.1.2")]
         [InlineData(null,                       false,        "4.1.1")]

@@ -23,8 +23,10 @@ namespace Microsoft.Extensions.Logging
         // - Be annotated as [SkipLocalsInit] to avoid zero'ing the stackalloc'd char span
         // - Format _valueNames.Count directly into a span
 
-        public LogValuesFormatter(string format!!)
+        public LogValuesFormatter(string format)
         {
+            ThrowHelper.ThrowIfNull(format);
+
             OriginalFormat = format;
 
             var vsb = new ValueStringBuilder(stackalloc char[256]);

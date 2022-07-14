@@ -27,7 +27,7 @@ namespace System
             try
             {
                 resourceString =
-#if SYSTEM_PRIVATE_CORELIB || CORERT
+#if SYSTEM_PRIVATE_CORELIB || NATIVEAOT
                     InternalGetResourceString(resourceKey);
 #else
                     ResourceManager.GetString(resourceKey);

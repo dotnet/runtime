@@ -52,10 +52,8 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 throw new ArgumentException(null, nameof(version));
             }
-            if (dependencies == null)
-            {
-                throw new ArgumentNullException(nameof(dependencies));
-            }
+            ThrowHelper.ThrowIfNull(dependencies);
+
             Type = type;
             Name = name;
             Version = version;

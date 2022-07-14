@@ -100,6 +100,7 @@ namespace ILCompiler
             public const int Bmi2 = 0x0800;
             public const int Lzcnt = 0x1000;
             public const int AvxVnni = 0x2000;
+            public const int Movbe = 0x4000;
 
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
@@ -134,9 +135,11 @@ namespace ILCompiler
                     InstructionSet.X64_BMI2 => Bmi2,
                     InstructionSet.X64_BMI2_X64 => Bmi2,
                     InstructionSet.X64_LZCNT => Lzcnt,
-                    InstructionSet.X64_LZCNT_X64 => Popcnt,
+                    InstructionSet.X64_LZCNT_X64 => Lzcnt,
                     InstructionSet.X64_AVXVNNI => AvxVnni,
                     InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
+                    InstructionSet.X64_MOVBE => Movbe,
+                    InstructionSet.X64_MOVBE_X64 => Movbe,
 
                     // SSE and SSE2 are baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

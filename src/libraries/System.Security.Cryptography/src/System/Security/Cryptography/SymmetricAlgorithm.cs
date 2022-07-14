@@ -19,9 +19,10 @@ namespace System.Security.Cryptography
         public static SymmetricAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static SymmetricAlgorithm? Create(string algName) =>
-            (SymmetricAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);
+            CryptoConfigForwarder.CreateFromName<SymmetricAlgorithm>(algName);
 
         public virtual int FeedbackSize
         {
@@ -445,8 +446,10 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptEcbCore" />.
         /// </remarks>
-        public byte[] DecryptEcb(byte[] ciphertext!!, PaddingMode paddingMode)
+        public byte[] DecryptEcb(byte[] ciphertext, PaddingMode paddingMode)
         {
+            ArgumentNullException.ThrowIfNull(ciphertext);
+
             // Padding mode is validated by callee.
             return DecryptEcb(new ReadOnlySpan<byte>(ciphertext), paddingMode);
         }
@@ -561,8 +564,10 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
         /// </remarks>
-        public byte[] EncryptEcb(byte[] plaintext!!, PaddingMode paddingMode)
+        public byte[] EncryptEcb(byte[] plaintext, PaddingMode paddingMode)
         {
+            ArgumentNullException.ThrowIfNull(plaintext);
+
             // paddingMode is validated by callee
             return EncryptEcb(new ReadOnlySpan<byte>(plaintext), paddingMode);
         }
@@ -682,8 +687,11 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptCbcCore" />.
         /// </remarks>
-        public byte[] DecryptCbc(byte[] ciphertext!!, byte[] iv!!, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public byte[] DecryptCbc(byte[] ciphertext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
+            ArgumentNullException.ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(iv);
+
             return DecryptCbc(new ReadOnlySpan<byte>(ciphertext), new ReadOnlySpan<byte>(iv), paddingMode);
         }
 
@@ -834,8 +842,11 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
         /// </remarks>
-        public byte[] EncryptCbc(byte[] plaintext!!, byte[] iv!!, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public byte[] EncryptCbc(byte[] plaintext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
+            ArgumentNullException.ThrowIfNull(plaintext);
+            ArgumentNullException.ThrowIfNull(iv);
+
             return EncryptCbc(new ReadOnlySpan<byte>(plaintext), new ReadOnlySpan<byte>(iv), paddingMode);
         }
 
@@ -1003,8 +1014,11 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
         /// </remarks>
-        public byte[] DecryptCfb(byte[] ciphertext!!, byte[] iv!!, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
+        public byte[] DecryptCfb(byte[] ciphertext, byte[] iv, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
         {
+            ArgumentNullException.ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(iv);
+
             return DecryptCfb(
                 new ReadOnlySpan<byte>(ciphertext),
                 new ReadOnlySpan<byte>(iv),

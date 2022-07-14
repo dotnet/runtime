@@ -599,12 +599,19 @@ namespace ILCompiler.PEWriter
 
             if (!_target.IsWindows)
             {
+                const int RVAAlign = 1 << RVABitsToMatchFilePos;
                 if (outputSectionIndex > 0)
                 {
                     sectionStartRva = Math.Max(sectionStartRva, _sectionRVAs[outputSectionIndex - 1] + _sectionRawSizes[outputSectionIndex - 1]);
+
+                    // when assembly is stored in a singlefile bundle, an additional skew is introduced
+                    // as the streams inside the bundle are not necessarily page aligned as we do not 
+                    // know the actual page size on the target system. 
+                    // We may need one page gap of unused VA space before the next section starts.
+                    // We will assume the page size is <= RVAAlign
+                    sectionStartRva += RVAAlign;
                 }
 
-                const int RVAAlign = 1 << RVABitsToMatchFilePos;
                 sectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, RVAAlign);
 
                 int rvaAdjust = (location.PointerToRawData - sectionStartRva) & (RVAAlign - 1);
@@ -673,14 +680,12 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="subsystem">Targeting subsystem</param>
         /// <param name="target">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Create(Subsystem subsystem, TargetDetails target)
+        public static PEHeaderBuilder Create(Subsystem subsystem, TargetDetails target, ulong imageBase)
         {
             bool is64BitTarget = target.PointerSize == sizeof(long);
 
             Characteristics imageCharacteristics = Characteristics.ExecutableImage | Characteristics.Dll;
             imageCharacteristics |= is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine;
-
-            ulong imageBase = is64BitTarget ? PE64HeaderConstants.DllImageBase : PE32HeaderConstants.ImageBase;
 
             int fileAlignment = 0x200;
             bool isWindowsOr32bit = target.IsWindows || !is64BitTarget;

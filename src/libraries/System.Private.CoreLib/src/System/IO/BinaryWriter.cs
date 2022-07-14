@@ -42,8 +42,11 @@ namespace System.IO
         {
         }
 
-        public BinaryWriter(Stream output!!, Encoding encoding!!, bool leaveOpen)
+        public BinaryWriter(Stream output, Encoding encoding, bool leaveOpen)
         {
+            ArgumentNullException.ThrowIfNull(output);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (!output.CanWrite)
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
 
@@ -150,8 +153,10 @@ namespace System.IO
         // This default implementation calls the Write(Object, int, int)
         // method to write the byte array.
         //
-        public virtual void Write(byte[] buffer!!)
+        public virtual void Write(byte[] buffer)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             OutStream.Write(buffer, 0, buffer.Length);
         }
 
@@ -209,8 +214,10 @@ namespace System.IO
         // This default implementation calls the Write(Object, int, int)
         // method to write the character array.
         //
-        public virtual void Write(char[] chars!!)
+        public virtual void Write(char[] chars)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             WriteCharsCommonWithoutLengthPrefix(chars, useThisWriteOverride: false);
         }
 
@@ -219,8 +226,10 @@ namespace System.IO
         // This default implementation calls the Write(Object, int, int)
         // method to write the character array.
         //
-        public virtual void Write(char[] chars!!, int index, int count)
+        public virtual void Write(char[] chars, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -336,8 +345,10 @@ namespace System.IO
         // an encoded unsigned integer with variable length, and then writes that many characters
         // to the stream.
         //
-        public virtual void Write(string value!!)
+        public virtual void Write(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             // Common: UTF-8, small string, avoid 2-pass calculation
             // Less common: UTF-8, large string, avoid 2-pass calculation
             // Uncommon: excessively large string or not UTF-8

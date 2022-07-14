@@ -18,6 +18,7 @@ list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
 check_include_files(mach/vm_types.h HAVE_MACH_VM_TYPES_H)
 check_include_files(mach/vm_param.h HAVE_MACH_VM_PARAM_H)
+check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
 check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
@@ -34,6 +35,7 @@ check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREA
 check_library_exists(${PTHREAD_LIBRARY} pthread_getthreadid_np "" HAVE_PTHREAD_GETTHREADID_NP)
 
 check_function_exists(clock_nanosleep HAVE_CLOCK_NANOSLEEP)
+check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)

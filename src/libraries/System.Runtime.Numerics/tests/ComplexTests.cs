@@ -1302,12 +1302,11 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidX86))]   // disabled on Android x86, see https://github.com/dotnet/runtime/issues/37093
         [MemberData(nameof(Boundaries_2_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
         [MemberData(nameof(Invalid_2_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public static void Reciprocal(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1732,22 +1731,22 @@ namespace System.Numerics.Tests
         {
             var complex = new Complex(real, imaginary);
 
-            string expected = "(" + real.ToString() + ", " + imaginary.ToString() + ")";
+            string expected = "<" + real.ToString() + "; " + imaginary.ToString() + ">";
             string actual = complex.ToString();
             Assert.Equal(expected, actual);
 
             NumberFormatInfo numberFormatInfo = CultureInfo.CurrentCulture.NumberFormat;
-            expected = "(" + real.ToString(numberFormatInfo) + ", " + imaginary.ToString(numberFormatInfo) + ")";
+            expected = "<" + real.ToString(numberFormatInfo) + "; " + imaginary.ToString(numberFormatInfo) + ">";
             actual = complex.ToString(numberFormatInfo);
             Assert.Equal(expected, complex.ToString(numberFormatInfo));
 
             foreach (string format in s_supportedStandardNumericFormats)
             {
-                expected = "(" + real.ToString(format) + ", " + imaginary.ToString(format) + ")";
+                expected = "<" + real.ToString(format) + "; " + imaginary.ToString(format) + ">";
                 actual = complex.ToString(format);
                 Assert.Equal(expected, actual);
 
-                expected = "(" + real.ToString(format, numberFormatInfo) + ", " + imaginary.ToString(format, numberFormatInfo) + ")";
+                expected = "<" + real.ToString(format, numberFormatInfo) + "; " + imaginary.ToString(format, numberFormatInfo) + ">";
                 actual = complex.ToString(format, numberFormatInfo);
                 Assert.Equal(expected, actual);
             }

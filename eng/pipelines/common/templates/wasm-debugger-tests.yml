@@ -1,6 +1,8 @@
 parameters:
   alwaysRun: false
   isExtraPlatformsBuild: false
+  browser: 'chrome'
+  shouldContinueOnError: false
   platforms: []
 
 jobs:
@@ -13,6 +15,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
       - name: wasmdebuggertestsContainsChange
@@ -24,8 +27,8 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: Mono_DebuggerTests
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }}
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -36,7 +39,7 @@ jobs:
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
         scenarios:
         - wasmdebuggertests

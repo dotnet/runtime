@@ -780,10 +780,7 @@ namespace System.ComponentModel.Composition.Hosting
                 contractName = AttributedModelServices.GetContractName(type);
             }
 
-            if (metadataViewType == null)
-            {
-                metadataViewType = ExportServices.DefaultMetadataViewType;
-            }
+            metadataViewType ??= ExportServices.DefaultMetadataViewType;
 
             if (!MetadataViewProvider.IsViewTypeValid(metadataViewType))
             {
@@ -794,8 +791,12 @@ namespace System.ComponentModel.Composition.Hosting
             return GetExports(importDefinition, null);
         }
 
-        private static ImportDefinition BuildImportDefinition(Type type!!, Type metadataViewType!!, string contractName!!, ImportCardinality cardinality)
+        private static ImportDefinition BuildImportDefinition(Type type, Type metadataViewType, string contractName, ImportCardinality cardinality)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(metadataViewType);
+            ArgumentNullException.ThrowIfNull(contractName);
+
             IEnumerable<KeyValuePair<string, Type>> requiredMetadata = CompositionServices.GetRequiredMetadata(metadataViewType);
             IDictionary<string, object?> metadata = CompositionServices.GetImportMetadata(type, null);
 

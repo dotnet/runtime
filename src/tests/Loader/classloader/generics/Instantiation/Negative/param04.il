@@ -9,13 +9,6 @@
 // instruction with two actual type parameters.
 // This call is in the method GenTest<T>.InternalTest().
 
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.1.2019.0
-//  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
-
-
-
-// Metadata version: v1.1.2019
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..

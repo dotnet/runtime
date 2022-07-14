@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
+#include "pal_safecrt.h"
 #include "pal_uid.h"
 #include "pal_utilities.h"
 
@@ -20,7 +21,7 @@
 #define USE_GROUPLIST_LOCK
 #endif
 
-#ifdef USE_GROUPLIST_LOCK
+#if defined(USE_GROUPLIST_LOCK) || !HAVE_GETGRGID_R
 #include <pthread.h>
 #endif
 
@@ -236,4 +237,68 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
     assert(groups != NULL);
 
     return getgroups(ngroups, groups);
+}
+
+#if !HAVE_GETGRGID_R
+// Need to call getgrgid which is not thread-safe, and protect it with a mutex
+static pthread_mutex_t s_getgrgid_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+char* SystemNative_GetGroupName(uint32_t gid)
+{
+#if HAVE_GETGRGID_R
+    size_t bufferLength = 512;
+    while (1)
+    {
+        char *buffer = (char*)malloc(bufferLength);
+        if (buffer == NULL)
+        {
+            return NULL;
+        }
+
+        struct group* result;
+        struct group gr;
+        if (getgrgid_r(gid, &gr, buffer, bufferLength, &result) == 0)
+        {
+            if (result == NULL)
+            {
+                errno = ENOENT;
+                free(buffer);
+                return NULL;
+            }
+            else
+            {
+                char* name = strdup(gr.gr_name);
+                free(buffer);
+                return name;
+            }
+        }
+
+        free(buffer);
+        size_t tmpBufferLength;
+        if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
+        {
+            return NULL;
+        }
+        bufferLength = tmpBufferLength;
+    }
+#else
+    // Platforms like Android API level < 24 do not have getgrgid_r available
+    int rv = pthread_mutex_lock(&s_getgrgid_lock);
+    if (rv != 0)
+    {
+        errno = rv;
+        return NULL;
+    }
+
+    struct group* result = getgrgid(gid);
+    if (result == NULL)
+    {
+        pthread_mutex_unlock(&s_getgrgid_lock);
+        return NULL;
+    }
+    char* name = strdup(result->gr_name);
+    pthread_mutex_unlock(&s_getgrgid_lock);
+    return name;
+#endif
 }

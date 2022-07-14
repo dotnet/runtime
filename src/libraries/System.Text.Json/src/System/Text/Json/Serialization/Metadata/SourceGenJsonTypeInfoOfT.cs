@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -20,12 +20,14 @@ namespace System.Text.Json.Serialization.Metadata
         public SourceGenJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(converter, options)
         {
+            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            MapInterfaceTypesToCallbacks();
         }
 
         /// <summary>
         /// Creates serialization metadata for an object.
         /// </summary>
-        public SourceGenJsonTypeInfo(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : base(GetConverter(objectInfo), options)
+        public SourceGenJsonTypeInfo(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : this(GetConverter(objectInfo), options)
         {
             if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
             {
@@ -34,9 +36,9 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                SetCreateObjectFunc(objectInfo.ObjectCreator);
+                SetCreateObject(objectInfo.ObjectCreator);
+                CreateObjectForExtensionDataProperty = ((JsonTypeInfo)this).CreateObject;
             }
-
 
             PropInitFunc = objectInfo.PropertyMetadataInitializer;
             SerializeHandler = objectInfo.SerializeHandler;
@@ -48,19 +50,25 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public SourceGenJsonTypeInfo(
             JsonSerializerOptions options,
-            JsonCollectionInfoValues<T> collectionInfo!!,
+            JsonCollectionInfoValues<T> collectionInfo,
             Func<JsonConverter<T>> converterCreator,
             object? createObjectWithArgs = null,
             object? addFunc = null)
-            : base(GetConverter(collectionInfo, converterCreator), options)
+            : this(new JsonMetadataServicesConverter<T>(converterCreator()), options)
         {
+            if (collectionInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(collectionInfo));
+            }
+
             KeyTypeInfo = collectionInfo.KeyInfo;
-            ElementTypeInfo = collectionInfo.ElementInfo ?? throw new ArgumentNullException(nameof(collectionInfo.ElementInfo));
+            ElementTypeInfo = collectionInfo.ElementInfo;
+            Debug.Assert(Kind != JsonTypeInfoKind.None);
             NumberHandling = collectionInfo.NumberHandling;
             SerializeHandler = collectionInfo.SerializeHandler;
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
-            SetCreateObjectFunc(collectionInfo.ObjectCreator);
+            CreateObject = collectionInfo.ObjectCreator;
         }
 
         private static JsonConverter GetConverter(JsonObjectInfoValues<T> objectInfo)
@@ -81,64 +89,55 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
         }
 
-        private static JsonConverter GetConverter(JsonCollectionInfoValues<T> collectionInfo, Func<JsonConverter<T>> converterCreator)
-        {
-            ConverterStrategy strategy = collectionInfo.KeyInfo == null ? ConverterStrategy.Enumerable : ConverterStrategy.Dictionary;
-            return new JsonMetadataServicesConverter<T>(converterCreator, strategy);
-        }
-
-        internal override void LateAddProperties()
-        {
-            AddPropertiesUsingSourceGenInfo();
-        }
-
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            JsonSerializerContext? context = Options.JsonSerializerContext;
             JsonParameterInfoValues[] array;
-            if (context == null || CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
+            if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolver, Type);
                 return null!;
             }
 
             return array;
         }
 
-        internal void AddPropertiesUsingSourceGenInfo()
+        internal override void LateAddProperties()
         {
-            if (PropertyInfoForTypeInfo.ConverterStrategy != ConverterStrategy.Object)
+            Debug.Assert(!IsConfigured);
+            Debug.Assert(PropertyCache is null);
+
+            if (Kind != JsonTypeInfoKind.Object)
             {
                 return;
             }
 
-            JsonSerializerContext? context = Options.JsonSerializerContext;
+            JsonSerializerContext? context = Options.SerializerContext;
             JsonPropertyInfo[] array;
-            if (context == null || PropInitFunc == null || (array = PropInitFunc(context)) == null)
+            if (PropInitFunc == null || (array = PropInitFunc(context!)) == null)
             {
                 if (typeof(T) == typeof(object))
                 {
                     return;
                 }
 
-                if (PropertyInfoForTypeInfo.ConverterBase.ElementType != null)
+                if (Converter.ElementType != null)
                 {
                     // Nullable<> or F# optional converter's strategy is set to element's strategy
                     return;
                 }
 
-                if (SerializeHandler != null && Options.JsonSerializerContext?.CanUseSerializationLogic == true)
+                if (SerializeHandler != null && context?.CanUseSerializationLogic == true)
                 {
                     ThrowOnDeserialize = true;
                     return;
                 }
 
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
                 return;
             }
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
-            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive, array.Length);
+            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = CreatePropertyCache(capacity: array.Length);
 
             for (int i = 0; i < array.Length; i++)
             {
@@ -149,7 +148,8 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (hasJsonInclude)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName!, jsonPropertyInfo.DeclaringType);
+                        Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
                     }
 
                     continue;
@@ -160,29 +160,10 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                if (jsonPropertyInfo.SrcGen_IsExtensionData)
-                {
-                    // Source generator compile-time type inspection has performed this validation for us.
-                    // except JsonTypeInfo can be initialized in parallel causing this to be ocassionally re-initialized
-                    // Debug.Assert(DataExtensionProperty == null);
-                    Debug.Assert(IsValidDataExtensionProperty(jsonPropertyInfo));
-
-                    DataExtensionProperty = jsonPropertyInfo;
-                    continue;
-                }
-
                 CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 
             PropertyCache = propertyCache;
-        }
-
-        private void SetCreateObjectFunc(Func<T>? createObjectFunc)
-        {
-            if (createObjectFunc != null)
-            {
-                CreateObject = () => createObjectFunc();
-            }
         }
     }
 }

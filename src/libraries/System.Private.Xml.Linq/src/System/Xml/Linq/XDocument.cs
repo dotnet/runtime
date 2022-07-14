@@ -419,8 +419,10 @@ namespace System.Xml.Linq
         /// A new <see cref="XDocument"/> containing the contents of the passed
         /// in <see cref="XmlReader"/>.
         /// </returns>
-        public static XDocument Load(XmlReader reader!!, LoadOptions options)
+        public static XDocument Load(XmlReader reader, LoadOptions options)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (reader.ReadState == ReadState.Initial) reader.Read();
 
             XDocument d = InitLoad(reader, options);
@@ -449,8 +451,10 @@ namespace System.Xml.Linq
         /// A new <see cref="XDocument"/> containing the contents of the passed
         /// in <see cref="XmlReader"/>.
         /// </returns>
-        public static Task<XDocument> LoadAsync(XmlReader reader!!, LoadOptions options, CancellationToken cancellationToken)
+        public static Task<XDocument> LoadAsync(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<XDocument>(cancellationToken);
             return LoadAsyncInternal(reader, options, cancellationToken);
@@ -789,8 +793,10 @@ namespace System.Xml.Linq
         /// The <see cref="XmlWriter"/> to output the content of this
         /// <see cref="XDocument"/>.
         /// </param>
-        public override void WriteTo(XmlWriter writer!!)
+        public override void WriteTo(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (_declaration != null && _declaration.Standalone == "yes")
             {
                 writer.WriteStartDocument(true);
@@ -817,8 +823,10 @@ namespace System.Xml.Linq
         /// <see cref="XDocument"/>.
         /// </param>
         /// <param name="cancellationToken">A cancellation token.</param>
-        public override Task WriteToAsync(XmlWriter writer!!, CancellationToken cancellationToken)
+        public override Task WriteToAsync(XmlWriter writer, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
             return WriteToAsyncInternal(writer, cancellationToken);
@@ -886,15 +894,6 @@ namespace System.Xml.Linq
             return null;
         }
 
-        internal static bool IsWhitespace(string s)
-        {
-            foreach (char ch in s)
-            {
-                if (ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n') return false;
-            }
-            return true;
-        }
-
         internal override void ValidateNode(XNode node, XNode? previous)
         {
             switch (node.NodeType)
@@ -937,7 +936,10 @@ namespace System.Xml.Linq
 
         internal override void ValidateString(string s)
         {
-            if (!IsWhitespace(s)) throw new ArgumentException(SR.Argument_AddNonWhitespace);
+            if (s.AsSpan().IndexOfAnyExcept(" \t\r\n") >= 0)
+            {
+                throw new ArgumentException(SR.Argument_AddNonWhitespace);
+            }
         }
     }
 }

@@ -110,10 +110,7 @@ namespace System.IO
             get => CoreNewLineStr;
             set
             {
-                if (value == null)
-                {
-                    value = Environment.NewLineConst;
-                }
+                value ??= Environment.NewLineConst;
 
                 CoreNewLineStr = value;
                 CoreNewLine = value.ToCharArray();
@@ -144,8 +141,10 @@ namespace System.IO
         // write count characters of data into this TextWriter from the
         // buffer character array starting at position index.
         //
-        public virtual void Write(char[] buffer!!, int index, int count)
+        public virtual void Write(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -698,8 +697,10 @@ namespace System.IO
             }
         }
 
-        public static TextWriter Synchronized(TextWriter writer!!)
+        public static TextWriter Synchronized(TextWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             return writer is SyncTextWriter ? writer : new SyncTextWriter(writer);
         }
 

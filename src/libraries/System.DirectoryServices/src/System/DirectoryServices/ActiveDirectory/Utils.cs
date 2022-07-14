@@ -606,7 +606,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if ((index = tmpUsername.IndexOf('\\')) != -1)
                 {
                     domain = tmpUsername.Substring(0, index);
-                    username = tmpUsername.Substring(index + 1, tmpUsername.Length - index - 1);
+                    username = tmpUsername.Substring(index + 1);
                 }
                 else
                 {
@@ -705,7 +705,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             if (result != 0)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(result, (domainControllerName != null) ? domainControllerName : domainName);
+                throw ExceptionHelper.GetExceptionFromErrorCode(result, domainControllerName ?? domainName);
             }
             return handle;
         }
@@ -1356,14 +1356,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (partitionsEntry != null)
-                    {
-                        partitionsEntry.Dispose();
-                    }
-                    if (fsmoPartitionsEntry != null)
-                    {
-                        fsmoPartitionsEntry.Dispose();
-                    }
+                    partitionsEntry?.Dispose();
+                    fsmoPartitionsEntry?.Dispose();
                 }
             }
 
@@ -1598,10 +1592,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        if (resCol != null)
-                        {
-                            resCol.Dispose();
-                        }
+                        resCol?.Dispose();
                     }
 
                     if (needToContinueRangeRetrieval)
@@ -1734,10 +1725,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (searchRootEntry != null)
-                {
-                    searchRootEntry.Dispose();
-                }
+                searchRootEntry?.Dispose();
             }
 
             // convert the ntdsa object names to server:port
@@ -1951,7 +1939,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             //extract IPv6 port number if any
             bool isBrace = serverName.StartsWith("[", StringComparison.Ordinal);
-            if (isBrace == true)
+            if (isBrace)
             {
                 if (serverName.EndsWith("]", StringComparison.Ordinal))
                 {
@@ -2049,7 +2037,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     bool success = global::Interop.Advapi32.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
 
                     // Since both pCopyOfUserSid and pMachineDomainSid should always be account SIDs
-                    Debug.Assert(success == true);
+                    Debug.Assert(success);
 
                     // If user SID is the same domain as the machine domain, and the machine is not a DC then the user is a local (machine) user
                     return sameDomain ? !IsMachineDC(null) : false;
@@ -2094,6 +2082,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if ((error = Marshal.GetLastWin32Error()) == 1008) // ERROR_NO_TOKEN
                     {
                         Debug.Assert(tokenHandle.IsInvalid);
+                        tokenHandle.Dispose();
 
                         // Current thread doesn't have a token, try the process
                         if (!global::Interop.Advapi32.OpenProcessToken(
@@ -2172,8 +2161,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (tokenHandle != null)
-                    tokenHandle.Dispose();
+                tokenHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -2231,8 +2219,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (policyHandle != null)
-                    policyHandle.Dispose();
+                policyHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     global::Interop.Advapi32.LsaFreeMemory(pBuffer);

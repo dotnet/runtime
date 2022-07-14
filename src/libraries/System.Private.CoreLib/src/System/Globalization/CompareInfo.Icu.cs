@@ -154,9 +154,9 @@ namespace System.Globalization
                         }
 
                         // uppercase both chars - notice that we need just one compare per char
-                        if ((uint)(valueChar - 'a') <= ('z' - 'a'))
+                        if (char.IsAsciiLetterLower(valueChar))
                             valueChar = (char)(valueChar - 0x20);
-                        if ((uint)(targetChar - 'a') <= ('z' - 'a'))
+                        if (char.IsAsciiLetterLower(targetChar))
                             targetChar = (char)(targetChar - 0x20);
 
                         if (valueChar == targetChar)
@@ -628,8 +628,10 @@ namespace System.Globalization
             }
         }
 
-        private unsafe SortKey IcuCreateSortKey(string source!!, CompareOptions options)
+        private unsafe SortKey IcuCreateSortKey(string source, CompareOptions options)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 

@@ -23,16 +23,20 @@ namespace System.ComponentModel.Composition
         internal static readonly Type DefaultMetadataViewType = typeof(IDictionary<string, object>);
         internal static readonly Type DefaultExportedValueType = typeof(object);
 
-        internal static bool IsDefaultMetadataViewType(Type metadataViewType!!)
+        internal static bool IsDefaultMetadataViewType(Type metadataViewType)
         {
+            ArgumentNullException.ThrowIfNull(metadataViewType);
+
             // Consider all types that IDictionary<string, object> derives from, such
             // as ICollection<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>>
             // and IEnumerable, as default metadata view
             return metadataViewType.IsAssignableFrom(DefaultMetadataViewType);
         }
 
-        internal static bool IsDictionaryConstructorViewType(Type metadataViewType!!)
+        internal static bool IsDictionaryConstructorViewType(Type metadataViewType)
         {
+            ArgumentNullException.ThrowIfNull(metadataViewType);
+
             // Does the view type have a constructor that is a Dictionary<string, object>
             return metadataViewType.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                                                     Type.DefaultBinder,

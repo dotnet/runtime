@@ -932,7 +932,7 @@ CordbWin32EventThread * ShimProcess::GetWin32EventThread()
 
 
 // Trivial accessor to mark whether we're interop-debugging.
-// Retreived via code:ShimProcess::IsInteropDebugging
+// Retrieved via code:ShimProcess::IsInteropDebugging
 void ShimProcess::SetIsInteropDebugging(bool fIsInteropDebugging)
 {
     m_fIsInteropDebugging = fIsInteropDebugging;
@@ -1602,7 +1602,7 @@ HMODULE ShimProcess::GetDacModule(PathString& dacModulePath)
     if (wszAccessDllPath.IsEmpty())
     {
         //
-        // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
+        // Load the access DLL from the same directory as the current CLR Debugging Services DLL.
         //
         if (GetClrModuleDirectory(wszAccessDllPath) != S_OK)
         {

@@ -42,16 +42,16 @@ namespace System.Configuration
 
         protected override SimpleBitVector32 ClassFlags => s_mgmtClassFlags;
 
-        private Hashtable SectionGroups => _sectionGroups ?? (_sectionGroups = new Hashtable());
+        private Hashtable SectionGroups => _sectionGroups ??= new Hashtable();
 
-        private Hashtable RemovedSections => _removedSections ?? (_removedSections = new Hashtable());
+        private Hashtable RemovedSections => _removedSections ??= new Hashtable();
 
-        private Hashtable RemovedSectionGroups => _removedSectionGroups ?? (_removedSectionGroups = new Hashtable());
+        private Hashtable RemovedSectionGroups => _removedSectionGroups ??= new Hashtable();
 
-        internal Hashtable SectionFactories => _sectionFactories ?? (_sectionFactories = GetAllFactories(false));
+        internal Hashtable SectionFactories => _sectionFactories ??= GetAllFactories(false);
 
         internal Hashtable SectionGroupFactories
-            => _sectionGroupFactories ?? (_sectionGroupFactories = GetAllFactories(true));
+            => _sectionGroupFactories ??= GetAllFactories(true);
 
         internal string ConfigurationFilePath => UpdateConfigHost.GetNewStreamname(ConfigStreamInfo.StreamName) ?? string.Empty;
 
@@ -299,7 +299,7 @@ namespace System.Configuration
         // Record all location tags in the config file, even if they are empty.
         protected override void AddLocation(string locationSubPath)
         {
-            if (_locationTags == null) _locationTags = new Hashtable(StringComparer.OrdinalIgnoreCase);
+            _locationTags ??= new Hashtable(StringComparer.OrdinalIgnoreCase);
 
             _locationTags[locationSubPath] = locationSubPath;
         }
@@ -1710,7 +1710,7 @@ namespace System.Configuration
 
                     if (addToConfigSourceUpdates)
                     {
-                        if (configSourceUpdates == null) configSourceUpdates = new ArrayList();
+                        configSourceUpdates ??= new ArrayList();
                         configSourceUpdates.Add(definitionUpdate);
                     }
                 }
@@ -1735,17 +1735,7 @@ namespace System.Configuration
 
         // Take an element name, and create an xml string that contains
         // that element in an empty state
-        private static string WriteEmptyElement(string elementName)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            // Create element
-            sb.Append('<');
-            sb.Append(elementName);
-            sb.Append(" />");
-
-            return sb.ToString();
-        }
+        private static string WriteEmptyElement(string elementName) => $"<{elementName} />";
 
         // After the config file has been written out, update the section records
         // to reflect changes that were made in the config file.

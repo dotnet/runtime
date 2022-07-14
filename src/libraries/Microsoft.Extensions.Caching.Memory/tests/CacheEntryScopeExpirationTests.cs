@@ -44,8 +44,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 cache.Set(key, obj, new MemoryCacheEntryOptions().AddExpirationToken(expirationToken));
             }
 
-            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, ((CacheEntry)entry).ExpirationTokens.Count);
-            Assert.Null(((CacheEntry)entry).AbsoluteExpiration);
+            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, entry.ExpirationTokens.Count);
+            Assert.Null(entry.AbsoluteExpiration);
         }
 
         [Theory]
@@ -67,8 +67,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 cache.Set(key, obj, new MemoryCacheEntryOptions().SetAbsoluteExpiration(time));
             }
 
-            Assert.Empty(((CacheEntry)entry).ExpirationTokens);
-            Assert.Equal(trackLinkedCacheEntries ? time : null, ((CacheEntry)entry).AbsoluteExpiration);
+            Assert.Empty(entry.ExpirationTokens);
+            Assert.Equal(trackLinkedCacheEntries ? time : null, entry.AbsoluteExpiration);
         }
 
         [Theory]
@@ -340,7 +340,7 @@ namespace Microsoft.Extensions.Caching.Memory
             string key = "myKey";
             string key1 = "myKey1";
 
-            Assert.Null(CacheEntryHelper.Current);
+            Assert.Null(CacheEntry.Current);
 
             ICacheEntry entry;
             using (entry = cache.CreateEntry(key))
@@ -351,10 +351,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 cache.Set(key1, obj, new MemoryCacheEntryOptions().AddExpirationToken(expirationToken));
             }
 
-            Assert.Null(CacheEntryHelper.Current);
+            Assert.Null(CacheEntry.Current);
 
-            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, ((CacheEntry)entry).ExpirationTokens.Count);
-            Assert.Null(((CacheEntry)entry).AbsoluteExpiration);
+            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, entry.ExpirationTokens.Count);
+            Assert.Null(entry.AbsoluteExpiration);
         }
 
         [Theory]
@@ -367,7 +367,7 @@ namespace Microsoft.Extensions.Caching.Memory
             string key = "myKey";
             string key1 = "myKey1";
 
-            Assert.Null(CacheEntryHelper.Current);
+            Assert.Null(CacheEntry.Current);
 
             ICacheEntry entry;
             ICacheEntry entry1;
@@ -387,12 +387,12 @@ namespace Microsoft.Extensions.Caching.Memory
                 VerifyCurrentEntry(trackLinkedCacheEntries, entry);
             }
 
-            Assert.Null(CacheEntryHelper.Current);
+            Assert.Null(CacheEntry.Current);
 
-            Assert.Single(((CacheEntry)entry1).ExpirationTokens);
-            Assert.Null(((CacheEntry)entry1).AbsoluteExpiration);
-            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, ((CacheEntry)entry).ExpirationTokens.Count);
-            Assert.Null(((CacheEntry)entry).AbsoluteExpiration);
+            Assert.Single(entry1.ExpirationTokens);
+            Assert.Null(entry1.AbsoluteExpiration);
+            Assert.Equal(trackLinkedCacheEntries ? 1 : 0, entry.ExpirationTokens.Count);
+            Assert.Null(entry.AbsoluteExpiration);
         }
 
         [Theory]
@@ -428,13 +428,13 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            Assert.Equal(trackLinkedCacheEntries ? 2 : 1, ((CacheEntry)entry1).ExpirationTokens.Count());
-            Assert.NotNull(((CacheEntry)entry1).AbsoluteExpiration);
-            Assert.Equal(clock.UtcNow + TimeSpan.FromSeconds(10), ((CacheEntry)entry1).AbsoluteExpiration);
+            Assert.Equal(trackLinkedCacheEntries ? 2 : 1, entry1.ExpirationTokens.Count());
+            Assert.NotNull(entry1.AbsoluteExpiration);
+            Assert.Equal(clock.UtcNow + TimeSpan.FromSeconds(10), entry1.AbsoluteExpiration);
 
-            Assert.Single(((CacheEntry)entry2).ExpirationTokens);
-            Assert.NotNull(((CacheEntry)entry2).AbsoluteExpiration);
-            Assert.Equal(clock.UtcNow + TimeSpan.FromSeconds(15), ((CacheEntry)entry2).AbsoluteExpiration);
+            Assert.Single(entry2.ExpirationTokens);
+            Assert.NotNull(entry2.AbsoluteExpiration);
+            Assert.Equal(clock.UtcNow + TimeSpan.FromSeconds(15), entry2.AbsoluteExpiration);
         }
 
         [Fact]
@@ -519,22 +519,22 @@ namespace Microsoft.Extensions.Caching.Memory
                 Task.Run(() => SetExpiredManyTimes(entry)),
                 Task.Run(() => SetExpiredManyTimes(entry)));
 
-            Assert.True(entry.CheckExpired(DateTimeOffset.UtcNow));
+            Assert.True(entry.CheckExpired(DateTime.UtcNow));
 
             static void SetExpiredManyTimes(CacheEntry cacheEntry)
             {
-                var now = DateTimeOffset.UtcNow;
+                var utcNow = DateTime.UtcNow;
                 for (int i = 0; i < 1_000; i++)
                 {
                     cacheEntry.SetExpired(EvictionReason.Expired); // modifies CacheEntry._state
-                    Assert.True(cacheEntry.CheckExpired(now));
+                    Assert.True(cacheEntry.CheckExpired(utcNow));
                     cacheEntry.Value = cacheEntry; // modifies CacheEntry._state
-                    Assert.True(cacheEntry.CheckExpired(now));
+                    Assert.True(cacheEntry.CheckExpired(utcNow));
 
                     cacheEntry.SetExpired(EvictionReason.Expired); // modifies CacheEntry._state
-                    Assert.True(cacheEntry.CheckExpired(now));
+                    Assert.True(cacheEntry.CheckExpired(utcNow));
                     cacheEntry.Dispose(); // might modify CacheEntry._state
-                    Assert.True(cacheEntry.CheckExpired(now));
+                    Assert.True(cacheEntry.CheckExpired(utcNow));
                 }
             }
         }
@@ -543,11 +543,11 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (trackLinkedCacheEntries)
             {
-                Assert.Same(entry, CacheEntryHelper.Current);
+                Assert.Same(entry, CacheEntry.Current);
             }
             else
             {
-                Assert.Null(CacheEntryHelper.Current);
+                Assert.Null(CacheEntry.Current);
             }
         }
     }

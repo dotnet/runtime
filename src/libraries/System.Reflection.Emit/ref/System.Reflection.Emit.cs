@@ -10,6 +10,7 @@ namespace System.Reflection.Emit
     {
         internal AssemblyBuilder() { }
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("This member throws an exception for assemblies embedded in a single-file app")]
         public override string? CodeBase { get { throw null; } }
         public override System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
         public override string? FullName { get { throw null; } }
@@ -355,10 +356,12 @@ namespace System.Reflection.Emit
     {
         internal ModuleBuilder() { }
         public override System.Reflection.Assembly Assembly { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Returns <Unknown> for modules with no file path")]
         public override string FullyQualifiedName { get { throw null; } }
         public override int MDStreamVersion { get { throw null; } }
         public override int MetadataToken { get { throw null; } }
         public override System.Guid ModuleVersionId { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Returns <Unknown> for modules with no file path")]
         public override string Name { get { throw null; } }
         public override string ScopeName { get { throw null; } }
         public void CreateGlobalFunctions() { }

@@ -23,6 +23,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/metadata-internals.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
@@ -539,6 +540,70 @@ ep_rt_mono_thread_teardown (void)
 }
 
 /*
+ * Little-Endian Conversion.
+ */
+
+static
+EP_ALWAYS_INLINE
+uint16_t
+ep_rt_val_uint16_t (uint16_t value)
+{
+	return GUINT16_TO_LE (value);
+}
+
+static
+EP_ALWAYS_INLINE
+uint32_t
+ep_rt_val_uint32_t (uint32_t value)
+{
+	return GUINT32_TO_LE (value);
+}
+
+static
+EP_ALWAYS_INLINE
+uint64_t
+ep_rt_val_uint64_t (uint64_t value)
+{
+	return GUINT64_TO_LE (value);
+}
+
+static
+EP_ALWAYS_INLINE
+int16_t
+ep_rt_val_int16_t (int16_t value)
+{
+	return (int16_t)GUINT16_TO_LE ((uint16_t)value);
+}
+
+static
+EP_ALWAYS_INLINE
+int32_t
+ep_rt_val_int32_t (int32_t value)
+{
+	return (int32_t)GUINT32_TO_LE ((uint32_t)value);
+}
+
+static
+EP_ALWAYS_INLINE
+int64_t
+ep_rt_val_int64_t (int64_t value)
+{
+	return (int64_t)GUINT64_TO_LE ((uint64_t)value);
+}
+
+static
+EP_ALWAYS_INLINE
+uintptr_t
+ep_rt_val_uintptr_t (uintptr_t value)
+{
+#if SIZEOF_VOID_P == 4
+	return (uintptr_t)GUINT32_TO_LE ((uint32_t)value);
+#else
+	return (uintptr_t)GUINT64_TO_LE ((uint64_t)value);
+#endif
+}
+
+/*
 * Atomics.
 */
 
@@ -600,6 +665,14 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 #else
 	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
 #endif
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
+	return (ep_char8_t *)mono_atomic_cas_ptr ((volatile gpointer *)target, (gpointer)value, (gpointer)expected);
 }
 
 /*
@@ -1451,7 +1524,7 @@ ep_rt_temp_path_get (
 
 	const ep_char8_t *path = g_get_tmp_dir ();
 	int32_t result = snprintf (buffer, buffer_len, "%s", path);
-	if (result <= 0 || result > buffer_len)
+	if (result <= 0 || GINT32_TO_UINT32(result) > buffer_len)
 		ep_raise_error ();
 
 	if (buffer [result - 1] != G_DIR_SEPARATOR) {
@@ -1746,11 +1819,11 @@ ep_rt_utf8_string_replace (
 static
 inline
 ep_char16_t *
-ep_rt_utf8_to_utf16_string (
+ep_rt_utf8_to_utf16le_string (
 	const ep_char8_t *str,
 	size_t len)
 {
-	return (ep_char16_t *)(g_utf8_to_utf16 ((const gchar *)str, (glong)len, NULL, NULL, NULL));
+	return (ep_char16_t *)(g_utf8_to_utf16le ((const gchar *)str, (glong)len, NULL, NULL, NULL));
 }
 
 static
@@ -1789,6 +1862,16 @@ ep_rt_utf16_to_utf8_string (
 	size_t len)
 {
 	return g_utf16_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_utf16le_to_utf8_string (
+	const ep_char16_t *str,
+	size_t len)
+{
+	return g_utf16le_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
 }
 
 static
@@ -2178,6 +2261,29 @@ ep_rt_volatile_store_ptr_without_barrier (
 bool
 ep_rt_mono_write_event_ee_startup_start (void);
 
+typedef struct _BulkTypeEventLogger BulkTypeEventLogger;
+
+void
+ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger);
+
+int
+ep_rt_mono_log_single_type (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_log_type_and_parameters (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_log_type_and_parameters_if_necessary (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_send_method_details_event (MonoMethod *method);
+
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);
 
@@ -2257,6 +2363,14 @@ ep_rt_write_event_threadpool_worker_thread_wait (
 	uint16_t clr_instance_id);
 
 bool
+ep_rt_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id);
+
+bool
 ep_rt_write_event_threadpool_worker_thread_adjustment_sample (
 	double throughput,
 	uint16_t clr_instance_id);
@@ -2298,6 +2412,12 @@ ep_rt_write_event_threadpool_io_dequeue (
 bool
 ep_rt_write_event_threadpool_working_thread_count (
 	uint16_t count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
 	uint16_t clr_instance_id);
 
 /*

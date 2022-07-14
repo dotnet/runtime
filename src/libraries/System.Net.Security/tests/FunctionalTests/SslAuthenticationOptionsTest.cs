@@ -19,6 +19,7 @@ namespace System.Net.Security.Tests
         protected abstract bool TestAuthenticateAsync { get; }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication()
         {
             using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
@@ -48,6 +49,7 @@ namespace System.Net.Security.Tests
 #pragma warning restore SYSLIB0040
                 RemoteCertificateValidationCallback serverRemoteCallback = new RemoteCertificateValidationCallback(delegate { return true; });
                 SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(serverCert, null, false);
+                X509ChainPolicy policy = new X509ChainPolicy();
 
                 (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
                 using (var client = new SslStream(stream1))
@@ -64,7 +66,8 @@ namespace System.Net.Security.Tests
                         EncryptionPolicy = clientEncryption,
                         LocalCertificateSelectionCallback = clientLocalCallback,
                         RemoteCertificateValidationCallback = clientRemoteCallback,
-                        TargetHost = clientHost
+                        TargetHost = clientHost,
+                        CertificateChainPolicy = policy,
                     };
 
                     // Create server options
@@ -79,6 +82,7 @@ namespace System.Net.Security.Tests
                         RemoteCertificateValidationCallback = serverRemoteCallback,
                         ServerCertificate = serverCert,
                         ServerCertificateContext = certificateContext,
+                        CertificateChainPolicy = policy,
                     };
 
                     // Authenticate
@@ -98,6 +102,8 @@ namespace System.Net.Security.Tests
                     Assert.Same(clientLocalCallback, clientOptions.LocalCertificateSelectionCallback);
                     Assert.Same(clientRemoteCallback, clientOptions.RemoteCertificateValidationCallback);
                     Assert.Same(clientHost, clientOptions.TargetHost);
+                    Assert.Same(clientHost, clientOptions.TargetHost);
+                    Assert.Same(policy, clientOptions.CertificateChainPolicy);
 
                     // Validate that server options are unchanged
                     Assert.Equal(serverAllowRenegotiation, serverOptions.AllowRenegotiation);
@@ -110,7 +116,29 @@ namespace System.Net.Security.Tests
                     Assert.Same(serverRemoteCallback, serverOptions.RemoteCertificateValidationCallback);
                     Assert.Same(serverCert, serverOptions.ServerCertificate);
                     Assert.Same(certificateContext, serverOptions.ServerCertificateContext);
+                    Assert.Same(policy, serverOptions.CertificateChainPolicy);
                 }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task ClientOptions_TargetHostNull_OK()
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = Configuration.Certificates.GetServerCertificate() };
+                var clientOptions = new SslClientAuthenticationOptions() { RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true };
+
+                Assert.Null(clientOptions.TargetHost);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+               Assert.Equal(string.Empty, client.TargetHostName);
+               Assert.Equal(string.Empty, server.TargetHostName);
             }
         }
     }

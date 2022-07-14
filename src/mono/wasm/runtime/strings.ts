@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer, WasmRootBuffer } from "./roots";
-import { MonoString, MonoStringNull } from "./types";
+import { MonoString, MonoStringNull, is_nullish } from "./types";
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root, WasmRoot } from "./roots";
-import { getI32 } from "./memory";
+import { getI32, getU32 } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 
 export class StringDecoder {
@@ -48,30 +48,30 @@ export class StringDecoder {
 
         cwraps.mono_wasm_string_get_data_ref(root.address, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
-        let result = mono_wasm_empty_string;
+        let result = undefined;
         const lengthBytes = getI32(pLengthBytes),
-            pChars = getI32(ppChars),
+            pChars = getU32(ppChars),
             isInterned = getI32(pIsInterned);
 
-        if (pLengthBytes && pChars) {
-            if (isInterned) {
-                result = interned_string_table.get(root.value)!;
-                // console.log(`intern table cache hit ${mono_string} ${result.length}`);
-            }
+        if (isInterned)
+            result = interned_string_table.get(root.value)!;
 
-            if (!isInterned || !result) {
+        if (result === undefined) {
+            if (lengthBytes && pChars) {
                 result = this.decode(<any>pChars, <any>pChars + lengthBytes);
-                if (isInterned) {
-                    // console.log("interned", mono_string, result.length);
+                if (isInterned)
                     interned_string_table.set(root.value, result);
-                }
-            }
+            } else
+                result = mono_wasm_empty_string;
         }
+
+        if (result === undefined)
+            throw new Error(`internal error when decoding string at location ${root.value}`);
 
         return result;
     }
 
-    private decode(start: CharPtr, end: CharPtr) {
+    decode(start: CharPtr, end: CharPtr): string {
         let str = "";
         if (this.mono_text_decoder) {
             // When threading is enabled, TextDecoder does not accept a view of a
@@ -123,9 +123,9 @@ export function mono_intern_string(string: string): string {
     //  interned string, so the address will never change and it is safe for us to use the raw pointer. Don't do this though
     const ptr = js_string_to_mono_string_interned(string);
     const result = interned_string_table.get(ptr);
-    if (!result)
+    if (is_nullish(result))
         throw new Error("internal error: interned_string_table did not contain string after js_string_to_mono_string_interned");
-    return result!;
+    return result;
 }
 
 function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString>, internIt: boolean): void {
@@ -167,11 +167,18 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
 }
 
 export function js_string_to_mono_string_interned_root(string: string | symbol, result: WasmRoot<MonoString>): void {
-    const text = (typeof (string) === "symbol")
-        ? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
-        : string;
+    let text: string | undefined;
+    if (typeof (string) === "symbol") {
+        text = string.description;
+        if (typeof (text) !== "string")
+            text = Symbol.keyFor(string);
+        if (typeof (text) !== "string")
+            text = "<unknown Symbol>";
+    } else if (typeof (string) === "string") {
+        text = string;
+    }
 
-    if (typeof(text) !== "string") {
+    if (typeof (text) !== "string") {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         throw new Error(`Argument to js_string_to_mono_string_interned must be a string but was ${string}`);

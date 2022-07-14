@@ -267,23 +267,6 @@
 #define UNIX_LOONGARCH64_ONLY(x)
 #endif // TARGET_LOONGARCH64
 
-#if defined(DEBUG)
-#define DEBUG_ARG_SLOTS
-#endif
-
-#if defined(DEBUG_ARG_SLOTS)
-#define DEBUG_ARG_SLOTS_ARG(x) , x
-#define DEBUG_ARG_SLOTS_ONLY(x) x
-// On all platforms except Arm64 OSX arguments on the stack are taking
-// register size slots. On these platforms we could check that stack slots count
-// matches our new byte size calculations.
-#define DEBUG_ARG_SLOTS_ASSERT(x) assert(compMacOsArm64Abi() || (x))
-#else
-#define DEBUG_ARG_SLOTS_ARG(x)
-#define DEBUG_ARG_SLOTS_ONLY(x)
-#define DEBUG_ARG_SLOTS_ASSERT(x)
-#endif
-
 #if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #endif
@@ -344,8 +327,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
-const CORINFO_CLASS_HANDLE NO_CLASS_HANDLE = nullptr;
-const CORINFO_FIELD_HANDLE NO_FIELD_HANDLE = nullptr;
+const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
+const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
+const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
 
 /*****************************************************************************/
 
@@ -353,7 +337,8 @@ typedef unsigned IL_OFFSET;
 
 const IL_OFFSET BAD_IL_OFFSET = 0xffffffff;
 
-const unsigned BAD_VAR_NUM = UINT_MAX;
+const unsigned BAD_VAR_NUM    = UINT_MAX;
+const uint16_t BAD_LCL_OFFSET = UINT16_MAX;
 
 // Code can't be more than 2^31 in any direction.  This is signed, so it should be used for anything that is
 // relative to something else.
@@ -415,7 +400,7 @@ public:
 
 #define CSE_INTO_HANDLERS 0
 #define DUMP_FLOWGRAPHS DEBUG                  // Support for creating Xml Flowgraph reports in *.fgx files
-#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 1 // if 1 we must have all handler entry points in the Hot code section
+#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 0 // if 1 we must have all handler entry points in the Hot code section
 
 /*****************************************************************************/
 
@@ -855,14 +840,21 @@ T dspOffset(T o)
 
 #endif // !defined(DEBUG)
 
-struct LikelyClassRecord
+struct LikelyClassMethodRecord
 {
-    CORINFO_CLASS_HANDLE clsHandle;
-    UINT32               likelihood;
+    intptr_t handle;
+    UINT32   likelihood;
 };
 
-extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*               pLikelyClasses,
                                           UINT32                                 maxLikelyClasses,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset);
+
+extern "C" UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*               pLikelyMethods,
+                                          UINT32                                 maxLikelyMethods,
                                           ICorJitInfo::PgoInstrumentationSchema* schema,
                                           UINT32                                 countSchemaItems,
                                           BYTE*                                  pInstrumentationData,

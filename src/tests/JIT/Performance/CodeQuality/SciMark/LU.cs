@@ -3,9 +3,9 @@
 /// <license>
 /// This is a port of the SciMark2a Java Benchmark to C# by
 /// Chris Re (cmr28@cornell.edu) and Werner Vogels (vogels@cs.cornell.edu)
-/// 
+///
 /// For details on the original authors see http://math.nist.gov/scimark2
-/// 
+///
 /// This software is likely to burn your processor, bitflip your memory chips
 /// anihilate your screen and corrupt all your disks, so you it at your
 /// own risk.
@@ -33,14 +33,14 @@ namespace SciMark2
         /// Returns a <em>copy</em> of the compact LU factorization.
         /// (useful mainly for debugging.)
         /// </summary>
-        /// 
+        ///
         /// <returns>
         /// the compact LU factorization.  The U factor
         /// is stored in the upper triangular portion, and the L
         /// factor is stored in the lower triangular portion.
         /// The main diagonal of L consists (by convention) of
         /// ones, and is not explicitly stored.
-        /// </returns>	
+        /// </returns>
         public static double num_flops(int N)
         {
             // rougly 2/3*N^3
@@ -95,11 +95,11 @@ namespace SciMark2
         }
 
         /// <summary>
-        /// Initalize LU factorization from matrix.
+        /// Initialize LU factorization from matrix.
         /// </summary>
         /// <param name="A">
         /// (in) the matrix to associate with this factorization.
-        /// 
+        ///
         /// </param>
         public LU(double[][] A)
         {
@@ -150,7 +150,7 @@ namespace SciMark2
 
             for (int j = 0; j < minMN; j++)
             {
-                // find pivot in column j and  test for singularity.			
+                // find pivot in column j and  test for singularity.
                 int jp = j;
 
                 double t = Math.Abs(A[j][j]);
@@ -166,8 +166,8 @@ namespace SciMark2
 
                 pivot[j] = jp;
 
-                // jp now has the index of maximum element 
-                // of column j, below the diagonal				
+                // jp now has the index of maximum element
+                // of column j, below the diagonal
                 if (A[jp][j] == 0)
                     return 1;
 
@@ -217,7 +217,7 @@ namespace SciMark2
         /// <summary>Solve a linear system, using a prefactored matrix
         /// in LU form.
         /// </summary>
-        /// <param name="A">(in) the factored matrix in LU form. 
+        /// <param name="A">(in) the factored matrix in LU form.
         /// </param>
         /// <param name="pivot">(in) the pivot vector which lists
         /// the reordering used during the factorization
@@ -225,7 +225,7 @@ namespace SciMark2
         /// </param>
         /// <param name="b">   (in/out) On input, the right-hand side.
         /// On output, the solution vector.
-        /// 
+        ///
         /// </param>
         public static void solve(double[][] A, int[] pvt, double[] b)
         {

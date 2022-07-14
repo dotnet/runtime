@@ -134,18 +134,8 @@ namespace System.Reflection
             // Gets or creates the ConstructorInfo for the IgnoresAccessChecksAttribute.
             // This attribute is both defined and referenced in the dynamic assembly to
             // allow access to internal types in other assemblies.
-            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor
-            {
-                get
-                {
-                    if (_ignoresAccessChecksToAttributeConstructor == null)
-                    {
-                        _ignoresAccessChecksToAttributeConstructor = IgnoreAccessChecksToAttributeBuilder.AddToModule(_mb);
-                    }
-
-                    return _ignoresAccessChecksToAttributeConstructor;
-                }
-            }
+            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor =>
+                _ignoresAccessChecksToAttributeConstructor ??= IgnoreAccessChecksToAttributeBuilder.AddToModule(_mb);
 
             public GeneratedTypeInfo GetProxyType(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
@@ -171,6 +161,8 @@ namespace System.Reflection
 
             // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+                Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
                 Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
             private GeneratedTypeInfo GenerateProxyType(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,

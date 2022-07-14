@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class EnumConverterFactory : JsonConverterFactory
     {
         public EnumConverterFactory()
@@ -16,21 +17,14 @@ namespace System.Text.Json.Serialization.Converters
             return type.IsEnum;
         }
 
-        public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options) =>
-            Create(type, EnumConverterOptions.AllowNumbers, options);
+        public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
+            => Create(type, EnumConverterOptions.AllowNumbers, namingPolicy: null, options);
 
-        internal static JsonConverter Create(Type enumType, EnumConverterOptions converterOptions, JsonSerializerOptions serializerOptions)
+        internal static JsonConverter Create(Type enumType, EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions options)
         {
             return (JsonConverter)Activator.CreateInstance(
                 GetEnumConverterType(enumType),
-                new object[] { converterOptions, serializerOptions })!;
-        }
-
-        internal static JsonConverter Create(Type enumType, EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions serializerOptions)
-        {
-            return (JsonConverter)Activator.CreateInstance(
-                GetEnumConverterType(enumType),
-                new object?[] { converterOptions, namingPolicy, serializerOptions })!;
+                new object?[] { converterOptions, namingPolicy, options })!;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",

@@ -2490,7 +2490,7 @@ namespace System.Numerics.Tests
 
         // A test for Matrix4x4 comparison involving NaN values
         [Fact]
-        public void Matrix4x4EqualsNanTest()
+        public void Matrix4x4EqualsNaNTest()
         {
             Matrix4x4 a = new Matrix4x4(float.NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             Matrix4x4 b = new Matrix4x4(0, float.NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -2577,23 +2577,22 @@ namespace System.Numerics.Tests
             Assert.False(o.IsIdentity);
             Assert.False(p.IsIdentity);
 
-            // Counterintuitive result - IEEE rules for NaN comparison are weird!
-            Assert.False(a.Equals(a));
-            Assert.False(b.Equals(b));
-            Assert.False(c.Equals(c));
-            Assert.False(d.Equals(d));
-            Assert.False(e.Equals(e));
-            Assert.False(f.Equals(f));
-            Assert.False(g.Equals(g));
-            Assert.False(h.Equals(h));
-            Assert.False(i.Equals(i));
-            Assert.False(j.Equals(j));
-            Assert.False(k.Equals(k));
-            Assert.False(l.Equals(l));
-            Assert.False(m.Equals(m));
-            Assert.False(n.Equals(n));
-            Assert.False(o.Equals(o));
-            Assert.False(p.Equals(p));
+            Assert.True(a.Equals(a));
+            Assert.True(b.Equals(b));
+            Assert.True(c.Equals(c));
+            Assert.True(d.Equals(d));
+            Assert.True(e.Equals(e));
+            Assert.True(f.Equals(f));
+            Assert.True(g.Equals(g));
+            Assert.True(h.Equals(h));
+            Assert.True(i.Equals(i));
+            Assert.True(j.Equals(j));
+            Assert.True(k.Equals(k));
+            Assert.True(l.Equals(l));
+            Assert.True(m.Equals(m));
+            Assert.True(n.Equals(n));
+            Assert.True(o.Equals(o));
+            Assert.True(p.Equals(p));
         }
 
         // A test to make sure these types are blittable directly into GPU buffer memory layouts

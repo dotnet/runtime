@@ -79,7 +79,7 @@ const signed char       opcodeSizes[] =
 // clang-format on
 
 const BYTE varTypeClassification[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) tf,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) tf,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -105,7 +105,7 @@ extern const BYTE opcodeArgKinds[] = {
 const char* varTypeName(var_types vt)
 {
     static const char* const varTypeNames[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) nm,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) nm,
 #include "typelist.h"
 #undef DEF_TP
     };
@@ -2233,6 +2233,38 @@ bool FloatingPointUtils::hasPreciseReciprocal(float x)
 }
 
 //------------------------------------------------------------------------
+// isAllBitsSet: Determines whether the specified value is AllBitsSet
+//
+// Arguments:
+//    val - value to check for AllBitsSet
+//
+// Return Value:
+//    True if val is AllBitsSet
+//
+
+bool FloatingPointUtils::isAllBitsSet(float val)
+{
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+    return bits == 0xFFFFFFFFU;
+}
+
+//------------------------------------------------------------------------
+// isAllBitsSet: Determines whether the specified value is AllBitsSet
+//
+// Arguments:
+//    val - value to check for AllBitsSet
+//
+// Return Value:
+//    True if val is AllBitsSet
+//
+
+bool FloatingPointUtils::isAllBitsSet(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return bits == 0xFFFFFFFFFFFFFFFFULL;
+}
+
+//------------------------------------------------------------------------
 // isNegative: Determines whether the specified value is negative
 //
 // Arguments:
@@ -2292,6 +2324,38 @@ bool FloatingPointUtils::isNaN(double val)
 {
     UINT64 bits = *reinterpret_cast<UINT64*>(&val);
     return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
+}
+
+//------------------------------------------------------------------------
+// isNegativeZero: Determines whether the specified value is negative zero (-0.0)
+//
+// Arguments:
+//    val - value to check for (-0.0)
+//
+// Return Value:
+//    True if val is (-0.0)
+//
+
+bool FloatingPointUtils::isNegativeZero(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return bits == 0x8000000000000000ULL;
+}
+
+//------------------------------------------------------------------------
+// isPositiveZero: Determines whether the specified value is positive zero (+0.0)
+//
+// Arguments:
+//    val - value to check for (+0.0)
+//
+// Return Value:
+//    True if val is (+0.0)
+//
+
+bool FloatingPointUtils::isPositiveZero(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return bits == 0x0000000000000000ULL;
 }
 
 //------------------------------------------------------------------------

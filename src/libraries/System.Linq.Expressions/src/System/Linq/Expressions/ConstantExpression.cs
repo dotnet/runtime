@@ -94,7 +94,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static ConstantExpression Constant(object? value, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (value == null)
             {

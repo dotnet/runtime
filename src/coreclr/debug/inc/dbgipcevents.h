@@ -1136,6 +1136,40 @@ struct MSLAYOUT DebuggerREGDISPLAY
     SIZE_T  LR;
     SIZE_T  SP;
     SIZE_T  PC;
+#elif defined(TARGET_LOONGARCH64)
+    #define DebuggerIPCE_FloatCount 32
+    SIZE_T  RA;
+    SIZE_T  TP;
+    SIZE_T  SP;
+    SIZE_T  A0;
+    SIZE_T  A1;
+    SIZE_T  A2;
+    SIZE_T  A3;
+    SIZE_T  A4;
+    SIZE_T  A5;
+    SIZE_T  A6;
+    SIZE_T  A7;
+    SIZE_T  T0;
+    SIZE_T  T1;
+    SIZE_T  T2;
+    SIZE_T  T3;
+    SIZE_T  T4;
+    SIZE_T  T5;
+    SIZE_T  T6;
+    SIZE_T  T7;
+    SIZE_T  T8;
+    SIZE_T  X0;
+    SIZE_T  FP;
+    SIZE_T  S0;
+    SIZE_T  S1;
+    SIZE_T  S2;
+    SIZE_T  S3;
+    SIZE_T  S4;
+    SIZE_T  S5;
+    SIZE_T  S6;
+    SIZE_T  S7;
+    SIZE_T  S8;
+    SIZE_T  PC;
 #else
     #define DebuggerIPCE_FloatCount 1
 
@@ -1853,6 +1887,13 @@ C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_ARM64
+#elif defined(TARGET_LOONGARCH64)
+#define DBG_TARGET_REGNUM_SP 3
+#define DBG_TARGET_REGNUM_AMBIENT_SP 34
+#ifdef TARGET_LOONGARCH64
+C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+#endif
 #else
 #error Target registers are not defined for this platform
 #endif

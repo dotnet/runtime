@@ -501,7 +501,7 @@ mono_gc_invoke_finalizers (void)
 MonoBoolean
 mono_gc_pending_finalizers (void)
 {
-	return sgen_have_pending_finalizers ();
+	return !!sgen_have_pending_finalizers ();
 }
 
 void
@@ -1066,7 +1066,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 
 	if (sgen_collect_before_allocs)
 		return NULL;
-	if (m_class_get_instance_size (klass) > sgen_tlab_size)
+	if (GINT_TO_UINT32(m_class_get_instance_size (klass)) > sgen_tlab_size)
 		return NULL;
 	if (known_instance_size && ALIGN_TO (m_class_get_instance_size (klass), SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
 		return NULL;
@@ -1812,13 +1812,13 @@ report_pin_queue (void)
 	//sort the addresses
 	sgen_pointer_queue_sort_uniq (&pinned_objects);
 
-	for (int i = 0; i < pinned_objects.next_slot; ++i) {
+	for (gsize i = 0; i < pinned_objects.next_slot; ++i) {
 		GCObject *obj = (GCObject*)pinned_objects.data [i];
 		ssize_t size = sgen_safe_object_get_size (obj);
 
 		ssize_t addr = (ssize_t)obj;
-		lower_bound = MIN (lower_bound, addr);
-		upper_bound = MAX (upper_bound, addr + size);
+		lower_bound = MIN (lower_bound, GSSIZE_TO_SIZE(addr));
+		upper_bound = MAX (upper_bound, GSSIZE_TO_SIZE(addr + size));
 	}
 
 	report_stack_roots ();

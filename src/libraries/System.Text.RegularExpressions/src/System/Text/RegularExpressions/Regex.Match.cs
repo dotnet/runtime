@@ -77,17 +77,8 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(quick: true, -1, input, 0, input.Length, RightToLeft ? input.Length : 0) is null;
+            return RunSingleMatch(RegexRunnerMode.ExistenceRequired, -1, input, 0, input.Length, RightToLeft ? input.Length : 0) is null;
         }
-
-        /// <summary>
-        /// Indicates whether the regular expression specified in the Regex constructor finds a match in a specified input span.
-        /// </summary>
-        /// <param name="input">The span to search for a match.</param>
-        /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="RegexMatchTimeoutException">A time-out ocurred.</exception>
-        public bool IsMatch(ReadOnlySpan<char> input) =>
-            RunSingleMatch(quick: true, -1, input, RightToLeft ? input.Length : 0) is null;
 
         /// <summary>
         /// Searches the input string for one or more matches using the previous pattern and options,
@@ -100,8 +91,27 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(quick: true, -1, input, 0, input.Length, startat) is null;
+            return RunSingleMatch(RegexRunnerMode.ExistenceRequired, -1, input, 0, input.Length, startat) is null;
         }
+
+        /// <summary>
+        /// Indicates whether the regular expression specified in the Regex constructor finds a match in a specified input span.
+        /// </summary>
+        /// <param name="input">The span to search for a match.</param>
+        /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
+        public bool IsMatch(ReadOnlySpan<char> input) =>
+            IsMatch(input, RightToLeft ? input.Length : 0);
+
+        /// <summary>
+        /// Indicates whether the regular expression specified in the Regex constructor finds a match in a specified input span.
+        /// </summary>
+        /// <param name="input">The span to search for a match.</param>
+        /// <param name="startat">The zero-based character position at which to start the search.</param>
+        /// <returns><see langword="true"/> if the regular expression finds a match; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="RegexMatchTimeoutException">A time-out occurred.</exception>
+        public bool IsMatch(ReadOnlySpan<char> input, int startat) =>
+            RunSingleMatch(RegexRunnerMode.ExistenceRequired, -1, input, startat).Success;
 
         /// <summary>
         /// Searches the input string for one or more occurrences of the text
@@ -132,7 +142,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(quick: false, -1, input, 0, input.Length, RightToLeft ? input.Length : 0)!;
+            return RunSingleMatch(RegexRunnerMode.FullMatchRequired, -1, input, 0, input.Length, RightToLeft ? input.Length : 0)!;
         }
 
         /// <summary>
@@ -146,7 +156,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(quick: false, -1, input, 0, input.Length, startat)!;
+            return RunSingleMatch(RegexRunnerMode.FullMatchRequired, -1, input, 0, input.Length, startat)!;
         }
 
         /// <summary>
@@ -159,7 +169,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            return RunSingleMatch(quick: false, -1, input, beginning, length, RightToLeft ? beginning + length : beginning)!;
+            return RunSingleMatch(RegexRunnerMode.FullMatchRequired, -1, input, beginning, length, RightToLeft ? beginning + length : beginning)!;
         }
 
         /// <summary>

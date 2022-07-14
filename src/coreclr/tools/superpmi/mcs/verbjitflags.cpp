@@ -29,9 +29,11 @@ int verbJitFlags::DoWork(const char* nameOfInput)
         //
         bool hasEdgeProfile = false;
         bool hasClassProfile = false;
+        bool hasMethodProfile = false;
         bool hasLikelyClass = false;
+        bool hasLikelyMethod = false;
         ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
-        if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasLikelyClass, pgoSource))
+        if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasMethodProfile, hasLikelyClass, hasLikelyMethod, pgoSource))
         {
             rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_PGO);
 
@@ -45,9 +47,19 @@ int verbJitFlags::DoWork(const char* nameOfInput)
                 rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE);
             }
 
+            if (hasMethodProfile)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_METHOD_PROFILE);
+            }
+
             if (hasLikelyClass)
             {
                 rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS);
+            }
+
+            if (hasLikelyMethod)
+            {
+                rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_METHOD);
             }
 
             if (pgoSource == ICorJitInfo::PgoSource::Static)
