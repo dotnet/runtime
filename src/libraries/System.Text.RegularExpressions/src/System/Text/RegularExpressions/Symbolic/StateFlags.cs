@@ -27,15 +27,10 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal static class StateFlagsExtensions
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsInitial(this StateFlags info) => info.HasFlag(StateFlags.IsInitialFlag);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsDeadend(this StateFlags info) => info.HasFlag(StateFlags.IsDeadendFlag);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsNullable(this StateFlags info) => info.HasFlag(StateFlags.IsNullableFlag);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool CanBeNullable(this StateFlags info) => info.HasFlag(StateFlags.CanBeNullableFlag);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool SimulatesBacktracking(this StateFlags info) => info.HasFlag(StateFlags.SimulatesBacktrackingFlag);
+        internal static bool IsInitial(this StateFlags info) => (info & StateFlags.IsInitialFlag) != 0;
+        internal static bool IsDeadend(this StateFlags info) => (info & StateFlags.IsDeadendFlag) != 0;
+        internal static bool IsNullable(this StateFlags info) => (info & StateFlags.IsNullableFlag) != 0;
+        internal static bool CanBeNullable(this StateFlags info) => (info & StateFlags.CanBeNullableFlag) != 0;
+        internal static bool SimulatesBacktracking(this StateFlags info) => (info & StateFlags.SimulatesBacktrackingFlag) != 0;
     }
 }

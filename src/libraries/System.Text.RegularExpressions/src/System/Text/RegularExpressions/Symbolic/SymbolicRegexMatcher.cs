@@ -523,11 +523,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Loop through each character in the input, transitioning from state to state for each.
                 while (true)
                 {
-                    StateFlags info = TStateHandler.GetStateFlags(this, in state);
+                    StateFlags flags = TStateHandler.GetStateFlags(this, in state);
 
                     // Check if currentState represents an initial state. If it does, call into any possible find optimizations
                     // to hopefully more quickly find the next possible starting location.
-                    if (info.IsInitial())
+                    if (flags.IsInitial())
                     {
                         if (!TFindOptimizationsHandler.TryFindNextStartingPosition<TInputReader>(this, input, ref state, ref pos))
                         {
@@ -538,7 +538,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // If the state is a dead end, such that we can't transition anywhere else, end the search.
-                    if (info.IsDeadend())
+                    if (flags.IsDeadend())
                     {
                         return true;
                     }
@@ -547,7 +547,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
-                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, info.IsNullable(), info.CanBeNullable()))
+                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, flags))
                     {
                         endPos = pos;
                         endStateId = TStateHandler.ExtractNullableCoreStateId(this, in state, input, pos);
@@ -658,7 +658,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If the state accepts the empty string, we found a valid starting position.  Record it and keep going,
                     // since we're looking for the earliest one to occur within bounds.
-                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, flags.IsNullable(), flags.CanBeNullable()))
+                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, flags))
                     {
                         lastStart = pos;
                     }
@@ -1106,17 +1106,18 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 else
                 {
-                    uint nextCharKind = matcher.GetPositionKind(mintermId);
                     // We have multiple source states, so we need to potentially dedup across each of
                     // their next states.  For each source state, get its next states, adding each into
                     // our set (which exists purely for deduping purposes), and if we successfully added
                     // to the set, then add the known-unique state to the destination list.
+                    uint nextCharKind = matcher.GetPositionKind(mintermId);
                     foreach (ref KeyValuePair<int, int> sourceState in CollectionsMarshal.AsSpan(sourceStates.Values))
                     {
                         foreach (int nextState in GetNextStates(sourceState.Key, mintermId, matcher))
                         {
                             nextStates.Add(nextState, out _);
                         }
+
                         // To simulate backtracking, if a source state is nullable then no further transitions are taken
                         // as the backtracking engines would prefer the match ending here.
                         int coreStateId = matcher.GetCoreStateId(sourceState.Key);
@@ -1159,7 +1160,8 @@ namespace System.Text.RegularExpressions.Symbolic
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static StateFlags GetStateFlags(SymbolicRegexMatcher<TSet> matcher, in CurrentState state)
             {
-                if (state.NfaState!.NfaStateSet.Count == 0)
+                SparseIntMap<int> stateSet = state.NfaState!.NfaStateSet;
+                if (stateSet.Count == 0)
                 {
                     // In NFA state sets dead ends are never included. Instead an empty set of states represents a dead end.
                     return StateFlags.IsDeadendFlag;
@@ -1171,7 +1173,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // they are true for any state in the set; SimulatesBacktracking is true for all the states if
                     // it is true for any state (since it is a phase-wide property); and all other flags are masked out.
                     StateFlags flags = 0;
-                    foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
+                    foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(stateSet.Values))
                     {
                         flags |= matcher._stateFlagsArray[matcher.GetCoreStateId(nfaState.Key)];
                     }
@@ -1180,8 +1182,8 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
 #if DEBUG
-    /// <summary>Undo a previous call to <see cref="TryTakeTransition"/>.</summary>
-    public static void UndoTransition(ref CurrentState state)
+            /// <summary>Undo a previous call to <see cref="TryTakeTransition"/>.</summary>
+            public static void UndoTransition(ref CurrentState state)
             {
                 Debug.Assert(state.DfaStateId < 0, $"Expected negative {nameof(state.DfaStateId)}.");
                 Debug.Assert(state.NfaState is not null, $"Expected non-null {nameof(state.NfaState)}.");
@@ -1287,7 +1289,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private interface INullabilityHandler
         {
-            public static abstract bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, bool isNullable, bool canBeNullable)
+            public static abstract bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
                     where TStateHandler : struct, IStateHandler;
         }
 
@@ -1297,11 +1299,11 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly struct NoAnchorsNullabilityHandler : INullabilityHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, bool isNullable, bool canBeNullable)
+            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
                 where TStateHandler : struct, IStateHandler
             {
                 Debug.Assert(!matcher._pattern._info.ContainsSomeAnchor);
-                return isNullable;
+                return flags.IsNullable();
             }
         }
 
@@ -1311,10 +1313,10 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly struct FullNullabilityHandler : INullabilityHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, bool isNullable, bool canBeNullable)
+            public static bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, in CurrentState state, int positionId, StateFlags flags)
                 where TStateHandler : struct, IStateHandler
             {
-                return isNullable || (canBeNullable && TStateHandler.IsNullableFor(matcher, in state, matcher.GetPositionKind(positionId)));
+                return flags.IsNullable() || (flags.CanBeNullable() && TStateHandler.IsNullableFor(matcher, in state, matcher.GetPositionKind(positionId)));
             }
         }
     }
