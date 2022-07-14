@@ -12948,39 +12948,52 @@ FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_confi
 }
 #endif //TRACE_GC || GC_CONFIG_DRIVEN
 
-size_t gc_heap::get_segment_size_hard_limit (uint32_t* num_heaps, bool should_adjust_num_heaps)
+uint32_t adjust_heaps_hard_limit_worker (uint32_t nhp, size_t limit)
 {
-    assert (heap_hard_limit);
-    size_t aligned_hard_limit =  align_on_segment_hard_limit (heap_hard_limit);
-    if (should_adjust_num_heaps)
+    if (!limit)
+        return nhp;
+
+    size_t aligned_limit =  align_on_segment_hard_limit (limit);
+    uint32_t nhp_oh = (uint32_t)(aligned_limit / min_segment_size_hard_limit);
+    nhp = min (nhp_oh, nhp);
+    return (max (nhp, 1));
+}
+
+uint32_t gc_heap::adjust_heaps_hard_limit (uint32_t nhp)
+{
+#ifdef MULTIPLE_HEAPS
+    if (heap_hard_limit_oh[soh])
     {
-        uint32_t max_num_heaps = (uint32_t)(aligned_hard_limit / min_segment_size_hard_limit);
-        if (*num_heaps > max_num_heaps)
+        for (int i = 0; i < (total_oh_count - 1); i++)
         {
-            *num_heaps = max_num_heaps;
+            nhp = adjust_heaps_hard_limit_worker (nhp, heap_hard_limit_oh[i]);
         }
     }
-
-    size_t seg_size = aligned_hard_limit / *num_heaps;
-    size_t aligned_seg_size = (use_large_pages_p ? align_on_segment_hard_limit (seg_size) : round_up_power2 (seg_size));
-
-    assert (g_theGCHeap->IsValidSegmentSize (aligned_seg_size));
-
-    size_t seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
-    if (seg_size_from_config)
+    else if (heap_hard_limit)
     {
-        size_t aligned_seg_size_config = (use_large_pages_p ? align_on_segment_hard_limit (seg_size) : round_up_power2 (seg_size_from_config));
+        nhp = adjust_heaps_hard_limit_worker (nhp, heap_hard_limit);
+    }
+#endif
 
-        aligned_seg_size = max (aligned_seg_size, aligned_seg_size_config);
+    return nhp;
+}
+
+size_t gc_heap::adjust_segment_size_hard_limit_va (size_t seg_size)
+{
+    return (use_large_pages_p ? 
+            align_on_segment_hard_limit (seg_size) : 
+            round_up_power2 (seg_size));
+}
+
+size_t gc_heap::adjust_segment_size_hard_limit (size_t limit, uint32_t nhp)
+{
+    if (!limit) 
+    {
+        limit = min_segment_size_hard_limit;
     }
 
-    //printf ("limit: %Idmb, aligned: %Idmb, %d heaps, seg size from config: %Idmb, seg size %Idmb",
-    //    (heap_hard_limit / 1024 / 1024),
-    //    (aligned_hard_limit / 1024 / 1024),
-    //    *num_heaps,
-    //    (seg_size_from_config / 1024 / 1024),
-    //    (aligned_seg_size / 1024 / 1024));
-    return aligned_seg_size;
+    size_t seg_size = align_on_segment_hard_limit (limit) / nhp;
+    return adjust_segment_size_hard_limit_va (seg_size);
 }
 
 #ifdef USE_REGIONS
@@ -44036,66 +44049,43 @@ HRESULT GCHeap::Initialize()
     size_t seg_size = 0;
     size_t large_seg_size = 0;
     size_t pin_seg_size = 0;
+    size_t seg_size_from_config = 0;
+
+    if (gc_heap::heap_hard_limit)
+    {
+        if (!nhp_from_config)
+        {
+            nhp = gc_heap::adjust_heaps_hard_limit (nhp);
+        }
+
+        seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
+        if (seg_size_from_config)
+        {
+            seg_size_from_config = gc_heap::adjust_segment_size_hard_limit_va (seg_size_from_config);
+        }
+
+        size_t limit_to_check = (gc_heap::heap_hard_limit_oh[soh] ? gc_heap::heap_hard_limit_oh[soh] : gc_heap::heap_hard_limit);
+        gc_heap::soh_segment_size = max (gc_heap::adjust_segment_size_hard_limit (limit_to_check, nhp), seg_size_from_config);
+    }
+    else
+    {
+        gc_heap::soh_segment_size = get_valid_segment_size();
+    }
+
+    seg_size = gc_heap::soh_segment_size;
 
 #ifndef USE_REGIONS
+    
     if (gc_heap::heap_hard_limit)
     {
         if (gc_heap::heap_hard_limit_oh[soh])
         {
-#ifdef MULTIPLE_HEAPS
-            if (nhp_from_config == 0)
-            {
-                for (int i = 0; i < (total_oh_count - 1); i++)
-                {
-                    if (i == poh && gc_heap::heap_hard_limit_oh[poh] == 0)
-                    {
-                        // if size 0 was specified for POH, ignore it for the nhp computation
-                        continue;
-                    }
-                    uint32_t nhp_oh = (uint32_t)(gc_heap::heap_hard_limit_oh[i] / min_segment_size_hard_limit);
-                    nhp = min (nhp, nhp_oh);
-                }
-                if (nhp == 0)
-                {
-                    nhp = 1;
-                }
-            }
-#endif
-            seg_size = gc_heap::heap_hard_limit_oh[soh] / nhp;
-            large_seg_size = gc_heap::heap_hard_limit_oh[loh] / nhp;
-            pin_seg_size = (gc_heap::heap_hard_limit_oh[poh] != 0) ? (gc_heap::heap_hard_limit_oh[2] / nhp) : min_segment_size_hard_limit;
-
-            size_t aligned_seg_size = align_on_segment_hard_limit (seg_size);
-            size_t aligned_large_seg_size = align_on_segment_hard_limit (large_seg_size);
-            size_t aligned_pin_seg_size = align_on_segment_hard_limit (pin_seg_size);
-
-            if (!gc_heap::use_large_pages_p)
-            {
-                aligned_seg_size = round_up_power2 (aligned_seg_size);
-                aligned_large_seg_size = round_up_power2 (aligned_large_seg_size);
-                aligned_pin_seg_size = round_up_power2 (aligned_pin_seg_size);
-            }
-
-            size_t seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
-            if (seg_size_from_config)
-            {
-                size_t aligned_seg_size_config = (gc_heap::use_large_pages_p ?
-                    align_on_segment_hard_limit (seg_size) : round_up_power2 (seg_size_from_config));
-                aligned_seg_size = max (aligned_seg_size, aligned_seg_size_config);
-                aligned_large_seg_size = max (aligned_large_seg_size, aligned_seg_size_config);
-                aligned_pin_seg_size = max (aligned_pin_seg_size, aligned_seg_size_config);
-            }
-
-            seg_size = aligned_seg_size;
-            gc_heap::soh_segment_size = seg_size;
-            large_seg_size = aligned_large_seg_size;
-            pin_seg_size = aligned_pin_seg_size;
+            large_seg_size = max (gc_heap::adjust_segment_size_hard_limit (gc_heap::heap_hard_limit_oh[loh], nhp), seg_size_from_config);
+            pin_seg_size = max (gc_heap::adjust_segment_size_hard_limit (gc_heap::heap_hard_limit_oh[poh], nhp), seg_size_from_config);
         }
         else
         {
-            seg_size = gc_heap::get_segment_size_hard_limit (&nhp, (nhp_from_config == 0));
-            gc_heap::soh_segment_size = seg_size;
-            large_seg_size = gc_heap::use_large_pages_p ? seg_size : seg_size * 2;
+            large_seg_size = gc_heap::use_large_pages_p ? gc_heap::soh_segment_size : gc_heap::soh_segment_size * 2;
             pin_seg_size = large_seg_size;
         }
         if (gc_heap::use_large_pages_p)
@@ -44103,8 +44093,6 @@ HRESULT GCHeap::Initialize()
     }
     else
     {
-        seg_size = get_valid_segment_size();
-        gc_heap::soh_segment_size = seg_size;
         large_seg_size = get_valid_segment_size (TRUE);
         pin_seg_size = large_seg_size;
     }
@@ -44128,13 +44116,6 @@ HRESULT GCHeap::Initialize()
     GCConfig::SetHeapCount(static_cast<int64_t>(nhp));
 
 #ifdef USE_REGIONS
-    // REGIONS TODO:
-    // soh_segment_size is used by a few places, I'm setting it temporarily and will
-    // get rid of it.
-    gc_heap::soh_segment_size = INITIAL_ALLOC;
-#ifdef MULTIPLE_HEAPS
-    gc_heap::soh_segment_size /= 4;
-#endif //MULTIPLE_HEAPS
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {
