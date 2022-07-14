@@ -29,7 +29,13 @@ import {
 import { makeEventPipeStreamingSession } from "./streaming-session";
 import parseMockCommand from "./mock-command-parser";
 import { CommonSocket } from "./common-socket";
-import { createProtocolSocket, dotnetDiagnosticsServerProtocolCommandEvent, BinaryProtocolCommand, ProtocolCommandEvent } from "./protocol-socket";
+import {
+    createProtocolSocket, dotnetDiagnosticsServerProtocolCommandEvent,
+    BinaryProtocolCommand,
+    ProtocolCommandEvent,
+    isBinaryProtocolCommand,
+    parseBinaryProtocolCommand,
+} from "./protocol-socket";
 
 function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
     return new Promise((resolve) => {
@@ -91,6 +97,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         await this.startRequestedController.promise;
         await this.attachToRuntimeController.promise; // can't start tracing until we've attached to the runtime
         while (!this.stopRequested) {
+            console.debug("diagnostic server: advertising and waiting for client");
             const p1: Promise<"first" | "second"> = this.advertiseAndWaitForClient().then(() => "first");
             const p2: Promise<"first" | "second"> = this.stopRequestedController.promise.then(() => "second");
             const result = await Promise.race([p1, p2]);
@@ -159,16 +166,18 @@ class DiagnosticServerImpl implements DiagnosticServer {
         guid.split("-").forEach((part) => {
             // FIXME: I'm sure the endianness is wrong here
             for (let i = 0; i < part.length; i += 2) {
-                view[pos++] = parseInt(part.substring(i, 2), 16);
+                const idx = part.length - i - 2; // go through the pieces backwards
+                view[pos++] = parseInt(part.substring(idx, idx + 2), 16);
             }
         });
         // "process ID" in 2 32-bit parts
-        const pid = [0, 1234];
+        const pid = [0, 1234]; // hi, lo
         for (let i = 0; i < pid.length; i++) {
-            view[pos++] = pid[i] & 0xFF;
-            view[pos++] = (pid[i] >> 8) & 0xFF;
-            view[pos++] = (pid[i] >> 16) & 0xFF;
-            view[pos++] = (pid[i] >> 24) & 0xFF;
+            const j = pid[pid.length - i - 1]; //lo, hi
+            view[pos++] = j & 0xFF;
+            view[pos++] = (j >> 8) & 0xFF;
+            view[pos++] = (j >> 16) & 0xFF;
+            view[pos++] = (j >> 24) & 0xFF;
         }
         view[pos++] = 0;
         view[pos++] = 0; // two reserved zero bytes
@@ -182,7 +191,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
             return parseMockCommand(message.data);
         } else {
             console.debug("parsing byte command: ", message.data);
-            throw new Error("TODO");
+            return parseProtocolCommand(message.data);
         }
     }
 
@@ -249,6 +258,14 @@ class DiagnosticServerImpl implements DiagnosticServer {
             cwraps.mono_wasm_diagnostic_server_post_resume_runtime();
             this.runtimeResumed = true;
         }
+    }
+}
+
+function parseProtocolCommand(data: ArrayBuffer | BinaryProtocolCommand): ProtocolClientCommandBase | null {
+    if (isBinaryProtocolCommand(data)) {
+        return parseBinaryProtocolCommand(data);
+    } else {
+        throw new Error("binary blob from mock is not implemented");
     }
 }
 

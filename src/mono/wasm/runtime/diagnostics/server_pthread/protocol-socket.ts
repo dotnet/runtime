@@ -2,6 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { CommonSocket } from "./common-socket";
+import type {
+    ProtocolClientCommandBase,
+    EventPipeClientCommandBase,
+    EventPipeCommandCollectTracing2,
+    EventPipeCollectTracingCommandProvider
+} from "./protocol-client-commands";
 
 export const dotnetDiagnosticsServerProtocolCommandEvent = "dotnet:diagnostics:protocolCommand" as const;
 
@@ -12,6 +18,9 @@ export interface BinaryProtocolCommand {
     payload: Uint8Array;
 }
 
+export function isBinaryProtocolCommand(x: object): x is BinaryProtocolCommand {
+    return "commandSet" in x && "command" in x && "payload" in x;
+}
 
 export interface ProtocolCommandEvent extends Event {
     type: typeof dotnetDiagnosticsServerProtocolCommandEvent;
@@ -73,7 +82,7 @@ class ProtocolSocketImpl implements ProtocolSocket {
     constructor(private readonly sock: CommonSocket) {
     }
     onMessage(this: ProtocolSocketImpl, ev: MessageEvent): void {
-        console.debug("socket received message", ev.data);
+        console.debug("protocol socket received message", ev.data);
         if (typeof ev.data === "object" && ev.data instanceof ArrayBuffer) {
             this.onArrayBuffer(ev.data);
         } else if (typeof ev.data === "object" && ev.data instanceof Blob) {
@@ -87,6 +96,7 @@ class ProtocolSocketImpl implements ProtocolSocket {
     }
 
     onArrayBuffer(this: ProtocolSocketImpl, buf: ArrayBuffer) {
+        console.debug("protocol-socket: parsing array buffer", buf);
         if (this.state.state == InState.Error) {
             return;
         }
@@ -97,10 +107,13 @@ class ProtocolSocketImpl implements ProtocolSocket {
             result = this.tryAppendBuffer(new Uint8Array(buf));
         }
         if (result.success) {
+            console.debug("protocol-socket: got result", result);
             this.setState(result.newState);
             if (result.command) {
                 const command = result.command;
+                console.debug("protocol-socket: queueing command", command);
                 queueMicrotask(() => {
+                    console.debug("dispatching protocol event with command", command);
                     this.dispatchProtocolCommandEvent(command);
                 });
             }
@@ -121,16 +134,17 @@ class ProtocolSocketImpl implements ProtocolSocket {
             return { success: false, error: "invalid header" };
         }
         const size = Parser.tryParseSize(buf, pos);
-        if (!size) {
+        if (size === undefined || size < Parser.MinimalHeaderSize) {
             return { success: false, error: "invalid size" };
         }
         // make a "partially completed" state with a buffer of the right size and just the header upto the size
         // field filled in.
+        const parsedSize = pos.pos;
         const partialBuf = new ArrayBuffer(size);
         const partialBufView = new Uint8Array(partialBuf);
-        partialBufView.set(buf.subarray(0, pos.pos));
-        const partialState: PartialCommandState = { state: InState.PartialCommand, buf: partialBufView, size: 0 };
-        return this.continueWithBuffer(partialState, buf.subarray(pos.pos));
+        partialBufView.set(buf.subarray(0, parsedSize));
+        const partialState: PartialCommandState = { state: InState.PartialCommand, buf: partialBufView, size: parsedSize };
+        return this.continueWithBuffer(partialState, buf.subarray(parsedSize));
     }
 
     tryAppendBuffer(moreBuf: Uint8Array): ParseResult {
@@ -193,6 +207,7 @@ class ProtocolSocketImpl implements ProtocolSocket {
         this.sock.addEventListener(type, listener, options);
         if (type === dotnetDiagnosticsServerProtocolCommandEvent) {
             if (this.protocolListeners === 0) {
+                console.debug("adding protocol listener, with a message chaser");
                 this.sock.addEventListener("message", this.messageListener);
             }
             this.protocolListeners++;
@@ -202,6 +217,7 @@ class ProtocolSocketImpl implements ProtocolSocket {
     removeEventListener<K extends keyof ProtocolSocketEventMap>(type: K, listener: (this: ProtocolSocket, ev: ProtocolSocketEventMap[K]) => any): void;
     removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
         if (type === dotnetDiagnosticsServerProtocolCommandEvent) {
+            console.debug("removing protocol listener and message chaser");
             this.protocolListeners--;
             if (this.protocolListeners === 0) {
                 this.sock.removeEventListener("message", this.messageListener);
@@ -251,9 +267,9 @@ const Parser = {
         pos.pos += offset;
     },
     tryParseHeader(buf: Uint8Array, pos: { pos: number }): boolean {
-        const j = pos.pos;
+        let j = pos.pos;
         for (let i = 0; i < Parser.DOTNET_IPC_V1.length; i++) {
-            if (buf[j] !== Parser.DOTNET_IPC_V1[i]) {
+            if (buf[j++] !== Parser.DOTNET_IPC_V1[i]) {
                 return false;
             }
         }
@@ -308,5 +324,150 @@ const Parser = {
         Parser.advancePos(pos, 2);
         return size;
     },
-
+    tryParseUint32(buf: Uint8Array, pos: { pos: number }): number | undefined {
+        const j = pos.pos;
+        if (j + 3 >= buf.byteLength) {
+            return undefined;
+        }
+        const size = (buf[j + 3] << 24) | (buf[j + 2] << 16) | (buf[j + 1] << 8) | buf[j];
+        Parser.advancePos(pos, 4);
+        return size;
+    },
+    tryParseUint64(buf: Uint8Array, pos: { pos: number }): [number, number] | undefined {
+        const lo = Parser.tryParseUint32(buf, pos);
+        if (lo === undefined)
+            return undefined;
+        const hi = Parser.tryParseUint32(buf, pos);
+        if (hi === undefined)
+            return undefined;
+        return [lo, hi];
+    },
+    tryParseBool(buf: Uint8Array, pos: { pos: number }): boolean | undefined {
+        const r = Parser.tryParseUint8(buf, pos);
+        if (r === undefined)
+            return undefined;
+        return r !== 0;
+    },
+    tryParseArraySize(buf: Uint8Array, pos: { pos: number }): number | undefined {
+        const r = Parser.tryParseUint32(buf, pos);
+        if (r === undefined)
+            return undefined;
+        return r;
+    },
+    tryParseStringLength(buf: Uint8Array, pos: { pos: number }): number | undefined {
+        return Parser.tryParseArraySize(buf, pos);
+    },
+    tryParseUtf16String(buf: Uint8Array, pos: { pos: number }): string | undefined {
+        const length = Parser.tryParseStringLength(buf, pos);
+        if (length === undefined)
+            return undefined;
+        const j = pos.pos;
+        if (j + length * 2 > buf.byteLength) {
+            return undefined;
+        }
+        const result = new Array<number>(length);
+        for (let i = 0; i < length; i++) {
+            result[i] = (buf[j + 2 * i + 1] << 8) | buf[j + 2 * i];
+        }
+        Parser.advancePos(pos, length * 2);
+        return String.fromCharCode.apply(null, result);
+    }
 };
+
+
+const enum CommandSet {
+    Reserved = 0,
+    Dump = 1,
+    EventPipe = 2,
+    Profiler = 3,
+    Process = 4,
+    /* future*/
+
+    // replies
+    Server = 0xFF,
+}
+
+export function parseBinaryProtocolCommand(cmd: BinaryProtocolCommand): ProtocolClientCommandBase | null {
+    switch (cmd.commandSet) {
+        case CommandSet.Reserved:
+            throw new Error("unexpected reserved command_set command");
+        case CommandSet.Dump:
+            throw new Error("TODO");
+        case CommandSet.EventPipe:
+            return parseEventPipeCommand(cmd);
+        case CommandSet.Profiler:
+            throw new Error("TODO");
+        case CommandSet.Process:
+            throw new Error("TODO");
+        default:
+            console.warn("unexpected command_set command: " + cmd.commandSet);
+            return null;
+    }
+}
+
+const enum EventPipeCommand {
+    StopTracing = 1,
+    CollectTracing = 2,
+    CollectTracing2 = 3,
+}
+
+function parseEventPipeCommand(cmd: BinaryProtocolCommand & { commandSet: CommandSet.EventPipe }): EventPipeClientCommandBase | null {
+    switch (cmd.command) {
+        case EventPipeCommand.StopTracing:
+            throw new Error("TODO");
+        case EventPipeCommand.CollectTracing:
+            throw new Error("TODO");
+        case EventPipeCommand.CollectTracing2:
+            return parseEventPipeCollectTracing2(cmd);
+        default:
+            console.warn("unexpected EventPipie command: " + cmd.command);
+            return null;
+    }
+}
+
+function parseEventPipeCollectTracing2(cmd: BinaryProtocolCommand & { commandSet: CommandSet.EventPipe, command: EventPipeCommand.CollectTracing2 }): EventPipeCommandCollectTracing2 | null {
+    const pos = { pos: 0 };
+    const buf = cmd.payload;
+    const circularBufferMB = Parser.tryParseUint32(buf, pos);
+    if (circularBufferMB === undefined) {
+        return null;
+    }
+    const format = Parser.tryParseUint32(buf, pos);
+    if (format === undefined) {
+        return null;
+    }
+    const requestRundown = Parser.tryParseBool(buf, pos);
+    if (requestRundown === undefined) {
+        return null;
+    }
+    const numProviders = Parser.tryParseArraySize(buf, pos);
+    if (numProviders === undefined) {
+        return null;
+    }
+    const providers = new Array<EventPipeCollectTracingCommandProvider>(numProviders);
+    for (let i = 0; i < numProviders; i++) {
+        const provider = parseEventPipeCollectTracingCommandProvider(buf, pos);
+        if (provider === null) {
+            return null;
+        }
+        providers[i] = provider;
+    }
+    return { command_set: "EventPipe", command: "CollectTracing2", circularBufferMB, format, requestRundown, providers };
+}
+
+function parseEventPipeCollectTracingCommandProvider(buf: Uint8Array, pos: { pos: number }): EventPipeCollectTracingCommandProvider | null {
+    const keywords = Parser.tryParseUint64(buf, pos);
+    if (keywords === undefined) {
+        return null;
+    }
+    const logLevel = Parser.tryParseUint32(buf, pos);
+    if (logLevel === undefined)
+        return null;
+    const providerName = Parser.tryParseUtf16String(buf, pos);
+    if (providerName === undefined)
+        return null;
+    const filterData = Parser.tryParseUtf16String(buf, pos);
+    if (filterData === undefined)
+        return null;
+    return { keywords, logLevel, provider_name: providerName, filter_data: filterData };
+}

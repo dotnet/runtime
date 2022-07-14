@@ -41,7 +41,7 @@ export interface EventPipeCommandStopTracing extends EventPipeClientCommandBase 
 }
 
 export interface EventPipeCollectTracingCommandProvider {
-    keywords: number;
+    keywords: [number, number];  // lo,hi.  FIXME: this is ugly
     logLevel: number;
     provider_name: string;
     filter_data: string;

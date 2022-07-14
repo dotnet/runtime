@@ -19,7 +19,7 @@ const script: ((engine: MockScriptEngine) => Promise<void>)[] = [
             requestRundown: true,
             providers: [
                 {
-                    keywords: 0,
+                    keywords: [0, 0],
                     logLevel: 5,
                     provider_name: "WasmHello",
                     filter_data: "EventCounterIntervalSec=1"

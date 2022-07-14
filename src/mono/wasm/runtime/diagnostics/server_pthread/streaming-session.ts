@@ -45,11 +45,20 @@ function providersStringFromObject(providers: EventPipeCollectTracingCommandProv
     return providersString;
 
     function providerToString(provider: EventPipeCollectTracingCommandProvider): string {
-        const keyword_str = provider.keywords === 0 ? "" : provider.keywords.toString();
+        const keyword_str = provider.keywords[0] === 0 && provider.keywords[1] === 0 ? "" : keywordsToHexString(provider.keywords);
         const args_str = provider.filter_data === "" ? "" : ":" + provider.filter_data;
         return provider.provider_name + ":" + keyword_str + ":" + provider.logLevel + args_str;
     }
+
+    function keywordsToHexString(k: [number, number]): string {
+        const lo = k[0];
+        const hi = k[1];
+        const lo_hex = lo.toString(16);
+        const hi_hex = hi.toString(16);
+        return hi_hex + lo_hex;
+    }
 }
+
 
 const IPC_STREAM_QUEUE_OFFSET = 4; /* keep in sync with mono_wasm_diagnostic_server_create_stream() in C */
 function mono_wasm_diagnostic_server_get_stream_queue(streamAddr: VoidPtr): VoidPtr {
