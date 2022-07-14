@@ -7,7 +7,7 @@
     <ApiCompatDependsOn>$(ApiCompatDependsOn);ILLinkTrimAssembly</ApiCompatDependsOn>
   </PropertyGroup>
   
-  <!-- Flow the IsTrimmable property down to consuming repositories, in order for oob.proj
+  <!-- Flow the IsTrimmable property down to consuming projects, in order for oob.proj
        to exclude non trimmable assemblies. -->
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
