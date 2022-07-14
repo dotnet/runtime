@@ -14,7 +14,7 @@ namespace Microsoft.Interop.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
     public class ShapeBreakingDiagnosticSuppressor : DiagnosticSuppressor
     {
-        public static readonly SuppressionDescriptor MarkMethodsAsStaticSuppression = new SuppressionDescriptor("SYSLIBSUPPRESS1001", "CA1822", "Do not offer to make methods static when they need to be instance methods.");
+        public static readonly SuppressionDescriptor MarkMethodsAsStaticSuppression = new SuppressionDescriptor("SYSLIBSUPPRESS0001", "CA1822", "Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape.");
 
         public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions =>
             ImmutableArray.Create(MarkMethodsAsStaticSuppression);
