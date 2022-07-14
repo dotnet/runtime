@@ -41,14 +41,10 @@ namespace ComInterfaceGenerator.Tests
                 public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => new VirtualMethodTableInfo(IntPtr.Zero, new ReadOnlySpan<IntPtr>(_vtableStart, 2));
             }
 
-            [CustomTypeMarshaller(typeof(StaticMethodTable), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.Out, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-            struct StaticMethodTableMarshaller
+            [CustomMarshaller(typeof(StaticMethodTable), MarshalMode.ManagedToUnmanagedOut, typeof(StaticMethodTableMarshaller))]
+            static class StaticMethodTableMarshaller
             {
-                private void* _nativeValue;
-
-                public void FromNativeValue(void* value) => _nativeValue = value;
-
-                public StaticMethodTable ToManaged() => new StaticMethodTable(_nativeValue);
+                public static StaticMethodTable ConvertToManaged(void* value) => new StaticMethodTable(value);
             }
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_static_function_table")]

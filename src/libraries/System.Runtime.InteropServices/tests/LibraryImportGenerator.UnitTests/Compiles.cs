@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using LibraryImportGenerator.UnitTests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using System;
 using System.Collections.Generic;
@@ -13,6 +13,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
+
+using StringMarshalling = Microsoft.Interop.StringMarshalling;
 
 namespace LibraryImportGenerator.UnitTests
 {

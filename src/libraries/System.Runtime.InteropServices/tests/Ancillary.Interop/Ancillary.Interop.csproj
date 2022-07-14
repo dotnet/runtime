@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.Interop.Ancillary</AssemblyName>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <RootNamespace>System.Runtime.InteropServices</RootNamespace>
+    <RootNamespace>System.Runtime.InteropServices.Marshalling</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>APIs required for usage of the LibraryImportGenerator and related tools.</Description>

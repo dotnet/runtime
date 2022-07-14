@@ -14,6 +14,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 
+using StringMarshalling = Microsoft.Interop.StringMarshalling;
+
 namespace LibraryImportGenerator.UnitTests
 {
     public class CompileFails

@@ -8,7 +8,7 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace System.Runtime.InteropServices
+namespace System.Runtime.InteropServices.Marshalling
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class VirtualMethodIndexAttribute : Attribute
@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices
 
         public bool ImplicitThisParameter { get; set; } = true;
 
-        public CustomTypeMarshallerDirection Direction { get; set; } = CustomTypeMarshallerDirection.Ref;
+        public MarshalDirection Direction { get; set; } = MarshalDirection.Bidirectional;
 
         /// <summary>
         /// Gets or sets how to marshal string arguments to the method.

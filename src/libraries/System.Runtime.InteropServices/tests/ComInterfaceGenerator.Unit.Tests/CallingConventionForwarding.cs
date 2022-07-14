@@ -19,16 +19,18 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task NoSpecifiedCallConvForwardsDefault()
         {
-            string source = @"
-using System.Runtime.InteropServices;
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                readonly record struct NoCasting {}
+                partial interface INativeAPI
+                {
+                    public static readonly NoCasting TypeKey = default;
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -44,17 +46,19 @@ partial interface INativeAPI
         [Fact]
         public async Task SuppressGCTransitionAttributeForwarded()
         {
-            string source = @"
-using System.Runtime.InteropServices;
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [SuppressGCTransitionAttribute]
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                readonly record struct NoCasting {}
+                partial interface INativeAPI
+                {
+                    public static readonly NoCasting TypeKey = default;
+                    [SuppressGCTransitionAttribute]
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -70,17 +74,19 @@ partial interface INativeAPI
         [Fact]
         public async Task EmptyUnmanagedCallConvAttributeForwarded()
         {
-            string source = @"
-using System.Runtime.InteropServices;
+            string source = """
+                using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [UnmanagedCallConv]
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                readonly record struct NoCasting {}
+                partial interface INativeAPI
+                {
+                    public static readonly NoCasting TypeKey = default;
+                    [UnmanagedCallConv]
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+            """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -96,17 +102,19 @@ partial interface INativeAPI
         [Fact]
         public async Task SimpleUnmanagedCallConvAttributeForwarded()
         {
-            string source = @"
-using System.Runtime.InteropServices;
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                readonly record struct NoCasting {}
+                partial interface INativeAPI
+                {
+                    public static readonly NoCasting TypeKey = default;
+                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -122,17 +130,19 @@ partial interface INativeAPI
         [Fact]
         public async Task ComplexUnmanagedCallConvAttributeForwarded()
         {
-            string source = @"
-using System.Runtime.InteropServices;
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                readonly record struct NoCasting {}
+                partial interface INativeAPI
+                {
+                    public static readonly NoCasting TypeKey = default;
+                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -154,18 +164,20 @@ partial interface INativeAPI
         [Fact]
         public async Task ComplexUnmanagedCallConvAttributeWithSuppressGCTransitionForwarded()
         {
-            string source = @"
-using System.Runtime.InteropServices;
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [SuppressGCTransition]
-    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                readonly record struct NoCasting {}
+                partial interface INativeAPI
+                {
+                    public static readonly NoCasting TypeKey = default;
+                    [SuppressGCTransition]
+                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);

@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -104,7 +105,7 @@ namespace Microsoft.Interop
                 .WithTrackingName(StepNames.CalculateStubInformation);
 
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateManagedToNativeStub = generateStubInformation
-                .Where(data => data.VtableIndexData.Direction.HasFlag(CustomTypeMarshallerDirection.In))
+                .Where(data => data.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 .Select(
                     static (data, ct) => GenerateManagedToNativeStub(data)
                 )
@@ -194,7 +195,7 @@ namespace Microsoft.Interop
                 return null;
             }
 
-            CustomTypeMarshallerDirection direction = CustomTypeMarshallerDirection.Ref;
+            MarshalDirection direction = MarshalDirection.Bidirectional;
             bool implicitThis = true;
             if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.Direction), out TypedConstant directionValue))
             {
@@ -204,7 +205,7 @@ namespace Microsoft.Interop
                     return null;
                 }
                 // A boxed primitive can be unboxed to an enum with the same underlying type.
-                direction = (CustomTypeMarshallerDirection)directionValue.Value!;
+                direction = (MarshalDirection)directionValue.Value!;
             }
             if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ImplicitThisParameter), out TypedConstant implicitThisValue))
             {
@@ -287,7 +288,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (!virtualMethodIndexData.ImplicitThisParameter && virtualMethodIndexData.Direction.HasFlag(CustomTypeMarshallerDirection.Out))
+            if (!virtualMethodIndexData.ImplicitThisParameter && virtualMethodIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
             {
                 // Report invalid configuration
             }
@@ -340,15 +341,18 @@ namespace Microsoft.Interop
             ITypeSymbol? disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
             bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
                 && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
-            InteropGenerationOptions options = new(UseMarshalType: true, RuntimeMarshallingDisabled: runtimeMarshallingDisabled);
+            InteropGenerationOptions options = new(UseMarshalType: true);
             IMarshallingGeneratorFactory generatorFactory;
 
             generatorFactory = new UnsupportedMarshallingFactory();
+            generatorFactory = new NoMarshallingInfoErrorMarshallingFactory(generatorFactory);
             generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
-            IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+
+            IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(
+                new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true), new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
             // We don't need to include the later generator factories for collection elements
             // as the later generator factories only apply to parameters.
-            generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
+            generatorFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, elementFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
 
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             return generatorFactory;

@@ -13,6 +13,10 @@
              Link="Common\SourceGenerators\LiveReferencePack.cs" />
     <Compile Include="..\Common\TestUtils.cs"
             Link="Common\TestUtils.cs" />
+    <Compile Include="..\Common\CodeSnippets.CustomCollectionMarshalling.cs"
+            Link="Common\CodeSnippets.CustomCollectionMarshalling.cs" />
+    <Compile Include="..\Common\CodeSnippets.CustomStructMarshalling.cs"
+            Link="Common\CodeSnippets.CustomStructMarshalling.cs" />
   </ItemGroup>
 
   <ItemGroup>

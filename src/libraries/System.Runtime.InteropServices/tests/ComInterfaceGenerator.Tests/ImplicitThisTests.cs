@@ -46,14 +46,10 @@ namespace ComInterfaceGenerator.Tests
                 }
             }
 
-            [CustomTypeMarshaller(typeof(NativeObject), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.Out, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-            struct NativeObjectMarshaller
+            [CustomMarshaller(typeof(NativeObject), MarshalMode.ManagedToUnmanagedOut, typeof(NativeObjectMarshaller))]
+            static class NativeObjectMarshaller
             {
-                private void* _nativeValue;
-
-                public void FromNativeValue(void* value) => _nativeValue = value;
-
-                public NativeObject ToManaged() => new NativeObject(_nativeValue);
+                public static NativeObject ConvertToManaged(void* value) => new NativeObject(value);
             }
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "new_native_object")]

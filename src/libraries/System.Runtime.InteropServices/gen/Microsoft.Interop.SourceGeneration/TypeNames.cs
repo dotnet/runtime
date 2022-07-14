@@ -28,7 +28,7 @@ namespace Microsoft.Interop
 
         public const string UnmanagedCallConvAttribute = "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
 
-        public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.VirtualMethodIndexAttribute";
+        public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute";
 
         public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.IUnmanagedVirtualMethodTableProvider";
 

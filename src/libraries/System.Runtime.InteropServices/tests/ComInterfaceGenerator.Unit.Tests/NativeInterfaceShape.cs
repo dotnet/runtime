@@ -21,6 +21,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 readonly record struct NoCasting {}
 partial interface INativeAPI
@@ -46,6 +47,7 @@ partial interface INativeAPI
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 readonly record struct NoCasting {}
 partial interface INativeAPI
@@ -71,6 +73,7 @@ partial interface INativeAPI
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 readonly record struct NoCasting {}
 partial interface INativeAPI

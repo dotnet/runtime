@@ -76,7 +76,7 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            int code = ContainingNamespace.GetHashCode();
+            int code = ContainingNamespace?.GetHashCode() ?? 0;
             foreach (ContainingSyntax containingSyntax in ContainingSyntax)
             {
                 code ^= containingSyntax.Identifier.Value.GetHashCode();

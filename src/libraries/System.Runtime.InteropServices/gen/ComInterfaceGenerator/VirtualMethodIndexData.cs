@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -14,6 +15,6 @@ namespace Microsoft.Interop
     {
         public bool ImplicitThisParameter { get; init; }
 
-        public CustomTypeMarshallerDirection Direction { get; init; }
+        public MarshalDirection Direction { get; init; }
     }
 }
