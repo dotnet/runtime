@@ -505,6 +505,12 @@ public:
         return m_pArrayDataPtr + m_CurrentPos;
     }
 
+    DWORD GetSize()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_ArraySize;
+    }
+
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
@@ -516,6 +522,24 @@ private:
     OBJECTREF *m_pArrayDataPtr;
 };
 
+// PinnedHeapHandleTable::AllocateHandles() cannot always be completed under a Crst
+// This class encapsulates a unit of work that must be done outside the Crst and then
+// the AllocateHandles() call can be re-attempted
+class OutsideLockWorkPHHT
+{
+public:
+    OutsideLockWorkPHHT();
+    OutsideLockWorkPHHT(PinnedHeapHandleBucket *pNext, DWORD nRequested, BaseDomain* pDomain);
+    BOOL NeedsWorkAndRetry();
+    void Run();
+    PinnedHeapHandleBucket* GetPinnedHeapHandleBucket();
+
+private:
+    PinnedHeapHandleBucket *m_pBucket;
+    PinnedHeapHandleBucket *m_pNext;
+    DWORD m_nRequested;
+    BaseDomain* m_pDomain;
+};
 
 
 // The pinned heap handle table is used to allocate handles that are pointers
@@ -528,7 +552,7 @@ public:
     ~PinnedHeapHandleTable();
 
     // Allocate handles from the pinned heap handle table.
-    OBJECTREF* AllocateHandles(DWORD nRequested);
+    OBJECTREF* AllocateHandles(DWORD nRequested, OutsideLockWorkPHHT & outsideLockWork);
 
     // Release object handles allocated using AllocateHandles().
     void ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased);
@@ -588,8 +612,35 @@ class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoN
 public:
     FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
     {
-        WRAPPER_NO_CONTRACT;
-        m_Data = pOwner->AllocateHandles(nCount);
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        OutsideLockWorkPHHT outsideLockWork;
+        while(true)
+        {
+            m_Data = pOwner->AllocateHandles(nCount, outsideLockWork);
+            if (outsideLockWork.NeedsWorkAndRetry())
+            {
+                // Calling outsideLockWork.Run() here is still inside a lock and leaves this code path 
+                // vulnerable to a potential debugger deadlock (see the big comment on 
+                // PinnedHeapHandleTable::AllocateHandles in appdomain.cpp)
+                //
+                // This code path has always been vulnerable to that deadlock and is no worse off than it was
+                // before. The BaseDomain::AllocateObjRefPtrsInLargeTable() path is fixed because that is where
+                // customers observed a problem. Fixing this path would take further refactoring and can be
+                // done in the future.
+                outsideLockWork.Run();
+            }
+            else
+            {
+                break;
+            }
+        }
         m_Count=nCount;
         m_pTable=pOwner;
     };

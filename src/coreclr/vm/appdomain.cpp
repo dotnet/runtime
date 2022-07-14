@@ -225,6 +225,41 @@ void PinnedHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 
 #define MAX_BUCKETSIZE (16384 - 4)
 
+OutsideLockWorkPHHT::OutsideLockWorkPHHT() :
+    m_pBucket(NULL), m_pNext(NULL), m_nRequested(0), m_pDomain(NULL)
+{}
+
+OutsideLockWorkPHHT::OutsideLockWorkPHHT(PinnedHeapHandleBucket* pNext, DWORD nRequested, BaseDomain* pDomain) :
+    m_pBucket(NULL), m_pNext(pNext), m_nRequested(nRequested), m_pDomain(pDomain)
+{}
+
+BOOL OutsideLockWorkPHHT::NeedsWorkAndRetry()
+{
+    return m_nRequested > 0;
+}
+
+void OutsideLockWorkPHHT::Run()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if(NeedsWorkAndRetry())
+    {
+        m_pBucket = new PinnedHeapHandleBucket(m_pNext, m_nRequested, m_pDomain);
+    }
+}
+
+PinnedHeapHandleBucket* OutsideLockWorkPHHT::GetPinnedHeapHandleBucket()
+{
+    return m_pBucket;
+}
+
+
 // Constructor for the PinnedHeapHandleTable class.
 PinnedHeapHandleTable::PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize)
 : m_pHead(NULL)
@@ -235,8 +270,8 @@ PinnedHeapHandleTable::PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialB
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pDomain));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -270,16 +305,12 @@ PinnedHeapHandleTable::~PinnedHeapHandleTable()
 
 //*****************************************************************************
 //
-// LOCKING RULES FOR AllocateHandles() and ReleaseHandles()  12/08/2004
+// LOCKING RULES FOR AllocateHandles() and ReleaseHandles()
 //
 //
-// These functions are not protected by any locking in this location but rather the callers are
-// assumed to be doing suitable locking  for the handle table.  The handle table itself is
-// behaving rather like a thread-agnostic collection class -- it doesn't want to know
-// much about the outside world and so it is just doing its job with no awareness of
-// thread notions.
+// These functions do not support concurrent invocation on multiple threads. It is
+// the caller's responsibility to ensure calls are synchronized.
 //
-// The instance in question is
 // There are two locations you can find a PinnedHeapHandleTable
 // 1) there is one in every BaseDomain, it is used to keep track of the static members
 //     in that domain
@@ -360,15 +391,36 @@ PinnedHeapHandleTable::~PinnedHeapHandleTable()
 // during their processing.  Both these paths use a StringLiteralEntryHolder to assist in cleanup,
 // the StaticRelease method of the StringLiteralEntry gets called, which in turn calls the
 // Release method.
-
+//
+//
+//  ---- Doing work outside the caller's lock ----
+// In some cases AllocateHandles() cannot complete the work it needs to do within the scope
+// of the caller's lock and it will need the caller to exit the lock, do the outside lock work,
+// and then re-enter the lock to retry the operation. The caller can check if that has occured by checking
+// outsideLockWork.NeedsWorkAndRetry() after the call returns.
+// 
+// Why do we need to do certain work outside the lock? Because if we didn't this can happen:
+// 1. AllocateHandles needs the GC to allocate
+// 2. Anything which invokes the GC might also get suspended by the managed debugger which
+//    will block the thread inside the lock
+// 3. The managed debugger can run function-evaluation on any thread
+// 4. Those func-evals might need to allocate handles
+// 5. The func-eval can't acquire the caller's lock to allocate handles because the thread in
+//    step (3) still holds the lock. The thread in step (3) won't release the lock until the
+//    debugger allows it to resume. The debugger won't resume until the funceval completes.
+// 6. This either creates a deadlock or forces the debugger to abort the func-eval with a bad
+//    user experience.
+//
+// This means it is possible one thread to re-entrantly allocate handles while some other thread has
+// done an initial call to AllocateHandles() but has not yet retried to finish the work.
 
 // Allocate handles from the large heap handle table.
-OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
+OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested, OutsideLockWorkPHHT & outsideLockWork)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(nRequested > 0);
         INJECT_FAULT(COMPlusThrowOM(););
@@ -416,6 +468,8 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
     // Retrieve the remaining number of handles in the bucket.
     DWORD NumRemainingHandlesInBucket = (m_pHead != NULL) ? m_pHead->GetNumRemainingHandles() : 0;
 
+    PinnedHeapHandleBucket* pPreAllocatedBucket = outsideLockWork.GetPinnedHeapHandleBucket();
+
     // create a new block if this request doesn't fit in the current block
     if (nRequested > NumRemainingHandlesInBucket)
     {
@@ -432,11 +486,55 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
 
         // We need a block big enough to hold the requested handles
         DWORD NewBucketSize = max(m_NextBucketSize, nRequested);
+        if(pPreAllocatedBucket != NULL)
+        {
+            // This is a retry of an earlier incomplete attempt at this operation.
+            // Our caller allocated a PinnedHeapHandleBucket for our use.
+            if(pPreAllocatedBucket->GetSize() != NewBucketSize || pPreAllocatedBucket->GetNext() != m_pHead)
+            {
+                // rare case: we must have raced with another thread which added a bucket between when
+                // we requested the outside lock work and now. Throw this bucket away and
+                // retry again with the updated info.
+                delete pPreAllocatedBucket;
+                pPreAllocatedBucket = NULL;
+            }
+            else
+            {
+                // common case: the pre-allocated bucket we requested in a previous attempt
+                // has the correct information because nothing has changed since then. We can use it
+                // and complete the operation.
+                m_pHead = pPreAllocatedBucket;
+                m_NextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
+                outsideLockWork = OutsideLockWorkPHHT();
+            }
+        }
 
-        m_pHead = new PinnedHeapHandleBucket(m_pHead, NewBucketSize, m_pDomain);
-
-        m_NextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
+        
+        if (pPreAllocatedBucket == NULL)
+        {
+            // common case: this is our first attempt at the operation and the caller didn't
+            // give us a pre-allocated bucket.
+            //
+            // rare case: our caller did give us a pre-allocated bucket but we deleted it above
+            // because it didn't have correct next pointer or bucket size.
+            // 
+            // Either way we need our caller to allocate a new bucket outside the lock and then
+            // it will call back to retry this operation.
+            outsideLockWork = OutsideLockWorkPHHT(m_pHead, NewBucketSize, m_pDomain);
+            return NULL;
+        }
     }
+    else if(pPreAllocatedBucket != NULL)
+    {
+        // rare case: when we attempted this operation previously we didn't have enough handles to 
+        // satisfy the request and we asked our caller to retry after allocating a new bucket. However
+        // now the situation has changed and there are enough handles to satisfy the request without
+        // needing the new bucket allocated by the caller. We need to delete the bucket the caller
+        // allocated to avoid leaking memory and then allocate from the handles we already have.
+        delete pPreAllocatedBucket;
+        outsideLockWork = OutsideLockWorkPHHT();
+    }
+
 
     return m_pHead->AllocateHandles(nRequested);
 }
@@ -682,7 +780,7 @@ void BaseDomain::Init()
     m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
     // Pinned heap handle table CRST.
-    m_PinnedHeapHandleTableCrst.Init(CrstAppDomainHandleTable);
+    m_PinnedHeapHandleTableCrst.Init(CrstAppDomainHandleTable, CRST_UNSAFE_COOPGC);
 
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
     // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
@@ -851,23 +949,31 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
         return *ppLazyAllocate;
     }
 
-    // Enter preemptive state, take the lock and go back to cooperative mode.
-    {
-        CrstHolder ch(&m_PinnedHeapHandleTableCrst);
-        GCX_COOP();
+    GCX_COOP();
 
-        if (ppLazyAllocate && *ppLazyAllocate)
-        {
-            // Allocation already happened
-            return *ppLazyAllocate;
-        }
+    // if there is work that needs to be done outside the lock then we might need to retry.
+    // Under normal circumstances there should be 0 or 1 retries. Under race conditions with
+    // other threads it is possible that we do more than 1 retry. Each additional retry means
+    // that some other thread successfully completed AllocateHandles() so at some point either this
+    // thread will succeed or the app will OOM because too many other threads did allocations.
+    OutsideLockWorkPHHT outsideLockWork;
+    while(true)
+    {
+        CrstHolderWithState ch(&m_PinnedHeapHandleTableCrst);
 
         // Make sure the large heap handle table is initialized.
         if (!m_pPinnedHeapHandleTable)
             InitPinnedHeapHandleTable();
 
         // Allocate the handles.
-        OBJECTREF* result = m_pPinnedHeapHandleTable->AllocateHandles(nRequested);
+        OBJECTREF* result = m_pPinnedHeapHandleTable->AllocateHandles(nRequested, outsideLockWork);
+        if (outsideLockWork.NeedsWorkAndRetry())
+        {
+            _ASSERTE(result == NULL);
+            ch.Release();
+            outsideLockWork.Run();
+            continue;
+        }
 
         if (ppLazyAllocate)
         {
@@ -954,8 +1060,8 @@ void BaseDomain::InitPinnedHeapHandleTable()
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
         PRECONDITION(m_pPinnedHeapHandleTable==NULL);
         INJECT_FAULT(COMPlusThrowOM(););
     }
