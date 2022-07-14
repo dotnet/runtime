@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <Target Name="RunApiCompat"
-          DependsOnTargets="FindReferenceAssembliesForReferences"
+          DependsOnTargets="FindReferenceAssembliesForReferences;RunApiCompatForCoreLib"
           AfterTargets="Build"
           Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
           Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
@@ -92,6 +92,36 @@
 
     <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
     <Touch Files="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt"
+           AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="AddApiCompatResolvedCoreLibProjectReferences">
+    <ItemGroup>
+      <_apiCompatResolvedCoreLibProjectReference Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)'))" />
+      <_apiCompatCoreLibReferenceAssembly Include="@(_apiCompatResolvedCoreLibProjectReference->Metadata('ReferenceAssembly'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RunApiCompatForCoreLib"
+          DependsOnTargets="FindReferenceAssembliesForReferences;AddApiCompatResolvedCoreLibProjectReferences"
+          AfterTargets="Build"
+          Inputs="@(_apiCompatResolvedCoreLibProjectReference);@(_apiCompatCoreLibReferenceAssembly)"
+          Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-corelib-marker.txt">
+    <Message Text="ApiCompat -> Comparing System.Private.CoreLib reference assembly against implementation ..." Importance="high"  />
+
+    <!-- ApiCompat: System.Private.CoreLib ref <-> implementation -->
+    <ApiCompatTask Contracts="@(_apiCompatCoreLibReferenceAssembly)"
+                   ExcludeAttributes="@(ApiCompatExcludeAttributesFile)"
+                   ImplementationDirectories="@(_apiCompatResolvedCoreLibProjectReference->'%(RootDir)%(Directory)')"
+                   OutFilePath="$(ApiCompatNetCoreAppLatestStableOutputFile)"
+                   DisableAssemblyResolveTraceListener="true"
+                   IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </ApiCompatTask>
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing System.Private.CoreLib reference assembly against implementation assembly '@(_apiCompatResolvedCoreLibProjectReference)'." />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
+    <Touch Files="$(IntermediateOutputPath)$(TargetArchitecture)-corelib-marker.txt"
            AlwaysCreate="true" />
   </Target>
 
