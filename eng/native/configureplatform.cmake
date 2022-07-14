@@ -2,7 +2,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 
 # If set, indicates that this is not an officially supported release.
 # Release branches should set this to false.
-set(PRERELEASE 0)
+set(PRERELEASE 1)
 
 #----------------------------------------
 # Detect and set platform variable names
