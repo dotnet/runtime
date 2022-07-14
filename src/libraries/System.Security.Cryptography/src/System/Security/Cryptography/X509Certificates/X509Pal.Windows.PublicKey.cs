@@ -80,7 +80,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             TAlgorithm key;
 
-            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext, importFlags))
+            using (SafeCertContextHandle certContext = certificatePal.GetCertContext())
+            using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certContext, importFlags))
             {
                 CngKeyBlobFormat blobFormat;
                 byte[] keyBlob;

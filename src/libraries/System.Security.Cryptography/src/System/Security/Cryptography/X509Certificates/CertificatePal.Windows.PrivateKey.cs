@@ -202,11 +202,14 @@ namespace System.Security.Cryptography.X509Certificates
         private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
         {
             CngKeyHandleOpenOptions cngHandleOptions;
-            SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(CertContext, out cngHandleOptions);
-            if (ncryptKey != null)
+            using (SafeCertContextHandle certContext = GetCertContext())
             {
-                CngKey cngKey = CngKey.Open(ncryptKey, cngHandleOptions);
-                return createCng(cngKey);
+                SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(certContext, out cngHandleOptions);
+                if (ncryptKey != null)
+                {
+                    CngKey cngKey = CngKey.Open(ncryptKey, cngHandleOptions);
+                    return createCng(cngKey);
+                }
             }
 
             CspParameters? cspParameters = GetPrivateKeyCsp();
