@@ -26,6 +26,13 @@ namespace System.Diagnostics
             // connect to the specified remote registry
             int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr(PerformanceData), ownsHandle: false), out SafeRegistryHandle foreignHKey);
 
+            if (ret == 0 && !foreignHKey.IsInvalid)
+            {
+                return new PerformanceDataRegistryKey(foreignHKey);
+            }
+
+            foreignHKey.Dispose();
+
             if (ret == Interop.Errors.ERROR_DLL_INIT_FAILED)
             {
                 // return value indicates an error occurred
@@ -37,13 +44,8 @@ namespace System.Diagnostics
                 Win32Error(ret, null);
             }
 
-            if (foreignHKey.IsInvalid)
-            {
-                // return value indicates an error occurred
-                throw new ArgumentException(SR.Format(SR.Arg_RegKeyNoRemoteConnect, machineName));
-            }
-
-            return new PerformanceDataRegistryKey(foreignHKey);
+            // return value indicates an error occurred
+            throw new ArgumentException(SR.Format(SR.Arg_RegKeyNoRemoteConnect, machineName));
         }
 
         public static PerformanceDataRegistryKey OpenLocal()

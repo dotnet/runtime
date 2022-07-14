@@ -97,9 +97,9 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            Type valueType = value.GetType();
+            RuntimeType valueType = (RuntimeType)value.GetType();
 
-            if (!(valueType.IsEnum || IsIntegerType(valueType)))
+            if (!(valueType.IsActualEnum || IsIntegerType(valueType)))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
 
             ulong ulValue = Enum.ToUInt64(value);
@@ -109,7 +109,7 @@ namespace System
 
         public override string[] GetEnumNames()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             string[] ret = Enum.InternalGetNames(this);
@@ -121,7 +121,7 @@ namespace System
         [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public override Array GetEnumValues()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             // Get all of the values
@@ -142,7 +142,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override Type GetEnumUnderlyingType()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             if (RuntimeHelpers.IsKnownConstant(this))
@@ -222,7 +222,7 @@ namespace System
                         typeCode = TypeCode.Decimal;
                     else if (ReferenceEquals(this, typeof(DateTime)))
                         typeCode = TypeCode.DateTime;
-                    else if (IsEnum)
+                    else if (IsActualEnum)
                         typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
                     else
                         typeCode = TypeCode.Object;
@@ -271,14 +271,14 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             // Check if both of them are of the same type
             RuntimeType valueType = (RuntimeType)value.GetType();
 
             // If the value is an Enum then we need to extract the underlying value from it
-            if (valueType.IsEnum)
+            if (valueType.IsActualEnum)
             {
                 if (!valueType.IsEquivalentTo(this))
                     throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType, this));
@@ -310,17 +310,6 @@ namespace System
             {
                 throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
-        }
-
-        protected override bool IsValueTypeImpl()
-        {
-            // We need to return true for generic parameters with the ValueType constraint.
-            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
-            // false for all generic parameters.
-            if (this == typeof(ValueType) || this == typeof(Enum))
-                return false;
-
-            return IsSubclassOf(typeof(ValueType));
         }
 
         protected override bool IsByRefImpl() => RuntimeTypeHandle.IsByRef(this);

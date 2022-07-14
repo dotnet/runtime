@@ -22926,6 +22926,22 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             return;
         }
 
+        CORINFO_CLASS_HANDLE definingClass = info.compCompHnd->getMethodClass(likelyMethod);
+        likelyClassAttribs                 = info.compCompHnd->getClassAttribs(definingClass);
+
+        // For instance methods on value classes we need an extended check to
+        // check for the unboxing stub. This is NYI.
+        // Note: For dynamic PGO likelyMethod above will be the unboxing stub
+        // which would fail GDV for other reasons.
+        // However, with static profiles or textual PGO input it is still
+        // possible that likelyMethod is not the unboxing stub. So we do need
+        // this explicit check.
+        if ((likelyClassAttribs & CORINFO_FLG_VALUECLASS) != 0)
+        {
+            JITDUMP("Cannot currently handle devirtualizing delegate calls on value types, sorry\n");
+            return;
+        }
+
         // Verify that the call target and args look reasonable so that the JIT
         // does not blow up during inlining/call morphing.
         //

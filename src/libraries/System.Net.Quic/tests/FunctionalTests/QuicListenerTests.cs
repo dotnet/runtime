@@ -18,13 +18,11 @@ namespace System.Net.Quic.Tests
         {
             await Task.Run(async () =>
             {
-                using QuicListener listener = await CreateQuicListener();
+                await using QuicListener listener = await CreateQuicListener();
 
-                using QuicConnection clientConnection = await CreateQuicConnection(listener.ListenEndPoint);
-                var clientStreamTask = clientConnection.ConnectAsync();
-
-                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                await clientStreamTask;
+                var clientStreamTask = CreateQuicConnection(listener.LocalEndPoint);
+                await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await using QuicConnection clientConnection = await clientStreamTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
@@ -33,13 +31,11 @@ namespace System.Net.Quic.Tests
         {
             await Task.Run(async () =>
             {
-                using QuicListener listener = await CreateQuicListener(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                await using QuicListener listener = await CreateQuicListener(new IPEndPoint(IPAddress.IPv6Loopback, 0));
 
-                using QuicConnection clientConnection = await CreateQuicConnection(listener.ListenEndPoint);
-                var clientStreamTask = clientConnection.ConnectAsync();
-
-                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                await clientStreamTask;
+                var clientStreamTask = CreateQuicConnection(listener.LocalEndPoint);
+                await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await using QuicConnection clientConnection = await clientStreamTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
@@ -52,13 +48,11 @@ namespace System.Net.Quic.Tests
                 // Use a copy of IPAddress.IPv6Any to make sure address detection doesn't rely on reference equality comparison.
                 IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>)new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
 
-                using QuicListener listener = await CreateQuicListener(new IPEndPoint(IPv6Any, 0));
+                await using QuicListener listener = await CreateQuicListener(new IPEndPoint(IPv6Any, 0));
 
-                using QuicConnection clientConnection = await CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, listener.ListenEndPoint.Port));
-                var clientStreamTask = clientConnection.ConnectAsync();
-
-                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                await clientStreamTask;
+                var clientStreamTask = CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, listener.LocalEndPoint.Port));
+                await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await using QuicConnection clientConnection = await clientStreamTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
     }

@@ -548,6 +548,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
             if (canPushCast)
             {
+                GenTree* op1 = oper->gtGetOp1();
+                GenTree* op2 = oper->gtGetOp2IfPresent();
+
+                canPushCast = !varTypeIsGC(op1) && ((op2 == nullptr) || !varTypeIsGC(op2));
+            }
+
+            if (canPushCast)
+            {
                 DEBUG_DESTROY_NODE(tree);
 
                 // Insert narrowing casts for op1 and op2.
@@ -820,9 +828,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 if (prevArg.AbiInfo.GetRegNum() == REG_STK)
                 {
                     // All stack args are already evaluated and placed in order
-                    // in this case; we only need to check this for register
-                    // args.
-                    break;
+                    // in this case.
+                    continue;
                 }
 #endif
 
@@ -902,7 +909,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 {
                     // All stack args are already evaluated and placed in order
                     // in this case.
-                    break;
+                    continue;
                 }
 #endif
 
@@ -965,7 +972,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                         {
                             // All stack args are already evaluated and placed in order
                             // in this case.
-                            break;
+                            continue;
                         }
 #endif
                         // Invariant here is that all nodes that were not
@@ -3643,7 +3650,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             if (location->OperIsLocalRead())
             {
-                if (!location->OperIs(GT_LCL_VAR) ||
+                if (!location->OperIs(GT_LCL_VAR) || (location->TypeGet() != argObj->TypeGet()) ||
                     !ClassLayout::AreCompatible(lvaGetDesc(location->AsLclVarCommon())->GetLayout(), layout))
                 {
                     unsigned lclOffset = location->AsLclVarCommon()->GetLclOffs();
@@ -9135,186 +9142,6 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
     }
 
     return nullptr;
-}
-
-//------------------------------------------------------------------------
-// fgMorphPromoteLocalInitBlock: Attempts to promote a local block init tree
-// to a tree of promoted field initialization assignments.
-//
-// Arguments:
-//    destLclNode - The destination LclVar node
-//    initVal - The initialization value
-//    blockSize - The amount of bytes to initialize
-//
-// Return Value:
-//    A tree that performs field by field initialization of the destination
-//    struct variable if various conditions are met, nullptr otherwise.
-//
-// Notes:
-//    This transforms a single block initialization assignment like:
-//
-//    *  ASG       struct (init)
-//    +--*  BLK(12)   struct
-//    |  \--*  ADDR      long
-//    |     \--*  LCL_VAR   struct(P) V02 loc0
-//    |     \--*    int    V02.a (offs=0x00) -> V06 tmp3
-//    |     \--*    ubyte  V02.c (offs=0x04) -> V07 tmp4
-//    |     \--*    float  V02.d (offs=0x08) -> V08 tmp5
-//    \--*  INIT_VAL  int
-//       \--*  CNS_INT   int    42
-//
-//    into a COMMA tree of assignments that initialize each promoted struct
-//    field:
-//
-//    *  COMMA     void
-//    +--*  COMMA     void
-//    |  +--*  ASG       int
-//    |  |  +--*  LCL_VAR   int    V06 tmp3
-//    |  |  \--*  CNS_INT   int    0x2A2A2A2A
-//    |  \--*  ASG       ubyte
-//    |     +--*  LCL_VAR   ubyte  V07 tmp4
-//    |     \--*  CNS_INT   int    42
-//    \--*  ASG       float
-//       +--*  LCL_VAR   float  V08 tmp5
-//       \--*  CNS_DBL   float  1.5113661732714390e-13
-//
-GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenTree* initVal, unsigned blockSize)
-{
-    assert(destLclNode->OperIs(GT_LCL_VAR));
-
-    LclVarDsc* destLclVar = lvaGetDesc(destLclNode);
-    assert(varTypeIsStruct(destLclVar->TypeGet()));
-    assert(destLclVar->lvPromoted);
-
-    if (blockSize == 0)
-    {
-        JITDUMP(" size is zero or unknown.\n");
-        return nullptr;
-    }
-
-    if (destLclVar->IsAddressExposed() && destLclVar->lvContainsHoles)
-    {
-        JITDUMP(" dest is address exposed and contains holes.\n");
-        return nullptr;
-    }
-
-    if (destLclVar->lvCustomLayout && destLclVar->lvContainsHoles)
-    {
-        // TODO-1stClassStructs: there are no reasons for this pessimization, delete it.
-        JITDUMP(" dest has custom layout and contains holes.\n");
-        return nullptr;
-    }
-
-    if (destLclVar->lvExactSize != blockSize)
-    {
-        JITDUMP(" dest size mismatch.\n");
-        return nullptr;
-    }
-
-    if (!initVal->OperIs(GT_CNS_INT))
-    {
-        JITDUMP(" source is not constant.\n");
-        return nullptr;
-    }
-
-    const int64_t initPattern = (initVal->AsIntCon()->IconValue() & 0xFF) * 0x0101010101010101LL;
-
-    if (initPattern != 0)
-    {
-        for (unsigned i = 0; i < destLclVar->lvFieldCnt; ++i)
-        {
-            LclVarDsc* fieldDesc = lvaGetDesc(destLclVar->lvFieldLclStart + i);
-
-            if (varTypeIsSIMD(fieldDesc->TypeGet()) || varTypeIsGC(fieldDesc->TypeGet()))
-            {
-                // Cannot initialize GC or SIMD types with a non-zero constant.
-                // The former is completly bogus. The later restriction could be
-                // lifted by supporting non-zero SIMD constants or by generating
-                // field initialization code that converts an integer constant to
-                // the appropiate SIMD value. Unlikely to be very useful, though.
-                JITDUMP(" dest contains GC and/or SIMD fields and source constant is not 0.\n");
-                return nullptr;
-            }
-        }
-    }
-
-    JITDUMP(" using field by field initialization.\n");
-
-    GenTree* tree = nullptr;
-
-    for (unsigned i = 0; i < destLclVar->lvFieldCnt; ++i)
-    {
-        unsigned   fieldLclNum = destLclVar->lvFieldLclStart + i;
-        LclVarDsc* fieldDesc   = lvaGetDesc(fieldLclNum);
-        GenTree*   dest        = gtNewLclvNode(fieldLclNum, fieldDesc->TypeGet());
-        // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
-        dest->gtFlags |= (destLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG));
-
-        GenTree* src;
-
-        switch (dest->TypeGet())
-        {
-            case TYP_BOOL:
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            case TYP_SHORT:
-            case TYP_USHORT:
-                // Promoted fields are expected to be "normalize on load". If that changes then
-                // we may need to adjust this code to widen the constant correctly.
-                assert(fieldDesc->lvNormalizeOnLoad());
-                FALLTHROUGH;
-            case TYP_INT:
-            {
-                int64_t mask = (int64_t(1) << (genTypeSize(dest->TypeGet()) * 8)) - 1;
-                src          = gtNewIconNode(static_cast<int32_t>(initPattern & mask));
-                break;
-            }
-            case TYP_LONG:
-                src = gtNewLconNode(initPattern);
-                break;
-            case TYP_FLOAT:
-                float floatPattern;
-                memcpy(&floatPattern, &initPattern, sizeof(floatPattern));
-                src = gtNewDconNode(floatPattern, dest->TypeGet());
-                break;
-            case TYP_DOUBLE:
-                double doublePattern;
-                memcpy(&doublePattern, &initPattern, sizeof(doublePattern));
-                src = gtNewDconNode(doublePattern, dest->TypeGet());
-                break;
-            case TYP_REF:
-            case TYP_BYREF:
-#ifdef FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-            case TYP_SIMD32:
-#endif // FEATURE_SIMD
-                assert(initPattern == 0);
-                src = gtNewIconNode(0, dest->TypeGet());
-                break;
-            default:
-                unreached();
-        }
-
-        GenTree* asg = gtNewAssignNode(dest, src);
-
-        if (optLocalAssertionProp)
-        {
-            optAssertionGen(asg);
-        }
-
-        if (tree != nullptr)
-        {
-            tree = gtNewOperNode(GT_COMMA, TYP_VOID, tree, asg);
-        }
-        else
-        {
-            tree = asg;
-        }
-    }
-
-    return tree;
 }
 
 //------------------------------------------------------------------------

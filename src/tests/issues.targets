@@ -1519,6 +1519,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/Structs/IncompatibleOverride/**">
             <Issue>Crashes during LLVM AOT compilation.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/RegressionTests/GitHub_71319/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71910</Issue>
+        </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/HwiOp/CompareVectorWithZero/**">
             <Issue>https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324</Issue>
@@ -3362,7 +3365,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly_MonoAot/UnmanagedCallersOnly_MonoAotTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/LocallocLarge_d/**">
@@ -3728,7 +3731,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly_MonoAot/UnmanagedCallersOnly_MonoAotTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">

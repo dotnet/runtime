@@ -875,15 +875,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\AnsiStringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\ArrayMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\BStrStringMarshaller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\ContiguousCollectionMarshallerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomMarshallerAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerDirection.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerFeatures.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\CustomTypeMarshallerKind.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\MarshalMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\MarshalUsingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\NativeMarshallingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\PointerArrayMarshaller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\ReadOnlySpanMarshaller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\SpanMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\Utf16StringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshalling\Utf8StringMarshaller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.cs" />
@@ -1492,6 +1491,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlNtStatusToDosError.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlNtStatusToDosError.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeleteFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.DeleteFile.cs</Link>
     </Compile>
@@ -1587,6 +1589,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetFileInformationByHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs</Link>
@@ -2001,6 +2006,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ChMod.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ChMod.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.FChMod.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
@@ -2015,9 +2023,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.FChMod.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FLock.cs</Link>

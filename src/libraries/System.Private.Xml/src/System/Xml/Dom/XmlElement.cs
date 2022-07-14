@@ -37,7 +37,7 @@ namespace System.Xml
             }
         }
 
-        protected internal XmlElement(string prefix, string localName, string? namespaceURI, XmlDocument doc)
+        protected internal XmlElement(string? prefix, string localName, string? namespaceURI, XmlDocument doc)
         : this(doc.AddXmlName(prefix, localName, namespaceURI, null), true, doc)
         {
         }

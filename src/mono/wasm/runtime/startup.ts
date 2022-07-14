@@ -16,6 +16,8 @@ import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
+import { initialize_marshalers_to_cs } from "./marshal-to-cs";
+import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 import { init_polyfills } from "./polyfills";
@@ -451,6 +453,21 @@ export function bindings_lazy_init(): void {
     runtimeHelpers.get_call_sig_ref = get_method("GetCallSignatureRef");
     if (!runtimeHelpers.get_call_sig_ref)
         throw "Can't find GetCallSignatureRef method";
+
+    runtimeHelpers.complete_task_method = get_method("CompleteTask");
+    if (!runtimeHelpers.complete_task_method)
+        throw "Can't find CompleteTask method";
+
+    runtimeHelpers.create_task_method = get_method("CreateTaskCallback");
+    if (!runtimeHelpers.create_task_method)
+        throw "Can't find CreateTaskCallback method";
+
+    runtimeHelpers.call_delegate = get_method("CallDelegate");
+    if (!runtimeHelpers.call_delegate)
+        throw "Can't find CallDelegate method";
+
+    initialize_marshalers_to_js();
+    initialize_marshalers_to_cs();
 
     _create_primitive_converters();
 

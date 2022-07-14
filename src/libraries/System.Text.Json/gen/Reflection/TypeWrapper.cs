@@ -40,7 +40,7 @@ namespace System.Text.Json.Reflection
         {
             get
             {
-                if (_assemblyQualifiedName == null)
+                if (_assemblyQualifiedName == null && !IsGenericParameter)
                 {
                     StringBuilder sb = new();
 
@@ -111,13 +111,15 @@ namespace System.Text.Json.Reflection
 
         public override Type BaseType => _typeSymbol.BaseType!.AsType(_metadataLoadContext);
 
+        public override Type DeclaringType => _typeSymbol.ContainingType?.ConstructedFrom.AsType(_metadataLoadContext);
+
         private string? _fullName;
 
         public override string FullName
         {
             get
             {
-                if (_fullName == null)
+                if (_fullName == null && !IsGenericParameter)
                 {
                     StringBuilder sb = new();
 
@@ -133,24 +135,32 @@ namespace System.Text.Json.Reflection
                     }
                     else
                     {
-                        sb.Append(Name);
-
-                        for (ISymbol currentSymbol = _typeSymbol.ContainingSymbol; currentSymbol != null && currentSymbol.Kind != SymbolKind.Namespace; currentSymbol = currentSymbol.ContainingSymbol)
-                        {
-                            sb.Insert(0, $"{currentSymbol.Name}+");
-                        }
-
                         if (!string.IsNullOrWhiteSpace(Namespace) && Namespace != JsonConstants.GlobalNamespaceValue)
                         {
-                            sb.Insert(0, $"{Namespace}.");
+                            sb.Append(Namespace);
+                            sb.Append('.');
                         }
 
-                        if (this.IsGenericType && !ContainsGenericParameters)
+                        AppendContainingTypes(sb, _typeSymbol);
+
+                        sb.Append(Name);
+
+                        if (IsGenericType && !ContainsGenericParameters)
                         {
                             sb.Append('[');
 
+                            bool first = true;
                             foreach (Type genericArg in GetGenericArguments())
                             {
+                                if (!first)
+                                {
+                                    sb.Append(',');
+                                }
+                                else
+                                {
+                                    first = false;
+                                }
+
                                 sb.Append('[');
                                 sb.Append(genericArg.AssemblyQualifiedName);
                                 sb.Append(']');
@@ -164,6 +174,16 @@ namespace System.Text.Json.Reflection
                 }
 
                 return _fullName;
+
+                static void AppendContainingTypes(StringBuilder sb, ITypeSymbol typeSymbol)
+                {
+                    if (typeSymbol.ContainingType != null)
+                    {
+                        AppendContainingTypes(sb, typeSymbol.ContainingType);
+                        sb.Append(typeSymbol.ContainingType.MetadataName);
+                        sb.Append('+');
+                    }
+                }
             }
         }
 
@@ -207,20 +227,55 @@ namespace System.Text.Json.Reflection
 
         public override bool IsGenericType => _namedTypeSymbol?.IsGenericType == true;
 
-        public override bool ContainsGenericParameters => _namedTypeSymbol?.IsUnboundGenericType == true;
+        public override bool ContainsGenericParameters
+        {
+            get
+            {
+                if (IsGenericParameter)
+                {
+                    return true;
+                }
 
-        public override bool IsGenericTypeDefinition => base.IsGenericTypeDefinition;
+                for (INamedTypeSymbol currentSymbol = _namedTypeSymbol; currentSymbol != null; currentSymbol = currentSymbol.ContainingType)
+                {
+                    if (currentSymbol.TypeArguments.Any(arg => arg.TypeKind == TypeKind.TypeParameter))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public override bool IsGenericTypeDefinition => IsGenericType && SymbolEqualityComparer.Default.Equals(_namedTypeSymbol, _namedTypeSymbol.ConstructedFrom);
+
+        public override bool IsGenericParameter => _typeSymbol.TypeKind == TypeKind.TypeParameter;
 
         public INamespaceSymbol GetNamespaceSymbol => _typeSymbol.ContainingNamespace;
 
         public override Type[] GetGenericArguments()
         {
-            var args = new List<Type>();
-            foreach (ITypeSymbol item in _namedTypeSymbol.TypeArguments)
+            if (!IsGenericType)
             {
-                args.Add(item.AsType(_metadataLoadContext));
+                return EmptyTypes;
             }
+
+            var args = new List<Type>();
+            AddTypeArguments(args, _namedTypeSymbol, _metadataLoadContext);
             return args.ToArray();
+
+            static void AddTypeArguments(List<Type> args, INamedTypeSymbol typeSymbol, MetadataLoadContextInternal metadataLoadContext)
+            {
+                if (typeSymbol.ContainingType != null)
+                {
+                    AddTypeArguments(args, typeSymbol.ContainingType, metadataLoadContext);
+                }
+                foreach (ITypeSymbol item in typeSymbol.TypeArguments)
+                {
+                    args.Add(item.AsType(metadataLoadContext));
+                }
+            }
         }
 
         public override Type GetGenericTypeDefinition()

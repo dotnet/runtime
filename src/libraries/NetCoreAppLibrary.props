@@ -105,7 +105,6 @@
       System.ObjectModel;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
@@ -176,10 +175,8 @@
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
     <NetCoreAppLibraryNoReference>
-      System.Net.Quic;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;

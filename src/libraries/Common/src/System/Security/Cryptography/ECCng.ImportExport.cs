@@ -503,6 +503,7 @@ namespace System.Security.Cryptography
             if (errorCode != ErrorCode.ERROR_SUCCESS)
             {
                 Exception e = errorCode.ToCryptographicException();
+                keyHandle.Dispose();
                 if (errorCode == ErrorCode.NTE_INVALID_PARAMETER)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curveName), e);
