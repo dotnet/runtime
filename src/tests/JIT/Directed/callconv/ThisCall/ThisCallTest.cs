@@ -74,6 +74,9 @@ unsafe class ThisCallNative
     public static extern E GetEFromManaged(C* c);
     [DllImport(nameof(ThisCallNative))]
     public static extern CLong GetWidthAsLongFromManaged(C* c);
+
+    [DllImport(nameof(ThisCallNative), CallingConvention = CallingConvention.ThisCall, EntryPoint = "GetWidthAsLongFromManaged")]
+    public static extern int ThisCallWithEmptySignature();
 }
 
 unsafe class ThisCallTest
@@ -100,6 +103,7 @@ unsafe class ThisCallTest
             Test4ByteNonHFAUnmanagedCallersOnly();
             TestEnumUnmanagedCallersOnly();
             TestCLongUnmanagedCallersOnly();
+            TestEmpty();
         }
         catch (System.Exception ex)
         {
@@ -340,5 +344,41 @@ unsafe class ThisCallTest
     private static CLong GetWidthAsLong(ThisCallNative.C* c)
     {
         return new CLong((nint)c->width);
+    }
+
+    private static void TestEmpty()
+    {
+        try
+        {
+            delegate* unmanaged[Thiscall]<ThisCallNative.C*, CLong> fn = &GetWidthAsLong;
+            CalliEmptyThisCall((delegate* unmanaged[Thiscall]<int>)fn);
+            Console.WriteLine("FAIL: thiscall fptr with no args should have failed");
+            throw new Exception("FAIL: thiscall fptr with no args should have failed");
+        }
+        catch (InvalidProgramException)
+        {
+            Console.WriteLine("thiscall fptr with no args failed as expected");
+        }
+
+        try
+        {
+            PinvokeEmptyThisCall();
+            Console.WriteLine("FAIL: pinvoke thiscall with no args should have failed");
+            throw new Exception("FAIL: pinvoke thiscall with no args should have failed");
+        }
+        catch (InvalidProgramException)
+        {
+            Console.WriteLine("thiscall pinvoke with no args failed as expected");
+        }
+    }
+
+    private static int CalliEmptyThisCall(delegate* unmanaged[Thiscall]<int> fn)
+    {
+        return fn();
+    }
+
+    private static void PinvokeEmptyThisCall()
+    {
+        ThisCallNative.ThisCallWithEmptySignature();
     }
 }
