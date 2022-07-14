@@ -9,7 +9,8 @@ build-all: $(WASI_SDK_CLANG)
 		-DWASI_SDK_PREFIX=$(WASI_SDK_ROOT) \
 		-DCMAKE_SYSROOT=$(WASI_SDK_ROOT)/share/wasi-sysroot \
 		-DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_ROOT)/share/cmake/wasi-sdk.cmake \
-		-DCMAKE_C_FLAGS="--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot -I$(CURDIR)/include -I$(TOP)/src/mono -I$(TOP)/src/native/public -I$(TOP)/src/mono/mono/eglib -I$(WASI_OBJ_DIR)/mono/eglib -I$(WASI_OBJ_DIR)" \
+		-DCMAKE_C_FLAGS="--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot \
+		-I$(CURDIR)/include -I$(TOP)/src/mono -I$(TOP)/src/native/public -I$(TOP)/src/mono/mono/eglib -I$(WASI_OBJ_DIR)/mono/eglib -I$(WASI_OBJ_DIR)" \
 		-DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot" \
 		-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,interpreter,threads,qcalls,debugger_agent,sockets,eventpipe \
 		-DDISABLE_SHARED_LIBS=1 \
