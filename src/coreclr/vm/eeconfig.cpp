@@ -779,7 +779,9 @@ HRESULT EEConfig::sync()
     fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
 #endif
 
+#if defined(FEATURE_READYTORUN)
     fReadyToRun = ReadyToRunInfo::IsReadyToRunEnabled();
+#endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     dwOSR_HitLimit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HitLimit);
