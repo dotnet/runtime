@@ -39,9 +39,9 @@ wasi_transport_recv (void *buf, int len)
 			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
 			long long start = timeInMilliseconds();
 			while (timeInMilliseconds() < start + (connection_wait/1000));
-		}
-		else
+		} else {
 			break;
+		}
 	} while (true);
 	return total;
 }
