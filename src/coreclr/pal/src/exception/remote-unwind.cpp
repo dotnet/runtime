@@ -169,6 +169,8 @@ typedef struct _libunwindInfo
     UnwindReadMemoryCallback ReadMemory;
 } libunwindInfo;
 
+#ifdef HOST_UNIX
+
 #define EXTRACT_BITS(value, mask)   ((value >> __builtin_ctz(mask)) & (((1 << __builtin_popcount(mask))) - 1))
 
 #define DW_EH_VERSION           1
@@ -524,6 +526,8 @@ ReadEncodedPointer(
     *valp = value;
     return true;
 }
+
+#endif // HOST_UNIX
 
 #if defined(__APPLE__) || defined(FEATURE_USE_SYSTEM_LIBUNWIND)
 
@@ -2516,6 +2520,7 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
     *ehFrameStart = 0;
     *ehFrameSize = 0;
 
+#ifdef HOST_UNIX
     libunwindInfo info;
     info.BaseAddress = baseAddress;
     info.Context = nullptr;
@@ -2642,6 +2647,9 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
     *ehFrameStart = ehFramePtr;
     *ehFrameSize = totalSize;
     return TRUE;
+#else
+    return FALSE;
+#endif // HOST_UNIX
 }
 
 #else
@@ -2649,6 +2657,13 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
 BOOL
 PALAPI
 PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback)
+{
+    return FALSE;
+}
+
+BOOL
+PALAPI
+PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize)
 {
     return FALSE;
 }
