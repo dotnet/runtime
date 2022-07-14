@@ -7,11 +7,6 @@
         <target state="translated">Hinzufügen fehlender benutzerdefinierter Marshallermember</target>
         <note />
       </trans-unit>
-      <trans-unit id="AddMissingFeaturesToCustomTypeMarshaller">
-        <source>Add missing features to the 'CustomTypeMarshallerAttribute' attribute</source>
-        <target state="translated">Hinzufügen fehlender Features zum CustomTypeMarshallerAttribute-Attribut</target>
-        <note />
-      </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
         <target state="translated">Wenn ein Konstruktor, der ein \"Span&lt;byte&gt;\" verwendet, für den nativen Typ angegeben wird, muss der Typ das BufferSize-Feld auf \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\" festlegen, um die Größe des vom Aufrufer zugewiesenen Puffers bereitzustellen.</target>
@@ -25,26 +20,6 @@
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
         <source>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</source>
         <target state="translated">„BufferSize“ muss auf „CustomTypeMarshallerAttribute“ festgelegt werden</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
-        <source>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</source>
-        <target state="translated">Ein Typ, der das Marshalling von verwaltet zu nativ mithilfe eines vom Aufrufer zugewiesenen Puffers unterstützt, sollte auch Marshalling von verwaltet zu nativ unterstützen, wobei die Verwendung eines vom Aufrufer zugeordneten Puffers unmöglich ist.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage">
-        <source>Native type '{0}' has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible</source>
-        <target state="translated">Der native Typ \"{0}\" weist einen Konstruktor auf, der einen vom Aufrufer zugewiesenen Puffer verwendet, unterstützt jedoch kein Marshalling in Szenarien, in denen die Verwendung eines vom Aufrufer zugewiesenen Puffers unmöglich ist.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription">
-        <source>A marshaller type that provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' should specify that it supports the 'CallerAllocatedBuffer' feature.</source>
-        <target state="translated">Ein Marshallertyp, der einen Konstruktor bereitstellt, der einen vom Aufrufer zugewiesenen \"Span&lt;byte&gt;\" verwendet, sollte angeben, dass er das Feature \"CallerAllocatedBuffer\" unterstützt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage">
-        <source>The type '{0}' provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' but does not specify that it supports the 'CallerAllocatedBuffer' feature. The constructor will not be used unless the feature is specified.</source>
-        <target state="translated">Der Typ \"{0}\" stellt einen Konstruktor bereit, der einen vom Aufrufer zugewiesenen \"Span&lt;byte&gt;\" verwendet, gibt jedoch nicht an, dass er das Feature \"CallerAllocatedBuffer\" unterstützt. Der Konstruktor wird nur verwendet, wenn das Feature angegeben ist.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -97,11 +72,6 @@
         <target state="translated">Die angegebene Konfiguration wird von quellgenerierten P/Invokes nicht unterstützt.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ConstantAndElementCountInfoDisallowed">
-        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
-        <target state="translated">Nur eines von \"ConstantElementCount\" oder \"ElementCountInfo\" kann in einem \"MarshalUsingAttribute\" für ein angegebenes \"ElementIndirectionDepth\" verwendet werden.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
         <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
         <target state="translated">Das automatische Konvertieren eines P/Invoke mit \"PreserveSig\" auf \"false\" in einen vom Quellcode generierten P/Invoke erzeugt möglicherweise ungültigen Code.</target>
@@ -142,56 +112,6 @@
         <target state="translated">Der Marshaller-Typ weist nicht die erforderliche Form auf</target>
         <note />
       </trans-unit>
-      <trans-unit id="CustomMarshallerTypeMustSupportDirectionDescription">
-        <source>A native must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
-        <target state="translated">Ein natives Element muss die Direction-Eigenschaft für \"CustomTypeMarshallerAttribute\" auf einen Wert festlegen, der mindestens einen bekannten Flagwert für die Enumeration \"CustomTypeMarshallerDirection\" festlegt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomMarshallerTypeMustSupportDirectionMessage">
-        <source>The native type '{0}' must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
-        <target state="translated">Der native Typ \"{0}\" muss die Eigenschaft \"Direction\" für \"CustomTypeMarshallerAttribute\" auf einen Wert festlegen, der mindestens einen bekannten Flagwert für die Enumeration \"CustomTypeMarshallerDirection\" festlegt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallerAttributeMustBeValidDescription">
-        <source>The 'CustomTypeMarshallerAttribute' attribute must be semantically valid</source>
-        <target state="translated">Das CustomTypeMarshallerAttribute-Attribut muss semantisch gültig sein.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallerAttributeMustBeValidMessage">
-        <source>The 'CustomTypeMarshallerAttribute' on '{0}' is semantically invalid</source>
-        <target state="translated">Das \"CustomTypeMarshallerAttribute\" für \"{0}\" ist semantisch ungültig</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
-        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
-        <target state="translated">Der angegebene Parameter muss von verwaltet zu nativ gemarshallt werden, der systemeigene Typ \"{0}\" unterstützt ihn jedoch nicht.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
-        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
-        <target state="translated">Der angegebene Parameter muss vom systemeigenen zum verwalteten Typ gemarshallt werden, der systemeigene Typ \"{0}\" unterstützt ihn jedoch nicht.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription">
-        <source>A marshaller type that provides a 'FreeNative' method should specify that it supports the 'UnmanagedResources' feature.</source>
-        <target state="translated">Ein Marshallertyp, der eine FreeNative-Methode bereitstellt, sollte angeben, dass er das Feature \"UnmanagedResources\" unterstützt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage">
-        <source>The type '{0}' provides a 'FreeNative' method but does not specify that it supports the 'UnmanagedResources' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">Der Typ \"{0}\" stellt eine FreeNative-Methode bereit, gibt jedoch nicht an, dass er das Feature \"UnmanagedResources\" unterstützt. Die Methode wird nur verwendet, wenn das Feature angegeben ist.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
-        <source>A marshaller type that provides a 'FromNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
-        <target state="translated">Ein Marshallingtyp, der eine FromNativeValue-Methode bereitstellt, sollte angeben, dass er das Feature \"TwoStageMarshalling\" unterstützt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage">
-        <source>The type '{0}' provides a 'FromNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">Der Typ \"{0}\" stellt eine FromNativeValue-Methode bereit, gibt jedoch nicht an, dass er das Feature \"TwoStageMarshalling\" unterstützt. Die Methode wird nur verwendet, wenn das Feature angegeben ist.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
         <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
         <target state="translated">Der Rückgabetyp von \"GetPinnableReference\" (nach Berücksichtigung von \"ref\") muss geeignet für Blitting sein.</target>
@@ -200,26 +120,6 @@
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
         <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
         <target state="translated">Der dereferenzierte Typ des Rückgabetyps der GetPinnableReference-Methode muss geeignet für Blitting sein.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription">
-        <source>A type that supports marshalling from managed to native by pinning should also support marshalling from managed to native where pinning is impossible.</source>
-        <target state="translated">Ein Typ, der Marshalling von verwaltet zu nativ durch Anheften unterstützt, sollte auch Marshalling von verwaltet zu nativ unterstützen, bei dem das Anheften unmöglich ist.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage">
-        <source>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</source>
-        <target state="translated">Der Typ \"{0}\" weist eine GetPinnableReference-Methode auf, der systemeigene Typ unterstützt jedoch kein Marshalling in Szenarien, in denen das Anheften unmöglich ist.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InTwoStageMarshallingRequiresToNativeValueDescription">
-        <source>The 'TwoStageMarshalling' feature requires a 'TNativeType ToNativeValue()' method for the 'In' direction.</source>
-        <target state="translated">Das Feature \"TwoStageMarshalling\" erfordert eine TNativeType ToNativeValue()-Methode für die Richtung \"In\".</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
-        <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="translated">Ein Marshaller-Typ „{0}“, der das Marshalling in der Richtung „In“ mit dem Feature „TwoStageMarshalling“ unterstützt, muss eine „ToNativeValue“-Instanzmethode bereitstellen, die den nativen Wert zurückgibt</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
@@ -327,46 +227,6 @@
         <target state="translated">Der Typ \"{0}\" gibt an, dass Marshalling in der Out-Richtung unterstützt wird. Er stellt jedoch keine \"GetManagedValuesDestination\" bereit, die ein \"int\" akzeptiert und ein \"Span&lt;&gt;\" und eine GetNativeValuesSource-Methode zurückgibt, die ein \"int\" und ein \"ReadOnlySpan&lt;byte&gt;\" akzeptiert.</target>
         <note />
       </trans-unit>
-      <trans-unit id="LinearCollectionOutRequiresIntConstructorDescription">
-        <source>A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a constructor that takes the size of the native element as an 'int'.</source>
-        <target state="translated">Ein nativer Typ vom Typ \"LinearCollection\", der Marshalling in der Out-Richtung unterstützt, muss einen Konstruktor bereitstellen, der die Größe des nativen Elements als \"int\" annimmt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LinearCollectionOutRequiresIntConstructorMessage">
-        <source>The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a constructor that takes the size of the native element as an 'int'.</source>
-        <target state="translated">Der Typ \"{0}\" gibt an, dass Marshalling in der Out-Richtung unterstützt wird, stellt jedoch keinen Konstruktor bereit, der die Größe des nativen Elements als \"int\" annimmt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerDirectionMustBeValidDescription">
-        <source>The specified marshaller direction must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerDirection' enum.</source>
-        <target state="translated">Die angegebene Marshallerrichtung muss ein gültiger Wert der Enumeration \"System.Runtime.InteropServices.CustomMarshallerDirection\" sein.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerDirectionMustBeValidMessage">
-        <source>The specified custom marshaller direction for '{0}' is invalid</source>
-        <target state="translated">Die angegebene benutzerdefinierte Marshallerrichtung für \"{0}\" ist ungültig.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription">
-        <source>The use cases for 'GetPinnableReference' are not applicable in any scenarios where 'TwoStageMarshalling' is not also required.</source>
-        <target state="translated">Die Anwendungsfälle für \"GetPinnableReference\" gelten nicht für Szenarien, in denen \"TwoStageMarshalling\" nicht ebenfalls erforderlich ist.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage">
-        <source>The 'GetPinnableReference' method cannot be provided on the native type '{0}' unless the 'TwoStageMarshalling' feature is also supported</source>
-        <target state="translated">Die GetPinnableReference-Methode kann für den systemeigenen Typ \"{0}\" nur bereitgestellt werden, wenn das Feature \"TwoStageMarshalling\" ebenfalls unterstützt wird.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerKindMustBeValidDescription">
-        <source>The specified marshaller kind must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerKind' enum.</source>
-        <target state="translated">Die angegebene Marshallerart muss ein gültiger Wert der Enumeration \"System.Runtime.InteropServices.CustomMarshallerKind\" sein.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerKindMustBeValidMessage">
-        <source>The specified custom marshaller kind for '{0}' is invalid</source>
-        <target state="translated">Die angegebene benutzerdefinierte Marshallerart für \"{0}\" ist ungültig.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' must specify a managed type</source>
         <target state="translated">Ein Typ mit einem \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\" muss einen verwalteten Typ angeben.</target>
@@ -375,11 +235,6 @@
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
         <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' applied to the type</source>
         <target state="translated">Der Typ \"{0}\" gibt keinen verwalteten Typ in \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\" an, der auf den Typ angewendet wird.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MissingAllocatingMarshallingFallbackTitle">
-        <source>Marshaller type does not support allocating constructor</source>
-        <target state="translated">Der Marshaller-Typ unterstützt nicht das Zuordnen eines Konstruktors</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
@@ -432,21 +287,6 @@
         <target state="translated">Der Typ \"{0}\" gibt an, dass das Marshalling in der Out-Richtung unterstützt wird. Er stellt jedoch keine ToManaged-Methode bereit, die den verwalteten Typ zurückgibt.</target>
         <note />
       </trans-unit>
-      <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueDescription">
-        <source>The 'TwoStageMarshalling' feature requires a 'void FromNativeValue(TNativeType value)' method for the 'Out' direction.</source>
-        <target state="translated">Das Feature \"TwoStageMarshalling\" erfordert eine void FromNativeValue(TNativeType value)-Methode für die Richtung \"Out\".</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueMessage">
-        <source>The marshaller type '{0}' supports marshalling in the 'Out' direction with the 'TwoStageMarshalling' feature, but it does not provide a 'FromNativeValue' instance method that returns 'void' and takes one parameter.</source>
-        <target state="translated">Der Marshallertyp \"{0}\" unterstützt das Marshalling in der Out-Richtung mit der Funktion \"TwoStageMarshalling\", stellt jedoch keine FromNativeValue-Instanzmethode bereit, die \"void\" zurückgibt und einen Parameter akzeptiert.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ProvidedMethodsNotSpecifiedInFeaturesTitle">
-        <source>Marshaller type defines a well-known method without specifying support for the corresponding feature</source>
-        <target state="translated">Der Marshaller-Typ definiert eine bekannte Methode, ohne Unterstützung für das entsprechende Feature anzugeben</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RefNativeValueUnsupportedDescription">
         <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
         <target state="translated">Die Value-Eigenschaft darf keine ref- oder readonly ref-Eigenschaft sein.</target>
@@ -455,21 +295,6 @@
       <trans-unit id="RefNativeValueUnsupportedMessage">
         <source>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</source>
         <target state="translated">Die Value-Eigenschaft für den systemeigenen Typ \"{0}\" darf keine ref- oder readonly ref-Eigenschaft sein.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Ein abstrakter Typ, der von \"SafeHandle\" abgeleitet wird, kann nicht als Verweis gemarshallt werden. Der angegebene Typ muss ein konkretes Element sein.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
-        <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
-        <target state="translated">Ein Marshallertyp, der eine ToNativeValue-Methode bereitstellt, sollte angeben, dass er das Feature \"TwoStageMarshalling\" unterstützt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage">
-        <source>The type '{0}' provides a 'ToNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">Der Typ \"{0}\" stellt eine ToNativeValue-Methode bereit, gibt jedoch nicht an, dass er das Feature \"TwoStageMarshalling\" unterstützt. Die Methode wird nur verwendet, wenn das Feature angegeben ist.</target>
         <note />
       </trans-unit>
       <trans-unit id="TwoStageMarshallingNativeTypesMustMatchDescription">
@@ -512,16 +337,6 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">Der angegebene Typ wird von quellgenerierten P/Invokes nicht unterstützt.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnmanagedResourcesRequiresFreeNativeDescription">
-        <source>The 'UnmanagedResources' feature requires a 'void FreeNative()' method.</source>
-        <target state="translated">Das Feature \"UnmanagedResources\" erfordert eine void FreeNative()-Methode.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnmanagedResourcesRequiresFreeNativeMessage">
-        <source>The marshaller type '{0}' supports marshalling with the 'UnmanagedResources' feature, but it does not provide a parameterless 'FreeNative' instance method that returns 'void'</source>
-        <target state="translated">Der Marshallertyp \"{0}\" unterstützt das Marshalling mit der Funktion \"UnmanagedResources\", stellt jedoch keine parameterlose Instanzmethode \"FreeNative\" bereit, die \"void\" zurückgibt.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

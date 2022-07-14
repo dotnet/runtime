@@ -7,11 +7,6 @@
         <target state="translated">添加缺少的自定义类型封送程序成员</target>
         <note />
       </trans-unit>
-      <trans-unit id="AddMissingFeaturesToCustomTypeMarshaller">
-        <source>Add missing features to the 'CustomTypeMarshallerAttribute' attribute</source>
-        <target state="translated">将缺少的功能添加到 “CustomTypeMarshallerAttribute” 属性</target>
-        <note />
-      </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
         <target state="translated">在本机类型上指定采用 “Span&lt;byte&gt;” 的构造函数时，类型必须在 “System.Runtime.InteropServices.CustomTypeMarshallerAttribute” 上设置 BufferSize 字段，以提供调用方分配的缓冲区大小。</target>
@@ -25,26 +20,6 @@
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
         <source>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</source>
         <target state="translated">应在 \"CustomTypeMarshallerAttribute\" 上设置 \"BufferSize\"</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
-        <source>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</source>
-        <target state="translated">支持使用调用方分配的缓冲区从托管到本机封送的类型还应该支持在不可能使用调用方分配的缓冲区情况下从托管到本机封送。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage">
-        <source>Native type '{0}' has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible</source>
-        <target state="translated">本机类型“{0}”具有采用调用方分配缓冲区的构造函数，但在无法使用调用方分配的缓冲区的方案中不支持封送</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription">
-        <source>A marshaller type that provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' should specify that it supports the 'CallerAllocatedBuffer' feature.</source>
-        <target state="translated">提供采用调用方分配的 “Span&lt;byte&gt;”的构造函数的封送程序类型应指定它支持 “CallerAllocatedBuffer” 功能。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage">
-        <source>The type '{0}' provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' but does not specify that it supports the 'CallerAllocatedBuffer' feature. The constructor will not be used unless the feature is specified.</source>
-        <target state="translated">类型“{0}”提供采用调用方分配的 “Span&lt;byte&gt;” 的构造函数，但不指定它支持 “CallerAllocatedBuffer” 功能。除非指定该功能，否则将不会使用该构造函数。</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -97,11 +72,6 @@
         <target state="translated">源生成的 P/Invoke 不支持指定的配置。</target>
         <note />
       </trans-unit>
-      <trans-unit id="ConstantAndElementCountInfoDisallowed">
-        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
-        <target state="translated">对于给定的 “ElementIndirectionDepth”，在 “MarshalUsingAttribute” 中只能使用 “ConstantElementCount” 或 “ElementCountInfo” 中的一个</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
         <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
         <target state="translated">将 “PreserveSig” 设置为 “false” 的 P/Invoke 自动转换为源生成的 P/Invoke 可能会产生无效代码</target>
@@ -142,56 +112,6 @@
         <target state="translated">封送程序类型没有必需的形状</target>
         <note />
       </trans-unit>
-      <trans-unit id="CustomMarshallerTypeMustSupportDirectionDescription">
-        <source>A native must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
-        <target state="translated">本机必须将 “CustomTypeMarshallerAttribute” 上的 “Direction” 属性设置为在 “CustomTypeMarshallerDirection” 枚举上至少设置一个已知标志值的值</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomMarshallerTypeMustSupportDirectionMessage">
-        <source>The native type '{0}' must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
-        <target state="translated">本机类型“{0}”必须将 “CustomTypeMarshallerAttribute” 上的 “Direction” 属性设置为在 “CustomTypeMarshallerDirection” 枚举上至少设置一个已知标志值的值</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallerAttributeMustBeValidDescription">
-        <source>The 'CustomTypeMarshallerAttribute' attribute must be semantically valid</source>
-        <target state="translated">“CustomTypeMarshallerAttribute” 特性必须在语义上有效</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallerAttributeMustBeValidMessage">
-        <source>The 'CustomTypeMarshallerAttribute' on '{0}' is semantically invalid</source>
-        <target state="translated">“{0}”上的 “CustomTypeMarshallerAttribute” 在语义上无效</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
-        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
-        <target state="translated">指定的参数需要从托管封送到本机，但本机类型“{0}”不支持此参数。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
-        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
-        <target state="translated">指定的参数需要从本机封送到托管，但本机类型“{0}”不支持此参数。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription">
-        <source>A marshaller type that provides a 'FreeNative' method should specify that it supports the 'UnmanagedResources' feature.</source>
-        <target state="translated">提供 “FreeNative” 方法的封送程序类型应指定它支持 “UnmanagedResources” 功能。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage">
-        <source>The type '{0}' provides a 'FreeNative' method but does not specify that it supports the 'UnmanagedResources' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">类型“{0}”提供 “FreeNative” 方法，但未指定它支持 “UnmanagedResources” 功能。除非指定该功能，否则将不会使用该方法。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
-        <source>A marshaller type that provides a 'FromNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
-        <target state="translated">提供 “FromNativeValue” 方法的封送程序类型应指定它支持 “TwoStageMarshalling” 功能。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage">
-        <source>The type '{0}' provides a 'FromNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">类型“{0}”提供 “FromNativeValue” 方法，但未指定它支持 “TwoStageMarshalling” 功能。除非指定该功能，否则将不会使用该方法。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
         <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
         <target state="translated">“GetPinnableReference” 的返回类型(考虑到 “ref” 之后)必须是 blittable 的。</target>
@@ -200,26 +120,6 @@
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
         <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
         <target state="translated">“GetPinnableReference” 方法的返回类型的取消引用类型必须是 blittable</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription">
-        <source>A type that supports marshalling from managed to native by pinning should also support marshalling from managed to native where pinning is impossible.</source>
-        <target state="translated">支持通过固定从托管到本机的封送的类型还应支持在不可能固定的情况下从托管到本机的封送处理。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage">
-        <source>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</source>
-        <target state="translated">类型“{0}”具有 “GetPinnableReference” 方法，但在无法固定的方案中，其本机类型不支持封送处理</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InTwoStageMarshallingRequiresToNativeValueDescription">
-        <source>The 'TwoStageMarshalling' feature requires a 'TNativeType ToNativeValue()' method for the 'In' direction.</source>
-        <target state="translated">“TwoStageMarshalling” 功能需要 “TNativeType ToNativeValue()” 方法以用于 “In” 方向。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
-        <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="translated">支持使用 \"TwoStageMarshalling\" 功能在 \"In\" 方向进行封送的封送程序类型 \"{0}\" 必须提供返回本机值的 \"ToNativeValue\" 实例方法</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
@@ -327,46 +227,6 @@
         <target state="translated">类型“{0}”指定它支持按 “Out” 方向进行封送，但不提供采用 “int” 并 “GetManagedValuesDestination“ 并返回 “Span&lt;&gt;” 的 “GetManagedValuesDestination”，以及采用 “int” 并返回 “ReadOnlySpan&lt;byte&gt;” 的 “GetNativeValuesSource” 方法</target>
         <note />
       </trans-unit>
-      <trans-unit id="LinearCollectionOutRequiresIntConstructorDescription">
-        <source>A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a constructor that takes the size of the native element as an 'int'.</source>
-        <target state="translated">支持在 “Out” 方向进行封送的 “LinearCollection” 种类的本机类型必须提供以本机元素的大小作为 “int” 的构造函数。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LinearCollectionOutRequiresIntConstructorMessage">
-        <source>The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a constructor that takes the size of the native element as an 'int'.</source>
-        <target state="translated">类型“{0}”指定它支持在 “Out‘’ 方向进行封送，但不提供将本机元素的大小作为 “int” 的构造函数。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerDirectionMustBeValidDescription">
-        <source>The specified marshaller direction must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerDirection' enum.</source>
-        <target state="translated">指定的封送程序方向必须是 “System.Runtime.InteropServices.CustomMarshallerDirection” 枚举的有效值。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerDirectionMustBeValidMessage">
-        <source>The specified custom marshaller direction for '{0}' is invalid</source>
-        <target state="translated">为“{0}”指定的自定义封送程序方向无效</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription">
-        <source>The use cases for 'GetPinnableReference' are not applicable in any scenarios where 'TwoStageMarshalling' is not also required.</source>
-        <target state="translated">“GetPinnableReference” 的用例在也不需要 “TwoStageMarshalling” 的任何情况下都不适用。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage">
-        <source>The 'GetPinnableReference' method cannot be provided on the native type '{0}' unless the 'TwoStageMarshalling' feature is also supported</source>
-        <target state="translated">无法在本机类型“{0}”上提供 “GetPinnableReference” 方法，除非还支持 “TwoStageMarshalling” 功能</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerKindMustBeValidDescription">
-        <source>The specified marshaller kind must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerKind' enum.</source>
-        <target state="translated">指定的封送程序类型必须是 “System.Runtime.InteropServices.CustomMarshallerKind” 枚举的有效值。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerKindMustBeValidMessage">
-        <source>The specified custom marshaller kind for '{0}' is invalid</source>
-        <target state="translated">为“{0}”指定的自定义封送处理程序种类无效</target>
-        <note />
-      </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' must specify a managed type</source>
         <target state="translated">具有 “System.Runtime.InteropServices.CustomTypeMarshallerAttribute” 的类型必须指定托管类型</target>
@@ -375,11 +235,6 @@
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
         <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' applied to the type</source>
         <target state="translated">类型“{0}”未在应用于该类型的 “System.Runtime.InteropServices.CustomTypeMarshallerAttribute” 中指定托管类型</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MissingAllocatingMarshallingFallbackTitle">
-        <source>Marshaller type does not support allocating constructor</source>
-        <target state="translated">封送程序类型不支持分配构造函数</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
@@ -432,21 +287,6 @@
         <target state="translated">类型“{0}”指定它支持按 “Out” 方向进行封送，但不提供返回托管类型的 “ToManaged” 方法</target>
         <note />
       </trans-unit>
-      <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueDescription">
-        <source>The 'TwoStageMarshalling' feature requires a 'void FromNativeValue(TNativeType value)' method for the 'Out' direction.</source>
-        <target state="translated">“TwoStageMarshalling” 功能需要 “void FromNativeValue(TNativeType 值)” 方法来实现 “Out” 方向。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueMessage">
-        <source>The marshaller type '{0}' supports marshalling in the 'Out' direction with the 'TwoStageMarshalling' feature, but it does not provide a 'FromNativeValue' instance method that returns 'void' and takes one parameter.</source>
-        <target state="translated">封送处理程序类型“{0}”支持使用 “TwoStageMarshalling” 功能在 “Out” 方向进行封送，但它不提供返回 “void” 并采用一个参数的 “FromNativeValue” 实例方法。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ProvidedMethodsNotSpecifiedInFeaturesTitle">
-        <source>Marshaller type defines a well-known method without specifying support for the corresponding feature</source>
-        <target state="translated">封送程序类型定义了一个已知方法，但不指定对相应功能的支持</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RefNativeValueUnsupportedDescription">
         <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
         <target state="translated">“Value” 属性不能是 “ref” 或 “readonly ref” 属性。</target>
@@ -455,21 +295,6 @@
       <trans-unit id="RefNativeValueUnsupportedMessage">
         <source>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</source>
         <target state="translated">本机类型“{0}”上的 “Value” 属性不能是 “ref” 或 “readonly ref” 属性。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">无法通过引用封送派生自 “SafeHandle” 的抽象类型。提供的类型必须是具体的。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
-        <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
-        <target state="translated">提供 “ToNativeValue” 方法的封送程序类型应指定它支持 “TwoStageMarshalling” 功能。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage">
-        <source>The type '{0}' provides a 'ToNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">类型“{0}”提供 “ToNativeValue” 方法，但未指定它支持 “TwoStageMarshalling” 功能。除非指定该功能，否则将不使用该方法。</target>
         <note />
       </trans-unit>
       <trans-unit id="TwoStageMarshallingNativeTypesMustMatchDescription">
@@ -512,16 +337,6 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">源生成的 P/Invoke 不支持指定的类型</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnmanagedResourcesRequiresFreeNativeDescription">
-        <source>The 'UnmanagedResources' feature requires a 'void FreeNative()' method.</source>
-        <target state="translated">“UnmanagedResources” 功能需要 “void FreeNative()” 方法。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnmanagedResourcesRequiresFreeNativeMessage">
-        <source>The marshaller type '{0}' supports marshalling with the 'UnmanagedResources' feature, but it does not provide a parameterless 'FreeNative' instance method that returns 'void'</source>
-        <target state="translated">封送程序类型“{0}”支持使用 “UnmanagedResources” 功能进行封送，但它不提供返回 “void” 的无参数 “FreeNative” 实例方法</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

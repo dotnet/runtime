@@ -7,11 +7,6 @@
         <target state="translated">Přidat chybějící vlastní typu zařazovacích členů</target>
         <note />
       </trans-unit>
-      <trans-unit id="AddMissingFeaturesToCustomTypeMarshaller">
-        <source>Add missing features to the 'CustomTypeMarshallerAttribute' attribute</source>
-        <target state="translated">Přidat do atributu CustomTypeMarshallerAttribute chybějící funkce</target>
-        <note />
-      </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
         <target state="translated">Pokud je konstruktor přebírající „Span&lt;byte&gt;“ určený u nativního typu, musí typ nastavit pole BufferSize na atributu System.Runtime.InteropServices.CustomTypeMarshallerAttribute tak, aby poskytoval velikost vyrovnávací paměť přidělené volajícímu.</target>
@@ -25,26 +20,6 @@
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
         <source>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</source>
         <target state="translated">Vlastnost BufferSize by měla být nastavená na CustomTypeMarshallerAttribute</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
-        <source>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</source>
-        <target state="translated">Typ, který podporuje zařazování ze spravovaného na nativní prostřednictvím vyrovnávací paměť přidělené volajícím, by měl zároveň podporovat zařazování ze spravovaného na nativní v případech, kdy není vyrovnávací paměť přidělená volajícím možná.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage">
-        <source>Native type '{0}' has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible</source>
-        <target state="translated">Nativní typ {0} má konstruktor přebírající vyrovnávací paměť přidělenou volajícímu, ale nepodporuje zařazování ve scénářích, v nichž není použití vyrovnávací paměť přidělené volajícímu možné.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription">
-        <source>A marshaller type that provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' should specify that it supports the 'CallerAllocatedBuffer' feature.</source>
-        <target state="translated">Typ zařazování, které poskytuje konstruktor přebírající „Span&lt;byte&gt;“ přidělený volajícímu, by měl určovat, že podporuje funkci CallerAllocatedBuffer.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage">
-        <source>The type '{0}' provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' but does not specify that it supports the 'CallerAllocatedBuffer' feature. The constructor will not be used unless the feature is specified.</source>
-        <target state="translated">Typ {0} poskytuje konstruktor přebírající „Span&lt;byte&gt;“ přidělený volajícímu, ale neurčuje, že podporuje funkci CallerAllocatedBuffer. Tento konstruktor se nepoužije, pokud není tato funkce přímo určena.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -97,11 +72,6 @@
         <target state="translated">Určenou konfiguraci nepodporují zdrojem generovaná volání P/Invokes.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ConstantAndElementCountInfoDisallowed">
-        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
-        <target state="translated">U atributu MarshalUsingAttribute pro daný ElementIndirectionDepth se může se použít jen jeden z prvků ConstantElementCount nebo ElementCountInfo</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
         <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
         <target state="translated">Automatická konverze volání P/Invoke s PreserveSig nastaveným na hodnotu False na zdrojem generované volání P/Invoke může mít za následek neplatný kód.</target>
@@ -142,56 +112,6 @@
         <target state="translated">Zařazovací typ nemá požadovaný tvar</target>
         <note />
       </trans-unit>
-      <trans-unit id="CustomMarshallerTypeMustSupportDirectionDescription">
-        <source>A native must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
-        <target state="translated">Nativní musí nastavit vlastnost „Direction“ u atributu CustomTypeMarshallerAttribute na hodnotu, která nastavuje alespoň jednu hodnotu příznaku na výčtu CustomTypeMarshallerDirection</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomMarshallerTypeMustSupportDirectionMessage">
-        <source>The native type '{0}' must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
-        <target state="translated">Nativní typ {0} musí nastavit vlastnost „Direction“ atributu CustomTypeMarshallerAttribute na hodnotu, která sama nastaví alespoň jednu známou hodnotu příznaku ve výčtu CustomTypeMarshallerDirection.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallerAttributeMustBeValidDescription">
-        <source>The 'CustomTypeMarshallerAttribute' attribute must be semantically valid</source>
-        <target state="translated">Atribut CustomTypeMarshallerAttribute musí být sémanticky platný</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallerAttributeMustBeValidMessage">
-        <source>The 'CustomTypeMarshallerAttribute' on '{0}' is semantically invalid</source>
-        <target state="translated">Atribut CustomTypeMarshallerAttribute na {0} je sémanticky neplatný.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
-        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
-        <target state="translated">Určený parametr musí být zařazený ze spravovaného na nativní, ale nativní typ {0} ho nepodporuje.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
-        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
-        <target state="translated">Určený parametr musí být zařazený z nativního na spravovaný, ale nativní typ {0} ho nepodporuje.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription">
-        <source>A marshaller type that provides a 'FreeNative' method should specify that it supports the 'UnmanagedResources' feature.</source>
-        <target state="translated">Typ zařazování, které poskytuje metodu FreeNative, by měl určovat, že podporuje funkci UnmanagedResources.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage">
-        <source>The type '{0}' provides a 'FreeNative' method but does not specify that it supports the 'UnmanagedResources' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">Typ {0} poskytuje metodu FreeNative, ale neurčuje, že podporuje funkci UnmanagedResources. Tato metoda se nepoužije, pokud není tato funkce přímo určena.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
-        <source>A marshaller type that provides a 'FromNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
-        <target state="translated">Typ zařazování, které poskytuje metodu FromNativeValue, by měl určovat, že podporuje funkci TwoStageMarshalling.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage">
-        <source>The type '{0}' provides a 'FromNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">Typ {0} poskytuje metodu FromNativeValue, ale neurčuje, že podporuje funkci TwoStageMarshalling. Tato metoda se nepoužije, pokud není tato funkce přímo určena.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
         <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
         <target state="translated">Návratový typ GetPinnableReference (když se vezme v úvahu „ref“) musí být přenositelný.</target>
@@ -200,26 +120,6 @@
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
         <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
         <target state="translated">Odkazovaný typ návratového typu GetPinnableReference musí být přenositelný</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription">
-        <source>A type that supports marshalling from managed to native by pinning should also support marshalling from managed to native where pinning is impossible.</source>
-        <target state="translated">Typ, který podporuje zařazování ze spravovaného na nativní prostřednictvím připnutí, by měl zároveň podporovat zařazování ze spravovaného na nativní v případech, kdy není připnutí možné.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage">
-        <source>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</source>
-        <target state="translated">Typ {0} má metodu GetPinnableReference, ale jeho nativní typ nepodporuje zařazování ve scénářích, kde není možné připnout.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InTwoStageMarshallingRequiresToNativeValueDescription">
-        <source>The 'TwoStageMarshalling' feature requires a 'TNativeType ToNativeValue()' method for the 'In' direction.</source>
-        <target state="translated">Funkce TwoStageMarshalling vyžaduje pro směr „In“ metodu TNativeType ToNativeValue().</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
-        <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
-        <target state="translated">Typ zařazování {0} podporuje zařazování ve směru In s funkcí TwoStageMarshalling podporující instanční metodu ToNativeValue, která vrací nativní hodnotu.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
@@ -327,46 +227,6 @@
         <target state="translated">Typ {0} konkrétně určuje, že podporuje zařazování ve směru „Out“, ale neposkytuje GetManagedValuesDestination, který přebírá „int“ a vrací „Span&lt;&gt;“ a metodu GetNativeValuesSource přebírající „int“ a vracející „ReadOnlySpan&lt;byte&gt;“</target>
         <note />
       </trans-unit>
-      <trans-unit id="LinearCollectionOutRequiresIntConstructorDescription">
-        <source>A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a constructor that takes the size of the native element as an 'int'.</source>
-        <target state="translated">Nativní typ druhu LinearCollection, který podporuje zařazování ve směru „Out“, musí poskytovat konstruktor přebírající velikost nativního prvku jako „int“.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LinearCollectionOutRequiresIntConstructorMessage">
-        <source>The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a constructor that takes the size of the native element as an 'int'.</source>
-        <target state="translated">Typ {0} konkrétně určuje, že podporuje zařazování ve směru „Out“, ale neposkytuje konstruktor, který přebírá velikost nativního prvku jako „int“.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerDirectionMustBeValidDescription">
-        <source>The specified marshaller direction must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerDirection' enum.</source>
-        <target state="translated">Určený směr zařazování musí být platná hodnota výčtu System.Runtime.InteropServices.CustomMarshallerDirection.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerDirectionMustBeValidMessage">
-        <source>The specified custom marshaller direction for '{0}' is invalid</source>
-        <target state="translated">Určený směr vlastního zařazování pro {0} je neplatný</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription">
-        <source>The use cases for 'GetPinnableReference' are not applicable in any scenarios where 'TwoStageMarshalling' is not also required.</source>
-        <target state="translated">Případy použití GetPinnableReference nejsou vhodné pro žádné scénáře, v nichž se zároveň nevyžaduje TwoStageMarshalling.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage">
-        <source>The 'GetPinnableReference' method cannot be provided on the native type '{0}' unless the 'TwoStageMarshalling' feature is also supported</source>
-        <target state="translated">Metoda GetPinnableReference nemůže být poskytnuta u nativního typu {0}, pokud se zároveň nepodporuje funkce TwoStageMarshalling</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerKindMustBeValidDescription">
-        <source>The specified marshaller kind must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerKind' enum.</source>
-        <target state="translated">Určený druh zařazování musí být platná hodnota výčtu System.Runtime.InteropServices.CustomMarshallerKind.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MarshallerKindMustBeValidMessage">
-        <source>The specified custom marshaller kind for '{0}' is invalid</source>
-        <target state="translated">Určený druh vlastního zařazovače pro {0} je neplatný</target>
-        <note />
-      </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' must specify a managed type</source>
         <target state="translated">Typ s atributem System.Runtime.InteropServices.CustomTypeMarshallerAttribute musí určit spravovaný typ</target>
@@ -375,11 +235,6 @@
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
         <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' applied to the type</source>
         <target state="translated">Typ {0} neurčuje spravovaný typ v atributu System.Runtime.InteropServices.CustomTypeMarshallerAttribute použitém na typ</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MissingAllocatingMarshallingFallbackTitle">
-        <source>Marshaller type does not support allocating constructor</source>
-        <target state="translated">Zařazovací typ nepodporuje přidělování konstruktoru</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
@@ -432,21 +287,6 @@
         <target state="translated">Typ {0}určuje, že podporuje zařazování ve směru „Out“, ale neposkytuje metodu ToManaged, která vrací spravovaný typ</target>
         <note />
       </trans-unit>
-      <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueDescription">
-        <source>The 'TwoStageMarshalling' feature requires a 'void FromNativeValue(TNativeType value)' method for the 'Out' direction.</source>
-        <target state="translated">Funkce TwoStageMarshalling vyžaduje pro směr „Out“ metodu void FromNativeValue(hodnota TNativeType).</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueMessage">
-        <source>The marshaller type '{0}' supports marshalling in the 'Out' direction with the 'TwoStageMarshalling' feature, but it does not provide a 'FromNativeValue' instance method that returns 'void' and takes one parameter.</source>
-        <target state="translated">Typ zařazování {0} podporuje zařazování ve směru „Out“ s funkcí TwoStageMarshalling, ale neposkytuje instanční metodu FromNativeValue, která vrací „void“ a přebírá jeden parametr.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ProvidedMethodsNotSpecifiedInFeaturesTitle">
-        <source>Marshaller type defines a well-known method without specifying support for the corresponding feature</source>
-        <target state="translated">Zařazovací typ definuje známou metodu bez zadání podpory pro odpovídající funkci.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RefNativeValueUnsupportedDescription">
         <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
         <target state="translated">Vlastnost Value nesmí být vlastnost typu „ref“ ani „readonly“.</target>
@@ -455,21 +295,6 @@
       <trans-unit id="RefNativeValueUnsupportedMessage">
         <source>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</source>
         <target state="translated">Vlastnost „Value“ nativního typu {0} nesmí být vlastnost „ref“ ani „readonly ref“.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Abstraktní typ odvozený ze SafeHandle nelze zařadit pomocí odkazu. Poskytnutý typ musí být konkrétní.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
-        <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
-        <target state="translated">Typ zařazování, které poskytuje metodu ToNativeValue, by měl určovat, že podporuje funkci TwoStageMarshalling.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage">
-        <source>The type '{0}' provides a 'ToNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</source>
-        <target state="translated">Typ {0} poskytuje metodu ToNativeValue, ale neurčuje, že podporuje funkci TwoStageMarshalling. Tato metoda se nepoužije, pokud není tato funkce přímo určena.</target>
         <note />
       </trans-unit>
       <trans-unit id="TwoStageMarshallingNativeTypesMustMatchDescription">
@@ -512,16 +337,6 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">Určený typ nepodporují zdrojem generovaná volání P/Invokes.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnmanagedResourcesRequiresFreeNativeDescription">
-        <source>The 'UnmanagedResources' feature requires a 'void FreeNative()' method.</source>
-        <target state="translated">Funkce UnmanagedResources vyžaduje metodu void FreeNative().</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnmanagedResourcesRequiresFreeNativeMessage">
-        <source>The marshaller type '{0}' supports marshalling with the 'UnmanagedResources' feature, but it does not provide a parameterless 'FreeNative' instance method that returns 'void'</source>
-        <target state="translated">Typ zařazování {0} podporuje zařazování s funkcí UnmanagedResources, ale neposkytuje bezparametrovou instanční metodu FreeNative, která vrací „void“</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

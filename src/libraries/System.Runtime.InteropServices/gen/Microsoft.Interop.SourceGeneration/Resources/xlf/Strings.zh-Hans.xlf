@@ -7,34 +7,9 @@
         <target state="translated">对从非托管到托管的数组进行封送需要在 “MarshalAsAttribute” 或 “ConstantElementCount” 或 “CountElementName” 属性上设置 “SizeParamIndex” 或 “SizeConst” 字段。</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArraySizeParamIndexOutOfRange">
-        <source>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</source>
-        <target state="translated">“MarshalAsAttribute” 中的 “SizeParamIndex” 值超出范围。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">需要将指定的参数从托管封送到非托管和从非托管封送到托管，但封送程序类型“{0}”不支持它。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CannotHaveMultipleMarshallingAttributesDescription">
-        <source>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</source>
-        <target state="translated">“BlittableTypeAttribute” 和 “NativeMarshallingAttribute” 属性是相互排斥的。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CannotHaveMultipleMarshallingAttributesMessage">
-        <source>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</source>
-        <target state="translated">类型“{0}”标记为 “BlittableTypeAttribute” 和 “NativeMarshallingAttribute”。类型只能具有这两个属性中的一个。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeDescription">
-        <source>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</source>
-        <target state="translated">具有 “GenericContiguousCollectionMarshallerAttribute” 的本机类型必须至少具有两种封送方法之一，以及某些 “T” 的类型为 “Span&lt;T&gt;” 的 “ManagedValues” 属性和类型为 “Span&lt;byte&gt;” 的 “NativeValueStorage” 属性，才能启用封送该托管类型。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CollectionNativeTypeMustHaveRequiredShapeMessage">
-        <source>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</source>
-        <target state="translated">本机类型“{0}”必须是一个值类型，并且具有一个构造函数，该构造函数采用两个参数，即类型“{1}” 之一和 “int”，或者具有名为 “ToManaged“” 的无参数实例方法，该方法可返回“{1}”以及某些 “T” 的类型为 “Span&lt;T&gt;” 的 “ManagedValues”属性和类型为 “Span&lt;byte&gt;” 的 “NativeValueStorage” 属性</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
@@ -45,16 +20,6 @@
       <trans-unit id="ConstantAndElementCountInfoDisallowed">
         <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
         <target state="translated">对于给定的 “ElementIndirectionDepth”，在 “MarshalUsingAttribute” 中只能使用 “ConstantElementCount” 或 “ElementCountInfo” 中的一个</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
-        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
-        <target state="translated">指定的参数需要从托管封送到本机，但本机类型“{0}”不支持此参数。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
-        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
-        <target state="translated">指定的参数需要从本机封送到托管，但本机类型“{0}”不支持此参数。</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
@@ -132,21 +97,6 @@
         <target state="translated">不支持封送没有显式封送信息的字符串或字符。请指定 \"LibraryImportAttribute.StringMarshalling\"、 \"LibraryImportAttribute.StringMarshallingCustomType\"、\"MarshalUsingAttribute\" 或 \"MarshalAsAttribute\"。</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
-        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="translated">托管类型“{1}”的本机类型“{0}”必须是封闭式泛型类型或与托管类型具有相同的 arity。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutByValueNotSupportedDescription">
-        <source>The '[Out]' attribute is only supported on array parameters.</source>
-        <target state="translated">“[Out]” 属性仅在数组参数上受支持。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutByValueNotSupportedMessage">
-        <source>The '[Out]' attribute is not supported on the '{0}' parameter.</source>
-        <target state="translated">“{0}”参数不支持 “[Out]” 属性。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">必须通过将 \"System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute\" 应用到程序集来在此项目中禁用运行时封送，以启用此类型的封送处理。</target>
@@ -157,19 +107,9 @@
         <target state="translated">无法通过引用封送派生自 “SafeHandle” 的抽象类型。提供的类型必须是具体的。</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedTitle">
-        <source>Specified type is not supported by source-generated P/Invokes</source>
-        <target state="translated">源生成的 P/Invoke 不支持指定的类型</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">需要将指定的参数从非托管封送到托管，但封送程序类型“{0}”不支持它。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
-        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="translated">类型 \"{0}\" 指定它支持使用 \"CallerAllocatedBuffer\" 功能对 \"{1}\" 进行 \"In\" 封送，但不提供以 \"{1}\" 和“非管理”类型的 \"Span\" 作为参数的单参数构造函数</target>
         <note />
       </trans-unit>
     </body>
