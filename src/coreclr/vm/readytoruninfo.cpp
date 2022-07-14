@@ -510,7 +510,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 
     PEAssembly * pFile = pModule->GetPEAssembly();
 
-    if (!IsReadyToRunEnabled())
+    if (!g_pConfig->ReadyToRun())
     {
         // Log message is ignored in this case.
         DoLog(NULL);
