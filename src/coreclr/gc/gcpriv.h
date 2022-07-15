@@ -1476,10 +1476,14 @@ public:
     static
     void shutdown_gc();
 
-    // If the hard limit is specified, take that into consideration
-    // and this means it may modify the # of heaps.
     PER_HEAP_ISOLATED
-    size_t get_segment_size_hard_limit (uint32_t* num_heaps, bool should_adjust_num_heaps);
+    uint32_t adjust_heaps_hard_limit (uint32_t nhp);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit_va (size_t seg_size);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit (size_t limit, uint32_t nhp);
 
     PER_HEAP_ISOLATED
     bool should_retry_other_heap (int gen_number, size_t size);

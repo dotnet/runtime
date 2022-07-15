@@ -14,9 +14,9 @@ The .NET Foundation licenses this file to you under the MIT license.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <CustomToolchainSpecified Condition="'$(CppCompilerAndLinker)' != ''">true</CustomToolchainSpecified>
-    <CppCompilerAndLinker Condition="'$(CustomToolchainSpecified)' != 'true'">clang</CppCompilerAndLinker>
-    <CppCompilerAndLinkerAlternative Condition="'$(CustomToolchainSpecified)' != 'true' and '$(TargetOS)' != 'OSX'">gcc</CppCompilerAndLinkerAlternative>
+    <CppCompilerAndLinkerAlternative />
+    <CppCompilerAndLinkerAlternative Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' != 'OSX'">gcc</CppCompilerAndLinkerAlternative>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <DsymUtilOptions Condition="'$(TargetOS)' == 'OSX'">--flat</DsymUtilOptions>
@@ -121,6 +121,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'OSX'">
       <ObjCopyName Condition="'$(CppCompilerAndLinker)' != 'clang'">objcopy</ObjCopyName>
       <ObjCopyName Condition="'$(CppCompilerAndLinker)' == 'clang'">llvm-objcopy</ObjCopyName>
+      <ObjCopyNameAlternative />
+      <ObjCopyNameAlternative Condition="'$(CppCompilerAndLinker)' == 'clang'">objcopy</ObjCopyNameAlternative>
     </PropertyGroup>
 
     <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
@@ -132,8 +134,20 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="command -v &quot;$(ObjCopyName)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'OSX' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
     </Exec>
+
+    <Exec Command="command -v &quot;$(ObjCopyNameAlternative)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'OSX' and '$(CppCompilerAndLinkerAlternative)' != '' and '$(StripSymbols)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripperAlt" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(ObjCopyNameAlternative)' != '' and '$(_WhereSymbolStripper)' != '0' and '$(_WhereSymbolStripperAlt)' == '0'">
+      <ObjCopyName>$(ObjCopyNameAlternative)</ObjCopyName>
+      <_WhereSymbolStripper>0</_WhereSymbolStripper>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(ObjCopyNameAlternative)' != ''"
+      Text="Symbol stripping tool ('$(ObjCopyName)' or '$(ObjCopyNameAlternative)') not found in PATH. Try installing appropriate package for $(ObjCopyName) or $(ObjCopyNameAlternative) to resolve the problem." />
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(TargetOS)' != 'OSX'"
-      Text="Symbol stripping tool ('$(ObjCopyName)') not found in PATH. Make sure 'objcopy' is available in PATH" />
+      Text="Symbol stripping tool ('$(ObjCopyName)') not found in PATH. Make sure '$(ObjCopyName)' is available in PATH" />
 
     <Exec Command="command -v dsymutil &amp;&amp; command -v strip" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' == 'OSX' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
