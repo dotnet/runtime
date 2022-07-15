@@ -7,9 +7,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -384,18 +381,6 @@ namespace Microsoft.Interop
                 }
             }
             return resultType;
-        }
-
-        public static IMethodSymbol? FindGetPinnableReference(ITypeSymbol type)
-        {
-            // Lookup a GetPinnableReference method based on the spec for the pattern-based
-            // fixed statement. We aren't supporting a GetPinnableReference extension method
-            // (which is apparently supported in the compiler).
-            // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-7.3/pattern-based-fixed
-            return type.GetMembers(ShapeMemberNames.GetPinnableReference)
-                .OfType<IMethodSymbol>()
-                .FirstOrDefault(m => m is { Parameters.Length: 0 } and
-                    ({ ReturnsByRef: true } or { ReturnsByRefReadonly: true }));
         }
 
         private static CustomTypeMarshallerData? GetMarshallerDataForType(
