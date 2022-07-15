@@ -154,12 +154,15 @@ namespace System.Threading
         }
 
 #if !TARGET_BROWSER || FEATURE_WASM_THREADS
+        [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => true;
         internal static bool IsInternalThreadStartSupported => true;
 #elif FEATURE_WASM_PERFTRACING
+        [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => true;
 #else
+        [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => false;
 #endif

@@ -10,8 +10,8 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <FeatureWasmPerfTracing>false</FeatureWasmPerfTracing>
-    <FeatureWasmThreads>false</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
     <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <DefineConstants>$(DefineConstants);HIDE_URI_TYPES</DefineConstants>
