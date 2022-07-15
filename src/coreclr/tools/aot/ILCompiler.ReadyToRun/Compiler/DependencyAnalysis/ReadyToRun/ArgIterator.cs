@@ -1317,7 +1317,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TargetArchitecture.LoongArch64:
                     {
                         int cFPRegs = 0;
-                        uint floatFieldFlags = (uint)LAFlags.STRUCT_NO_FLOAT_FIELD;
+                        uint floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
                         _hasArgLocDescForStructInRegs = false;
 
                         switch (argType)
@@ -1342,10 +1342,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     else
                                     {
                                         floatFieldFlags = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(_argTypeHandle.GetRuntimeTypeHandle());
-                                        if ((floatFieldFlags & (uint)LAFlags.STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+                                        if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+                                        {
                                             cFPRegs = 2;
-                                        else if ((floatFieldFlags & (uint)LAFlags.STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
+                                        }
+                                        else if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
+                                        {
                                             cFPRegs = 1;
+                                        }
                                     }
 
                                     break;
@@ -1360,7 +1364,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         if (cFPRegs > 0 && !IsVarArg)
                         {
-                            if (isValueType && ((floatFieldFlags & (uint)LAFlags.STRUCT_HAS_ONE_FLOAT_MASK) != 0))
+                            if (isValueType && ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_ONE_FLOAT_MASK) != 0))
                             {
                                 if ((_loongarch64IdxFPReg < 8) && (_loongarch64IdxGenReg < 8))
                                 {
@@ -1885,7 +1889,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //        METHOD_INVOKE_NEEDS_ACTIVATION  = 0x0040,   // Flag used by ArgIteratorForMethodInvoke
 
         //        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
-        //    {};
 
         private void ComputeReturnFlags()
         {
