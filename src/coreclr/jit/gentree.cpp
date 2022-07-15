@@ -12910,18 +12910,26 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         //
         // Find out how we can compare the two handles.
         // NOTE: We're potentially passing NO_CLASS_HANDLE, but the runtime knows what to do with it here.
-        CorInfoInlineTypeCheck inliningKind =
+        //
+        CorInfoInlineTypeCheck inliningKind1 =
             info.compCompHnd->canInlineTypeCheck(cls1Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
+        CorInfoInlineTypeCheck inliningKind2 =
+            info.compCompHnd->canInlineTypeCheck(cls2Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
 
-        // If the first type needs helper, check the other type: it might be okay with a simple compare.
-        if (inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER)
+        // If either type needs a comparison helper, just bail on the optimization.
+        // The helper no longer exists.
+        //
+        if ((inliningKind1 == CORINFO_INLINE_TYPECHECK_USE_HELPER) ||
+            (inliningKind2 == CORINFO_INLINE_TYPECHECK_USE_HELPER))
         {
-            inliningKind = info.compCompHnd->canInlineTypeCheck(cls2Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
+            JITDUMP("Comparison requires helper, not optimizing\n");
+            return tree;
         }
 
-        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS || inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER);
-
-        GenTree* compare = gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, inliningKind);
+        assert(inliningKind1 == CORINFO_INLINE_TYPECHECK_PASS);
+        assert(inliningKind2 == CORINFO_INLINE_TYPECHECK_PASS);
+        GenTree* compare =
+            gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, CORINFO_INLINE_TYPECHECK_PASS);
 
         // Drop any now-irrelvant flags
         compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);

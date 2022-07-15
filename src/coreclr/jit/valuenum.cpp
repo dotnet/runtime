@@ -3708,6 +3708,28 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
         return NoVN;
     }
 
+    // Only re-express as handle equality when we have known
+    // class handles and the VM agrees comparing these gives the same
+    // result as comparing the runtime types.
+    //
+    ValueNum handle0 = arg0Func.m_args[0];
+    ValueNum handle1 = arg1Func.m_args[0];
+    if (!IsVNHandle(handle0) || !IsVNHandle(handle1))
+    {
+        return NoVN;
+    }
+    assert(GetHandleFlags(handle0) == GTF_ICON_CLASS_HDL);
+    assert(GetHandleFlags(handle1) == GTF_ICON_CLASS_HDL);
+    CORINFO_CLASS_HANDLE cls0Hnd = CORINFO_CLASS_HANDLE(ConstantValue<ssize_t>(handle0));
+    CORINFO_CLASS_HANDLE cls1Hnd = CORINFO_CLASS_HANDLE(ConstantValue<ssize_t>(handle1));
+
+    TypeCompareState s = m_pComp->info.compCompHnd->compareTypesForEquality(cls0Hnd, cls1Hnd);
+
+    if (s == TypeCompareState::May)
+    {
+        return NoVN;
+    }
+
     return VNForFunc(type, func, arg0Func.m_args[0], arg1Func.m_args[0]);
 }
 
