@@ -941,7 +941,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
             if (exitCode != 0)
             {
-                Log.LogError($"Precompiling failed for {assembly}.{Environment.NewLine}{output}");
+                Log.LogError($"Precompiling failed for {assembly} with exit code {exitCode}.{Environment.NewLine}{output}");
                 return false;
             }
 
