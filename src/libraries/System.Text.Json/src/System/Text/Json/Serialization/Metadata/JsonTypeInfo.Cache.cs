@@ -56,32 +56,32 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType)
         {
-            // Resolve the JsonTypeInfo for the member type, if it has already been cached.
-            // If not found, type metadata resolution will be delayed until the Configure() stage.
-            Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo);
-            JsonConverter? converterForType = jsonTypeInfo?.Converter;
+            JsonPropertyInfo? jsonPropertyInfo;
 
-            JsonPropertyInfo jsonPropertyInfo;
-
-            if (converterForType?.TypeToConvert == propertyType)
+            if (Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo))
             {
-                // For the vast majority of use cases, the converter type matches the property type.
-                // Avoid reflection-based initialization by delegating JsonPropertyInfo<T> construction to the converter itself.
-                jsonPropertyInfo = converterForType.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+                // If a JsonTypeInfo has already cached for the property type,
+                // avoid reflection-based initialization by delegating construction
+                // of JsonPropertyInfo<T> construction to the property type metadata.
+                return jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this);
             }
             else
             {
-                // We don't have a converter yet or the converter does not match the declared member type.
+                // Metadata for `propertyType` has not been registered yet.
                 // Use reflection to instantiate the correct JsonPropertyInfo<T>
                 s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
                 MethodInfo factoryInfo = s_createJsonPropertyInfo.MakeGenericMethod(propertyType);
                 jsonPropertyInfo = (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
             }
 
-            jsonPropertyInfo.DefaultConverterForType = converterForType;
-            jsonPropertyInfo.JsonTypeInfo = jsonTypeInfo;
+            Debug.Assert(jsonPropertyInfo.PropertyType == propertyType);
             return jsonPropertyInfo;
         }
+
+        /// <summary>
+        /// Creates a JsonPropertyInfo whose property type matches the type of this JsonTypeInfo instance.
+        /// </summary>
+        private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo);
 
         private static JsonPropertyInfo CreateJsonPropertyInfo<T>(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
             => new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options);

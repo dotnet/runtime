@@ -45,44 +45,34 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
 
-            JsonTypeInfo? typeInfo;
-            if (IsLockedInstance)
-            {
-                typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
-                typeInfo?.EnsureConfigured();
-            }
-            else
-            {
-                typeInfo = GetTypeInfoNoCaching(type);
-            }
-
-            if (typeInfo is null)
-            {
-                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
-            }
-
-            return typeInfo;
+            return GetTypeInfoInternal(type, resolveIfMutable: true);
         }
 
         /// <summary>
-        /// This method returns configured non-null JsonTypeInfo
+        /// Same as GetTypeInfo but without validation and additional knobs.
         /// </summary>
-        internal JsonTypeInfo GetTypeInfoCached(Type type)
+        internal JsonTypeInfo GetTypeInfoInternal(Type type, bool ensureConfigured = true, bool resolveIfMutable = false)
         {
             JsonTypeInfo? typeInfo = null;
 
             if (IsLockedInstance)
             {
                 typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
+                if (ensureConfigured)
+                {
+                    typeInfo?.EnsureConfigured();
+                }
+            }
+            else if (resolveIfMutable)
+            {
+                typeInfo = GetTypeInfoNoCaching(type);
             }
 
             if (typeInfo == null)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
-                return null;
             }
 
-            typeInfo.EnsureConfigured();
             return typeInfo;
         }
 
@@ -108,7 +98,7 @@ namespace System.Text.Json
 
             if (jsonTypeInfo?.Type != type)
             {
-                jsonTypeInfo = GetTypeInfoCached(type);
+                jsonTypeInfo = GetTypeInfoInternal(type);
                 _lastTypeInfo = jsonTypeInfo;
             }
 

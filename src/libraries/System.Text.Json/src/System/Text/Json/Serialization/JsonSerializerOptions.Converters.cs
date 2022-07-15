@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
@@ -53,34 +52,15 @@ namespace System.Text.Json
                 return DefaultJsonTypeInfoResolver.GetConverterForType(typeToConvert, this);
             }
 
-            return GetConverterFromTypeInfo(typeToConvert);
+            return GetConverterInternal(typeToConvert);
         }
 
         /// <summary>
-        /// Same as GetConverter but does not root converters
+        /// Same as GetConverter but without defaulting to reflection converters.
         /// </summary>
-        internal JsonConverter GetConverterFromTypeInfo(Type typeToConvert)
+        internal JsonConverter GetConverterInternal(Type typeToConvert)
         {
-            JsonTypeInfo? jsonTypeInfo;
-
-            if (IsLockedInstance)
-            {
-                jsonTypeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(typeToConvert);
-            }
-            else
-            {
-                // We do not want to lock options instance here but we need to return correct answer
-                // which means we need to go through TypeInfoResolver but without caching because that's the
-                // only place which will have correct converter for JsonSerializerContext and reflection
-                // based resolver. It will also work correctly for combined resolvers.
-                jsonTypeInfo = GetTypeInfoNoCaching(typeToConvert);
-            }
-
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(typeToConvert, TypeInfoResolver);
-            }
-
+            JsonTypeInfo jsonTypeInfo = GetTypeInfoInternal(typeToConvert, ensureConfigured: false, resolveIfMutable: true);
             return jsonTypeInfo.Converter;
         }
 

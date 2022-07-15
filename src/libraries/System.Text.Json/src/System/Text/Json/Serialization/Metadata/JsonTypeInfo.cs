@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
                         // also see comment on JsonPropertyInfo.JsonTypeInfo
-                        _elementTypeInfo = Options.GetTypeInfoCached(ElementType);
+                        _elementTypeInfo = Options.GetTypeInfoInternal(ElementType);
                     }
                 }
                 else
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                         // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
                         // also see comment on JsonPropertyInfo.JsonTypeInfo
-                        _keyTypeInfo = Options.GetTypeInfoCached(KeyType);
+                        _keyTypeInfo = Options.GetTypeInfoInternal(KeyType);
                     }
                 }
                 else
