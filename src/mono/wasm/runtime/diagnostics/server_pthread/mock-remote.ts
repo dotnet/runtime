@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mock, MockScriptEngine } from "../mock";
-import { PromiseController } from "../../promise-utils";
+import { createPromiseController } from "../../promise-controller";
 
 function expectAdvertise(data: string | ArrayBuffer) { return data === "ADVR_V1"; }
 
-const scriptPC = new PromiseController();
-const scriptPCunfulfilled = new PromiseController();
+const scriptPC = createPromiseController<void>().promise_control;
+const scriptPCunfulfilled = createPromiseController<void>().promise_control;
 
 const script: ((engine: MockScriptEngine) => Promise<void>)[] = [
     async (engine) => {

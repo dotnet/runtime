@@ -15,7 +15,7 @@ import {
 
 import { mockScript } from "./mock-remote";
 import type { MockRemoteSocket } from "../mock";
-import { PromiseController } from "../../promise-utils";
+import { createPromiseController } from "../../promise-controller";
 import {
     isEventPipeCommand,
     isProcessCommand,
@@ -73,11 +73,11 @@ class DiagnosticServerImpl implements DiagnosticServer {
         this.mocked = websocketUrl.startsWith("mock:");
     }
 
-    private startRequestedController = new PromiseController<void>();
+    private startRequestedController = createPromiseController<void>().promise_control;
     private stopRequested = false;
-    private stopRequestedController = new PromiseController<void>();
+    private stopRequestedController = createPromiseController<void>().promise_control;
 
-    private attachToRuntimeController = new PromiseController<void>();
+    private attachToRuntimeController = createPromiseController<void>().promise_control;
 
     start(): void {
         console.log(`starting diagnostic server with url: ${this.websocketUrl}`);
