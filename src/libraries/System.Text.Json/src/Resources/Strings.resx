@@ -576,7 +576,7 @@
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="SerializerContextOptionsImmutable" xml:space="preserve">
-    <value>A 'JsonSerializerOptions' instance associated with a 'JsonSerializerContext' instance cannot be mutated once the context has been instantiated.</value>
+    <value>JsonSerializerOptions instances cannot be modified once encapsulated by a JsonSerializerContext. This can happen either when calling 'JsonSerializerOptions.AddContext' or when passing the options instance to a JsonSerializerContext constructor.</value>
   </data>
   <data name="ConverterForPropertyMustBeValid" xml:space="preserve">
     <value>The generic type of the converter for property '{0}.{1}' must match with the specified converter type '{2}'. The converter must not be 'null'.</value>
