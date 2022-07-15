@@ -100,8 +100,9 @@ namespace System.Security.Cryptography.X509Certificates
         ///   when the RDN only contains one attribute.
         /// </summary>
         /// <returns>
-        ///   <see langword="null"/> if the encoded value is not a textual data type, such as an
-        ///   <c>OCTET STRING</c>; otherwise, the textual representation of the value.
+        ///   The decoded text representing the attribute value.
+        ///   If the attribute value is an <c>OCTET STRING</c>, or other non-text data type,
+        ///   this method returns <see langword="null" />.
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   The attribute is identified as a textual value, but the value did not successfully decode.
@@ -125,7 +126,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(_singleElementValue.Span, AsnEncodingRules.BER);
+                AsnValueReader reader = new AsnValueReader(_singleElementValue.Span, AsnEncodingRules.DER);
                 Asn1Tag tag = reader.PeekTag();
 
                 if (tag.TagClass == TagClass.Universal)

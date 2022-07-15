@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Security.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -31,6 +30,12 @@ namespace System.Security.Cryptography
         private static volatile Oid? s_subjectKeyIdentifierOid;
         private static volatile Oid? s_authorityInformationAccessOid;
         private static volatile Oid? s_commonNameOid;
+        private static volatile Oid? s_countryOrRegionOid;
+        private static volatile Oid? s_localityNameOid;
+        private static volatile Oid? s_stateOrProvinceNameOid;
+        private static volatile Oid? s_organizationOid;
+        private static volatile Oid? s_organizationalUnitOid;
+        private static volatile Oid? s_emailAddressOid;
 
         internal static Oid RsaOid => s_rsaOid ??= InitializeOid(Rsa);
         internal static Oid EcPublicKeyOid => s_ecPublicKeyOid ??= InitializeOid(EcPublicKey);
@@ -57,6 +62,12 @@ namespace System.Security.Cryptography
         internal static Oid AuthorityInformationAccessOid => s_authorityInformationAccessOid ??= InitializeOid(AuthorityInformationAccess);
 
         internal static Oid CommonNameOid => s_commonNameOid ??= InitializeOid(CommonName);
+        internal static Oid CountryOrRegionNameOid => s_countryOrRegionOid ??= InitializeOid(CountryOrRegionName);
+        internal static Oid LocalityNameOid => s_localityNameOid ??= InitializeOid(LocalityName);
+        internal static Oid StateOrProvinceNameOid = s_stateOrProvinceNameOid ??= InitializeOid(StateOrProvinceName);
+        internal static Oid OrganizationOid = s_organizationOid ??= InitializeOid(Organization);
+        internal static Oid OrganizationalUnitOid = s_organizationalUnitOid ??= InitializeOid(OrganizationalUnit);
+        internal static Oid EmailAddressOid = s_emailAddressOid ??= InitializeOid(EmailAddress);
 
         private static Oid InitializeOid(string oidValue)
         {
@@ -112,7 +123,13 @@ namespace System.Security.Cryptography
 
             Oid? ret = contentBytes switch
             {
+                [0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01] => EmailAddressOid,
                 [0x55, 0x04, 0x03] => CommonNameOid,
+                [0x55, 0x04, 0x06] => CountryOrRegionNameOid,
+                [0x55, 0x04, 0x07] => LocalityNameOid,
+                [0x55, 0x04, 0x08] => StateOrProvinceNameOid,
+                [0x55, 0x04, 0x0A] => OrganizationOid,
+                [0x55, 0x04, 0x0B] => OrganizationalUnitOid,
                 _ => null,
             };
 
@@ -124,26 +141,12 @@ namespace System.Security.Cryptography
 
             return ret;
 #else
-            // Cannot use list patterns on older TFMs.
+            // The list pattern isn't available in System.Security.Cryptography.Pkcs for the
+            // netstandard2.0 or netfx builds.  Any OIDs that it's important to optimize in
+            // those contexts can be matched on here, but using a longer form of matching.
+
             return null;
 #endif
-        }
-
-        internal static bool ValueEquals(this Oid oid, Oid? other)
-        {
-            Debug.Assert(oid is not null);
-
-            if (ReferenceEquals(oid, other))
-            {
-                return true;
-            }
-
-            if (other is null)
-            {
-                return false;
-            }
-
-            return oid.Value is not null && oid.Value.Equals(other.Value);
         }
     }
 }
