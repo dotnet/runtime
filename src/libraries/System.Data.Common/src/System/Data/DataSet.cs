@@ -3135,11 +3135,7 @@ namespace System.Data
 
         internal void OnRemovedTable(DataTable table)
         {
-            DataViewManager? viewManager = _defaultViewManager;
-            if (null != viewManager)
-            {
-                viewManager.DataViewSettings.Remove(table);
-            }
+            _defaultViewManager?.DataViewSettings.Remove(table);
         }
 
         /// <summary>

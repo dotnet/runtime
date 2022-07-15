@@ -113,7 +113,11 @@ namespace System.Security.Cryptography.X509Certificates
                 IntPtr.Zero);
 
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+            {
+                Exception e = new CryptographicException(Marshal.GetLastWin32Error());
+                safeCertStoreHandle?.Dispose();
+                throw e;
+            }
 
             Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW csc = default;
             // Older versions of CRYPTUI do not check the size correctly,
@@ -160,7 +164,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             if (dwErrorCode != ERROR_SUCCESS)
+            {
+                safeCertContextHandle?.Dispose();
                 throw new CryptographicException(dwErrorCode);
+            }
 
             return safeCertStoreHandle;
         }

@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 {
                     using (var textReader = new StreamReader(readStream))
                     {
-                        using (var reader = new JsonTextReader(textReader))
+                        using (var reader = new JsonTextReader(textReader) { MaxDepth = null })
                         {
                             return JObject.Load(reader);
                         }

@@ -306,6 +306,10 @@ namespace ILCompiler
                     extraHelp.Add(archString.ToString());
                 }
 
+                extraHelp.Add("");
+                extraHelp.Add("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
+                extraHelp.Add(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
+
                 argSyntax.ExtraHelpParagraphs = extraHelp;
             }
 
@@ -439,7 +443,15 @@ namespace ILCompiler
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                if (_targetOS == TargetOS.OSX)
+                {
+                    // For osx-arm64 we know that apple-m1 is a baseline
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                }
             }
 
             if (_instructionSet != null)

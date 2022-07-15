@@ -168,6 +168,9 @@
   <data name="net_http_content_readonly_stream" xml:space="preserve">
     <value>The stream does not support writing.</value>
   </data>
+  <data name="net_http_content_writeonly_stream" xml:space="preserve">
+    <value>The stream does not support reading.</value>
+  </data>
   <data name="net_http_content_invalid_charset" xml:space="preserve">
     <value>The character set provided in ContentType is invalid. Cannot read content as string using an invalid character set.</value>
   </data>
@@ -405,8 +408,14 @@
   <data name="net_http_http2_connection_error" xml:space="preserve">
     <value>The HTTP/2 server sent invalid data on the connection. HTTP/2 error code '{0}' (0x{1}).</value>
   </data>
+  <data name="net_http_http2_connection_close" xml:space="preserve">
+    <value>The HTTP/2 server closed the connection. HTTP/2 error code '{0}' (0x{1}).</value>
+  </data>
   <data name="net_http_http2_stream_error" xml:space="preserve">
     <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http3_stream_error" xml:space="preserve">
+    <value>The HTTP/3 server reset the stream. HTTP/3 error code '{0}' (0x{1}).</value>
   </data>
   <data name="net_http_http2_connection_not_established" xml:space="preserve">
     <value>An HTTP/2 connection could not be established because the server did not complete the HTTP/2 handshake.</value>
@@ -473,6 +482,9 @@
   </data>
   <data name="net_http_http3_connection_error" xml:space="preserve">
     <value>The HTTP/3 server sent invalid data on the connection. HTTP/3 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http3_connection_close" xml:space="preserve">
+    <value>The HTTP/3 server closed the connection. HTTP/3 error code '{0}' (0x{1}).</value>
   </data>
   <data name="net_http_retry_on_older_version" xml:space="preserve">
     <value>The server is unable to process the request using the current HTTP version and indicates the request should be retried on an older HTTP version.</value>
@@ -563,5 +575,8 @@
   </data>
   <data name="net_http_chunk_too_large" xml:space="preserve">
     <value>The HTTP/1.1 response chunk was too large.</value>
+  </data>
+    <data name="net_unsupported_extended_connect" xml:space="preserve">
+    <value>Failed to establish web socket connection over HTTP/2 because extended CONNECT is not supported. Try to downgrade the request version to HTTP/1.1.</value>
   </data>
 </root>

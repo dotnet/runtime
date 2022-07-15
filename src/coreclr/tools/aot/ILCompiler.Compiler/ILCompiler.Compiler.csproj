@@ -163,6 +163,9 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropStateManager.cs">
       <Link>TypeSystem\Interop\InteropStateManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs">
+      <Link>TypeSystem\Interop\UnmanagedCallingConventions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\CodeGen\INonEmittableType.cs">
       <Link>TypeSystem\CodeGen\INonEmittableType.cs</Link>
     </Compile>

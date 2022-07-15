@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class ConfigurationList<TItem> : IList<TItem>
     {
-        private readonly List<TItem> _list;
+        protected readonly List<TItem> _list;
 
         public ConfigurationList(IList<TItem>? source = null)
         {

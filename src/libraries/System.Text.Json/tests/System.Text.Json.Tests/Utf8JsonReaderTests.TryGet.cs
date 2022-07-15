@@ -1026,7 +1026,7 @@ namespace System.Text.Json.Tests
             var expectedPropertyNames = new List<string>();
             var expectedValues = new List<string>();
 
-            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString));
+            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
             while (jsonNewtonsoft.Read())
             {
                 if (jsonNewtonsoft.TokenType == JsonToken.String)

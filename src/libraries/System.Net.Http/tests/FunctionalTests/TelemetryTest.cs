@@ -664,7 +664,7 @@ namespace System.Net.Http.Functional.Tests
                                 connection = await server.EstablishGenericConnectionAsync();
                             }
 
-                            using (connection)
+                            await using (connection)
                             {
                                 // Dummy request to ensure that the MaxConcurrentStreams setting has been acknowledged
                                 await connection.ReadRequestDataAsync(readBody: false);
@@ -682,7 +682,7 @@ namespace System.Net.Http.Functional.Tests
                                 await connection.ReadRequestDataAsync(readBody: false);
                                 await connection.SendResponseAsync();
                             };
-                        }, options: new Http3Options { MaxBidirectionalStreams = 1 });
+                        }, options: new Http3Options { MaxInboundBidirectionalStreams = 1 });
 
                     await WaitForEventCountersAsync(events);
                 });

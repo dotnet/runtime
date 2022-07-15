@@ -1896,7 +1896,7 @@ namespace System.Xml.Serialization
                 }
                 XmlAttribute xmlAttribute = (XmlAttribute)Document.ReadNode(_r)!;
                 xmlNodeList.Add(xmlAttribute);
-                if (unknownElement != null) unknownElement.SetAttributeNode(xmlAttribute);
+                unknownElement?.SetAttributeNode(xmlAttribute);
             }
 
             // If the node is referenced (or in case of paramStyle = bare) and if xsi:type is not
@@ -1932,7 +1932,7 @@ namespace System.Xml.Serialization
                 {
                     XmlNode xmlNode = Document.ReadNode(_r)!;
                     xmlNodeList.Add(xmlNode);
-                    if (unknownElement != null) unknownElement.AppendChild(xmlNode);
+                    unknownElement?.AppendChild(xmlNode);
                     Reader.MoveToContent();
                 }
                 ReadEndElement();
@@ -3648,12 +3648,7 @@ namespace System.Xml.Serialization
 
         private void WriteID(string? name)
         {
-            if (name == null)
-            {
-                //Writer.Write("null");
-                //return;
-                name = "";
-            }
+            name ??= "";
             string? idName = (string?)_idNames[name];
             if (idName == null)
             {

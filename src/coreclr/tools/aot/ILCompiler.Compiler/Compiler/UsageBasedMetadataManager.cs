@@ -214,6 +214,21 @@ namespace ILCompiler
         {
             TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type");
 
+            if (type.IsDelegate)
+            {
+                // We've decided as a policy that delegate Invoke methods will be generated in full.
+                // The libraries (e.g. System.Linq.Expressions) have trimming warning suppressions
+                // in places where they assume IL-level trimming (where the method cannot be removed).
+                // We ask for a full reflectable method with its method body instead of just the
+                // metadata.
+                MethodDesc invokeMethod = type.GetMethod("Invoke", null);
+                if (!IsReflectionBlocked(invokeMethod))
+                {
+                    dependencies ??= new DependencyList();
+                    dependencies.Add(factory.ReflectableMethod(invokeMethod), "Delegate invoke method is always reflectable");
+                }
+            }
+
             MetadataType mdType = type as MetadataType;
 
             // If anonymous type heuristic is turned on and this is an anonymous type, make sure we have

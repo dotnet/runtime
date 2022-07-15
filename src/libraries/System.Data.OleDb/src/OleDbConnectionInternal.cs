@@ -306,14 +306,8 @@ namespace System.Data.OleDb
         public override void Dispose()
         {
             Debug.Assert(null == LocalTransaction, "why was Deactivate not called first");
-            if (null != _sessionwrp)
-            {
-                _sessionwrp.Dispose();
-            }
-            if (null != _datasrcwrp)
-            {
-                _datasrcwrp.Dispose();
-            }
+            _sessionwrp?.Dispose();
+            _datasrcwrp?.Dispose();
             base.Dispose();
         }
 

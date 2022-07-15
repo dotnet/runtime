@@ -270,8 +270,7 @@ namespace System.Xml
             if (!CanInsertBefore(newChild, refChild))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Location);
 
-            if (newChild.ParentNode != null)
-                newChild.ParentNode.RemoveChild(newChild);
+            newChild.ParentNode?.RemoveChild(newChild);
 
             // special case for doc-fragment.
             if (newChild.NodeType == XmlNodeType.DocumentFragment)
@@ -385,8 +384,7 @@ namespace System.Xml
             if (!CanInsertAfter(newChild, refChild))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Location);
 
-            if (newChild.ParentNode != null)
-                newChild.ParentNode.RemoveChild(newChild);
+            newChild.ParentNode?.RemoveChild(newChild);
 
             // special case for doc-fragment.
             if (newChild.NodeType == XmlNodeType.DocumentFragment)
@@ -588,8 +586,7 @@ namespace System.Xml
             if (this == newChild || AncestorNode(newChild))
                 throw new ArgumentException(SR.Xdom_Node_Insert_Child);
 
-            if (newChild.ParentNode != null)
-                newChild.ParentNode.RemoveChild(newChild);
+            newChild.ParentNode?.RemoveChild(newChild);
 
             XmlDocument? childDoc = newChild.OwnerDocument;
             if (childDoc != null && childDoc != thisDoc && childDoc != this)
