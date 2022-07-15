@@ -683,11 +683,18 @@ namespace System.IO
             ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
             sb.Append(linkPath);
 
-            string? linkTarget = Interop.Sys.ReadLink(linkPath, isDirectory, true);
+            string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
                 sb.Dispose();
-                return null;
+                Interop.Error error = Interop.Sys.GetLastError();
+                // Not a link, return null
+                if (error == Interop.Error.EINVAL)
+                {
+                    return null;
+                }
+
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), linkPath, isDirectory);
             }
 
             if (!returnFinalTarget)

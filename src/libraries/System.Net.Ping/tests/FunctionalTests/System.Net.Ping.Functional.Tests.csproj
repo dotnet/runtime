@@ -5,7 +5,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
-    <StringResourcesPath>$(LibrariesProjectRoot)/Common/tests/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <!-- Test APIs introduced after 1.0 -->
   <ItemGroup>
@@ -32,10 +31,6 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ReadLink.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
-             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
-             Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\UnixCommandLinePing.cs"
              Link="Common\System\Net\NetworkInformation\UnixCommandLinePing.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.RawSocketPermissions.cs"
