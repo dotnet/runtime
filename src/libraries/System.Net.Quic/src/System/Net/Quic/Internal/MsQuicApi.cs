@@ -58,22 +58,6 @@ internal sealed unsafe class MsQuicApi
 
     static MsQuicApi()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            if (!IsWindowsVersionSupported())
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
-                }
-
-                return;
-            }
-
-            Tls13ServerMayBeDisabled = IsTls13Disabled(true);
-            Tls13ClientMayBeDisabled = IsTls13Disabled(false);
-        }
-
         IntPtr msQuicHandle;
         if (NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
             NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
@@ -92,17 +76,13 @@ internal sealed unsafe class MsQuicApi
                         if (StatusSucceeded(apiTable->GetParam(null, QUIC_PARAM_GLOBAL_LIBRARY_VERSION, &size, libVersion)))
                         {
                             var version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
-                            if (version >= MsQuicVersion)
-                            {
-                                Api = new MsQuicApi(apiTable);
-                                IsQuicSupported = true;
-                            }
-                            else
+                            if (version < MsQuicVersion)
                             {
                                 if (NetEventSource.Log.IsEnabled())
                                 {
                                     NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting '{MsQuicVersion}'");
                                 }
+                                return;
                             }
 
                             // Assume SChanel is being used on windows and query for the actual provider from the library
@@ -110,6 +90,25 @@ internal sealed unsafe class MsQuicApi
                             size = sizeof(QUIC_TLS_PROVIDER);
                             apiTable->GetParam(null, QUIC_PARAM_GLOBAL_TLS_PROVIDER, &size, &provider);
                             UsesSChannelBackend = provider == QUIC_TLS_PROVIDER.SCHANNEL;
+
+                            if (UsesSChannelBackend)
+                            {
+                                if (!IsWindowsVersionSupported())
+                                {
+                                    if (NetEventSource.Log.IsEnabled())
+                                    {
+                                        NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                                    }
+
+                                    return;
+                                }
+
+                                Tls13ServerMayBeDisabled = IsTls13Disabled(true);
+                                Tls13ClientMayBeDisabled = IsTls13Disabled(false);
+                            }
+
+                            Api = new MsQuicApi(apiTable);
+                            IsQuicSupported = true;
                         }
                     }
                 }
