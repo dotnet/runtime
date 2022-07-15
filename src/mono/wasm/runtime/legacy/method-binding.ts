@@ -403,7 +403,6 @@ export function mono_bind_method(method: MonoMethod, args_marshal: string/*ArgsM
     const unbox_buffer = Module._malloc(unbox_buffer_size);
 
     const token: BoundMethodToken = {
-        friendlyName: friendly_name,
         method,
         converter,
         scratchRootBuffer: null,
@@ -633,7 +632,6 @@ export type Converter = {
 }
 
 export type BoundMethodToken = {
-    friendlyName: string;
     method: MonoMethod;
     converter: Converter | null;
     scratchRootBuffer: WasmRootBuffer | null;
