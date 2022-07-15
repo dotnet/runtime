@@ -89,7 +89,7 @@ jobs:
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_buildScript)
-                    -subset libs.pretest
+                    -subset host+libs.pretest
                     $(_buildArguments)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
