@@ -17,7 +17,7 @@ jobs:
 
 - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
   parameters:
-    runProfile: 'option#2'
+    runProfile: 'v8'
     collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
     #onlySanityCheck: false
     #downloadSpecificBuild:

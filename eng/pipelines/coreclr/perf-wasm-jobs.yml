@@ -2,7 +2,7 @@
 #
 
 parameters:
-  runProfile: 'option#1'
+  runProfile: 'non-v8'
   compare: false
   onlySanityCheck: false
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
@@ -10,7 +10,7 @@ parameters:
 
 jobs:
 
-- ${{ if eq(parameters.runProfile, 'option#1') }}:
+- ${{ if eq(parameters.runProfile, 'non-v8') }}:
   - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
     # build mono on wasm - if not using an existing build
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -75,7 +75,7 @@ jobs:
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
 
-- ${{ if eq(parameters.runProfile, 'option#2') }}:
+- ${{ if eq(parameters.runProfile, 'v8') }}:
   - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
     # build mono on wasm - if not using an existing build
     - template: /eng/pipelines/common/platform-matrix.yml
