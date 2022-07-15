@@ -94,7 +94,9 @@ public:
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
 #endif
 
+#if defined(FEATURE_READYTORUN)
     bool          ReadyToRun(void) const { LIMITED_METHOD_CONTRACT;  return fReadyToRun; }
+#endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     // OSR Config
@@ -658,7 +660,9 @@ private: //----------------------------------------------------------------
     bool fTieredPGO;
 #endif
 
+#if defined(FEATURE_READYTORUN)
     bool fReadyToRun;
+#endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     DWORD dwOSR_HitLimit;

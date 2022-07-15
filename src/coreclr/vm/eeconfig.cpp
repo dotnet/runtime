@@ -241,7 +241,9 @@ HRESULT EEConfig::Init()
     fTieredPGO = false;
 #endif
 
+#if defined(FEATURE_READYTORUN)
     fReadyToRun = false;
+#endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     dwOSR_HitLimit = 10;
