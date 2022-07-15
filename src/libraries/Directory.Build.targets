@@ -81,7 +81,7 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == '' and '$(DisableBinPlaceAssembly)' != 'true'">
+  <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- Used by the runtime tests to prepare the CORE_ROOT layout. Don't use in libraries. -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
                               Condition="'$(BinPlaceForTargetVertical)' == 'true'">
