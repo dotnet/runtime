@@ -79,14 +79,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- CLR NativeAot only builds in a subset of the matrix -->
-    <NativeAotSupported Condition="('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and ('$(TargetOS)' != 'OSX' or '$(TargetArchitecture)' != 'arm64')">true</NativeAotSupported>
-
-    <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
-    <UseNativeAotCoreLib Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+'))">true</UseNativeAotCoreLib>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <_subset>$(_subset.Replace('+clr.paltests+', '+clr.paltests+clr.paltestlist+'))</_subset>
     <_subset>$(_subset.Replace('+clr+', '+$(DefaultCoreClrSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+clr.aot+', '+$(DefaultNativeAotSubsets)+'))</_subset>
@@ -100,6 +92,14 @@
 
     <ClrRuntimeBuildSubsets></ClrRuntimeBuildSubsets>
     <ClrDefaultRuntimeBuildSubsets>ClrRuntimeSubset=true;ClrJitSubset=true;ClrILToolsSubset=true</ClrDefaultRuntimeBuildSubsets>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- CLR NativeAot only builds in a subset of the matrix -->
+    <NativeAotSupported Condition="('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and ('$(TargetOS)' != 'OSX' or '$(TargetArchitecture)' != 'arm64')">true</NativeAotSupported>
+
+    <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
+    <UseNativeAotCoreLib Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+'))">true</UseNativeAotCoreLib>
   </PropertyGroup>
 
   <ItemGroup>
