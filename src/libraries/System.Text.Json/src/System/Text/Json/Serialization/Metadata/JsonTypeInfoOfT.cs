@@ -101,12 +101,12 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
-        private protected override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo)
+        private protected override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
         {
-            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, Options)
+            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
             {
                 JsonTypeInfo = this
-            };;
+            };
         }
 
         private protected void MapInterfaceTypesToCallbacks()

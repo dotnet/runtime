@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // If a JsonTypeInfo has already cached for the property type,
                 // avoid reflection-based initialization by delegating construction
                 // of JsonPropertyInfo<T> construction to the property type metadata.
-                return jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this);
+                return jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
             }
             else
             {
@@ -81,7 +81,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates a JsonPropertyInfo whose property type matches the type of this JsonTypeInfo instance.
         /// </summary>
-        private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo);
+        private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options);
 
         private static JsonPropertyInfo CreateJsonPropertyInfo<T>(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
             => new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options);
