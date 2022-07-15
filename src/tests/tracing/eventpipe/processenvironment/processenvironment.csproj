@@ -6,6 +6,8 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- This test provides no interesting scenarios for GCStress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
