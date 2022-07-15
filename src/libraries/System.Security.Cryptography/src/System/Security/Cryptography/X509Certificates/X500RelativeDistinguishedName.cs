@@ -40,10 +40,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (rdn.HasData)
             {
-                while (rdn.HasData)
+                do
                 {
                     typeAndValue = rdn.ReadSequence();
 
+                    // Check that the attribute type is a valid OID,
+                    // if it's from the cache, even better (faster, lower alloc).
                     if (Oids.GetSharedOrNullOid(ref typeAndValue) is null)
                     {
                         typeAndValue.ReadObjectIdentifier();
@@ -52,6 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
                     typeAndValue.ReadEncodedValue();
                     typeAndValue.ThrowIfNotEmpty();
                 }
+                while (rdn.HasData);
             }
             else
             {
