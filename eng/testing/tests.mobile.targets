@@ -16,6 +16,10 @@
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(PublishTestsWithTrimming)' == 'true'">
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress linker warnings as these are tests -->
