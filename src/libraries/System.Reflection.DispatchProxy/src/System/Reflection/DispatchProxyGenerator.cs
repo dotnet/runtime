@@ -59,6 +59,7 @@ namespace System.Reflection
             typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
+        [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
         internal static object CreateProxyInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
@@ -113,6 +114,7 @@ namespace System.Reflection
             private readonly HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
             private ConstructorInfo? _ignoresAccessChecksToAttributeConstructor;
 
+            [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
             public ProxyAssembly(AssemblyLoadContext alc)
             {
                 string name;

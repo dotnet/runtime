@@ -45,29 +45,8 @@
       <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
       <OOBLibrarySuppressionsXml Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
       
-      <!-- The following is the list of all the OOBs we will ignore for now -->
-      <OOBAssemblyToIgnore Include="System.CodeDom;
-                                    System.ComponentModel.Composition;
-                                    System.ComponentModel.Composition.Registration;
-                                    System.Composition.AttributedModel;
-                                    System.Composition.Convention;
-                                    System.Composition.Hosting;
-                                    System.Composition.Runtime;
-                                    System.Composition.TypedParts;
-                                    System.Configuration.ConfigurationManager;
-                                    System.Speech;
-                                    Microsoft.Extensions.DependencyInjection.Specification.Tests" />
-
-      <!-- Move items to FileName so that we can subtract them. -->
-      <OOBAssemblyWithFilename Include="@(OOBAssembly->Metadata('Filename'))"
-                               OriginalIdentity="%(Identity)" />
-      <OOBAssemblyToTrimWithFilename Include="@(OOBAssemblyWithFilename)"
-                                     Exclude="@(OOBAssemblyToIgnore)" />
-      <OOBAssemblyToIgnoreWithFilename Include="@(OOBAssemblyWithFilename)"
-                                       Exclude="@(OOBAssemblyToTrimWithFilename)" />
-
-      <OOBAssemblyToTrim Include="@(OOBAssemblyToTrimWithFilename->Metadata('OriginalIdentity'))" />
-      <OOBAssemblyReference Include="@(OOBAssemblyToIgnoreWithFilename->Metadata('OriginalIdentity'));
+      <OOBAssemblyToTrim Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'true'))" />
+      <OOBAssemblyReference Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'false'));
                                      @(SharedFrameworkAssembly)" />
     </ItemGroup>
   </Target>

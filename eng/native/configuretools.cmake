@@ -29,6 +29,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
     endif()
 
     find_program(EXEC_LOCATION_${exec}
+      NO_CACHE
       NAMES
       "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
       "${TOOLSET_PREFIX}${exec}")

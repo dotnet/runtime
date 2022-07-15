@@ -4671,33 +4671,10 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         bool skipUnmarkLoop = false;
 
-        // If block is the backedge for a loop and succBlock precedes block
-        // then the succBlock becomes the new LOOP HEAD
-        // NOTE: there's an assumption here that the blocks are numbered in increasing bbNext order.
-        // NOTE 2: if fgDomsComputed is false, then we can't check reachability. However, if this is
-        // the case, then the loop structures probably are also invalid, and shouldn't be used. This
-        // can be the case late in compilation (such as Lower), where remnants of earlier created
-        // structures exist, but haven't been maintained.
-        if (block->isLoopHead() && (succBlock->bbNum <= block->bbNum))
+        if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
         {
-            succBlock->bbFlags |= BBF_LOOP_HEAD;
-
-            if (block->isLoopAlign())
-            {
-                loopAlignCandidates++;
-                succBlock->bbFlags |= BBF_LOOP_ALIGN;
-                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for " FMT_LP "\n ", block->bbNum,
-                        succBlock->bbNum, block->bbNatLoopNum);
-            }
-
-            if (fgDomsComputed && fgReachable(succBlock, block))
-            {
-                // Mark all the reachable blocks between 'succBlock' and 'bPrev'
-                optScaleLoopBlocks(succBlock, bPrev);
-            }
-        }
-        else if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
-        {
+            // It looks like `block` is the source of a back edge of a loop, and once we remove `block` the
+            // loop will still exist because we'll move the edge to `bPrev`. So, don't unscale the loop blocks.
             skipUnmarkLoop = true;
         }
 

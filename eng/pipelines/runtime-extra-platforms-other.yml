@@ -85,6 +85,7 @@ jobs:
     - windows_x64
     - windows_arm64
     - Linux_x64
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       isSingleFile: true

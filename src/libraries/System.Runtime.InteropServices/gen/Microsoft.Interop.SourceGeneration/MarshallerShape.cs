@@ -411,12 +411,30 @@ namespace Microsoft.Interop
             public IMethodSymbol? ToUnmanaged { get; init; }
             public IMethodSymbol? Free { get; init; }
             public IMethodSymbol? OnInvoked { get; init; }
+            public IMethodSymbol? StatefulGetPinnableReference { get; init; }
 
             // Linear collection
             public IMethodSymbol? ManagedValuesSource { get; init; }
             public IMethodSymbol? UnmanagedValuesDestination { get; init; }
             public IMethodSymbol? ManagedValuesDestination { get; init; }
             public IMethodSymbol? UnmanagedValuesSource { get; init; }
+
+            public bool IsShapeMethod(IMethodSymbol method)
+            {
+                return SymbolEqualityComparer.Default.Equals(method, FromManaged)
+                    || SymbolEqualityComparer.Default.Equals(method, FromManagedWithBuffer)
+                    || SymbolEqualityComparer.Default.Equals(method, ToManaged)
+                    || SymbolEqualityComparer.Default.Equals(method, ToManagedGuranteed)
+                    || SymbolEqualityComparer.Default.Equals(method, FromUnmanaged)
+                    || SymbolEqualityComparer.Default.Equals(method, ToUnmanaged)
+                    || SymbolEqualityComparer.Default.Equals(method, Free)
+                    || SymbolEqualityComparer.Default.Equals(method, OnInvoked)
+                    || SymbolEqualityComparer.Default.Equals(method, StatefulGetPinnableReference)
+                    || SymbolEqualityComparer.Default.Equals(method, ManagedValuesSource)
+                    || SymbolEqualityComparer.Default.Equals(method, UnmanagedValuesDestination)
+                    || SymbolEqualityComparer.Default.Equals(method, ManagedValuesDestination)
+                    || SymbolEqualityComparer.Default.Equals(method, UnmanagedValuesSource);
+            }
         }
 
         public static (MarshallerShape shape, MarshallerMethods methods) GetShapeForType(ITypeSymbol marshallerType, ITypeSymbol managedType, bool isLinearCollectionMarshaller, Compilation compilation)
@@ -518,9 +536,12 @@ namespace Microsoft.Interop
             {
                 shape |= MarshallerShape.StatelessPinnableReference;
             }
-            if (GetStatefulGetPinnableReference(marshallerType) is not null)
+
+            IMethodSymbol statefulGetPinnableReference = GetStatefulGetPinnableReference(marshallerType);
+            if (statefulGetPinnableReference is not null)
             {
                 shape |= MarshallerShape.StatefulPinnableReference;
+                methods = methods with { StatefulGetPinnableReference = statefulGetPinnableReference };
             }
 
             return (shape, methods);
