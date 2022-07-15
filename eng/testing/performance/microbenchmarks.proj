@@ -72,7 +72,7 @@
 
   <PropertyGroup>
     <WorkItemTimeout>2:30</WorkItemTimeout>
-    <WorkItemTimeout Condition="'$(HelixSourcePrefix)' != 'official'">0:15</WorkItemTimeout>
+    <WorkItemTimeout Condition="'$(OnlySanityCheck)' == 'true'">0:15</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>
