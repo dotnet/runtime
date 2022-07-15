@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo))
             {
-                // If a JsonTypeInfo has already cached for the property type,
+                // If a JsonTypeInfo has already been cached for the property type,
                 // avoid reflection-based initialization by delegating construction
                 // of JsonPropertyInfo<T> construction to the property type metadata.
                 return jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);

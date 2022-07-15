@@ -115,12 +115,7 @@ namespace System.Text.Json
         {
             Debug.Assert(IsLockedInstance);
 
-            if (_cachingContext is null)
-            {
-                _cachingContext = TrackedCachingContexts.GetOrCreate(this);
-            }
-
-            return _cachingContext;
+            return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
         }
 
         /// <summary>
