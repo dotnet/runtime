@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void JsonPropertyInfoOptionsAreSet()
         {
-            JsonSerializerOptions options = JsonSerializerOptions.Default;
+            JsonSerializerOptions options = new() { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(MyClass), options);
             CreatePropertyAndCheckOptions(options, typeInfo);
 
@@ -26,6 +26,9 @@ namespace System.Text.Json.Serialization.Tests
             CreatePropertyAndCheckOptions(options, typeInfo);
 
             typeInfo = options.TypeInfoResolver.GetTypeInfo(typeof(MyClass), options);
+            CreatePropertyAndCheckOptions(options, typeInfo);
+
+            typeInfo = options.GetTypeInfo(typeof(MyClass));
             CreatePropertyAndCheckOptions(options, typeInfo);
 
             static void CreatePropertyAndCheckOptions(JsonSerializerOptions expectedOptions, JsonTypeInfo typeInfo)
