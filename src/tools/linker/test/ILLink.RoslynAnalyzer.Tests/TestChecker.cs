@@ -7,7 +7,6 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
-using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -197,15 +196,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 				if (args.TryGetValue ("ProducedBy", out var producedBy)) {
 					// Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
 					return GetProducedBy (producedBy).HasFlag (ProducedBy.Analyzer);
-				}
-				if (args.TryGetValue ("#0", out var id) &&
-					(id as LiteralExpressionSyntax)?.Token.ValueText != DiagnosticId.RequiresUnreferencedCode.AsString () &&
-					args.TryGetValue ("CompilerGeneratedCode", out var compilerGeneratedExpr)) {
-					// https://github.com/dotnet/linker/issues/2587
-					// We currently don't generate any data flow warnings in compiler generated code for the analyzer since
-					// the compiler-generated code support in the linker is inconsistent. Until the above issue is
-					// fixed, skip all warnings in compiler generated code
-					return compilerGeneratedExpr is not LiteralExpressionSyntax { Token: { RawKind: (int) SyntaxKind.TrueKeyword } };
 				}
 
 				return true;

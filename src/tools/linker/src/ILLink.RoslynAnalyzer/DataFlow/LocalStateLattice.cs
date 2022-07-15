@@ -39,6 +39,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// are tracked as part of the dictionary of values, keyed by LocalKey.
 		public DefaultValueDictionary<CaptureId, CapturedReferenceValue> CapturedReferences;
 
+		public LocalState (TValue defaultValue)
+			: this (new DefaultValueDictionary<LocalKey, TValue> (defaultValue),
+				new DefaultValueDictionary<CaptureId, CapturedReferenceValue> (new CapturedReferenceValue ()))
+		{
+		}
+
 		public LocalState (DefaultValueDictionary<LocalKey, TValue> dictionary, DefaultValueDictionary<CaptureId, CapturedReferenceValue> capturedReferences)
 		{
 			Dictionary = dictionary;

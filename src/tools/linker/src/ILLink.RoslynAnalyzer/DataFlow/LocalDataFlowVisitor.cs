@@ -6,10 +6,8 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
-
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
 	// Visitor which tracks the values of locals in a block. It provides extension points that get called
@@ -26,11 +24,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	{
 		protected readonly LocalStateLattice<TValue, TValueLattice> LocalStateLattice;
 
-		protected readonly OperationBlockAnalysisContext Context;
+		protected readonly InterproceduralStateLattice<TValue, TValueLattice> InterproceduralStateLattice;
+
+		protected readonly IMethodSymbol Method;
+
+		private readonly ControlFlowGraph ControlFlowGraph;
 
 		protected TValue TopValue => LocalStateLattice.Lattice.ValueLattice.Top;
 
 		private readonly ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures;
+
+		public InterproceduralState<TValue, TValueLattice> InterproceduralState;
 
 		bool IsLValueFlowCapture (CaptureId captureId)
 			=> lValueFlowCaptures.ContainsKey (captureId);
@@ -38,8 +42,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		bool IsRValueFlowCapture (CaptureId captureId)
 			=> !lValueFlowCaptures.TryGetValue (captureId, out var captureKind) || captureKind != FlowCaptureKind.LValueCapture;
 
-		public LocalDataFlowVisitor (LocalStateLattice<TValue, TValueLattice> lattice, OperationBlockAnalysisContext context, ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures) =>
-			(LocalStateLattice, Context, this.lValueFlowCaptures) = (lattice, context, lValueFlowCaptures);
+		public LocalDataFlowVisitor (
+			LocalStateLattice<TValue, TValueLattice> lattice,
+			IMethodSymbol method,
+			ControlFlowGraph cfg,
+			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
+			InterproceduralState<TValue, TValueLattice> interproceduralState)
+		{
+			LocalStateLattice = lattice;
+			InterproceduralStateLattice = default;
+			Method = method;
+			ControlFlowGraph = cfg;
+			this.lValueFlowCaptures = lValueFlowCaptures;
+			InterproceduralState = interproceduralState;
+		}
 
 		public void Transfer (BlockProxy block, LocalDataFlowState<TValue, TValueLattice> state)
 		{
@@ -96,7 +112,44 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitLocalReference (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			return state.Get (new LocalKey (operation.Local));
+			return GetLocal (operation, state);
+		}
+
+		bool IsReferenceToCapturedVariable (ILocalReferenceOperation localReference)
+		{
+			var local = localReference.Local;
+
+			if (local.IsConst)
+				return false;
+
+			var declaringSymbol = (IMethodSymbol) local.ContainingSymbol;
+			return !ReferenceEquals (declaringSymbol, Method);
+		}
+
+		TValue GetLocal (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			var local = new LocalKey (operation.Local);
+			if (IsReferenceToCapturedVariable (operation))
+				InterproceduralState.TrackHoistedLocal (local);
+
+			// Get the value from the hoisted locals, if it's tracked there.
+			if (InterproceduralState.TryGetHoistedLocal (local, out TValue? value))
+				return value.Value;
+
+			return state.Get (local);
+		}
+
+		void SetLocal (ILocalReferenceOperation operation, TValue value, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			var local = new LocalKey (operation.Local);
+			if (IsReferenceToCapturedVariable (operation))
+				InterproceduralState.TrackHoistedLocal (local);
+
+			// Update the value stored in the hoisted locals, if it's tracked there.
+			if (InterproceduralState.TrySetHoistedLocal (local, value))
+				return;
+
+			state.Set (local, value);
 		}
 
 		public override TValue VisitSimpleAssignment (ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
@@ -104,7 +157,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			var targetOperation = operation.Target;
 			if (targetOperation is IFlowCaptureReferenceOperation flowCaptureReference) {
 				Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
-				Debug.Assert (!flowCaptureReference.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read));
+				Debug.Assert (!flowCaptureReference.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read));
 				var capturedReference = state.Current.CapturedReferences.Get (flowCaptureReference.Id).Reference;
 				targetOperation = capturedReference;
 				if (targetOperation == null)
@@ -177,7 +230,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// TODO: when setting a property in an attribute, target is an IPropertyReference.
 			case ILocalReferenceOperation localRef: {
 					TValue value = Visit (operation.Value, state);
-					state.Set (new LocalKey (localRef.Local), value);
+					SetLocal (localRef, value, state);
 					return value;
 				}
 			case IArrayElementReferenceOperation arrayElementRef: {
@@ -230,7 +283,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// Similar to VisitLocalReference
 		public override TValue VisitFlowCaptureReference (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (!operation.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read)) {
+			if (!operation.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read)) {
 				// There are known cases where this assert doesn't hold, because LValueFlowCaptureProvider
 				// produces the wrong result in some cases for flow captures with IsInitialization = true.
 				// https://github.com/dotnet/linker/issues/2749 
@@ -280,7 +333,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (!operation.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read))
+			if (!operation.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read))
 				return TopValue;
 
 			// Accessing property for reading is really a call to the getter
@@ -292,7 +345,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitImplicitIndexerReference (IImplicitIndexerReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (!operation.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read))
+			if (!operation.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read))
 				return TopValue;
 
 			TValue instanceValue = Visit (operation.Instance, state);
@@ -310,7 +363,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitArrayElementReference (IArrayElementReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (!operation.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read))
+			if (!operation.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read))
 				return TopValue;
 
 			// Accessing an array element for reading is a call to the indexer
@@ -353,6 +406,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return ProcessMethodCall (operation, operation.Constructor, null, operation.Arguments, state);
 		}
 
+		public override TValue VisitFlowAnonymousFunction (IFlowAnonymousFunctionOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			Debug.Assert (operation.Symbol.ContainingSymbol is IMethodSymbol);
+			var lambda = operation.Symbol;
+			Debug.Assert (lambda.MethodKind == MethodKind.LambdaMethod);
+			var lambdaCFG = ControlFlowGraph.GetAnonymousFunctionControlFlowGraphInScope (operation);
+			InterproceduralState.TrackMethod (new MethodBodyValue (lambda, lambdaCFG));
+			return TopValue;
+		}
+
 		TValue ProcessMethodCall (
 			IOperation operation,
 			IMethodSymbol method,
@@ -372,6 +435,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					break;
 
 				argumentsBuilder.Add (VisitArgument (argument, state));
+			}
+
+			// For local functions with generic arguments, the substituted method symbol's containing
+			// symbol is not the containing method, so we need to check the OriginalDefinition.
+			if (method.OriginalDefinition.ContainingSymbol is IMethodSymbol) {
+				var localFunction = method.OriginalDefinition;
+				Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);
+				var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
+				InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
 			}
 
 			return HandleMethodCall (
