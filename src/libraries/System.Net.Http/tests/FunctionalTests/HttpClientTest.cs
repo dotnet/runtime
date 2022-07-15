@@ -798,6 +798,32 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task ConnectTimeout_NotWrappedInMultipleTimeoutExceptions()
+        {
+            using var handler = CreateHttpClientHandler();
+
+            SocketsHttpHandler socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler);
+
+            socketsHttpHandler.ConnectTimeout = TimeSpan.FromMilliseconds(1);
+            socketsHttpHandler.ConnectCallback = async (context, cancellation) =>
+            {
+                await Task.Delay(-1, cancellation);
+                throw new UnreachableException();
+            };
+
+            using var client = CreateHttpClient(handler);
+            client.Timeout = TimeSpan.FromSeconds(42);
+
+            TaskCanceledException e = await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetAsync(CreateFakeUri()));
+
+            TimeoutException connectTimeoutException = Assert.IsType<TimeoutException>(e.InnerException);
+            Assert.Contains("ConnectTimeout", connectTimeoutException.Message);
+
+            Assert.Null(connectTimeoutException.InnerException);
+            Assert.DoesNotContain("42", e.ToString());
+        }
+
         [Fact]
         public void DefaultProxy_SetNull_Throws()
         {

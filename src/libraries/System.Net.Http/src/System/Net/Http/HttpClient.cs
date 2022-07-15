@@ -607,8 +607,18 @@ namespace System.Net.Http
                 else if (!pendingRequestsCts.IsCancellationRequested)
                 {
                     // If this exception is for cancellation, but cancellation wasn't requested, either by the caller's token or by the pending requests source,
-                    // the only other cause could be a timeout.  Treat it as such.
-                    e = toThrow = new TaskCanceledException(SR.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
+                    // the only other cause could be a timeout (HttpClient.Timeout or SocketsHttpHandler.ConnectTimeout).
+                    // If the cause was a ConnectTimeout, the exception will already contain a TimeoutException.
+
+                    // We can't just check cts.IsCancellationRequested, as there is a race where cancellation could have been requested
+                    // right after we checked cancellationToken.IsCancellationRequested above.
+                    Debug.Assert(e.InnerException is TimeoutException == e.ToString().Contains("ConnectTimeout"));
+
+                    if (e.InnerException is not TimeoutException)
+                    {
+                        Debug.Assert(_timeout.TotalSeconds > 0);
+                        e = toThrow = new TaskCanceledException(SR.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
+                    }
                 }
             }
             else if (e is HttpRequestException && cts.IsCancellationRequested) // if cancellationToken is canceled, cts will also be canceled
