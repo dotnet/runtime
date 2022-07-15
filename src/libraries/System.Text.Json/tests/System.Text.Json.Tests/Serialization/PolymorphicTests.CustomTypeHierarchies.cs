@@ -1888,10 +1888,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(5)] // 1st Write/ReadStack resize
         [InlineData(17)] // 2nd Write/ReadStack resize
         [InlineData(33)] // 3rd Write/ReadStack resize
-        [InlineData(63)]
+        [InlineData(65)] // 4th Write/ReadStack resize
         public async Task Peano_Roundtrip(int number)
         {
             JsonSerializerOptions options = new();
+            options.MaxDepth = number + 1;
             Peano obj = Peano.FromInteger(number);
             string json = await Serializer.SerializeWrapper(obj, options);
             Peano deserialized = await Serializer.DeserializeWrapper<Peano>(json, options);
