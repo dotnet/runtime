@@ -232,6 +232,7 @@
       System.CodeDom;
       System.Configuration.ConfigurationManager;
       System.Diagnostics.EventLog;
+      System.Diagnostics.EventLog.Messages;
       System.Diagnostics.PerformanceCounter;
       System.DirectoryServices;
       System.Drawing.Common;
