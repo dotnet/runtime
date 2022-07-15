@@ -22,8 +22,17 @@ namespace System.Net.Quic.Tests
         protected override bool BlocksOnZeroByteReads => true;
         protected override bool CanTimeout => true;
 
-        public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
         public ITestOutputHelper _output;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                ServerCertificate.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
         public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
@@ -66,44 +75,67 @@ namespace System.Net.Quic.Tests
             byte[] buffer = new byte[1] { 42 };
             QuicConnection connection1 = null, connection2 = null;
             QuicStream stream1 = null, stream2 = null;
-            await WhenAllOrAnyFailed(
-                Task.Run(async () =>
-                {
-                    connection1 = await listener.AcceptConnectionAsync();
-                    stream1 = await connection1.AcceptInboundStreamAsync();
-                    Assert.Equal(1, await stream1.ReadAsync(buffer));
-                }),
-                Task.Run(async () =>
-                {
-                    try
+            try
+            {
+                await WhenAllOrAnyFailed(
+                    Task.Run(async () =>
                     {
-                        connection2 = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
+                        connection1 = await listener.AcceptConnectionAsync();
+                        stream1 = await connection1.AcceptInboundStreamAsync();
+                        Assert.Equal(1, await stream1.ReadAsync(buffer));
+                    }),
+                    Task.Run(async () =>
+                    {
+                        try
                         {
-                            DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeClient,
-                            DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeClient,
-                            RemoteEndPoint = listener.LocalEndPoint,
-                            ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
-                        });
-                        stream2 = await connection2.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
-                        // OpenBidirectionalStream only allocates ID. We will force stream opening
-                        // by Writing there and receiving data on the other side.
-                        await stream2.WriteAsync(buffer);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output?.WriteLine($"Failed to {ex.Message}");
-                        throw;
-                    }
-                }));
+                            connection2 = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
+                            {
+                                DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeClient,
+                                DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeClient,
+                                RemoteEndPoint = listener.LocalEndPoint,
+                                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                            });
+                            stream2 = await connection2.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                            // OpenBidirectionalStream only allocates ID. We will force stream opening
+                            // by Writing there and receiving data on the other side.
+                            await stream2.WriteAsync(buffer);
+                        }
+                        catch (Exception ex)
+                        {
+                            _output?.WriteLine($"Failed to {ex.Message}");
+                            throw;
+                        }
+                    }));
 
-            // No need to keep the listener once we have connected connection and streams
-            await listener.DisposeAsync();
+                // No need to keep the listener once we have connected connection and streams
+                await listener.DisposeAsync();
 
-            var result = new StreamPairWithOtherDisposables(stream1, stream2);
-            result.Disposables.Add(connection1);
-            result.Disposables.Add(connection2);
+                var result = new StreamPairWithOtherDisposables(stream1, stream2);
+                result.Disposables.Add(connection1);
+                result.Disposables.Add(connection2);
 
-            return result;
+                return result;
+            }
+            catch
+            {
+                if (stream1 is not null)
+                {
+                    await stream1.DisposeAsync();
+                }
+                if (stream2 is not null)
+                {
+                    await stream2.DisposeAsync();
+                }
+                if (connection1 is not null)
+                {
+                    await connection1.DisposeAsync();
+                }
+                if (connection2 is not null)
+                {
+                    await connection2.DisposeAsync();
+                }
+                throw;
+            }
         }
 
         private sealed class StreamPairWithOtherDisposables : StreamPair
