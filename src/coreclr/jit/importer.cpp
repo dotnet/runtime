@@ -2557,7 +2557,7 @@ inline void Compiler::impSpillSpecialSideEff()
 //    lclNum   - The local's number
 //    chkLevel - Height (exclusive) of the portion of the stack to check
 //
-void Compiler::impSpillLclRefs(ssize_t lclNum, unsigned chkLevel /* = CHECK_SPILL_ALL */)
+void Compiler::impSpillLclRefs(unsigned lclNum, unsigned chkLevel)
 {
     // Before we make any appends to the tree list we must spill the
     // "special" side effects (GTF_ORDER_SIDEEFF) - GT_CATCH_ARG.
@@ -16230,11 +16230,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                // "impAssignStruct" will back-substitute the field address tree into calls that return things via
-                // return buffers, so we have to delay calling it until after we have spilled everything needed.
-                bool deferStructAssign = (lclTyp == TYP_STRUCT);
-
-                if (!deferStructAssign)
+                if (lclTyp != TYP_STRUCT)
                 {
                     assert(op1->OperIs(GT_FIELD, GT_IND));
 
@@ -16323,8 +16319,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewAssignNode(op1, op2);
                 }
 
-                /* Check if the class needs explicit initialization */
-
+                // Check if the class needs explicit initialization.
                 if (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
                 {
                     GenTree* helperNode = impInitClass(&resolvedToken);
@@ -16338,16 +16333,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                // An indirect store such as "st[s]fld" interferes with indirect accesses, so we must spill
-                // global refs and potentially aliased locals.
-                impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spill side effects before STFLD"));
-
-                if (deferStructAssign)
+                if (lclTyp == TYP_STRUCT)
                 {
                     op1 = impAssignStruct(op1, op2, clsHnd, CHECK_SPILL_ALL);
                 }
+
+                goto SPILL_APPEND;
             }
-                goto APPEND;
 
             case CEE_NEWARR:
             {

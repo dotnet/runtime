@@ -4000,7 +4000,7 @@ private:
     void impSpillSpecialSideEff();
     void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
-    void impSpillLclRefs(ssize_t lclNum, unsigned chkLevel = CHECK_SPILL_ALL);
+    void impSpillLclRefs(unsigned lclNum, unsigned chkLevel);
 
     BasicBlock* impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter);
 
