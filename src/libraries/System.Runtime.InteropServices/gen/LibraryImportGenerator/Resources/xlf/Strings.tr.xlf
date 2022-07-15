@@ -8,13 +8,13 @@
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
-        <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
-        <target state="translated">Yerel tür için 'Span&lt;byte&gt;' parametresini alan bir oluşturucunun belirtildiği durumlarda, çağıran tarafından ayrılan arabelleğin boyutunu sağlamak için, türün 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' üzerinde BufferSize alanını ayarlaması gerekir.</target>
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="needs-review-translation">Yerel tür için 'Span&lt;byte&gt;' parametresini alan bir oluşturucunun belirtildiği durumlarda, çağıran tarafından ayrılan arabelleğin boyutunu sağlamak için, türün 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' üzerinde BufferSize alanını ayarlaması gerekir.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
-        <source>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</source>
-        <target state="translated">Çağıran tarafından ayrılan 'Span&lt;byte&gt;' alan bir oluşturucuya sahip olduğu için '{0}' yerel türünün, çağıran tarafından ayrılan arabelleğin boyutunu belirtmek için, geçerli 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' üzerindeki 'BufferSize' alanını ayarlaması gerekir</target>
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
@@ -137,9 +137,9 @@
         <target state="translated">'LibraryImportAttribute' ile işaretlendiğinde '{0}' metodu 'static', 'partial' ve genel olmayan özellikte olmalıdır. P/Invoke kaynak oluşturma '{0}' metodunu yok sayar.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
-        <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
-        <target state="translated">Geçersiz `CustomTypeMarshallerAttribute` kullanımı</target>
+      <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
+        <source>Invalid `CustomMarshallerAttribute` usage</source>
+        <target state="needs-review-translation">Geçersiz `CustomTypeMarshallerAttribute` kullanımı</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -147,9 +147,9 @@
         <target state="translated">Geçersiz 'LibraryImportAttribute' kullanımı</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidNativeTypeTitle">
-        <source>Specified native type is invalid</source>
-        <target state="translated">Belirtilen yerel tür geçersiz</target>
+      <trans-unit id="InvalidMarshallerTypeTitle">
+        <source>Specified marshaller type is invalid</source>
+        <target state="needs-review-translation">Belirtilen yerel tür geçersiz</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -237,44 +237,44 @@
         <target state="translated">'{0}' türünde, bu türe uygulanan 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' değerinde herhangi bir yönetilen tür belirtilmiyor</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
-        <source>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="translated">'{0}' yerel türü kapalı bir genel tür olmalıdır veya yayınlanan kodun belirli bir örnek oluşturma kullanabilmesi için yönetilen türle aynı sayıda genel parametreye sahip olmalıdır.</target>
+      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="needs-review-translation">'{0}' yerel türü kapalı bir genel tür olmalıdır veya yayınlanan kodun belirli bir örnek oluşturma kullanabilmesi için yönetilen türle aynı sayıda genel parametreye sahip olmalıdır.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
-        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="translated">'{1}' yönetilen türü için '{0}' yerel türü kapalı bir genel tür olmalıdır veya yönetilen tür ile aynı parametre sayısı değerine sahip olmalıdır.</target>
+      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+        <target state="needs-review-translation">'{1}' yönetilen türü için '{0}' yerel türü kapalı bir genel tür olmalıdır veya yönetilen tür ile aynı parametre sayısı değerine sahip olmalıdır.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBeBlittableDescription">
+      <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableDescription">
         <source>A native type must be blittable.</source>
         <target state="translated">Bir yerel türün blok halinde kopyalanabilir olması gerekir.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBeBlittableMessage">
-        <source>The native type '{0}' for type '{1}' must be blittable</source>
-        <target state="translated">'{1}' türü için '{0}' yerel türü blok halinde kopyalanabilir olmalıdır</target>
+      <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableMessage">
+        <source>The type '{0}' must be unmanaged or strictly blittable</source>
+        <target state="new">The type '{0}' must be unmanaged or strictly blittable</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBePointerSizedDescription">
-        <source>The native type must be pointer sized so the pinned result of 'GetPinnableReference' can be cast to the native type.</source>
-        <target state="translated">'GetPinnableReference' sabitlenmiş sonucunun yerel türe dönüştürülebilmesi için yerel tür işaretçi boyutunda olmalıdır.</target>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
+        <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
+        <target state="needs-review-translation">'GetPinnableReference' sabitlenmiş sonucunun yerel türe dönüştürülebilmesi için yerel tür işaretçi boyutunda olmalıdır.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBePointerSizedMessage">
-        <source>The native type '{0}' must be pointer sized because the managed type '{1}' has a 'GetPinnableReference' method</source>
-        <target state="translated">'{1}' yönetilen türü bir 'GetPinnableReference' metoduna sahip olduğu için '{0}' yerel türü işaretçi boyutunda olmalıdır</target>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
+        <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
+        <target state="needs-review-translation">'{1}' yönetilen türü bir 'GetPinnableReference' metoduna sahip olduğu için '{0}' yerel türü işaretçi boyutunda olmalıdır</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeDescription">
-        <source>A native type for a given type must have the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="translated">Belirli bir tür için bir yerel türün, bu türü yönetilen tür olarak belirten 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' değerini taşıması gerekir.</target>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="needs-review-translation">Belirli bir tür için bir yerel türün, bu türü yönetilen tür olarak belirten 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' değerini taşıması gerekir.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeMessage">
-        <source>The native type for the type '{0}' must be a type with the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type</source>
-        <target state="translated">'{0}' türünün yerel türü, bu türü yönetilen tür olarak belirten 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' özelliğini taşıyan tür olmalıdır</target>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
+        <source>The enty-point marshaller type for the type '{0}' must be a type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="needs-review-translation">'{0}' türünün yerel türü, bu türü yönetilen tür olarak belirten 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' özelliğini taşıyan tür olmalıdır</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -287,22 +287,12 @@
         <target state="translated">'{0}' türü, 'Out' yönünde sıralamayı desteklediğini belirtiyor, ancak yönetilen türü döndüren bir 'ToManaged' metodu sağlamıyor</target>
         <note />
       </trans-unit>
-      <trans-unit id="RefNativeValueUnsupportedDescription">
-        <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
-        <target state="translated">'Value' özelliği bir 'ref' veya 'readonly ref' özelliği olamaz.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="RefNativeValueUnsupportedMessage">
-        <source>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</source>
-        <target state="translated">'{0}' yerel türündeki 'Value' özelliği bir 'ref' veya 'readonly ref' özelliği olamaz.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchDescription">
+      <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
         <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</source>
         <target state="translated">'ToNativeValue' dönüş türü ve 'FromNativeValue' parametre türü aynı olmalıdır.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchMessage">
+      <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
         <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</source>
         <target state="translated">'ToNativeValue' dönüş türü ve 'FromNativeValue' parametre türü aynı olmalıdır</target>
         <note />

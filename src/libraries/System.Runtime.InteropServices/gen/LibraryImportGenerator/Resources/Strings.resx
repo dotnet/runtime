@@ -118,10 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="CallerAllocConstructorMustHaveBufferSizeDescription" xml:space="preserve">
-    <value>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</value>
+    <value>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</value>
   </data>
   <data name="CallerAllocConstructorMustHaveBufferSizeMessage" xml:space="preserve">
-    <value>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</value>
+    <value>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</value>
   </data>
   <data name="CannotForwardToDllImportDescription" xml:space="preserve">
     <value>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</value>
@@ -207,40 +207,34 @@
     <value>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</value>
   </data>
   <data name="MarshallerTypeMustSpecifyManagedTypeDescription" xml:space="preserve">
-    <value>A type with a 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' must specify a managed type</value>
+    <value>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</value>
   </data>
   <data name="MarshallerTypeMustSpecifyManagedTypeMessage" xml:space="preserve">
-    <value>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' applied to the type</value>
+    <value>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</value>
   </data>
-  <data name="NativeGenericTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
-    <value>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
+  <data name="GenericMarshallerTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
+    <value>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
   </data>
-  <data name="NativeGenericTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
-    <value>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
+  <data name="GenericMarshallerTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
   </data>
-  <data name="NativeTypeMustBeBlittableDescription" xml:space="preserve">
+  <data name="TypeMustBeUnmanagedOrStrictlyBlittableDescription" xml:space="preserve">
     <value>A native type must be blittable.</value>
   </data>
-  <data name="NativeTypeMustBeBlittableMessage" xml:space="preserve">
-    <value>The native type '{0}' for type '{1}' must be blittable</value>
+  <data name="TypeMustBeUnmanagedOrStrictlyBlittableMessage" xml:space="preserve">
+    <value>The type '{0}' must be unmanaged or strictly blittable</value>
   </data>
-  <data name="NativeTypeMustBePointerSizedDescription" xml:space="preserve">
-    <value>The native type must be pointer sized so the pinned result of 'GetPinnableReference' can be cast to the native type.</value>
+  <data name="TypeMustHaveExplicitCastFromVoidPointerDescription" xml:space="preserve">
+    <value>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</value>
   </data>
-  <data name="NativeTypeMustBePointerSizedMessage" xml:space="preserve">
-    <value>The native type '{0}' must be pointer sized because the managed type '{1}' has a 'GetPinnableReference' method</value>
+  <data name="TypeMustHaveExplicitCastFromVoidPointerMessage" xml:space="preserve">
+    <value>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</value>
   </data>
-  <data name="NativeTypeMustHaveCustomTypeMarshallerAttributeDescription" xml:space="preserve">
-    <value>A native type for a given type must have the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type.</value>
+  <data name="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription" xml:space="preserve">
+    <value>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</value>
   </data>
-  <data name="NativeTypeMustHaveCustomTypeMarshallerAttributeMessage" xml:space="preserve">
-    <value>The native type for the type '{0}' must be a type with the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type</value>
-  </data>
-  <data name="RefNativeValueUnsupportedDescription" xml:space="preserve">
-    <value>The 'Value' property must not be a 'ref' or 'readonly ref' property.</value>
-  </data>
-  <data name="RefNativeValueUnsupportedMessage" xml:space="preserve">
-    <value>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</value>
+  <data name="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage" xml:space="preserve">
+    <value>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</value>
   </data>
   <data name="TypeNotSupportedDescription" xml:space="preserve">
     <value>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</value>
@@ -315,11 +309,23 @@
   <data name="LinearCollectionElementTypesMustMatchMessage" xml:space="preserve">
     <value>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</value>
   </data>
-  <data name="TwoStageMarshallingNativeTypesMustMatchDescription" xml:space="preserve">
-    <value>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</value>
+  <data name="ToFromUnmanagedTypesMustMatchDescription" xml:space="preserve">
+    <value>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</value>
   </data>
-  <data name="TwoStageMarshallingNativeTypesMustMatchMessage" xml:space="preserve">
-    <value>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</value>
+  <data name="ToFromUnmanagedTypesMustMatchMessage" xml:space="preserve">
+    <value>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</value>
+  </data>
+  <data name="FromUnmanagedOverloadsNotSupportedDescription" xml:space="preserve">
+    <value>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</value>
+  </data>
+  <data name="FromUnmanagedOverloadsNotSupportedMessage" xml:space="preserve">
+    <value>Overloading the 'FromUnmanaged' method is not supported in custom marshallers</value>
+  </data>
+  <data name="ToUnmanagedFromManagedTypesMustMatchDescription" xml:space="preserve">
+    <value>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</value>
+  </data>
+  <data name="ToUnmanagedFromManagedTypesMustMatchMessage" xml:space="preserve">
+    <value>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</value>
   </data>
   <data name="CallerAllocConstructorMustHaveBufferSizeTitle" xml:space="preserve">
     <value>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</value>
@@ -327,11 +333,11 @@
   <data name="CustomMarshallerTypeMustHaveRequiredShapeTitle" xml:space="preserve">
     <value>Marshaller type does not have the required shape</value>
   </data>
-  <data name="InvalidCustomTypeMarshallerAttributeUsageTitle" xml:space="preserve">
-    <value>Invalid `CustomTypeMarshallerAttribute` usage</value>
+  <data name="InvalidCustomMarshallerAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid `CustomMarshallerAttribute` usage</value>
   </data>
-  <data name="InvalidNativeTypeTitle" xml:space="preserve">
-    <value>Specified native type is invalid</value>
+  <data name="InvalidMarshallerTypeTitle" xml:space="preserve">
+    <value>Specified marshaller type is invalid</value>
   </data>
   <data name="InvalidSignaturesInMarshallerShapeTitle" xml:space="preserve">
     <value>Marshaller type has incompatible method signatures</value>

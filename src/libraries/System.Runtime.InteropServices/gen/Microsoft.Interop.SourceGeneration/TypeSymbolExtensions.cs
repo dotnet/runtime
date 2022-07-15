@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Dynamic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -184,6 +187,87 @@ namespace Microsoft.Interop
                 (INamedTypeSymbol namedType, INamedTypeSymbol namedOther) => SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, namedOther.ConstructedFrom),
                 _ => SymbolEqualityComparer.Default.Equals(type, other)
             };
+        }
+
+        /// <summary>
+        /// Reconstruct a possibly-nested type with the generic parameters of another type, accounting for type nesting and generic parameters split between different nesting levels.
+        /// </summary>
+        /// <param name="instantiatedTemplateType">The generic type from which to copy type arguments</param>
+        /// <param name="unboundConstructedType">The type to recursively instantiate</param>
+        /// <param name="numOriginalTypeArgumentsSubstituted">How many type parameters from <c><paramref name="unboundConstructedType"/>.ConstructedFrom</c> that needed to be substituted to fill the generic parameter list.</param>
+        /// <param name="extraTypeArgumentsInTemplate">How many type parameters from <paramref name="instantiatedTemplateType"/>were unused.</param>
+        /// <returns>A fully constructed type based on <c><paramref name="unboundConstructedType"/>.ConstructedFrom</c> with the generic arguments from <paramref name="instantiatedTemplateType"/>.</returns>
+        public static INamedTypeSymbol ResolveUnboundConstructedTypeToConstructedType(this INamedTypeSymbol unboundConstructedType, INamedTypeSymbol instantiatedTemplateType, out int numOriginalTypeArgumentsSubstituted, out int extraTypeArgumentsInTemplate)
+        {
+            var (typeArgumentsToSubstitute, nullableAnnotationsToSubstitute) = GetArgumentsToSubstitute(instantiatedTemplateType);
+
+            Stack<INamedTypeSymbol> originalNestedTypes = new();
+            for (INamedTypeSymbol constructedFromType = unboundConstructedType.ConstructedFrom; constructedFromType is not null; constructedFromType = constructedFromType.ContainingType)
+            {
+                originalNestedTypes.Push(constructedFromType);
+            }
+
+            numOriginalTypeArgumentsSubstituted = 0;
+            int currentArityOffset = 0;
+            INamedTypeSymbol currentType = null;
+            while (originalNestedTypes.Count > 0)
+            {
+                if (currentType is null)
+                {
+                    currentType = originalNestedTypes.Pop();
+                }
+                else
+                {
+                    INamedTypeSymbol originalNestedType = originalNestedTypes.Pop();
+                    currentType = currentType.GetTypeMembers(originalNestedType.Name, originalNestedType.Arity).First();
+                }
+
+                if (currentType.TypeParameters.Length > 0)
+                {
+                    int numArgumentsToInsert = currentType.TypeParameters.Length;
+                    var arguments = new ITypeSymbol[numArgumentsToInsert];
+                    var annotations = new NullableAnnotation[numArgumentsToInsert];
+
+                    int numArgumentsToCopy = Math.Min(numArgumentsToInsert, typeArgumentsToSubstitute.Length - currentArityOffset);
+
+                    typeArgumentsToSubstitute.CopyTo(currentArityOffset, arguments, 0, numArgumentsToCopy);
+                    nullableAnnotationsToSubstitute.CopyTo(currentArityOffset, annotations, 0, numArgumentsToCopy);
+                    currentArityOffset += numArgumentsToCopy;
+
+                    if (numArgumentsToCopy != numArgumentsToInsert)
+                    {
+                        int numArgumentsToPropogate = numArgumentsToInsert - numArgumentsToCopy;
+                        numOriginalTypeArgumentsSubstituted += numArgumentsToPropogate;
+                        currentType.TypeParameters.CastArray<ITypeSymbol>().CopyTo(currentType.TypeParameters.Length - numArgumentsToPropogate, arguments, numArgumentsToCopy, numArgumentsToPropogate);
+                    }
+
+                    currentType = currentType.Construct(
+                        ImmutableArray.CreateRange(instantiatedTemplateType.TypeArguments, currentArityOffset, currentType.TypeParameters.Length, x => x),
+                        ImmutableArray.CreateRange(instantiatedTemplateType.TypeArgumentNullableAnnotations, currentArityOffset, currentType.TypeParameters.Length, x => x));
+                    currentArityOffset += currentType.TypeParameters.Length;
+                }
+            }
+            extraTypeArgumentsInTemplate = typeArgumentsToSubstitute.Length - currentArityOffset;
+
+            return currentType;
+
+            static (ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>) GetArgumentsToSubstitute(INamedTypeSymbol instantiatedGeneric)
+            {
+                Stack<(ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>)> genericTypesToSubstitute = new();
+                for (INamedTypeSymbol instantiatedType = instantiatedGeneric; instantiatedType is not null; instantiatedType = instantiatedGeneric.ContainingType)
+                {
+                    genericTypesToSubstitute.Push((instantiatedType.TypeArguments, instantiatedType.TypeArgumentNullableAnnotations));
+                }
+                ImmutableArray<ITypeSymbol>.Builder typeArguments = ImmutableArray.CreateBuilder<ITypeSymbol>();
+                ImmutableArray<NullableAnnotation>.Builder nullableAnnotations = ImmutableArray.CreateBuilder<NullableAnnotation>();
+                while (genericTypesToSubstitute.Count != 0)
+                {
+                    var (args, annotations) = genericTypesToSubstitute.Pop();
+                    typeArguments.AddRange(args);
+                    nullableAnnotations.AddRange(annotations);
+                }
+                return (typeArguments.ToImmutable(), nullableAnnotations.ToImmutable());
+            }
         }
     }
 }

@@ -8,13 +8,13 @@
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
-        <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
-        <target state="translated">Gdy konstruktor przyjmujący wartość „Span&lt;byte&gt;” jest określony w typie natywnym, typ musi ustawić pole BufferSize dla atrybutu „System.Runtime.InteropServices.CustomTypeMarshallerAttribute”, aby zapewnić rozmiar buforu przydzielonego przez funkcję wywołującą.</target>
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="needs-review-translation">Gdy konstruktor przyjmujący wartość „Span&lt;byte&gt;” jest określony w typie natywnym, typ musi ustawić pole BufferSize dla atrybutu „System.Runtime.InteropServices.CustomTypeMarshallerAttribute”, aby zapewnić rozmiar buforu przydzielonego przez funkcję wywołującą.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
-        <source>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</source>
-        <target state="translated">Typ natywny „{0}” musi ustawić pole „BufferSize” w zastosowanym atrybucie „System.Runtime.InteropServices.CustomTypeMarshallerAttribute”, aby określić rozmiar buforu przydzielonego przez funkcję wywołującą, ponieważ ma on konstruktora, który przyjmuje przydzieloną funkcję wywołującą o wartości „Span&lt;byte&gt;”</target>
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
@@ -137,9 +137,9 @@
         <target state="translated">Metoda „{0}” powinna być „statyczna”, „częściowa” i nieogólna, gdy jest oznaczona za pomocą atrybutu „LibraryImportAttribute”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
-        <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
-        <target state="translated">Nieprawidłowe użycie atrybutu „CustomTypeMarshaellerAttribute”</target>
+      <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
+        <source>Invalid `CustomMarshallerAttribute` usage</source>
+        <target state="needs-review-translation">Nieprawidłowe użycie atrybutu „CustomTypeMarshaellerAttribute”</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -147,9 +147,9 @@
         <target state="translated">Nieprawidłowe użycie parametru „LibraryImportAttribute”</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidNativeTypeTitle">
-        <source>Specified native type is invalid</source>
-        <target state="translated">Określony typ natywny jest nieprawidłowy</target>
+      <trans-unit id="InvalidMarshallerTypeTitle">
+        <source>Specified marshaller type is invalid</source>
+        <target state="needs-review-translation">Określony typ natywny jest nieprawidłowy</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -237,44 +237,44 @@
         <target state="translated">Typ „{0}” nie określa typu zarządzanego w atrybucie „System.Runtime.InteropServices.CustomTypeMarshallerAttribute” zastosowanym do typu</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
-        <source>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="translated">Typ natywny „{0}” musi być zamkniętym typem ogólnym lub mieć taką samą liczbę parametrów ogólnych jak typ zarządzany, aby emitowany kod mógł używać określonego tworzenia wystąpienia.</target>
+      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="needs-review-translation">Typ natywny „{0}” musi być zamkniętym typem ogólnym lub mieć taką samą liczbę parametrów ogólnych jak typ zarządzany, aby emitowany kod mógł używać określonego tworzenia wystąpienia.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
-        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="translated">Typ natywny „{0}” dla typu zarządzanego „{1}” musi być zamkniętym typem ogólnym lub mieć taką samą liczbę argumentów jak typ zarządzany.</target>
+      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+        <target state="needs-review-translation">Typ natywny „{0}” dla typu zarządzanego „{1}” musi być zamkniętym typem ogólnym lub mieć taką samą liczbę argumentów jak typ zarządzany.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBeBlittableDescription">
+      <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableDescription">
         <source>A native type must be blittable.</source>
         <target state="translated">Typ natywny musi być kopiowalny.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBeBlittableMessage">
-        <source>The native type '{0}' for type '{1}' must be blittable</source>
-        <target state="translated">Typ natywny „{0}” dla typu „{1}” musi być kopiowalny</target>
+      <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableMessage">
+        <source>The type '{0}' must be unmanaged or strictly blittable</source>
+        <target state="new">The type '{0}' must be unmanaged or strictly blittable</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBePointerSizedDescription">
-        <source>The native type must be pointer sized so the pinned result of 'GetPinnableReference' can be cast to the native type.</source>
-        <target state="translated">Typ natywny musi mieć rozmiar wskaźnika, aby przypięty wynik elementu „GetPinnableReference” można było rzutować na typ natywny.</target>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
+        <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
+        <target state="needs-review-translation">Typ natywny musi mieć rozmiar wskaźnika, aby przypięty wynik elementu „GetPinnableReference” można było rzutować na typ natywny.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBePointerSizedMessage">
-        <source>The native type '{0}' must be pointer sized because the managed type '{1}' has a 'GetPinnableReference' method</source>
-        <target state="translated">Typ natywny „{0}” musi mieć rozmiar wskaźnika, ponieważ typ zarządzany „{1}” ma metodę „GetPinnableReference”</target>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
+        <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
+        <target state="needs-review-translation">Typ natywny „{0}” musi mieć rozmiar wskaźnika, ponieważ typ zarządzany „{1}” ma metodę „GetPinnableReference”</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeDescription">
-        <source>A native type for a given type must have the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="translated">Typ natywny dla danego typu musi mieć atrybut „System.Runtime.InteropServices.CustomTypeMarshallerAttribute”, który określa ten typ jako typ zarządzany.</target>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="needs-review-translation">Typ natywny dla danego typu musi mieć atrybut „System.Runtime.InteropServices.CustomTypeMarshallerAttribute”, który określa ten typ jako typ zarządzany.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeMessage">
-        <source>The native type for the type '{0}' must be a type with the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type</source>
-        <target state="translated">Typ natywny dla typu „{0}” musi być typem o atrybucie „System.Runtime.InteropServices.CustomTypeMarshallerAttribute”, który określa ten typ jako typ zarządzany</target>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
+        <source>The enty-point marshaller type for the type '{0}' must be a type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="needs-review-translation">Typ natywny dla typu „{0}” musi być typem o atrybucie „System.Runtime.InteropServices.CustomTypeMarshallerAttribute”, który określa ten typ jako typ zarządzany</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -287,22 +287,12 @@
         <target state="translated">Typ „{0}” określa, że obsługuje skierowanie w kierunku „Out”, ale nie zapewnia metody „ToManaged”, która zwraca typ zarządzany</target>
         <note />
       </trans-unit>
-      <trans-unit id="RefNativeValueUnsupportedDescription">
-        <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
-        <target state="translated">Właściwość „Value” nie może być właściwością „ref” ani „readonly ref”.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="RefNativeValueUnsupportedMessage">
-        <source>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</source>
-        <target state="translated">Właściwość „Value” typu natywnego „{0}” nie może być właściwością „ref” ani „readonly ref”.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchDescription">
+      <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
         <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</source>
         <target state="translated">Zwracany typ elementu „ToNativeValue” i typ parametru „FromNativeValue” muszą być takie same.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchMessage">
+      <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
         <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</source>
         <target state="translated">Zwracany typ elementu „ToNativeValue” i typ parametru „FromNativeValue” muszą być takie same</target>
         <note />

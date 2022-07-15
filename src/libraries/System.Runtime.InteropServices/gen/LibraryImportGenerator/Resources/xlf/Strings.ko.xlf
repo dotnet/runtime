@@ -8,13 +8,13 @@
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
-        <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
-        <target state="translated">'Span&lt;byte&gt;'을 사용하는 생성자가 네이티브 형식에 지정되면 형식은 호출자 할당 버퍼의 크기를 제공하기 위해 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'의 BufferSize 필드를 설정해야 합니다.</target>
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="needs-review-translation">'Span&lt;byte&gt;'을 사용하는 생성자가 네이티브 형식에 지정되면 형식은 호출자 할당 버퍼의 크기를 제공하기 위해 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'의 BufferSize 필드를 설정해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
-        <source>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</source>
-        <target state="translated">네이티브 형식 '{0}'에는 호출자 할당 'Span&lt;byte&gt;'을 사용하는 생성자가 있으므로 호출자 할당 버퍼의 크기를 지정하려면 적용된 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'에 'BufferSize' 필드를 설정해야 합니다.</target>
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
@@ -137,9 +137,9 @@
         <target state="translated">'{0}' 메서드는 'LibraryImportAttribute'로 표시된 경우 '정적', '부분적'이어야 하며 일반이 아니어야 합니다. P/Invoke 소스 생성은 '{0}' 메서드를 무시합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
-        <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
-        <target state="translated">잘못된 ‘CustomTypeMarshallerAttribute’ 사용법</target>
+      <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
+        <source>Invalid `CustomMarshallerAttribute` usage</source>
+        <target state="needs-review-translation">잘못된 ‘CustomTypeMarshallerAttribute’ 사용법</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -147,9 +147,9 @@
         <target state="translated">잘못된 'LibraryImportAttribute' 사용</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidNativeTypeTitle">
-        <source>Specified native type is invalid</source>
-        <target state="translated">지정한 네이티브 형식이 잘못되었습니다.</target>
+      <trans-unit id="InvalidMarshallerTypeTitle">
+        <source>Specified marshaller type is invalid</source>
+        <target state="needs-review-translation">지정한 네이티브 형식이 잘못되었습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -237,44 +237,44 @@
         <target state="translated">형식 '{0}'은(는) 해당 형식에 적용된 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'의 관리 형식을 지정하지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
-        <source>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="translated">네이티브 형식 '{0}'은(는) 닫힌 제네릭이거나 내보낸 코드에서 특정 인스턴스화를 사용할 수 있도록 관리되는 형식과 동일한 수의 제네릭 매개 변수를 가져야 합니다.</target>
+      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="needs-review-translation">네이티브 형식 '{0}'은(는) 닫힌 제네릭이거나 내보낸 코드에서 특정 인스턴스화를 사용할 수 있도록 관리되는 형식과 동일한 수의 제네릭 매개 변수를 가져야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
-        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="translated">관리 형식 '{1}'에 대한 네이티브 형식 '{0}'은(는) 폐쇄된 일반 형식이거나 관리 형식과 인자가 동일해야 합니다.</target>
+      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+        <target state="needs-review-translation">관리 형식 '{1}'에 대한 네이티브 형식 '{0}'은(는) 폐쇄된 일반 형식이거나 관리 형식과 인자가 동일해야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBeBlittableDescription">
+      <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableDescription">
         <source>A native type must be blittable.</source>
         <target state="translated">네이티브 형식은 blittable이어야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBeBlittableMessage">
-        <source>The native type '{0}' for type '{1}' must be blittable</source>
-        <target state="translated">형식 '{1}'의 네이티브 형식 '{0}'은(는) blittable이어야 합니다.</target>
+      <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableMessage">
+        <source>The type '{0}' must be unmanaged or strictly blittable</source>
+        <target state="new">The type '{0}' must be unmanaged or strictly blittable</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBePointerSizedDescription">
-        <source>The native type must be pointer sized so the pinned result of 'GetPinnableReference' can be cast to the native type.</source>
-        <target state="translated">네이티브 형식은 'GetPinnableReference'의 고정된 결과를 네이티브 형식으로 캐스팅할 수 있도록 포인터 크기여야 합니다.</target>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
+        <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
+        <target state="needs-review-translation">네이티브 형식은 'GetPinnableReference'의 고정된 결과를 네이티브 형식으로 캐스팅할 수 있도록 포인터 크기여야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBePointerSizedMessage">
-        <source>The native type '{0}' must be pointer sized because the managed type '{1}' has a 'GetPinnableReference' method</source>
-        <target state="translated">관리 형식 '{1}'에 'GetPinnableReference' 메서드가 있으므로 네이티브 형식 '{0}'은(는) 포인터 크기여야 합니다.</target>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
+        <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
+        <target state="needs-review-translation">관리 형식 '{1}'에 'GetPinnableReference' 메서드가 있으므로 네이티브 형식 '{0}'은(는) 포인터 크기여야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeDescription">
-        <source>A native type for a given type must have the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="translated">지정된 형식의 네이티브 형식에는 이 형식을 관리 형식으로 지정하는 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'가 있어야 합니다.</target>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="needs-review-translation">지정된 형식의 네이티브 형식에는 이 형식을 관리 형식으로 지정하는 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'가 있어야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeMessage">
-        <source>The native type for the type '{0}' must be a type with the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type</source>
-        <target state="translated">형식 '{0}'의 네이티브 형식은 이 형식을 관리 형식으로 지정하는 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'가 있는 형식이어야 합니다.</target>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
+        <source>The enty-point marshaller type for the type '{0}' must be a type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="needs-review-translation">형식 '{0}'의 네이티브 형식은 이 형식을 관리 형식으로 지정하는 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'가 있는 형식이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -287,22 +287,12 @@
         <target state="translated">형식 '{0}'은(는) 'Out' 방향으로 마샬링을 지원하도록 지정하지만 관리 형식을 반환하는 'ToManaged' 메서드를 제공하지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RefNativeValueUnsupportedDescription">
-        <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
-        <target state="translated">'값' 속성은 'ref' 또는 'readonly ref' 속성이 아니어야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="RefNativeValueUnsupportedMessage">
-        <source>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</source>
-        <target state="translated">네이티브 형식 '{0}'의 'Value' 속성은 'ref' 또는 'readonly ref' 속성이 아니어야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchDescription">
+      <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
         <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</source>
         <target state="translated">'ToNativeValue'의 반환 형식과 'FromNativeValue'의 매개 변수 형식은 동일해야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchMessage">
+      <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
         <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</source>
         <target state="translated">'ToNativeValue'의 반환 형식과 'FromNativeValue'의 매개 변수 형식은 동일해야 합니다.</target>
         <note />

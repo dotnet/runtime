@@ -8,13 +8,13 @@
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
-        <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
-        <target state="translated">Если в машинном типе указан конструктор, который принимает \"Span&lt;byte&gt;\", тип должен задавать в поле \"BufferSize\" атрибута \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\" размер буфера, выделенного вызывающим объектом.</target>
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="needs-review-translation">Если в машинном типе указан конструктор, который принимает \"Span&lt;byte&gt;\", тип должен задавать в поле \"BufferSize\" атрибута \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\" размер буфера, выделенного вызывающим объектом.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
-        <source>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</source>
-        <target state="translated">Собственный тип \"{0}\" должен задавать в поле \"BufferSize\" примененного атрибута \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\" размер выделенного вызывающим объектом буфера, так как он содержит конструктор, который принимает выделенный вызывающим объектом \"Span&lt;byte&gt;\".</target>
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
@@ -137,9 +137,9 @@
         <target state="translated">Метод \"{0}\" должен быть \"static\", \"partial\" и неуниверсальным, если он имеет атрибут \"LibraryImportAttribute\". При создании источника в P/Invoke метод \"{0}\" игнорируется.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
-        <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
-        <target state="translated">Недопустимое использование \"CustomTypeMarshallerAttribute\"</target>
+      <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
+        <source>Invalid `CustomMarshallerAttribute` usage</source>
+        <target state="needs-review-translation">Недопустимое использование \"CustomTypeMarshallerAttribute\"</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -147,9 +147,9 @@
         <target state="translated">Недопустимое использование \"LibraryImportAttribute\"</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidNativeTypeTitle">
-        <source>Specified native type is invalid</source>
-        <target state="translated">Указанный собственный тип недопустим</target>
+      <trans-unit id="InvalidMarshallerTypeTitle">
+        <source>Specified marshaller type is invalid</source>
+        <target state="needs-review-translation">Указанный собственный тип недопустим</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -237,44 +237,44 @@
         <target state="translated">Тип \"{0}\" не указывает управляемый тип в примененном к нему атрибуте \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\"</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
-        <source>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="translated">Собственный тип \"{0}\" должен быть закрытым универсальным или иметь то же количество универсальных параметров, что и управляемый тип, чтобы генерируемый код мог использовать конкретный экземпляр.</target>
+      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="needs-review-translation">Собственный тип \"{0}\" должен быть закрытым универсальным или иметь то же количество универсальных параметров, что и управляемый тип, чтобы генерируемый код мог использовать конкретный экземпляр.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
-        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
-        <target state="translated">Собственный тип \"{0}\" для управляемого типа \"{1}\" должен быть закрытым универсальным типом или иметь ту же арность, что и управляемый тип.</target>
+      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+        <target state="needs-review-translation">Собственный тип \"{0}\" для управляемого типа \"{1}\" должен быть закрытым универсальным типом или иметь ту же арность, что и управляемый тип.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBeBlittableDescription">
+      <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableDescription">
         <source>A native type must be blittable.</source>
         <target state="translated">Собственный тип должен быть непреобразуемым.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBeBlittableMessage">
-        <source>The native type '{0}' for type '{1}' must be blittable</source>
-        <target state="translated">Собственный тип \"{0}\" для типа \"{1}\" должен быть непреобразуемым</target>
+      <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableMessage">
+        <source>The type '{0}' must be unmanaged or strictly blittable</source>
+        <target state="new">The type '{0}' must be unmanaged or strictly blittable</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBePointerSizedDescription">
-        <source>The native type must be pointer sized so the pinned result of 'GetPinnableReference' can be cast to the native type.</source>
-        <target state="translated">Собственный тип должен иметь размер указателя, поэтому закрепленный результат \"GetPinnableReference\" можно привести к собственному типу.</target>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
+        <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
+        <target state="needs-review-translation">Собственный тип должен иметь размер указателя, поэтому закрепленный результат \"GetPinnableReference\" можно привести к собственному типу.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustBePointerSizedMessage">
-        <source>The native type '{0}' must be pointer sized because the managed type '{1}' has a 'GetPinnableReference' method</source>
-        <target state="translated">Собственный тип \"{0}\" должен иметь размер указателя, так как управляемый тип \"{1}\" имеет метод \"GetPinnableReference\"</target>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
+        <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
+        <target state="needs-review-translation">Собственный тип \"{0}\" должен иметь размер указателя, так как управляемый тип \"{1}\" имеет метод \"GetPinnableReference\"</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeDescription">
-        <source>A native type for a given type must have the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="translated">Собственный тип для данного типа должен иметь атрибут \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\", который указывает этот тип в качестве управляемого типа.</target>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="needs-review-translation">Собственный тип для данного типа должен иметь атрибут \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\", который указывает этот тип в качестве управляемого типа.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeMessage">
-        <source>The native type for the type '{0}' must be a type with the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type</source>
-        <target state="translated">Собственный тип для типа \"{0}\" должен иметь атрибут \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\", который указывает этот тип в качестве управляемого типа</target>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
+        <source>The enty-point marshaller type for the type '{0}' must be a type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="needs-review-translation">Собственный тип для типа \"{0}\" должен иметь атрибут \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\", который указывает этот тип в качестве управляемого типа</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -287,22 +287,12 @@
         <target state="translated">Тип \"{0}\" указывает, что поддерживает маршализацию в направлении \"наружу\", но не предоставляет метод \"ToManaged\", который возвращает управляемый тип</target>
         <note />
       </trans-unit>
-      <trans-unit id="RefNativeValueUnsupportedDescription">
-        <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
-        <target state="translated">Свойство \"Value\" не должно быть свойством \"ref\" или \"readonly ref\".</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="RefNativeValueUnsupportedMessage">
-        <source>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</source>
-        <target state="translated">Свойство \"Value\" в собственном типе \"{0}\" не должно быть свойством \"ref\" или \"readonly ref\".</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchDescription">
+      <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
         <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</source>
         <target state="translated">Тип возвращаемого значения \"ToNativeValue\" и тип параметра \"FromNativeValue\" должны совпадать.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchMessage">
+      <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
         <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</source>
         <target state="translated">Тип возвращаемого значения \"ToNativeValue\" и тип параметра \"FromNativeValue\" должны совпадать</target>
         <note />
