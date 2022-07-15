@@ -529,6 +529,124 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(Expected, json);
         }
 
+        [Fact]
+        public async Task NestedPolymorphicClassesIncreaseReadAndWriteStackWhenNeeded()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/71994
+            TestNode obj = new TestNodeList
+            {
+                Name = "testName",
+                Info = "1",
+                List = new List<TestNode>
+                {
+                    new TestLeaf
+                    {
+                        Name = "testName2"
+                    },
+
+                    new TestNodeList
+                    {
+                        Name = "testName3",
+                        Info = "2",
+                        List = new List<TestNode>
+                        {
+                            new TestNodeList
+                            {
+                                Name = "testName4",
+                                Info = "1"
+                            }
+                        }
+
+                    }
+                }
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            JsonTestHelper.AssertJsonEqual(
+                @"{
+                   ""$type"": ""NodeList"",
+                   ""Info"": ""1"",
+                   ""List"": [
+                     {
+                       ""$type"": ""Leaf"",
+                       ""Test"": null,
+                       ""Name"": ""testName2""
+                     },
+                     {
+                       ""$type"": ""NodeList"",
+                       ""Info"": ""2"",
+                       ""List"": [
+                         {
+                           ""$type"": ""NodeList"",
+                           ""Info"": ""1"",
+                           ""List"": null,
+                           ""Name"": ""testName4""
+                         }
+                       ],
+                       ""Name"": ""testName3""
+                     }
+                   ],
+                   ""Name"": ""testName""}", json);
+
+            TestNode deserialized = await Serializer.DeserializeWrapper<TestNode>(json);
+            obj.AssertEqualTo(deserialized);
+        }
+
+        [JsonDerivedType(typeof(TestNodeList), "NodeList")]
+        [JsonDerivedType(typeof(TestLeaf), "Leaf")]
+        abstract class TestNode
+        {
+            public string Name { get; set; }
+
+            public abstract void AssertEqualTo(TestNode other);
+        }
+
+        class TestNodeList : TestNode
+        {
+            public string Info { get; set; }
+
+            public IEnumerable<TestNode> List { get; set; }
+
+            public override void AssertEqualTo(TestNode other)
+            {
+                Assert.Equal(Name, other.Name);
+                Assert.IsType<TestNodeList>(other);
+                TestNodeList typedOther = (TestNodeList)other;
+                Assert.Equal(Info, typedOther.Info);
+                Assert.Equal(List is null, typedOther.List is null);
+
+                if (List is not null)
+                {
+                    using IEnumerator<TestNode> thisEnumerator = List.GetEnumerator();
+                    using IEnumerator<TestNode> otherEnumerator = typedOther.List.GetEnumerator();
+
+                    while (true)
+                    {
+                        bool hasNext = thisEnumerator.MoveNext();
+                        Assert.Equal(hasNext, otherEnumerator.MoveNext());
+
+                        if (!hasNext)
+                            break;
+
+                        thisEnumerator.Current.AssertEqualTo(otherEnumerator.Current);
+                    }
+                }
+            }
+        }
+
+        class TestLeaf : TestNode
+        {
+            public string Test { get; set; }
+
+            public override void AssertEqualTo(TestNode other)
+            {
+                Assert.Equal(Name, other.Name);
+                Assert.IsType<TestLeaf>(other);
+                TestLeaf typedOther = (TestLeaf)other;
+                Assert.Equal(Test, typedOther.Test);
+            }
+        }
+
         class MyClass
         {
             public string Value { get; set; }
