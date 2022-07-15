@@ -103,8 +103,8 @@ internal sealed unsafe class MsQuicApi
                                     return;
                                 }
 
-                                Tls13ServerMayBeDisabled = IsTls13Disabled(true);
-                                Tls13ClientMayBeDisabled = IsTls13Disabled(false);
+                                Tls13ServerMayBeDisabled = IsTls13Disabled(isServer: true);
+                                Tls13ClientMayBeDisabled = IsTls13Disabled(isServer: false);
                             }
 
                             Api = new MsQuicApi(apiTable);
