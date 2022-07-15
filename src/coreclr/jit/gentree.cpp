@@ -7360,6 +7360,17 @@ GenTreeLclFld* Compiler::gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, 
     return node;
 }
 
+GenTreeConditional* Compiler::gtNewConditionalNode(
+    genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type)
+{
+    assert(GenTree::OperIsConditional(oper));
+    GenTreeConditional* node = new (this, oper) GenTreeConditional(oper, type, cond, op1, op2);
+    node->gtFlags |= (cond->gtFlags & GTF_ALL_EFFECT);
+    node->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
+    node->gtFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
+    return node;
+}
+
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset);
@@ -12587,6 +12598,10 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
     if (!(kind & GTK_SMPOP))
     {
+        if (tree->OperIsConditional())
+        {
+            return gtFoldExprConditional(tree);
+        }
         return tree;
     }
 
@@ -12853,6 +12868,112 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
     DISPTREE(cons);
 
     return cons;
+}
+
+/*****************************************************************************
+ *
+ * Some conditionals can be folded:
+ *   SELECT TRUE  X Y  ->  X
+ *   SELECT FALSE X Y  ->  Y
+ *   SELECT COND X X   ->  X
+ *
+ */
+
+GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
+{
+    GenTree* cond = tree->AsConditional()->gtCond;
+    GenTree* op1  = tree->AsConditional()->gtOp1;
+    GenTree* op2  = tree->AsConditional()->gtOp2;
+
+    assert(tree->OperIsConditional());
+
+    // Check for a constant conditional
+    if (cond->OperIsConst())
+    {
+        // Constant conditions must be folded away.
+
+        JITDUMP("\nFolding conditional op with constant condition:\n");
+        DISPTREE(tree);
+
+        assert(cond->TypeGet() == TYP_INT);
+        assert((tree->gtFlags & GTF_SIDE_EFFECT & ~GTF_ASG) == 0);
+        assert((tree->gtFlags & GTF_ORDER_SIDEEFF) == 0);
+
+        GenTree* replacement = nullptr;
+        if (cond->AsIntConCommon()->IntegralValue() == 0)
+        {
+            JITDUMP("Bashed to false path:\n");
+            replacement = op2;
+        }
+        else
+        {
+            // Condition should never be a constant other than 0 or 1
+            assert(cond->AsIntConCommon()->IntegralValue() == 1);
+
+            JITDUMP("Bashed to true path:\n");
+            replacement = op1;
+        }
+
+        if (fgGlobalMorph)
+        {
+            fgMorphTreeDone(replacement);
+        }
+        else
+        {
+            replacement->gtNext = tree->gtNext;
+            replacement->gtPrev = tree->gtPrev;
+        }
+        DISPTREE(replacement);
+        JITDUMP("\n");
+
+        // If we bashed to a compare, try to fold that.
+        if (replacement->OperIsCmpCompare())
+        {
+            return gtFoldExprCompare(replacement);
+        }
+
+        return replacement;
+    }
+
+    assert(cond->OperIsCmpCompare());
+
+    if (((tree->gtFlags & GTF_SIDE_EFFECT) != 0) || !GenTree::Compare(op1, op2, true))
+    {
+        // No folding.
+        return tree;
+    }
+
+    // GTF_ORDER_SIDEEFF here may indicate volatile subtrees.
+    // Or it may indicate a non-null assertion prop into an indir subtree.
+    if ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+    {
+        // If op1 is "volatile" and op2 is not, we can still fold.
+        const bool op1MayBeVolatile = (op1->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+        const bool op2MayBeVolatile = (op2->gtFlags & GTF_ORDER_SIDEEFF) != 0;
+
+        if (!op1MayBeVolatile || op2MayBeVolatile)
+        {
+            // No folding.
+            return tree;
+        }
+    }
+
+    JITDUMP("Bashed to first of two identical paths:\n");
+    GenTree* replacement = op1;
+
+    if (fgGlobalMorph)
+    {
+        fgMorphTreeDone(replacement);
+    }
+    else
+    {
+        replacement->gtNext = tree->gtNext;
+        replacement->gtPrev = tree->gtPrev;
+    }
+    DISPTREE(replacement);
+    JITDUMP("\n");
+
+    return replacement;
 }
 
 //------------------------------------------------------------------------

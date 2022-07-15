@@ -4564,6 +4564,267 @@ PhaseStatus Compiler::optUnrollLoops()
 #pragma warning(pop)
 #endif
 
+//-----------------------------------------------------------------------------
+// optIfConvert
+//
+// Find blocks representing simple if statements represented by conditional jumps
+// over another block. Try to replace the jumps by use of conditional nodes.
+//
+// Arguments:
+//   block -- block that may represent the conditional jump in an if statement.
+//
+// Returns:
+//   true if any IR changes possibly made.
+//
+bool Compiler::optIfConvert(BasicBlock* block)
+{
+#ifndef TARGET_ARM64
+    return false;
+#else
+
+    // Don't optimise the block if it is inside a loop
+    // When inside a loop, branches are quicker than selects.
+    // Detect via the block weight as that will be high when inside a loop.
+    if (block->getBBWeight(this) > BB_UNITY_WEIGHT)
+    {
+        return false;
+    }
+
+    // Does the block end by branching via a JTRUE after a compare?
+    if (block->bbJumpKind != BBJ_COND || block->NumSucc() != 2)
+    {
+        return false;
+    }
+
+    // Verify the test block ends with a conditional that we can manipulate.
+    GenTree* last = block->lastStmt()->GetRootNode();
+    noway_assert(last->gtOper == GT_JTRUE);
+    if (!last->AsOp()->gtOp1->OperIsCmpCompare() || (last->gtFlags & GTF_SIDE_EFFECT) != 0 ||
+        (last->AsOp()->gtOp1->gtFlags & GTF_COLON_COND) != 0)
+    {
+        return false;
+    }
+
+    BasicBlock* middle_block = block;
+    GenTree*    asg_node     = nullptr;
+    Statement*  asg_stmt     = nullptr;
+    bool        found_select = false;
+
+    // Check the the block is followed by a block or chain of blocks that only contain NOPs and
+    // a single ASG statement. The destination of the final block must point to the same as the
+    // true path of the JTRUE block.
+    bool found_middle = false;
+    while (!found_middle)
+    {
+        middle_block = middle_block->bbNext;
+        noway_assert(middle_block != nullptr);
+
+        if (middle_block->bbNext == block->bbJumpDest)
+        {
+            // This is our final middle block.
+            found_middle = true;
+        }
+
+        // Make sure there is only one block which jumps to the middle block,
+        // and the middle block is not the start of a TRY block or an exception handler.
+        noway_assert(!fgCheapPredsValid);
+        if (middle_block->NumSucc() != 1 || middle_block->bbJumpKind != BBJ_NONE ||
+            middle_block->bbPreds->flNext != nullptr || middle_block->bbCatchTyp != BBCT_NONE ||
+            ((middle_block->bbFlags & (BBF_TRY_BEG | BBF_DONT_REMOVE)) != 0))
+        {
+            return false;
+        }
+
+        // Can all the nodes within the middle block be made to conditionally execute?
+        for (Statement* const stmt : middle_block->Statements())
+        {
+            GenTree* tree = stmt->GetRootNode();
+            switch (tree->gtOper)
+            {
+                case GT_ASG:
+                {
+                    GenTree* op1 = tree->AsOp()->gtOp1;
+                    GenTree* op2 = tree->AsOp()->gtOp2;
+
+                    // Only one per assignment per block can be conditionally executed.
+                    // Ensure the destination of the assign is a local variable with integer type,
+                    // and the nodes of the assign won't cause any additional side effects.
+                    if (asg_node != nullptr || op1->gtOper != GT_LCL_VAR || !varTypeIsIntegralOrI(op1->TypeGet()) ||
+                        (op1->gtFlags & GTF_SIDE_EFFECT) != 0 || (op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        return false;
+                    }
+                    asg_node = tree;
+                    asg_stmt = stmt;
+
+                    if (op2->gtOper == GT_SELECT)
+                    {
+                        found_select = true;
+                    }
+                    break;
+                }
+
+                // These do not need conditional execution.
+                case GT_NOP:
+                    break;
+
+                // Cannot optimise this block.
+                default:
+                    return false;
+            }
+        }
+    }
+    if (asg_node == nullptr)
+    {
+        // The blocks checked didn't contain any ASG nodes.
+        return false;
+    }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        JITDUMP("Attempting to conditionally execute " FMT_BB " from " FMT_BB "\n", middle_block->bbNum, block->bbNum);
+        for (BasicBlock* dump_block = block; dump_block != middle_block->bbNext; dump_block = dump_block->bbNext)
+        {
+            fgDumpBlock(dump_block);
+        }
+        JITDUMP("\n");
+    }
+#endif
+
+    if (found_select)
+    {
+        // The assign is already conditional. Try adding another condition.
+        if (!optIfConvertCCmp(last->gtGetOp1(), asg_node))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        // Make the assign conditional.
+        if (!optIfConvertSelect(last->gtGetOp1(), asg_node))
+        {
+            return false;
+        }
+    }
+
+    // Remove the JTRUE statement.
+    last->ReplaceWith(gtNewNothingNode(), this);
+    fgSetStmtSeq(block->lastStmt());
+    gtSetEvalOrder(last);
+    fgSetStmtSeq(asg_stmt);
+
+    // Update the flow.
+    fgRemoveAllRefPreds(block->bbJumpDest, block);
+    block->bbJumpKind = BBJ_NONE;
+    block->bbJumpDest = middle_block;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        JITDUMP("After if conversion\n");
+        for (BasicBlock* dump_block = block; dump_block != middle_block->bbNext; dump_block = dump_block->bbNext)
+        {
+            fgDumpBlock(dump_block);
+        }
+        JITDUMP("\n");
+    }
+#endif
+
+    return true;
+#endif
+}
+
+bool Compiler::optIfConvertSelect(GenTree* original_condition, GenTree* asg_node)
+{
+    assert(original_condition->OperIsCmpCompare());
+    assert(asg_node->gtOper == GT_ASG);
+
+    // Duplicate the input of the assign.
+    // This will be used as the false result of the select node.
+    GenTree* current_value = gtCloneExpr(asg_node->AsOp()->gtOp1);
+    current_value->gtFlags &= GTF_EMPTY;
+
+    // Duplicate the condition and invert it
+    GenTree* cond = gtCloneExpr(original_condition);
+    cond->gtFlags |= GTF_DONT_CSE;
+    cond->gtFlags ^= GTF_RELOP_JMP_USED;
+    cond->gtFlags ^= GTF_RELOP_NAN_UN;
+    cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
+
+    // Create a select node.
+    GenTreeConditional* select =
+        gtNewConditionalNode(GT_SELECT, cond, asg_node->AsOp()->gtOp2, current_value, asg_node->TypeGet());
+
+    // Use the select as the input to the assignment.
+    asg_node->AsOp()->gtOp2 = select;
+    asg_node->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
+
+    // Calculate costs.
+    gtSetEvalOrder(select);
+
+    return true;
+}
+
+bool Compiler::optIfConvertCCmp(GenTree* original_condition, GenTree* asg_node)
+{
+    assert(original_condition->OperIsCmpCompare());
+    assert(asg_node->gtOper == GT_ASG);
+
+    // For now, don't handle floats.
+    if (!varTypeIsIntegralOrI(original_condition->AsOp()->gtOp1->TypeGet()))
+    {
+        return false;
+    }
+
+    // Note: Limiting the maximum number of chained compares may give a performance
+    //       boost, at the cost of more emitted code.
+
+    GenTreeConditional* select_node      = asg_node->AsOp()->gtOp2->AsConditional();
+    GenTree*            select_node_cond = select_node->gtCond;
+
+    // Duplicate the condition and invert it
+    GenTree* new_cond = gtCloneExpr(original_condition);
+    new_cond->gtFlags |= GTF_DONT_CSE;
+    new_cond->gtFlags ^= GTF_RELOP_JMP_USED;
+    new_cond->gtFlags ^= GTF_RELOP_NAN_UN;
+    new_cond->gtOper = GenTree::ReverseRelop(new_cond->gtOper);
+
+    // Link together the two conditions.
+    GenTree* const link = gtNewOperNode(GT_AND, TYP_INT, select_node_cond, new_cond);
+    link->gtFlags |= (select_node_cond->gtFlags & GTF_ALL_EFFECT);
+    link->gtFlags |= (new_cond->gtFlags & GTF_ALL_EFFECT);
+
+    // Use the link as the conditional input to the select.
+    select_node->gtCond = link;
+    select_node->gtFlags |= (link->gtFlags & GTF_ALL_EFFECT);
+    select_node->gtFlags ^= GTF_RELOP_NAN_UN;
+    asg_node->AsOp()->gtFlags |= (select_node->gtFlags & GTF_ALL_EFFECT);
+
+    // Calculate costs.
+    gtSetEvalOrder(link);
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// optIfConversion: If conversion
+//
+// Returns:
+//   suitable phase status
+//
+void Compiler::optIfConversion()
+{
+    // Reverse iterate through the blocks.
+    BasicBlock* block = fgLastBB;
+    while (block != nullptr)
+    {
+        optIfConvert(block);
+        block = block->bbPrev;
+    }
+}
+
 /*****************************************************************************
  *
  *  Return false if there is a code path from 'topBB' to 'botBB' that might

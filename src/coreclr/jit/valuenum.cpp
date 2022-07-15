@@ -9075,6 +9075,27 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 break;
 
+            case GT_SELECT:
+            {
+                GenTreeConditional* const conditional = tree->AsConditional();
+
+                ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+
+                // Collect the exception sets from our operands
+                vnpExcSet = vnStore->VNPUnionExcSet(conditional->gtCond->gtVNPair, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(conditional->gtOp1->gtVNPair, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(conditional->gtOp2->gtVNPair, vnpExcSet);
+
+                // The normal value is a new unique VN.
+                ValueNumPair normalPair;
+                normalPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+
+                // Attach the combined exception set
+                tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
+
+                break;
+            }
+
             default:
                 assert(!"Unhandled special node in fgValueNumberTree");
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
