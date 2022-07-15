@@ -11,7 +11,7 @@ The Native AOT toolchain can be currently built for Linux (x64/arm64), macOS (x6
 
 The paths to major components can be overridden using `IlcToolsPath`, `IlcSdkPath`, `IlcFrameworkPath`, `IlcFrameworkNativePath` and `IlcMibcPath` properties for `dotnet publish`. For example, `/p:IlcToolsPath=<repo root>\artifacts\bin\coreclr\windows.x64.Debug\ilc` can be used to override the compiler with a local debug build for troubleshooting or quick iterations.
 
-The component that writes out object files (objwriter.dll/libobjwriter.so/libobjwriter.dylib) is based on LLVM and doesn't build in the runtime repo. It gets published as a NuGet package out of the [dotnet/llvm-project](https://github.com/dotnet/llvm-project) repo (branch [objwriter/12.x](https://github.com/dotnet/llvm-project/tree/objwriter/12.x)). If you're working on ObjWriter or bringing up a new platform that doesn't have ObjWriter packages yet, as additional pre-requiresites you need to build objwriter out of that repo and replace the file in the output.
+The component that writes out object files (objwriter.dll/libobjwriter.so/libobjwriter.dylib) is based on LLVM and doesn't build in the runtime repo. It gets published as a NuGet package out of the [dotnet/llvm-project](https://github.com/dotnet/llvm-project) repo (branch [objwriter/12.x](https://github.com/dotnet/llvm-project/tree/objwriter/12.x)). If you're working on ObjWriter or bringing up a new platform that doesn't have ObjWriter packages yet, as additional pre-requisites you need to build objwriter out of that repo and replace the file in the output.
 
 ### Building packages
 
