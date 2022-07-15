@@ -16,15 +16,19 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         protected override Func<ECDiffieHellman, byte[]> PublicKeyWriteArrayFunc { get; } =
             key =>
             {
-                using ECDiffieHellmanPublicKey publicKey = key.PublicKey;
-                return publicKey.ExportSubjectPublicKeyInfo();
+                using (ECDiffieHellmanPublicKey publicKey = key.PublicKey)
+                {
+                    return publicKey.ExportSubjectPublicKeyInfo();
+                }
             };
 
         protected override WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } =
             (ECDiffieHellman key, Span<byte> destination, out int bytesWritten) =>
             {
-                using ECDiffieHellmanPublicKey publicKey = key.PublicKey;
-                return publicKey.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+                using (ECDiffieHellmanPublicKey publicKey = key.PublicKey)
+                {
+                    return publicKey.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+                }
             };
     }
 }
