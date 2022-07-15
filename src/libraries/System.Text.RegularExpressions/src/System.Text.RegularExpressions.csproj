@@ -70,6 +70,7 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermGenerator.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\RegexNodeConverter.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SparseIntMap.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\StateFlags.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicMatch.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexNode.cs" />
