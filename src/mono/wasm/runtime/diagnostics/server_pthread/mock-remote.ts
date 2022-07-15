@@ -4,7 +4,15 @@
 import { mock, MockScriptEngine } from "../mock";
 import { createPromiseController } from "../../promise-controller";
 
-function expectAdvertise(data: string | ArrayBuffer) { return data === "ADVR_V1"; }
+function expectAdvertise(data: string | ArrayBuffer) {
+    if (typeof (data) === "string") {
+        return data === "ADVR_V1";
+    } else {
+        const view = new Uint8Array(data);
+        const ADVR_V1 = Array.from("ADVR_V1\0").map((c) => c.charCodeAt(0));
+        return view.length >= ADVR_V1.length && ADVR_V1.every((v, i) => v === view[i]);
+    }
+}
 
 const scriptPC = createPromiseController<void>().promise_control;
 const scriptPCunfulfilled = createPromiseController<void>().promise_control;
