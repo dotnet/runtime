@@ -1430,7 +1430,7 @@ internal static class ReflectionTest
 
             Console.WriteLine("Enum.GetValues");
             {
-                if (Enum.GetValues(typeof(Mine)).GetType().GetElementType() != typeof(Mine))
+                if (Enum.GetValues(typeof(Mine)) is not Mine[])
                     throw new Exception("GetValues");
             }
 
