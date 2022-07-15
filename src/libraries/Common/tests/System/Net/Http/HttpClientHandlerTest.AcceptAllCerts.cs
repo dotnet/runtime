@@ -98,7 +98,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(InvalidCertificateServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68898", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate")]
         public async Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds(string url)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
