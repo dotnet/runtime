@@ -1,0 +1,13 @@
+<Project>
+  <!-- ApiCompat setting -->
+  <PropertyGroup>
+    <RunApiCompatForSrc>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunApiCompatForSrc>
+    <RunMatchingRefApiCompat>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunMatchingRefApiCompat>
+    <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ApiCompatExcludeAttributesFile Include="$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt" />
+    <ApiCompatExcludeAttributesFile Include="$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt" />
+  </ItemGroup>
+</Project>

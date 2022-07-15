@@ -57,18 +57,6 @@
     <AssemblyVersion />
   </PropertyGroup>
 
-  <!-- ApiCompat setting -->
-  <PropertyGroup>
-    <RunApiCompatForSrc>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunApiCompatForSrc>
-    <RunMatchingRefApiCompat>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunMatchingRefApiCompat>
-    <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <ApiCompatExcludeAttributesFile Include="$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt" />
-    <ApiCompatExcludeAttributesFile Include="$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt" />
-  </ItemGroup>
-
   <ItemGroup>
     <!-- Projects which are manually built. -->
     <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
@@ -76,6 +64,7 @@
 
   <Import Project="NetCoreAppLibrary.props" />
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssemblyProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
 
   <PropertyGroup>
     <!-- Default any assembly not specifying a key to use the Open Key -->

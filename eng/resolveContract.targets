@@ -22,6 +22,10 @@
     <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != '' and '@(ResolvedMatchingContract)' == ''">
     <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContract" />
     <!-- We aren't referencing the contract, but make sure it's considered as an input to Compile so that if it changes we rebuild and rerun API compat -->
