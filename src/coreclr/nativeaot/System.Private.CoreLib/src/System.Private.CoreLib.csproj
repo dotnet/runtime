@@ -614,9 +614,10 @@
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
-  <!-- Import refererence assembly logic -->
+  <!-- Import refererence assembly and ApiCompat logic -->
   <PropertyGroup>
     <IsSourceProject>true</IsSourceProject>
+    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
   </PropertyGroup>
   <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
