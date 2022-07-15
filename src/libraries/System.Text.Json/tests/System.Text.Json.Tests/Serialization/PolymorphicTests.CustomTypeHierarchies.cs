@@ -1889,6 +1889,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(17)] // 2nd Write/ReadStack resize
         [InlineData(33)] // 3rd Write/ReadStack resize
         [InlineData(65)] // 4th Write/ReadStack resize
+        [InlineData(80)]
         public async Task Peano_Roundtrip(int number)
         {
             JsonSerializerOptions options = new();
