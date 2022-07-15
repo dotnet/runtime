@@ -10966,7 +10966,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
             return op;
         }
 
-        if (op->gtOper == GT_CALL)
+        if (op->IsCall() && (op->AsCall()->GetUnmanagedCallConv() == unmgdCallConv))
         {
             return op;
         }
