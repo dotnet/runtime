@@ -156,33 +156,60 @@ namespace System.Net.Security
                     }
                 }
 
-                X509Certificate2Collection collectionEx;
                 string certHash = certEx!.Thumbprint;
 
                 // ELSE Try the MY user and machine stores for private key check.
                 // For server side mode MY machine store takes priority.
-                X509Store? store = CertificateValidationPal.EnsureStoreOpened(isServer);
-                if (store != null)
+                X509Certificate2? found =
+                    FindCertWithPrivateKey(isServer) ??
+                    FindCertWithPrivateKey(!isServer);
+                if (found is not null)
                 {
-                    collectionEx = store.Certificates.Find(X509FindType.FindByThumbprint, certHash, false);
-                    if (collectionEx.Count > 0 && collectionEx[0].HasPrivateKey)
-                    {
-                        if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Log.FoundCertInStore(isServer, instance);
-                        return collectionEx[0];
-                    }
+                    return found;
                 }
 
-                store = CertificateValidationPal.EnsureStoreOpened(!isServer);
-                if (store != null)
+                X509Certificate2? FindCertWithPrivateKey(bool isServer)
                 {
-                    collectionEx = store.Certificates.Find(X509FindType.FindByThumbprint, certHash, false);
-                    if (collectionEx.Count > 0 && collectionEx[0].HasPrivateKey)
+                    if (CertificateValidationPal.EnsureStoreOpened(isServer) is X509Store store)
                     {
-                        if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Log.FoundCertInStore(!isServer, instance);
-                        return collectionEx[0];
+                        X509Certificate2Collection certs = store.Certificates;
+                        X509Certificate2Collection found = certs.Find(X509FindType.FindByThumbprint, certHash, false);
+                        X509Certificate2? cert = null;
+                        try
+                        {
+                            if (found.Count > 0)
+                            {
+                                cert = found[0];
+                                if (cert.HasPrivateKey)
+                                {
+                                    if (NetEventSource.Log.IsEnabled())
+                                    {
+                                        NetEventSource.Log.FoundCertInStore(isServer, instance);
+                                    }
+
+                                    return cert;
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            for (int i = 0; i < found.Count; i++)
+                            {
+                                X509Certificate2 toDispose = found[i];
+                                if (!ReferenceEquals(toDispose, cert))
+                                {
+                                    toDispose.Dispose();
+                                }
+                            }
+
+                            for (int i = 0; i < certs.Count; i++)
+                            {
+                                certs[i].Dispose();
+                            }
+                        }
                     }
+
+                    return null;
                 }
             }
             catch (CryptographicException)
@@ -937,11 +964,13 @@ namespace System.Net.Security
             try
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
-                if (_remoteCertificate != null && certificate != null &&
+                if (_remoteCertificate != null &&
+                    certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
                     // This is renegotiation or TLS 1.3 and the certificate did not change.
                     // There is no reason to process callback again as we already established trust.
+                    certificate.Dispose();
                     return true;
                 }
 
