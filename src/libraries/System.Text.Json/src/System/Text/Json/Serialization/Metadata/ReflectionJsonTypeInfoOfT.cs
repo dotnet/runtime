@@ -185,13 +185,6 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(typeToConvert, memberInfo.DeclaringType, memberInfo);
             }
 
-            // Resolve the default converter for the member type, if it has already been cached.
-            // If not found, converter resolution will be delayed until the Configure() stage.
-            JsonConverter? converter =
-                options.TryGetTypeInfoCached(typeToConvert, out JsonTypeInfo? jsonTypeInfo)
-                ? jsonTypeInfo.Converter
-                : null;
-
             // Resolve any custom converters on the attribute level.
             JsonConverter? customConverter;
             try
@@ -204,7 +197,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return null;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert, converter);
+            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert);
             jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition);
             return jsonPropertyInfo;
         }

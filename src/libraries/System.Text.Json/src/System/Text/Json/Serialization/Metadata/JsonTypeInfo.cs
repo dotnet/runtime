@@ -516,12 +516,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
         /// <remarks>
         /// The returned <see cref="JsonTypeInfo{T}"/> will be blank, with the exception of the
-        /// <see cref="JsonTypeInfo.Converter"/> property which will be resolved either from
+        /// <see cref="Converter"/> property which will be resolved either from
         /// <see cref="JsonSerializerOptions.Converters"/> or the built-in converters for the type.
         /// Any converters specified via <see cref="JsonConverterAttribute"/> on the type declaration
         /// will not be resolved by this method.
         ///
-        /// What converter does get resolved influences the value of <see cref="JsonTypeInfo.Kind"/>,
+        /// What converter does get resolved influences the value of <see cref="Kind"/>,
         /// which constrains the type of metadata that can be modified in the <see cref="JsonTypeInfo"/> instance.
         /// </remarks>
         [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
@@ -544,17 +544,17 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <param name="type">The type for which contract metadata is specified.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> instance the metadata is associated with.</param>
-        /// <returns>A blank <see cref="JsonTypeInfo{T}"/> instance.</returns>
+        /// <returns>A blank <see cref="JsonTypeInfo"/> instance.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="options"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="type"/> cannot be used for serialization.</exception>
         /// <remarks>
-        /// The returned <see cref="JsonTypeInfo{T}"/> will be blank, with the exception of the
-        /// <see cref="JsonTypeInfo.Converter"/> property which will be resolved either from
+        /// The returned <see cref="JsonTypeInfo"/> will be blank, with the exception of the
+        /// <see cref="Converter"/> property which will be resolved either from
         /// <see cref="JsonSerializerOptions.Converters"/> or the built-in converters for the type.
         /// Any converters specified via <see cref="JsonConverterAttribute"/> on the type declaration
         /// will not be resolved by this method.
         ///
-        /// What converter does get resolved influences the value of <see cref="JsonTypeInfo.Kind"/>,
+        /// What converter does get resolved influences the value of <see cref="Kind"/>,
         /// which constrains the type of metadata that can be modified in the <see cref="JsonTypeInfo"/> instance.
         /// </remarks>
         [RequiresUnreferencedCode(MetadataFactoryRequiresUnreferencedCode)]
@@ -608,12 +608,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(propertyType), propertyType, Type, name);
             }
 
-            JsonConverter? converter =
-                Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo)
-                ? jsonTypeInfo.Converter
-                : null;
-
-            JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType, converter);
+            JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType);
             propertyInfo.Name = name;
 
             return propertyInfo;

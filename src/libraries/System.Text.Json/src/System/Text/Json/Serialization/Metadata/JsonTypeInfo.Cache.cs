@@ -54,17 +54,20 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, JsonConverter? converter)
+        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType)
         {
-            Debug.Assert(converter is null || propertyType.IsInSubtypeRelationshipWith(converter.TypeToConvert));
+            // Resolve the JsonTypeInfo for the member type, if it has already been cached.
+            // If not found, type metadata resolution will be delayed until the Configure() stage.
+            Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo);
+            JsonConverter? converterForType = jsonTypeInfo?.Converter;
 
             JsonPropertyInfo jsonPropertyInfo;
 
-            if (converter?.TypeToConvert == propertyType)
+            if (converterForType?.TypeToConvert == propertyType)
             {
                 // For the vast majority of use cases, the converter type matches the property type.
                 // Avoid reflection-based initialization by delegating JsonPropertyInfo<T> construction to the converter itself.
-                jsonPropertyInfo = converter.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
+                jsonPropertyInfo = converterForType.CreateJsonPropertyInfo(declaringTypeInfo: this, Options);
             }
             else
             {
@@ -75,7 +78,8 @@ namespace System.Text.Json.Serialization.Metadata
                 jsonPropertyInfo = (JsonPropertyInfo)factoryInfo.Invoke(null, new object[] { this, Options })!;
             }
 
-            jsonPropertyInfo.DefaultConverterForType = converter;
+            jsonPropertyInfo.DefaultConverterForType = converterForType;
+            jsonPropertyInfo.JsonTypeInfo = jsonTypeInfo;
             return jsonPropertyInfo;
         }
 
