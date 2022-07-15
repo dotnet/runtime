@@ -3543,24 +3543,8 @@ bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 // This will enable to use directly the typehandle instead of going through getClassByHandle
 CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, CorInfoInlineTypeCheckSource source)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoInlineTypeCheck result = CORINFO_INLINE_TYPECHECK_PASS;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    if (TypeHandle(clsHnd).IsFnPtrType())
-    {
-        result = CORINFO_INLINE_TYPECHECK_USE_HELPER;
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
+    LIMITED_METHOD_CONTRACT;
+    return CORINFO_INLINE_TYPECHECK_PASS;
 }
 
 /*********************************************************************/
@@ -4237,14 +4221,7 @@ TypeCompareState CEEInfo::compareTypesForEquality(
     // If neither type is a canonical subtype, type handle comparison suffices
     if (!hnd1.IsCanonicalSubtype() && !hnd2.IsCanonicalSubtype())
     {
-        if (hnd1.IsFnPtrType() || hnd2.IsFnPtrType())
-        {
-            result = TypeCompareState::May;
-        }
-        else
-        {
-            result = (hnd1 == hnd2 ? TypeCompareState::Must : TypeCompareState::MustNot);
-        }
+        result = (hnd1 == hnd2 ? TypeCompareState::Must : TypeCompareState::MustNot);
     }
     // If either or both types are canonical subtypes, we can sometimes prove inequality.
     else
