@@ -364,9 +364,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         if (codeVersion.IsDefaultVersion())
         {
             pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-            _ASSERTE(!codeVersion.IsUnoptimizedTier());
+            _ASSERTE(codeVersion.IsFinalTier());
         }
-        else if (codeVersion.IsUnoptimizedTier())
+        else if (!codeVersion.IsFinalTier())
         {
             codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         }
@@ -465,7 +465,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
 #ifdef FEATURE_TIERED_COMPILATION
                 if (shouldCountCalls)
                 {
-                    _ASSERTE(pConfig->GetCodeVersion().IsUnoptimizedTier());
+                    _ASSERTE(!pConfig->GetCodeVersion().IsFinalTier());
                     pConfig->SetShouldCountCalls();
                 }
 #endif
@@ -1314,6 +1314,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         _ASSERTE(
             previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
             previousOptimizationTier == NativeCodeVersion::OptimizationTierInstrumented ||
+            previousOptimizationTier == NativeCodeVersion::OptimizationTierInstrumentedOptimized ||
             previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
     #endif // _DEBUG
 

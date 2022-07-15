@@ -83,7 +83,7 @@ public:
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
-    bool IsUnoptimizedTier() const;
+    bool IsFinalTier() const;
 #ifndef DACCESS_COMPILE
     void SetOptimizationTier(OptimizationTier tier);
 #endif

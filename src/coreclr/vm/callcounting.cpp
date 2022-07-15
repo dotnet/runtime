@@ -574,7 +574,7 @@ bool CallCountingManager::SetCodeEntryPoint(
             // For a default code version that is not tier 0, call counting will have been disabled by this time (checked
             // below). Avoid the redundant and not-insignificant expense of GetOptimizationTier() on a default code version.
             !activeCodeVersion.IsDefaultVersion() &&
-            !activeCodeVersion.IsUnoptimizedTier()
+            activeCodeVersion.IsFinalTier()
         ) ||
         !g_pConfig->TieredCompilation_CallCounting())
     {
@@ -602,7 +602,7 @@ bool CallCountingManager::SetCodeEntryPoint(
                 return true;
             }
 
-            _ASSERTE(activeCodeVersion.IsUnoptimizedTier());
+            _ASSERTE(!activeCodeVersion.IsFinalTier());
 
             // If the tiering delay is active, postpone further work
             if (GetAppDomain()
@@ -649,7 +649,7 @@ bool CallCountingManager::SetCodeEntryPoint(
         }
         else
         {
-            _ASSERTE(activeCodeVersion.IsUnoptimizedTier());
+            _ASSERTE(!activeCodeVersion.IsFinalTier());
 
             // If the tiering delay is active, postpone further work
             if (GetAppDomain()
@@ -780,7 +780,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     // used going forward under appropriate locking to synchronize further with deletion.
     GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
 
-    _ASSERTE(codeVersion.IsUnoptimizedTier());
+    _ASSERTE(!codeVersion.IsFinalTier());
 
     codeEntryPoint = codeVersion.GetNativeCode();
     do

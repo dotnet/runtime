@@ -333,11 +333,11 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
     }
 }
 
-bool NativeCodeVersion::IsUnoptimizedTier() const
+bool NativeCodeVersion::IsFinalTier() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     OptimizationTier tier = GetOptimizationTier();
-    return tier == OptimizationTier0 || tier == OptimizationTierInstrumented;
+    return tier == OptimizationTier1 || tier == OptimizationTierOptimized;
 }
 
 #ifndef DACCESS_COMPILE
@@ -815,7 +815,7 @@ bool ILCodeVersion::HasAnyOptimizedNativeCodeVersion(NativeCodeVersion tier0Nati
     _ASSERTE(!tier0NativeCodeVersion.IsNull());
     _ASSERTE(tier0NativeCodeVersion.GetILCodeVersion() == *this);
     _ASSERTE(tier0NativeCodeVersion.GetMethodDesc()->IsEligibleForTieredCompilation());
-    _ASSERTE(tier0NativeCodeVersion.IsUnoptimizedTier());
+    _ASSERTE(!tier0NativeCodeVersion.IsFinalTier());
 
     NativeCodeVersionCollection nativeCodeVersions = GetNativeCodeVersions(tier0NativeCodeVersion.GetMethodDesc());
     for (auto itEnd = nativeCodeVersions.End(), it = nativeCodeVersions.Begin(); it != itEnd; ++it)
@@ -1715,9 +1715,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             {
             #ifdef FEATURE_TIERED_COMPILATION
                 _ASSERTE(!config->ShouldCountCalls() || pMethodDesc->IsEligibleForTieredCompilation());
-                _ASSERTE(
-                    !config->ShouldCountCalls() ||
-                    activeVersion.IsUnoptimizedTier());
+                _ASSERTE(!config->ShouldCountCalls() || !activeVersion.IsFinalTier());
                 if (config->ShouldCountCalls()) // the generated code was at a tier that is call-counted
                 {
                     // This is the first call to a call-counted code version of the method

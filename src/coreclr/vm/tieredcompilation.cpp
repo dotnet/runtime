@@ -258,7 +258,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     _ASSERTE(!tier0NativeCodeVersion.IsNull());
-    _ASSERTE(tier0NativeCodeVersion.IsUnoptimizedTier());
+    _ASSERTE(!tier0NativeCodeVersion.IsFinalTier());
     _ASSERTE(createTieringBackgroundWorkerRef != nullptr);
 
     NativeCodeVersion t1NativeCodeVersion;
@@ -1027,7 +1027,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
     _ASSERTE(config != nullptr);
     _ASSERTE(
         !config->WasTieringDisabledBeforeJitting() ||
-        !config->GetCodeVersion().IsUnoptimizedTier());
+        config->GetCodeVersion().IsFinalTier());
 
     CORJIT_FLAGS flags;
 
@@ -1067,7 +1067,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
             if (g_pConfig->TieredCompilation_QuickJit())
             {
-                _ASSERTE(nativeCodeVersion.IsUnoptimizedTier());
+                _ASSERTE(!nativeCodeVersion.IsFinalTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
             }
