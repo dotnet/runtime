@@ -825,6 +825,22 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task UnknownOperationCanceledException_NotWrappedInATimeoutException()
+        {
+            using var client = new HttpClient(new CustomResponseHandler((request, cancellation) =>
+            {
+                throw new OperationCanceledException("Foo");
+            }));
+            client.Timeout = TimeSpan.FromSeconds(42);
+
+            OperationCanceledException e = await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetAsync(CreateFakeUri()));
+
+            Assert.Null(e.InnerException);
+            Assert.Equal("Foo", e.Message);
+            Assert.DoesNotContain("42", e.ToString());
+        }
+
+        [Fact]
         public void DefaultProxy_SetNull_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => HttpClient.DefaultProxy = null);
