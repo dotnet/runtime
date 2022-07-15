@@ -99,6 +99,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void Extract_SymbolicLinkEntry_TargetInsideDirectory(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink, format, null);
 
+        [PlatformSpecific(~TestPlatforms.LinuxBionic)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -109,6 +110,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void Extract_SymbolicLinkEntry_TargetInsideDirectory_LongBaseDir(TarEntryFormat format) => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink, format, new string('a', 99));
 
+        [PlatformSpecific(~TestPlatforms.LinuxBionic)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsHardLinkCreation))]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]

@@ -9,7 +9,7 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarReader_TarEntry_ExtractToFileAsync_Tests : TarTestsBase
     {
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.tvOS)] // https://github.com/dotnet/runtime/issues/68360
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.tvOS & ~TestPlatforms.LinuxBionic)] // https://github.com/dotnet/runtime/issues/68360
         [ConditionalFact(nameof(IsUnixButNotSuperUser))]
         public async Task SpecialFile_Unelevated_Throws_Async()
         {
