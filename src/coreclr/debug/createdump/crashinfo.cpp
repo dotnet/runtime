@@ -823,13 +823,6 @@ ModuleInfo::GetSymbolName(uint64_t address)
     return nullptr;
 }
 
-// Helper for PAL_VirtualUnwindOutOfProc/PAL_GetUnwindInfoSize
-BOOL
-ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
-{
-    return g_crashInfo->ReadMemory(address, buffer, size);
-}
-
 //
 // Returns just the file name portion of a file path
 //

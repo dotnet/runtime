@@ -11,6 +11,8 @@
 typedef int __ptrace_request;
 #endif
 
+extern CrashInfo* g_crashInfo;
+
 // Helper for UnwindNativeFrames
 static void
 GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
@@ -28,6 +30,13 @@ GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
     *ip = pContext->Pc & ~THUMB_CODE;
     *sp = pContext->Sp;
 #endif
+}
+
+// Helper for UnwindNativeFrames
+static BOOL
+ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
+{
+    return g_crashInfo->ReadMemory(address, buffer, size);
 }
 
 void

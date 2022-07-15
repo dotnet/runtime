@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+extern CrashInfo* g_crashInfo;
+
 int g_readProcessMemoryErrno = 0;
 
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
@@ -332,6 +334,14 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
         }
     }
     EnumerateProgramHeaders(baseAddress);
+}
+
+// Helper for PAL_GetUnwindInfoSize. Reads memory directly without adding it to the memory region list.
+BOOL
+ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
+{
+    size_t read = 0;
+    return g_crashInfo->ReadProcessMemory(address, buffer, size, &read);
 }
 
 //

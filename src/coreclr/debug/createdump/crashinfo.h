@@ -30,7 +30,6 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 
 #endif
 
-extern BOOL ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size);
 extern const std::string GetFileName(const std::string& fileName);
 extern const std::string GetDirectory(const std::string& fileName);
 extern std::string FormatString(const char* format, ...);
