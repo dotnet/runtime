@@ -417,18 +417,18 @@ namespace DebuggerTests
             }
         }
 
-        public static void EvaluateMethods()
+        public static async Task EvaluateMethods()
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
             DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.Run();
             DebuggerTests.EvaluateStaticFieldsInStaticClass.Run();
-            DebuggerTests.EvaluateStaticFieldsInStaticClass.RunAsync();
+            await DebuggerTests.EvaluateStaticFieldsInStaticClass.RunAsync();
             DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStatic();
-            DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStaticAsync();
+            await DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStaticAsync();
             var instanceWithStaticFields = new EvaluateStaticFieldsInInstanceClass();
             instanceWithStaticFields.Run();
-            instanceWithStaticFields.RunAsync();
+            await instanceWithStaticFields.RunAsync();
         }
     }
 
@@ -443,7 +443,7 @@ namespace DebuggerTests
             bool stop = true;
         }
 
-        public async static void RunAsync()
+        public async static Task RunAsync()
         {
             await Task.FromResult(0);
         }
@@ -473,7 +473,7 @@ namespace DebuggerTests
             bool stop = true;
         }
 
-        public async void RunAsync()
+        public async Task RunAsync()
         {
             await Task.FromResult(0);
         }
@@ -483,7 +483,7 @@ namespace DebuggerTests
             bool stop = true;
         }
 
-        public static async void RunStaticAsync()
+        public static async Task RunStaticAsync()
         {
             await Task.FromResult(0);
         }
