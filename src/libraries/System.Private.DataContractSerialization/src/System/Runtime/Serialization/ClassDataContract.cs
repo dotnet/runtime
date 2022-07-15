@@ -20,9 +20,9 @@ namespace System.Runtime.Serialization
         internal const string ContractTypeString = nameof(ClassDataContract);
         public override string? ContractType => ContractTypeString;
 
-        internal XmlDictionaryString[]? ContractNamespaces;
+        public XmlDictionaryString[]? ContractNamespaces;
 
-        internal XmlDictionaryString[]? MemberNames;
+        public XmlDictionaryString[]? MemberNames;
 
         internal XmlDictionaryString[]? MemberNamespaces;
 
