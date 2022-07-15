@@ -107,9 +107,9 @@
         <target state="translated">El tipo de punto de entrada del serializador "{0}" para el tipo administrado "{1}" debe tener una aridad mayor que el tipo administrado.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerTypeMustBeStatic">
-        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
-        <target state="translated">El tipo de serializador "{0}" para el tipo administrado "{1}" debe ser estático.</target>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">

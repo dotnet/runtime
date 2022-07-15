@@ -184,12 +184,12 @@ namespace System.Text.RegularExpressions.Generator
                 SyntaxNode createRegexMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
                 SyntaxNode method = generator.InvocationExpression(generator.MemberAccessExpression(createRegexMethod, invocationOperation.TargetMethod.Name), arguments.Select(arg => arg.Syntax).ToArray());
 
-                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, method);
+                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(method, nodeToFix));
             }
             else // When using a Regex constructor
             {
                 SyntaxNode invokeMethod = generator.InvocationExpression(generator.IdentifierName(methodName));
-                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, invokeMethod);
+                newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit.ReplaceNode(nodeToFix, WithTrivia(invokeMethod, nodeToFix));
             }
 
             // Initialize the inputs for the RegexGenerator attribute.
@@ -308,6 +308,9 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 return string.Join(" | ", parts);
             }
+
+            static SyntaxNode WithTrivia(SyntaxNode method, SyntaxNode nodeToFix)
+                => method.WithLeadingTrivia(nodeToFix.GetLeadingTrivia()).WithTrailingTrivia(nodeToFix.GetTrailingTrivia());
         }
     }
 }

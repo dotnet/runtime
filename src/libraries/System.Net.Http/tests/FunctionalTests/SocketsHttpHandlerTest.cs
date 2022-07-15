@@ -2242,21 +2242,21 @@ namespace System.Net.Http.Functional.Tests
 
             List<(Http2LoopbackConnection connection, int streamId)> acceptedRequests = new List<(Http2LoopbackConnection connection, int streamId)>();
 
-            using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            await using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
             for (int i = 0; i < MaxConcurrentStreams; i++)
             {
                 (int streamId, _) = await c1.ReadAndParseRequestHeaderAsync();
                 acceptedRequests.Add((c1, streamId));
             }
 
-            using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            await using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
             for (int i = 0; i < MaxConcurrentStreams; i++)
             {
                 (int streamId, _) = await c2.ReadAndParseRequestHeaderAsync();
                 acceptedRequests.Add((c2, streamId));
             }
 
-            using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            await using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
             (int finalStreamId, _) = await c3.ReadAndParseRequestHeaderAsync();
             acceptedRequests.Add((c3, finalStreamId));
 
@@ -2638,7 +2638,7 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
+                await using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
                 await loopbackConnection.InitializeConnectionAsync();
 
                 HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
@@ -2699,7 +2699,7 @@ namespace System.Net.Http.Functional.Tests
                 Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
 
                 Socket serverSocket = await listenSocket.AcceptAsync();
-                using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
+                await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
                 {
                     await loopbackConnection.InitializeConnectionAsync();
 
@@ -2761,7 +2761,7 @@ namespace System.Net.Http.Functional.Tests
 
             await serverStream.WriteAsync(ResponsePrefix);
 
-            using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
+            await using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
             await loopbackConnection.InitializeConnectionAsync();
 
             HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
@@ -3256,7 +3256,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await serverStream.WriteAsync(ResponsePrefix);
 
-                using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, new GenericLoopbackOptions() { UseSsl = false });
+                await using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, new GenericLoopbackOptions() { UseSsl = false });
                 await loopbackConnection.InitializeConnectionAsync();
 
                 HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();

@@ -2710,15 +2710,7 @@ namespace System.Xml
                 {
                     if (s_xmlNamespace == null)
                     {
-                        byte[] xmlBuffer =
-                            {
-                                (byte)'x', (byte)'m', (byte)'l',
-                                (byte)'h', (byte)'t', (byte)'t', (byte)'p', (byte)':', (byte)'/', (byte)'/', (byte)'w',
-                                (byte)'w', (byte)'w', (byte)'.', (byte)'w', (byte)'3', (byte)'.', (byte)'o', (byte)'r',
-                                (byte)'g', (byte)'/', (byte)'X', (byte)'M', (byte)'L', (byte)'/', (byte)'1', (byte)'9',
-                                (byte)'9', (byte)'8', (byte)'/', (byte)'n', (byte)'a', (byte)'m', (byte)'e', (byte)'s',
-                                (byte)'p', (byte)'a', (byte)'c', (byte)'e'
-                            };
+                        byte[] xmlBuffer = "xmlhttp://www.w3.org/XML/1998/namespace"u8.ToArray();
                         Namespace nameSpace = new Namespace(new XmlBufferReader(xmlBuffer));
                         nameSpace.Prefix.SetValue(0, 3);
                         nameSpace.Uri.SetValue(3, xmlBuffer.Length - 3);

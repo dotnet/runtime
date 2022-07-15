@@ -108,15 +108,14 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private MsQuicSafeHandle? _configuration;
 
     /// <summary>
-    /// Set when SHUTDOWN_INITIATED_BY_PEER is received.
-    /// </summary>
-    private long _abortErrorCode = -1;
-
-    /// <summary>
     /// Used by <see cref="AcceptInboundStreamAsync(CancellationToken)" /> to throw in case no stream can be opened from the peer.
     /// <c>true</c> when at least one of <see cref="QuicConnectionOptions.MaxInboundBidirectionalStreams" /> or <see cref="QuicConnectionOptions.MaxInboundUnidirectionalStreams" /> is greater than <c>0</c>.
     /// </summary>
     private bool _canAccept;
+    /// <summary>
+    /// From <see cref="QuicConnectionOptions.DefaultStreamErrorCode"/>, passed to newly created <see cref="QuicStream"/>.
+    /// </summary>
+    private long _defaultStreamErrorCode;
     /// <summary>
     /// From <see cref="QuicConnectionOptions.DefaultCloseErrorCode"/>, used to close connection in <see cref="DisposeAsync"/>.
     /// </summary>
@@ -193,7 +192,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 MsQuicApi.Api.Registration.QuicHandle,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
-                &handle));
+                &handle),
+                "ConnectionOpen failed");
             _handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->ConnectionClose, SafeHandleType.Connection);
         }
         catch
@@ -237,11 +237,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
+            _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
-                throw new ArgumentException($"Unsupported remote endpoint type '{options.RemoteEndPoint.GetType()}', expected IP or DNS endpoint.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.net_quic_unsupported_endpoint_type, options.RemoteEndPoint.GetType()), nameof(options));
             }
             int addressFamily = QUIC_ADDRESS_FAMILY_UNSPEC;
 
@@ -306,7 +307,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                         _configuration.QuicHandle,
                         (ushort)addressFamily,
                         (sbyte*)targetHostPtr,
-                        (ushort)port));
+                        (ushort)port),
+                        "ConnectionStart failed");
                 }
             }
             finally
@@ -325,6 +327,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (_connectedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
+            _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
 
             _sslConnectionOptions = new SslConnectionOptions(
@@ -340,7 +343,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConnectionSetConfiguration(
                     _handle.QuicHandle,
-                    _configuration.QuicHandle));
+                    _configuration.QuicHandle),
+                    "ConnectionSetConfiguration failed");
             }
         }
 
@@ -359,14 +363,23 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        QuicStream stream = new QuicStream(new Implementations.MsQuic.MsQuicStream(_state, _handle, type));
+        QuicStream? stream = null;
         try
         {
+            stream = new QuicStream(_state, _handle, type, _defaultStreamErrorCode);
             await stream.StartAsync(cancellationToken).ConfigureAwait(false);
         }
         catch
         {
-            await stream.DisposeAsync().ConfigureAwait(false);
+            if (stream is not null)
+            {
+                await stream.DisposeAsync().ConfigureAwait(false);
+            }
+            // Propagate connection error if present.
+            if (_acceptQueue.Reader.Completion.IsFaulted)
+            {
+                await _acceptQueue.Reader.Completion.ConfigureAwait(false);
+            }
             throw;
         }
         return stream;
@@ -449,21 +462,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
-        _connectedTcs.TrySetException(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
-        // To throw QuicConnectionAbortedException (instead of QuicOperationAbortedException) out of AcceptStreamAsync() since
-        // it wasn't our side who shutdown the connection.
-        // We should rather keep the Status and propagate it either in a different exception or as a different field of QuicConnectionAbortedException.
-        // See: https://github.com/dotnet/runtime/issues/60133
-        _abortErrorCode = 0;
-        _state.AbortErrorCode = _abortErrorCode;
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(_abortErrorCode)));
+        _state.AbortErrorCode = 0;
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
+        _connectedTcs.TrySetException(exception);
+        _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownInitiatedByPeer(ref SHUTDOWN_INITIATED_BY_PEER_DATA data)
     {
-        _abortErrorCode = (long)data.ErrorCode;
-        _state.AbortErrorCode = _abortErrorCode;
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException(_abortErrorCode)));
+        _state.AbortErrorCode = (long)data.ErrorCode;
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetConnectionAbortedException((long)data.ErrorCode)));
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE_DATA data)
@@ -484,7 +492,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventPeerStreamStarted(ref PEER_STREAM_STARTED_DATA data)
     {
-        QuicStream stream = new QuicStream(new Implementations.MsQuic.MsQuicStream(_state, _handle, data.Stream, data.Flags));
+        QuicStream stream = new QuicStream(_state, _handle, data.Stream, data.Flags, _defaultStreamErrorCode);
         if (!_acceptQueue.Writer.TryWrite(stream))
         {
             if (NetEventSource.Log.IsEnabled())
@@ -583,6 +591,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
         }
 
+        // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
         await valueTask.ConfigureAwait(false);
         _handle.Dispose();
 

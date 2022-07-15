@@ -935,7 +935,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [ActiveIssue("Need to refactor root-level polymorphic JsonTypeInfo handling.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72187")]
         [MemberData(nameof(PolymorphicClass_WithBaseTypeDiscriminator.GetTestData), MemberType = typeof(PolymorphicClass_WithBaseTypeDiscriminator))]
         public async Task PolymorphicClass_BoxedSerialization_DoesNotUseTypeDiscriminators(PolymorphicClass_WithBaseTypeDiscriminator value, string expectedJson)
         {
@@ -956,7 +956,7 @@ namespace System.Text.Json.Serialization.Tests
             public static IEnumerable<object[]> GetTestData()
             {
                 yield return WrapArgs(new PolymorphicClass_WithBaseTypeDiscriminator { Number = 42 }, @"{""Number"" : 42 }");
-                yield return WrapArgs(new DerivedClass { Number = 42, String = "str" }, @"{""Number"" : 42, ""String"" : str }");
+                yield return WrapArgs(new DerivedClass { Number = 42, String = "str" }, @"{""Number"" : 42, ""String"" : ""str"" }");
 
                 static object[] WrapArgs(PolymorphicClass_WithBaseTypeDiscriminator value, string expectedJson)
                     => new object[] { value, expectedJson };
