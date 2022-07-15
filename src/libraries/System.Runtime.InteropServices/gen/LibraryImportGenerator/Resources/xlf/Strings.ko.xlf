@@ -112,6 +112,26 @@
         <target state="translated">마샬러 형식에 필요한 셰이프가 없습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="new">An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullMessage">
+        <source>The entry-point marshaller type for the type '{0}' must be not 'null'</source>
+        <target state="new">The entry-point marshaller type for the type '{0}' must be not 'null'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
+        <source>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</source>
+        <target state="new">Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
+        <source>Overloading the 'FromUnmanaged' method is not supported in custom marshallers</source>
+        <target state="new">Overloading the 'FromUnmanaged' method is not supported in custom marshallers</target>
+        <note />
+      </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
         <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
         <target state="translated">'GetPinnableReference'의 반환 형식('ref'를 고려한 후)은 blittable이어야 합니다.</target>
@@ -228,13 +248,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
-        <source>A type with a 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' must specify a managed type</source>
-        <target state="translated">'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'가 있는 형식은 관리 형식을 지정해야 합니다.</target>
+        <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
+        <target state="needs-review-translation">'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'가 있는 형식은 관리 형식을 지정해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
-        <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' applied to the type</source>
-        <target state="translated">형식 '{0}'은(는) 해당 형식에 적용된 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'의 관리 형식을 지정하지 않습니다.</target>
+        <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
+        <target state="needs-review-translation">형식 '{0}'은(는) 해당 형식에 적용된 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'의 관리 형식을 지정하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -245,6 +265,16 @@
       <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityMessage">
         <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
         <target state="needs-review-translation">관리 형식 '{1}'에 대한 네이티브 형식 '{0}'은(는) 폐쇄된 일반 형식이거나 관리 형식과 인자가 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</source>
+        <target state="new">The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchMessage">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</source>
+        <target state="new">The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedOrStrictlyBlittableDescription">
@@ -273,8 +303,8 @@
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
-        <source>The enty-point marshaller type for the type '{0}' must be a type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
-        <target state="needs-review-translation">형식 '{0}'의 네이티브 형식은 이 형식을 관리 형식으로 지정하는 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'가 있는 형식이어야 합니다.</target>
+        <source>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="new">The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -288,13 +318,13 @@
         <note />
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
-        <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</source>
-        <target state="translated">'ToNativeValue'의 반환 형식과 'FromNativeValue'의 매개 변수 형식은 동일해야 합니다.</target>
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
+        <target state="needs-review-translation">'ToNativeValue'의 반환 형식과 'FromNativeValue'의 매개 변수 형식은 동일해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
-        <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</source>
-        <target state="translated">'ToNativeValue'의 반환 형식과 'FromNativeValue'의 매개 변수 형식은 동일해야 합니다.</target>
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
+        <target state="needs-review-translation">'ToNativeValue'의 반환 형식과 'FromNativeValue'의 매개 변수 형식은 동일해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

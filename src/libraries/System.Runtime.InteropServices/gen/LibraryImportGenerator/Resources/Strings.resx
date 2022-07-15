@@ -236,6 +236,12 @@
   <data name="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage" xml:space="preserve">
     <value>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</value>
   </data>
+  <data name="EntryPointTypeMustBeNonNullDescription" xml:space="preserve">
+    <value>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</value>
+  </data>
+  <data name="EntryPointTypeMustBeNonNullMessage" xml:space="preserve">
+    <value>The entry-point marshaller type for the type '{0}' must be not 'null'</value>
+  </data>
   <data name="TypeNotSupportedDescription" xml:space="preserve">
     <value>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</value>
   </data>

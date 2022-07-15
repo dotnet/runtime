@@ -202,9 +202,9 @@ namespace Microsoft.Interop
             var (typeArgumentsToSubstitute, nullableAnnotationsToSubstitute) = GetArgumentsToSubstitute(instantiatedTemplateType);
 
             Stack<INamedTypeSymbol> originalNestedTypes = new();
-            for (INamedTypeSymbol constructedFromType = unboundConstructedType.ConstructedFrom; constructedFromType is not null; constructedFromType = constructedFromType.ContainingType)
+            for (INamedTypeSymbol originalTypeDefinition = unboundConstructedType.OriginalDefinition; originalTypeDefinition is not null; originalTypeDefinition = originalTypeDefinition.ContainingType)
             {
-                originalNestedTypes.Push(constructedFromType);
+                originalNestedTypes.Push(originalTypeDefinition);
             }
 
             numOriginalTypeArgumentsSubstituted = 0;
@@ -242,9 +242,8 @@ namespace Microsoft.Interop
                     }
 
                     currentType = currentType.Construct(
-                        ImmutableArray.CreateRange(instantiatedTemplateType.TypeArguments, currentArityOffset, currentType.TypeParameters.Length, x => x),
-                        ImmutableArray.CreateRange(instantiatedTemplateType.TypeArgumentNullableAnnotations, currentArityOffset, currentType.TypeParameters.Length, x => x));
-                    currentArityOffset += currentType.TypeParameters.Length;
+                        ImmutableArray.CreateRange(arguments),
+                        ImmutableArray.CreateRange(annotations));
                 }
             }
             extraTypeArgumentsInTemplate = typeArgumentsToSubstitute.Length - currentArityOffset;
@@ -254,7 +253,7 @@ namespace Microsoft.Interop
             static (ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>) GetArgumentsToSubstitute(INamedTypeSymbol instantiatedGeneric)
             {
                 Stack<(ImmutableArray<ITypeSymbol>, ImmutableArray<NullableAnnotation>)> genericTypesToSubstitute = new();
-                for (INamedTypeSymbol instantiatedType = instantiatedGeneric; instantiatedType is not null; instantiatedType = instantiatedGeneric.ContainingType)
+                for (INamedTypeSymbol instantiatedType = instantiatedGeneric; instantiatedType is not null; instantiatedType = instantiatedType.ContainingType)
                 {
                     genericTypesToSubstitute.Push((instantiatedType.TypeArguments, instantiatedType.TypeArgumentNullableAnnotations));
                 }
