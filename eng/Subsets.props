@@ -63,6 +63,8 @@
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
+    <DefaultNativeAotSubsets>clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
+
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'Browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
@@ -87,6 +89,7 @@
   <PropertyGroup>
     <_subset>$(_subset.Replace('+clr.paltests+', '+clr.paltests+clr.paltestlist+'))</_subset>
     <_subset>$(_subset.Replace('+clr+', '+$(DefaultCoreClrSubsets)+'))</_subset>
+    <_subset>$(_subset.Replace('+clr.aot+', '+$(DefaultNativeAotSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+mono+', '+$(DefaultMonoSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+libs+', '+$(DefaultLibrariesSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+host+', '+$(DefaultHostSubsets)+'))</_subset>
@@ -106,6 +109,7 @@
     <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools (ilasm/ildasm)." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime. Includes clr.jit, clr.iltools, clr.hosts." />
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools. Includes clr.hosts, clr.runtime, clr.jit, clr.alljits, clr.paltests, clr.iltools, clr.nativeaotruntime, clr.spmi." />
+    <SubsetName Include="Clr.Aot" Description="Everything needed for Native AOT workloads, including clr.alljits, clr.tools, clr.nativeaotlibs, and clr.nativeaotruntime" />
     <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib and other low level class libraries." />
     <SubsetName Include="Clr.NativeAotRuntime" Description="The stripped-down CoreCLR native AOT runtime." />
     <SubsetName Include="Clr.CrossArchTools" Description="The cross-targetted CoreCLR tools." />
