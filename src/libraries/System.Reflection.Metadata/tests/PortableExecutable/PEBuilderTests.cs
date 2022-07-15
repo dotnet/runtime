@@ -756,7 +756,7 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.False(TestChecksumAndAuthenticodeSignature(new MemoryStream(Misc.Deterministic)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography isn't supported on browser")]
         public void ChecksumFXAssemblies()
         {

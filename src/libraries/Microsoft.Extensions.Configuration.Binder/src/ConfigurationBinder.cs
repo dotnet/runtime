@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindNonScalar(this IConfiguration configuration, object instance, BinderOptions options)
         {
-            PropertyInfo[] modelProperties = GetAllProperties(instance.GetType());
+            List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
 
             if (options.ErrorOnUnknownConfiguration)
             {
@@ -451,7 +451,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
 
-                PropertyInfo[] properties = GetAllProperties(type);
+                List<PropertyInfo> properties = GetAllProperties(type);
 
                 if (!DoAllParametersHaveEquivalentProperties(parameters, properties, out string nameOfInvalidParameters))
                 {
@@ -482,7 +482,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
-            PropertyInfo[] properties, out string missing)
+            List<PropertyInfo> properties, out string missing)
         {
             HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
             foreach (PropertyInfo prop in properties)
@@ -752,8 +752,32 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        private static PropertyInfo[] GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
-            => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+        private static List<PropertyInfo> GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        {
+            var allProperties = new List<PropertyInfo>();
+
+            Type baseType = type;
+            while (baseType != typeof(object))
+            {
+                PropertyInfo[] properties = baseType.GetProperties(DeclaredOnlyLookup);
+
+                foreach (PropertyInfo property in properties)
+                {
+                    // if the property is virtual, only add the base-most definition so
+                    // overriden properties aren't duplicated in the list.
+                    MethodInfo? setMethod = property.GetSetMethod(true);
+
+                    if (setMethod is null || !setMethod.IsVirtual || setMethod == setMethod.GetBaseDefinition())
+                    {
+                        allProperties.Add(property);
+                    }
+                }
+
+                baseType = baseType.BaseType!;
+            }
+
+            return allProperties;
+        }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,

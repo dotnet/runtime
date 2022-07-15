@@ -97,36 +97,50 @@
 
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
-          DependsOnTargets="ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
+          DependsOnTargets="_GetNuGetsToBuild;_PreparePackagesForWorkloadInstall;ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
-  <Target Name="_InstallWorkload"
-          Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="$(SdkWithWorkload_WorkloadStampPath)">
-
-    <ItemGroup>
-      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
-      <_PropsForAOTCrossBuild Include="Configuration=$(Configuration)" />
-      <_PropsForAOTCrossBuild Include="TargetOS=Browser" />
-      <_PropsForAOTCrossBuild Include="TargetArchitecture=wasm" />
-      <_PropsForAOTCrossBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
-
-      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
-    </ItemGroup>
-
-    <Exec Command="dotnet build -bl -restore -t:Pack @(_PropsForAOTCrossBuild -> '-p:%(Identity)', ' ') Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-          WorkingDirectory="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App" />
-
-    <ItemGroup>
-      <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
-    </ItemGroup>
-
+  <Target Name="_GetNuGetsToBuild" Returns="@(_NuGetsToBuild)">
     <PropertyGroup>
       <_PackageVersion>$(PackageVersion)</_PackageVersion>
       <_PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_PackageVersion>
       <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
       <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(_PackageVersion).nupkg</_AOTCrossNuGetPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_PropsForNuGetBuild Include="Configuration=$(Configuration)" />
+      <_PropsForNuGetBuild Include="TargetOS=Browser" />
+      <_PropsForNuGetBuild Include="TargetArchitecture=wasm" />
+      <_PropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
+
+      <_PropsForAOTCrossBuild Include="@(_PropsForNuGetBuild)" />
+      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
+      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
+      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
+
+      <_NuGetsToBuild Include="$(_AOTCrossNuGetPath)"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+                      BuildArgs="@(_PropsForAOTCrossBuild -> '-p:%(Identity)', ' ')" />
+
+      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(_PackageVersion).nupkg"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
+                      BuildArgs="@(_PropsForNuGetBuild -> '-p:%(Identity)', ' ')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_PreparePackagesForWorkloadInstall" Inputs="%(_NuGetsToBuild.Project)" Outputs="%(_NuGetsToBuild.Identity)">
+    <Exec Command="dotnet build -bl -restore -v:q -t:Pack %(_NuGetsToBuild.BuildArgs)  %(_NuGetsToBuild.Project)" />
+  </Target>
+
+  <Target Name="_InstallWorkload"
+          Inputs="@(AvailableNuGetsInArtifacts)"
+          Outputs="$(SdkWithWorkload_WorkloadStampPath)">
+    <ItemGroup>
+      <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
+    </ItemGroup>
+
+    <PropertyGroup>
     </PropertyGroup>
 
     <Error Text="Could not find cross compiler nupkg at $(_AOTCrossNuGetPath). Found packages: @(_BuiltNuGets)"
@@ -135,7 +149,7 @@
     <Message Text="Packages found in $(LibrariesShippingPackagesDir): @(_BuiltNuGets)" Importance="Low" />
 
     <InstallWorkloadFromArtifacts
-                     WorkloadId="@(WorkloadIdForTesting)"
+                     WorkloadIds="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
@@ -148,7 +162,7 @@
           Outputs="$(SdkWithNoWorkload_WorkloadStampPath)">
 
     <InstallWorkloadFromArtifacts
-                     WorkloadId="@(WorkloadIdForTesting)"
+                     WorkloadIds="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"

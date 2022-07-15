@@ -46,7 +46,13 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
             }
 
-            _typeInfoResolver ??= DefaultJsonTypeInfoResolver.RootDefaultInstance();
+            if (_typeInfoResolver is null)
+            {
+                // Backward compatibility -- root the default reflection converters
+                // but do not populate the TypeInfoResolver setting.
+                DefaultJsonTypeInfoResolver.RootDefaultInstance();
+            }
+
             return GetConverterFromTypeInfo(typeToConvert);
         }
 

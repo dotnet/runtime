@@ -46,7 +46,6 @@ struct ElementTypeInfo {
 extern const ElementTypeInfo gElementTypeInfo[];
 
 unsigned GetSizeForCorElementType(CorElementType etyp);
-const ElementTypeInfo* GetElementTypeInfo(CorElementType etyp);
 
 class SigBuilder;
 class ArgDestination;

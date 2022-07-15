@@ -205,7 +205,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             if (ThrowOnDeserialize)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolverSafe, Type);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }
         }
 
@@ -434,7 +434,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal virtual void Configure()
         {
             Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
-            Options.InitializeForMetadataGeneration();
+
+            if (!Options.IsLockedInstance)
+            {
+                Options.InitializeForMetadataGeneration();
+            }
 
             PropertyInfoForTypeInfo.EnsureChildOf(this);
             PropertyInfoForTypeInfo.EnsureConfigured();
