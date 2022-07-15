@@ -24,71 +24,71 @@ variables:
 
 
 jobs:
-#- job: linux
-#  displayName: Docker Linux
-#  timeoutInMinutes: 180
-#  variables:
-#    DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
-#  pool:
-#    name: NetCore1ESPool-Public
-#    demands: ImageOverride -equals 1es-ubuntu-1804-open
-#
-#  steps:
-#  - checkout: self
-#    clean: true
-#    fetchDepth: 5
-#
-#  - bash: |
-#      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION) && \
-#      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-#    name: buildRuntime
-#    displayName: Build CLR and Libraries
-#
-#  - bash: |
-#      $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage) && \
-#      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-#    name: buildStress
-#    displayName: Build HttpStress
-#
-#  - bash: |
-#      cd '$(httpStressProject)'
-#      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
-#      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
-#      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
-#      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
-#      docker-compose up --abort-on-container-exit --no-color
-#    timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
-#    displayName: Run HttpStress - HTTP 3.0
-#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
-#
-#  - bash: |
-#      cd '$(httpStressProject)'
-#      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
-#      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
-#      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
-#      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
-#      docker-compose up --abort-on-container-exit --no-color
-#    displayName: Run HttpStress - HTTP 2.0
-#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
-#
-#  - bash: |
-#      cd '$(httpStressProject)'
-#      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
-#      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
-#      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
-#      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
-#      docker-compose up --abort-on-container-exit --no-color
-#    displayName: Run HttpStress - HTTP 1.1
-#    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
-#
-#  - bash: |
-#      sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/dumps
-#    displayName: Own shared dumps and files
-#    condition: failed()
-#
-#  - publish: $(Build.ArtifactStagingDirectory)/dumps
-#    artifact: DumpsLinux
-#    condition: failed()
+- job: linux
+  displayName: Docker Linux
+  timeoutInMinutes: 180
+  variables:
+    DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
+  pool:
+    name: NetCore1ESPool-Public
+    demands: ImageOverride -equals 1es-ubuntu-1804-open
+
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 5
+
+  - bash: |
+      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION) && \
+      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+    name: buildRuntime
+    displayName: Build CLR and Libraries
+
+  - bash: |
+      $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage) && \
+      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+    name: buildStress
+    displayName: Build HttpStress
+
+  - bash: |
+      cd '$(httpStressProject)'
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
+      docker-compose up --abort-on-container-exit --no-color
+    timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
+    displayName: Run HttpStress - HTTP 3.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - bash: |
+      cd '$(httpStressProject)'
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 2.0
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - bash: |
+      cd '$(httpStressProject)'
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
+      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
+      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run HttpStress - HTTP 1.1
+    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - bash: |
+      sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/dumps
+    displayName: Own shared dumps and files
+    condition: failed()
+
+  - publish: $(Build.ArtifactStagingDirectory)/dumps
+    artifact: DumpsLinux
+    condition: failed()
 
 - job: windows
   displayName: Docker NanoServer

@@ -25,30 +25,30 @@ variables:
 
 jobs:
 
-# - job: linux
-#   displayName: Docker Linux
-#   timeoutInMinutes: 120
-#   pool:
-#     name: NetCore1ESPool-Public
-#     demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
-# 
-#   steps:
-#   - checkout: self
-#     clean: true
-#     fetchDepth: 5
-# 
-#   - bash: |
-#       $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-#     displayName: Build CLR and Libraries
-# 
-#   - bash: |
-#       $(sslStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
-#     displayName: Build SslStress
-# 
-#   - bash: |
-#       cd '$(sslStressProject)'
-#       docker-compose up --abort-on-container-exit --no-color
-#     displayName: Run SslStress
+- job: linux
+  displayName: Docker Linux
+  timeoutInMinutes: 120
+  pool:
+    name: NetCore1ESPool-Public
+    demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+
+  steps:
+  - checkout: self
+    clean: true
+    fetchDepth: 5
+
+  - bash: |
+      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+    displayName: Build CLR and Libraries
+
+  - bash: |
+      $(sslStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+    displayName: Build SslStress
+
+  - bash: |
+      cd '$(sslStressProject)'
+      docker-compose up --abort-on-container-exit --no-color
+    displayName: Run SslStress
 
 - job: windows
   displayName: Docker NanoServer
