@@ -1905,7 +1905,6 @@ namespace System.Text.Json.Serialization.Tests
         public abstract record Peano
         {
             public static Peano FromInteger(int value) => value == 0 ? new Zero() : new Succ(FromInteger(value - 1));
-            public static int ToInteger(Peano value) => value is Succ succ ? 1 + ToInteger(succ.value) : 0;
             public record Zero : Peano;
             public record Succ(Peano value) : Peano;
         }
