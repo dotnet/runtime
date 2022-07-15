@@ -82,7 +82,7 @@ namespace System.Net.Quic
         public System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol> ApplicationProtocols { get { throw null; } set { } }
         public System.Func<System.Net.Quic.QuicConnection, System.Net.Security.SslClientHelloInfo, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.Net.Quic.QuicServerConnectionOptions>> ConnectionOptionsCallback { get { throw null; } set { } }
         public int ListenBacklog { get { throw null; } set { } }
-        public System.Net.IPEndPoint ListenEndPoint { get { throw null; } set { } }
+        public required System.Net.IPEndPoint ListenEndPoint { get { throw null; } set { } }
     }
     public sealed partial class QuicServerConnectionOptions : System.Net.Quic.QuicConnectionOptions
     {
@@ -121,6 +121,7 @@ namespace System.Net.Quic
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
+        public override string ToString() { throw null; }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

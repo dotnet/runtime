@@ -16,7 +16,7 @@ public sealed class QuicListenerOptions
     /// <summary>
     /// The endpoint to listen on.
     /// </summary>
-    public IPEndPoint ListenEndPoint { get; set; } = null!;
+    public required IPEndPoint ListenEndPoint { get; set; } = null!;
 
     /// <summary>
     /// List of application protocols which the listener will accept. At least one must be specified.
