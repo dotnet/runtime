@@ -36,4 +36,4 @@ jobs:
     ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
       runProfile: 'v8'
 
-#- template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
+- template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
