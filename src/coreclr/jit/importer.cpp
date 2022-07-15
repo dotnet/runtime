@@ -453,25 +453,23 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
         }
     }
 
-    if (tree->gtOper == GT_ASG)
+    if (tree->OperIs(GT_ASG))
     {
         // For an assignment to a local variable, all references of that
         // variable have to be spilled. If it is aliased, all calls and
         // indirect accesses have to be spilled
 
-        if (tree->AsOp()->gtOp1->gtOper == GT_LCL_VAR)
+        if (tree->AsOp()->gtOp1->OperIsLocal())
         {
             unsigned lclNum = tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
             for (unsigned level = 0; level < chkLevel; level++)
             {
-                assert(!gtHasRef(verCurrentState.esStack[level].val, lclNum));
-                assert(!lvaTable[lclNum].IsAddressExposed() ||
-                       (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT) == 0);
+                GenTree* stkTree = verCurrentState.esStack[level].val;
+                assert(!gtHasRef(stkTree, lclNum) || impIsInvariant(stkTree));
+                assert(!lvaTable[lclNum].IsAddressExposed() || ((stkTree->gtFlags & GTF_SIDE_EFFECT) == 0));
             }
         }
-
         // If the access may be to global memory, all side effects have to be spilled.
-
         else if (tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF)
         {
             for (unsigned level = 0; level < chkLevel; level++)
