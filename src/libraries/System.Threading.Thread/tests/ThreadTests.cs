@@ -669,6 +669,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72246", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsLinux))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void PriorityTest()
         {
