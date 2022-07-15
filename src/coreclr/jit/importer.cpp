@@ -516,26 +516,29 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         GenTreeFlags flags = expr->gtFlags & GTF_GLOB_EFFECT;
 
         // If the only side effect of this tree is an assignment to an unaliased local, we can avoid
-        // spilling pending loads from the stack. Note we still need to spill LCL_VAR/LCL_FLD nodes
-        // that refer to this local in such a case.
+        // spilling all pending loads from the stack. Instead we only spill trees with LCL_[VAR|FLD]
+        // nodes that refer to the local.
         //
         if (expr->OperIs(GT_ASG) && expr->AsOp()->gtOp1->OperIsLocal())
         {
-            LclVarDsc* spillVarDsc = lvaGetDesc(expr->AsOp()->gtOp1->AsLclVarCommon());
+            LclVarDsc* dstVarDsc = lvaGetDesc(expr->AsOp()->gtOp1->AsLclVarCommon());
 
             // We make two assumptions here:
             //
-            // 1. All locals which can be accessed indirectly are marked as address-exposed or with
-            //    "lvHasLdAddrOp".
+            // 1. All locals which can be modified indirectly are marked as address-exposed or with
+            //    "lvHasLdAddrOp" -- we will rely on "impSpillSideEffects(spillGlobEffects: true)"
+            //    below to spill them.
             // 2. Trees that assign to unaliased locals are always top-level (this avoids having to
             //    walk down the tree here).
             //
             // If any of the above are violated (say for some temps), the relevant code must spill
             // any possible pending references manually.
             //
-            if (!spillVarDsc->IsAddressExposed() && !spillVarDsc->lvHasLdAddrOp)
+            if (!dstVarDsc->IsAddressExposed() && !dstVarDsc->lvHasLdAddrOp)
             {
-                impSpillLclRefs(lvaGetLclNum(spillVarDsc), chkLevel);
+                impSpillLclRefs(lvaGetLclNum(dstVarDsc), chkLevel);
+
+                // We still needs to spill things that the RHS could modify/interfere with.
                 flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
             }
         }
@@ -2330,14 +2333,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     impAssignTempGen(tmp, result, (unsigned)CHECK_SPILL_NONE);
     return gtNewLclvNode(tmp, TYP_I_IMPL);
 }
-
-/******************************************************************************
- *  Spills the stack at verCurrentState.esStack[level] and replaces it with a temp.
- *  If tnum!=BAD_VAR_NUM, the temp var used to replace the tree is tnum,
- *     else, grab a new temp.
- *  For structs (which can be pushed on the stack using obj, etc),
- *  special handling is needed
- */
 
 struct RecursiveGuard
 {
@@ -13141,56 +13136,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
-
-                // We need to call impSpillLclRefs() for a struct type lclVar.
-                // This is because there may be loads of that lclVar on the evaluation stack, and
-                // we need to ensure that those loads are completed before we modify it.
-                if ((op1->OperGet() == GT_ASG) && varTypeIsStruct(op1->gtGetOp1()))
-                {
-                    GenTree*             lhs    = op1->gtGetOp1();
-                    GenTreeLclVarCommon* lclVar = nullptr;
-                    if (lhs->gtOper == GT_LCL_VAR)
-                    {
-                        lclVar = lhs->AsLclVarCommon();
-                    }
-                    else if (lhs->OperIsBlk())
-                    {
-                        // Check if LHS address is within some struct local, to catch
-                        // cases where we're updating the struct by something other than a stfld
-                        GenTree* addr = lhs->AsBlk()->Addr();
-
-                        // Catches ADDR(LCL_VAR), or ADD(ADDR(LCL_VAR),CNS_INT))
-                        lclVar = addr->IsLocalAddrExpr();
-
-                        // Catches ADDR(FIELD(... ADDR(LCL_VAR)))
-                        if (lclVar == nullptr)
-                        {
-                            GenTree* lclTree = nullptr;
-                            if (impIsAddressInLocal(addr, &lclTree))
-                            {
-                                lclVar = lclTree->AsLclVarCommon();
-                            }
-                        }
-                    }
-                    if (lclVar != nullptr)
-                    {
-                        impSpillLclRefs(lclVar->GetLclNum());
-                    }
-                }
-
-                /* Append 'op1' to the list of statements */
                 impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
                 goto DONE_APPEND;
 
             APPEND:
-
-                /* Append 'op1' to the list of statements */
-
                 impAppendTree(op1, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
                 goto DONE_APPEND;
 
             DONE_APPEND:
-
 #ifdef DEBUG
                 // Remember at which BC offset the tree was finished
                 impNoteLastILoffs();
@@ -13468,24 +13421,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                /* Create the assignment node */
-
                 op2 = gtNewLclvNode(lclNum, lclTyp DEBUGARG(opcodeOffs + sz + 1));
 
-                /* If the local is aliased or pinned, we need to spill calls and
-                   indirections from the stack. */
-
-                if ((lvaTable[lclNum].IsAddressExposed() || lvaTable[lclNum].lvHasLdAddrOp ||
-                     lvaTable[lclNum].lvPinned) &&
-                    (verCurrentState.esStackDepth > 0))
+                // Stores to pinned locals can have the implicit side effect of "unpinning", so we must spill
+                // things that could depend on the pin. TODO-Bug: which can actually be anything, including
+                // unpinned unaliased locals, not just side-effecting trees.
+                if (lvaTable[lclNum].lvPinned)
                 {
-                    impSpillSideEffects(false,
-                                        (unsigned)CHECK_SPILL_ALL DEBUGARG("Local could be aliased or is pinned"));
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Spill before store to pinned local"));
                 }
-
-                /* Spill any refs to the local from the stack */
-
-                impSpillLclRefs(lclNum);
 
                 // We can generate an assignment to a TYP_FLOAT from a TYP_DOUBLE
                 // We insert a cast to the dest 'op2' type
@@ -13498,13 +13442,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (varTypeIsStruct(lclTyp))
                 {
-                    op1 = impAssignStruct(op2, op1, clsHnd, (unsigned)CHECK_SPILL_ALL);
+                    op1 = impAssignStruct(op2, op1, clsHnd, CHECK_SPILL_ALL);
                 }
                 else
                 {
                     op1 = gtNewAssignNode(op2, op1);
                 }
-
                 goto SPILL_APPEND;
 
             case CEE_LDLOCA:
@@ -15119,6 +15062,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #endif
 
                 op1 = gtNewOperNode(GT_IND, lclTyp, op1);
+                op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
 
                 if (prefixFlags & PREFIX_VOLATILE)
                 {
@@ -15134,15 +15078,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = gtNewAssignNode(op1, op2);
-                op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
-
-                // Spill side-effects AND global-data-accesses
-                if (verCurrentState.esStackDepth > 0)
-                {
-                    impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STIND"));
-                }
-
-                goto APPEND;
+                goto SPILL_APPEND;
 
             case CEE_LDIND_I1:
                 lclTyp = TYP_BYTE;
