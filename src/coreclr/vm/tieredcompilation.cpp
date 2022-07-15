@@ -290,12 +290,6 @@ void TieredCompilationManager::AsyncPromoteToTier1(
         ThrowHR(hr);
     }
 
-    // Try to re-use previous callcounting stub for instrumented tier0
-    if (nextTier == NativeCodeVersion::OptimizationTier0Instrumented)
-    {
-        pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->ReuseStubForNewVersion(tier0NativeCodeVersion, t1NativeCodeVersion);
-    }
-
     // Insert the method into the optimization queue and trigger a thread to service
     // the queue if needed.
     SListElem<NativeCodeVersion>* pMethodListItem = new SListElem<NativeCodeVersion>(t1NativeCodeVersion);

@@ -224,7 +224,6 @@ private:
     #ifndef DACCESS_COMPILE
     public:
         void SetStage(Stage stage);
-        void ReuseForNewVersion(NativeCodeVersion version);
     #endif
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -356,7 +355,6 @@ public:
 #ifndef DACCESS_COMPILE
 public:
     void DisableCallCounting(NativeCodeVersion codeVersion);
-    void ReuseStubForNewVersion(NativeCodeVersion oldVersion, NativeCodeVersion newVersion);
 
 public:
     static bool SetCodeEntryPoint(
