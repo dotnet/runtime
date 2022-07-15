@@ -91,24 +91,14 @@ namespace System
             }
         }
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public sealed override Array GetEnumValues()
         {
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            Array values = Enum.GetEnumInfo(this).ValuesAsUnderlyingType;
-            int count = values.Length;
-            // Without universal shared generics, chances are slim that we'll have the appropriate
-            // array type available. Offer an escape hatch that avoids a MissingMetadataException
-            // at the cost of a small appcompat risk.
-            Array result;
-            if (AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed)
-                result = Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count);
-            else
-                result = Array.CreateInstance(this, count);
-            Array.Copy(values, result, values.Length);
-            return result;
+            // Compat: we should be returning SomeInt32Enum[]. Instead we return Int32[].
+            // This is a tradeoff since SomeInt32Enum[] type might not have been pregenerated.
+            return (Array)Enum.GetEnumInfo(this).ValuesAsUnderlyingType.Clone();
         }
 
         internal bool IsActualEnum
