@@ -167,7 +167,7 @@ namespace System.Net.Quic.Tests
             {
                 byte[] buffer = new byte[64];
 
-                using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                await using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                 Task writeTask = clientStream.WriteAsync("PING"u8.ToArray(), completeWrites: true).AsTask();
                 Task<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync().AsTask();
                 await new Task[] { writeTask, acceptTask }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
