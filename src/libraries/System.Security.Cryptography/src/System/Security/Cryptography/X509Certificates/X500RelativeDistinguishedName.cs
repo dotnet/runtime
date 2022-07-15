@@ -60,11 +60,9 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 _singleElementType = firstType;
 
-                if (!rawDataSpan.Overlaps(firstValue, out int offset))
-                {
-                    Debug.Fail("AsnValueReader.ReadEncodedValue returned data outside its bounds");
-                    throw new UnreachableException();
-                }
+                bool overlaps = rawDataSpan.Overlaps(firstValue, out int offset);
+                Debug.Assert(overlaps, "AsnValueReader.ReadEncodedValue returns a slice of the source");
+                Debug.Assert(offset > 0);
 
                 _singleElementValue = rawData.Slice(offset, firstValue.Length);
             }
