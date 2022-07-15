@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -99,14 +100,15 @@ namespace System.Security.Cryptography.X509Certificates
 
                 case X509SubjectKeyIdentifierHashAlgorithm.ShortSha1:
                     {
-                        byte[] sha1 = SHA1.HashData(key.EncodedKeyValue.RawData);
+                        Span<byte> sha1 = stackalloc byte[SHA1.HashSizeInBytes];
+                        int written = SHA1.HashData(key.EncodedKeyValue.RawData, sha1);
+                        Debug.Assert(written == SHA1.HashSizeInBytes);
 
                         //  ShortSha1: The keyIdentifier is composed of a four bit type field with
                         //  the value 0100 followed by the least significant 60 bits of the
                         //  SHA-1 hash of the value of the BIT STRING subjectPublicKey
                         // (excluding the tag, length, and number of unused bit string bits)
-                        byte[] shortSha1 = new byte[8];
-                        Buffer.BlockCopy(sha1, sha1.Length - 8, shortSha1, 0, shortSha1.Length);
+                        byte[] shortSha1 = sha1.Slice(SHA1.HashSizeInBytes - 8).ToArray();
                         shortSha1[0] &= 0x0f;
                         shortSha1[0] |= 0x40;
                         return shortSha1;
