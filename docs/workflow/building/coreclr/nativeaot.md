@@ -5,7 +5,9 @@ The Native AOT toolchain can be currently built for Linux (x64/arm64), macOS (x6
 ## Building
 
 1. [Install pre-requisites](../../README.md#build-requirements)
-1. Run `build[.cmd|.sh] clr.nativeaot+libs -rc [Debug|Release]` from the repo root to build binaries for local development. This will build individual components, but not the NuGet packages and builds much faster.
+1. Run `build[.cmd|.sh] clr.aot+libs -rc [Debug|Release]` from the repo root to build binaries for local development. This will build individual components, but not the NuGet packages and builds much faster.
+
+### Using built binaries
 
 The paths to major components can be overriden using `IlcToolsPath`, `IlcSdkPath`, `IlcFrameworkPath`, `IlcFrameworkNativePath` and `IlcMibcPath` properties for `dotnet publish`. For example, `/p:IlcToolsPath=<repo root>\artifacts\bin\coreclr\windows.x64.Debug\ilc` can be used to override the compiler with a local debug build for troubleshooting or quick iterations.
 

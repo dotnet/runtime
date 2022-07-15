@@ -51,14 +51,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- CLR NativeAot only builds in a subset of the matrix -->
-    <NativeAotSupported Condition="('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and ('$(TargetOS)' != 'OSX' or '$(TargetArchitecture)' != 'arm64')">true</NativeAotSupported>
-
-    <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
-    <UseNativeAotCoreLib Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+'))">true</UseNativeAotCoreLib>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
@@ -84,6 +76,14 @@
     <DefaultPacksSubsets>packs.product</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultPacksSubsets)+packs.installers</DefaultPacksSubsets>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- CLR NativeAot only builds in a subset of the matrix -->
+    <NativeAotSupported Condition="('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and ('$(TargetOS)' != 'OSX' or '$(TargetArchitecture)' != 'arm64')">true</NativeAotSupported>
+
+    <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
+    <UseNativeAotCoreLib Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+'))">true</UseNativeAotCoreLib>
   </PropertyGroup>
 
   <PropertyGroup>
