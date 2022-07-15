@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
@@ -7,7 +8,6 @@
         Remove warning disable when nullable attributes are respected,
         Type has no accessible constructors which use only CLS-compliant types -->
     <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015</NoWarn>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <FeatureWasmPerfTracing Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</FeatureWasmPerfTracing>
@@ -16,9 +16,7 @@
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <DefineConstants>$(DefineConstants);HIDE_URI_TYPES</DefineConstants>
     <DefineConstants>$(DefineConstants);HIDE_CONTRACT_TYPES</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- disable binplacing since the System.Private.CoreLib reference assembly is internal to our build and shouldn't be exposed in ref packs -->
+    <!-- Disable binplacing since the System.Private.CoreLib reference assembly is internal to our build and shouldn't be exposed anywhere -->
     <EnableBinPlacing>false</EnableBinPlacing>
   </PropertyGroup>
   <ItemGroup>

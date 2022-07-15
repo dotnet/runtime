@@ -7,6 +7,7 @@
     <DefineConstants Condition="'$(GVM_RESOLUTION_TRACE)' != ''">GVM_RESOLUTION_TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(CCCONVERTER_TRACE)' != ''">CCCONVERTER_TRACE;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
+    <!-- we access a lot of internals of System.Private.CoreLib, disable compiling against the ref assembly for now so we don't need to update it -->
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
   <ItemGroup>
