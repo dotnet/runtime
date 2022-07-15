@@ -239,6 +239,8 @@ HRESULT EEConfig::Init()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = false;
+    fTieredPGO_OptimizeInstrumentedTier = false;
+    fTieredPGO_UseInstrumentedTierForR2R = false;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -744,8 +746,8 @@ HRESULT EEConfig::sync()
             }
         }
 
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) != 0 &&
-            CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_OptimizedInstrumentedTier) == 0)
+        if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_UseInstrumentedTierForR2R() &&
+            !g_pConfig->TieredPGO_OptimizeInstrumentedTier())
         {
             // When we're not using optimizations in the instrumented tier we produce a lot of new first-time compilation 
             // due to disabled inlining even for very small methods - such first-time compilations delay promotions by
@@ -785,6 +787,8 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+    fTieredPGO_OptimizeInstrumentedTier = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_OptimizeInstrumentedTier) != 0;
+    fTieredPGO_UseInstrumentedTierForR2R = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_UseInstrumentedTierForR2R) != 0;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

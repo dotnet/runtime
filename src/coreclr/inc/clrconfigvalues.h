@@ -620,6 +620,17 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_PGODataPath, W("PGODataPath"), "Read/Write PG
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ReadPGOData, W("ReadPGOData"), 0, "Read PGO data")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_WritePGOData, W("WritePGOData"), 0, "Write PGO data")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier0 code and make counts available to Tier1")
+
+// Use optimizations inside instrumented tier
+// Pros:
+//    InstrumentedTier produces faster code, we can perform probe-specific optimizations and emit less of those
+//    Optimized code is able to inlines methods so we won't be producing new Compilation units for even small methods
+//
+// Cons:
+//    We won't instrument inlinees -> probably missing a lot of oportunities and produce less accurate profile
+//
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_OptimizeInstrumentedTier, W("TieredPGO_OptimizeInstrumentedTier"), 0, "Use code optimizations inside the instrumented tier")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_UseInstrumentedTierForR2R, W("TieredPGO_UseInstrumentedTierForR2R"), 0, "Hot R2R code might be promoted to an instrumented tier to collect profile")
 #endif
 
 ///

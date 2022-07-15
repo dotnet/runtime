@@ -272,7 +272,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     // likely classes in the current implementation)
     // Also, this Tier0 likely doesn't need any patchpoints since it's already survived a promotion and will
     // likely survive it once again
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TieredPGO) != 0 &&
+    if (g_pConfig->TieredPGO() &&
         pMethodDesc->IsEligibleForTieredCompilation() &&
         tier0NativeCodeVersion.IsDefaultVersion() &&
         tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
@@ -1046,7 +1046,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
                 if (nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
                 {
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_OptimizedInstrumentedTier) != 0)
+                    if (g_pConfig->TieredPGO_OptimizeInstrumentedTier())
                     {
                         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
                     }
@@ -1083,7 +1083,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
             if (g_pConfig->TieredCompilation_QuickJit())
             {
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_OptimizedInstrumentedTier) != 0)
+                if (g_pConfig->TieredPGO())
                 {
                     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
                 }

@@ -74,10 +74,10 @@ public:
     enum OptimizationTier
     {
         OptimizationTier0,
-        OptimizationTier0Instrumented,
         OptimizationTier1,
         OptimizationTier1OSR,
         OptimizationTierOptimized, // may do less optimizations than tier 1
+        OptimizationTier0Instrumented,
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;

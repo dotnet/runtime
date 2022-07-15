@@ -92,6 +92,8 @@ public:
 
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
+    bool          TieredPGO_OptimizeInstrumentedTier(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO_OptimizeInstrumentedTier; }
+    bool          TieredPGO_UseInstrumentedTierForR2R(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO_UseInstrumentedTierForR2R; }
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -654,6 +656,8 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
+    bool fTieredPGO_OptimizeInstrumentedTier;
+    bool fTieredPGO_UseInstrumentedTierForR2R;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
