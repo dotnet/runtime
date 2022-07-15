@@ -688,7 +688,6 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72231", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThreadStateTest()
         {
