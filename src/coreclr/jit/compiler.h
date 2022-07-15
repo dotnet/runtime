@@ -9101,15 +9101,6 @@ public:
         }
 #endif
 
-        bool IsInstrumented()
-        {
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
-        }
-        bool IsInstrumentedOptimized()
-        {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
-        }
-
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
         // PInvoke transitions inline. Normally used by R2R, but also used when generating a reverse pinvoke frame, as
         // the current logic for frame setup initializes and pushes

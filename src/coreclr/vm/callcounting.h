@@ -150,7 +150,6 @@ public:
 
     PTR_CallCount GetRemainingCallCountCell() const;
     PCODE GetTargetForMethod() const;
-    void SetTargetForMethod(PCODE code);
 
 protected:
 
@@ -183,9 +182,6 @@ private:
             // Stub may be called, don't know if it's actually active (changes to code versions, etc.)
             StubMayBeActive,
 
-            // Stub is being considered to re-use
-            PendingReset,
-
             // Stub may be active, call counting complete, not yet promoted
             PendingCompletion,
 
@@ -197,7 +193,7 @@ private:
         };
 
     private:
-        NativeCodeVersion m_codeVersion;
+        const NativeCodeVersion m_codeVersion;
         const CallCountingStub *m_callCountingStub;
         CallCount m_remainingCallCount;
         Stage m_stage;
@@ -421,12 +417,6 @@ inline PCODE CallCountingStub::GetTargetForMethod() const
 {
     WRAPPER_NO_CONTRACT;
     return GetData()->TargetForMethod;
-}
-
-inline void CallCountingStub::SetTargetForMethod(PCODE code)
-{
-    WRAPPER_NO_CONTRACT;
-    InterlockedExchangeT<PCODE>(&GetData()->TargetForMethod, code);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
