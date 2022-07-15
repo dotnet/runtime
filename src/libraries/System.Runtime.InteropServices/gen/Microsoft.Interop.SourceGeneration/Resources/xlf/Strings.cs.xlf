@@ -72,9 +72,9 @@
         <target state="translated">Typ vstupního bodu řadiče „{0}“ pro spravovaný typ „{1}“ musí mít aritu o jednu větší než spravovaný typ.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerTypeMustBeStatic">
-        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
-        <target state="translated">Typ zařazovače {0} pro spravovaný typ {1} musí být statický.</target>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">

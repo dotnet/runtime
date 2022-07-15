@@ -177,8 +177,8 @@
   <data name="UnmanagedToManagedMissingRequiredMarshaller" xml:space="preserve">
     <value>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</value>
   </data>
-  <data name="MarshallerTypeMustBeStatic" xml:space="preserve">
-    <value>The marshaller type '{0}' for managed type '{1}' must be static.</value>
+  <data name="MarshallerTypeMustBeStaticClassOrStruct" xml:space="preserve">
+    <value>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</value>
   </data>
   <data name="MarshallerEntryPointTypeMustMatchArity" xml:space="preserve">
     <value>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</value>

@@ -72,9 +72,9 @@
         <target state="translated">Il tipo di punto di ingresso del marshalling '{0}' per il tipo gestito '{1}' deve avere un grado maggiore rispetto a quello del tipo gestito.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerTypeMustBeStatic">
-        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
-        <target state="translated">Il tipo di gestore del marshalling '{0}' per il tipo gestito '{1}' deve essere statico.</target>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">

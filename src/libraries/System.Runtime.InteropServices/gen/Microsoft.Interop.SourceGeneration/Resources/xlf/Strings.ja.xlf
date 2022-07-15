@@ -72,9 +72,9 @@
         <target state="translated">マネージド型 '{1}' のマーシャラー エントリ ポイント型 '{0}' には、マネージド型より 1 大きい引数が必要です。</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerTypeMustBeStatic">
-        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
-        <target state="translated">マネージド型 '{1}' のマーシャラー型 '{0}' は静的である必要があります。</target>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">

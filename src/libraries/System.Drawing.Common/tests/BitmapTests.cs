@@ -790,6 +790,7 @@ namespace System.Drawing.Tests
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In .NET Framework we use GDI 1.0")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72165", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void SaveWmfAsPngDoesntChangeImageBoundaries()
         {
             if (PlatformDetection.IsWindows7)

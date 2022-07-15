@@ -72,9 +72,9 @@
         <target state="translated">受控類型 '{1}' 的封送處理器進入點類型 '{0}' 必須具有大於受控類型的 arity。</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerTypeMustBeStatic">
-        <source>The marshaller type '{0}' for managed type '{1}' must be static.</source>
-        <target state="translated">受控類型 '{1}' 的封送處理程式類型 '{0}' 必須是靜態。</target>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
