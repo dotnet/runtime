@@ -7921,76 +7921,20 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
-        {
-            simd8_t simd8Val;
-
-            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
-            if (tree->IsIntegralConst(0))
-            {
-                simd8Val = {};
-            }
-            else
-            {
-                simd8Val = tree->AsVecCon()->gtSimd8Val;
-            }
-
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(tree->AsVecCon()->gtSimd8Val));
             break;
-        }
 
         case TYP_SIMD12:
-        {
-            simd12_t simd12Val;
-
-            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
-            if (tree->IsIntegralConst(0))
-            {
-                simd12Val = {};
-            }
-            else
-            {
-                simd12Val = tree->AsVecCon()->gtSimd12Val;
-            }
-
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(simd12Val));
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(tree->AsVecCon()->gtSimd12Val));
             break;
-        }
 
         case TYP_SIMD16:
-        {
-            simd16_t simd16Val;
-
-            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
-            if (tree->IsIntegralConst(0))
-            {
-                simd16Val = {};
-            }
-            else
-            {
-                simd16Val = tree->AsVecCon()->gtSimd16Val;
-            }
-
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(simd16Val));
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(tree->AsVecCon()->gtSimd16Val));
             break;
-        }
 
         case TYP_SIMD32:
-        {
-            simd32_t simd32Val;
-
-            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
-            if (tree->IsIntegralConst(0))
-            {
-                simd32Val = {};
-            }
-            else
-            {
-                simd32Val = tree->AsVecCon()->gtSimd32Val;
-            }
-
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(simd32Val));
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(tree->AsVecCon()->gtSimd32Val));
             break;
-        }
 #endif // FEATURE_SIMD
 
         case TYP_FLOAT:

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Quic;
@@ -231,8 +232,9 @@ namespace System.Net.Http
             catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
             {
                 Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
 
-                switch ((Http3ErrorCode)ex.ApplicationErrorCode.Value)
+                switch (code)
                 {
                     case Http3ErrorCode.VersionFallback:
                         // The server is requesting us fall back to an older HTTP version.
@@ -244,14 +246,16 @@ namespace System.Net.Http
 
                     default:
                         // Our stream was reset.
-                        Exception? abortException = _connection.AbortException;
-                        throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
+                        throw new HttpRequestException(SR.net_http_client_execution_error, _connection.AbortException ?? HttpProtocolException.CreateHttp3StreamException(code));
                 }
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
             {
                 // Our connection was reset. Start shutting down the connection.
-                Exception abortException = _connection.Abort(ex);
+                Debug.Assert(ex.ApplicationErrorCode.HasValue);
+                Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
+
+                Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
@@ -269,7 +273,7 @@ namespace System.Net.Http
                     throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }
-            catch (Http3ConnectionException ex)
+            catch (HttpProtocolException ex)
             {
                 // A connection-level protocol error has occurred on our stream.
                 _connection.Abort(ex);
@@ -794,12 +798,12 @@ namespace System.Net.Http
                     case Http3FrameType.ReservedHttp2Ping:
                     case Http3FrameType.ReservedHttp2WindowUpdate:
                     case Http3FrameType.ReservedHttp2Continuation:
-                        throw new Http3ConnectionException(Http3ErrorCode.UnexpectedFrame);
+                        throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.UnexpectedFrame);
                     case Http3FrameType.PushPromise:
                     case Http3FrameType.CancelPush:
                         // Because we haven't sent any MAX_PUSH_ID frames, any of these push-related
                         // frames that the server sends will have an out-of-range push ID.
-                        throw new Http3ConnectionException(Http3ErrorCode.IdError);
+                        throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.IdError);
                     default:
                         // Unknown frame types should be skipped.
                         await SkipUnknownPayloadAsync(payloadLength, cancellationToken).ConfigureAwait(false);
@@ -883,7 +887,7 @@ namespace System.Net.Http
             if (!HeaderDescriptor.TryGetStaticQPackHeader(index, out descriptor, out knownValue))
             {
                 if (NetEventSource.Log.IsEnabled()) Trace($"Response contains invalid static header index '{index}'.");
-                throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
+                throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ProtocolError);
             }
         }
 
@@ -899,13 +903,13 @@ namespace System.Net.Http
                 if (!descriptor.Equals(KnownHeaders.PseudoStatus))
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
-                    throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
+                    throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ProtocolError);
                 }
 
                 if (_headerState != HeaderState.StatusHeader)
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
-                    throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
+                    throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ProtocolError);
                 }
 
                 int statusCode;
@@ -996,7 +1000,7 @@ namespace System.Net.Http
                 {
                     case HeaderState.StatusHeader:
                         if (NetEventSource.Log.IsEnabled()) Trace($"Received headers without :status.");
-                        throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
+                        throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ProtocolError);
                     case HeaderState.ResponseHeaders when descriptor.HeaderType.HasFlag(HttpHeaderType.Content):
                         _response!.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);
                         break;
@@ -1034,7 +1038,7 @@ namespace System.Net.Http
                     else
                     {
                         // Our buffer has partial frame data in it but not enough to complete the read: bail out.
-                        throw new Http3ConnectionException(Http3ErrorCode.FrameError);
+                        throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.FrameError);
                     }
                 }
 
@@ -1185,21 +1189,29 @@ namespace System.Net.Http
             }
         }
 
+        [DoesNotReturn]
         private void HandleReadResponseContentException(Exception ex, CancellationToken cancellationToken)
         {
             switch (ex)
             {
-                case QuicException e when (e.QuicError == QuicError.StreamAborted || e.QuicError == QuicError.OperationAborted):
-                    // Peer or user aborted the stream
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+                case QuicException e when (e.QuicError == QuicError.StreamAborted):
+                    // Peer aborted the stream
+                    Debug.Assert(e.ApplicationErrorCode.HasValue);
+                    throw HttpProtocolException.CreateHttp3StreamException((Http3ErrorCode)e.ApplicationErrorCode.Value);
+
                 case QuicException e when (e.QuicError == QuicError.ConnectionAborted):
                     // Our connection was reset. Start aborting the connection.
-                    Exception abortException = _connection.Abort(ex);
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, abortException));
-                case Http3ConnectionException:
+                    Debug.Assert(e.ApplicationErrorCode.HasValue);
+                    HttpProtocolException exception = HttpProtocolException.CreateHttp3ConnectionException((Http3ErrorCode)e.ApplicationErrorCode.Value, SR.net_http_http3_connection_close);
+                    _connection.Abort(exception);
+                    throw exception;
+
+                case HttpProtocolException:
                     // A connection-level protocol error has occurred on our stream.
                     _connection.Abort(ex);
-                    throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+                    ExceptionDispatchInfo.Throw(ex); // Rethrow.
+                    return; // Never reached.
+
                 case OperationCanceledException oce when oce.CancellationToken == cancellationToken:
                     _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.

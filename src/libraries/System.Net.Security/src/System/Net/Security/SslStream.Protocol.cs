@@ -377,13 +377,13 @@ namespace System.Net.Security
                         {
                             if (chain != null)
                             {
-                                chain.Dispose();
-
                                 int elementsCount = chain.ChainElements.Count;
                                 for (int element = 0; element < elementsCount; element++)
                                 {
-                                    chain.ChainElements[element].Certificate!.Dispose();
+                                    chain.ChainElements[element].Certificate.Dispose();
                                 }
+
+                                chain.Dispose();
                             }
 
                             if (certificateEx != null && (object)certificateEx != (object)_sslAuthenticationOptions.ClientCertificates[i])
@@ -1037,7 +1037,7 @@ namespace System.Net.Security
                     int elementsCount = chain.ChainElements.Count;
                     for (int i = 0; i < elementsCount; i++)
                     {
-                        chain.ChainElements[i].Certificate!.Dispose();
+                        chain.ChainElements[i].Certificate.Dispose();
                     }
 
                     chain.Dispose();

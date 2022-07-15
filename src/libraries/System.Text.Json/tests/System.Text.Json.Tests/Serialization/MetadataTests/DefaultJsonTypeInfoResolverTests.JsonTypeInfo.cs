@@ -592,6 +592,46 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void AddRecursiveJsonPropertyInfoFromMetadataServices()
+        {
+            JsonSerializerOptions options = new()
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static typeInfo =>
+                        {
+                            if (typeInfo.Type != typeof(SomeClass))
+                            {
+                                return;
+                            }
+
+                            typeInfo.Properties.Clear();
+                            JsonPropertyInfo propertyInfo = JsonMetadataServices.CreatePropertyInfo<SomeClass>(
+                                typeInfo.Options,
+                                new JsonPropertyInfoValues<SomeClass>()
+                                {
+                                    DeclaringType = typeof(SomeClass),
+                                    PropertyName = "Next",
+                                });
+
+                            typeInfo.Properties.Add(propertyInfo);
+                            Assert.Equal(JsonTypeInfoKind.Object, typeInfo.Kind);
+                        }
+                    }
+                }
+            };
+
+            JsonTypeInfo<SomeClass> jsonTypeInfo = Assert.IsAssignableFrom<JsonTypeInfo<SomeClass>>(options.GetTypeInfo(typeof(SomeClass)));
+            Assert.Equal(1, jsonTypeInfo.Properties.Count);
+
+            JsonPropertyInfo propertyInfo = jsonTypeInfo.Properties[0];
+            Assert.Equal(typeof(SomeClass), propertyInfo.PropertyType);
+            Assert.Equal("Next", propertyInfo.Name);
+        }
+
+        [Fact]
         public static void AddingNullJsonPropertyInfoIsNotPossible()
         {
             JsonSerializerOptions options = new();

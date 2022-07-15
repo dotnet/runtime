@@ -152,11 +152,7 @@ namespace System.IO
                 return;
             }
 
-            ReadOnlySpan<byte> hex = new byte[]
-            {
-                (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                (byte)'8', (byte)'9', (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F',
-            };
+            ReadOnlySpan<byte> hex = "0123456789ABCDEF"u8;
 
             int bytesPerLine = _bytesPerLine;
             int requiredHexLength = bytesPerLine * 3 - 1;
