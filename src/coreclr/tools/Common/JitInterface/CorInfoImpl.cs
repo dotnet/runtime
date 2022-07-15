@@ -1923,6 +1923,17 @@ namespace Internal.JitInterface
         {
             // TODO: when we support multiple modules at runtime, this will need to do more work
             // NOTE: cls can be null
+
+            // Block the jit from optimizing type tests involving function pointers.
+            if (cls != null)
+            {
+                TypeDesc type = HandleToObject(cls);
+                if (type.IsFunctionPointer)
+                {
+                    return CorInfoInlineTypeCheck.CORINFO_INLINE_TYPECHECK_USE_HELPER;
+                }
+            }
+
             return CorInfoInlineTypeCheck.CORINFO_INLINE_TYPECHECK_PASS;
         }
 
@@ -2590,7 +2601,15 @@ namespace Internal.JitInterface
             // If neither type is a canonical subtype, type handle comparison suffices
             if (!type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                result = (type1 == type2 ? TypeCompareState.Must : TypeCompareState.MustNot);
+                // FunctionPointer types are special. Avoid letting the jit optimize them for now.
+                if (type1.IsFunctionPointer || type2.IsFunctionPointer)
+                {
+                    result = TypeCompareState.May;
+                }
+                else
+                {
+                    result = (type1 == type2 ? TypeCompareState.Must : TypeCompareState.MustNot);
+                }
             }
             // If either or both types are canonical subtypes, we can sometimes prove inequality.
             else

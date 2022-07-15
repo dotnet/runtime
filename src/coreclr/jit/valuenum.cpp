@@ -3730,7 +3730,10 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
         return NoVN;
     }
 
-    return VNForFunc(type, func, arg0Func.m_args[0], arg1Func.m_args[0]);
+    // At this point we know enough to determine if the resulting compare will
+    // be true or false, but we'll let normal const folding take over.
+    //
+    return VNForFunc(type, func, handle0, handle1);
 }
 
 //------------------------------------------------------------------------
