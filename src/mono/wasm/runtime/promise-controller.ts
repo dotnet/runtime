@@ -34,7 +34,7 @@ export function createPromiseController<T>(afterResolve?: () => void, afterRejec
     const promise = new Promise<T>(function (resolve, reject) {
         promise_control = {
             isDone: false,
-            promise: promise,
+            promise: null as unknown as Promise<T>,
             resolve: (data: T | PromiseLike<T>) => {
                 if (!promise_control!.isDone) {
                     promise_control!.isDone = true;
@@ -55,6 +55,7 @@ export function createPromiseController<T>(afterResolve?: () => void, afterRejec
             }
         };
     });
+    (<any>promise_control).promise = promise;
     const controllablePromise = promise as ControllablePromise<T>;
     controllablePromise[promise_control_symbol] = promise_control;
     return { promise: controllablePromise, promise_control: promise_control };
