@@ -648,6 +648,9 @@
   <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
     <value>The PKCS#12 PersistKeySet flag is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_X509_SAN_UnknownIPAddressSize" xml:space="preserve">
+    <value>The Subject Alternative Name has an ipAddress entry that is not a recognized size.</value>
+  </data>
   <data name="Cryptography_X509_Store_RootUnsupported" xml:space="preserve">
     <value>Root certificate store is not supported on this platform.</value>
   </data>
@@ -677,6 +680,9 @@
   </data>
   <data name="Cryptography_X509_StoreRemoveFailure" xml:space="preserve">
     <value>The X509 certificate could not be removed from the store.</value>
+  </data>
+  <data name="Cryptography_X509_TooManySANs" xml:space="preserve">
+    <value>The X509 certificate has more than one Subject Alternative Name extension.</value>
   </data>
   <data name="Cryptography_X509Store_WouldModifyAdminTrust" xml:space="preserve">
     <value>Removing the requested certificate would modify admin trust settings, and has been denied.</value>

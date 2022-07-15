@@ -39,9 +39,11 @@
     <Compile Include="ExtensionsTests\ComprehensiveTests.cs" />
     <Compile Include="ExtensionsTests\EnhancedKeyUsageTests.cs" />
     <Compile Include="ExtensionsTests\KeyUsageTests.cs" />
+    <Compile Include="ExtensionsTests\SubjectAlternativeNameTests.cs" />
     <Compile Include="ExtensionsTests\SubjectKeyIdentifierTests.cs" />
     <Compile Include="FindTests.cs" />
     <Compile Include="LoadFromFileTests.cs" />
+    <Compile Include="MatchesHostnameTests.cs" />
     <Compile Include="NameTests.cs" />
     <Compile Include="PfxFormatTests.cs" />
     <Compile Include="PfxFormatTests.SingleCertGenerator.cs" />

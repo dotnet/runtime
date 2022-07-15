@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
+using System.Net;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates.Asn1;
@@ -1166,6 +1167,239 @@ namespace System.Security.Cryptography.X509Certificates
             return PemEncoding.TryWrite(PemLabels.X509Certificate, RawDataMemory.Span, destination, out charsWritten);
         }
 
+        /// <summary>
+        ///   Checks to see if the certificate matches the provided hostname.
+        /// </summary>
+        /// <param name="hostname">The host name to match against.</param>
+        /// <param name="allowWildcards">
+        ///   <see langword="true"/> to allow wildcard matching for <c>dNSName</c> values in the
+        ///   Subject Alternative Name extension; otherwise, <see langword="false"/>.
+        /// </param>
+        /// <param name="allowCommonName">
+        ///   <see langword="true"/> to allow matching against the subject Common Name value;
+        ///   otherwise, <see langword="false"/>.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the certificate is a match for the requested hostname;
+        ///   otherwise, <see langword="false"/>
+        /// </returns>
+        /// <remarks>
+        ///   <para>
+        ///     This method is a platform neutral implementation of IETF RFC 6125 host matching logic.
+        ///     The SslStream class uses the hostname validator from the operating system, which may
+        ///     result in different values from this implementation.
+        ///   </para>
+        ///   <para>
+        ///     The logical flow of this method is:
+        ///     <list type="bullet">
+        ///       <item>
+        ///         If the hostname parses as an <see cref="IPAddress"/> then IPAddress matching is done;
+        ///         otherwise, DNS Name matching is done.
+        ///       </item>
+        ///       <item>
+        ///         For IPAddress matching, the value must be an exact match against an <c>iPAddress</c> value in an
+        ///         entry of the Subject Alternative Name extension.
+        ///       </item>
+        ///       <item>
+        ///         For DNS Name matching, the value must be an exact match against a <c>dNSName</c> value in an
+        ///         entry of the Subject Alternative Name extension, or a wildcard match against the same.
+        ///       </item>
+        ///       <item>
+        ///         For wildcard matching, the wildcard must be the first character in the <c>dNSName</c> entry,
+        ///         the second character must be a period (.), and the entry must have a length greater than two.
+        ///         The wildcard will only match the <paramref name="hostname"/> value up to the first period (.),
+        ///         remaining characters must be an exact match.
+        ///       </item>
+        ///       <item>
+        ///         If there is no Subject Alternative Name extension, or the extension does not have any entries
+        ///         of the appropriate type, then Common Name matching is used as a fallback.
+        ///       </item>
+        ///       <item>
+        ///         For Common Name matching, if the Subject Name contains a single Common Name, and that attribute
+        ///         is not defined as part of a multi-valued Relative Distinguished Name, then the hostname is matched
+        ///         against the Common Name attribute's value.
+        ///         Note that wildcards are not used in Common Name matching.
+        ///       </item>
+        ///     </list>
+        ///   </para>
+        ///   <para>
+        ///     This method does not convert non-ASCII hostnames to the IDNA representation. For Unicode domains,
+        ///     the caller must make use of <see cref="System.Globalization.IdnMapping"/> or an equivalent IDNA mapper.
+        ///   </para>
+        ///   <para>
+        ///     The "exact" matches performed by this routine are <see cref="StringComparison.OrdinalIgnoreCase"/>,
+        ///     as domain names are not case-sensitive.
+        ///   </para>
+        ///   <para>
+        ///     This method does not determine if the hostname is authorized by a trusted authority.  A trust
+        ///     decision cannot be made without additionally checking for trust via <see cref="X509Chain"/>.
+        ///   </para>
+        ///   <para>
+        ///     This method does not check that the certificate has an <c>id-kp-serverAuth</c> (1.3.6.1.5.5.7.3.1)
+        ///     extended key usage.
+        ///   </para>
+        /// </remarks>
+        /// <exception cref="CryptographicException">
+        ///   <para>The certificate contains multiple Subject Alternative Name extensions.</para>
+        ///   <para>- or -</para>
+        ///   <para>The Subject Alternative Name extension or Subject Name could not be decooded.</para>
+        /// </exception>
+        public bool MatchesHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true)
+        {
+            ArgumentNullException.ThrowIfNull(hostname);
+
+            if (hostname.Length == 0)
+            {
+                return false;
+            }
+
+            X509Extension? rawSAN = null;
+
+            foreach (X509Extension extension in Pal.Extensions)
+            {
+                if (extension.Oid!.Value == Oids.SubjectAltName)
+                {
+                    if (rawSAN is null)
+                    {
+                        rawSAN = extension;
+                    }
+                    else
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_TooManySANs);
+                    }
+                }
+            }
+
+            if (rawSAN is not null)
+            {
+                var san = new X509SubjectAlternativeNameExtension();
+                san.CopyFrom(rawSAN);
+
+                bool hadAny = false;
+
+                if (IPAddress.TryParse(hostname, out IPAddress? ipAddress))
+                {
+                    foreach (IPAddress sanEntry in san.EnumerateIPAddresses())
+                    {
+                        if (sanEntry.Equals(ipAddress))
+                        {
+                            return true;
+                        }
+
+                        hadAny = true;
+                    }
+                }
+                else
+                {
+                    ReadOnlySpan<char> match = hostname;
+
+                    // Treat "something.example.org." as "something.example.org"
+                    if (hostname.EndsWith('.'))
+                    {
+                        match = match.Slice(0, match.Length - 1);
+
+                        if (match.IsEmpty)
+                        {
+                            return false;
+                        }
+                    }
+
+                    ReadOnlySpan<char> afterFirstDot = default;
+                    int firstDot = match.IndexOf('.');
+
+                    // ".something.example.org" always fails to match.
+                    if (firstDot == 0)
+                    {
+                        return false;
+                    }
+
+                    if (firstDot > 0)
+                    {
+                        afterFirstDot = match.Slice(firstDot + 1);
+                    }
+
+                    foreach (string embedded in san.EnumerateDnsNames())
+                    {
+                        hadAny = true;
+
+                        if (embedded.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        ReadOnlySpan<char> embeddedSpan = embedded;
+
+                        // Convert embedded "something.example.org." to "something.example.org"
+                        if (embedded.EndsWith('.'))
+                        {
+                            embeddedSpan = embeddedSpan.Slice(0, embeddedSpan.Length - 1);
+                        }
+
+                        if (allowWildcards && embeddedSpan.StartsWith("*.") && embeddedSpan.Length > 2)
+                        {
+                            if (embeddedSpan.Slice(2).Equals(afterFirstDot, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
+                        }
+                        else if (embeddedSpan.Equals(match, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                if (hadAny)
+                {
+                    return false;
+                }
+            }
+
+            if (allowCommonName)
+            {
+                X500RelativeDistinguishedName? cn = null;
+
+                foreach (X500RelativeDistinguishedName rdn in SubjectName.EnumerateRelativeDistinguishedNames())
+                {
+                    if (rdn.HasMultipleElements)
+                    {
+                        AsnValueReader reader = new AsnValueReader(rdn.RawData.Span, AsnEncodingRules.DER);
+                        // Be lax with the sort order because Windows is
+                        AsnValueReader set = reader.ReadSetOf(skipSortOrderValidation: true);
+
+                        while (set.HasData)
+                        {
+                            AsnValueReader attributeTypeAndValue = set.ReadSequence();
+                            Oid? type = Oids.GetSharedOrNullOid(ref attributeTypeAndValue);
+
+                            if (Oids.CommonNameOid.ValueEquals(type))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    else if (Oids.CommonNameOid.ValueEquals(rdn.GetSingleElementType()))
+                    {
+                        if (cn is null)
+                        {
+                            cn = rdn;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                if (cn is not null)
+                {
+                    return hostname.Equals(cn.GetSingleElementValue(), StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return false;
+        }
+
         private static X509Certificate2 ExtractKeyFromPem<TAlg>(
             ReadOnlySpan<char> keyPem,
             string[] labels,
@@ -1237,6 +1471,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.EnhancedKeyUsage => new X509EnhancedKeyUsageExtension(),
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
                 Oids.AuthorityInformationAccess => new X509AuthorityInformationAccessExtension(),
+                Oids.SubjectAltName => new X509SubjectAlternativeNameExtension(),
                 _ => null,
             };
 
