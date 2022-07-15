@@ -95,7 +95,11 @@ namespace System.Security.Cryptography
             get
             {
                 ThrowIfDisposed();
-                return new ECDiffieHellmanOpenSslPublicKey(_key.UpRefKeyHandle());
+
+                using (SafeEvpPKeyHandle handle = _key.UpRefKeyHandle())
+                {
+                    return new ECDiffieHellmanOpenSslPublicKey(handle);
+                }
             }
         }
 
