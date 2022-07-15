@@ -27,8 +27,7 @@
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
     <NoWarn>$(NoWarn);IL3050;IL3051;IL3052;IL3055;IL1005</NoWarn>
-    <!-- Replace with TrimMode=partial when NativeAOT understands it. -->
-    <TrimmerDefaultAction>copy</TrimmerDefaultAction>
+    <TrimMode>partial</TrimMode>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
 
