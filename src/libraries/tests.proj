@@ -376,12 +376,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAppleSiliconTests)' != 'true'">
-    <!-- ActiveIssue Apple Silicon No usable version of libssl was found https://github.com/dotnet/runtime/issues/49083 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Algorithms/tests/System.Security.Cryptography.Algorithms.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetArchitecture)' == 's390x' and '$(RunDisableds390xTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
   </ItemGroup>
