@@ -167,6 +167,11 @@
         <target state="translated">“LibraryImportAttribute” 用法无效</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidManagedTypeTitle">
+        <source>Specified managed type is invalid</source>
+        <target state="new">Specified managed type is invalid</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
         <target state="needs-review-translation">指定的本机类型无效</target>
@@ -247,6 +252,36 @@
         <target state="translated">类型“{0}”指定它支持按 “Out” 方向进行封送，但不提供采用 “int” 并 “GetManagedValuesDestination“ 并返回 “Span&lt;&gt;” 的 “GetManagedValuesDestination”，以及采用 “int” 并返回 “ReadOnlySpan&lt;byte&gt;” 的 “GetNativeValuesSource” 方法</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
+        <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="new">The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullDescription">
+        <source>The managed type for a custom marshaller must be non-null.</source>
+        <target state="new">The managed type for a custom marshaller must be non-null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullMessage">
+        <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
+        <target state="new">The managed type for the entry-point marshaller type '{0}' must not be 'null'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
+        <target state="new">The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
         <target state="needs-review-translation">具有 “System.Runtime.InteropServices.CustomTypeMarshallerAttribute” 的类型必须指定托管类型</target>
@@ -257,13 +292,13 @@
         <target state="needs-review-translation">类型“{0}”未在应用于该类型的 “System.Runtime.InteropServices.CustomTypeMarshallerAttribute” 中指定托管类型</target>
         <note />
       </trans-unit>
-      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityDescription">
-        <source>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="needs-review-translation">本机类型“{0}”必须是封闭泛型或具有与托管类型相同数目的泛型参数，以便发出的代码可以使用特定实例化。</target>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
         <note />
       </trans-unit>
-      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityMessage">
-        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
         <target state="needs-review-translation">托管类型“{1}”的本机类型“{0}”必须是封闭式泛型类型或与托管类型具有相同的 arity。</target>
         <note />
       </trans-unit>

@@ -212,11 +212,23 @@
   <data name="MarshallerTypeMustSpecifyManagedTypeMessage" xml:space="preserve">
     <value>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</value>
   </data>
-  <data name="GenericMarshallerTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
-    <value>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
+  <data name="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
+    <value>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
   </data>
-  <data name="GenericMarshallerTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
-    <value>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
+  <data name="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</value>
+  </data>
+  <data name="ManagedTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
+    <value>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</value>
+  </data>
+  <data name="ManagedTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</value>
+  </data>
+  <data name="MarshallerTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
+    <value>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
+  </data>
+  <data name="MarshallerTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</value>
   </data>
   <data name="TypeMustBeUnmanagedOrStrictlyBlittableDescription" xml:space="preserve">
     <value>A native type must be blittable.</value>
@@ -241,6 +253,12 @@
   </data>
   <data name="EntryPointTypeMustBeNonNullMessage" xml:space="preserve">
     <value>The entry-point marshaller type for the type '{0}' must be not 'null'</value>
+  </data>
+  <data name="ManagedTypeMustBeNonNullDescription" xml:space="preserve">
+    <value>The managed type for a custom marshaller must be non-null.</value>
+  </data>
+  <data name="ManagedTypeMustBeNonNullMessage" xml:space="preserve">
+    <value>The managed type for the entry-point marshaller type '{0}' must not be 'null'</value>
   </data>
   <data name="TypeNotSupportedDescription" xml:space="preserve">
     <value>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</value>
@@ -344,6 +362,9 @@
   </data>
   <data name="InvalidMarshallerTypeTitle" xml:space="preserve">
     <value>Specified marshaller type is invalid</value>
+  </data>
+  <data name="InvalidManagedTypeTitle" xml:space="preserve">
+    <value>Specified managed type is invalid</value>
   </data>
   <data name="InvalidSignaturesInMarshallerShapeTitle" xml:space="preserve">
     <value>Marshaller type has incompatible method signatures</value>

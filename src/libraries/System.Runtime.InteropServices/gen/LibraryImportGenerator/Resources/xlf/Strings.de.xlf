@@ -167,6 +167,11 @@
         <target state="translated">Ungültige Verwendung von \"LibraryImportAttribute\"</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidManagedTypeTitle">
+        <source>Specified managed type is invalid</source>
+        <target state="new">Specified managed type is invalid</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
         <target state="needs-review-translation">Der angegebene native Typ ist ungültig</target>
@@ -247,6 +252,36 @@
         <target state="translated">Der Typ \"{0}\" gibt an, dass Marshalling in der Out-Richtung unterstützt wird. Er stellt jedoch keine \"GetManagedValuesDestination\" bereit, die ein \"int\" akzeptiert und ein \"Span&lt;&gt;\" und eine GetNativeValuesSource-Methode zurückgibt, die ein \"int\" und ein \"ReadOnlySpan&lt;byte&gt;\" akzeptiert.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
+        <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="new">The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullDescription">
+        <source>The managed type for a custom marshaller must be non-null.</source>
+        <target state="new">The managed type for a custom marshaller must be non-null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullMessage">
+        <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
+        <target state="new">The managed type for the entry-point marshaller type '{0}' must not be 'null'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
+        <target state="new">The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
         <target state="needs-review-translation">Ein Typ mit einem \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\" muss einen verwalteten Typ angeben.</target>
@@ -257,13 +292,13 @@
         <target state="needs-review-translation">Der Typ \"{0}\" gibt keinen verwalteten Typ in \"System.Runtime.InteropServices.CustomTypeMarshallerAttribute\" an, der auf den Typ angewendet wird.</target>
         <note />
       </trans-unit>
-      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityDescription">
-        <source>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="needs-review-translation">Der native Typ \"{0}\" muss ein geschlossener generischer Typ sein oder dieselbe Anzahl generischer Parameter wie der verwaltete Typ aufweisen, damit der ausgegebene Code eine bestimmte Instanziierung verwenden kann.</target>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
         <note />
       </trans-unit>
-      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityMessage">
-        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
         <target state="needs-review-translation">Der native Typ \"{0}\" für den verwalteten Typ \"{1}\" muss ein geschlossener generischer Typ sein oder dieselbe Stelligkeit wie der verwaltete Typ aufweisen.</target>
         <note />
       </trans-unit>

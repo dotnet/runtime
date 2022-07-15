@@ -237,17 +237,17 @@ namespace Microsoft.Interop
             entryPoint = instantiatedEntryType;
             if (extraArgumentsInTemplate > 0)
             {
-                onArityMismatch(entryPointType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
+                onArityMismatch(managedType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
                 return false;
             }
             if (!isLinearCollectionMarshalling && numOriginalArgsSubstituted != 0)
             {
-                onArityMismatch(entryPointType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
+                onArityMismatch(managedType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
                 return false;
             }
             else if (isLinearCollectionMarshalling && numOriginalArgsSubstituted != 1)
             {
-                onArityMismatch(entryPointType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
+                onArityMismatch(managedType.OriginalDefinition, instantiatedEntryType.OriginalDefinition);
                 return false;
             }
 

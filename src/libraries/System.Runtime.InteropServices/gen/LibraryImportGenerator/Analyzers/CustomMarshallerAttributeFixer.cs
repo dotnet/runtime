@@ -19,7 +19,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace Microsoft.Interop.Analyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp), Shared]
-    public class CustomTypeMarshallerFixer : CodeFixProvider
+    public class CustomMarshallerAttributeFixer : CodeFixProvider
     {
         private const string AddMissingCustomTypeMarshallerMembersKey = nameof(AddMissingCustomTypeMarshallerMembersKey);
 
@@ -57,7 +57,7 @@ namespace Microsoft.Interop.Analyzers
                 editor.ReplaceNode(
                     node,
                     (node, gen) =>
-                        CustomTypeMarshallerFixer.AddMissingMembers(
+                        CustomMarshallerAttributeFixer.AddMissingMembers(
                             node,
                             marshallerType,
                             missingMemberNames,
@@ -72,7 +72,7 @@ namespace Microsoft.Interop.Analyzers
             ImmutableArray.Create(
                 AnalyzerDiagnostics.Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 AnalyzerDiagnostics.Ids.MissingAllocatingMarshallingFallback,
-                AnalyzerDiagnostics.Ids.ProvidedMethodsNotSpecifiedInFeatures);
+                AnalyzerDiagnostics.Ids.InvalidNativeMarshallingAttributeUsage);
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -104,9 +104,9 @@ namespace Microsoft.Interop.Analyzers
                 if (diagnostic.Id == AnalyzerDiagnostics.Ids.CustomMarshallerTypeMustHaveRequiredShape)
                 {
                     requiredShapeDiagnostics.Add(diagnostic);
-                    if (diagnostic.Properties.TryGetValue(CustomTypeMarshallerAnalyzer.MissingMemberNames.Key, out string missingMembers))
+                    if (diagnostic.Properties.TryGetValue(CustomMarshallerAttributeAnalyzer.MissingMemberNames.Key, out string missingMembers))
                     {
-                        missingMemberNames.AddRange(missingMembers.Split(CustomTypeMarshallerAnalyzer.MissingMemberNames.Delimiter));
+                        missingMemberNames.AddRange(missingMembers.Split(CustomMarshallerAttributeAnalyzer.MissingMemberNames.Delimiter));
                     }
                 }
             }

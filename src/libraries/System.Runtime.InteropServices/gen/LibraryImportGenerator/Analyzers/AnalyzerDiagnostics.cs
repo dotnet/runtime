@@ -19,10 +19,10 @@ namespace Microsoft.Interop.Analyzers
             public const string ConvertToLibraryImport = Prefix + "1054";
 
             // CustomTypeMarshaller
-            public const string InvalidMarshallerAttributeUsage = Prefix + "1055";
+            public const string InvalidCustomMarshallerAttributeUsage = Prefix + "1055";
             public const string InvalidNativeType = Prefix + "1056";
             public const string CustomMarshallerTypeMustHaveRequiredShape = Prefix + "1057";
-            public const string ProvidedMethodsNotSpecifiedInFeatures = Prefix + "1058";
+            public const string InvalidNativeMarshallingAttributeUsage = Prefix + "1058";
             public const string MissingAllocatingMarshallingFallback = Prefix + "1059";
             public const string CallerAllocConstructorMustHaveBufferSize = Prefix + "1060";
             public const string InvalidSignaturesInMarshallerShape = Prefix + "1061";

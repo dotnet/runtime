@@ -167,6 +167,11 @@
         <target state="translated">잘못된 'LibraryImportAttribute' 사용</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidManagedTypeTitle">
+        <source>Specified managed type is invalid</source>
+        <target state="new">Specified managed type is invalid</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
         <target state="needs-review-translation">지정한 네이티브 형식이 잘못되었습니다.</target>
@@ -247,6 +252,36 @@
         <target state="translated">형식 '{0}'은(는) 'Out' 방향으로 마샬링을 지원하지만 'int'를 사용하고 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination' 및 'int'를 사용하고 'ReadOnlySpan&lt;byte&gt;'를 반환하는 'GetNativeValuesSource' 메서드를 제공하지 않음을 지정합니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
+        <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="new">The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullDescription">
+        <source>The managed type for a custom marshaller must be non-null.</source>
+        <target state="new">The managed type for a custom marshaller must be non-null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullMessage">
+        <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
+        <target state="new">The managed type for the entry-point marshaller type '{0}' must not be 'null'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
+        <target state="new">The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
         <target state="needs-review-translation">'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'가 있는 형식은 관리 형식을 지정해야 합니다.</target>
@@ -257,13 +292,13 @@
         <target state="needs-review-translation">형식 '{0}'은(는) 해당 형식에 적용된 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute'의 관리 형식을 지정하지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityDescription">
-        <source>The marshaller type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="needs-review-translation">네이티브 형식 '{0}'은(는) 닫힌 제네릭이거나 내보낸 코드에서 특정 인스턴스화를 사용할 수 있도록 관리되는 형식과 동일한 수의 제네릭 매개 변수를 가져야 합니다.</target>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
         <note />
       </trans-unit>
-      <trans-unit id="GenericMarshallerTypeMustBeClosedOrMatchArityMessage">
-        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
         <target state="needs-review-translation">관리 형식 '{1}'에 대한 네이티브 형식 '{0}'은(는) 폐쇄된 일반 형식이거나 관리 형식과 인자가 동일해야 합니다.</target>
         <note />
       </trans-unit>
