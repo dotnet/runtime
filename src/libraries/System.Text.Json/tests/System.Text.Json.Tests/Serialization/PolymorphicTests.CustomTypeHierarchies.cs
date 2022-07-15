@@ -1896,7 +1896,6 @@ namespace System.Text.Json.Serialization.Tests
             Peano obj = Peano.FromInteger(number);
             string json = await Serializer.SerializeWrapper(obj, options);
             Peano deserialized = await Serializer.DeserializeWrapper<Peano>(json, options);
-            Assert.Equal(number, Peano.ToInteger(deserialized));
             Assert.Equal(obj, deserialized);
         }
 
