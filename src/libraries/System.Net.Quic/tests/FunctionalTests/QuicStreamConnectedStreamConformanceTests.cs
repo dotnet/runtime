@@ -118,8 +118,14 @@ namespace System.Net.Quic.Tests
             }
             catch
             {
-                stream1?.Dispose();
-                stream2?.Dispose();
+                if (stream1 is not null)
+                {
+                    await stream1.DisposeAsync();
+                }
+                if (stream2 is not null)
+                {
+                    await stream2.DisposeAsync();
+                }
                 if (connection1 is not null)
                 {
                     await connection1.DisposeAsync();

@@ -172,7 +172,7 @@ namespace System.Net.Quic.Tests
                 Task<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync().AsTask();
                 await new Task[] { writeTask, acceptTask }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
 
-                using QuicStream serverStream = acceptTask.Result;
+                await using QuicStream serverStream = acceptTask.Result;
                 await serverStream.ReadAsync(buffer);
             }
         }
