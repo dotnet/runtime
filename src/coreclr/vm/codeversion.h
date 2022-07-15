@@ -71,13 +71,15 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = NULL);
 #endif
 
+    // NOTE: Don't change existing values to avoid breaking changes in event tracing
     enum OptimizationTier
     {
         OptimizationTier0,
         OptimizationTier1,
         OptimizationTier1OSR,
         OptimizationTierOptimized, // may do less optimizations than tier 1
-        OptimizationTier0Instrumented,
+        OptimizationTierInstrumented,
+        OptimizationTierInstrumentedOptimized,
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;

@@ -1223,7 +1223,6 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
             switch (config->GetCodeVersion().GetOptimizationTier())
             {
                 case NativeCodeVersion::OptimizationTier0:
-                case NativeCodeVersion::OptimizationTier0Instrumented:
                     return JitOptimizationTier::QuickJitted;
 
                 case NativeCodeVersion::OptimizationTier1:
@@ -1234,6 +1233,12 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
 
                 case NativeCodeVersion::OptimizationTierOptimized:
                     return JitOptimizationTier::Optimized;
+
+                case NativeCodeVersion::OptimizationTierInstrumented:
+                    return JitOptimizationTier::InstrumentedTier;
+
+                case NativeCodeVersion::OptimizationTierInstrumentedOptimized:
+                    return JitOptimizationTier::InstrumentedTierOptimized;
 
                 default:
                     UNREACHABLE();
@@ -1257,6 +1262,8 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
         case JitOptimizationTier::QuickJitted: return "QuickJitted";
         case JitOptimizationTier::OptimizedTier1: return "OptimizedTier1";
         case JitOptimizationTier::OptimizedTier1OSR: return "OptimizedTier1OSR";
+        case JitOptimizationTier::InstrumentedTier: return "InstrumentedTier";
+        case JitOptimizationTier::InstrumentedTierOptimized: return "InstrumentedTierOptimized";
 
         default:
             UNREACHABLE();
@@ -1306,7 +1313,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         NativeCodeVersion::OptimizationTier previousOptimizationTier = GetCodeVersion().GetOptimizationTier();
         _ASSERTE(
             previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
-            previousOptimizationTier == NativeCodeVersion::OptimizationTier0Instrumented ||
+            previousOptimizationTier == NativeCodeVersion::OptimizationTierInstrumented ||
             previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
     #endif // _DEBUG
 

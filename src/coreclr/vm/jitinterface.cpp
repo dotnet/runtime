@@ -12595,23 +12595,6 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
 
 #ifdef FEATURE_PGO
 
-    // Instrument, if
-    //
-    // * We're writing pgo data and we're jitting at Tier0.
-    // * Tiered PGO is enabled and we're jitting at Tier0.
-    // * Tiered PGO is enabled and we are jitting an OSR method.
-    //
-    if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) > 0)
-        && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-    }
-    else if ((g_pConfig->TieredPGO())
-        && (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) || flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR)))
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-    }
-
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);

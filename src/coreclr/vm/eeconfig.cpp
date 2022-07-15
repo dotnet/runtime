@@ -239,8 +239,7 @@ HRESULT EEConfig::Init()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = false;
-    fTieredPGO_OptimizeInstrumentedTier = false;
-    fTieredPGO_UseInstrumentedTierForR2R = false;
+    fTieredPGO_Strategy = (TieredPGOStrategy)0;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -746,16 +745,6 @@ HRESULT EEConfig::sync()
             }
         }
 
-        if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_UseInstrumentedTierForR2R() &&
-            !g_pConfig->TieredPGO_OptimizeInstrumentedTier())
-        {
-            // When we're not using optimizations in the instrumented tier we produce a lot of new first-time compilation 
-            // due to disabled inlining even for very small methods - such first-time compilations delay promotions by
-            // tieredCompilation_CallCountingDelayMs
-            tieredCompilation_CallCountingDelayMs /= 3;
-            tieredCompilation_CallCountingDelayMs = max(1, tieredCompilation_CallCountingDelayMs);
-        }
-
         if (fTieredCompilation_CallCounting)
         {
             fTieredCompilation_UseCallCountingStubs =
@@ -787,8 +776,27 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
-    fTieredPGO_OptimizeInstrumentedTier = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_OptimizeInstrumentedTier) != 0;
-    fTieredPGO_UseInstrumentedTierForR2R = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_UseInstrumentedTierForR2R) != 0;
+    fTieredPGO_Strategy = (TieredPGOStrategy)CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_Strategy);
+
+    // We need quick jit for TieredPGO
+    if (!fTieredCompilation_QuickJit)
+    {
+        fTieredPGO = false;
+    }
+    else
+    {
+        if (fTieredPGO_Strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier ||
+            fTieredPGO_Strategy == PromoteHotTier0ToInstrumentedTier)
+        {
+            // When we're not using optimizations in the instrumented tiers we produce a lot of new first-time compilation 
+            // due to disabled inlining even for very small methods - such first-time compilations delay promotions by
+            // tieredCompilation_CallCountingDelayMs
+            tieredCompilation_CallCountingDelayMs /= 3;
+            tieredCompilation_CallCountingDelayMs = max(1, tieredCompilation_CallCountingDelayMs);
+        }
+        _ASSERTE(fTieredPGO_Strategy >= 0 && fTieredPGO_Strategy <= 2 &&
+            "Only '0', '1' and '2' strategies are currently supported");
+    }
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

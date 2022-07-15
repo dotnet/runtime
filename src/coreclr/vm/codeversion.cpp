@@ -337,7 +337,7 @@ bool NativeCodeVersion::IsUnoptimizedTier() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     OptimizationTier tier = GetOptimizationTier();
-    return tier == OptimizationTier0 || tier == OptimizationTier0Instrumented;
+    return tier == OptimizationTier0 || tier == OptimizationTierInstrumented;
 }
 
 #ifndef DACCESS_COMPILE

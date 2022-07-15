@@ -112,6 +112,13 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         return NativeCodeVersion::OptimizationTierOptimized;
     }
 
+#ifdef FEATURE_PGO
+    if (g_pConfig->TieredPGO())
+    {
+        return NativeCodeVersion::OptimizationTierInstrumented;
+    }
+#endif
+
     return NativeCodeVersion::OptimizationTier0;
 #else
     return NativeCodeVersion::OptimizationTierOptimized;
@@ -266,20 +273,28 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
     NativeCodeVersion::OptimizationTier nextTier = NativeCodeVersion::OptimizationTier1;
 
-    // Compile to Tier0 with instrumentation if we promote from R2R and PGO is enabled.
-    // If that R2R has a static profile we might consider skipping it if we can rely on it being accurate
-    // e.g. if the current R2R image is Composite (in the default mode we might lose cross-module
-    // likely classes in the current implementation)
-    // Also, this Tier0 likely doesn't need any patchpoints since it's already survived a promotion and will
-    // likely survive it once again
-    if (g_pConfig->TieredPGO() &&
-        pMethodDesc->IsEligibleForTieredCompilation() &&
-        tier0NativeCodeVersion.IsDefaultVersion() &&
-        tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
-        ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+    // If TieredPGO is enabled, follow TieredPGO_Strategy, see comments in clrconfigvalues.h around it
+    if (g_pConfig->TieredPGO() && pMethodDesc->IsEligibleForTieredCompilation())
     {
-        _ASSERT(!pMethodDesc->RequestedAggressiveOptimization());
-        nextTier = NativeCodeVersion::OptimizationTier0Instrumented;
+        TieredPGOStrategy strategy = g_pConfig->TieredPGO_Strategy();
+        if ((strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier ||
+             strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized) &&
+            tier0NativeCodeVersion.IsDefaultVersion() &&
+            tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+            ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+        {
+            if (strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier)
+            {
+                // Promote hot R2R code to InstrumentedTier
+                nextTier = NativeCodeVersion::OptimizationTierInstrumented;
+            }
+            else
+            {
+                // Promote hot R2R code to InstrumentedTierOptimized
+                assert(strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized);
+                nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
+            }
+        }
     }
 
     ILCodeVersion ilCodeVersion = tier0NativeCodeVersion.GetILCodeVersion();
@@ -1035,21 +1050,23 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         NativeCodeVersion::OptimizationTier newOptimizationTier;
         if (!methodDesc->RequestedAggressiveOptimization())
         {
+            NativeCodeVersion::OptimizationTier currentTier = nativeCodeVersion.GetOptimizationTier();
+            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTierInstrumented)
+            {
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+                return flags;
+            }
+
+            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTierInstrumentedOptimized)
+            {
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+                return flags;
+            }
+
             if (g_pConfig->TieredCompilation_QuickJit())
             {
-                if (nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
-                {
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                    if (g_pConfig->TieredPGO_OptimizeInstrumentedTier())
-                    {
-                        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-                    }
-                    else
-                    {
-                        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-                    }
-                    return flags;
-                }
                 _ASSERTE(nativeCodeVersion.IsUnoptimizedTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
@@ -1073,21 +1090,15 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
     switch (nativeCodeVersion.GetOptimizationTier())
     {
-        case NativeCodeVersion::OptimizationTier0Instrumented:
-            if (g_pConfig->TieredCompilation_QuickJit())
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                if (g_pConfig->TieredPGO())
-                {
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-                }
-                else
-                {
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-                }
-                break;
-            }
-            FALLTHROUGH;
+        case NativeCodeVersion::OptimizationTierInstrumented:
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+            break;
+
+        case NativeCodeVersion::OptimizationTierInstrumentedOptimized:
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+            break;
 
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())

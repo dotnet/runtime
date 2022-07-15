@@ -51,6 +51,27 @@ enum ParseCtl {
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
 };
 
+// Keep in sync with clrconfigvalues.h, see TieredPGO_Strategy
+enum TieredPGOStrategy
+{
+    // Use InstrumentedTier for new code without R2R (or if it's disabled), R2R won't instrumented
+    UseInstrumentedTierForILOnly = 0, // Default behavior
+
+    // Use InstrumentedTier for new code without R2R (or if it's disabled), hot R2R
+    // will be promoted to an intermediate InstrumentedTier (without optimizations in it)
+    UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier = 1,
+
+    // Use InstrumentedTier for new code without R2R (or if it's disabled), hot R2R
+    // will be promoted to an intermediate InstrumentedTierOptimized (without optimizations in it)
+    UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized = 2,
+
+    // NYI:
+    // In these modes we never instrument Tier0 and only promote hot Tier0 and R2R
+    // code to intermediate tiers with instrumentation
+    PromoteHotTier0ToInstrumentedTier = 3,
+    PromoteHotTier0ToInstrumentedTierOptimized = 4,
+};
+
 class EEConfig
 {
 public:
@@ -91,9 +112,8 @@ public:
 #endif
 
 #if defined(FEATURE_PGO)
-    bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
-    bool          TieredPGO_OptimizeInstrumentedTier(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO_OptimizeInstrumentedTier; }
-    bool          TieredPGO_UseInstrumentedTierForR2R(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO_UseInstrumentedTierForR2R; }
+    bool              TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
+    TieredPGOStrategy TieredPGO_Strategy(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO_Strategy; }
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -656,8 +676,7 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
-    bool fTieredPGO_OptimizeInstrumentedTier;
-    bool fTieredPGO_UseInstrumentedTierForR2R;
+    TieredPGOStrategy fTieredPGO_Strategy;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
