@@ -24,5 +24,8 @@
                       Pack="true"
                       Private="true"
                       IncludeReferenceAssemblyInPackage="true" />
+    <!-- Messages is an implementation only assembly. -->
+    <ProjectReference Update="$(LibrariesProjectRoot)System.Diagnostics.EventLog\src\Messages\System.Diagnostics.EventLog.Messages.csproj"
+                      IncludeReferenceAssemblyInPackage="false" />
   </ItemGroup>
 </Project>
