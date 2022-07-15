@@ -187,14 +187,16 @@ CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, 
 
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                     // Dumps disassembly for specified method
-CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies"))    // Only show JitDisasm and related info for methods
-                                                                // from this semicolon-delimited list of assemblies.
-CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)        // Dump interleaved GC Info for any method disassembled.
-CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
-CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
-CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
+CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
+                                                             // from this semicolon-delimited list of assemblies.
+CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
+CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump interleaved debug info for any method
+                                                                       // disassembled.
+CONFIG_METHODSET(JitDump, W("JitDump"))                                // Dumps trees for specified method
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)                     // Dump tier0 requests
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1)        // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1)       // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
@@ -248,9 +250,6 @@ CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't d
 CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext order;  1 == bbNum order; 2 == bbID
                                                                  // order
 
-CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
-CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
-
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
@@ -272,6 +271,21 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
                                                                            // intrinsic classes
 
 #endif // defined(DEBUG)
+
+CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
+
+#ifdef DEBUG
+CONFIG_STRING(WriteRichDebugInfoFile, W("WriteRichDebugInfoFile")) // Write rich debug info in JSON format to this file
+#endif
+
+CONFIG_INTEGER(JitEarlyExpandMDArrays, W("JitEarlyExpandMDArrays"), 1) // Enable early expansion of multi-dimensional
+                                                                       // array access
+
+#ifdef DEBUG
+CONFIG_METHODSET(JitEarlyExpandMDArraysFilter, W("JitEarlyExpandMDArraysFilter")) // Filter functions with early
+                                                                                  // expansion of multi-dimensional
+                                                                                  // array access
+#endif
 
 #if FEATURE_LOOP_ALIGN
 CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
@@ -354,9 +368,9 @@ CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNu
 //
 CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 
-#define CONST_CSE_ENABLE_ARM64 0
+#define CONST_CSE_ENABLE_ARM 0
 #define CONST_CSE_DISABLE_ALL 1
-#define CONST_CSE_ENABLE_ARM64_NO_SHARING 2
+#define CONST_CSE_ENABLE_ARM_NO_SHARING 2
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
@@ -548,10 +562,12 @@ CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
 CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 0)                     // Profile castclass/isinst
-CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 0) // Consume profile data (if any) for
+CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 1) // Consume profile data (if any) for
                                                                              // castclass/isinst
 
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)         // Profile virtual and interface calls
+CONFIG_INTEGER(JitDelegateProfiling, W("JitDelegateProfiling"), 1)   // Profile resolved delegate call targets
+CONFIG_INTEGER(JitVTableProfiling, W("JitVTableProfiling"), 0)       // Profile resolved vtable call targets
 CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)           // Profile edges instead of blocks
 CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
 
@@ -603,6 +619,8 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 //    1: disable frames that save FP/LR registers with the callee-saved registers (at the top of the frame)
 //    2: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
 //    of the frame)
+//    3: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
+//    of the frame) and also force using the large funclet frame variation (frame 5) if possible.
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
 #endif // defined(TARGET_ARM64)
 

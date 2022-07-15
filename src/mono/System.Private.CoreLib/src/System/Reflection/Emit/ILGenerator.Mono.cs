@@ -343,7 +343,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void BeginCatchBlock(Type exceptionType)
+        public virtual void BeginCatchBlock(Type? exceptionType)
         {
             if (!InExceptionBlock)
                 throw new NotSupportedException("Not in an exception block");
@@ -469,7 +469,9 @@ namespace System.Reflection.Emit
         public virtual Label DefineLabel()
         {
             if (labels == null)
+            {
                 labels = new LabelData[defaultLabelsSize];
+            }
             else if (num_labels >= labels.Length)
             {
                 LabelData[] t = new LabelData[labels.Length * 2];
@@ -554,7 +556,9 @@ namespace System.Reflection.Emit
                 labels[label.m_label].maxStack = cur_stack;
 
             if (fixups == null)
+            {
                 fixups = new LabelFixup[defaultFixupSize];
+            }
             else if (num_fixups >= fixups.Length)
             {
                 LabelFixup[] newf = new LabelFixup[fixups.Length * 2];
@@ -584,7 +588,9 @@ namespace System.Reflection.Emit
 
             emit_int(count);
             if (fixups == null)
+            {
                 fixups = new LabelFixup[defaultFixupSize + count];
+            }
             else if (num_fixups + count >= fixups.Length)
             {
                 LabelFixup[] newf = new LabelFixup[count + fixups.Length * 2];

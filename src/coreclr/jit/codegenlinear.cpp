@@ -424,10 +424,12 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
-
-        bool addPreciseMappings =
-            (JitConfig.JitDumpPreciseDebugInfoFile() != nullptr) || (JitConfig.JitDisasmWithDebugInfo() != 0);
 #endif // DEBUG
+
+        bool addRichMappings = JitConfig.RichDebugInfo() != 0;
+
+        INDEBUG(addRichMappings |= JitConfig.JitDisasmWithDebugInfo() != 0);
+        INDEBUG(addRichMappings |= JitConfig.WriteRichDebugInfoFile() != nullptr);
 
         DebugInfo currentDI;
         for (GenTree* node : LIR::AsRange(block))
@@ -445,12 +447,12 @@ void CodeGen::genCodeForBBlist()
                     firstMapping = false;
                 }
 
-#ifdef DEBUG
-                if (addPreciseMappings && ilOffset->gtStmtDI.IsValid())
+                if (addRichMappings && ilOffset->gtStmtDI.IsValid())
                 {
-                    genAddPreciseIPMappingHere(ilOffset->gtStmtDI);
+                    genAddRichIPMappingHere(ilOffset->gtStmtDI);
                 }
 
+#ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
@@ -753,24 +755,27 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_ALWAYS:
-                inst_JMP(EJ_jmp, block->bbJumpDest
-#ifdef TARGET_AMD64
-                         // AMD64 requires an instruction after a call instruction for unwinding
-                         // inside an EH region so if the last instruction generated was a call instruction
-                         // do not allow this jump to be marked for possible later removal.
-                         //
-                         // If a block was selected to place an alignment instruction because it ended
-                         // with a jump, do not remove jumps from such blocks.
-                         ,
-                         /* isRemovableJmpCandidate */ !GetEmitter()->emitIsLastInsCall() && !block->hasAlign()
-#else
 #ifdef TARGET_XARCH
-                         ,
-                         /* isRemovableJmpCandidate */ !block->hasAlign()
-#endif
+            {
+                // If a block was selected to place an alignment instruction because it ended
+                // with a jump, do not remove jumps from such blocks.
+                // Do not remove a jump between hot and cold regions.
+                bool isRemovableJmpCandidate =
+                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->bbJumpDest);
 
-#endif
-                             );
+#ifdef TARGET_AMD64
+                // AMD64 requires an instruction after a call instruction for unwinding
+                // inside an EH region so if the last instruction generated was a call instruction
+                // do not allow this jump to be marked for possible later removal.
+                isRemovableJmpCandidate = isRemovableJmpCandidate && !GetEmitter()->emitIsLastInsCall();
+#endif // TARGET_AMD64
+
+                inst_JMP(EJ_jmp, block->bbJumpDest, isRemovableJmpCandidate);
+            }
+#else
+                inst_JMP(EJ_jmp, block->bbJumpDest);
+#endif // TARGET_XARCH
+
                 FALLTHROUGH;
 
             case BBJ_COND:
@@ -1762,21 +1767,21 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
                                         regNumber         sizeReg)
 {
     // The putArgNode children are always contained. We should not consume any registers.
-    assert(putArgNode->gtGetOp1()->isContained());
+    assert(putArgNode->Data()->isContained());
 
-    // Get the source address.
-    GenTree* src = putArgNode->gtGetOp1();
+    // Get the source.
+    GenTree*  src        = putArgNode->Data();
+    regNumber srcAddrReg = REG_NA;
     assert(varTypeIsStruct(src));
-    assert((src->gtOper == GT_OBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
-    GenTree* srcAddr = src->gtGetOp1();
+    assert(src->OperIs(GT_OBJ) || src->OperIsLocalRead() || (src->OperIs(GT_IND) && varTypeIsSIMD(src)));
 
     assert(dstReg != REG_NA);
     assert(srcReg != REG_NA);
 
-    // Consume the registers only if they are not contained or set to REG_NA.
-    if (srcAddr->GetRegNum() != REG_NA)
+    // Consume the register for the source address if needed.
+    if (src->OperIsIndir())
     {
-        genConsumeReg(srcAddr);
+        srcAddrReg = genConsumeReg(src->AsIndir()->Addr());
     }
 
     // If the op1 is already in the dstReg - nothing to do.
@@ -1798,22 +1803,17 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 #endif // !TARGET_X86
 
-    if (srcAddr->OperIsLocalAddr())
+    if (srcAddrReg != REG_NA)
     {
-        // The OperLocalAddr is always contained.
-        assert(srcAddr->isContained());
-        const GenTreeLclVarCommon* lclNode = srcAddr->AsLclVarCommon();
-
-        // Generate LEA instruction to load the LclVar address in RSI.
-        // Source is known to be on the stack. Use EA_PTRSIZE.
-        unsigned int offset = lclNode->GetLclOffs();
-        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->GetLclNum(), offset);
+        // Source is not known to be on the stack. Use EA_BYREF.
+        GetEmitter()->emitIns_Mov(INS_mov, EA_BYREF, srcReg, srcAddrReg, /* canSkip */ true);
     }
     else
     {
-        assert(srcAddr->GetRegNum() != REG_NA);
-        // Source is not known to be on the stack. Use EA_BYREF.
-        GetEmitter()->emitIns_Mov(INS_mov, EA_BYREF, srcReg, srcAddr->GetRegNum(), /* canSkip */ true);
+        // Generate LEA instruction to load the LclVar address in RSI.
+        // Source is known to be on the stack. Use EA_PTRSIZE.
+        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, src->AsLclVarCommon()->GetLclNum(),
+                                  src->AsLclVarCommon()->GetLclOffs());
     }
 
     if (sizeReg != REG_NA)
@@ -2630,7 +2630,16 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
     assert(jtrue->OperIs(GT_JTRUE));
 
-    GenTreeOp*   relop     = jtrue->gtGetOp1()->AsOp();
+    GenTreeOp* relop;
+    if (jtrue->gtGetOp1()->OperIsCompare())
+    {
+        relop = jtrue->gtGetOp1()->AsOp();
+    }
+    else
+    {
+        assert(jtrue->gtGetOp1()->OperIsConditionalCompare());
+        relop = jtrue->gtGetOp1()->AsConditional();
+    }
     GenCondition condition = GenCondition::FromRelop(relop);
 
     if (condition.PreferSwap())

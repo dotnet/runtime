@@ -478,7 +478,11 @@ namespace Internal.JitInterface
     }
     public enum CorInfoInline
     {
-        INLINE_PASS = 0,    // Inlining OK
+        INLINE_PASS = 0,   // Inlining OK
+        INLINE_PREJIT_SUCCESS = 1,   // Inline check for prejit checking usage succeeded
+        INLINE_CHECK_CAN_INLINE_SUCCESS = 2,   // JIT detected it is permitted to try to actually inline
+        INLINE_CHECK_CAN_INLINE_VMFAIL = 3,   // VM specified that inline must fail via the CanInline api
+
 
         // failures are negative
         INLINE_FAIL = -1,   // Inlining not OK for this case only
@@ -1257,6 +1261,30 @@ namespace Internal.JitInterface
         public uint endOffset;
         public uint varNumber;
     };
+
+    public unsafe struct InlineTreeNode
+    {
+        // Method handle for inlinee (or root)
+        public CORINFO_METHOD_STRUCT_* Method;
+        // IL offset of IL instruction resulting in the inline
+        public uint ILOffset;
+        // Index of child in tree, 0 if no children
+        public uint Child;
+        // Index of sibling in tree, 0 if no sibling
+        public uint Sibling;
+    }
+
+    public struct RichOffsetMapping
+    {
+        // Offset in emitted code
+        public uint NativeOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        public uint Inlinee;
+        // IL offset of IL instruction in inlinee that this mapping was created from
+        public uint ILOffset;
+        // Source information about the IL instruction in the inlinee
+        public SourceTypes Source;
+    }
 
     // This enum is used for JIT to tell EE where this token comes from.
     // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or

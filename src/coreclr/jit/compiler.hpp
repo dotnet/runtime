@@ -902,17 +902,11 @@ inline GenTree* Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, Ge
  *  that may need to be fixed up).
  */
 
-inline GenTree* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields)
+inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields)
 {
-    GenTree* node;
-    assert((flags & (GTF_ICON_HDL_MASK | GTF_ICON_FIELD_OFF)) != 0);
+    assert((flags & GTF_ICON_HDL_MASK) != 0);
 
-    // Interpret "fields == NULL" as "not a field."
-    if (fields == nullptr)
-    {
-        fields = FieldSeqStore::NotAField();
-    }
-
+    GenTreeIntCon* node;
 #if defined(LATE_DISASM)
     node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
 #else
@@ -1123,19 +1117,16 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
         varDsc->lvFieldAccessed = 1;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-        // These structs are passed by reference and can easily become global
-        // references if those references are exposed. We clear out
-        // address-exposure information for these parameters when they are
-        // converted into references in fgRetypeImplicitByRefArgs() so we do
-        // not have the necessary information in morph to know if these
-        // indirections are actually global references, so we have to be
-        // conservative here.
-        if (varDsc->lvIsParam)
+
+        if (lvaIsImplicitByRefLocal(lvaGetLclNum(varDsc)))
         {
+            // These structs are passed by reference and can easily become global references if those
+            // references are exposed. We clear out address-exposure information for these parameters
+            // when they are converted into references in fgRetypeImplicitByRefArgs() so we do not have
+            // the necessary information in morph to know if these indirections are actually global
+            // references, so we have to be conservative here.
             fieldNode->gtFlags |= GTF_GLOB_REF;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     }
     else
     {
@@ -1190,29 +1181,92 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 }
 
 //------------------------------------------------------------------------------
-// gtNewArrLen : Helper to create an array length node.
-//
+// gtAnnotateNewArrLen : Helper to add flags for new array length nodes.
 //
 // Arguments:
-//    typ      -  Type of the node
-//    arrayOp  -  Array node
+//    arrLen    - The new GT_ARR_LENGTH or GT_MDARR_LENGTH node
+//    block     - Basic block that will contain the new length node
+//
+inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block)
+{
+    assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
+    static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    static_assert_no_msg(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    arrLen->SetIndirExceptionFlags(this);
+}
+
+//------------------------------------------------------------------------------
+// gtNewArrLen : Helper to create an array length node.
+//
+// Arguments:
+//    typ       - Type of the node
+//    arrayOp   - Array node
 //    lenOffset - Offset of the length field
 //    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_ARR_LENGTH node
-
+//
 inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block)
 {
     GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
-    static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
-    arrLen->SetIndirExceptionFlags(this);
+    gtAnnotateNewArrLen(arrLen, block);
     if (block != nullptr)
     {
         block->bbFlags |= BBF_HAS_IDX_LEN;
     }
     optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
+}
+
+//------------------------------------------------------------------------------
+// gtNewMDArrLen : Helper to create an MD array length node.
+//
+// Arguments:
+//    arrayOp   - Array node
+//    dim       - MD array dimension of interest
+//    rank      - MD array rank
+//    block     - Basic block that will contain the result
+//
+// Return Value:
+//    New GT_MDARR_LENGTH node
+//
+inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
+{
+    GenTreeMDArr* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArr(GT_MDARR_LENGTH, arrayOp, dim, rank);
+    gtAnnotateNewArrLen(arrLen, block);
+    if (block != nullptr)
+    {
+        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+    }
+    assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
+    return arrLen;
+}
+
+//------------------------------------------------------------------------------
+// gtNewMDArrLowerBound : Helper to create an MD array lower bound node.
+//
+// Arguments:
+//    arrayOp   - Array node
+//    dim       - MD array dimension of interest
+//    rank      - MD array rank
+//    block     - Basic block that will contain the result
+//
+// Return Value:
+//    New GT_MDARR_LOWER_BOUND node
+//
+inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
+{
+    GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
+
+    static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
+    arrOp->SetIndirExceptionFlags(this);
+    if (block != nullptr)
+    {
+        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+    }
+    assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
+    return arrOp;
 }
 
 //------------------------------------------------------------------------------
@@ -1369,7 +1423,8 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     switch (oper)
     {
         case GT_CNS_INT:
-            AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsIntCon()->gtFieldSeq = nullptr;
+            INDEBUG(AsIntCon()->gtTargetHandle = 0);
             break;
 #if defined(TARGET_ARM)
         case GT_MUL_LONG:
@@ -1462,7 +1517,7 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(!OperIsConst(oper)); // use BashToConst() instead
 
     GenTreeFlags mask = GTF_COMMON_MASK;
-    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    if (this->OperIsIndirOrArrMetaData() && OperIsIndirOrArrMetaData(oper))
     {
         mask |= GTF_IND_NONFAULTING;
     }
@@ -1473,7 +1528,7 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
 {
     GenTreeFlags mask = GTF_COMMON_MASK;
-    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    if (this->OperIsIndirOrArrMetaData() && OperIsIndirOrArrMetaData(oper))
     {
         mask |= GTF_IND_NONFAULTING;
     }
@@ -1550,7 +1605,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
-            AsIntCon()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsIntCon()->gtFieldSeq = nullptr;
             break;
 
 #if !defined(TARGET_64BIT)
@@ -1879,10 +1934,10 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
             bool doubleWeight = lvIsTemp;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if FEATURE_IMPLICIT_BYREFS
             // and, for the time being, implicit byref params
             doubleWeight |= lvIsImplicitByRef;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // FEATURE_IMPLICIT_BYREFS
 
             if (doubleWeight && (weight * 2 > weight))
             {
@@ -1927,38 +1982,6 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
                refCntWtd2str(lvRefCntWtd(state)));
     }
 #endif
-}
-
-/*****************************************************************************
- *
- *  The following returns the mask of all tracked locals
- *  referenced in a statement.
- */
-
-inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(Statement* stmt)
-{
-    VARSET_TP lclMask(VarSetOps::MakeEmpty(this));
-
-    assert(fgStmtListThreaded);
-
-    for (GenTree* const tree : stmt->TreeList())
-    {
-        if (tree->gtOper != GT_LCL_VAR)
-        {
-            continue;
-        }
-
-        const LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
-
-        if (!varDsc->lvTracked)
-        {
-            continue;
-        }
-
-        VarSetOps::UnionD(this, lclMask, VarSetOps::MakeSingleton(this, varDsc->lvVarIndex));
-    }
-
-    return lclMask;
 }
 
 /*****************************************************************************
@@ -2337,27 +2360,6 @@ inline bool Compiler::lvaIsOriginalThisReadOnly()
  *  integer/address and a float value.
  */
 
-/* static */ inline unsigned Compiler::lvaTypeRefMask(var_types type)
-{
-    const static BYTE lvaTypeRefMasks[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) howUsed,
-#include "typelist.h"
-#undef DEF_TP
-    };
-
-    assert((unsigned)type < sizeof(lvaTypeRefMasks));
-    assert(lvaTypeRefMasks[type] != 0);
-
-    return lvaTypeRefMasks[type];
-}
-
-/*****************************************************************************
- *
- *  The following is used to detect the cases where the same local variable#
- *  is used both as a long/double value and a 32-bit value and/or both as an
- *  integer/address and a float value.
- */
-
 inline var_types Compiler::lvaGetActualType(unsigned lclNum)
 {
     return genActualType(lvaGetRealType(lclNum));
@@ -2483,41 +2485,6 @@ inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
     NYI("getCallArgFloatRegister for RyuJIT/x86");
     return REG_NA;
 #endif // !TARGET_AMD64
-}
-
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                     Register Allocator                                    XX
-XX                      Inline functions                                     XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************/
-
-inline bool rpCanAsgOperWithoutReg(GenTree* op, bool lclvar)
-{
-    var_types type;
-
-    switch (op->OperGet())
-    {
-        case GT_CNS_LNG:
-        case GT_CNS_INT:
-            return true;
-        case GT_LCL_VAR:
-            type = genActualType(op->TypeGet());
-            if (lclvar && ((type == TYP_INT) || (type == TYP_REF) || (type == TYP_BYREF)))
-            {
-                return true;
-            }
-            break;
-        default:
-            break;
-    }
-
-    return false;
 }
 
 /*
@@ -4007,24 +3974,17 @@ inline bool Compiler::lvaIsFieldOfDependentlyPromotedStruct(const LclVarDsc* var
 //    This is because struct variables are never tracked as a whole for GC purposes.
 //    It is up to the caller to ensure that the fields of struct variables are
 //    correctly tracked.
-//    On Amd64, we never GC-track fields of dependently promoted structs, even
+//
+//    We never GC-track fields of dependently promoted structs, even
 //    though they may be tracked for optimization purposes.
-//    It seems that on x86 and arm, we simply don't track these
-//    fields, though I have not verified that.  I attempted to make these GC-tracked,
-//    but there was too much logic that depends on these being untracked, so changing
-//    this would require non-trivial effort.
-
+//
 inline bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
 {
     if (varDsc->lvTracked && (varDsc->lvType == TYP_REF || varDsc->lvType == TYP_BYREF))
     {
         // Stack parameters are always untracked w.r.t. GC reportings
         const bool isStackParam = varDsc->lvIsParam && !varDsc->lvIsRegArg;
-#ifdef TARGET_AMD64
         return !isStackParam && !lvaIsFieldOfDependentlyPromotedStruct(varDsc);
-#else  // !TARGET_AMD64
-        return !isStackParam;
-#endif // !TARGET_AMD64
     }
     else
     {
@@ -4167,21 +4127,6 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
 }
 
 /*****************************************************************************/
-ValueNum Compiler::GetUseAsgDefVNOrTreeVN(GenTree* op)
-{
-    if (op->gtFlags & GTF_VAR_USEASG)
-    {
-        unsigned lclNum = op->AsLclVarCommon()->GetLclNum();
-        unsigned ssaNum = GetSsaNumForLocalVarDef(op);
-        return lvaTable[lclNum].GetPerSsaData(ssaNum)->m_vnPair.GetConservative();
-    }
-    else
-    {
-        return op->gtVNPair.GetConservative();
-    }
-}
-
-/*****************************************************************************/
 unsigned Compiler::GetSsaNumForLocalVarDef(GenTree* lcl)
 {
     // Address-taken variables don't have SSA numbers.
@@ -4267,7 +4212,10 @@ void GenTree::VisitOperands(TVisitor visitor)
             }
             FALLTHROUGH;
 
-        // Standard unary operators
+// Standard unary operators
+#ifdef TARGET_ARM64
+        case GT_CNEG_LT:
+#endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -4277,6 +4225,8 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_COPY:
         case GT_RELOAD:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:

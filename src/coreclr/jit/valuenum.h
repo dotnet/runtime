@@ -379,6 +379,8 @@ private:
     // returns true iff vn is known to be a constant int32 that is > 0
     bool IsVNPositiveInt32Constant(ValueNum vn);
 
+    GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
+
 public:
     // Initializes any static variables of ValueNumStore.
     static void InitValueNumStoreStatics();
@@ -685,9 +687,8 @@ public:
                                       op3VN.GetConservative(), op4VN.GetConservative()));
     }
 
-    // Get a new, unique value number for an expression that we're not equating to some function,
-    // which is the value of a tree in the given block.
-    ValueNum VNForExpr(BasicBlock* block, var_types typ = TYP_UNKNOWN);
+    ValueNum VNForExpr(BasicBlock* block, var_types type = TYP_UNKNOWN);
+    ValueNumPair VNPairForExpr(BasicBlock* block, var_types type);
 
 // This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
 #define FEATURE_VN_TRACE_APPLY_SELECTORS 1
@@ -732,21 +733,15 @@ public:
                                bool         hasOverflowCheck = false);
 
     ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType);
 
-    bool IsVNNotAField(ValueNum vn);
+    ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 
-    ValueNum VNForFieldSeq(FieldSeqNode* fieldSeq);
+    FieldSeq* FieldSeqVNToFieldSeq(ValueNum vn);
 
-    FieldSeqNode* FieldSeqVNToFieldSeq(ValueNum vn);
-
-    ValueNum FieldSeqVNAppend(ValueNum innerFieldSeqVN, FieldSeqNode* outerFieldSeq);
-
-    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, and "opB" is an integer
-    // with a "fieldSeq", returns the VN for the pointer form extended with the field sequence; or else NoVN.
     ValueNum ExtendPtrVN(GenTree* opA, GenTree* opB);
-    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, returns the VN for the
-    // pointer form extended with "fieldSeq"; or else NoVN.
-    ValueNum ExtendPtrVN(GenTree* opA, FieldSeqNode* fieldSeq, ssize_t offset);
+
+    ValueNum ExtendPtrVN(GenTree* opA, FieldSeq* fieldSeq, ssize_t offset);
 
     // Queries on value numbers.
     // All queries taking value numbers require that those value numbers are valid, that is, that
@@ -847,10 +842,10 @@ public:
     // Check if "vn" IsVNNewArr and return <= 0 if arr size cannot be determined, else array size.
     int GetNewArrSize(ValueNum vn);
 
-    // Check if "vn" is "a.len"
+    // Check if "vn" is "a.Length" or "a.GetLength(n)"
     bool IsVNArrLen(ValueNum vn);
 
-    // If "vn" is VN(a.len) then return VN(a); NoVN if VN(a) can't be determined.
+    // If "vn" is VN(a.Length) or VN(a.GetLength(n)) then return VN(a); NoVN if VN(a) can't be determined.
     ValueNum GetArrForLenVn(ValueNum vn);
 
     // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
@@ -1039,10 +1034,6 @@ public:
     // the function application it represents; otherwise, return "false."
     bool GetVNFunc(ValueNum vn, VNFuncApp* funcApp);
 
-    // Requires that "vn" represents a "GC heap address" the sum of a "TYP_REF" value and some integer
-    // value.  Returns the TYP_REF value.
-    ValueNum VNForRefInAddr(ValueNum vn);
-
     // Returns "true" iff "vn" is a valid value number -- one that has been previously returned.
     bool VNIsValid(ValueNum vn);
 
@@ -1178,14 +1169,13 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_Const,     // This chunk contains constant values.
-        CEA_Handle,    // This chunk contains handle constants.
-        CEA_NotAField, // This chunk contains "not a field" values.
-        CEA_Func0,     // Represents functions of arity 0.
-        CEA_Func1,     // ...arity 1.
-        CEA_Func2,     // ...arity 2.
-        CEA_Func3,     // ...arity 3.
-        CEA_Func4,     // ...arity 4.
+        CEA_Const,  // This chunk contains constant values.
+        CEA_Handle, // This chunk contains handle constants.
+        CEA_Func0,  // Represents functions of arity 0.
+        CEA_Func1,  // ...arity 1.
+        CEA_Func2,  // ...arity 2.
+        CEA_Func3,  // ...arity 3.
+        CEA_Func4,  // ...arity 4.
         CEA_Count
     };
 
@@ -1810,7 +1800,7 @@ inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
 {
     if (vnf >= VNF_Boundary)
     {
-        // For integer types we have unsigned comparisions, and
+        // For integer types we have unsigned comparisons, and
         // for floating point types these are the unordered variants.
         //
         return ((vnf == VNF_LT_UN) || (vnf == VNF_LE_UN) || (vnf == VNF_GE_UN) || (vnf == VNF_GT_UN));

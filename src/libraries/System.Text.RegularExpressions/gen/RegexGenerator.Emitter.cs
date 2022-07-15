@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions.Generator
     public partial class RegexGenerator
     {
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
-        private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer, string generatedClassName)
+        private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
         {
             // Emit the namespace.
             RegexType? parent = regexMethod.DeclaringType;
@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("/// </code>");
             writer.WriteLine("/// </remarks>");
             writer.WriteLine($"[global::System.CodeDom.Compiler.{s_generatedCodeAttribute}]");
-            writer.WriteLine($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex {regexMethod.MethodName}() => global::{GeneratedNamespace}.{generatedClassName}.{regexMethod.GeneratedName}.Instance;");
+            writer.WriteLine($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex {regexMethod.MethodName}() => global::{GeneratedNamespace}.{regexMethod.GeneratedName}.Instance;");
 
             // Unwind all scopes
             while (writer.Indent != 0)
@@ -75,7 +75,8 @@ namespace System.Text.RegularExpressions.Generator
         {
             writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
-            writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
+            writer.WriteLine($"[{s_generatedCodeAttribute}]");
+            writer.WriteLine($"file sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.Write($"    internal static readonly Regex Instance = ");
@@ -94,10 +95,15 @@ namespace System.Text.RegularExpressions.Generator
 
         /// <summary>Emits the Regex-derived type for a method whose RunnerFactory implementation was generated into <paramref name="runnerFactoryImplementation"/>.</summary>
         private static void EmitRegexDerivedImplementation(
-            IndentedTextWriter writer, RegexMethod rm, string runnerFactoryImplementation)
+            IndentedTextWriter writer, RegexMethod rm, string runnerFactoryImplementation, bool allowUnsafe)
         {
             writer.WriteLine($"/// <summary>Custom <see cref=\"Regex\"/>-derived type for the {rm.MethodName} method.</summary>");
-            writer.WriteLine($"internal sealed class {rm.GeneratedName} : Regex");
+            writer.WriteLine($"[{s_generatedCodeAttribute}]");
+            if (allowUnsafe)
+            {
+                writer.WriteLine($"[SkipLocalsInit]");
+            }
+            writer.WriteLine($"file sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.WriteLine($"    internal static readonly {rm.GeneratedName} Instance = new();");
@@ -1365,7 +1371,7 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 int numChars = RegexCharClass.GetSetChars(childStart.Str!, setChars);
                                 Debug.Assert(numChars != 0);
-                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(c => Literal(c)))}:");
+                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(Literal))}:");
                             }
                             else
                             {
@@ -2268,7 +2274,6 @@ namespace System.Text.RegularExpressions.Generator
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 // Before we handle general-purpose matching logic for nodes, handle any special-casing.
-                // -
                 if (rm.Tree.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
                     rm.Tree.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
                 {

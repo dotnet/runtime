@@ -359,19 +359,9 @@ namespace System.Collections.Generic
             }
         }
 
-        private KeyList GetKeyListHelper()
-        {
-            if (keyList == null)
-                keyList = new KeyList(this);
-            return keyList;
-        }
+        private KeyList GetKeyListHelper() => keyList ??= new KeyList(this);
 
-        private ValueList GetValueListHelper()
-        {
-            if (valueList == null)
-                valueList = new ValueList(this);
-            return valueList;
-        }
+        private ValueList GetValueListHelper() => valueList ??= new ValueList(this);
 
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
         {

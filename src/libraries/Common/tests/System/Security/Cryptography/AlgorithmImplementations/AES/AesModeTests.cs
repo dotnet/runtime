@@ -7,7 +7,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
     using Aes = System.Security.Cryptography.Aes;
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class AesModeTests
     {
         [Fact]
@@ -17,24 +16,28 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public static void SupportsECB()
         {
             SupportsMode(CipherMode.ECB);
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void SupportsCFB8()
         {
             SupportsMode(CipherMode.CFB, feedbackSize: 8);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void SupportsCFB128()
         {
             SupportsMode(CipherMode.CFB, feedbackSize: 128);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows7))]
+        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public static void Windows7DoesNotSupportCFB128()
         {
             DoesNotSupportMode(CipherMode.CFB, feedbackSize: 128);

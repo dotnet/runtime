@@ -44,7 +44,7 @@ namespace System.DirectoryServices.AccountManagement
                                     "ADDNLinkedAttrSet",
                                     "ADDNLinkedAttrSet: groupDN={0}, primaryGroupDN={1}, recursive={2}, PG queryFilter={3}, PG queryBase={4}",
                                     groupDN,
-                                    (primaryGroupDN != null ? primaryGroupDN : "NULL"),
+                                    primaryGroupDN ?? "NULL",
                                     recursive,
                                     (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.Filter : "NULL"),
                                     (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
@@ -89,7 +89,7 @@ namespace System.DirectoryServices.AccountManagement
                                     "ADDNLinkedAttrSet",
                                     "ADDNLinkedAttrSet: groupDN={0}, primaryGroupDN={1}, recursive={2}, M queryFilter={3}, M queryBase={4}, PG queryFilter={5}, PG queryBase={6}",
                                     groupDN,
-                                    (primaryGroupDN != null ? primaryGroupDN : "NULL"),
+                                    primaryGroupDN ?? "NULL",
                                     recursive,
                                     (membersSearcher != null ? membersSearcher[0].Filter : "NULL"),
                                     (membersSearcher != null ? membersSearcher[0].SearchRoot.Path : "NULL"),
@@ -417,16 +417,8 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (!memberFound)
                 {
-                    IDisposable disposableMembers = _members as IDisposable;
-                    if (disposableMembers != null)
-                    {
-                        disposableMembers.Dispose();
-                    }
-                    IDisposable disposableMembersEnum = _membersEnum as IDisposable;
-                    if (disposableMembersEnum != null)
-                    {
-                        disposableMembersEnum.Dispose();
-                    }
+                    (_members as IDisposable)?.Dispose();
+                    (_membersEnum as IDisposable)?.Dispose();
                     _members = null;
                     _membersEnum = null;
                 }
@@ -816,7 +808,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool ExpandForeignGroupEnumerator()
         {
-            Debug.Assert(_recursive == true);
+            Debug.Assert(_recursive);
             GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "ADDNLinkedAttrSet",
                                     "ExpandForeignGroupEnumerator: there are {0} foreignGroups",
@@ -846,7 +838,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool ExpandForeignGroupSearcher()
         {
-            Debug.Assert(_recursive == true);
+            Debug.Assert(_recursive);
             GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "ADDNLinkedAttrSet",
                                     "ExpandForeignGroupSearcher: there are {0} foreignGroups",
@@ -961,8 +953,7 @@ namespace System.DirectoryServices.AccountManagement
                 _foreignMembersCurrentGroup.Clear();
                 _fakePrincipalMembers.Clear();
 
-                if (null != _foreignMembersToReturn)
-                    _foreignMembersToReturn.Clear();
+                _foreignMembersToReturn?.Clear();
 
                 _currentForeignPrincipal = null;
                 _currentForeignDE = null;
@@ -1149,8 +1140,7 @@ namespace System.DirectoryServices.AccountManagement
             _currentForeignPrincipal = adBookmark.currentForeignPrincipal;
             _currentForeignDE = adBookmark.currentForeignDE;
             _foreignGroups = adBookmark.foreignGroups;
-            if (_queryMembersResults != null)
-                _queryMembersResults.Dispose();
+            _queryMembersResults?.Dispose();
             _queryMembersResults = adBookmark.queryMembersResults;
             _queryMembersResultEnumerator = adBookmark.queryMembersResultEnumerator;
             _memberSearchResults = adBookmark.memberSearchResults;
@@ -1255,11 +1245,7 @@ namespace System.DirectoryServices.AccountManagement
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing membersQueue");
                         foreach (IEnumerable enumerable in _membersQueue)
                         {
-                            IDisposable disposableEnum = enumerable as IDisposable;
-                            if (disposableEnum != null)
-                            {
-                                disposableEnum.Dispose();
-                            }
+                            (enumerable as IDisposable)?.Dispose();
                         }
                     }
                     if (_foreignGroups != null)

@@ -8,15 +8,36 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="CompressedTar.Async.Tests.cs" />
     <Compile Include="CompressedTar.Tests.cs" />
-    <Compile Include="TarEntry\TarEntryV7.Tests.cs" />
-    <Compile Include="TarEntry\TarEntryUstar.Tests.cs" />
-    <Compile Include="TarEntry\TarEntryPax.Tests.cs" />
-    <Compile Include="TarEntry\TarEntryGnu.Tests.cs" />
+    <Compile Include="TarEntry\TarEntry.ExtractToFile.Tests.cs" />
+    <Compile Include="TarEntry\TarEntry.ExtractToFileAsync.Tests.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.Stream.Tests.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.cs" />
+    <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.Stream.Tests.cs" />
+    <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.File.Tests.cs" />
+    <Compile Include="TarEntry\TarEntry.Conversion.Tests.Base.cs" />
+    <Compile Include="TarEntry\GnuTarEntry.Conversion.Tests.cs" />
+    <Compile Include="TarEntry\PaxTarEntry.Conversion.Tests.cs" />
+    <Compile Include="TarEntry\UstarTarEntry.Conversion.Tests.cs" />
+    <Compile Include="TarEntry\V7TarEntry.Conversion.Tests.cs" />
+    <Compile Include="TarEntry\V7TarEntry.Tests.cs" />
+    <Compile Include="TarEntry\UstarTarEntry.Tests.cs" />
+    <Compile Include="TarEntry\PaxTarEntry.Tests.cs" />
+    <Compile Include="TarEntry\GnuTarEntry.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectory.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectory.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.Stream.Tests.cs" />
+    <Compile Include="TarReader\TarReader.StreamConformanceTests.cs" />
+    <Compile Include="TarReader\TarReader.File.GlobalExtendedAttributes.Async.Tests.cs" />
+    <Compile Include="TarReader\TarReader.File.Async.Tests.Base.cs" />
+    <Compile Include="TarReader\TarReader.File.Async.Tests.cs" />
+    <Compile Include="TarReader\TarReader.GetNextEntryAsync.Tests.cs" />
+    <Compile Include="TarReader\TarReader.File.GlobalExtendedAttributes.Tests.cs" />
+    <Compile Include="TarReader\TarReader.File.Tests.Base.cs" />
+    <Compile Include="TarReader\TarReader.TarEntry.ExtractToFileAsync.Tests.cs" />
+    <Compile Include="TarReader\TarReader.TarEntry.ExtractToFile.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.Tests.cs" />
     <Compile Include="TarReader\TarReader.GetNextEntry.Tests.cs" />
     <Compile Include="TarTestsBase.cs" />
@@ -25,6 +46,14 @@
     <Compile Include="TarTestsBase.Posix.cs" />
     <Compile Include="TarTestsBase.Ustar.cs" />
     <Compile Include="TarTestsBase.V7.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntry.Base.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Ustar.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.V7.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Pax.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Gnu.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.Async.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Gnu.Tests.cs" />
@@ -39,7 +68,8 @@
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.Windows.cs" />
-    <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.Windows.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Windows.cs" />
+    <Compile Include="TarWriter\TarWriter.File.Base.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -51,8 +81,14 @@
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="TarEntry\TarEntry.ExtractToFile.Tests.Unix.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.Unix.cs" />
+    <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Unix.cs" />
+    <Compile Include="TarReader\TarReader.TarEntry.ExtractToFileAsync.Tests.Unix.cs" />
+    <Compile Include="TarReader\TarReader.TarEntry.ExtractToFile.Tests.Unix.cs" />
+    <Compile Include="TarWriter\TarWriter.File.Base.Unix.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.Unix.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs" Link="Common\Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
@@ -65,9 +101,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="TarWriter\TarWriter.WriteEntry.File.Tests.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
     <PackageReference Include="System.Formats.Tar.TestData" Version="$(SystemFormatsTarTestDataVersion)" />
   </ItemGroup>
 </Project>

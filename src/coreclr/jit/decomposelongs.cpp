@@ -931,7 +931,6 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
 
     loResult->gtFlags |= GTF_SET_FLAGS;
-    hiAdjust->gtFlags |= GTF_USE_FLAGS;
 
 #elif defined(TARGET_ARM)
 
@@ -942,7 +941,6 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     Range().InsertAfter(loResult, hiResult);
 
     loResult->gtFlags |= GTF_SET_FLAGS;
-    hiResult->gtFlags |= GTF_USE_FLAGS;
 
 #endif
 
@@ -997,7 +995,6 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
     if ((oper == GT_ADD) || (oper == GT_SUB))
     {
         loResult->gtFlags |= GTF_SET_FLAGS;
-        hiResult->gtFlags |= GTF_USE_FLAGS;
 
         if ((loResult->gtFlags & GTF_OVERFLOW) != 0)
         {

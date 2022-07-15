@@ -171,17 +171,14 @@ namespace System.Linq
         private Type GetEquivalentType(Type type)
         {
             Type? equiv;
-            if (_equivalentTypeCache == null)
-            {
-                // Pre-loading with the non-generic IQueryable and IEnumerable not only covers this case
-                // without any reflection-based introspection, but also means the slightly different
-                // code needed to catch this case can be omitted safely.
-                _equivalentTypeCache = new Dictionary<Type, Type>
+            // Pre-loading with the non-generic IQueryable and IEnumerable not only covers this case
+            // without any reflection-based introspection, but also means the slightly different
+            // code needed to catch this case can be omitted safely.
+            _equivalentTypeCache ??= new Dictionary<Type, Type>
                     {
                         { typeof(IQueryable), typeof(IEnumerable) },
                         { typeof(IEnumerable), typeof(IEnumerable) }
                     };
-            }
             if (!_equivalentTypeCache.TryGetValue(type, out equiv))
             {
                 Type pubType = GetPublicType(type);
@@ -463,9 +460,14 @@ namespace System.Linq
         {
             LabelTarget? newTarget;
             if (_targetCache == null)
+            {
                 _targetCache = new Dictionary<LabelTarget, LabelTarget>();
+            }
             else if (_targetCache.TryGetValue(node!, out newTarget))
+            {
                 return newTarget;
+            }
+
             Type type = node!.Type;
             if (!typeof(IQueryable).IsAssignableFrom(type))
                 newTarget = base.VisitLabelTarget(node);

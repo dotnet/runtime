@@ -86,17 +86,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal MethodInfo XmlFormatReaderMethod
-        {
-            get
-            {
-                if (_helper.XmlFormatReaderMethod == null)
-                {
-                    _helper.XmlFormatReaderMethod = typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
-                }
-                return _helper.XmlFormatReaderMethod;
-            }
-        }
+        internal MethodInfo XmlFormatReaderMethod =>
+            _helper.XmlFormatReaderMethod ??= typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
@@ -625,6 +616,10 @@ namespace System.Runtime.Serialization
 
     internal sealed class DateTimeDataContract : PrimitiveDataContract
     {
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on the first parameter of the PrimitiveDataContract constructor references methods of DateTime, " +
+                            "which has a compiler-generated local function LowGranularityNonCachedFallback that calls PInvokes " +
+                            "which are considered potentially dangerous. Data contract serialization will not access this local function.")]
         public DateTimeDataContract() : base(typeof(DateTime), DictionaryGlobals.DateTimeLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }

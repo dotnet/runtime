@@ -37,6 +37,7 @@ RuntimeInformationDCStart
 ThreadCreated
 ThreadPoolIODequeue
 ThreadPoolIOEnqueue
+ThreadPoolMinMaxThreads
 ThreadPoolWorkerThreadAdjustmentAdjustment
 ThreadPoolWorkerThreadAdjustmentSample
 ThreadPoolWorkerThreadAdjustmentStats

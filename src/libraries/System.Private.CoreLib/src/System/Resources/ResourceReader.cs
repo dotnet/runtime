@@ -15,9 +15,11 @@ namespace System.Resources
     .Extensions
 #endif
 {
+#pragma warning disable IDE0065
 #if RESOURCES_EXTENSIONS
     using ResourceReader = DeserializingResourceReader;
 #endif
+#pragma warning restore IDE0065
 
     // Provides the default implementation of IResourceReader, reading
     // .resources file from the system default binary format.  This class
@@ -156,8 +158,7 @@ namespace System.Resources
                     // that we may call Close n times, but that's safe.
                     BinaryReader copyOfStore = _store;
                     _store = null!;
-                    if (copyOfStore != null)
-                        copyOfStore.Close();
+                    copyOfStore?.Close();
                 }
                 _store = null!;
                 _namePositions = null;

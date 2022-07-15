@@ -461,8 +461,12 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         case NI_AVX2_ShiftRightArithmetic:
         case NI_AVX2_ShiftRightLogical:
         {
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack(simdType);
+
             GenTree* tmpOp =
                 gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_SSE2_ConvertScalarToVector128Int32, CORINFO_TYPE_INT, 16);
             return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, intrinsic, simdBaseJitType, genTypeSize(simdType));
@@ -2151,6 +2155,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
 
@@ -2179,6 +2186,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
 
@@ -2206,6 +2216,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
+
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
@@ -2236,11 +2249,20 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for HWIntrinsic"));
+
                 op3 = impPopStack().val;
             }
             else
             {
                 assert(sig->numArgs == 2);
+
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impPopStack().val;
@@ -2534,12 +2556,21 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
         case NI_SSE_CompareScalarNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
+
+            bool supportsAvx = compOpportunisticallyDependsOn(InstructionSet_AVX);
+
+            if (!supportsAvx)
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            }
+
             op2             = impSIMDPopStack(TYP_SIMD16);
             op1             = impSIMDPopStack(TYP_SIMD16);
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
             assert(JitType2PreciseVarType(simdBaseJitType) == TYP_FLOAT);
 
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            if (supportsAvx)
             {
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
@@ -2606,11 +2637,20 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
         case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
+
+            bool supportsAvx = compOpportunisticallyDependsOn(InstructionSet_AVX);
+
+            if (!supportsAvx)
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            }
+
             op2 = impSIMDPopStack(TYP_SIMD16);
             op1 = impSIMDPopStack(TYP_SIMD16);
             assert(JitType2PreciseVarType(simdBaseJitType) == TYP_DOUBLE);
 
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            if (supportsAvx)
             {
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
@@ -2679,9 +2719,14 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
         case NI_AVX2_PermuteVar8x32:
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
+
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
             // swap the two operands
             GenTree* indexVector  = impSIMDPopStack(TYP_SIMD32);
             GenTree* sourceVector = impSIMDPopStack(TYP_SIMD32);
+
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD32, indexVector, sourceVector, NI_AVX2_PermuteVar8x32,
                                                simdBaseJitType, 32);
             break;

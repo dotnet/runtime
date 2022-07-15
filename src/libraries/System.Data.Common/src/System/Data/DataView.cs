@@ -153,15 +153,8 @@ namespace System.Data
                 throw ExceptionBuilder.SetRowStateFilter();
             }
 
-            if (Sort == null)
-            {
-                Sort = string.Empty;
-            }
-
-            if (RowFilter == null)
-            {
-                RowFilter = string.Empty;
-            }
+            Sort ??= string.Empty;
+            RowFilter ??= string.Empty;
 
             DataExpression newFilter = new DataExpression(table, RowFilter);
             SetIndex(Sort, RowState, newFilter);
@@ -318,10 +311,7 @@ namespace System.Data
             [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_RowFilter|API> {0}, '{1}'", ObjectID, value);
 
                 if (_fInitInProgress)
@@ -348,8 +338,8 @@ namespace System.Data
         {
             get
             {
-                RowPredicateFilter? filter = (GetFilter() as RowPredicateFilter);
-                return ((null != filter) ? filter._predicateFilter : null);
+                RowPredicateFilter? filter = GetFilter() as RowPredicateFilter;
+                return filter?._predicateFilter;
             }
             set
             {
@@ -434,10 +424,7 @@ namespace System.Data
             }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
                 DataCommonEventSource.Log.Trace("<ds.DataView.set_Sort|API> {0}, '{1}'", ObjectID, value);
 
                 if (_fInitInProgress)
@@ -921,10 +908,7 @@ namespace System.Data
 
         internal Index? GetFindIndex(string column, bool keepIndex)
         {
-            if (_findIndexes == null)
-            {
-                _findIndexes = new Dictionary<string, Index>();
-            }
+            _findIndexes ??= new Dictionary<string, Index>();
 
             Index? findIndex;
             if (_findIndexes.TryGetValue(column, out findIndex))
@@ -1702,7 +1686,7 @@ namespace System.Data
             DataTable dt = new DataTable();
             dt.Locale = _table!.Locale;
             dt.CaseSensitive = _table.CaseSensitive;
-            dt.TableName = ((null != tableName) ? tableName : _table.TableName);
+            dt.TableName = tableName ?? _table.TableName;
             dt.Namespace = _table.Namespace;
             dt.Prefix = _table.Prefix;
 

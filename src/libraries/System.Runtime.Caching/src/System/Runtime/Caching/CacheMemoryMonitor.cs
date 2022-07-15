@@ -137,11 +137,7 @@ namespace System.Runtime.Caching
             {
                 sref.Dispose();
             }
-            IMemoryCacheManager memoryCacheManager = s_memoryCacheManager;
-            if (memoryCacheManager != null)
-            {
-                memoryCacheManager.ReleaseCache(_memoryCache);
-            }
+            s_memoryCacheManager?.ReleaseCache(_memoryCache);
         }
 
         internal static long EffectiveProcessMemoryLimit
@@ -175,17 +171,13 @@ namespace System.Runtime.Caching
 
                 // increment the index (it's either 1 or 0)
                 Debug.Assert(SAMPLE_COUNT == 2);
-                _idx = _idx ^ 1;
+                _idx ^= 1;
                 // remember the sample time
                 _cacheSizeSampleTimes[_idx] = DateTime.UtcNow;
                 // remember the sample value
                 _cacheSizeSamples[_idx] = sref.ApproximateSize;
                 Dbg.Trace("MemoryCacheStats", "SizedRef.ApproximateSize=" + _cacheSizeSamples[_idx]);
-                IMemoryCacheManager memoryCacheManager = s_memoryCacheManager;
-                if (memoryCacheManager != null)
-                {
-                    memoryCacheManager.UpdateCacheSize(_cacheSizeSamples[_idx], _memoryCache);
-                }
+                s_memoryCacheManager?.UpdateCacheSize(_cacheSizeSamples[_idx], _memoryCache);
             }
 
             // if there's no memory limit, then there's nothing more to do

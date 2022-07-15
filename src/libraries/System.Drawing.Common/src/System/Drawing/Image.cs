@@ -10,6 +10,10 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
@@ -40,6 +44,45 @@ namespace System.Drawing
         // to modify it, in order to preserve compatibility.
         public delegate bool GetThumbnailImageAbort();
 
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(GetThumbnailImageAbort), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        internal static class GetThumbnailImageAbortMarshaller
+        {
+            internal unsafe struct KeepAliveMarshaller
+            {
+                private delegate Interop.BOOL GetThumbnailImageAbortNative(IntPtr callbackdata);
+                private GetThumbnailImageAbortNative? _managed;
+                private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+                public void FromManaged(GetThumbnailImageAbort managed)
+                {
+                    if (managed is null)
+                    {
+                        _managed = null;
+                        _nativeFunction = null;
+                    }
+                    else
+                    {
+                        _managed = data => managed() ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                        _nativeFunction = (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                    }
+                }
+
+                public delegate* unmanaged<IntPtr, Interop.BOOL> ToUnmanaged()
+                {
+                    return _nativeFunction;
+                }
+
+                public void OnInvoked()
+                {
+                    GC.KeepAlive(_managed);
+                }
+
+                [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "This method is part of the marshaller shape and is required to be an instance method.")]
+                public void Free() { }
+            }
+        }
+#endif
+
         internal IntPtr nativeImage;
 
         private object? _userData;
@@ -57,9 +100,7 @@ namespace System.Drawing
 
         private protected Image() { }
 
-#pragma warning disable CA2229 // Implement Serialization constructor
         private protected Image(SerializationInfo info, StreamingContext context)
-#pragma warning restore CA2229
         {
             byte[] dat = (byte[])info.GetValue("Data", typeof(byte[]))!; // Do not rename (binary serialization)
 
@@ -258,10 +299,7 @@ namespace System.Drawing
         {
             ArgumentNullException.ThrowIfNull(format);
 
-            ImageCodecInfo? codec = format.FindEncoder();
-
-            if (codec == null)
-                codec = ImageFormat.Png.FindEncoder()!;
+            ImageCodecInfo codec = format.FindEncoder() ?? ImageFormat.Png.FindEncoder()!;
 
             Save(filename, codec, null);
         }

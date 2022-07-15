@@ -119,7 +119,6 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
-            GC.SuppressFinalize(this);
         }
 
         //
@@ -252,10 +251,7 @@ namespace System.Net.Security
                 {
                     issuers = GetRequestCertificateAuthorities();
                     remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext);
-                    if (_sslAuthenticationOptions.ClientCertificates == null)
-                    {
-                        _sslAuthenticationOptions.ClientCertificates = new X509CertificateCollection();
-                    }
+                    _sslAuthenticationOptions.ClientCertificates ??= new X509CertificateCollection();
                     clientCertificate = _sslAuthenticationOptions.CertSelectionDelegate(this, _sslAuthenticationOptions.TargetHost, _sslAuthenticationOptions.ClientCertificates, remoteCert, issuers);
                 }
                 finally
@@ -381,13 +377,13 @@ namespace System.Net.Security
                         {
                             if (chain != null)
                             {
-                                chain.Dispose();
-
                                 int elementsCount = chain.ChainElements.Count;
                                 for (int element = 0; element < elementsCount; element++)
                                 {
-                                    chain.ChainElements[element].Certificate!.Dispose();
+                                    chain.ChainElements[element].Certificate.Dispose();
                                 }
+
+                                chain.Dispose();
                             }
 
                             if (certificateEx != null && (object)certificateEx != (object)_sslAuthenticationOptions.ClientCertificates[i])
@@ -503,7 +499,12 @@ namespace System.Net.Security
                 // SECURITY: selectedCert ref if not null is a safe object that does not depend on possible **user** inherited X509Certificate type.
                 //
                 byte[]? guessedThumbPrint = selectedCert?.GetCertHash();
-                SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
+                SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(
+                    guessedThumbPrint,
+                    _sslAuthenticationOptions.EnabledSslProtocols,
+                    _sslAuthenticationOptions.IsServer,
+                    _sslAuthenticationOptions.EncryptionPolicy,
+                    _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -563,7 +564,7 @@ namespace System.Net.Security
             return cachedCred;
         }
 
-        private static List<T> EnsureInitialized<T>(ref List<T>? list) => list ?? (list = new List<T>());
+        private static List<T> EnsureInitialized<T>(ref List<T>? list) => list ??= new List<T>();
 
         //
         // Acquire Server Side Certificate information and set it on the class.
@@ -661,8 +662,7 @@ namespace System.Net.Security
 
         private static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            SafeFreeCredentials cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols,
-                sslAuthenticationOptions.EncryptionPolicy, sslAuthenticationOptions.IsServer);
+            SafeFreeCredentials cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions);
 
             if (sslAuthenticationOptions.CertificateContext != null)
             {
@@ -823,7 +823,14 @@ namespace System.Net.Security
                     //
                     if (!cachedCreds && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
                     {
-                        SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy, sendTrustList);
+                        SslSessionsCache.CacheCredential(
+                            _credentialsHandle,
+                            thumbPrint,
+                            _sslAuthenticationOptions.EnabledSslProtocols,
+                            _sslAuthenticationOptions.IsServer,
+                            _sslAuthenticationOptions.EncryptionPolicy,
+                            _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
+                            sendTrustList);
                     }
                 }
             }
@@ -929,7 +936,7 @@ namespace System.Net.Security
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain);
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
                 if (_remoteCertificate != null && certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
@@ -947,28 +954,36 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    if (chain == null)
+                    chain ??= new X509Chain();
+
+                    if (_sslAuthenticationOptions.CertificateChainPolicy != null)
                     {
-                        chain = new X509Chain();
+                        chain.ChainPolicy = _sslAuthenticationOptions.CertificateChainPolicy;
+                    }
+                    else
+                    {
+                        chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
+                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                        if (trust != null)
+                        {
+                            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                            if (trust._store != null)
+                            {
+                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                            }
+                            if (trust._trustList != null)
+                            {
+                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                            }
+                        }
                     }
 
-                    chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
-                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                    // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                    chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
-
-                    if (trust != null)
+                    // set ApplicationPolicy unless already provided.
+                    if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
                     {
-                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                        if (trust._store != null)
-                        {
-                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
-                        }
-                        if (trust._trustList != null)
-                        {
-                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
-                        }
+                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
+                        chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
                     }
 
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
@@ -1022,7 +1037,7 @@ namespace System.Net.Security
                     int elementsCount = chain.ChainElements.Count;
                     for (int i = 0; i < elementsCount; i++)
                     {
-                        chain.ChainElements[i].Certificate!.Dispose();
+                        chain.ChainElements[i].Certificate.Dispose();
                     }
 
                     chain.Dispose();

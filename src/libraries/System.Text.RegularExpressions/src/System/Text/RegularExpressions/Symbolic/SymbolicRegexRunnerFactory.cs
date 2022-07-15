@@ -22,6 +22,7 @@ namespace System.Text.RegularExpressions.Symbolic
             var converter = new RegexNodeConverter(bddBuilder, regexTree.CaptureNumberSparseMapping);
 
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
+
             // Determine if the root node is supported for safe handling
             int threshold = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
             Debug.Assert(threshold > 0);
@@ -36,8 +37,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            rootNode = rootNode.AddFixedLengthMarkers();
-            BDD[] minterms = rootNode.ComputeMinterms();
+            rootNode = rootNode.AddFixedLengthMarkers(bddBuilder);
+            BDD[] minterms = rootNode.ComputeMinterms(bddBuilder);
 
             _matcher = minterms.Length > 64 ?
                 SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorSolver(minterms, charSetSolver), matchTimeout) :
@@ -98,6 +99,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Capture(0, start, end);
                     }
+
                     runtextpos = end;
                 }
                 else

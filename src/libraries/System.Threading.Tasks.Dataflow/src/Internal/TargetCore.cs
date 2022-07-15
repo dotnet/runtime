@@ -847,7 +847,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>Gets any postponed messages.</summary>
             internal QueuedMap<ISourceBlock<TInput>, DataflowMessageHeader>? PostponedMessages
             {
-                get { return _target._boundingState != null ? _target._boundingState.PostponedMessages : null; }
+                get { return _target._boundingState?.PostponedMessages; }
             }
 
             /// <summary>Gets the current number of outstanding input processing operations.</summary>

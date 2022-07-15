@@ -76,11 +76,11 @@ namespace Internal.Cryptography.Pal.AnyOS
                     }
 
                     Oid oid = new Oid(rid.RKeyId.Value.Other.Value.KeyAttrId);
-                    byte[] rawData = Array.Empty<byte>();
+                    ReadOnlySpan<byte> rawData = ReadOnlySpan<byte>.Empty;
 
                     if (rid.RKeyId.Value.Other.Value.KeyAttr != null)
                     {
-                        rawData = rid.RKeyId.Value.Other.Value.KeyAttr!.Value.ToArray();
+                        rawData = rid.RKeyId.Value.Other.Value.KeyAttr!.Value.Span;
                     }
 
                     Pkcs9AttributeObject pkcs9AttributeObject = new Pkcs9AttributeObject(oid, rawData);

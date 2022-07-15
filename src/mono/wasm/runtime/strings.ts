@@ -6,7 +6,7 @@ import { MonoString, MonoStringNull, is_nullish } from "./types";
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root, WasmRoot } from "./roots";
-import { getI32 } from "./memory";
+import { getI32, getU32 } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 
 export class StringDecoder {
@@ -50,7 +50,7 @@ export class StringDecoder {
 
         let result = undefined;
         const lengthBytes = getI32(pLengthBytes),
-            pChars = getI32(ppChars),
+            pChars = getU32(ppChars),
             isInterned = getI32(pIsInterned);
 
         if (isInterned)
@@ -71,7 +71,7 @@ export class StringDecoder {
         return result;
     }
 
-    private decode(start: CharPtr, end: CharPtr) {
+    decode(start: CharPtr, end: CharPtr): string {
         let str = "";
         if (this.mono_text_decoder) {
             // When threading is enabled, TextDecoder does not accept a view of a
@@ -167,7 +167,7 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
 }
 
 export function js_string_to_mono_string_interned_root(string: string | symbol, result: WasmRoot<MonoString>): void {
-    let text : string | undefined;
+    let text: string | undefined;
     if (typeof (string) === "symbol") {
         text = string.description;
         if (typeof (text) !== "string")
@@ -178,7 +178,7 @@ export function js_string_to_mono_string_interned_root(string: string | symbol, 
         text = string;
     }
 
-    if (typeof(text) !== "string") {
+    if (typeof (text) !== "string") {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         throw new Error(`Argument to js_string_to_mono_string_interned must be a string but was ${string}`);

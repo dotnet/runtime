@@ -60,10 +60,8 @@ namespace System.Net
                     {
                         _cookies = ParseCookies(RequestUri, cookieString);
                     }
-                    if (_cookies == null)
-                    {
-                        _cookies = new CookieCollection();
-                    }
+
+                    _cookies ??= new CookieCollection();
                 }
                 return _cookies;
             }
@@ -514,12 +512,9 @@ namespace System.Net
 
                 internal void AddByte(byte b)
                 {
-                    {
-                        if (_byteBuffer == null)
-                            _byteBuffer = new byte[_bufferSize];
+                    _byteBuffer ??= new byte[_bufferSize];
 
-                        _byteBuffer[_numBytes++] = b;
-                    }
+                    _byteBuffer[_numBytes++] = b;
                 }
 
                 internal string GetString()

@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Text;
+using System.Globalization;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl.Runtime;
+using MS.Internal.Xml.XPath;
+using System.Collections;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Text;
-    using System.Globalization;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.Runtime;
-    using MS.Internal.Xml.XPath;
-    using System.Collections;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed class NamespaceInfo
     {
         internal string? prefix;
@@ -435,10 +435,7 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
             info.NegativeInfinitySymbol = string.Concat(info.NegativeSign, info.PositiveInfinitySymbol);
-            if (Name == null)
-            {
-                Name = new XmlQualifiedName();
-            }
+            Name ??= new XmlQualifiedName();
             compiler.AddDecimalFormat(Name, format);
             CheckEmpty(compiler);
         }
@@ -860,10 +857,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddAction(Action? action)
         {
-            if (this.containedActions == null)
-            {
-                this.containedActions = new ArrayList();
-            }
+            this.containedActions ??= new ArrayList();
             this.containedActions.Add(action);
             lastCopyCodeAction = null;
         }

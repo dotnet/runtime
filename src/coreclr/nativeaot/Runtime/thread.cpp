@@ -26,6 +26,7 @@
 #include "rhbinder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
+#include "RhVolatile.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -36,12 +37,6 @@ EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
 static int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
 
-#ifdef _MSC_VER
-extern "C" void _ReadWriteBarrier(void);
-#pragma intrinsic(_ReadWriteBarrier)
-#else // _MSC_VER
-#define _ReadWriteBarrier() __asm__ volatile("" : : : "memory")
-#endif // _MSC_VER
 #endif //!DACCESS_COMPILE
 
 PInvokeTransitionFrame* Thread::GetTransitionFrame()
@@ -63,36 +58,35 @@ PInvokeTransitionFrame* Thread::GetTransitionFrame()
 
 PInvokeTransitionFrame* Thread::GetTransitionFrameForStackTrace()
 {
-    ASSERT_MSG(ThreadStore::GetSuspendingThread() == NULL, "Not allowed when suspended for GC.");
     ASSERT_MSG(this == ThreadStore::GetCurrentThread(), "Only supported for current thread.");
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
     ASSERT(m_pDeferredTransitionFrame != NULL);
     return m_pDeferredTransitionFrame;
 }
 
-void Thread::WaitForSuspend()
-{
-    Unhijack();
-    GetThreadStore()->WaitForSuspendComplete();
-}
-
 void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(!IsDoNotTriggerGcSet());
 
+    // The wait operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the wait operation;
+    int32_t lastErrorOnEntry = PalGetLastError();
+
     do
     {
-        m_pTransitionFrame = pTransitionFrame;
+        // set preemptive mode
+        VolatileStoreWithoutBarrier(&m_pTransitionFrame, pTransitionFrame);
 
         Unhijack();
         RedhawkGCInterface::WaitForGCCompletion();
 
-        m_pTransitionFrame = NULL;
-
-        // We need to prevent compiler reordering between above write and below read.
-        _ReadWriteBarrier();
+        // must be in cooperative mode when checking the trap flag
+        VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
     }
     while (ThreadStore::IsTrapThreadsRequested());
+
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 
 //
@@ -115,7 +109,11 @@ bool Thread::CacheTransitionFrameForSuspend()
     if (m_pCachedTransitionFrame != NULL)
         return true;
 
-    PInvokeTransitionFrame* temp = m_pTransitionFrame;     // volatile read
+    // Once we see a thread posted a transition frame we can assume it will not enter cooperative mode.
+    // It may temporarily set the frame to NULL when checking the trap flag, but will revert.
+    // We can safely return true here and ache the frame.
+    // Make sure compiler emits only one read.
+    PInvokeTransitionFrame* temp = VolatileLoadWithoutBarrier(&m_pTransitionFrame);
     if (temp == NULL)
         return false;
 
@@ -144,31 +142,16 @@ void Thread::EnablePreemptiveMode()
 
     Unhijack();
 
-    // ORDERING -- this write must occur before checking the trap
-    m_pTransitionFrame = m_pDeferredTransitionFrame;
-
-    // We need to prevent compiler reordering between above write and below read.  Both the read and the write
-    // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
-    // but if not, this barrier would be required.  If so, it won't change anything to add the barrier.
-    _ReadWriteBarrier();
-
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        WaitForSuspend();
-    }
+    // set preemptive mode
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, m_pDeferredTransitionFrame);
 }
 
 void Thread::DisablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
 
-    // ORDERING -- this write must occur before checking the trap
-    m_pTransitionFrame = NULL;
-
-    // We need to prevent compiler reordering between above write and below read.  Both the read and the write
-    // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
-    // but if not, this barrier would be required.  If so, it won't change anything to add the barrier.
-    _ReadWriteBarrier();
+    // must be in cooperative mode when checking the trap flag
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
 
     if (ThreadStore::IsTrapThreadsRequested() && (this != ThreadStore::GetSuspendingThread()))
     {
@@ -271,9 +254,6 @@ void Thread::Construct()
              (offsetof(Thread, m_pTransitionFrame)));
 #endif // USE_PORTABLE_HELPERS
 
-    m_numDynamicTypesTlsCells = 0;
-    m_pDynamicTypesTlsCells = NULL;
-
     m_pThreadLocalModuleStatics = NULL;
     m_numThreadLocalModuleStatics = 0;
 
@@ -305,6 +285,11 @@ void Thread::Construct()
 #endif // STRESS_LOG
 
     m_threadAbortException = NULL;
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    m_redirectionContextBuffer = NULL;
+    m_redirectionContext = NULL;
+#endif //FEATURE_SUSPEND_REDIRECTION
 }
 
 bool Thread::IsInitialized()
@@ -365,16 +350,6 @@ void Thread::Destroy()
     if (m_hPalThread != INVALID_HANDLE_VALUE)
         PalCloseHandle(m_hPalThread);
 
-    if (m_pDynamicTypesTlsCells != NULL)
-    {
-        for (uint32_t i = 0; i < m_numDynamicTypesTlsCells; i++)
-        {
-            if (m_pDynamicTypesTlsCells[i] != NULL)
-                delete[] m_pDynamicTypesTlsCells[i];
-        }
-        delete[] m_pDynamicTypesTlsCells;
-    }
-
     if (m_pThreadLocalModuleStatics != NULL)
     {
         for (uint32_t i = 0; i < m_numThreadLocalModuleStatics; i++)
@@ -391,6 +366,13 @@ void Thread::Destroy()
     ThreadStressLog* ptsl = reinterpret_cast<ThreadStressLog*>(GetThreadStressLog());
     StressLog::ThreadDetach(ptsl);
 #endif // STRESS_LOG
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    if (m_redirectionContextBuffer != NULL)
+    {
+        delete[] m_redirectionContextBuffer;
+    }
+#endif //FEATURE_SUSPEND_REDIRECTION
 }
 
 #ifdef HOST_WASM
@@ -514,7 +496,8 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
                                                frameIterator.GetEffectiveSafePointAddress(),
                                                frameIterator.GetRegisterSet(),
                                                pfnEnumCallback,
-                                               pvCallbackData);
+                                               pvCallbackData,
+                                               frameIterator.IsActiveStackFrame());
             }
 
             // Each enumerated frame (including the first one) may have an associated stack range we need to
@@ -561,6 +544,8 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 }
 
 #ifndef DACCESS_COMPILE
+
+EXTERN_C void FASTCALL RhpSuspendRedirected();
 
 #ifndef TARGET_ARM64
 EXTERN_C void FASTCALL RhpGcProbeHijackScalar();
@@ -655,14 +640,25 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
         return true;
     }
 
-    if (!GetRuntimeInstance()->IsManaged((PTR_VOID)pThreadContext->IP))
+    void* pvAddress = (void*)pThreadContext->IP;
+    RuntimeInstance* runtime = GetRuntimeInstance();
+    if (!runtime->IsManaged(pvAddress))
     {
         // Running in cooperative mode, but not managed.
         // We cannot continue.
         return false;
     }
 
-    // TODO: attempt to redirect 
+    ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
+    if (codeManager->IsSafePoint(pvAddress))
+    {
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        if (pThread->Redirect())
+        {
+            return true;
+        }
+#endif //FEATURE_SUSPEND_REDIRECTION
+    }
 
     return pThread->InternalHijack(pThreadContext, NormalHijackTargets);
 }
@@ -768,6 +764,43 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
 
     return fSuccess;
 }
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+CONTEXT* Thread::GetRedirectionContext()
+{
+    if (m_redirectionContext == NULL)
+    {
+        m_redirectionContext = PalAllocateCompleteOSContext(&m_redirectionContextBuffer);
+    }
+
+    return m_redirectionContext;
+}
+
+bool Thread::Redirect()
+{
+    if (IsDoNotTriggerGcSet())
+        return false;
+
+    CONTEXT* redirectionContext = GetRedirectionContext();
+    if (redirectionContext == NULL)
+        return false;
+
+    if (!PalGetCompleteThreadContext(m_hPalThread, redirectionContext))
+        return false;
+
+    uintptr_t origIP = redirectionContext->GetIp();
+    redirectionContext->SetIp((uintptr_t)RhpSuspendRedirected);
+    if (!PalSetThreadContext(m_hPalThread, redirectionContext))
+        return false;
+
+    redirectionContext->SetIp(origIP);
+
+    STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
+        GetPalThreadIdForLogging(), origIP);
+
+    return true;
+}
+#endif //FEATURE_SUSPEND_REDIRECTION
 
 // This is the standard Unhijack, which is only allowed to be called on your own thread.
 // Note that all the asm-implemented Unhijacks should also only be operating on their
@@ -933,36 +966,14 @@ EXTERN_C void FASTCALL RhpUnsuppressGcStress()
 }
 #endif // FEATURE_GC_STRESS
 
-// Standard calling convention variant and actual implementation for RhpWaitForSuspend
-EXTERN_C NOINLINE void FASTCALL RhpWaitForSuspend2()
-{
-    // The wait operation below may trash the last win32 error. We save the error here so that it can be
-    // restored after the wait operation;
-    int32_t lastErrorOnEntry = PalGetLastError();
-
-    ThreadStore::GetCurrentThread()->WaitForSuspend();
-
-    // Restore the saved error
-    PalSetLastError(lastErrorOnEntry);
-}
-
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
-
     Thread * pThread = pFrame->m_pThread;
-
     if (pThread->IsDoNotTriggerGcSet())
         return;
 
-    // The wait operation below may trash the last win32 error. We save the error here so that it can be
-    // restored after the wait operation;
-    int32_t lastErrorOnEntry = PalGetLastError();
-
     pThread->WaitForGC(pFrame);
-
-    // Restore the saved error
-    PalSetLastError(lastErrorOnEntry);
 }
 
 // Standard calling convention variant and actual implementation for RhpGcPoll
@@ -973,6 +984,20 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 
     RhpWaitForGC2(pFrame);
 }
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+
+EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    pThread->WaitForGC(REDIRECTED_THREAD_MARKER);
+
+    // restore execution at interrupted location
+    PalRestoreContext(pThread->GetRedirectionContext());
+    UNREACHABLE();
+}
+
+#endif //FEATURE_SUSPEND_REDIRECTION
 
 void Thread::PushExInfo(ExInfo * pExInfo)
 {
@@ -1066,58 +1091,7 @@ PTR_UInt8 Thread::GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOf
 #endif
 }
 
-PTR_UInt8 Thread::GetThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset)
-{
-    // Note: When called from GC root enumeration, no changes can be made by the AllocateThreadLocalStorageForDynamicType to
-    // the 2 variables accessed here because AllocateThreadLocalStorageForDynamicType is called in cooperative mode.
-
-    uTlsTypeOffset &= ~DYNAMIC_TYPE_TLS_OFFSET_FLAG;
-    return dac_cast<PTR_UInt8>(uTlsTypeOffset < m_numDynamicTypesTlsCells ? m_pDynamicTypesTlsCells[uTlsTypeOffset] : NULL);
-}
-
 #ifndef DACCESS_COMPILE
-PTR_UInt8 Thread::AllocateThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset, uint32_t tlsStorageSize, uint32_t numTlsCells)
-{
-    uTlsTypeOffset &= ~DYNAMIC_TYPE_TLS_OFFSET_FLAG;
-
-    if (m_pDynamicTypesTlsCells == NULL || m_numDynamicTypesTlsCells <= uTlsTypeOffset)
-    {
-        // Keep at least a 2x grow so that we don't have to reallocate everytime a new type with TLS statics is created
-        if (numTlsCells < 2 * m_numDynamicTypesTlsCells)
-            numTlsCells = 2 * m_numDynamicTypesTlsCells;
-
-        PTR_UInt8* pTlsCells = new (nothrow) PTR_UInt8[numTlsCells];
-        if (pTlsCells == NULL)
-            return NULL;
-
-        memset(&pTlsCells[m_numDynamicTypesTlsCells], 0, sizeof(PTR_UInt8) * (numTlsCells - m_numDynamicTypesTlsCells));
-
-        if (m_pDynamicTypesTlsCells != NULL)
-        {
-            memcpy(pTlsCells, m_pDynamicTypesTlsCells, sizeof(PTR_UInt8) * m_numDynamicTypesTlsCells);
-            delete[] m_pDynamicTypesTlsCells;
-        }
-
-        m_pDynamicTypesTlsCells = pTlsCells;
-        m_numDynamicTypesTlsCells = numTlsCells;
-    }
-
-    ASSERT(uTlsTypeOffset < m_numDynamicTypesTlsCells);
-
-    if (m_pDynamicTypesTlsCells[uTlsTypeOffset] == NULL)
-    {
-        uint8_t* pTlsStorage = new (nothrow) uint8_t[tlsStorageSize];
-        if (pTlsStorage == NULL)
-            return NULL;
-
-        // Initialize storage to 0's before returning it
-        memset(pTlsStorage, 0, tlsStorageSize);
-
-        m_pDynamicTypesTlsCells[uTlsTypeOffset] = pTlsStorage;
-    }
-
-    return m_pDynamicTypesTlsCells[uTlsTypeOffset];
-}
 
 #ifndef TARGET_UNIX
 EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
@@ -1152,11 +1126,8 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
-    // set our mode to cooperative
-    m_pTransitionFrame = NULL;
-
-    // We need to prevent compiler reordering between above write and below read.
-    _ReadWriteBarrier();
+    // must be in cooperative mode when checking the trap flag
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
 
     // now check if we need to trap the thread
     if (ThreadStore::IsTrapThreadsRequested())
@@ -1199,11 +1170,8 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
-    // set our mode to cooperative
-    m_pTransitionFrame = NULL;
-
-    // We need to prevent compiler reordering between above write and below read.
-    _ReadWriteBarrier();
+    // must be in cooperative mode when checking the trap flag
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
 
     // now check if we need to trap the thread
     if (ThreadStore::IsTrapThreadsRequested())
@@ -1232,32 +1200,21 @@ void Thread::EnsureRuntimeInitialized()
 
 FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
 {
-    m_pTransitionFrame = pFrame->m_savedPInvokeTransitionFrame;
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        RhpWaitForSuspend2();
-    }
+    // set our mode to preemptive
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame->m_savedPInvokeTransitionFrame);
 }
 
 FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
 {
     pFrame->m_pThread = this;
     // set our mode to preemptive
-    m_pTransitionFrame = pFrame;
-
-    // We need to prevent compiler reordering between above write and below read.
-    _ReadWriteBarrier();
-
-    // now check if we need to trap the thread
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        RhpWaitForSuspend2();
-    }
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
 }
 
 FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame * pFrame)
 {
-    m_pTransitionFrame = NULL;
+    // must be in cooperative mode when checking the trap flag
+    VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
     if (ThreadStore::IsTrapThreadsRequested())
     {
         RhpWaitForGC2(pFrame);

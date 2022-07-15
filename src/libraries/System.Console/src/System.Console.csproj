@@ -158,6 +158,8 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="System\ConsolePal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
+             Link="Common\System\Console\ConsoleUtils.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
@@ -230,6 +232,7 @@
     <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <Reference Include="System.Runtime.InteropServices.JavaScript" />
   </ItemGroup>
 </Project>

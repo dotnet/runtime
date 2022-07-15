@@ -23,10 +23,7 @@ namespace MS.Internal.Xml.XPath
         public override void SetXsltContext(XsltContext context)
         {
             _xsltContext = context.Whitespace ? context : null;
-            if (_arg != null)
-            {
-                _arg.SetXsltContext(context);
-            }
+            _arg?.SetXsltContext(context);
         }
 
         private XPathNavigator? EvaluateArg(XPathNodeIterator context)

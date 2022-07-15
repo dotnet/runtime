@@ -281,10 +281,10 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		if ((info->native_size == 1) || (info->native_size == 2) || (info->native_size == 4) || (info->native_size == 8)) {
 			ainfo->storage = ArgValuetypeInReg;
 			ainfo->pair_storage [0] = ArgInIReg;
-			ainfo->pair_regs [0] = return_regs [0];
+			ainfo->pair_regs [0] = GINT32_TO_UINT8 (return_regs [0]);
 			if (info->native_size > 4) {
 				ainfo->pair_storage [1] = ArgInIReg;
-				ainfo->pair_regs [1] = return_regs [1];
+				ainfo->pair_regs [1] = GINT32_TO_UINT8 (return_regs [1]);
 			}
 			return;
 		}
@@ -961,9 +961,8 @@ GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
 	GList *vars = NULL;
-	int i;
 
-	for (i = 0; i < cfg->num_varinfo; i++) {
+	for (guint i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
 
@@ -1100,7 +1099,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	MonoInst *inst;
 	guint32 locals_stack_size, locals_stack_align;
-	int i, offset;
+	int offset;
 	gint32 *offsets;
 	CallInfo *cinfo;
 
@@ -1149,7 +1148,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* Allocate a local for any register arguments that need them. */
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
 		inst = cfg->args [i];
 		if (inst->opcode != OP_REGVAR && storage_in_ireg (ainfo->storage)) {
@@ -1191,7 +1190,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += extra_size;
 		locals_stack_size += extra_size;
 	}
-	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+	for (guint i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		if (offsets [i] != -1) {
 			inst = cfg->varinfo [i];
 			inst->opcode = OP_REGOFFSET;
@@ -1247,7 +1246,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
 	}
 
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
 		inst = cfg->args [i];
 		if (inst->opcode != OP_REGVAR) {
@@ -1362,7 +1361,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 LLVMCallInfo*
 mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 {
-	int i, n;
+	guint n;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	LLVMCallInfo *linfo;
@@ -1409,7 +1408,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		cfg->disable_llvm = TRUE;
 	}
 
-	for (i = 0; i < n; ++i) {
+	for (guint i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
 		if (i >= sig->hasthis)
@@ -1548,7 +1547,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			emit_gc_param_slot_def (cfg, cinfo->ret.offset, NULL);
 		}
 
-		if (i >= sig->hasthis)
+		if (GINT_TO_UINT(i) >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
 			t = mono_get_int_type ();
@@ -1572,7 +1571,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			memcpy (arg->inst_p1, ainfo, sizeof (ArgInfo));
 			sp_offset += 4;
 			MONO_ADD_INS (cfg->cbb, arg);
-		} else if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(t))) {
+		} else if ((GINT_TO_UINT(i) >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(t))) {
 			guint32 align;
 			guint32 size;
 
@@ -3053,7 +3052,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_TAILCALL_MEMBASE:
 		case OP_TAILCALL_REG: {
 			call = (MonoCallInst*)ins;
-			int pos = 0, i;
+			int pos = 0;
 			gboolean const tailcall_membase = ins->opcode == OP_TAILCALL_MEMBASE;
 			gboolean const tailcall_reg = (ins->opcode == OP_TAILCALL_REG);
 			int const sreg1 = ins->sreg1;
@@ -3089,7 +3088,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			/* restore callee saved registers */
-			for (i = 0; i < X86_NREG; ++i)
+			for (guint i = 0; i < X86_NREG; ++i)
 				if (X86_IS_CALLEE_SAVED_REG (i) && cfg->used_int_regs & ((regmask_t)1 << i))
 					pos -= 4;
 			if (cfg->used_int_regs & (1 << X86_ESI)) {
@@ -3108,7 +3107,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Copy arguments on the stack to our argument area */
 			// FIXME use rep mov for constant code size, before nonvolatiles
 			// restored, first saving esi, edi into volatiles
-			for (i = 0; i < call->stack_usage - call->stack_align_amount; i += 4) {
+			for (guint i = 0; i < call->stack_usage - call->stack_align_amount; i += 4) {
 				x86_mov_reg_membase (code, X86_EAX, X86_ESP, i, 4);
 				x86_mov_membase_reg (code, X86_EBP, 8 + i, X86_EAX, 4);
 			}
@@ -4946,7 +4945,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 		}
 
-		if (G_UNLIKELY ((code - cfg->native_code - offset) > max_len)) {
+		if (G_UNLIKELY ((code - cfg->native_code - offset) > GINT_TO_UINT(max_len))) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
 					   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
@@ -5019,7 +5018,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoInst *inst;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
-	int alloc_size, pos, max_offset, i, cfa_offset;
+	int alloc_size, pos, max_offset, cfa_offset;
 	guint8 *code;
 	gboolean need_stack_frame;
 
@@ -5114,7 +5113,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		tot &= MONO_ARCH_FRAME_ALIGNMENT - 1;
 		if (tot) {
 			alloc_size += MONO_ARCH_FRAME_ALIGNMENT - tot;
-			for (i = 0; i < MONO_ARCH_FRAME_ALIGNMENT - tot; i += sizeof (target_mgreg_t))
+			for (int i = 0; i < MONO_ARCH_FRAME_ALIGNMENT - tot; i += sizeof (target_mgreg_t))
 				mini_gc_set_slot_type_from_fp (cfg, - (alloc_size + pos - i), SLOT_NOREF);
 		}
 	}
@@ -5215,7 +5214,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cinfo = cfg->arch.cinfo;
 
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		inst = cfg->args [pos];
 		ainfo = &cinfo->args [pos];
 		if (inst->opcode == OP_REGVAR) {
@@ -5824,7 +5823,6 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 		x86_mov_membase_reg (code, X86_ESP, 4, X86_ECX, 4);
 		x86_jump_membase (code, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 	} else {
-		int i = 0;
 		/* 8 for mov_reg and jump, plus 8 for each parameter */
 		code_reserve = 8 + (param_count * 8);
 		/*
@@ -5849,7 +5847,7 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 		x86_mov_reg_membase (code, X86_ECX, X86_ESP, 4, 4);
 
 		/* move args up */
-		for (i = 0; i < param_count; ++i) {
+		for (guint32 i = 0; i < param_count; ++i) {
 			x86_mov_reg_membase (code, X86_EAX, X86_ESP, (i+2)*4, 4);
 			x86_mov_membase_reg (code, X86_ESP, (i+1)*4, X86_EAX, 4);
 		}

@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override string Value
         {
-            get { return (_val == null) ? base.Value : _val; }
+            get { return _val ?? base.Value; }
         }
 
         /// <summary>
@@ -128,10 +128,9 @@ namespace System.Xml.Xsl.Runtime
                         if (_shouldStrip)
                         {
                             // Save whitespace until it can be determined whether it will be stripped
-                            if (ws == null)
-                                ws = base.Value;
-                            else
-                                ws = string.Concat(ws, base.Value);
+                            ws = ws == null ?
+                                base.Value :
+                                string.Concat(ws, base.Value);
 
                             // Read next event
                             continue;

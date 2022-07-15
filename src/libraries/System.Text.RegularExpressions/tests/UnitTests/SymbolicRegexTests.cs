@@ -86,7 +86,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 RegexNode tree = RegexParser.Parse(Pattern, options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { rootNode, ExpectedSafeSize };
+                yield return new object[] { bddBuilder, rootNode, ExpectedSafeSize };
             }
 
             // add .*? in front of the pattern, this adds 1 more NFA state
@@ -94,7 +94,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 RegexNode tree = RegexParser.Parse(".*?" + Pattern, options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { rootNode, 1 + ExpectedSafeSize};
+                yield return new object[] { bddBuilder, rootNode, 1 + ExpectedSafeSize};
             }
 
             // use of anchors increases the estimate by 5x in general but in reality much less, at most 3x
@@ -102,7 +102,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 RegexNode tree = RegexParser.Parse(Pattern + "$", options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { rootNode, 5 * ExpectedSafeSize };
+                yield return new object[] { bddBuilder, rootNode, 5 * ExpectedSafeSize };
             }
 
             // use of captures has no effect on the estimations
@@ -110,31 +110,32 @@ namespace System.Text.RegularExpressions.Tests
             {
                 RegexNode tree = RegexParser.Parse(Pattern, options, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { rootNode, ExpectedSafeSize };
+                yield return new object[] { bddBuilder, rootNode, ExpectedSafeSize };
             }
         }
 
         [Theory]
         [MemberData(nameof(SafeThresholdTests_MemberData))]
-        public void SafeThresholdTests(object obj, int expectedSafeSize)
+        public void SafeThresholdTests(object builderObj, object nodeObj, int expectedSafeSize)
         {
-            SymbolicRegexNode<BDD> node = (SymbolicRegexNode<BDD>)obj;
+            SymbolicRegexBuilder<BDD> builder = (SymbolicRegexBuilder<BDD>)builderObj;
+            SymbolicRegexNode<BDD> node = (SymbolicRegexNode<BDD>)nodeObj;
             int safeSize = node.EstimateNfaSize();
             Assert.Equal(expectedSafeSize, safeSize);
-            int nfaStateCount = CalculateNfaStateCount(node);
+            int nfaStateCount = CalculateNfaStateCount(builder, node);
             Assert.True(nfaStateCount <= expectedSafeSize);
         }
 
         /// <summary>
         /// Compute the closure of all NFA states from root and return the size of the resulting state space.
         /// </summary>
-        private static int CalculateNfaStateCount(SymbolicRegexNode<BDD> root)
+        private static int CalculateNfaStateCount(SymbolicRegexBuilder<BDD> builder, SymbolicRegexNode<BDD> root)
         {
             // Here we are actually using the original BDD algebra (not converting to the BV or Uint64 algebra)
             // because it does not matter which algebra we use here (this matters only for performance)
             HashSet<(uint, SymbolicRegexNode<BDD>)> states = new();
             Stack<(uint, SymbolicRegexNode<BDD>)> frontier = new();
-            List<BDD> minterms = root._builder._solver.GenerateMinterms(root.GetSets());
+            List<BDD> minterms = MintermGenerator<BDD>.GenerateMinterms(builder._solver, root.GetSets(builder));
 
             // Start from the initial state that has kind 'General' when no anchors are being used, else kind 'BeginningEnd'
             (uint, SymbolicRegexNode<BDD>) initialState = (root._info.ContainsSomeAnchor ? CharKind.BeginningEnd : CharKind.General, root);
@@ -150,7 +151,7 @@ namespace System.Text.RegularExpressions.Tests
                 foreach (BDD minterm in minterms)
                 {
                     uint kind = GetCharKind(minterm);
-                    SymbolicRegexNode<BDD> target = source.Node.CreateDerivativeWithoutEffects(minterm, source.Kind);
+                    SymbolicRegexNode<BDD> target = source.Node.CreateDerivativeWithoutEffects(builder, minterm, source.Kind);
 
                     //In the case of an NFA all the different alternatives in the DFA state become individual states themselves
                     foreach (SymbolicRegexNode<BDD> node in GetAlternatives(target))
@@ -169,7 +170,7 @@ namespace System.Text.RegularExpressions.Tests
             return states.Count;
 
             // Enumerates the alternatives from a node, for eaxmple (ab|(bc|cd)) has three alternatives
-            static IEnumerable<SymbolicRegexNode<BDD>> GetAlternatives(SymbolicRegexNode<BDD> node)
+            IEnumerable<SymbolicRegexNode<BDD>> GetAlternatives(SymbolicRegexNode<BDD> node)
             {
                 if (node._kind == SymbolicRegexNodeKind.Alternate)
                 {
@@ -178,7 +179,7 @@ namespace System.Text.RegularExpressions.Tests
                     foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(node._right!))
                         yield return elem;
                 }
-                else if (!node.IsNothing) // omit deadend states
+                else if (!node.IsNothing(builder._solver)) // omit deadend states
                 {
                     yield return node;
                 }
@@ -187,8 +188,8 @@ namespace System.Text.RegularExpressions.Tests
             // Simplified character kind calculation that omits the special case that minterm can be the very last \n
             // This omission has practically no effect of the size of the state space, but would complicate the logic
             uint GetCharKind(BDD minterm) =>
-                minterm.Equals(root._builder._newLineSet) ? CharKind.Newline :  // is \n
-                (!root._builder._solver.IsEmpty(root._builder._solver.And(root._builder._wordLetterForBoundariesSet, minterm)) ?
+                minterm.Equals(builder._newLineSet) ? CharKind.Newline :  // is \n
+                (!builder._solver.IsEmpty(builder._solver.And(builder._wordLetterForBoundariesSet, minterm)) ?
                 CharKind.WordLetter : // in \w
                 CharKind.General);    // anything else, thus in particular in \W
         }

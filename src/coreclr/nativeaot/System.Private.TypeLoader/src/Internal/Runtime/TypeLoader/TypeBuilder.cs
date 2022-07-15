@@ -88,7 +88,7 @@ namespace Internal.Runtime.TypeLoader
         /// The StaticClassConstructionContext for a type is encoded in the negative space
         /// of the NonGCStatic fields of a type.
         /// </summary>
-        public static unsafe readonly int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+        public static readonly unsafe int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
         private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
 
@@ -105,6 +105,10 @@ namespace Internal.Runtime.TypeLoader
         // Helper exception to abort type building if we do not find the generic type template
         internal class MissingTemplateException : Exception
         {
+            public MissingTemplateException()
+                // Cannot afford calling into resource manager from here, even to get the default message for System.Exception.
+                // This exception is always caught and rethrown as something more user friendly.
+                : base("Template is missing") { }
         }
 
 
@@ -179,8 +183,7 @@ namespace Internal.Runtime.TypeLoader
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return;
 
-            if (_typesThatNeedPreparation == null)
-                _typesThatNeedPreparation = new LowLevelList<TypeDesc>();
+            _typesThatNeedPreparation ??= new LowLevelList<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -243,8 +246,7 @@ namespace Internal.Runtime.TypeLoader
             if (hasTypeHandle)
                 return;
 
-            if (state == null)
-                state = type.GetOrCreateTypeBuilderState();
+            state ??= type.GetOrCreateTypeBuilderState();
 
             // If this type was already prepared, do nothing unless we are re-preparing it for the purpose of loading the field layout
             if (state.HasBeenPrepared)
@@ -262,10 +264,8 @@ namespace Internal.Runtime.TypeLoader
 
             bool noExtraPreparation = false; // Set this to true for types which don't need other types to be prepared. I.e GenericTypeDefinitions
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 if (typeAsDefType.HasInstantiation)
                 {
                     if (typeAsDefType.IsTypeDefinition)
@@ -301,10 +301,8 @@ namespace Internal.Runtime.TypeLoader
             {
                 PrepareType(((ParameterizedType)type).ParameterType);
 
-                if (type is ArrayType)
+                if (type is ArrayType typeAsArrayType)
                 {
-                    ArrayType typeAsArrayType = (ArrayType)type;
-
                     if (typeAsArrayType.IsSzArray && !typeAsArrayType.ElementType.IsPointer)
                     {
                         TypeDesc.ComputeTemplate(state);
@@ -977,13 +975,10 @@ namespace Internal.Runtime.TypeLoader
 
             Debug.Assert(type is DefType || type is ArrayType || type is PointerType || type is ByRefType);
 
-            if (state.ThreadDataSize != 0)
-                state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue();
-
             RuntimeTypeHandle rtt = EETypeCreator.CreateEEType(type, state);
 
             if (state.ThreadDataSize != 0)
-                TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadDataSize);
+                TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadStaticDesc);
 
             TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->BaseSize.LowLevelToString());
         }
@@ -1152,8 +1147,10 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private unsafe void FinishTypeDictionary(TypeDesc type, TypeBuilderState state)
+        private unsafe void FinishTypeDictionary(TypeDesc type)
         {
+            TypeBuilderState state = type.GetTypeBuilderState();
+
             if (state.Dictionary != null)
             {
                 // First, update the dictionary slot in the type's vtable to point to the created dictionary when applicable
@@ -1322,10 +1319,8 @@ namespace Internal.Runtime.TypeLoader
 
             var state = type.GetTypeBuilderState();
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 if (type.HasInstantiation)
                 {
                     // Type definitions don't need any further finishing once created by the EETypeCreator
@@ -1350,8 +1345,6 @@ namespace Internal.Runtime.TypeLoader
 
                 FinishInterfaces(type, state);
 
-                FinishTypeDictionary(type, state);
-
                 FinishClassConstructor(type, state);
 
 #if FEATURE_UNIVERSAL_GENERICS
@@ -1363,10 +1356,8 @@ namespace Internal.Runtime.TypeLoader
             }
             else if (type is ParameterizedType)
             {
-                if (type is ArrayType)
+                if (type is ArrayType typeAsSzArrayType)
                 {
-                    ArrayType typeAsSzArrayType = (ArrayType)type;
-
                     state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(typeAsSzArrayType.ElementType));
 
                     state.HalfBakedRuntimeTypeHandle.SetComponentSize(state.ComponentSize.Value);
@@ -1375,8 +1366,6 @@ namespace Internal.Runtime.TypeLoader
 
                     if (typeAsSzArrayType.IsSzArray && !typeAsSzArrayType.ElementType.IsPointer)
                     {
-                        FinishTypeDictionary(type, state);
-
 #if FEATURE_UNIVERSAL_GENERICS
                         // For types that were allocated from universal canonical templates, patch their vtables with
                         // pointers to calling convention conversion thunks
@@ -1526,6 +1515,11 @@ namespace Internal.Runtime.TypeLoader
                 FinishRuntimeType(_typesThatNeedTypeHandles[i]);
             }
 
+            for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
+            {
+                FinishTypeDictionary(_typesThatNeedTypeHandles[i]);
+            }
+
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
                 FinishMethodDictionary(_methodsThatNeedDictionaries[i]);
@@ -1552,8 +1546,7 @@ namespace Internal.Runtime.TypeLoader
                     newByRefTypesCount++;
                 else if (typeAsParameterizedType.IsMdArray)
                 {
-                    if (mdArrayNewTypesCount == null)
-                        mdArrayNewTypesCount = new int[MDArray.MaxRank + 1];
+                    mdArrayNewTypesCount ??= new int[MDArray.MaxRank + 1];
                     mdArrayNewTypesCount[((ArrayType)typeAsParameterizedType).Rank]++;
                 }
             }

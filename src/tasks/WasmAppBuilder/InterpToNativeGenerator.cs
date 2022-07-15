@@ -174,7 +174,7 @@ internal sealed class InterpToNativeGenerator
                     throw new InvalidSignatureCharException(c);
             }
 
-            return $"mono_wasm_interp_method_args_get_{char.ToLower(c)}arg (margs, {argIndex})";
+            return $"mono_wasm_interp_method_args_get_{char.ToLower(c, CultureInfo.InvariantCulture)}arg (margs, {argIndex})";
         }
     }
 }

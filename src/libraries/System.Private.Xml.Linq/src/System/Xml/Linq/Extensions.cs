@@ -317,8 +317,7 @@ namespace System.Xml.Linq
             XAttribute?[] attributes = EnumerableHelpers.ToArray(source, out count);
             for (int i = 0; i < count; i++)
             {
-                XAttribute? a = attributes[i];
-                if (a != null) a.Remove();
+                attributes[i]?.Remove();
             }
         }
 
@@ -335,8 +334,7 @@ namespace System.Xml.Linq
             T?[] nodes = EnumerableHelpers.ToArray(source, out count);
             for (int i = 0; i < count; i++)
             {
-                T? node = nodes[i];
-                if (node != null) node.Remove();
+                nodes[i]?.Remove();
             }
         }
 

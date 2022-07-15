@@ -5,6 +5,10 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
+    <SuppressTrimAnalysisWarnings Condition="'$(EnableAggressiveTrimming)' == 'true'">true</SuppressTrimAnalysisWarnings>
+    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
+    <NoWarn Condition="'$(EnableAggressiveTrimming)' == 'true'">$(NoWarn);IL2118</NoWarn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
@@ -73,6 +77,7 @@
 
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
+    <_XHarnessArgs Condition="('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true') and '$(_XHarnessArs.Contains(&quot;--web-server-use-cop&quot;)' != 'true'">$(_XHarnessArgs) --web-server-use-cop</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) -s dotnet.js.symbols</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbol-patterns wasm-symbol-patterns.txt</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
@@ -129,6 +134,10 @@
 
   <ItemGroup>
     <WorkloadIdForTesting Include="wasm-tools"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)" />
+    <WorkloadIdForTesting Include="wasm-experimental"
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
@@ -297,5 +306,9 @@
       <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
       <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="DeployHelixTargetsFile" AfterTargets="ArchiveTests" Condition="'$(HelixTargetsFile)' != ''">
+    <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
   </Target>
 </Project>

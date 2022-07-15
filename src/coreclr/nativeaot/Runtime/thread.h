@@ -28,9 +28,7 @@ class Thread;
 #endif // HOST_64BIT
 
 #define TOP_OF_STACK_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-1)
-
-#define DYNAMIC_TYPE_TLS_OFFSET_FLAG 0x80000000
-
+#define REDIRECTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
 enum SyncRequestResult
 {
@@ -90,13 +88,13 @@ struct ThreadBuffer
     uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
     EEThreadId              m_threadId;
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    uint8_t*                m_redirectionContextBuffer;              // storage for redirection context, allocated on demand
+    CONTEXT*                m_redirectionContext;                    // legacy context somewhere inside the context buffer
+#endif //FEATURE_SUSPEND_REDIRECTION
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-
-    // Thread Statics Storage for dynamic types
-    uint32_t          m_numDynamicTypesTlsCells;
-    PTR_PTR_UInt8   m_pDynamicTypesTlsCells;
 
 };
 
@@ -138,6 +136,10 @@ private:
 
     static UInt32_BOOL HijackCallback(HANDLE hThread, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext);
     bool InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[]);
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    bool Redirect();
+#endif //FEATURE_SUSPEND_REDIRECTION
 
     bool CacheTransitionFrameForSuspend();
     void ResetCachedTransitionFrame();
@@ -191,9 +193,6 @@ public:
 
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
 
-    PTR_UInt8           AllocateThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset, uint32_t tlsStorageSize, uint32_t numTlsCells);
-
-    PTR_UInt8           GetThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset);
     PTR_UInt8           GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset);
 
     void                PushExInfo(ExInfo * pExInfo);
@@ -248,7 +247,6 @@ public:
     //
     // Managed/unmanaged interop transitions support APIs
     //
-    void WaitForSuspend();
     void WaitForGC(PInvokeTransitionFrame* pTransitionFrame);
 
     void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame);
@@ -264,6 +262,10 @@ public:
 
     Object* GetThreadStaticStorageForModule(uint32_t moduleIndex);
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    CONTEXT* GetRedirectionContext();
+#endif //FEATURE_SUSPEND_REDIRECTION
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

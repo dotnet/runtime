@@ -399,10 +399,17 @@ namespace System.IO.Tests
                 Assert.Throws<IOException>(() => { stream.Seek(-1, SeekOrigin.Begin); });
                 Assert.Throws<IOException>(() => { stream.Seek(-stream.Position - 1, SeekOrigin.Current); });
                 Assert.Throws<IOException>(() => { stream.Seek(-stream.Length - 1, SeekOrigin.End); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)(-1)); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)3); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, ~SeekOrigin.Begin); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.SetLength(-1); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)(-1)); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)3); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, ~SeekOrigin.Begin); });
+                if (CanSetLength)
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => { stream.SetLength(-1); });
+                }
+                else
+                {
+                    Assert.Throws<NotSupportedException>(() => { stream.SetLength(0); });
+                }
             }
             else
             {
@@ -616,10 +623,11 @@ namespace System.IO.Tests
             private readonly int _length;
             private IntPtr _ptr;
             public int PinRefCount;
+            private readonly string _ctorStack = Environment.StackTrace;
 
             public NativeMemoryManager(int length) => _ptr = Marshal.AllocHGlobal(_length = length);
 
-            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized");
+            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
 
             public override Memory<byte> Memory => CreateMemory(_length);
 
@@ -1294,6 +1302,31 @@ namespace System.IO.Tests
                 Assert.Equal(pos, Seek(mode, stream, pos));
                 Assert.Equal(expected[pos], (byte)stream.ReadByte());
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllSeekModes))]
+        public virtual async Task Seek_PastEnd_ReadReturns0(SeekMode mode)
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            const int Length = 512;
+
+            byte[] expected = RandomNumberGenerator.GetBytes(Length);
+            using Stream? stream = await CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            long pos = stream.Length + 10;
+            Assert.Equal(pos, Seek(mode, stream, pos));
+
+            Assert.Equal(0, stream.Read(new byte[1], 0, 1));
+            Assert.Equal(-1, stream.ReadByte());
         }
 
         [Theory]

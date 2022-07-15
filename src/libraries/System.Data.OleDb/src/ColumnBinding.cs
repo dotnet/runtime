@@ -206,10 +206,7 @@ namespace System.Data.OleDb
             StringMemHandle? sptr = _sptr;
             _sptr = null;
 
-            if (null != sptr)
-            {
-                sptr.Dispose();
-            }
+            sptr?.Dispose();
 
             if (_pinnedBuffer.IsAllocated)
             {
@@ -684,7 +681,7 @@ namespace System.Data.OleDb
                     bindings.DangerousRelease();
                 }
             }
-            return ((null != value) ? value : Array.Empty<byte>());
+            return value ?? Array.Empty<byte>();
         }
         private void Value_ByRefBYTES(byte[] value)
         {

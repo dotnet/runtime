@@ -12,8 +12,9 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    public abstract class QuicStreamTests<T> : QuicTestBase<T>
-         where T : IQuicImplProviderFactory, new()
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
         public QuicStreamTests(ITestOutputHelper output) : base(output) { }
@@ -25,7 +26,7 @@ namespace System.Net.Quic.Tests
                 iterations: 100,
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
 
                     byte[] buffer = new byte[s_data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
@@ -33,22 +34,19 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(s_data.Length, bytesRead);
                     Assert.Equal(s_data, buffer);
 
-                    await stream.WriteAsync(s_data, endStream: true);
-                    await stream.ShutdownCompleted();
+                    await stream.WriteAsync(s_data, completeWrites: true);
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
 
-                    await stream.WriteAsync(s_data, endStream: true);
+                    await stream.WriteAsync(s_data, completeWrites: true);
 
                     byte[] buffer = new byte[s_data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
 
                     Assert.Equal(s_data.Length, bytesRead);
                     Assert.Equal(s_data, buffer);
-
-                    await stream.ShutdownCompleted();
                 }
             );
         }
@@ -72,7 +70,7 @@ namespace System.Net.Quic.Tests
                 iterations: 100,
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync(cts.Token);
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync(cts.Token);
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
@@ -83,26 +81,22 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WriteAsync(s_data);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true, cts.Token);
-
-                    await stream.ShutdownCompleted(cts.Token);
+                    await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true, cts.Token);
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
 
                     for (int i = 0; i < sendCount; i++)
                     {
                         await stream.WriteAsync(s_data, cts.Token);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true, cts.Token);
+                    await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true, cts.Token);
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(expectedBytesCount, bytesRead);
                     Assert.Equal(expected, buffer);
-
-                    await stream.ShutdownCompleted(cts.Token);
                 }
             );
         }
@@ -113,8 +107,8 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
-                    await using QuicStream stream2 = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
+                    await using QuicStream stream2 = await connection.AcceptInboundStreamAsync();
 
                     byte[] buffer = new byte[s_data.Length];
                     byte[] buffer2 = new byte[s_data.Length];
@@ -127,19 +121,16 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(s_data.Length, bytesRead2);
                     Assert.Equal(s_data, buffer2);
 
-                    await stream.WriteAsync(s_data, endStream: true);
-                    await stream2.WriteAsync(s_data, endStream: true);
-
-                    await stream.ShutdownCompleted();
-                    await stream2.ShutdownCompleted();
+                    await stream.WriteAsync(s_data, completeWrites: true);
+                    await stream2.WriteAsync(s_data, completeWrites: true);
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
-                    await using QuicStream stream2 = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    await using QuicStream stream2 = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
 
-                    await stream.WriteAsync(s_data, endStream: true);
-                    await stream2.WriteAsync(s_data, endStream: true);
+                    await stream.WriteAsync(s_data, completeWrites: true);
+                    await stream2.WriteAsync(s_data, completeWrites: true);
 
                     byte[] buffer = new byte[s_data.Length];
                     byte[] buffer2 = new byte[s_data.Length];
@@ -151,9 +142,6 @@ namespace System.Net.Quic.Tests
                     int bytesRead2 = await ReadAll(stream2, buffer2);
                     Assert.Equal(s_data.Length, bytesRead2);
                     Assert.Equal(s_data, buffer2);
-
-                    await stream.ShutdownCompleted();
-                    await stream2.ShutdownCompleted();
                 }
             );
         }
@@ -165,8 +153,8 @@ namespace System.Net.Quic.Tests
             Task[] tasks = new Task[count];
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
-            using (clientConnection)
-            using (serverConnection)
+            await using (clientConnection)
+            await using (serverConnection)
             {
                 for (int i = 0; i < count; i++)
                 {
@@ -178,9 +166,9 @@ namespace System.Net.Quic.Tests
             static async Task MakeStreams(QuicConnection clientConnection, QuicConnection serverConnection)
             {
                 byte[] buffer = new byte[64];
-                QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
-                ValueTask writeTask = clientStream.WriteAsync("PING"u8.ToArray(), endStream: true);
-                ValueTask<QuicStream> acceptTask = serverConnection.AcceptStreamAsync();
+                QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                ValueTask writeTask = clientStream.WriteAsync("PING"u8.ToArray(), completeWrites: true);
+                ValueTask<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync();
                 await new Task[] { writeTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
                 QuicStream serverStream = acceptTask.Result;
                 await serverStream.ReadAsync(buffer);
@@ -192,11 +180,11 @@ namespace System.Net.Quic.Tests
         {
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-            using (clientConnection)
-            using (serverConnection)
+            await using (clientConnection)
+            await using (serverConnection)
             {
-                using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
-                Assert.Equal(0, clientStream.StreamId);
+                await using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                Assert.Equal(0, clientStream.Id);
 
                 // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
                 // explicitly closing the connections seems to help, but the problem should still be investigated, we should have a meaningful
@@ -216,7 +204,7 @@ namespace System.Net.Quic.Tests
                 iterations: 5,
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
 
                     byte[] buffer = new byte[data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
@@ -227,26 +215,22 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WriteAsync(data[pos..(pos + writeSize)]);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
-
-                    await stream.ShutdownCompleted();
+                    await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true);
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
 
                     for (int pos = 0; pos < data.Length; pos += writeSize)
                     {
                         await stream.WriteAsync(data[pos..(pos + writeSize)]);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true);
 
                     byte[] buffer = new byte[data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(data.Length, bytesRead);
                     AssertExtensions.SequenceEqual(data, buffer);
-
-                    await stream.ShutdownCompleted();
                 }
             );
         }
@@ -254,15 +238,16 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task TestStreams()
         {
-            using QuicListener listener = CreateQuicListener();
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
-            using (clientConnection)
-            using (serverConnection)
+            await using QuicListener listener = await CreateQuicListener();
+            var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.MaxInboundBidirectionalStreams = 1;
+            clientOptions.MaxInboundUnidirectionalStreams = 1;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
+            await using (clientConnection)
+            await using (serverConnection)
             {
-                Assert.True(clientConnection.Connected);
-                Assert.True(serverConnection.Connected);
-                Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
-                Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+                Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
+                Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
                 Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
 
                 await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
@@ -275,13 +260,13 @@ namespace System.Net.Quic.Tests
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
         {
-            using QuicStream s1 = await c1.OpenBidirectionalStreamAsync();
+            await using QuicStream s1 = await c1.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
             Assert.True(s1.CanRead);
             Assert.True(s1.CanWrite);
 
             ValueTask writeTask = s1.WriteAsync(s_data);
 
-            using QuicStream s2 = await c2.AcceptStreamAsync();
+            await using QuicStream s2 = await c2.AcceptInboundStreamAsync();
             await ReceiveDataAsync(s_data, s2);
             await writeTask;
             await TestBidirectionalStream(s1, s2);
@@ -289,14 +274,14 @@ namespace System.Net.Quic.Tests
 
         private static async Task CreateAndTestUnidirectionalStream(QuicConnection c1, QuicConnection c2)
         {
-            using QuicStream s1 = await c1.OpenUnidirectionalStreamAsync();
+            await using QuicStream s1 = await c1.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
 
             Assert.False(s1.CanRead);
             Assert.True(s1.CanWrite);
 
             ValueTask writeTask = s1.WriteAsync(s_data);
 
-            using QuicStream s2 = await c2.AcceptStreamAsync();
+            await using QuicStream s2 = await c2.AcceptInboundStreamAsync();
             await ReceiveDataAsync(s_data, s2);
             await writeTask;
             await TestUnidirectionalStream(s1, s2);
@@ -308,7 +293,7 @@ namespace System.Net.Quic.Tests
             Assert.True(s1.CanWrite);
             Assert.True(s2.CanRead);
             Assert.True(s2.CanWrite);
-            Assert.Equal(s1.StreamId, s2.StreamId);
+            Assert.Equal(s1.Id, s2.Id);
 
             await SendAndReceiveDataAsync(s_data, s1, s2);
             await SendAndReceiveDataAsync(s_data, s2, s1);
@@ -317,9 +302,6 @@ namespace System.Net.Quic.Tests
 
             await SendAndReceiveEOFAsync(s1, s2);
             await SendAndReceiveEOFAsync(s2, s1);
-
-            await s1.ShutdownCompleted();
-            await s2.ShutdownCompleted();
         }
 
         private static async Task TestUnidirectionalStream(QuicStream s1, QuicStream s2)
@@ -328,15 +310,12 @@ namespace System.Net.Quic.Tests
             Assert.True(s1.CanWrite);
             Assert.True(s2.CanRead);
             Assert.False(s2.CanWrite);
-            Assert.Equal(s1.StreamId, s2.StreamId);
+            Assert.Equal(s1.Id, s2.Id);
 
             await SendAndReceiveDataAsync(s_data, s1, s2);
             await SendAndReceiveDataAsync(s_data, s1, s2);
 
             await SendAndReceiveEOFAsync(s1, s2);
-
-            await s1.ShutdownCompleted();
-            await s2.ShutdownCompleted();
         }
 
         private static async Task SendAndReceiveDataAsync(byte[] data, QuicStream s1, QuicStream s2)
@@ -363,7 +342,7 @@ namespace System.Net.Quic.Tests
         {
             byte[] readBuffer = new byte[1];
 
-            await s1.WriteAsync(Memory<byte>.Empty, endStream: true);
+            await s1.WriteAsync(Memory<byte>.Empty, completeWrites: true);
 
             int bytesRead = await s2.ReadAsync(readBuffer);
             Assert.Equal(0, bytesRead);
@@ -383,7 +362,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    await using QuicStream clientStream = await clientConnection.OpenUnidirectionalStreamAsync();
+                    await using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
 
                     ReadOnlyMemory<byte> sendBuffer = testBuffer;
                     while (sendBuffer.Length != 0)
@@ -393,12 +372,11 @@ namespace System.Net.Quic.Tests
                         sendBuffer = sendBuffer.Slice(chunk.Length);
                     }
 
-                    await clientStream.WriteAsync(Memory<byte>.Empty, endStream: true);
-                    await clientStream.ShutdownCompleted();
+                    await clientStream.WriteAsync(Memory<byte>.Empty, completeWrites: true);
                 },
                 async serverConnection =>
                 {
-                    await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                    await using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
 
                     byte[] receiveBuffer = new byte[testBuffer.Length];
                     int totalBytesRead = 0;
@@ -417,8 +395,6 @@ namespace System.Net.Quic.Tests
 
                     Assert.Equal(testBuffer.Length, totalBytesRead);
                     AssertExtensions.SequenceEqual(testBuffer, receiveBuffer);
-
-                    await serverStream.ShutdownCompleted();
                 });
         }
 
@@ -436,7 +412,6 @@ namespace System.Net.Quic.Tests
         public async Task Read_WriteAborted_Throws()
         {
             const int ExpectedErrorCode = 0xfffffff;
-
             using SemaphoreSlim sem = new SemaphoreSlim(0);
 
             await RunBidirectionalClientServer(
@@ -445,7 +420,7 @@ namespace System.Net.Quic.Tests
                     await clientStream.WriteAsync(new byte[1]);
 
                     await sem.WaitAsync();
-                    clientStream.AbortWrite(ExpectedErrorCode);
+                    clientStream.Abort(QuicAbortDirection.Write, ExpectedErrorCode);
                 },
                 async serverStream =>
                 {
@@ -455,8 +430,8 @@ namespace System.Net.Quic.Tests
                     sem.Release();
 
                     byte[] buffer = new byte[100];
-                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
-                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                    QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => serverStream.ReadAsync(buffer).AsTask());
+                    Assert.Equal(ExpectedErrorCode, ex.ApplicationErrorCode);
                 });
         }
 
@@ -470,7 +445,7 @@ namespace System.Net.Quic.Tests
                 {
                     await clientStream.WriteAsync(new byte[1]);
                     sem.Release();
-                    clientStream.Shutdown();
+                    clientStream.CompleteWrites();
                     sem.Release();
                 },
                 async serverStream =>
@@ -498,21 +473,15 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task ReadOutstanding_ReadAborted_Throws()
         {
-            // aborting doesn't work properly on mock
-            if (typeof(T) == typeof(MockProviderFactory))
-            {
-                return;
-            }
-
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
-            using (clientConnection)
-            using (serverConnection)
+            await using (clientConnection)
+            await using (serverConnection)
             {
                 byte[] buffer = new byte[1] { 42 };
                 const int ExpectedErrorCode = 0xfffffff;
 
-                QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
-                Task<QuicStream> t = serverConnection.AcceptStreamAsync().AsTask();
+                QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                Task<QuicStream> t = serverConnection.AcceptInboundStreamAsync().AsTask();
                 await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientStream.WriteAsync(buffer).AsTask(), t, PassingTestTimeoutMilliseconds);
                 QuicStream serverStream = t.Result;
                 Assert.Equal(1, await serverStream.ReadAsync(buffer));
@@ -521,10 +490,10 @@ namespace System.Net.Quic.Tests
                 using (clientStream)
                 using (serverStream)
                 {
-                    Task exTask = Assert.ThrowsAsync<QuicOperationAbortedException>(() => serverStream.ReadAsync(new byte[1]).AsTask());
+                    Task exTask = AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => serverStream.ReadAsync(new byte[1]).AsTask());
                     Assert.False(exTask.IsCompleted);
 
-                    serverStream.AbortRead(ExpectedErrorCode);
+                    serverStream.Abort(QuicAbortDirection.Read, ExpectedErrorCode);
 
                     await exTask;
                 }
@@ -539,17 +508,17 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenUnidirectionalStreamAsync();
-                    stream.AbortWrite(expectedErrorCode);
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
+                    stream.Abort(QuicAbortDirection.Write, expectedErrorCode);
                 },
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
 
                     byte[] buffer = new byte[1];
 
-                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(stream, buffer));
-                    Assert.Equal(expectedErrorCode, ex.ErrorCode);
+                    QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => ReadAll(stream, buffer));
+                    Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
 
                     // We should still return true from CanRead, even though the read has been aborted.
                     Assert.True(stream.CanRead);
@@ -565,15 +534,15 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
-                    stream.AbortRead(expectedErrorCode);
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    stream.Abort(QuicAbortDirection.Read, expectedErrorCode);
                 },
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
 
-                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => WriteForever(stream));
-                    Assert.Equal(expectedErrorCode, ex.ErrorCode);
+                    QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => WriteForever(stream));
+                    Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
 
                     // We should still return true from CanWrite, even though the write has been aborted.
                     Assert.True(stream.CanWrite);
@@ -584,12 +553,10 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WritePreCanceled_Throws()
         {
-            const long expectedErrorCode = 1234;
-
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenUnidirectionalStreamAsync();
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
 
                     CancellationTokenSource cts = new CancellationTokenSource();
                     cts.Cancel();
@@ -597,22 +564,16 @@ namespace System.Net.Quic.Tests
                     await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1], cts.Token).AsTask());
 
                     // aborting write causes the write direction to throw on subsequent operations
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => stream.WriteAsync(new byte[1]).AsTask());
-
-                    // manual write abort is still required
-                    stream.AbortWrite(expectedErrorCode);
-
-                    await stream.ShutdownCompleted();
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.WriteAsync(new byte[1]).AsTask());
                 },
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
 
                     byte[] buffer = new byte[1024 * 1024];
 
-                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(stream, buffer));
-
-                    await stream.ShutdownCompleted();
+                    QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => ReadAll(stream, buffer));
+                    Assert.Equal(DefaultStreamErrorCodeClient, ex.ApplicationErrorCode);
                 }
             );
         }
@@ -620,18 +581,10 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteCanceled_NextWriteThrows()
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55995")]
-            if (typeof(T) == typeof(MockProviderFactory))
-            {
-                return;
-            }
-
-            const long expectedErrorCode = 1234;
-
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenUnidirectionalStreamAsync();
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
 
                     CancellationTokenSource cts = new CancellationTokenSource(500);
 
@@ -648,16 +601,11 @@ namespace System.Net.Quic.Tests
                     await Assert.ThrowsAsync<OperationCanceledException>(() => WriteUntilCanceled().WaitAsync(TimeSpan.FromSeconds(3)));
 
                     // next write would also throw
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => stream.WriteAsync(new byte[1]).AsTask());
-
-                    // manual write abort is still required
-                    stream.AbortWrite(expectedErrorCode);
-
-                    await stream.ShutdownCompleted();
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.WriteAsync(new byte[1]).AsTask());
                 },
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
 
                     async Task ReadUntilAborted()
                     {
@@ -672,9 +620,8 @@ namespace System.Net.Quic.Tests
                         }
                     }
 
-                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadUntilAborted());
-
-                    await stream.ShutdownCompleted();
+                    QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.StreamAborted, () => ReadUntilAborted());
+                    Assert.Equal(DefaultStreamErrorCodeClient, ex.ApplicationErrorCode);
                 }
             );
         }
@@ -688,25 +635,24 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                     // Force stream to open on the wire
                     await stream.WriteAsync(buffer);
                     await sem.WaitAsync();
 
-                    stream.Dispose();
+                    await stream.DisposeAsync();
 
                     // should not throw ODE on aborting
-                    stream.AbortRead(1234);
-                    stream.AbortWrite(5675);
+                    stream.Abort(QuicAbortDirection.Read, 1234);
+                    stream.Abort(QuicAbortDirection.Write, 5675);
                 },
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
                     Assert.Equal(1, await stream.ReadAsync(buffer));
                     sem.Release();
 
                     // client will abort both sides, so we will receive the final event
-                    await stream.ShutdownCompleted();
                 }
             );
         }
@@ -717,21 +663,20 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 clientFunction: async connection =>
                 {
-                    QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
 
                     // dispose will flush stream creation on the wire
-                    stream.Dispose();
+                    await stream.DisposeAsync();
 
                     // should not throw ODE on aborting
-                    stream.AbortRead(1234);
-                    stream.AbortWrite(5675);
+                    stream.Abort(QuicAbortDirection.Read, 1234);
+                    stream.Abort(QuicAbortDirection.Write, 5675);
                 },
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
 
                     // client will abort both sides, so we will receive the final event
-                    await stream.ShutdownCompleted();
                 }
             );
         }
@@ -747,12 +692,12 @@ namespace System.Net.Quic.Tests
             await RunBidirectionalClientServer(
                 async clientStream =>
                 {
-                    await clientStream.WriteAsync(new byte[1], endStream: true);
+                    await clientStream.WriteAsync(new byte[1], completeWrites: true);
 
                     // Wait for server to read data
                     await sem.WaitAsync();
 
-                    clientStream.AbortRead(ExpectedErrorCode);
+                    clientStream.Abort(QuicAbortDirection.Read, ExpectedErrorCode);
                 },
                 async serverStream =>
                 {
@@ -777,12 +722,12 @@ namespace System.Net.Quic.Tests
                     {
                         try
                         {
-                            await serverStream.WaitForWriteCompletionAsync();
+                            await serverStream.WritesClosed;
                             waitForAbortTcs.SetException(new Exception("WaitForWriteCompletionAsync didn't throw stream aborted."));
                         }
-                        catch (QuicStreamAbortedException ex)
+                        catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
                         {
-                            waitForAbortTcs.SetResult(ex.ErrorCode);
+                            waitForAbortTcs.SetResult(ex.ApplicationErrorCode.Value);
                         }
                         catch (Exception ex)
                         {
@@ -796,12 +741,6 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteAsync_LocalAbort_Throws()
         {
-            if (IsMockProvider)
-            {
-                // Mock provider does not support aborting pending writes via AbortWrite
-                return;
-            }
-
             const int ExpectedErrorCode = 0xfffffff;
             SemaphoreSlim sem = new SemaphoreSlim(0);
 
@@ -817,9 +756,9 @@ namespace System.Net.Quic.Tests
                     // But in most cases it will still exercise aborting the outstanding write task.
 
                     var writeTask = WriteForever(serverStream, 1024 * 1024);
-                    serverStream.AbortWrite(ExpectedErrorCode);
+                    serverStream.Abort(QuicAbortDirection.Write, ExpectedErrorCode);
 
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.WaitAsync(TimeSpan.FromSeconds(3)));
+                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => writeTask.WaitAsync(TimeSpan.FromSeconds(3)));
                     sem.Release();
                 });
         }
@@ -828,13 +767,15 @@ namespace System.Net.Quic.Tests
         public async Task WaitForWriteCompletionAsync_ServerWriteAborted_Throws()
         {
             const int ExpectedErrorCode = 0xfffffff;
+            SemaphoreSlim sem = new SemaphoreSlim(0);
 
             TaskCompletionSource waitForAbortTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await RunBidirectionalClientServer(
                 async clientStream =>
                 {
-                    await clientStream.WriteAsync(new byte[1], endStream: true);
+                    await clientStream.WriteAsync(new byte[1], completeWrites: true);
+                    await sem.WaitAsync();
                 },
                 async serverStream =>
                 {
@@ -847,7 +788,8 @@ namespace System.Net.Quic.Tests
 
                     Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
 
-                    serverStream.AbortWrite(ExpectedErrorCode);
+                    serverStream.Abort(QuicAbortDirection.Write, ExpectedErrorCode);
+                    sem.Release();
 
                     await waitForAbortTcs.Task;
                     await writeCompletionTask;
@@ -856,10 +798,10 @@ namespace System.Net.Quic.Tests
                     {
                         try
                         {
-                            await serverStream.WaitForWriteCompletionAsync();
+                            await serverStream.WritesClosed;
                             waitForAbortTcs.SetException(new Exception("WaitForWriteCompletionAsync didn't throw stream aborted."));
                         }
-                        catch (QuicOperationAbortedException)
+                        catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
                         {
                             waitForAbortTcs.SetResult();
                         }
@@ -877,7 +819,7 @@ namespace System.Net.Quic.Tests
             await RunBidirectionalClientServer(
                 async clientStream =>
                 {
-                    await clientStream.WriteAsync(new byte[1], endStream: true);
+                    await clientStream.WriteAsync(new byte[1], completeWrites: true);
 
                     int readCount = await clientStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, readCount);
@@ -887,7 +829,7 @@ namespace System.Net.Quic.Tests
                 },
                 async serverStream =>
                 {
-                    var writeCompletionTask = serverStream.WaitForWriteCompletionAsync();
+                    var writeCompletionTask = serverStream.WritesClosed;
 
                     int received = await serverStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
@@ -898,7 +840,7 @@ namespace System.Net.Quic.Tests
 
                     Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
 
-                    serverStream.Shutdown();
+                    serverStream.CompleteWrites();
 
                     await writeCompletionTask;
                 });
@@ -910,7 +852,7 @@ namespace System.Net.Quic.Tests
             await RunBidirectionalClientServer(
                 async clientStream =>
                 {
-                    await clientStream.WriteAsync(new byte[1], endStream: true);
+                    await clientStream.WriteAsync(new byte[1], completeWrites: true);
 
                     int readCount = await clientStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, readCount);
@@ -920,7 +862,7 @@ namespace System.Net.Quic.Tests
                 },
                 async serverStream =>
                 {
-                    var writeCompletionTask = serverStream.WaitForWriteCompletionAsync();
+                    var writeCompletionTask = serverStream.WritesClosed;
 
                     int received = await serverStream.ReadAsync(new byte[1]);
                     Assert.Equal(1, received);
@@ -929,7 +871,7 @@ namespace System.Net.Quic.Tests
 
                     Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
 
-                    await serverStream.WriteAsync(new byte[1], endStream: true);
+                    await serverStream.WriteAsync(new byte[1], completeWrites: true);
 
                     await writeCompletionTask;
                 });
@@ -946,7 +888,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
 
                     var writeCompletionTask = ReleaseOnWriteCompletionAsync();
 
@@ -967,22 +909,22 @@ namespace System.Net.Quic.Tests
                     {
                         try
                         {
-                            await stream.WaitForWriteCompletionAsync();
+                            await stream.WritesClosed;
                             waitForAbortTcs.SetException(new Exception("WaitForWriteCompletionAsync didn't throw connection aborted."));
                         }
-                        catch (QuicConnectionAbortedException ex)
+                        catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
                         {
-                            waitForAbortTcs.SetResult(ex.ErrorCode);
+                            waitForAbortTcs.SetResult(ex.ApplicationErrorCode.Value);
                         }
                     };
                 },
                 clientFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
 
-                    await stream.WriteAsync(new byte[1], endStream: true);
+                    await stream.WriteAsync(new byte[1], completeWrites: true);
 
-                    await stream.WaitForWriteCompletionAsync();
+                    await stream.WritesClosed;
 
                     // Wait for the server to read data before closing the connection
                     await sem.WaitAsync();
@@ -991,18 +933,5 @@ namespace System.Net.Quic.Tests
                 }
             );
         }
-    }
-
-    [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
-    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory>
-    {
-        public QuicStreamTests_MockProvider(ITestOutputHelper output) : base(output) { }
-    }
-
-    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    [Collection(nameof(DisableParallelization))]
-    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
-    {
-        public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
     }
 }

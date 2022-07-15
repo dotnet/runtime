@@ -179,10 +179,7 @@ namespace System.Security.Cryptography.Xml
         {
             if (type == typeof(XmlNodeList) || type.IsSubclassOf(typeof(XmlNodeList)))
             {
-                if (_inputNodeList == null)
-                {
-                    _inputNodeList = Utils.AllDescendantNodes(_containingDocument, true);
-                }
+                _inputNodeList ??= Utils.AllDescendantNodes(_containingDocument, true);
                 return (XmlNodeList)GetOutput();
             }
             else if (type == typeof(XmlDocument) || type.IsSubclassOf(typeof(XmlDocument)))

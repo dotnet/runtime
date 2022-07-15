@@ -426,6 +426,13 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     }
     else
     {
+        if (pThread->PreemptiveGCDisabled())
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                COR_E_EXECUTIONENGINE,
+                W("Invalid Program: attempted to call a COM method from managed code."));
+        }
+
         // Transition to cooperative GC mode before we start setting up the stub.
         GCX_COOP();
 
@@ -665,7 +672,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSStr
         OBJECTHANDLE handle = GetMainWrapper()->GetObjectHandle();
         _UNCHECKED_OBJECTREF obj = NULL;
 
-        // Force retriving the handle without using OBJECTREF and under cooperative mode
+        // Force retrieving the handle without using OBJECTREF and under cooperative mode
         // We only need the value in ETW events and it doesn't matter if it is super accurate
         if (handle != NULL)
             obj = *((_UNCHECKED_OBJECTREF *)(handle));
@@ -727,7 +734,7 @@ void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString &ssMe
         EX_TRY
         {
             ssMessage.AppendPrintf(", RefCount=%u\n", dwRefCountToLog);
-            OutputDebugStringUtf8(ssMessage.GetUTF8NoConvert());
+            OutputDebugStringUtf8(ssMessage.GetUTF8());
         }
         EX_CATCH
         { }
@@ -991,7 +998,7 @@ BOOL SimpleComCallWrapper::CustomQIRespondsToIMarshal()
         {
             newFlags |= enum_CustomQIRespondsToIMarshal;
         }
-        FastInterlockOr((ULONG *)&m_flags, newFlags);
+        InterlockedOr((LONG*)&m_flags, newFlags);
     }
 
     return (m_flags & enum_CustomQIRespondsToIMarshal);
@@ -1034,7 +1041,7 @@ void SimpleComCallWrapper::InitDispatchExInfo()
     pDispExInfo->SynchWithManagedView();
 
     // Swap the lock into the class member in a thread safe manner.
-    if (NULL == FastInterlockCompareExchangePointer(&pAuxData->m_pDispatchExInfo, pDispExInfo.GetValue(), NULL))
+    if (NULL == InterlockedCompareExchangeT(&pAuxData->m_pDispatchExInfo, pDispExInfo.GetValue(), NULL))
         pDispExInfo.SuppressRelease();
 
     // Set the vtable entry to ensure that the next QI call will return immediately.
@@ -2083,7 +2090,7 @@ void ComCallWrapper::ClearHandle()
     WRAPPER_NO_CONTRACT;
 
     OBJECTHANDLE pThis = m_ppThis;
-    if (FastInterlockCompareExchangePointer(&m_ppThis, NULL, pThis) == pThis)
+    if (InterlockedCompareExchangeT(&m_ppThis, NULL, pThis) == pThis)
     {
         DestroyRefcountedHandle(pThis);
     }
@@ -3068,7 +3075,7 @@ LONG ComCallWrapperCache::AddRef()
     }
     CONTRACTL_END;
 
-    LONG i = FastInterlockIncrement(&m_cbRef);
+    LONG i = InterlockedIncrement(&m_cbRef);
     LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Addref %8.8x with %d in loader allocator [%d] %8.8x\n",
         this, i, GetLoaderAllocator()?GetLoaderAllocator()->GetCreationNumber() : 0, GetLoaderAllocator()));
 
@@ -3089,7 +3096,7 @@ LONG ComCallWrapperCache::Release()
     }
     CONTRACTL_END;
 
-    LONG i = FastInterlockDecrement(&m_cbRef);
+    LONG i = InterlockedDecrement(&m_cbRef);
     _ASSERTE(i >= 0);
 
     LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Release %8.8x with %d in loader allocator [%d] %8.8x\n",
@@ -3790,7 +3797,7 @@ void ComMethodTable::LayOutBasicMethodTable()
     //
     // Set the layout complete flag.
     //
-    FastInterlockOr((DWORD *)&m_Flags, enum_LayoutComplete);
+    InterlockedOr((LONG*)&m_Flags, enum_LayoutComplete);
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), this));
 }
@@ -3821,7 +3828,7 @@ DispatchInfo *ComMethodTable::GetDispatchInfo()
 
         ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
         // Swap the lock into the class member in a thread safe manner.
-        if (NULL == FastInterlockCompareExchangePointer(&comMTWriterHolder.GetRW()->m_pDispatchInfo, pDispInfo.GetValue(), NULL))
+        if (NULL == InterlockedCompareExchangeT(&comMTWriterHolder.GetRW()->m_pDispatchInfo, pDispInfo.GetValue(), NULL))
             pDispInfo.SuppressRelease();
 
     }
@@ -4140,7 +4147,7 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
 
     if (isSafe)
     {
-        FastInterlockOr(&m_flags, enum_IsSafeTypeForMarshalling);
+        InterlockedOr((LONG*)&m_flags, enum_IsSafeTypeForMarshalling);
     }
 
     return isSafe;
@@ -4212,7 +4219,7 @@ DefaultInterfaceType ComCallWrapperTemplate::GetDefaultInterface(MethodTable **p
         _ASSERTE(th.IsNull() || !th.IsTypeDesc());
         m_pDefaultItf = th.AsMethodTable();
 
-        FastInterlockOr(&m_flags, enum_DefaultInterfaceTypeComputed | (DWORD)defItfType);
+        InterlockedOr((LONG*)&m_flags, enum_DefaultInterfaceTypeComputed | (DWORD)defItfType);
     }
 
     *ppDefaultItf = m_pDefaultItf;

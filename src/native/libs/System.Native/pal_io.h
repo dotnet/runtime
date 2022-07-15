@@ -759,6 +759,13 @@ PALEXPORT int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64
 PALEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
 
 /**
+* Changes the file flags of the file "fd".
+*
+* Returns 0 for success, -1 for failure. Sets errno for failure.
+*/
+PALEXPORT int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags);
+
+/**
  * Determines if the current platform supports setting UF_HIDDEN (0x8000) flag
  *
  * Returns true (non-zero) if supported, false (zero) if not.

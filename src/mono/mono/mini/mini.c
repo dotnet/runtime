@@ -213,15 +213,14 @@ mono_find_block_region_notry (MonoCompile *cfg, int offset)
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
-	int i;
 
-	for (i = 0; i < header->num_clauses; ++i) {
+	for (guint i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
-		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->data.filter_offset) &&
-		    (offset < (clause->handler_offset)))
+		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) && (GINT_TO_UINT32(offset) >= clause->data.filter_offset) &&
+		    (GINT_TO_UINT32(offset) < (clause->handler_offset)))
 			return ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
 
-		if (MONO_OFFSET_IN_HANDLER (clause, offset)) {
+		if (MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32(offset))) {
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
 				return ((i + 1) << 8) | MONO_REGION_FINALLY | clause->flags;
 			else if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT)
@@ -250,7 +249,7 @@ mono_get_block_region_notry (MonoCompile *cfg, int region)
 		 * This can happen if a try clause is nested inside a finally clause.
 		 */
 		int clause_index = (region >> 8) - 1;
-		g_assert (clause_index >= 0 && clause_index < header->num_clauses);
+		g_assert (clause_index >= 0 && GINT_TO_UINT(clause_index) < header->num_clauses);
 
 		region = mono_find_block_region_notry (cfg, header->clauses [clause_index].try_offset);
 	}
@@ -613,11 +612,11 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 static void
 set_vreg_to_inst (MonoCompile *cfg, int vreg, MonoInst *inst)
 {
-	if (vreg >= cfg->vreg_to_inst_len) {
+	if (GINT_TO_UINT32(vreg) >= cfg->vreg_to_inst_len) {
 		MonoInst **tmp = cfg->vreg_to_inst;
 		int size = cfg->vreg_to_inst_len;
 
-		while (vreg >= cfg->vreg_to_inst_len)
+		while (GINT_TO_UINT32(vreg) >= cfg->vreg_to_inst_len)
 			cfg->vreg_to_inst_len = cfg->vreg_to_inst_len ? cfg->vreg_to_inst_len * 2 : 32;
 		cfg->vreg_to_inst = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * cfg->vreg_to_inst_len);
 		if (size)
@@ -633,7 +632,7 @@ MonoInst*
 mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, int vreg)
 {
 	MonoInst *inst;
-	int num = cfg->num_varinfo;
+	guint num = cfg->num_varinfo;
 	gboolean regpair;
 
 	type = mini_get_underlying_type (type);
@@ -792,11 +791,11 @@ mini_get_int_to_float_spill_area (MonoCompile *cfg)
 void
 mono_mark_vreg_as_ref (MonoCompile *cfg, int vreg)
 {
-	if (vreg >= cfg->vreg_is_ref_len) {
+	if (GINT_TO_UINT32(vreg) >= cfg->vreg_is_ref_len) {
 		gboolean *tmp = cfg->vreg_is_ref;
 		int size = cfg->vreg_is_ref_len;
 
-		while (vreg >= cfg->vreg_is_ref_len)
+		while (GINT_TO_UINT32(vreg) >= cfg->vreg_is_ref_len)
 			cfg->vreg_is_ref_len = cfg->vreg_is_ref_len ? cfg->vreg_is_ref_len * 2 : 32;
 		cfg->vreg_is_ref = (gboolean *)mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * cfg->vreg_is_ref_len);
 		if (size)
@@ -808,11 +807,11 @@ mono_mark_vreg_as_ref (MonoCompile *cfg, int vreg)
 void
 mono_mark_vreg_as_mp (MonoCompile *cfg, int vreg)
 {
-	if (vreg >= cfg->vreg_is_mp_len) {
+	if (GINT_TO_UINT32(vreg) >= cfg->vreg_is_mp_len) {
 		gboolean *tmp = cfg->vreg_is_mp;
 		int size = cfg->vreg_is_mp_len;
 
-		while (vreg >= cfg->vreg_is_mp_len)
+		while (GINT_TO_UINT32(vreg) >= cfg->vreg_is_mp_len)
 			cfg->vreg_is_mp_len = cfg->vreg_is_mp_len ? cfg->vreg_is_mp_len * 2 : 32;
 		cfg->vreg_is_mp = (gboolean *)mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * cfg->vreg_is_mp_len);
 		if (size)
@@ -973,7 +972,7 @@ compare_by_interval_start_pos_func (gconstpointer a, gconstpointer b)
 static gint32*
 mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
 {
-	int i, slot, offset, size;
+	int slot, offset, size;
 	guint32 align;
 	MonoMethodVar *vmv;
 	MonoInst *inst;
@@ -992,10 +991,10 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 	nvtypes = 0;
 
 	offsets = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (gint32) * cfg->num_varinfo);
-	for (i = 0; i < cfg->num_varinfo; ++i)
+	for (guint i = 0; i < cfg->num_varinfo; ++i)
 		offsets [i] = -1;
 
-	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+	for (guint i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		inst = cfg->varinfo [i];
 		vmv = MONO_VARINFO (cfg, i);
 
@@ -1009,7 +1008,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 
 	/* Sanity check */
 	/*
-	i = 0;
+	int i = 0;
 	for (unhandled = vars; unhandled; unhandled = unhandled->next) {
 		MonoMethodVar *current = unhandled->data;
 
@@ -1062,6 +1061,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		case MONO_TYPE_VALUETYPE:
 			if (!vtype_stack_slots)
 				vtype_stack_slots = (StackSlotInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * vtype_stack_slots_size);
+			int i;
 			for (i = 0; i < nvtypes; ++i)
 				if (t->data.klass == vtype_stack_slots [i].vtype)
 					break;
@@ -1243,7 +1243,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			 */
 			if (MONO_TYPE_ISSTRUCT (t)) {
 				align = MAX (align, sizeof (target_mgreg_t));
-				align = MAX (align, mono_class_min_align (mono_class_from_mono_type_internal (t)));
+				align = MAX (align, GINT32_TO_UINT32(mono_class_min_align (mono_class_from_mono_type_internal (t))));
 			}
 
 			if (backward) {
@@ -1266,11 +1266,11 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		offsets [vmv->idx] = slot;
 	}
 	g_list_free (vars);
-	for (i = 0; i < MONO_TYPE_PINNED; ++i) {
+	for (guint i = 0; i < MONO_TYPE_PINNED; ++i) {
 		if (scalar_stack_slots [i].active)
 			g_list_free (scalar_stack_slots [i].active);
 	}
-	for (i = 0; i < nvtypes; ++i) {
+	for (int i = 0; i < nvtypes; ++i) {
 		if (vtype_stack_slots [i].active)
 			g_list_free (vtype_stack_slots [i].active);
 	}
@@ -1293,7 +1293,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 gint32*
 mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
 {
-	int i, slot, offset, size;
+	int slot, offset, size;
 	guint32 align;
 	MonoMethodVar *vmv;
 	MonoInst *inst;
@@ -1313,10 +1313,10 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 	nvtypes = 0;
 
 	offsets = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (gint32) * cfg->num_varinfo);
-	for (i = 0; i < cfg->num_varinfo; ++i)
+	for (guint i = 0; i < cfg->num_varinfo; ++i)
 		offsets [i] = -1;
 
-	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+	for (guint i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		inst = cfg->varinfo [i];
 		vmv = MONO_VARINFO (cfg, i);
 
@@ -1369,6 +1369,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		case MONO_TYPE_VALUETYPE:
 			if (!vtype_stack_slots)
 				vtype_stack_slots = (StackSlotInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * vtype_stack_slots_size);
+			int i;
 			for (i = 0; i < nvtypes; ++i)
 				if (t->data.klass == vtype_stack_slots [i].vtype)
 					break;
@@ -1496,7 +1497,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			 */
 			if (MONO_TYPE_ISSTRUCT (t)) {
 				align = MAX (align, sizeof (target_mgreg_t));
-				align = MAX (align, mono_class_min_align (mono_class_from_mono_type_internal (t)));
+				align = MAX (align, GINT32_TO_UINT32(mono_class_min_align (mono_class_from_mono_type_internal (t))));
 				/*
 				 * Align the size too so the code generated for passing vtypes in
 				 * registers doesn't overwrite random locals.
@@ -1523,11 +1524,11 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		offsets [vmv->idx] = slot;
 	}
 	g_list_free (vars);
-	for (i = 0; i < MONO_TYPE_PINNED; ++i) {
+	for (guint i = 0; i < MONO_TYPE_PINNED; ++i) {
 		if (scalar_stack_slots [i].active)
 			g_list_free (scalar_stack_slots [i].active);
 	}
-	for (i = 0; i < nvtypes; ++i) {
+	for (int i = 0; i < nvtypes; ++i) {
 		if (vtype_stack_slots [i].active)
 			g_list_free (vtype_stack_slots [i].active);
 	}
@@ -1585,7 +1586,6 @@ mini_register_opcode_emulation (int opcode, MonoJitICallInfo *info, const char *
 static void
 print_dfn (MonoCompile *cfg)
 {
-	int i, j;
 	char *code;
 	MonoBasicBlock *bb;
 	MonoInst *c;
@@ -1596,7 +1596,7 @@ print_dfn (MonoCompile *cfg)
 		g_free (method_name);
 	}
 
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		bb = cfg->bblocks [i];
 		/*if (bb->cil_code) {
 			char* code1, *code2;
@@ -1618,11 +1618,11 @@ print_dfn (MonoCompile *cfg)
 		}
 
 		g_print ("\tprev:");
-		for (j = 0; j < bb->in_count; ++j) {
+		for (gint16 j = 0; j < bb->in_count; ++j) {
 			g_print (" BB%d", bb->in_bb [j]->block_num);
 		}
 		g_print ("\t\tsucc:");
-		for (j = 0; j < bb->out_count; ++j) {
+		for (gint16 j = 0; j < bb->out_count; ++j) {
 			g_print (" BB%d", bb->out_bb [j]->block_num);
 		}
 		g_print ("\n\tidom: BB%d\n", bb->idom? bb->idom->block_num: -1);
@@ -2246,7 +2246,7 @@ static void mono_bb_ordering (MonoCompile *cfg)
 	 * for more information see https://github.com/mono/mono/issues/9298 */
 	mono_memory_barrier ();
 #endif
-	g_assertf (cfg->num_bblocks >= dfn, "cfg->num_bblocks=%d, dfn=%d\n", cfg->num_bblocks, dfn);
+	g_assertf (cfg->num_bblocks >= GINT_TO_UINT(dfn), "cfg->num_bblocks=%d, dfn=%d\n", cfg->num_bblocks, dfn);
 
 	if (cfg->num_bblocks != dfn + 1) {
 		MonoBasicBlock *bb;
@@ -2601,8 +2601,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	}
 
 	if (G_UNLIKELY (cfg->verbose_level >= 4)) {
-		int i;
-		for (i = 0; i < jinfo->num_clauses; i++) {
+		for (guint32 i = 0; i < jinfo->num_clauses; i++) {
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 			ptrdiff_t start = (guint8*)ei->try_start - cfg->native_code;
 			ptrdiff_t end = (guint8*)ei->try_end - cfg->native_code;
@@ -2646,20 +2645,19 @@ is_gsharedvt_method (MonoMethod *method)
 {
 	MonoGenericContext *context;
 	MonoGenericInst *inst;
-	int i;
 
 	if (!method->is_inflated)
 		return FALSE;
 	context = mono_method_get_context (method);
 	inst = context->class_inst;
 	if (inst) {
-		for (i = 0; i < inst->type_argc; ++i)
+		for (guint i = 0; i < inst->type_argc; ++i)
 			if (mini_is_gsharedvt_gparam (inst->type_argv [i]))
 				return TRUE;
 	}
 	inst = context->method_inst;
 	if (inst) {
-		for (i = 0; i < inst->type_argc; ++i)
+		for (guint i = 0; i < inst->type_argc; ++i)
 			if (mini_is_gsharedvt_gparam (inst->type_argv [i]))
 				return TRUE;
 	}
@@ -3261,6 +3259,18 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->gsctx_context = context;
 
 		cfg->gsharedvt = TRUE;
+		if (cfg->llvm_only) {
+			/*
+			 * Enable a minimal version of gsharedvt where only
+			 * methods which don't really depend on their generic
+			 * arguments are supported, like List<T>.get_Count ().
+			 * - no signatures or locals with variable length types
+			 * - no calls with signatures with variable length types
+			 * etc.
+			 */
+			cfg->gsharedvt_min = TRUE;
+		}
+
 		if (!cfg->llvm_only) {
 			cfg->disable_llvm = TRUE;
 			cfg->exception_message = g_strdup ("gsharedvt");
@@ -3294,7 +3304,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		return cfg;
 	}
 
-	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && !cfg->gsharedvt && header->num_clauses) {
+	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
 		cfg->deopt = TRUE;
 		/* Can't reconstruct inlined state */
 		cfg->disable_inline = TRUE;
@@ -3758,6 +3768,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->init_method_rgctx_ins = NULL;
 		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
 		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
+		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
 	}
 
 	if (cfg->got_var) {
@@ -4404,7 +4415,7 @@ mini_class_is_system_array (MonoClass *klass)
  *
  *   query pagesize used to determine if an implicit NRE can be used
  */
-int
+guint
 mono_target_pagesize (void)
 {
 	/* We could query the system's pagesize via mono_pagesize (), however there

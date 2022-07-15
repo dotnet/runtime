@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -13,9 +15,11 @@ namespace System.Formats.Tar
         private readonly Dictionary<uint, string> _userIdentifiers = new Dictionary<uint, string>();
         private readonly Dictionary<uint, string> _groupIdentifiers = new Dictionary<uint, string>();
 
-        // Unix specific implementation of the method that reads an entry from disk and writes it into the archive stream.
-        partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
+        // Creates an entry for writing using the specified path and entryName. If this is being called from an async method, FileOptions should contain Asynchronous.
+        private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
         {
+            Debug.Assert(!string.IsNullOrEmpty(fullPath));
+
             Interop.Sys.FileStatus status = default;
             status.Mode = default;
             status.Dev = default;
@@ -58,11 +62,11 @@ namespace System.Formats.Tar
                 entry._header._devMinor = (int)minor;
             }
 
-            entry._header._mTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.MTime);
-            entry._header._aTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.ATime);
-            entry._header._cTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(status.CTime);
+            entry._header._mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.MTime);
+            entry._header._aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.ATime);
+            entry._header._cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.CTime);
 
-            entry._header._mode = (status.Mode & 4095); // First 12 bits
+            entry._header._mode = status.Mode & 4095; // First 12 bits
 
             // Uid and UName
             entry._header._uid = (int)status.Uid;
@@ -90,14 +94,19 @@ namespace System.Formats.Tar
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = File.OpenRead(fullPath);
+
+                FileStreamOptions options = new()
+                {
+                    Mode = FileMode.Open,
+                    Access = FileAccess.Read,
+                    Share = FileShare.Read,
+                    Options = fileOptions
+                };
+
+                entry._header._dataStream = new FileStream(fullPath, options);
             }
 
-            WriteEntry(entry);
-            if (entry._header._dataStream != null)
-            {
-                entry._header._dataStream.Dispose();
-            }
+            return entry;
         }
     }
 }

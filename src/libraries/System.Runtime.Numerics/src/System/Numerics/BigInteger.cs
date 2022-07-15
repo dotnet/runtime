@@ -1084,12 +1084,10 @@ namespace System.Numerics
             if (_bits is null)
                 return _sign;
 
-            int hash = _sign;
-            for (int iv = _bits.Length; --iv >= 0;)
-                hash = unchecked((int)CombineHash((uint)hash, _bits[iv]));
-            return hash;
-
-            static uint CombineHash(uint u1, uint u2) => ((u1 << 7) | (u1 >> 25)) ^ u2;
+            HashCode hash = default;
+            hash.AddBytes(MemoryMarshal.AsBytes(_bits.AsSpan()));
+            hash.Add(_sign);
+            return hash.ToHashCode();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -2693,7 +2691,7 @@ namespace System.Numerics
                                 : bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
 
                 BigIntegerCalculator.Square(left, bits);
-                result = new BigInteger(bits, negative: false);
+                result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
             }
             else if (left.Length < right.Length)
             {
@@ -3112,13 +3110,6 @@ namespace System.Numerics
                 Debug.Assert(_sign > int.MinValue);
             }
         }
-
-        //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static BigInteger IAdditionOperators<BigInteger, BigInteger, BigInteger>.operator checked +(BigInteger left, BigInteger right) => left + right;
 
         //
         // IAdditiveIdentity
@@ -3828,6 +3819,9 @@ namespace System.Numerics
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static BigInteger IBinaryNumber<BigInteger>.AllBitsSet => MinusOne;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(BigInteger value) => value.IsPowerOfTwo;
 
@@ -3850,39 +3844,11 @@ namespace System.Numerics
         }
 
         //
-        // IDecrementOperators
-        //
-
-        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        static BigInteger IDecrementOperators<BigInteger>.operator checked --(BigInteger value) => --value;
-
-        //
-        // IDivisionOperators
-        //
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static BigInteger IDivisionOperators<BigInteger, BigInteger, BigInteger>.operator checked /(BigInteger left, BigInteger right) => left / right;
-
-        //
-        // IIncrementOperators
-        //
-
-        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        static BigInteger IIncrementOperators<BigInteger>.operator checked ++(BigInteger value) => ++value;
-
-        //
         // IMultiplicativeIdentity
         //
 
         /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
         static BigInteger IMultiplicativeIdentity<BigInteger, BigInteger>.MultiplicativeIdentity => One;
-
-        //
-        // IMultiplyOperators
-        //
-
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static BigInteger IMultiplyOperators<BigInteger, BigInteger, BigInteger>.operator checked *(BigInteger left, BigInteger right) => left * right;
 
         //
         // INumber
@@ -3967,6 +3933,63 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
         static int INumberBase<BigInteger>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BigInteger CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            BigInteger result;
+
+            if (typeof(TOther) == typeof(BigInteger))
+            {
+                result = (BigInteger)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<BigInteger>.IsCanonical(BigInteger value) => true;
@@ -4101,7 +4124,11 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromChecked<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromChecked<TOther>(TOther value, out BigInteger result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out BigInteger result)
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -4214,7 +4241,11 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out BigInteger result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out BigInteger result)
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -4327,7 +4358,11 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out BigInteger result)
+        static bool INumberBase<BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out BigInteger result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out BigInteger result)
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -5156,7 +5191,7 @@ namespace System.Numerics
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
         public static BigInteger operator >>>(BigInteger value, int shiftAmount)
         {
             value.AssertValid();
@@ -5255,19 +5290,5 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out BigInteger result) => TryParse(s, NumberStyles.Integer, provider, out result);
-
-        //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static BigInteger ISubtractionOperators<BigInteger, BigInteger, BigInteger>.operator checked -(BigInteger left, BigInteger right) => left - right;
-
-        //
-        // IUnaryNegationOperators
-        //
-
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static BigInteger IUnaryNegationOperators<BigInteger, BigInteger>.operator checked -(BigInteger value) => -value;
     }
 }

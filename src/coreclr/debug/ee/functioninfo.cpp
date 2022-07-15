@@ -1518,6 +1518,9 @@ DebuggerJitInfo * DebuggerMethodInfo::FindJitInfo(MethodDesc * pMD,
     }
     CONTRACTL_END;
 
+#ifdef TARGET_ARM
+    addrNativeStartAddr = addrNativeStartAddr|THUMB_CODE;
+#endif
 
     DebuggerJitInfo * pCheck = m_latestJitInfo;
     while (pCheck != NULL)

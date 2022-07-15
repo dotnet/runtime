@@ -13,18 +13,8 @@ namespace System.Configuration
         private XmlNode _valueXml;
         private bool _isModified;
 
-        protected internal override ConfigurationPropertyCollection Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new ConfigurationPropertyCollection();
-                }
-
-                return _properties;
-            }
-        }
+        protected internal override ConfigurationPropertyCollection Properties =>
+            _properties ??= new ConfigurationPropertyCollection();
 
         public XmlNode ValueXml
         {

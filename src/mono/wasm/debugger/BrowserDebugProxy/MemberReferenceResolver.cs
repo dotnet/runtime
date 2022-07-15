@@ -77,54 +77,73 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<(JObject containerObject, string remaining)> ResolveStaticMembersInStaticTypes(string varName, CancellationToken token)
+        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> expressionParts, CancellationToken token)
         {
-            string classNameToFind = "";
-            string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
-            var store = await proxy.LoadStore(sessionId, token);
+            var store = await proxy.LoadStore(sessionId, false, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
             if (methodInfo == null)
                 return (null, null);
 
-            int typeId = -1;
-            for (int i = 0; i < parts.Length; i++)
+            string[] parts = expressionParts.ToArray();
+
+            string fullName = methodInfo.IsAsync == 0 ? methodInfo.TypeInfo.FullName : StripAsyncPartOfFullName(methodInfo.TypeInfo.FullName);
+            string[] fullNameParts = fullName.Split(".", StringSplitOptions.TrimEntries).ToArray();
+            for (int i = 0; i < fullNameParts.Length; i++)
             {
-                string part = parts[i];
+                string[] fullNamePrefix = fullNameParts[..^i];
+                var (memberObject, remaining) = await FindStaticMemberMatchingParts(parts, fullNamePrefix);
+                if (memberObject != null)
+                    return (memberObject, remaining);
+            }
+            return await FindStaticMemberMatchingParts(parts);
 
-                if (typeId != -1)
+            async Task<(JObject, ArraySegment<string>)> FindStaticMemberMatchingParts(string[] parts, string[] fullNameParts = null)
+            {
+                string classNameToFind = fullNameParts == null ? "" : string.Join(".", fullNameParts);
+                int typeId = -1;
+                for (int i = 0; i < parts.Length; i++)
                 {
-                    JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
-                    if (memberObject != null)
+                    if (!string.IsNullOrEmpty(methodInfo.TypeInfo.Namespace))
                     {
-                        string remaining = null;
-                        if (i < parts.Length - 1)
-                            remaining = string.Join('.', parts[(i + 1)..]);
+                        typeId = await FindStaticTypeId(methodInfo.TypeInfo.Namespace + "." + classNameToFind);
+                        if (typeId != -1)
+                            continue;
+                    }
+                    typeId = await FindStaticTypeId(classNameToFind);
 
-                        return (memberObject, remaining);
+                    string part = parts[i];
+                    if (typeId != -1)
+                    {
+                        JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
+                        if (memberObject != null)
+                        {
+                            ArraySegment<string> remaining = null;
+                            if (i < parts.Length - 1)
+                                remaining = parts[i..];
+                            return (memberObject, remaining);
+                        }
+
+                        // Didn't find a member named `part` in `typeId`.
+                        // Could be a nested type. Let's continue the search
+                        // with `part` added to the type name
+
+                        typeId = -1;
                     }
 
-                    // Didn't find a member named `part` in `typeId`.
-                    // Could be a nested type. Let's continue the search
-                    // with `part` added to the type name
-
-                    typeId = -1;
+                    if (classNameToFind.Length > 0)
+                        classNameToFind += ".";
+                    classNameToFind += part;
                 }
-
-                if (classNameToFind.Length > 0)
-                    classNameToFind += ".";
-                classNameToFind += part;
-
-                if (!string.IsNullOrEmpty(methodInfo?.TypeInfo?.Namespace))
-                {
-                    typeId = await FindStaticTypeId(methodInfo?.TypeInfo?.Namespace + "." + classNameToFind);
-                    if (typeId != -1)
-                        continue;
-                }
-                typeId = await FindStaticTypeId(classNameToFind);
+                return (null, null);
             }
 
-            return (null, null);
+            // async function full name has a form: namespaceName.<currentFrame'sMethodName>d__integer
+            static string StripAsyncPartOfFullName(string fullName)
+                => fullName.IndexOf(".<") is int index && index < 0
+                    ? fullName
+                    : fullName.Substring(0, index);
+
 
             async Task<JObject> FindStaticMemberInType(string classNameToFind, string name, int typeId)
             {
@@ -139,11 +158,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         isInitialized = await context.SdbAgent.TypeInitialize(typeId, token);
                     }
-                    var staticFieldValue = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
-                    var valueRet = await GetValueFromObject(staticFieldValue, token);
-                    // we need the full name here
-                    valueRet["className"] = classNameToFind;
-                    return valueRet;
+                    try
+                    {
+                        var staticFieldValue = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
+                        var valueRet = await GetValueFromObject(staticFieldValue, token);
+                        // we need the full name here
+                        valueRet["className"] = classNameToFind;
+                        return valueRet;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, $"Failed to get value of field {field.Name} on {classNameToFind} " +
+                            $"because {field.Name} is not a static member of {classNameToFind}.");
+                    }
+                    return null;
                 }
 
                 var methodId = await context.SdbAgent.GetPropertyMethodIdByName(typeId, name, token);
@@ -151,8 +179,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     using var commandParamsObjWriter = new MonoBinaryWriter();
                     commandParamsObjWriter.Write(0); //param count
-                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
-                    return await GetValueFromObject(retMethod, token);
+                    try
+                    {
+                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
+                        return await GetValueFromObject(retMethod, token);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, $"Failed to invoke getter of id={methodId} on {classNameToFind}.{name} " +
+                            $"because {name} is not a static member of {classNameToFind}.");
+                    }
                 }
                 return null;
             }
@@ -177,6 +213,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         // Checks Locals, followed by `this`
         public async Task<JObject> Resolve(string varName, CancellationToken token)
         {
+            // question mark at the end of expression is invalid
+            if (varName[^1] == '?')
+                throw new ReturnAsErrorException($"Expected expression.", "ReferenceError");
+
             //has method calls
             if (varName.Contains('('))
                 return null;
@@ -187,18 +227,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (scopeCache.ObjectFields.TryGetValue(varName, out JObject valueRet))
                 return await GetValueFromObject(valueRet, token);
 
-            string[] parts = varName.Split(".");
-            if (parts.Length == 0)
-                return null;
+            string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
+            if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
+                throw new ReturnAsErrorException($"Failed to resolve expression: {varName}", "ReferenceError");
 
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
+            bool throwOnNullReference = parts[0][^1] != '?';
             if (retObject != null && parts.Length > 1)
-                retObject = await ResolveAsInstanceMember(string.Join('.', parts[1..]), retObject);
+                retObject = await ResolveAsInstanceMember(parts, retObject, throwOnNullReference);
 
             if (retObject == null)
             {
-                (retObject, string remaining) = await ResolveStaticMembersInStaticTypes(varName, token);
-                if (!string.IsNullOrEmpty(remaining))
+                (retObject, ArraySegment<string> remaining) = await ResolveStaticMembersInStaticTypes(parts, token);
+                if (remaining != null && remaining.Count != 0)
                 {
                     if (retObject.IsNullValuedObject())
                     {
@@ -207,7 +248,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
-                        retObject = await ResolveAsInstanceMember(remaining, retObject);
+                        retObject = await ResolveAsInstanceMember(remaining, retObject, throwOnNullReference);
                     }
                 }
             }
@@ -217,7 +258,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             async Task<JObject> ResolveAsLocalOrThisMember(string name)
             {
-                var nameTrimmed = name.Trim();
                 if (scopeCache.Locals.Count == 0 && !localsFetched)
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
@@ -226,7 +266,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     localsFetched = true;
                 }
 
-                if (scopeCache.Locals.TryGetValue(nameTrimmed, out JObject obj))
+                // remove null-condition, otherwise TryGet by name fails
+                if (name[^1] == '?' || name[^1] == '!')
+                    name = name.Remove(name.Length - 1);
+
+                if (scopeCache.Locals.TryGetValue(name, out JObject obj))
                     return obj["value"]?.Value<JObject>();
 
                 if (!scopeCache.Locals.TryGetValue("this", out JObject objThis))
@@ -242,54 +286,74 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
                 }
 
-                JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == nameTrimmed);
+                JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == name);
                 if (objRet != null)
                     return await GetValueFromObject(objRet, token);
 
                 return null;
             }
 
-            async Task<JObject> ResolveAsInstanceMember(string expr, JObject baseObject)
+            async Task<JObject> ResolveAsInstanceMember(ArraySegment<string> parts, JObject baseObject, bool throwOnNullReference)
             {
                 JObject resolvedObject = baseObject;
-                string[] parts = expr.Split('.');
-                for (int i = 0; i < parts.Length; i++)
+                // parts[0] - name of baseObject
+                for (int i = 1; i < parts.Count; i++)
                 {
-                    string partTrimmed = parts[i].Trim();
-                    if (partTrimmed.Length == 0)
+                    string part = parts[i];
+                    if (part.Length == 0)
                         return null;
+
+                    bool hasCurrentPartNullCondition = part[^1] == '?';
+
+                    // current value of resolvedObject is on parts[i - 1]
+                    if (resolvedObject.IsNullValuedObject())
+                    {
+                        // trying null.$member
+                        if (throwOnNullReference)
+                            throw new ReturnAsErrorException($"Expression threw NullReferenceException trying to access \"{part}\" on a null-valued object.", "ReferenceError");
+
+                        if (i == parts.Count - 1)
+                        {
+                            // this is not ideal, it returns the last object
+                            // that had objectId and was null-valued,
+                            // so the class/description of object are not of the last part
+                            return resolvedObject;
+                        }
+
+                        // check if null condition is correctly applied: should we throw or return null-object
+                        throwOnNullReference = !hasCurrentPartNullCondition;
+                        continue;
+                    }
 
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
-                        return null;
+                    {
+                        if (resolvedObject["type"].Value<string>() == "string")
+                            throw new ReturnAsErrorException($"String properties evaluation is not supported yet.", "ReferenceError"); // Issue #66823
+                        if (!throwOnNullReference)
+                            throw new ReturnAsErrorException($"Operation '?' not allowed on primitive type - '{parts[i - 1]}'", "ReferenceError");
+                        throw new ReturnAsErrorException($"Cannot find member '{part}' on a primitive type", "ReferenceError");
+                    }
 
-                    ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, null, token);
+                    var args = JObject.FromObject(new { forDebuggerDisplayAttribute = true });
+                    ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     if (valueOrError.IsError)
                     {
                         logger.LogDebug($"ResolveAsInstanceMember failed with : {valueOrError.Error}");
                         return null;
                     }
 
-                    JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
+                    if (part[^1] == '!' || part[^1] == '?')
+                        part = part.Remove(part.Length - 1);
+
+                    JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == part);
                     if (objRet == null)
                         return null;
 
                     resolvedObject = await GetValueFromObject(objRet, token);
                     if (resolvedObject == null)
                         return null;
-
-                    if (resolvedObject.IsNullValuedObject())
-                    {
-                        if (i < parts.Length - 1)
-                        {
-                            // there is some parts remaining, and can't
-                            // do null.$remaining
-                            return null;
-                        }
-
-                        return resolvedObject;
-                    }
+                    throwOnNullReference = !hasCurrentPartNullCondition;
                 }
-
                 return resolvedObject;
             }
         }

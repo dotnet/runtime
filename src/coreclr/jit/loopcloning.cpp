@@ -456,14 +456,17 @@ JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* LoopCloneContext::Ensur
 {
     if (blockConditions[loopNum] == nullptr)
     {
-        blockConditions[loopNum] =
-            new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>(alloc, condBlocks);
+        blockConditions[loopNum] = new (alloc) JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>(alloc);
     }
+
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = blockConditions[loopNum];
-    for (unsigned i = 0; i < condBlocks; ++i)
+    // Iterate backwards to make sure the expand array stack reallocs just once here.
+    unsigned prevSize = levelCond->Size();
+    for (unsigned i = condBlocks; i > prevSize; i--)
     {
-        levelCond->Set(i, new (alloc) JitExpandArrayStack<LC_Condition>(alloc));
+        levelCond->Set(i - 1, new (alloc) JitExpandArrayStack<LC_Condition>(alloc));
     }
+
     return levelCond;
 }
 
@@ -1724,6 +1727,25 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
+    // Reject cloning if this is a mid-entry loop and the entry has non-loop predecessors other than its head.
+    // This loop may be part of a larger looping construct that we didn't recognize.
+    //
+    // We should really fix this in optCanonicalizeLoop.
+    //
+    if (!loop.lpIsTopEntry())
+    {
+        for (BasicBlock* const entryPred : loop.lpEntry->PredBlocks())
+        {
+            if ((entryPred != loop.lpHead) && !loop.lpContains(entryPred))
+            {
+                JITDUMP("Loop cloning: rejecting loop " FMT_LP
+                        ". Is not top entry, and entry has multiple non-loop preds.\n",
+                        loopInd);
+                return false;
+            }
+        }
+    }
+
     // We've previously made a decision whether to have separate return epilogs, or branch to one.
     // There's a GCInfo limitation in the x86 case, so that there can be no more than SET_EPILOGCNT_MAX separate
     // epilogs.  Other architectures have a limit of 4 here for "historical reasons", but this should be revisited
@@ -2418,7 +2440,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     result->useBlock = compCurBB;
     result->rank++;
 
-    // If the array element type (saved from the GT_INDEX node during morphing) is anything but
+    // If the array element type (saved from the GT_INDEX_ADDR node during morphing) is anything but
     // TYP_REF, then it must the final level of jagged array.
     assert(arrBndsChk->gtInxType != TYP_VOID);
     *topLevelIsFinal = (arrBndsChk->gtInxType != TYP_REF);
@@ -2484,7 +2506,7 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
 //
 //  Arguments:
 //      tree        the tree to be checked if it is an array [][][] operation.
-//      result      OUT: the extracted GT_INDEX information.
+//      result      OUT: the extracted GT_INDEX_ADDR information.
 //
 //  Return Value:
 //      Returns true if array index can be extracted, else, return false. "rank" field in
@@ -2499,99 +2521,103 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
 //      Note that the array expression is implied by the array bounds check under the COMMA, and the array bounds
 //      checks is what is parsed from the morphed tree; the array addressing expression is not parsed.
 //      However, the array bounds checks are not quite sufficient because of the way "morph" alters the trees.
-//      Specifically, we normally see a COMMA node with a LHS of the morphed array INDEX expression and RHS
+//      Specifically, we normally see a COMMA node with a LHS of the morphed array INDEX_ADDR expression and RHS
 //      of the bounds check. E.g., for int[][], a[i][j] we have a pre-morph tree:
 //
-// \--*  INDEX     int
-//   +--*  INDEX     ref
-//   |  +--*  LCL_VAR   ref    V00 loc0
-//   |  \--*  LCL_VAR   int    V02 loc2
-//   \--*  LCL_VAR   int    V03 loc3
+// \--*  IND       int
+//    \--*  INDEX_ADDR byref int[]
+//       +--*  IND       ref
+//       |  \--*  INDEX_ADDR byref ref[]
+//       |     +--*  LCL_VAR   ref    V00 arg0
+//       |     \--*  LCL_VAR   int    V01 arg1
+//       \--*  LCL_VAR   int    V02 arg2
 //
 //      and post-morph tree:
 //
 // \--*  COMMA     int
 //    +--*  ASG       ref
-//    |  +--*  LCL_VAR   ref    V19 tmp12
+//    |  +--*  LCL_VAR   ref    V04 tmp1
 //    |  \--*  COMMA     ref
 //    |     +--*  BOUNDS_CHECK_Rng void
-//    |     |  +--*  LCL_VAR   int    V02 loc2
+//    |     |  +--*  LCL_VAR   int    V01 arg1
 //    |     |  \--*  ARR_LENGTH int
-//    |     |     \--*  LCL_VAR   ref    V00 loc0
+//    |     |     \--*  LCL_VAR   ref    V00 arg0
 //    |     \--*  IND       ref
-//    |        \--*  ADD       byref
-//    |           +--*  LCL_VAR   ref    V00 loc0
-//    |           \--*  ADD       long
-//    |              +--*  LSH       long
-//    |              |  +--*  CAST      long <- uint
-//    |              |  |  \--*  LCL_VAR   int    V02 loc2
-//    |              |  \--*  CNS_INT   long   3
-//    |              \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//    |        \--*  ARR_ADDR  byref ref[]
+//    |           \--*  ADD       byref
+//    |              +--*  LCL_VAR   ref    V00 arg0
+//    |              \--*  ADD       long
+//    |                 +--*  LSH       long
+//    |                 |  +--*  CAST      long <- uint
+//    |                 |  |  \--*  LCL_VAR   int    V01 arg1
+//    |                 |  \--*  CNS_INT   long   3
+//    |                 \--*  CNS_INT   long   16
 //    \--*  COMMA     int
 //       +--*  BOUNDS_CHECK_Rng void
-//       |  +--*  LCL_VAR   int    V03 loc3
+//       |  +--*  LCL_VAR   int    V02 arg2
 //       |  \--*  ARR_LENGTH int
-//       |     \--*  LCL_VAR   ref    V19 tmp12
+//       |     \--*  LCL_VAR   ref    V04 tmp1
 //       \--*  IND       int
-//          \--*  ADD       byref
-//             +--*  LCL_VAR   ref    V19 tmp12
-//             \--*  ADD       long
-//                +--*  LSH       long
-//                |  +--*  CAST      long <- uint
-//                |  |  \--*  LCL_VAR   int    V03 loc3
-//                |  \--*  CNS_INT   long   2
-//                \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//          \--*  ARR_ADDR  byref int[]
+//             \--*  ADD       byref
+//                +--*  LCL_VAR   ref    V04 tmp1
+//                \--*  ADD       long
+//                   +--*  LSH       long
+//                   |  +--*  CAST      long <- uint
+//                   |  |  \--*  LCL_VAR   int    V02 arg2
+//                   |  \--*  CNS_INT   long   2
+//                   \--*  CNS_INT   long   16
 //
 //      However, for an array of structs that contains an array field, e.g. ValueTuple<int[], int>[], expression
 //      a[i].Item1[j],
 //
-// \--*  INDEX     int
-//    +--*  FIELD     ref    Item1
-//       |  \--*  ADDR      byref
-//       |     \--*  INDEX     struct<System.ValueTuple`2[System.Int32[],System.Int32], 16>
-//       |        +--*  LCL_VAR   ref    V01 loc1
-//       |        \--*  LCL_VAR   int    V04 loc4
-//       \--*  LCL_VAR   int    V06 loc6
+// \--*  IND       int
+//    \--*  INDEX_ADDR byref int[]
+//       +--*  FIELD     ref    Item1
+//       |  \--*  INDEX_ADDR byref System.ValueTuple`2[System.Int32[],System.Int32][]
+//       |     +--*  LCL_VAR   ref    V00 arg0
+//       |     \--*  LCL_VAR   int    V01 arg1
+//       \--*  LCL_VAR   int    V02 arg2
 //
 //      Morph "hoists" the bounds check above the struct field access:
 //
 // \--*  COMMA     int
 //    +--*  ASG       ref
-//    |  +--*  LCL_VAR   ref    V23 tmp16
+//    |  +--*  LCL_VAR   ref    V04 tmp1
 //    |  \--*  COMMA     ref
 //    |     +--*  BOUNDS_CHECK_Rng void
-//    |     |  +--*  LCL_VAR   int    V04 loc4
+//    |     |  +--*  LCL_VAR   int    V01 arg1
 //    |     |  \--*  ARR_LENGTH int
-//    |     |     \--*  LCL_VAR   ref    V01 loc1
+//    |     |     \--*  LCL_VAR   ref    V00 arg0
 //    |     \--*  IND       ref
-//    |        \--*  ADDR      byref  Zero Fseq[Item1]
-//    |           \--*  IND       struct<System.ValueTuple`2[System.Int32[],System.Int32], 16>
-//    |              \--*  ADD       byref
-//    |                 +--*  LCL_VAR   ref    V01 loc1
-//    |                 \--*  ADD       long
-//    |                    +--*  LSH       long
-//    |                    |  +--*  CAST      long <- uint
-//    |                    |  |  \--*  LCL_VAR   int    V04 loc4
-//    |                    |  \--*  CNS_INT   long   4
-//    |                    \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//    |        \--*  ARR_ADDR  byref System.ValueTuple`2[System.Int32[],System.Int32][] Zero Fseq[Item1]
+//    |           \--*  ADD       byref
+//    |              +--*  LCL_VAR   ref    V00 arg0
+//    |              \--*  ADD       long
+//    |                 +--*  LSH       long
+//    |                 |  +--*  CAST      long <- uint
+//    |                 |  |  \--*  LCL_VAR   int    V01 arg1
+//    |                 |  \--*  CNS_INT   long   4
+//    |                 \--*  CNS_INT   long   16
 //    \--*  COMMA     int
 //       +--*  BOUNDS_CHECK_Rng void
-//       |  +--*  LCL_VAR   int    V06 loc6
+//       |  +--*  LCL_VAR   int    V02 arg2
 //       |  \--*  ARR_LENGTH int
-//       |     \--*  LCL_VAR   ref    V23 tmp16
+//       |     \--*  LCL_VAR   ref    V04 tmp1
 //       \--*  IND       int
-//          \--*  ADD       byref
-//             +--*  LCL_VAR   ref    V23 tmp16
-//             \--*  ADD       long
-//                +--*  LSH       long
-//                |  +--*  CAST      long <- uint
-//                |  |  \--*  LCL_VAR   int    V06 loc6
-//                |  \--*  CNS_INT   long   2
-//                \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//          \--*  ARR_ADDR  byref int[]
+//             \--*  ADD       byref
+//                +--*  LCL_VAR   ref    V04 tmp1
+//                \--*  ADD       long
+//                   +--*  LSH       long
+//                   |  +--*  CAST      long <- uint
+//                   |  |  \--*  LCL_VAR   int    V02 arg2
+//                   |  \--*  CNS_INT   long   2
+//                   \--*  CNS_INT   long   16
 //
 //      This should not be parsed as a jagged array (e.g., a[i][j]). To ensure that it is not, the type of the
-//      GT_INDEX node is stashed in the GT_BOUNDS_CHECK node during morph. If we see a bounds check node where
-//      the GT_INDEX was not TYP_REF, then it must be the outermost jagged array level. E.g., if it is
+//      GT_INDEX_ADDR node is stashed in the GT_BOUNDS_CHECK node during morph. If we see a bounds check node
+//      where the GT_INDEX_ADDR was not TYP_REF, then it must be the outermost jagged array level. E.g., if it is
 //      TYP_STRUCT, then we have an array of structs, and any further bounds checks must be of one of its fields.
 //
 //      It would be much better if we didn't need to parse these trees at all, and did all this work pre-morph.
@@ -2980,14 +3006,6 @@ PhaseStatus Compiler::optCloneLoops()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nBefore loop cloning:\n");
-        fgDispBasicBlocks(/*dumpTrees*/ true);
-    }
-#endif
-
     LoopCloneContext context(optLoopCount, getAllocator(CMK_LoopClone));
 
     // Obtain array optimization candidates in the context.
@@ -3093,7 +3111,6 @@ PhaseStatus Compiler::optCloneLoops()
         fgDispBasicBlocks(/*dumpTrees*/ true);
     }
 
-    fgDebugCheckLoopTable();
 #endif
 
     return PhaseStatus::MODIFIED_EVERYTHING;

@@ -33,11 +33,7 @@ namespace System.Speech.Internal.GrammarBuilding
             IOneOf oneOf = elementFactory.CreateOneOf(parent, rule);
             foreach (GrammarBuilderBase item in Items)
             {
-                ItemElement newItem = item as ItemElement;
-                if (newItem == null)
-                {
-                    newItem = new ItemElement(item);
-                }
+                ItemElement newItem = item as ItemElement ?? new ItemElement(item);
 
                 IItem element = (IItem)newItem.CreateElement(elementFactory, oneOf, rule, ruleIds);
                 element.PostParse(oneOf);
