@@ -278,6 +278,7 @@ namespace System.Threading.Threads.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72232", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows_Nano_Server(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
