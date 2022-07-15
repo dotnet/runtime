@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.Build.NoTargets">
+<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsShipping>false</IsShipping>
@@ -6,7 +6,7 @@
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>true</IncludeBuildOutput>
-    <!-- Enable when the package shipped with NET6. -->
+    <!-- Enable when PackageValidation supports comparing multiple assemblies. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Internal transport package to provide windowsdesktop with the assemblies from dotnet/runtime that make up the Microsoft.WindowsDesktop.App shared framework.</PackageDescription>
     <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
@@ -16,6 +16,13 @@
   <ItemGroup>
     <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items.
          ReferringTargetFramework is set to $(NetCoreAppCurrent)-windows so that we pack the Windows specific implementation assemblies -->
-    <ProjectReference Include="@(WindowsDesktopCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj')" ReferringTargetFramework="$(NetCoreAppCurrent)-windows" PrivateAssets="all" Pack="true" Private="true" IncludeReferenceAssemblyInPackage="true" />
+    <ProjectReference Include="@(WindowsDesktopCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj');
+                               $(LibrariesProjectRoot)System.Diagnostics.EventLog\src\Messages\System.Diagnostics.EventLog.Messages.csproj"
+                      Exclude="$(LibrariesProjectRoot)System.Diagnostics.EventLog.Messages\src\System.Diagnostics.EventLog.Messages.csproj"
+                      ReferringTargetFramework="$(NetCoreAppCurrent)-windows"
+                      PrivateAssets="all"
+                      Pack="true"
+                      Private="true"
+                      IncludeReferenceAssemblyInPackage="true" />
   </ItemGroup>
 </Project>
