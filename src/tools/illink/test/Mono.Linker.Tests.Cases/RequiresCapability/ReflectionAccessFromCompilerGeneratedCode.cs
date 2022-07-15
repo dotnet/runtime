@@ -23,14 +23,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class ReflectionAccessFromStateMachine
 		{
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
 			[ExpectedWarning ("IL2026", "--MethodWithLocalFunctionWithRUC.LocalFunction--", CompilerGeneratedCode = true,
 				ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (TypeWithMethodWithRequires.MethodWithLocalFunctionCallsRUC), "LocalFunction", CompilerGeneratedCode = true,
-					ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations), CompilerGeneratedCode = true,
-					ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations), CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestIterator ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresAll ();
@@ -44,14 +42,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				yield return 0;
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
 			[ExpectedWarning ("IL2026", "--MethodWithLocalFunctionWithRUC.LocalFunction--", CompilerGeneratedCode = true,
 				ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (TypeWithMethodWithRequires.MethodWithLocalFunctionCallsRUC), "LocalFunction", CompilerGeneratedCode = true,
-					ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations), CompilerGeneratedCode = true,
-					ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations), CompilerGeneratedCode = true)]
 			static async void TestAsync ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresAll ();
@@ -80,14 +76,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			static void TestLocalFunction ()
 			{
-				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--",
-					ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--")]
 				[ExpectedWarning ("IL2026", "--MethodWithLocalFunctionWithRUC.LocalFunction--",
 					ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2118", nameof (TypeWithMethodWithRequires.MethodWithLocalFunctionCallsRUC), "LocalFunction",
 					ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations),
-					ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations))]
 				void LocalFunction ()
 				{
 					typeof (TypeWithMethodWithRequires).RequiresAll ();
@@ -130,14 +124,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static void TestLambda ()
 			{
 				var lambda =
-				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--",
-					ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--")]
 				[ExpectedWarning ("IL2026", "--MethodWithLocalFunctionWithRUC.LocalFunction--",
 					ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2118", nameof (TypeWithMethodWithRequires.MethodWithLocalFunctionCallsRUC), "LocalFunction",
 					ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations),
-					ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations))]
 				() => {
 					typeof (TypeWithMethodWithRequires).RequiresAll ();
 				};

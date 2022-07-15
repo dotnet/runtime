@@ -98,7 +98,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			NonTypeType.StaticMethod ();
 		}
 
-		[ExpectedWarning ("IL2065", nameof (MethodThisDataFlowTypeTest) + "." + nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods), "'this'", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2065", nameof (MethodThisDataFlowTypeTest) + "." + nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods), "'this'")]
 		static void TestUnknownThis ()
 		{
 			var array = new object[1];

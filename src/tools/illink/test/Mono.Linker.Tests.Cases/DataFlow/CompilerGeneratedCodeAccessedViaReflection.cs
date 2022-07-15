@@ -55,15 +55,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3050", "--MethodWithRequires--",
 				ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL2119", "<" + nameof (IteratorCallsMethodWithRequires) + ">", "MoveNext", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2119", "<" + nameof (IteratorCallsMethodWithRequires) + ">", "MoveNext", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
 			public static IEnumerable<int> IteratorCallsMethodWithRequires ()
 			{
 				yield return 0;
 				MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithCorrectDataflow) + ">", "MoveNext", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL2119", "<t_IteratorWithCorrectDataflow>", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithCorrectDataflow) + ">", "MoveNext", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2119", "<t_IteratorWithCorrectDataflow>", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
 			public static IEnumerable<int> IteratorWithCorrectDataflow ()
 			{
 				var t_IteratorWithCorrectDataflow = GetAll ();
@@ -71,8 +74,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t_IteratorWithCorrectDataflow.RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithIntegerDataflow) + ">", "MoveNext", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL2119", "<types>", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithIntegerDataflow) + ">", "MoveNext", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2119", "<types>", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
 			public static IEnumerable<int> IteratorWithIntegerDataflow ()
 			{
 				int integerLocal = 0;
@@ -81,10 +86,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				types[integerLocal].RequiresPublicMethods ();
 			}
 
-			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithProblematicDataflow) + ">", "MoveNext", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL2119", "<t_IteratorWithProblematicDataflow>", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true,
+			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithProblematicDataflow) + ">", "MoveNext", CompilerGeneratedCode = true,
 				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2119", "<t_IteratorWithProblematicDataflow>", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true)]
 			public static IEnumerable<int> IteratorWithProblematicDataflow ()
 			{
 				var t_IteratorWithProblematicDataflow = GetWithPublicMethods ();
@@ -92,7 +98,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t_IteratorWithProblematicDataflow.RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2112", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2112", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("--RUCTypeWithIterators--")]
 			class RUCTypeWithIterators
 			{
@@ -184,8 +191,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t_AsyncWithCorrectDataflow.RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true)]
 			public static async Task AsyncWithProblematicDataflow ()
 			{
 				var t_AsyncWithProblematicDataflow = GetWithPublicMethods ();
@@ -231,8 +237,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t.RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true)]
 			public static async IAsyncEnumerable<int> AsyncIteratorWithProblematicDataflow ()
 			{
 				var t = GetWithPublicMethods ();
@@ -307,8 +312,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var lambda =
 				[ExpectedWarning ("IL2119", "<" + nameof (LambdaWithProblematicDataflow) + ">",
 					ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll),
-					ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll))]
 				() => {
 					var t = GetWithPublicMethods ();
 					t.RequiresAll ();
@@ -322,8 +326,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var lambda =
 				[ExpectedWarning ("IL2119", "<" + nameof (LambdaWithCapturedTypeToDAM) + ">",
 					ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll),
-					ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll))]
 				() => {
 					t.RequiresAll ();
 				};
@@ -339,7 +342,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				lambda ();
 			}
 
-			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLambdas--")]
 			class RUCTypeWithLambdas
 			{
@@ -426,8 +430,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static void LocalFunctionWithProblematicDataflow ()
 			{
-				[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll),
-					ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll))]
 				[ExpectedWarning ("IL2119", "<" + nameof (LocalFunctionWithProblematicDataflow) + ">",
 					ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction ()
@@ -458,7 +461,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				LocalFunction ();
 			}
 
-			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLocalFunctions) + "()", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLocalFunctions) + "()", CompilerGeneratedCode = true,
+				ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLocalFunctions--")]
 			class RUCTypeWithLocalFunctions
 			{

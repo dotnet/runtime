@@ -143,7 +143,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TypeStore._staticTypeWithPublicParameterlessConstructor = GetUnknownType ();
 		}
 
-		[ExpectedWarning ("IL2064", nameof (TypeStore) + "." + nameof (TypeStore._staticTypeWithPublicParameterlessConstructor), ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2064", nameof (TypeStore) + "." + nameof (TypeStore._staticTypeWithPublicParameterlessConstructor))]
 		private void WriteUnknownValue ()
 		{
 			var array = new object[1];

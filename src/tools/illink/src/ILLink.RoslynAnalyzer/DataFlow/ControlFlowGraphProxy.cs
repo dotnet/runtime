@@ -83,7 +83,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		static bool TryGetTryOrCatchOrFilter (ControlFlowRegion? region, out RegionProxy tryOrCatchOrFilterRegion)
 		{
 			tryOrCatchOrFilterRegion = default;
-			while (region != null) {
+			// The check for ControlFlowRegionKind.Root prevents us from walking out to regions that
+			// contain code outside of the current control flow graph.
+			while (region != null && region.Kind != ControlFlowRegionKind.Root) {
 				if (region.Kind is ControlFlowRegionKind.Try or ControlFlowRegionKind.Catch or ControlFlowRegionKind.Filter) {
 					tryOrCatchOrFilterRegion = new RegionProxy (region);
 					return true;
@@ -97,7 +99,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			catchRegion = default;
 			ControlFlowRegion? region = block.Block.EnclosingRegion;
-			while (region != null) {
+			// The check for ControlFlowRegionKind.Root prevents us from walking out to regions that
+			// contain code outside of the current control flow graph.
+			while (region != null && region.Kind != ControlFlowRegionKind.Root) {
 				if (region.Kind == ControlFlowRegionKind.Finally) {
 					catchRegion = new RegionProxy (region);
 					return true;
