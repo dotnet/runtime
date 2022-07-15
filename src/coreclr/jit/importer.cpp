@@ -490,7 +490,7 @@ inline void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
 // Arguments:
 //    stmt                   - The statement to add.
 //    chkLevel               - [0..chkLevel) is the portion of the stack which we will check
-//                             for interference with stmt and spill if needed.
+//                             for interference with stmt and spilled if needed.
 //    checkConsumedDebugInfo - Whether to check for consumption of impCurStmtDI. impCurStmtDI
 //                             marks the debug info of the current boundary and is set when we
 //                             start importing IL at that boundary. If this parameter is true,
@@ -509,61 +509,40 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
     {
         assert(chkLevel <= verCurrentState.esStackDepth);
 
-        /* If the statement being appended has any side-effects, check the stack
-           to see if anything needs to be spilled to preserve correct ordering. */
+        // If the statement being appended has any side-effects, check the stack to see if anything
+        // needs to be spilled to preserve correct ordering.
 
         GenTree*     expr  = stmt->GetRootNode();
         GenTreeFlags flags = expr->gtFlags & GTF_GLOB_EFFECT;
 
-        // Assignment to (unaliased) locals don't count as a side-effect as
-        // we handle them specially using impSpillLclRefs(). Temp locals should
-        // be fine too.
-
-        if ((expr->gtOper == GT_ASG) && (expr->AsOp()->gtOp1->gtOper == GT_LCL_VAR) &&
-            ((expr->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) == 0) && !gtHasLocalsWithAddrOp(expr->AsOp()->gtOp2))
+        // If the only side effect of this tree is an assignment to an unaliased local, we can avoid
+        // spilling pending loads from the stack. Note we still need to spill LCL_VAR/LCL_FLD nodes
+        // that refer to this local in such a case.
+        //
+        if (expr->OperIs(GT_ASG) && expr->AsOp()->gtOp1->OperIsLocal())
         {
-            GenTreeFlags op2Flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
-            assert(flags == (op2Flags | GTF_ASG));
-            flags = op2Flags;
+            LclVarDsc* spillVarDsc = lvaGetDesc(expr->AsOp()->gtOp1->AsLclVarCommon());
+
+            // We make two assumptions here:
+            //
+            // 1. All locals which can be accessed indirectly are marked as address-exposed or with
+            //    "lvHasLdAddrOp".
+            // 2. Trees that assign to unaliased locals are always top-level (this avoids having to
+            //    walk down the tree here).
+            //
+            // If any of the above are violated (say for some temps), the relevant code must spill
+            // any possible pending references manually.
+            //
+            if (!spillVarDsc->IsAddressExposed() && !spillVarDsc->lvHasLdAddrOp)
+            {
+                impSpillLclRefs(lvaGetLclNum(spillVarDsc), chkLevel);
+                flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
+            }
         }
 
         if (flags != 0)
         {
-            bool spillGlobEffects = false;
-
-            if ((flags & GTF_CALL) != 0)
-            {
-                // If there is a call, we have to spill global refs
-                spillGlobEffects = true;
-            }
-            else if (!expr->OperIs(GT_ASG))
-            {
-                if ((flags & GTF_ASG) != 0)
-                {
-                    // The expression is not an assignment node but it has an assignment side effect, it
-                    // must be an atomic op, HW intrinsic or some other kind of node that stores to memory.
-                    // Since we don't know what it assigns to, we need to spill global refs.
-                    spillGlobEffects = true;
-                }
-            }
-            else
-            {
-                GenTree* lhs = expr->gtGetOp1();
-                GenTree* rhs = expr->gtGetOp2();
-
-                if (((rhs->gtFlags | lhs->gtFlags) & GTF_ASG) != 0)
-                {
-                    // Either side of the assignment node has an assignment side effect.
-                    // Since we don't know what it assigns to, we need to spill global refs.
-                    spillGlobEffects = true;
-                }
-                else if ((lhs->gtFlags & GTF_GLOB_REF) != 0)
-                {
-                    spillGlobEffects = true;
-                }
-            }
-
-            impSpillSideEffects(spillGlobEffects, chkLevel DEBUGARG("impAppendStmt"));
+            impSpillSideEffects((flags & (GTF_ASG | GTF_CALL)) != 0, chkLevel DEBUGARG("impAppendStmt"));
         }
         else
         {
@@ -2578,21 +2557,27 @@ inline void Compiler::impSpillSpecialSideEff()
     }
 }
 
-/*****************************************************************************
- *
- *  If the stack contains any trees with references to local #lclNum, assign
- *  those trees to temps and replace their place on the stack with refs to
- *  their temps.
- */
-
-void Compiler::impSpillLclRefs(unsigned lclNum)
+//------------------------------------------------------------------------
+// impSpillLclRefs: Spill all trees referencing the given local.
+//
+// Arguments:
+//    lclNum   - The local's number
+//    chkLevel - Height (exclusive) of the portion of the stack to check
+//
+void Compiler::impSpillLclRefs(ssize_t lclNum, unsigned chkLevel /* = CHECK_SPILL_ALL */)
 {
-    /* Before we make any appends to the tree list we must spill the
-     * "special" side effects (GTF_ORDER_SIDEEFF) - GT_CATCH_ARG */
-
+    // Before we make any appends to the tree list we must spill the
+    // "special" side effects (GTF_ORDER_SIDEEFF) - GT_CATCH_ARG.
     impSpillSpecialSideEff();
 
-    for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+    if (chkLevel == CHECK_SPILL_ALL)
+    {
+        chkLevel = verCurrentState.esStackDepth;
+    }
+
+    assert(chkLevel <= verCurrentState.esStackDepth);
+
+    for (unsigned level = 0; level < chkLevel; level++)
     {
         GenTree* tree = verCurrentState.esStack[level].val;
 
