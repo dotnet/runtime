@@ -51,6 +51,8 @@ internal sealed unsafe class MsQuicApi
 
     internal static bool IsQuicSupported { get; }
 
+    internal static bool UsesSChannelBackend { get; }
+
     internal static bool Tls13ServerMayBeDisabled { get; }
     internal static bool Tls13ClientMayBeDisabled { get; }
 
@@ -102,6 +104,12 @@ internal sealed unsafe class MsQuicApi
                                     NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting '{MsQuicVersion}'");
                                 }
                             }
+
+                            // Assume SChanel is being used on windows and query for the actual provider from the library
+                            QUIC_TLS_PROVIDER provider = OperatingSystem.IsWindows() ? QUIC_TLS_PROVIDER.SCHANNEL : QUIC_TLS_PROVIDER.OPENSSL;
+                            size = sizeof(QUIC_TLS_PROVIDER);
+                            apiTable->GetParam(null, QUIC_PARAM_GLOBAL_TLS_PROVIDER, &size, &provider);
+                            UsesSChannelBackend = provider == QUIC_TLS_PROVIDER.SCHANNEL;
                         }
                     }
                 }
