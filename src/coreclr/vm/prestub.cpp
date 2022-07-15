@@ -1310,12 +1310,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         // native code version of a method. The current optimization tier should be consistent with the change being made
         // (Tier 0 to Optimized), such that the tier is not changed in an unexpected way or at an unexpected time. Since changes
         // to the optimization tier are unlocked, this assertion is just a speculative check on possible values.
-        NativeCodeVersion::OptimizationTier previousOptimizationTier = GetCodeVersion().GetOptimizationTier();
-        _ASSERTE(
-            previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
-            previousOptimizationTier == NativeCodeVersion::OptimizationTierInstrumented ||
-            previousOptimizationTier == NativeCodeVersion::OptimizationTierInstrumentedOptimized ||
-            previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
+        _ASSERTE(!GetCodeVersion().IsFinalTier());
     #endif // _DEBUG
 
         // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
