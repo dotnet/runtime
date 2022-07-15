@@ -225,8 +225,7 @@ namespace System.Net.Http.Functional.Tests
         {
             const string Host = "localhost:1234";
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = (context, token) =>
             {
@@ -1199,11 +1198,7 @@ namespace System.Net.Http.Functional.Tests
                         VersionPolicy = versionPolicy
                     };
 
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    if (useSsl)
-                    {
-                        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                    }
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
                     using HttpClient client = CreateHttpClient(handler);
                     client.Timeout = TimeSpan.FromSeconds(30);
 

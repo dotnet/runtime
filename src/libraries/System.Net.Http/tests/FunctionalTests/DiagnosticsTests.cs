@@ -1138,20 +1138,9 @@ namespace System.Net.Http.Functional.Tests
 
         private static async Task<(HttpRequestMessage, HttpResponseMessage)> GetAsync(string useVersion, string testAsync, Uri uri, CancellationToken cancellationToken = default, bool useSocketsHttpHandler = false)
         {
-            HttpMessageHandler handler;
-            if (useSocketsHttpHandler)
-            {
-                var socketsHttpHandler = new SocketsHttpHandler();
-                socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
-                handler = socketsHttpHandler;
-            }
-            else
-            {
-                handler = new HttpClientHandler
-                {
-                    ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates
-                };
-            }
+            HttpMessageHandler handler = useSocketsHttpHandler
+                ? CreateSocketsHttpHandler(allowAllCertificates: true)
+                : CreateHttpClientHandler(allowAllCertificates: true);
 
             using var client = new HttpClient(handler);
             var request = CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true);

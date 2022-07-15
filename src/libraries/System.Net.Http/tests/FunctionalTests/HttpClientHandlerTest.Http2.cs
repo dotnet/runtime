@@ -1932,8 +1932,7 @@ namespace System.Net.Http.Functional.Tests
             // to ensure the request is cancelled as expected.
             const int ContentSize = DefaultInitialWindowSize + 1;
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
 
             var content = new ByteAtATimeContent(ContentSize);
 
@@ -2248,10 +2247,9 @@ namespace System.Net.Http.Functional.Tests
 
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
-                using (var handler = new SocketsHttpHandler())
+                using (var handler = CreateSocketsHttpHandler(allowAllCertificates: true))
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                     // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
                     handler.Expect100ContinueTimeout = TimeSpan.FromSeconds(300);
 
@@ -2520,9 +2518,7 @@ namespace System.Net.Http.Functional.Tests
 
             StreamingHttpContent requestContent = new StreamingHttpContent();
 
-            using var handler = new SocketsHttpHandler();
-            handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
-
+            using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
             using HttpClient client = new HttpClient(handler);
 
             HttpRequestMessage request = new(HttpMethod.Connect, server.Address);
@@ -3311,9 +3307,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_ProtocolMismatch_Throws()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
+            HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using (HttpClient client = CreateHttpClient())
             {
                 // Create HTTP/1.1 loopback server and advertise HTTP2 via ALPN.

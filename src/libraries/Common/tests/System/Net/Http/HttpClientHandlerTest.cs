@@ -166,9 +166,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
@@ -200,12 +198,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            if (PlatformDetection.IsNotBrowser)
-            {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            }
-
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = address };

@@ -96,11 +96,8 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
 
-                using var handler = new SocketsHttpHandler
-                {
-                    ConnectCallback = delegate { return ValueTask.FromResult(httpConnection); }
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                using var handler = TestHelper.CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.ConnectCallback = delegate { return ValueTask.FromResult(httpConnection); };
 
                 using var client = new HttpClient(handler);
 

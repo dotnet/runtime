@@ -44,13 +44,10 @@ namespace System.Net.Http.Functional.Tests
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
-                    KeepAlivePingDelay = Timeout.InfiniteTimeSpan
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+                handler.KeepAlivePingDelay = Timeout.InfiniteTimeSpan;
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -104,13 +101,10 @@ namespace System.Net.Http.Functional.Tests
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(10),
-                    KeepAlivePingPolicy = policy,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
+                handler.KeepAlivePingPolicy = policy;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -183,13 +177,10 @@ namespace System.Net.Http.Functional.Tests
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -233,13 +224,10 @@ namespace System.Net.Http.Functional.Tests
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;

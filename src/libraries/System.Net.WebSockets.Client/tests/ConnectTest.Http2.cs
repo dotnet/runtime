@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
+using static System.Net.Http.Functional.Tests.TestHelper;
+
 namespace System.Net.WebSockets.Client.Tests
 {
     public class ConnectTest_Http2 : ClientWebSocketTestBase
@@ -28,8 +30,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     clientSocket.Options.HttpVersion = HttpVersion.Version20;
                     clientSocket.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
-                    using var handler = new SocketsHttpHandler();
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
                     Task t = clientSocket.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
                     Assert.IsType<HttpRequestException>(ex.InnerException);
@@ -54,8 +55,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     cws.Options.HttpVersion = HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
-                    using var handler = new SocketsHttpHandler();
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
                     await cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
                 }
             },

@@ -1585,10 +1585,9 @@ namespace System.Net.Http.Functional.Tests
                 var releaseServer = new TaskCompletionSource();
                 await LoopbackServer.CreateClientAndServerAsync(async uri =>
                 {
-                    using (var handler = new SocketsHttpHandler())
+                    using (var handler = CreateSocketsHttpHandler(allowAllCertificates: true))
                     using (HttpClient client = CreateHttpClient(handler, useVersionString))
                     {
-                        handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                         handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(1);
 
                         var exceptions = new List<Exception>();
@@ -2558,8 +2557,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Version = UseVersion;
                     requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectCallback = async (context, token) =>
                     {
@@ -2603,8 +2601,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectCallback = async (context, token) =>
                     {
@@ -2649,8 +2646,7 @@ namespace System.Net.Http.Functional.Tests
 
             Task clientTask = Task.Run(async () =>
             {
-                using HttpClientHandler handler = CreateHttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                 var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 socketsHandler.ConnectCallback = (context, token) => new ValueTask<Stream>(clientStream);
 
@@ -2678,8 +2674,7 @@ namespace System.Net.Http.Functional.Tests
             listenSocket.Bind(serverEP);
             listenSocket.Listen();
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = async (context, token) =>
             {
@@ -2728,8 +2723,7 @@ namespace System.Net.Http.Functional.Tests
             listenSocket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
             listenSocket.Listen();
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = async (context, token) =>
             {
@@ -2782,8 +2776,7 @@ namespace System.Net.Http.Functional.Tests
 
             bool disposeCalled = false;
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = (context, token) =>
             {
@@ -2809,8 +2802,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Exception e = new Exception("hello!");
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = (context, token) =>
             {
@@ -2829,8 +2821,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectCallback_ReturnsNull_ThrowsHttpRequestException(bool useSsl)
         {
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = (context, token) =>
             {
@@ -2852,8 +2843,7 @@ namespace System.Net.Http.Functional.Tests
                 async uri =>
                 {
                     string[] parts = uri.Authority.Split(':', 2);
-                    HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                    HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSslStream);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectCallback = async (context, token) =>
                     {
@@ -2862,7 +2852,7 @@ namespace System.Net.Http.Functional.Tests
                         if (useSslStream)
                         {
                             SslClientAuthenticationOptions options = new SslClientAuthenticationOptions();
-                            options.RemoteCertificateValidationCallback = (a, b, c, d) => true;
+                            options.RemoteCertificateValidationCallback = (a, b, c, d) => true; // TODO ??!!
                             options.TargetHost = parts[0];
                             if (context.InitialRequestMessage.Version.Major == 2 && PlatformDetection.SupportsAlpn)
                             {
@@ -3116,8 +3106,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Version = UseVersion;
                     requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = async (context, token) =>
                     {
@@ -3154,8 +3143,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = (context, token) =>
                     {
@@ -3202,8 +3190,7 @@ namespace System.Net.Http.Functional.Tests
 
             Task clientTask = Task.Run(async () =>
             {
-                using HttpClientHandler handler = CreateHttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                 var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 socketsHandler.PlaintextStreamFilter = async (context, token) =>
                 {
@@ -3283,8 +3270,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Version = UseVersion;
                     requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = (context, token) =>
                     {
@@ -3322,8 +3308,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Version = UseVersion;
                     requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = (context, token) =>
                     {
@@ -3362,8 +3347,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = (context, token) =>
                     {
@@ -3414,8 +3398,7 @@ namespace System.Net.Http.Functional.Tests
                     string sendText = "";
                     string recvText = "";
 
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.PlaintextStreamFilter = (context, token) =>
                     {

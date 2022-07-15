@@ -32,7 +32,9 @@ namespace System.Net.Http.Functional.Tests
 
         // This enables customizing ServerCertificateCustomValidationCallback in WinHttpHandler variants:
         protected bool AllowAllCertificates { get; set; } = true;
-        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, allowAllCertificates: AllowAllCertificates);
+        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(
+            useVersion: UseVersion,
+            allowAllCertificates: UseVersion >= HttpVersion20.Value && AllowAllCertificates);
         protected override HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
         [Fact]
@@ -282,7 +284,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate before the .NET custom validation callback is reached")]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
             const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
@@ -306,7 +308,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate before the .NET custom validation callback is reached")]
         public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

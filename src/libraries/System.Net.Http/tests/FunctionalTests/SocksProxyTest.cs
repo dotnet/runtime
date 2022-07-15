@@ -44,11 +44,10 @@ namespace System.Net.Http.Functional.Tests
                 async uri =>
                 {
                     await using var proxy = useAuth ? new LoopbackSocksServer("DOTNET", "424242") : new LoopbackSocksServer();
-                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     using HttpClient client = CreateHttpClient(handler);
 
                     handler.Proxy = new WebProxy($"{scheme}://127.0.0.1:{proxy.Port}");
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                     if (useAuth)
                     {

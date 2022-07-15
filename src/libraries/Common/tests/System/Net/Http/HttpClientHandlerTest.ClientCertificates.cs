@@ -68,8 +68,7 @@ namespace System.Net.Http.Functional.Tests
 
         private HttpClient CreateHttpClientWithCert(X509Certificate2 cert)
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             Assert.NotNull(cert);
             handler.ClientCertificates.Add(cert);
             Assert.True(handler.ClientCertificates.Contains(cert));
@@ -188,10 +187,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(ClientCertificateOption.Automatic)]
         public async Task AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable(ClientCertificateOption mode)
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.ClientCertificateOptions = mode;
 
                 await LoopbackServer.CreateServerAsync(async server =>
