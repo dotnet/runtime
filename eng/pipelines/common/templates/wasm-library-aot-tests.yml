@@ -23,7 +23,7 @@ jobs:
         - Browser_wasm
       nameSuffix: ${{ parameters.nameSuffix }}
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      extraBuildArgs: /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
+      extraBuildArgs: -p:PublishTrimmed=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
       extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
       alwaysRun: ${{ parameters.alwaysRun }}
       runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
@@ -39,7 +39,7 @@ jobs:
         - Browser_wasm_win
       nameSuffix: ${{ parameters.nameSuffix }}
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      extraBuildArgs: /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
+      extraBuildArgs: -p:PublishTrimmed=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
       extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
       alwaysRun: ${{ parameters.alwaysRun }}
       runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
