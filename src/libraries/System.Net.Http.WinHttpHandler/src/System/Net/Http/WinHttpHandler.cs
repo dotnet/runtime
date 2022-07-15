@@ -820,6 +820,7 @@ namespace System.Net.Http
                         {
                             int lastError = Marshal.GetLastWin32Error();
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
+
                             if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
                             {
                                 ThrowOnInvalidHandle(sessionHandle, nameof(Interop.WinHttp.WinHttpOpen));
@@ -1659,6 +1660,9 @@ namespace System.Net.Http
             {
                 int lastError = Marshal.GetLastWin32Error();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"error={lastError}");
+
+                handle.Dispose();
+
                 throw WinHttpException.CreateExceptionUsingError(lastError, nameOfCalledFunction);
             }
         }

@@ -2500,7 +2500,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 
         if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
         {
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
+            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
                 nestingLevel * 5, "", this->GetDebugClassName()));
 
             return false;
@@ -5500,15 +5500,15 @@ namespace
                         for (; it.IsValid() && candidateMaybe == NULL; it.Next())
                         {
                             MethodDesc *pDeclMD = it.GetMethodDesc();
-    
+
                             // Is this the right slot?
                             if (pDeclMD->GetSlot() != targetSlot)
                                 continue;
-    
+
                             // Is this the right interface?
                             if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
                                 continue;
-    
+
                             if (interfaceMD->HasClassInstantiation())
                             {
                                 // pInterfaceMD will be in the canonical form, so we need to check the specific
@@ -5516,17 +5516,17 @@ namespace
                                 //
                                 // The parent of pDeclMD is unreliable for this purpose because it may or
                                 // may not be canonicalized. Let's go from the metadata.
-    
+
                                 SigTypeContext typeContext = SigTypeContext(pMT);
-    
+
                                 mdTypeRef tkParent;
                                 IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
-    
+
                                 MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
                                     pMD->GetModule(),
                                     tkParent,
                                     &typeContext).AsMethodTable();
-    
+
                                 // We do CanCastToInterface to also cover variance.
                                 // We already know this is a method on the same type definition as the (generic)
                                 // interface but we need to make sure the instantiations match.

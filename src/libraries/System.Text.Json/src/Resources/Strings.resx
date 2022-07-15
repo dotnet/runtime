@@ -244,7 +244,7 @@
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
   <data name="TypeInfoResolverImmutable" xml:space="preserve">
-    <value>Default TypeInfoResolver and custom TypeInfoResolver cannot be changed after first usage.</value>
+    <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
   </data>
   <data name="TypeInfoImmutable" xml:space="preserve">
     <value>JsonTypeInfo cannot be changed after first usage.</value>
@@ -576,7 +576,7 @@
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="SerializerContextOptionsImmutable" xml:space="preserve">
-    <value>A 'JsonSerializerOptions' instance associated with a 'JsonSerializerContext' instance cannot be mutated once the context has been instantiated.</value>
+    <value>JsonSerializerOptions instances cannot be modified once encapsulated by a JsonSerializerContext. Such encapsulation can happen either when calling 'JsonSerializerOptions.AddContext' or when passing the options instance to a JsonSerializerContext constructor.</value>
   </data>
   <data name="ConverterForPropertyMustBeValid" xml:space="preserve">
     <value>The generic type of the converter for property '{0}.{1}' must match with the specified converter type '{2}'. The converter must not be 'null'.</value>
@@ -585,7 +585,7 @@
     <value>Built-in type converters have not been initialized. There is no converter available for type '{0}'. To root all built-in converters, use a 'JsonSerializerOptions'-based method of the 'JsonSerializer'.</value>
   </data>
   <data name="NoMetadataForType" xml:space="preserve">
-    <value>Metadata for type '{0}' was not provided to the serializer. The serializer method used does not support reflection-based creation of serialization-related type metadata. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
+    <value>Metadata for type '{0}' was not provided by TypeInfoResolver of type '{1}'. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
   </data>
   <data name="CollectionIsReadOnly" xml:space="preserve">
     <value>Collection is read-only.</value>
@@ -599,14 +599,8 @@
   <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
     <value>A custom converter for JsonObject is not allowed on an extension property.</value>
   </data>
-  <data name="MetadataInitFuncsNull" xml:space="preserve">
-    <value>Invalid configuration provided for 'propInitFunc', 'ctorParamInitFunc' and 'serializeFunc'.</value>
-  </data>
   <data name="NoMetadataForTypeProperties" xml:space="preserve">
     <value>TypeInfoResolver '{0}' did not provide property metadata for type '{1}'.</value>
-  </data>
-  <data name="NoDefaultOptionsForContext" xml:space="preserve">
-    <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
   </data>
   <data name="FieldCannotBeVirtual" xml:space="preserve">
     <value>A 'field' member cannot be 'virtual'. See arguments for the '{0}' and '{1}' parameters. </value>

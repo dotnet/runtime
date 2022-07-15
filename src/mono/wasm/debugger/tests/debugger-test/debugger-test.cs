@@ -1159,3 +1159,91 @@ public class DebugWithoutDebugSymbols
         System.Diagnostics.Debugger.Break();
     }
 }
+
+public class AsyncGeneric
+{
+    public static async void TestAsyncGeneric1Parm()
+    {
+        var a = await GetAsyncMethod<int>(10); 
+        Console.WriteLine(a);
+    }
+    protected static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
+    {
+        await System.Threading.Tasks.Task.Delay(1);
+        System.Diagnostics.Debugger.Break();
+        return parm;
+    }
+
+    public static async void TestKlassGenericAsyncGeneric()
+    {
+        var a = await MyKlass<bool, char>.GetAsyncMethod<int>(10); 
+        Console.WriteLine(a);
+    }
+    class MyKlass<T, L>
+    {
+        public static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            System.Diagnostics.Debugger.Break();
+            return parm;
+        }
+        public static async System.Threading.Tasks.Task<K> GetAsyncMethod2<K, R>(K parm)
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            System.Diagnostics.Debugger.Break();
+            return parm;
+        }
+    }
+
+    public static async void TestKlassGenericAsyncGeneric2()
+    {
+        var a = await MyKlass<bool>.GetAsyncMethod<int>(10); 
+        Console.WriteLine(a);
+    }
+    class MyKlass<T>
+    {
+        public static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            System.Diagnostics.Debugger.Break();
+            return parm;
+        }
+        public static async System.Threading.Tasks.Task<K> GetAsyncMethod2<K, R>(K parm)
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            System.Diagnostics.Debugger.Break();
+            return parm;
+        }
+        public class MyKlassNested<U>
+        {
+            public static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
+            {
+                await System.Threading.Tasks.Task.Delay(1);
+                System.Diagnostics.Debugger.Break();
+                return parm;
+            }
+        }
+    }
+
+    public static async void TestKlassGenericAsyncGeneric3()
+    {
+        var a = await MyKlass<bool>.GetAsyncMethod2<int, char>(10); 
+        Console.WriteLine(a);
+    }
+    public static async void TestKlassGenericAsyncGeneric4()
+    {
+        var a = await MyKlass<bool, double>.GetAsyncMethod2<int, char>(10); 
+        Console.WriteLine(a);
+    }
+    public static async void TestKlassGenericAsyncGeneric5()
+    {
+        var a = await MyKlass<bool>.MyKlassNested<int>.GetAsyncMethod<char>('1'); 
+        Console.WriteLine(a);
+    }
+    public static async void TestKlassGenericAsyncGeneric6()
+    {
+        var a = await MyKlass<MyKlass<int>>.GetAsyncMethod<char>('1'); 
+        Console.WriteLine(a);
+    }
+}
+

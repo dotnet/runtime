@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -61,6 +62,8 @@ namespace Microsoft.Interop
             public const string CountElementName = nameof(CountElementName);
             public const string ConstantElementCount = nameof(ConstantElementCount);
         }
+
+        private static void IgnoreDiagnostic(Diagnostic diagnostic) { }
 
         public static bool IsLinearCollectionEntryPoint(INamedTypeSymbol entryPointType)
         {
@@ -149,28 +152,9 @@ namespace Microsoft.Interop
                     continue;
 
                 ITypeSymbol marshallerType = marshallerTypeOnAttr;
-                if (isLinearCollectionMarshalling && marshallerTypeOnAttr is INamedTypeSymbol namedMarshallerType)
+                if (!TryResolveMarshallerType(entryPointType, marshallerType, IgnoreDiagnostic, out marshallerType))
                 {
-                    // Update the marshaller type with resolved type arguments based on the entry point type
-                    // We expect the entry point to already have its type arguments updated based on the managed type
-                    Stack<string> nestedTypeNames = new Stack<string>();
-                    INamedTypeSymbol currentType = namedMarshallerType;
-                    while (currentType is not null)
-                    {
-                        if (currentType.IsConstructedFromEqualTypes(entryPointType))
-                            break;
-
-                        nestedTypeNames.Push(currentType.Name);
-                        currentType = currentType.ContainingType;
-                    }
-
-                    currentType = entryPointType;
-                    foreach (string name in nestedTypeNames)
-                    {
-                        currentType = currentType.GetTypeMembers(name).First();
-                    }
-
-                    marshallerType = currentType;
+                    continue;
                 }
 
                 // TODO: Report invalid shape for mode
@@ -195,6 +179,72 @@ namespace Microsoft.Interop
                 Modes = modes.ToImmutableDictionary()
             };
 
+            return true;
+        }
+
+        /// <summary>
+        /// Resolve the (possibly unbound generic) marshaller type to a fully constructed type based on the entry point type's generic parameters.
+        /// </summary>
+        /// <param name="entryPointType">The entry point type</param>
+        /// <param name="attributeMarshallerType">The marshaller type from the CustomMarshallerAttribute</param>
+        /// <returns>A fully constructed marshaller type</returns>
+        public static bool TryResolveMarshallerType(INamedTypeSymbol entryPointType, ITypeSymbol? attributeMarshallerType, Action<Diagnostic> reportDiagnostic, [NotNullWhen(true)] out ITypeSymbol? marshallerType)
+        {
+            if (attributeMarshallerType is null)
+            {
+                marshallerType = null;
+                return false;
+            }
+
+            if (attributeMarshallerType is not INamedTypeSymbol namedMarshallerType)
+            {
+                marshallerType = attributeMarshallerType;
+                return true;
+            }
+
+            // Update the marshaller type with resolved type arguments based on the entry point type
+            // We expect the entry point to already have its type arguments updated based on the managed type
+            Stack<INamedTypeSymbol> nestedTypes = new();
+            INamedTypeSymbol currentType = namedMarshallerType;
+            int totalArity = 0;
+            while (currentType is not null)
+            {
+                nestedTypes.Push(currentType);
+                totalArity += currentType.Arity;
+                currentType = currentType.ContainingType;
+            }
+
+            if (totalArity != entryPointType.Arity)
+            {
+                //TODO: Report diagnostic
+                marshallerType = null;
+                return false;
+            }
+
+            int currentArityOffset = 0;
+            currentType = null;
+            while (nestedTypes.Count > 0)
+            {
+                if (currentType is null)
+                {
+                    currentType = nestedTypes.Pop();
+                }
+                else
+                {
+                    INamedTypeSymbol originalType = nestedTypes.Pop();
+                    currentType = currentType.GetTypeMembers(originalType.Name, originalType.Arity).First();
+                }
+
+                if (currentType.TypeParameters.Length > 0)
+                {
+                    currentType = currentType.ConstructedFrom.Construct(
+                        ImmutableArray.CreateRange(entryPointType.TypeArguments, currentArityOffset, currentType.TypeParameters.Length, x => x),
+                        ImmutableArray.CreateRange(entryPointType.TypeArgumentNullableAnnotations, currentArityOffset, currentType.TypeParameters.Length, x => x));
+                    currentArityOffset += currentType.TypeParameters.Length;
+                }
+            }
+
+            marshallerType = currentType;
             return true;
         }
 
@@ -357,7 +407,7 @@ namespace Microsoft.Interop
                 if (mode != MarshalMode.Default && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
                     return null;
 
-                if (isLinearCollectionMarshaller)
+                if (isLinearCollectionMarshaller && methods.ManagedValuesSource is not null)
                 {
                     // Element type is the type parameter of the ReadOnlySpan returned by GetManagedValuesSource
                     collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesSource.ReturnType).TypeArguments[0];
@@ -382,13 +432,19 @@ namespace Microsoft.Interop
 
                 if (isLinearCollectionMarshaller)
                 {
-                    // Native type is the first parameter of GetUnmanagedValuesSource
-                    nativeType = methods.UnmanagedValuesSource.Parameters[0].Type;
+                    if (nativeType is null && methods.UnmanagedValuesSource is not null)
+                    {
+                        // Native type is the first parameter of GetUnmanagedValuesSource
+                        nativeType = methods.UnmanagedValuesSource.Parameters[0].Type;
+                    }
 
-                    // Element type is the type parameter of the Span returned by GetManagedValuesDestination
-                    collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
+                    if (collectionElementType is null && methods.ManagedValuesDestination is not null)
+                    {
+                        // Element type is the type parameter of the Span returned by GetManagedValuesDestination
+                        collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];
+                    }
                 }
-                else
+                else if (nativeType is null)
                 {
                     // Native type is the first parameter of ConvertToManaged or ConvertToManagedFinally
                     if (methods.ToManagedFinally is not null)
@@ -457,7 +513,7 @@ namespace Microsoft.Interop
                     nativeType = methods.ToUnmanaged.ReturnType;
                 }
 
-                if (isLinearCollectionMarshaller)
+                if (isLinearCollectionMarshaller && methods.ManagedValuesSource is not null)
                 {
                     // Element type is the type parameter of the ReadOnlySpan returned by GetManagedValuesSource
                     collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesSource.ReturnType).TypeArguments[0];
@@ -475,7 +531,7 @@ namespace Microsoft.Interop
                     nativeType = methods.FromUnmanaged.Parameters[0].Type;
                 }
 
-                if (isLinearCollectionMarshaller && collectionElementType is null)
+                if (isLinearCollectionMarshaller && collectionElementType is null && methods.ManagedValuesDestination is not null)
                 {
                     // Element type is the type parameter of the Span returned by GetManagedValuesDestination
                     collectionElementType = ((INamedTypeSymbol)methods.ManagedValuesDestination.ReturnType).TypeArguments[0];

@@ -16,10 +16,10 @@ namespace DebuggerTests
         {}
 
         [Theory]
-        [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, false)]
-        [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, true)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, true)]
+        [InlineData(19, 8, "DebuggerTests.ArrayTestsClass.PrimitiveTypeLocals", false, 0, false)]
+        [InlineData(19, 8, "DebuggerTests.ArrayTestsClass.PrimitiveTypeLocals", false, 0, true)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, false)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectPrimitiveTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
             entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:PrimitiveTypeLocals",
@@ -33,10 +33,10 @@ namespace DebuggerTests
             use_cfo: use_cfo);
 
         [Theory]
-        [InlineData(36, 8, "ValueTypeLocals", false, 0, false)]
-        [InlineData(36, 8, "ValueTypeLocals", false, 0, true)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, true)]
+        [InlineData(36, 8, "DebuggerTests.ArrayTestsClass.ValueTypeLocals", false, 0, false)]
+        [InlineData(36, 8, "DebuggerTests.ArrayTestsClass.ValueTypeLocals", false, 0, true)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, false)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectValueTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
             entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocals",
@@ -58,10 +58,10 @@ namespace DebuggerTests
             use_cfo: use_cfo);
 
         [Theory]
-        [InlineData(54, 8, "ObjectTypeLocals", false, 0, false)]
-        [InlineData(54, 8, "ObjectTypeLocals", false, 0, true)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, true)]
+        [InlineData(54, 8, "DebuggerTests.ArrayTestsClass.ObjectTypeLocals", false, 0, false)]
+        [InlineData(54, 8, "DebuggerTests.ArrayTestsClass.ObjectTypeLocals", false, 0, true)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, false)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectObjectArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
             entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:ObjectTypeLocals",
@@ -85,10 +85,10 @@ namespace DebuggerTests
             use_cfo: use_cfo);
 
         [Theory]
-        [InlineData(72, 8, "GenericTypeLocals", false, 0, false)]
-        [InlineData(72, 8, "GenericTypeLocals", false, 0, true)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, true)]
+        [InlineData(72, 8, "DebuggerTests.ArrayTestsClass.GenericTypeLocals", false, 0, false)]
+        [InlineData(72, 8, "DebuggerTests.ArrayTestsClass.GenericTypeLocals", false, 0, true)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, false)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectGenericTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
             entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:GenericTypeLocals",
@@ -122,10 +122,10 @@ namespace DebuggerTests
             use_cfo: use_cfo);
 
         [Theory]
-        [InlineData(89, 8, "GenericValueTypeLocals", false, 0, false)]
-        [InlineData(89, 8, "GenericValueTypeLocals", false, 0, true)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, true)]
+        [InlineData(89, 8, "DebuggerTests.ArrayTestsClass.GenericValueTypeLocals", false, 0, false)]
+        [InlineData(89, 8, "DebuggerTests.ArrayTestsClass.GenericValueTypeLocals", false, 0, true)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, false)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectGenericValueTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
             entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:GenericValueTypeLocals",
@@ -157,10 +157,10 @@ namespace DebuggerTests
             use_cfo: use_cfo);
 
         [Theory]
-        [InlineData(213, 8, "GenericValueTypeLocals2", false, 0, false)]
-        [InlineData(213, 8, "GenericValueTypeLocals2", false, 0, true)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, true)]
+        [InlineData(213, 8, "DebuggerTests.ArrayTestsClass.GenericValueTypeLocals2", false, 0, false)]
+        [InlineData(213, 8, "DebuggerTests.ArrayTestsClass.GenericValueTypeLocals2", false, 0, true)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, false)]
+        [InlineData(100, 8, "DebuggerTests.ArrayTestsClass.YetAnotherMethod", true, 2, true)]
         public async Task InspectGenericValueTypeArrayLocals2(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
             entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:GenericValueTypeLocals2",
@@ -302,7 +302,7 @@ namespace DebuggerTests
             int line = 227;
             int col = 12;
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers";
-            string method_name = "PlaceholderMethod";
+            string method_name = "DebuggerTests.Container.PlaceholderMethod";
             int frame_idx = 1;
 
             UseCallFunctionOnBeforeGetProperties = use_cfo;
@@ -374,7 +374,7 @@ namespace DebuggerTests
             int line = 157;
             int col = 12;
             string entry_method_name = "[debugger-test] DebuggerTests.ArrayTestsClass:ValueTypeLocalsAsync";
-            string method_name = "MoveNext"; // BUG: this should be ValueTypeLocalsAsync
+            string method_name = "DebuggerTests.ArrayTestsClass.ValueTypeLocalsAsync";
             int frame_idx = 0;
 
             UseCallFunctionOnBeforeGetProperties = use_cfo;
@@ -451,7 +451,7 @@ namespace DebuggerTests
                 "); }, 1);";
 
             // BUG: Should be InspectValueTypeArrayLocalsInstanceAsync
-            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, "MoveNext");
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, "DebuggerTests.ArrayTestsClass.InstanceMethodValueTypeLocalsAsync<SimpleGenericStruct<Point>>");
 
             var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
             await CheckProps(frame_locals, new
@@ -503,7 +503,7 @@ namespace DebuggerTests
                 "); }, 1);";
 
             // BUG: Should be InspectValueTypeArrayLocalsInstanceAsync
-            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, "MoveNext");
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, "DebuggerTests.Point.AsyncMethod");
 
             var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
             await CheckProps(frame_locals, new
@@ -534,7 +534,7 @@ namespace DebuggerTests
                 "); }, 1);";
 
             // BUG: Should be InspectValueTypeArrayLocalsInstanceAsync
-            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, "MoveNext");
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, "DebuggerTests.Point.AsyncInstanceMethod");
 
             var frame_locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
             await CheckProps(frame_locals, new
@@ -567,7 +567,7 @@ namespace DebuggerTests
         [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65742
         [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65742
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
+            "DebuggerTests.Container", "PlaceholderMethod", 1, "DebuggerTests.Container.PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -589,7 +589,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
+            "DebuggerTests.Container", "PlaceholderMethod", 1, "DebuggerTests.Container.PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
             locals_fn: async (locals) =>
             {
@@ -630,7 +630,7 @@ namespace DebuggerTests
                 $"'[debugger-test] DebuggerTests.MultiDimensionalArray:run'" +
                 "); }, 1);";
 
-            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 343, 12, "run");
+            var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, 343, 12, "DebuggerTests.MultiDimensionalArray.run");
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             Assert.Equal(3, locals.Count());

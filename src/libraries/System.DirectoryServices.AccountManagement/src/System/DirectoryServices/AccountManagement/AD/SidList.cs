@@ -94,6 +94,8 @@ namespace System.DirectoryServices.AccountManagement
                                     out policyHandle);
                 if (err != 0)
                 {
+                    policyHandle.Dispose();
+
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: couldn't get policy handle, err={0}", err);
 
                     throw new PrincipalOperationException(SR.Format(
@@ -119,6 +121,9 @@ namespace System.DirectoryServices.AccountManagement
                      err != Interop.StatusOptions.STATUS_SOME_NOT_MAPPED &&
                      err != Interop.StatusOptions.STATUS_NONE_MAPPED)
                 {
+                    domainsHandle.Dispose();
+                    namesHandle.Dispose();
+
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);
 
                     throw new PrincipalOperationException(SR.Format(

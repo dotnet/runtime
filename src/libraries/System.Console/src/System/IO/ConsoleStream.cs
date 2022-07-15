@@ -142,10 +142,7 @@ namespace System.IO
             set => throw Error.GetSeekNotSupported();
         }
 
-        public override void Flush()
-        {
-            if (!CanWrite) throw Error.GetWriteNotSupported();
-        }
+        public override void Flush() { }
 
         public sealed override void SetLength(long value) => throw Error.GetSeekNotSupported();
 

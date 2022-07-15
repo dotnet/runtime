@@ -699,7 +699,7 @@ namespace System.Security.Cryptography.Xml
                 symmetricAlgorithm.Mode = _mode;
                 symmetricAlgorithm.Padding = _padding;
 
-                ICryptoTransform enc = symmetricAlgorithm.CreateEncryptor();
+                using ICryptoTransform enc = symmetricAlgorithm.CreateEncryptor();
                 cipher = enc.TransformFinalBlock(plaintext, 0, plaintext.Length);
             }
             finally
@@ -777,7 +777,7 @@ namespace System.Security.Cryptography.Xml
                 symmetricAlgorithm.Mode = _mode;
                 symmetricAlgorithm.Padding = _padding;
 
-                ICryptoTransform dec = symmetricAlgorithm.CreateDecryptor();
+                using ICryptoTransform dec = symmetricAlgorithm.CreateDecryptor();
                 output = dec.TransformFinalBlock(cipherValue, lengthIV, cipherValue.Length - lengthIV);
             }
             finally

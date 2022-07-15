@@ -16,8 +16,16 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public ECDsaCng(ECCurve curve)
         {
-            // Specified curves generate the key immediately
-            GenerateKey(curve);
+            try
+            {
+                // Specified curves generate the key immediately
+                GenerateKey(curve);
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
         }
 
         /// <summary>

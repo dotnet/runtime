@@ -88,7 +88,9 @@ internal static partial class Interop
     {
         if (handle.IsInvalid)
         {
-            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory);
+            Exception e = Interop.GetExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory);
+            handle.Dispose();
+            throw e;
         }
 
         return handle;

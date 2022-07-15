@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (_applicationPolicy?.Count > 0)
             {
-                foreach (var item in _applicationPolicy)
+                foreach (Oid item in _applicationPolicy)
                 {
                     clone.ApplicationPolicy.Add(item);
                 }
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (_certificatePolicy?.Count > 0)
             {
-                foreach (var item in _certificatePolicy)
+                foreach (Oid item in _certificatePolicy)
                 {
                     clone.CertificatePolicy.Add(item);
                 }

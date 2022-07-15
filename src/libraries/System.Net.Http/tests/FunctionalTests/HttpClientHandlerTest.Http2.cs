@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
-        private async Task AssertProtocolErrorForIOExceptionAsync(Task task, ProtocolErrors errorCode)
+        private async Task AssertHttpProtocolException(Task task, ProtocolErrors errorCode)
         {
             HttpProtocolException protocolEx = await Assert.ThrowsAsync<HttpProtocolException>(() => task);
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
@@ -291,7 +291,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
 
-                connection.Dispose();
+                await connection.DisposeAsync();
             }
         }
 
@@ -2609,7 +2609,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(0, await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
 
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Fact]
@@ -2838,7 +2838,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.ENHANCE_YOUR_CALM, streamId));
 
                     // Trying to read on the response stream should fail now, and client should ignore any data received
-                    await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
+                    await AssertHttpProtocolException(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
 
                     // Attempting to write on the request body should now fail with IOException.
                     Exception e = await Assert.ThrowsAnyAsync<IOException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });

@@ -1053,6 +1053,7 @@ namespace System.Net.Sockets
 
                 SocketsTelemetry.Log.AfterAccept(errorCode);
 
+                acceptedSocketHandle.Dispose();
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
