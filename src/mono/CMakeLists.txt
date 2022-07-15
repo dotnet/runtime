@@ -561,6 +561,7 @@ set(MONO_llvm_extra_libs_armcodegen_1100 "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlo
 
 # llvm-config --libs aarch64codegen
 set(MONO_llvm_extra_libs_aarch64codegen_1100 "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
+set(MONO_llvm_extra_libs_aarch64codegen_1400 "${MONO_llvm_extra_libs_aarch64codegen_1100}")
 
 ######################################
 # LLVM CHECKS
