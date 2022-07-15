@@ -135,6 +135,15 @@ class DiagnosticServerImpl implements DiagnosticServer {
             this.sendAdvertise(ws);
             const message = await p;
             console.debug("received advertising response: ", message);
+            queueMicrotask(() => this.parseAndDispatchMessage(ws, message));
+        } finally {
+            // if there were errors, resume the runtime anyway
+            this.resumeRuntime();
+        }
+    }
+
+    async parseAndDispatchMessage(ws: CommonSocket, message: MessageEvent<string | ArrayBuffer> | ProtocolCommandEvent): Promise<void> {
+        try {
             const cmd = this.parseCommand(message);
             if (cmd === null) {
                 console.error("unexpected message from client", message);
