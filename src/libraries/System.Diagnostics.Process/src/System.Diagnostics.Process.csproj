@@ -259,6 +259,8 @@
              Link="Common\Interop\Unix\Interop.Kill.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
              Link="Common\Interop\Unix\Interop.ReadLink.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
+             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForSigChld.cs"
              Link="Common\Interop\Unix\Interop.RegisterForRegisterForSigChld.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetDelayedSigChildConsoleConfigurationHandler.cs"

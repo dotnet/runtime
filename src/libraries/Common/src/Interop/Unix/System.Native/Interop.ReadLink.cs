@@ -28,7 +28,20 @@ internal static partial class Interop
         /// </summary>
         /// <param name="path">The path to the symlink.</param>
         /// <returns>Returns the link to the target path on success; and null otherwise.</returns>
-        internal static string? ReadLink(ReadOnlySpan<char> path)
+        internal static string? ReadLink(ReadOnlySpan<char> path) => ReadLink(path, false, false);
+
+        /// <summary>
+        /// Takes a path to a symbolic link and returns the link target path.
+        /// </summary>
+        /// <param name="path">The path to the symlink.</param>
+        /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
+        /// <param name="validatePath">true if <paramref name="path"/> need to be validated; otherwise, false.</param>
+        /// <returns>Returns the link to the target path on success; and null otherwise.</returns>
+        /// <exception cref="System.IO.DirectoryNotFoundException">thrown when <paramref name="validatePath"/> and <paramref name="isDirectory"/> true and directory link does not exist.</exception>
+        /// <exception cref="System.IO.FileNotFoundException">thrown when <paramref name="validatePath"/> true and <paramref name="isDirectory"/> false and file link does not exist.</exception>
+        /// <exception cref="UnauthorizedAccessException">thrown when <paramref name="validatePath"/> true and permission is denied for link.</exception>
+        /// <exception cref="System.IO.PathTooLongException">thrown when <paramref name="validatePath"/> true and link path too long.</exception>
+        internal static string? ReadLink(ReadOnlySpan<char> path, bool isDirectory, bool validatePath)
         {
             const int StackBufferSize = 256;
 
@@ -40,7 +53,6 @@ internal static partial class Interop
             ref byte pathReference = ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path));
             while (true)
             {
-                int error = 0;
                 try
                 {
                     int resultLength = ReadLink(ref pathReference, ref MemoryMarshal.GetReference(spanBuffer), spanBuffer.Length);
@@ -48,8 +60,18 @@ internal static partial class Interop
                     if (resultLength < 0)
                     {
                         // error
-                        error = Marshal.GetLastPInvokeError();
-                        return null;
+                        if (!validatePath)
+                        {
+                            return null;
+                        }
+
+                        Interop.Error error = Interop.Sys.GetLastError();
+                        if (error == Interop.Error.EINVAL)
+                        {
+                            return null;
+                        }
+
+                        throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), isDirectory: isDirectory);
                     }
                     else if (resultLength < spanBuffer.Length)
                     {
@@ -62,11 +84,6 @@ internal static partial class Interop
                     if (arrayBuffer != null)
                     {
                         ArrayPool<byte>.Shared.Return(arrayBuffer);
-                    }
-
-                    if (error > 0)
-                    {
-                        Marshal.SetLastPInvokeError(error);
                     }
                 }
 
