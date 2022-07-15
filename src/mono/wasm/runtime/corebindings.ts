@@ -47,7 +47,6 @@ export interface t_CSwraps {
     _set_tcs_failure(gcHandle: GCHandle, result: string): void
     _get_tcs_task_ref(gcHandle: GCHandle, result: MonoObjectRef): void;
     _task_from_result_ref(value: any, result: MonoObjectRef): void;
-    // FIXME: PromiseController is a JS object so we can't pass an address directly
     _setup_js_cont_ref(task: MonoObjectRef, continuation: PromiseController): void;
 
     _object_to_string_ref(obj: MonoObjectRef): string;
