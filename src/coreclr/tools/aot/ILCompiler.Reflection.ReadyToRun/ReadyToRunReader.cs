@@ -610,8 +610,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     _pointerSize = 8;
                     break;
 
-                case Machine.LoongArch64:
-                    _architecture = Architecture.LoongArch64;
+                case (Machine) 0x6264: /* LoongArch64 */
+                    _architecture = (Architecture) 6; /* LoongArch64 */
                     _pointerSize = 8;
                     break;
 
