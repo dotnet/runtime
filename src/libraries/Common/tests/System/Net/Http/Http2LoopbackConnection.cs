@@ -838,12 +838,12 @@ namespace System.Net.Test.Common
             await SendResponseDataAsync(streamId, responseBody, isFinal).ConfigureAwait(false);
         }
 
-        public override void Dispose()
+        public override async ValueTask DisposeAsync()
         {
             // Might have been already shutdown manually via WaitForConnectionShutdownAsync which nulls the _connectionStream.
             if (_connectionStream != null)
             {
-                ShutdownIgnoringErrorsAsync(_lastStreamId).GetAwaiter().GetResult();
+                await ShutdownIgnoringErrorsAsync(_lastStreamId);
             }
         }
 

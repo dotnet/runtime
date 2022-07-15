@@ -66,7 +66,7 @@ namespace System.Threading.RateLimiting
             return new CombinedRateLimitLease(leases!);
         }
 
-        protected override async ValueTask<RateLimitLease> WaitAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken)
+        protected override async ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             RateLimitLease[]? leases = null;
@@ -76,7 +76,7 @@ namespace System.Threading.RateLimiting
                 Exception? exception = null;
                 try
                 {
-                    lease = await _limiters[i].WaitAsync(resourceID, permitCount, cancellationToken).ConfigureAwait(false);
+                    lease = await _limiters[i].WaitAndAcquireAsync(resourceID, permitCount, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

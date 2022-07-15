@@ -68,14 +68,22 @@ public class Program
             await VerifyCS.VerifyAnalyzerAsync(test);
         }
 
-        [Fact]
-        public async Task NoDiagnosticForTopLevelStatements()
+        [Theory]
+        [MemberData(nameof(InvocationTypes))]
+        public async Task TopLevelStatements(InvocationType invocationType)
         {
+            string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
             string test = @"using System.Text.RegularExpressions;
+var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern: "\"\"") + @"|]" + isMatchInvocation + ";";
+            string fixedCode = @"using System.Text.RegularExpressions;
+var isMatch = MyRegex().IsMatch("""");
 
-Regex r = new Regex("""");";
-
-            await VerifyCS.VerifyAnalyzerAsync(test);
+partial class Program
+{
+    [RegexGenerator("""")]
+    private static partial Regex MyRegex();
+}";
+            await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
         }
 
         public static IEnumerable<object[]> StaticInvocationWithTimeoutTestData()
@@ -737,15 +745,50 @@ partial class Program
         }
 
         [Fact]
-        public async Task NoDiagnosticForTopLevelStatements_MultipleSourceFiles()
+        public async Task TopLevelStatements_MultipleSourceFiles()
         {
             await new VerifyCS.Test(references: null, usePreviewLanguageVersion: true, numberOfIterations: 1)
             {
                 TestState =
                 {
-                    Sources = { "public class C { }", @"var r = new System.Text.RegularExpressions.Regex("""");" },
+                    Sources = { "public class C { }", @"var r = [|new System.Text.RegularExpressions.Regex("""")|];" },
                 },
+                FixedState =
+                {
+                    Sources = { "public class C { }", @"var r = MyRegex();
+
+partial class Program
+{
+    [System.Text.RegularExpressions.RegexGenerator("""")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex();
+}" }
+                }
             }.RunAsync();
+        }
+
+        [Fact]
+        public async Task LeadingAndTrailingTriviaIsPreservedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        {|#0:Regex.Replace(text, @"" \s+"" , ""  "")|};
+}";
+
+            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+static partial class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        MyRegex().Replace(text, ""  "");
+    [RegexGenerator("" \\s+"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, expectedFixedCode);
         }
 
         #region Test helpers

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -14,7 +15,6 @@ namespace System.Security.Cryptography
     /// phase to be skipped, and the master key to be used directly as the pseudorandom key.
     /// See <a href="https://tools.ietf.org/html/rfc5869">RFC5869</a> for more information.
     /// </remarks>
-    [UnsupportedOSPlatform("browser")]
     public static class HKDF
     {
         /// <summary>
@@ -290,7 +290,9 @@ namespace System.Security.Cryptography
             }
             else if (hashAlgorithmName == HashAlgorithmName.MD5)
             {
+#pragma warning disable CA1416 // HMACMD5 is unsupported on browser, throwing is handled later when making the HMAC call
                 return HMACMD5.HashSizeInBytes;
+#pragma warning restore CA1416
             }
             else
             {

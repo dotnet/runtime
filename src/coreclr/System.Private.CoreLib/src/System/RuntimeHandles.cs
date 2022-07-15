@@ -93,29 +93,19 @@ namespace System
         internal RuntimeType m_type;
 
         public override int GetHashCode()
-        {
-            return m_type != null ? m_type.GetHashCode() : 0;
-        }
+            => m_type?.GetHashCode() ?? 0;
 
         public override bool Equals(object? obj)
-        {
-            if (!(obj is RuntimeTypeHandle))
-                return false;
-
-            RuntimeTypeHandle handle = (RuntimeTypeHandle)obj;
-            return handle.m_type == m_type;
-        }
+            => (obj is RuntimeTypeHandle handle) && ReferenceEquals(handle.m_type, m_type);
 
         public bool Equals(RuntimeTypeHandle handle)
-        {
-            return handle.m_type == m_type;
-        }
+            => ReferenceEquals(handle.m_type, m_type);
 
-        public IntPtr Value => m_type != null ? m_type.m_handle : IntPtr.Zero;
+        public IntPtr Value => m_type?.m_handle ?? 0;
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetValueInternal(RuntimeTypeHandle handle);
+        internal static IntPtr GetValueInternal(RuntimeTypeHandle handle)
+            => handle.m_type?.GetUnderlyingNativeHandle() ?? 0;
 
         internal RuntimeTypeHandle(RuntimeType type)
         {

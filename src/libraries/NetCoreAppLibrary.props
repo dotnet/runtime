@@ -105,7 +105,6 @@
       System.ObjectModel;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
@@ -176,10 +175,8 @@
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
     <NetCoreAppLibraryNoReference>
-      System.Net.Quic;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
@@ -187,6 +184,7 @@
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
       LibraryImportGenerator;
+      JSImportGenerator;
       System.Text.Json.SourceGeneration.Roslyn4.0;
       System.Text.RegularExpressions.Generator;
     </NetCoreAppLibraryGenerator>

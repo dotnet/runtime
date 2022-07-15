@@ -209,9 +209,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert, converter);
-            jsonPropertyInfo.IgnoreCondition = ignoreCondition;
-            jsonPropertyInfo.CustomConverter = customConverter;
-            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo);
+            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition);
             return jsonPropertyInfo;
         }
 
