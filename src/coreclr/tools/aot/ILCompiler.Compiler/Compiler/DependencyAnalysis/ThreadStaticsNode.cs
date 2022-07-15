@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using ILCompiler.Compiler.Compiler.DependencyAnalysis;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -62,10 +62,7 @@ namespace ILCompiler.DependencyAnalysis
                 result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
             }
 
-            if (_type.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                result.Add(factory.MethodEntrypoint(moduleCctor), "Static base in a module with initializer");
-            }
+            NodeHelpers.ModuleConstructorCall(ref result, factory, _type, "Static base in a module with initializer");
 
             EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref result);
             return result;

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Runtime;
 using Internal.TypeSystem;
 using Internal.IL;
+using ILCompiler.Compiler.Compiler.DependencyAnalysis;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -33,11 +34,7 @@ namespace ILCompiler.DependencyAnalysis
             // relocs to nodes we emit.
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
 
-            if (_type is MetadataType mdType
-                && mdType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencyList.Add(factory.MethodEntrypoint(moduleCctor), "Type in a module with initializer");
-            }
+            NodeHelpers.ModuleConstructorCall(ref dependencyList, factory, _type, "Type in a module with initializer");
 
             DefType closestDefType = _type.GetClosestDefType();
 

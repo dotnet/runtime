@@ -12,6 +12,7 @@ using ILCompiler.DependencyAnalysis;
 using DependencyList=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList=System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
 using DependencyListEntry=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+using ILCompiler.Compiler.Compiler.DependencyAnalysis;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -23,12 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.InteropStubManager.AddDependenciesDueToPInvoke(ref dependencies, factory, method);
 
-            if (method.OwningType is MetadataType mdOwningType
-                && mdOwningType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.MethodEntrypoint(moduleCctor), "Method in a module with initializer");
-            }
+            NodeHelpers.ModuleConstructorCall(ref dependencies, factory, method.OwningType, "Method in a module with initializer");
 
             if (method.IsIntrinsic)
             {

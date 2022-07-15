@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using ILCompiler.Compiler.Compiler.DependencyAnalysis;
 using Internal.IL;
 using Internal.Runtime;
 using Internal.Text;
@@ -547,11 +547,7 @@ namespace ILCompiler.DependencyAnalysis
                 factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _type);
 
                 // If necessary MethodTable is the highest load level, consider this a module use
-                if (_type is MetadataType mdType
-                    && mdType.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-                {
-                    dependencies.Add(factory.MethodEntrypoint(moduleCctor), "Type in a module with initializer");
-                }
+                NodeHelpers.ModuleConstructorCall(ref dependencies, factory, _type, "Type in a module with initializer");
             }
 
             return dependencies;

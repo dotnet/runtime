@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-
+using ILCompiler.Compiler.Compiler.DependencyAnalysis;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -62,10 +62,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
-            if (_type.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                dependencyList.Add(factory.MethodEntrypoint(moduleCctor), "Static base in a module with initializer");
-            }
+            NodeHelpers.ModuleConstructorCall(ref dependencyList, factory, _type, "Static base in a module with initializer");
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
 

@@ -2,17 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Xml.XPath;
+using ILCompiler;
+using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysis;
 using ILLink.Shared;
+using Internal.TypeSystem;
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
-using Mono.Cecil;
+#nullable enable
 
-namespace Mono.Linker.Steps
+namespace ILCompiler
 {
-    public class DescriptorMarker : ProcessLinkerXmlBase
+    internal sealed class DescriptorMarker : ProcessLinkerXmlBase
     {
         const string NamespaceElementName = "namespace";
 
@@ -23,33 +32,35 @@ namespace Mono.Linker.Steps
         static readonly string[] _accessorsAll = new string[] { "all" };
         static readonly char[] _accessorsSep = new char[] { ';' };
 
-        public DescriptorMarker(LinkContext context, Stream documentStream, string xmlDocumentLocation)
-            : base(context, documentStream, xmlDocumentLocation)
+        private NodeFactory _factory;
+
+        private DependencyList _dependencies = new DependencyList();
+        public DependencyList Dependencies { get => _dependencies; }
+
+        public DescriptorMarker(NodeFactory factory, Stream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            : base(factory.TypeSystemContext, documentStream, xmlDocumentLocation, featureSwitchValues)
         {
+            _dependencies = new DependencyList();
+            _factory = factory;
         }
 
-        public DescriptorMarker(LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
-            : base(context, documentStream, resource, resourceAssembly, xmlDocumentLocation)
+        public DescriptorMarker(NodeFactory factory, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            : base(factory.TypeSystemContext, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
         {
-        }
-
-        public void Mark()
-        {
-            bool stripDescriptors = _context.IsOptimizationEnabled(CodeOptimizations.RemoveDescriptors, _resource?.Assembly);
-            ProcessXml(stripDescriptors, _context.IgnoreDescriptors);
+            _factory = factory;
         }
 
         protected override AllowedAssemblies AllowedAssemblySelector { get => AllowedAssemblies.AnyAssembly; }
 
-        protected override void ProcessAssembly(AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
+        protected override void ProcessAssembly(ModuleDesc assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
         {
             if (GetTypePreserve(nav) == TypePreserve.All)
             {
-                foreach (var type in assembly.MainModule.Types)
+                foreach (var type in assembly.GetAllTypes())
                     MarkAndPreserveAll(type, nav);
-
-                foreach (var exportedType in assembly.MainModule.ExportedTypes)
-                    _context.MarkingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition(nav));
+                
+                //foreach (var exportedType in assembly.MainModule.ExportedTypes)
+                //    _context.MarkingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition(nav));
             }
             else
             {
@@ -58,7 +69,7 @@ namespace Mono.Linker.Steps
             }
         }
 
-        void ProcessNamespaces(AssemblyDefinition assembly, XPathNavigator nav)
+        void ProcessNamespaces(ModuleDesc assembly, XPathNavigator nav)
         {
             foreach (XPathNavigator namespaceNav in nav.SelectChildren(NamespaceElementName, XmlNamespace))
             {
@@ -67,9 +78,9 @@ namespace Mono.Linker.Steps
 
                 string fullname = GetFullName(namespaceNav);
                 bool foundMatch = false;
-                foreach (TypeDefinition type in assembly.MainModule.Types)
+                foreach (TypeDesc type in assembly.GetAllTypes())
                 {
-                    if (type.Namespace != fullname)
+                    if (type is not DefType defType || defType.Namespace != fullname)
                         continue;
 
                     foundMatch = true;
@@ -78,48 +89,82 @@ namespace Mono.Linker.Steps
 
                 if (!foundMatch)
                 {
-                    LogWarning(namespaceNav, DiagnosticId.XmlCouldNotFindAnyTypeInNamespace, fullname);
+                    // LogWarning(namespaceNav, DiagnosticId.XmlCouldNotFindAnyTypeInNamespace, fullname);
                 }
             }
         }
 
-        void MarkAndPreserveAll(TypeDefinition type, XPathNavigator nav)
+        void MarkAndPreserveAll(TypeDesc type, XPathNavigator nav)
         {
-            _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
-            _context.Annotations.SetPreserve(type, TypePreserve.All);
+            var members = type.GetDynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All);
+            foreach (var member in members)
+            {
+                string reason = "type was kept in its entirity by the embedded descriptor file";
+                switch (member)
+                {
+                    case MethodDesc m:
+                        RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, m, reason);
+                        break;
+                    case FieldDesc field:
+                        RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, _factory, field, reason);
+                        break;
+                    case MetadataType nestedType:
+                        RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, nestedType, reason);
+                        break;
+                    case PropertyPseudoDesc property:
+                        if (property.GetMethod != null)
+                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, property.GetMethod, reason);
+                        if (property.SetMethod != null)
+                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, property.SetMethod, reason);
+                        break;
+                    case EventPseudoDesc @event:
+                        if (@event.AddMethod != null)
+                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, @event.AddMethod, reason);
+                        if (@event.RemoveMethod != null)
+                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, @event.RemoveMethod, reason);
+                        break;
+                    default:
+                        Debug.Fail(member.GetType().ToString());
+                        break;
+                }
+            }
 
+#if false
             if (!type.HasNestedTypes)
                 return;
 
-            foreach (TypeDefinition nested in type.NestedTypes)
+            foreach (TypeDesc nested in type.NestedTypes)
                 MarkAndPreserveAll(nested, nav);
+#endif
         }
 
-        protected override TypeDefinition? ProcessExportedType(ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav)
+#if false
+        protected override TypeDesc? ProcessExportedType(ExportedType exported, ModuleDesc assembly, XPathNavigator nav)
         {
             _context.MarkingHelpers.MarkExportedType(exported, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
             return base.ProcessExportedType(exported, assembly, nav);
         }
+#endif
 
-        protected override void ProcessType(TypeDefinition type, XPathNavigator nav)
+        protected override void ProcessType(TypeDesc type, XPathNavigator nav)
         {
             Debug.Assert(ShouldProcessElement(nav));
 
             TypePreserve preserve = GetTypePreserve(nav);
             switch (preserve)
             {
-                case TypePreserve.Fields when !type.HasFields:
-                    LogWarning(nav, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName());
+                case TypePreserve.Fields when !type.GetFields().Any():
+                    //LogWarning(nav, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName());
                     break;
 
-                case TypePreserve.Methods when !type.HasMethods:
-                    LogWarning(nav, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName());
+                case TypePreserve.Methods when !type.GetMethods().Any():
+                    //LogWarning(nav, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName());
                     break;
 
                 case TypePreserve.Fields:
                 case TypePreserve.Methods:
                 case TypePreserve.All:
-                    _context.Annotations.SetPreserve(type, preserve);
+                    //_context.Annotations.SetPreserve(type, preserve);
                     break;
             }
 
@@ -129,8 +174,43 @@ namespace Mono.Linker.Steps
             if (!required)
                 return;
 
-            _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
 
+            var members = type.GetDynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All);
+            foreach (var member in members)
+            {
+                string reason = "type was kept in its entirity by the embedded descriptor file";
+                switch (member)
+                {
+                    case MethodDesc m:
+                        RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, m, reason);
+                        break;
+                    case FieldDesc field:
+                        RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, _factory, field, reason);
+                        break;
+                    case MetadataType nestedType:
+                        RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, nestedType, reason);
+                        break;
+                    case PropertyPseudoDesc property:
+                        if (property.GetMethod != null)
+                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, property.GetMethod, reason);
+                        if (property.SetMethod != null)
+                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, property.SetMethod, reason);
+                        break;
+                    case EventPseudoDesc @event:
+                        if (@event.AddMethod != null)
+                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, @event.AddMethod, reason);
+                        if (@event.RemoveMethod != null)
+                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, @event.RemoveMethod, reason);
+                        break;
+                    default:
+                        Debug.Fail(member.GetType().ToString());
+                        break;
+                }
+            }
+
+            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, "type marked via descriptor");
+
+#if false
             if (type.IsNested)
             {
                 var currentType = type;
@@ -141,6 +221,7 @@ namespace Mono.Linker.Steps
                     currentType = parent;
                 }
             }
+#endif
         }
 
         static TypePreserve GetTypePreserve(XPathNavigator nav)
@@ -154,33 +235,38 @@ namespace Mono.Linker.Steps
             return TypePreserve.Nothing;
         }
 
-        protected override void ProcessField(TypeDefinition type, FieldDefinition field, XPathNavigator nav)
+        protected override void ProcessField(TypeDesc type, FieldDesc field, XPathNavigator nav)
         {
+            /*
             if (_context.Annotations.IsMarked(field))
-                LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
+            {
+                // LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
+            }*/
 
-            _context.Annotations.Mark(field, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+            _dependencies.Add(_factory.ReflectableField(field), "field kept due to embedded descriptor");
         }
 
-        protected override void ProcessMethod(TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
+        protected override void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
         {
-            if (_context.Annotations.IsMarked(method))
-                LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, method.GetDisplayName());
-
+            /*if (_context.Annotations.IsMarked(method))
+            {
+                // LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, method.GetDisplayName());
+            }
             _context.Annotations.MarkIndirectlyCalledMethod(method);
-            _context.Annotations.SetAction(method, MethodAction.Parse);
+            _context.Annotations.SetAction(method, MethodAction.Parse);*/
 
             if (customData is bool required && !required)
             {
-                _context.Annotations.AddPreservedMethod(type, method);
+                //TODO: Add a conditional dependency if the type is used also mark the method
+                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to embedded descriptor");
             }
             else
             {
-                _context.Annotations.Mark(method, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to embedded descriptor");
             }
         }
 
-        void ProcessMethodIfNotNull(TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
+        void ProcessMethodIfNotNull(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
         {
             if (method == null)
                 return;
@@ -188,59 +274,36 @@ namespace Mono.Linker.Steps
             ProcessMethod(type, method, nav, customData);
         }
 
-        protected override MethodDefinition? GetMethod(TypeDefinition type, string signature)
+        protected override MethodDesc? GetMethod(TypeDesc type, string signature)
         {
-            if (type.HasMethods)
-                foreach (MethodDefinition meth in type.Methods)
-                    if (signature == GetMethodSignature(meth, false))
-                        return meth;
-
+            foreach (MethodDesc meth in type.GetAllMethods())
+            {
+                if (signature == ProcessLinkerXmlBase.GetMethodSignature(meth, false))
+                    return meth;
+            }
             return null;
         }
 
-        public static string GetMethodSignature(MethodDefinition meth, bool includeGenericParameters)
+        protected override void ProcessEvent(TypeDesc type, EventPseudoDesc @event, XPathNavigator nav, object? customData)
         {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(meth.ReturnType.FullName);
-            sb.Append(" ");
-            sb.Append(meth.Name);
-            if (includeGenericParameters && meth.HasGenericParameters)
+            /*if (_context.Annotations.IsMarked(@event))
             {
-                sb.Append("`");
-                sb.Append(meth.GenericParameters.Count);
-            }
-
-            sb.Append("(");
-            if (meth.HasParameters)
-            {
-                for (int i = 0; i < meth.Parameters.Count; i++)
-                {
-                    if (i > 0)
-                        sb.Append(",");
-
-                    sb.Append(meth.Parameters[i].ParameterType.FullName);
-                }
-            }
-            sb.Append(")");
-            return sb.ToString();
-        }
-
-        protected override void ProcessEvent(TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData)
-        {
-            if (_context.Annotations.IsMarked(@event))
                 LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, @event.FullName);
+            }*/
 
             ProcessMethod(type, @event.AddMethod, nav, customData);
             ProcessMethod(type, @event.RemoveMethod, nav, customData);
-            ProcessMethodIfNotNull(type, @event.InvokeMethod, nav, customData);
+            ProcessMethodIfNotNull(type, @event.RaiseMethod, nav, customData);
         }
 
-        protected override void ProcessProperty(TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature)
+        protected override void ProcessProperty(TypeDesc type, PropertyPseudoDesc property, XPathNavigator nav, object? customData, bool fromSignature)
         {
             string[] accessors = fromSignature ? GetAccessors(nav) : _accessorsAll;
 
-            if (_context.Annotations.IsMarked(property))
+            /*if (_context.Annotations.IsMarked(property))
+            {
                 LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, property.FullName);
+            }*/
 
             if (Array.IndexOf(accessors, "all") >= 0)
             {
@@ -252,12 +315,16 @@ namespace Mono.Linker.Steps
             if (property.GetMethod != null && Array.IndexOf(accessors, "get") >= 0)
                 ProcessMethod(type, property.GetMethod, nav, customData);
             else if (property.GetMethod == null)
-                LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccesorOfPropertyOnType, property.Name, type.FullName);
+            {
+                // LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccesorOfPropertyOnType, property.Name, type.FullName);
+            }
 
             if (property.SetMethod != null && Array.IndexOf(accessors, "set") >= 0)
                 ProcessMethod(type, property.SetMethod, nav, customData);
             else if (property.SetMethod == null)
-                LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccesorOfPropertyOnType, property.Name, type.FullName);
+            {
+                // LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccesorOfPropertyOnType, property.Name, type.FullName);
+            }
         }
 
         static bool IsRequired(XPathNavigator nav)
@@ -269,7 +336,7 @@ namespace Mono.Linker.Steps
             return bool.TryParse(attribute, out bool result) && result;
         }
 
-        protected static string[] GetAccessors(XPathNavigator nav)
+        static string[] GetAccessors(XPathNavigator nav)
         {
             string accessorsValue = GetAttribute(nav, _accessors);
 
@@ -287,6 +354,13 @@ namespace Mono.Linker.Steps
                 }
             }
             return _accessorsAll;
+        }
+
+        public static DependencyList GetDependencies(NodeFactory factory, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        {
+            var descriptor = new DescriptorMarker(factory, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
+            descriptor.ProcessXml(false);
+            return descriptor.Dependencies;
         }
     }
 }
