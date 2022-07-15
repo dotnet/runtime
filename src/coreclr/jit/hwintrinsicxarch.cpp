@@ -2540,7 +2540,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             else
             {
                 GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
@@ -2620,7 +2620,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             else
             {
                 GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
