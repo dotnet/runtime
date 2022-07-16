@@ -7,7 +7,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    // Functionality related to determinstic ordering of types and members
+    // Functionality related to deterministic ordering of types and members
     //
     // Many places within a compiler need a way to generate deterministically ordered lists
     // that may be a result of non-deterministic processes. Multi-threaded compilation is a good

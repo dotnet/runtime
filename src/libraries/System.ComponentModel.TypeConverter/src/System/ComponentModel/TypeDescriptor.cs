@@ -1713,12 +1713,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Metdata filtering is the third stage of our pipeline.
+        /// Metadata filtering is the third stage of our pipeline.
         /// In this stage we check to see if the given object is a
         /// sited component that provides the ITypeDescriptorFilterService
         /// object. If it does, we allow the TDS to filter the metadata.
         /// This will use the cache, if available, to store filtered
-        /// metdata.
+        /// metadata.
         /// </summary>
         private static ICollection PipelineFilter(int pipelineType, ICollection members, object instance, IDictionary? cache)
         {
@@ -1952,7 +1952,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Metadata merging is the second stage of our metadata pipeline. This stage
-        /// merges extended metdata with primary metadata, and stores it in
+        /// merges extended metadata with primary metadata, and stores it in
         /// the cache if it is available.
         /// </summary>
         private static ICollection PipelineMerge(int pipelineType, ICollection primary, ICollection secondary, object instance, IDictionary? cache)
@@ -2212,7 +2212,7 @@ namespace System.ComponentModel
             }
 
             // We only clear our filter and fire the refresh event if there was one or
-            // more type description providers that were populated with metdata.
+            // more type description providers that were populated with metadata.
             // This prevents us from doing a lot of extra work and raising
             // a ton more events than we need to.
             if (found)

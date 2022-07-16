@@ -83,8 +83,8 @@ namespace Tests.System.IO
         }
 
         [Theory]
-        [InlineData("", Interop.Errors.ERROR_FILENAME_EXCED_RANGE, "IO_PathTooLong")]
-        [InlineData("foo", Interop.Errors.ERROR_FILENAME_EXCED_RANGE, "IO_PathTooLong_Path")]
+        [InlineData("", Interop.Errors.ERROR_FILENAME_EXCEED_RANGE, "IO_PathTooLong")]
+        [InlineData("foo", Interop.Errors.ERROR_FILENAME_EXCEED_RANGE, "IO_PathTooLong_Path")]
         public void PathTooLongErrors(string path, int errorCode, string error)
         {
             var exception = Win32Marshal.GetExceptionForWin32Error(errorCode, path);

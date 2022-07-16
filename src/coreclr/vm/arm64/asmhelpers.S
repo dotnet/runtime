@@ -754,7 +754,7 @@ LOCAL_LABEL(Success):
     blt     LOCAL_LABEL(Promote)
 
     ldr     x16, [x9, #ResolveCacheElem__target]    // get the ImplTarget
-    br      x16               // branch to interface implemenation target
+    br      x16               // branch to interface implementation target
 
 LOCAL_LABEL(Promote):
                               // Move this entry to head postion of the chain

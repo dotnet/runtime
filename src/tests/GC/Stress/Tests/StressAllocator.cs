@@ -51,7 +51,7 @@ namespace StressAllocator
         private const int BUCKETS_MAX = 80000;
         //////
         //// DEFAULT PARAMETERS
-        //These parameters may be overriden by command line parameters
+        //These parameters may be overridden by command line parameters
         public const int DEFAULT_MINLIFE = 3; //milliseconds
         public const int DEFAULT_MAXLIFE = 30; //milliseconds
         public const int DEFAULT_OBJCOUNT = 2000; //object count

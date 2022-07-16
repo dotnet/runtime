@@ -4,7 +4,7 @@
 // This test covers the scenario of testing overrides of generic methods
 // 1. Test1 covers testing cases where a MethodImpl Decl could
 //    resolve to 2 different methods and the exact signature is needed to represent
-//    which method is overriden.
+//    which method is overridden.
 // 2. Test2 covers testing the substitution chain handling scenario.
 
 // Metadata version: v4.0.30319

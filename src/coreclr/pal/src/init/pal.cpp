@@ -1354,7 +1354,7 @@ static BOOL INIT_SharedFilesPath(void)
         // Verify the size of the path won't exceed maximum allowed size
         if (gSharedFilesPath->GetCount() + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ > MAX_LONGPATH)
         {
-            SetLastError(ERROR_FILENAME_EXCED_RANGE);
+            SetLastError(ERROR_FILENAME_EXCEED_RANGE);
             return FALSE;
         }
 

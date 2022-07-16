@@ -56,7 +56,7 @@ namespace Internal.TypeSystem.Ecma
                         }
                         else
                         {
-                            // Further depedencies are handled by specifying a module which has a further assembly dependency on the correct module
+                            // Further dependencies are handled by specifying a module which has a further assembly dependency on the correct module
                             string asmReferenceName = GetNameOfAssemblyRefWhichResolvesToType(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences, metadataType);
                             int index = _moduleToIndex(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences);
                             Debug.Assert(index != -1);

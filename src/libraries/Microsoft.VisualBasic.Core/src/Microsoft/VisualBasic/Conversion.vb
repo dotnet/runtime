@@ -338,7 +338,7 @@ RangeCheck:
                         If (LongValue > 0) Then
                             Return Hex(LongValue)
                         Else
-                            'For VB6 compatability, format as Int32 value
+                            'For VB6 compatibility, format as Int32 value
                             ' unless it overflows into an Int64
                             If (LongValue >= System.Int32.MinValue) Then
                                 Return Hex(CInt(LongValue))
@@ -449,7 +449,7 @@ RangeCheck:
                         If (LongValue > 0) Then
                             Return Oct(LongValue)
                         Else
-                            'For VB6 compatability, format as Int32 value
+                            'For VB6 compatibility, format as Int32 value
                             ' unless it overflows into an Int64
                             If (LongValue >= System.Int32.MinValue) Then
                                 Return Oct(CInt(LongValue))

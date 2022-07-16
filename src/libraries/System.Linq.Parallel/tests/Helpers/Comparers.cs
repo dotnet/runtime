@@ -127,7 +127,7 @@ namespace System.Linq.Parallel.Tests
         }
     }
 
-    internal static class DelgatedComparable
+    internal static class DelegatedComparable
     {
         public static DelegatedComparable<T> Delegate<T>(T value, IComparer<T> comparer) where T : IComparable<T>
         {

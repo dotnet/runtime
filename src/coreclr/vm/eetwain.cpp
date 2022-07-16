@@ -1944,7 +1944,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
                        S   indicates that register ESI is an interior pointer
                        D   indicates that register EDI is an interior pointer
                        the list count is the number of entries in the list
-                       the list size gives the byte-lenght of the list
+                       the list size gives the byte-length of the list
                        the offsets in the list are variable-length
   */
         while (scanOffs < curOffs)

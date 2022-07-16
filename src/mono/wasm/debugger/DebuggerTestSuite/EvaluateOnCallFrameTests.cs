@@ -459,7 +459,7 @@ namespace DebuggerTests
 
                   ("me.foo", "ReferenceError"),
 
-                  ("this.a + non_existant", "ReferenceError"),
+                  ("this.a + non_existent", "ReferenceError"),
 
                   ("this.NullIfAIsNotZero.foo", "ReferenceError"),
                   ("NullIfAIsNotZero.foo", "ReferenceError"));

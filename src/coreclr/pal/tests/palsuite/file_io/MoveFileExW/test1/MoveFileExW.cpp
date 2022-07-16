@@ -123,7 +123,7 @@ void removeAll_MoveFileExW_test1(void)
 //    lpSource_MoveFileExW_test1[0] = convert("src_existing.tmp");
     
     removeFileHelper_MoveFileExW_test1(lpSource_MoveFileExW_test1[1], 12);
-  //lpSource_MoveFileExW_test1[1] = convert("src_non-existant.tmp");
+  //lpSource_MoveFileExW_test1[1] = convert("src_non-existent.tmp");
   
     removeFileHelper_MoveFileExW_test1(lpFiles_MoveFileExW_test1[0], 13);
 //    lpFiles_MoveFileExW_test1[0] = convert("src_dir_existing\\test01.tmp");
@@ -135,13 +135,13 @@ void removeAll_MoveFileExW_test1(void)
 //    lpSource_MoveFileExW_test1[2] = convert("src_dir_existing");
 
     removeFileHelper_MoveFileExW_test1(lpFiles_MoveFileExW_test1[4], 15);
-//    lpFiles_MoveFileExW_test1[4] = convert("src_dir_non-existant\\test01.tmp");
+//    lpFiles_MoveFileExW_test1[4] = convert("src_dir_non-existent\\test01.tmp");
 
     removeFileHelper_MoveFileExW_test1(lpFiles_MoveFileExW_test1[5], 16);
-//    lpFiles_MoveFileExW_test1[5] = convert("src_dir_non-existant\\test02.tmp");
+//    lpFiles_MoveFileExW_test1[5] = convert("src_dir_non-existent\\test02.tmp");
 
     removeDirectoryHelper_MoveFileExW_test1(lpSource_MoveFileExW_test1[3], 102);
-//    lpSource_MoveFileExW_test1[3] = convert("src_dir_non-existant");
+//    lpSource_MoveFileExW_test1[3] = convert("src_dir_non-existent");
 
     /* get rid of destination dirs and files */
     dwAtt = GetFileAttributesW(lpDestination_MoveFileExW_test1[0]);
@@ -165,17 +165,17 @@ void removeAll_MoveFileExW_test1(void)
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
         removeFileHelper_MoveFileExW_test1(lpFiles_MoveFileExW_test1[8], 21);
-    //    lpFiles_MoveFileExW_test1[8] = convert("dst_non-existant.tmp\\test01.tmp");
+    //    lpFiles_MoveFileExW_test1[8] = convert("dst_non-existent.tmp\\test01.tmp");
         removeFileHelper_MoveFileExW_test1(lpFiles_MoveFileExW_test1[9], 22);
-    //    lpFiles_MoveFileExW_test1[9] = convert("dst_non-existant.tmp\\test02.tmp");
+    //    lpFiles_MoveFileExW_test1[9] = convert("dst_non-existent.tmp\\test02.tmp");
         removeDirectoryHelper_MoveFileExW_test1(lpDestination_MoveFileExW_test1[1], 104);
-    //    lpDestination_MoveFileExW_test1[1] = convert("dst_non-existant.tmp");
+    //    lpDestination_MoveFileExW_test1[1] = convert("dst_non-existent.tmp");
 
     }
     else
     {
         removeFileHelper_MoveFileExW_test1(lpDestination_MoveFileExW_test1[1], 19);
-            //lpDestination_MoveFileExW_test1[1] = convert("dst_non-existant.tmp");
+            //lpDestination_MoveFileExW_test1[1] = convert("dst_non-existent.tmp");
     }
  
     dwAtt = GetFileAttributesW(lpDestination_MoveFileExW_test1[2]);
@@ -200,17 +200,17 @@ void removeAll_MoveFileExW_test1(void)
     if (( dwAtt != INVALID_FILE_ATTRIBUTES ) && ( dwAtt & FILE_ATTRIBUTE_DIRECTORY) )
     {
         removeFileHelper_MoveFileExW_test1(lpFiles_MoveFileExW_test1[12], 26);
-    //    lpFiles_MoveFileExW_test1[12] = convert("dst_dir_non-existant\\test01.tmp");
+    //    lpFiles_MoveFileExW_test1[12] = convert("dst_dir_non-existent\\test01.tmp");
         removeFileHelper_MoveFileExW_test1(lpFiles_MoveFileExW_test1[13], 27);
-    //    lpFiles_MoveFileExW_test1[13] = convert("dst_dir_non-existant\\test02.tmp");
+    //    lpFiles_MoveFileExW_test1[13] = convert("dst_dir_non-existent\\test02.tmp");
         removeDirectoryHelper_MoveFileExW_test1(lpDestination_MoveFileExW_test1[3], 106);
-    //    lpDestination_MoveFileExW_test1[3] = convert("dst_dir_non-existant");
+    //    lpDestination_MoveFileExW_test1[3] = convert("dst_dir_non-existent");
 
     }
     else
     {
         removeFileHelper_MoveFileExW_test1(lpDestination_MoveFileExW_test1[3], 107);
-    //    lpDestination_MoveFileExW_test1[3] = convert("dst_dir_non-existant");
+    //    lpDestination_MoveFileExW_test1[3] = convert("dst_dir_non-existent");
 
     }
 
@@ -234,33 +234,33 @@ PALTEST(file_io_MoveFileExW_test1_paltest_movefileexw_test1, "file_io/MoveFileEx
     }
 
     lpSource_MoveFileExW_test1[0] = convert("src_existing.tmp");
-    lpSource_MoveFileExW_test1[1] = convert("src_non-existant.tmp");
+    lpSource_MoveFileExW_test1[1] = convert("src_non-existent.tmp");
     lpSource_MoveFileExW_test1[2] = convert("src_dir_existing");
-    lpSource_MoveFileExW_test1[3] = convert("src_dir_non-existant");
+    lpSource_MoveFileExW_test1[3] = convert("src_dir_non-existent");
 
     lpDestination_MoveFileExW_test1[0] = convert("dst_existing.tmp");
-    lpDestination_MoveFileExW_test1[1] = convert("dst_non-existant.tmp");
+    lpDestination_MoveFileExW_test1[1] = convert("dst_non-existent.tmp");
     lpDestination_MoveFileExW_test1[2] = convert("dst_dir_existing");
-    lpDestination_MoveFileExW_test1[3] = convert("dst_dir_non-existant");
+    lpDestination_MoveFileExW_test1[3] = convert("dst_dir_non-existent");
 
     lpFiles_MoveFileExW_test1[0] = convert("src_dir_existing\\test01.tmp");
     lpFiles_MoveFileExW_test1[1] = convert("src_dir_existing\\test02.tmp");
     lpFiles_MoveFileExW_test1[2] = convert("dst_dir_existing\\test01.tmp");
     lpFiles_MoveFileExW_test1[3] = convert("dst_dir_existing\\test02.tmp");
-    lpFiles_MoveFileExW_test1[4] = convert("src_dir_non-existant\\test01.tmp");
-    lpFiles_MoveFileExW_test1[5] = convert("src_dir_non-existant\\test02.tmp");
+    lpFiles_MoveFileExW_test1[4] = convert("src_dir_non-existent\\test01.tmp");
+    lpFiles_MoveFileExW_test1[5] = convert("src_dir_non-existent\\test02.tmp");
 
     lpFiles_MoveFileExW_test1[6] = convert("dst_existing.tmp\\test01.tmp");
     lpFiles_MoveFileExW_test1[7] = convert("dst_existing.tmp\\test02.tmp");
 
-    lpFiles_MoveFileExW_test1[8] = convert("dst_non-existant.tmp\\test01.tmp");
-    lpFiles_MoveFileExW_test1[9] = convert("dst_non-existant.tmp\\test02.tmp");
+    lpFiles_MoveFileExW_test1[8] = convert("dst_non-existent.tmp\\test01.tmp");
+    lpFiles_MoveFileExW_test1[9] = convert("dst_non-existent.tmp\\test02.tmp");
 
     lpFiles_MoveFileExW_test1[10] = convert("dst_dir_existing\\test01.tmp");  
     lpFiles_MoveFileExW_test1[11] = convert("dst_dir_existing\\test02.tmp");
 
-    lpFiles_MoveFileExW_test1[12] = convert("dst_dir_non-existant\\test01.tmp");
-    lpFiles_MoveFileExW_test1[13] = convert("dst_dir_non-existant\\test02.tmp");
+    lpFiles_MoveFileExW_test1[12] = convert("dst_dir_non-existent\\test01.tmp");
+    lpFiles_MoveFileExW_test1[13] = convert("dst_dir_non-existent\\test02.tmp");
 
     /* read in the expected results to compare with actual results */
     memset (results, 0, 34);

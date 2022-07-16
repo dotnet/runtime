@@ -38,7 +38,7 @@ PALTEST(c_runtime_strtok_test1_paltest_strtok_test1, "c_runtime/strtok/test1/pal
     }
     if (memcmp(str, result1, len) != 0)
     {
-        Fail("strtok altered the string in an unexpeced way!\n");
+        Fail("strtok altered the string in an unexpected way!\n");
     }
 
     ptr = strtok(NULL, "r ");
@@ -48,7 +48,7 @@ PALTEST(c_runtime_strtok_test1_paltest_strtok_test1, "c_runtime/strtok/test1/pal
     }
     if (memcmp(str, result2, len) != 0)
     {
-        Fail("strtok altered the string in an unexpeced way!\n");
+        Fail("strtok altered the string in an unexpected way!\n");
     }
 
 
@@ -59,7 +59,7 @@ PALTEST(c_runtime_strtok_test1_paltest_strtok_test1, "c_runtime/strtok/test1/pal
     }
     if (memcmp(str, result2, len) != 0)
     {
-        Fail("strtok altered the string in an unexpeced way!\n");
+        Fail("strtok altered the string in an unexpected way!\n");
     }
 
     ptr = strtok(NULL, "X");
@@ -69,7 +69,7 @@ PALTEST(c_runtime_strtok_test1_paltest_strtok_test1, "c_runtime/strtok/test1/pal
     }
     if (memcmp(str, result2, len) != 0)
     {
-        Fail("strtok altered the string in an unexpeced way!\n");
+        Fail("strtok altered the string in an unexpected way!\n");
     }
 
     PAL_Terminate();

@@ -134,7 +134,7 @@
   <data name="NoProcessHandle" xml:space="preserve">
     <value>Process was not started by this object, so requested information cannot be determined.</value>
   </data>
-  <data name="MissingProccess" xml:space="preserve">
+  <data name="MissingProcess" xml:space="preserve">
     <value>Process with an Id of {0} is not running.</value>
   </data>
   <data name="BadMinWorkset" xml:space="preserve">

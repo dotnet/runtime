@@ -28,7 +28,7 @@ public class MarshalStructTest
         StringStructSequentialUnicodeId,
         S8Id,
         S9Id,
-        IncludeOuterIntergerStructSequentialId,
+        IncludeOuterIntegerStructSequentialId,
         S11Id,
         ComplexStructId
     }
@@ -610,29 +610,29 @@ public class MarshalStructTest
 
     #endregion
 
-    #region Methods for the struct IncludeOuterIntergerStructSequential declaration
+    #region Methods for the struct IncludeOuterIntegerStructSequential declaration
 
     #region PassByRef
 
     //For Delegate Pinvoke ByRef
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate bool IncludeOuterIntergerStructSequentialByRefDelegateCdecl([In, Out]ref IncludeOuterIntergerStructSequential argStr);
+    public delegate bool IncludeOuterIntegerStructSequentialByRefDelegateCdecl([In, Out]ref IncludeOuterIntegerStructSequential argStr);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public delegate bool IncludeOuterIntergerStructSequentialByRefDelegateStdCall([In, Out]ref IncludeOuterIntergerStructSequential argStr);
+    public delegate bool IncludeOuterIntegerStructSequentialByRefDelegateStdCall([In, Out]ref IncludeOuterIntegerStructSequential argStr);
     //Pinvoke,cdecl
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.Cdecl)]
-    public static extern bool MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl([In, Out]ref IncludeOuterIntergerStructSequential argStr);
+    public static extern bool MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl([In, Out]ref IncludeOuterIntegerStructSequential argStr);
     //Delegate PInvoke,cdecl
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.FunctionPtr)]
-    public static extern IncludeOuterIntergerStructSequentialByRefDelegateCdecl Get_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl_FuncPtr();
+    public static extern IncludeOuterIntegerStructSequentialByRefDelegateCdecl Get_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl_FuncPtr();
     //Pinvoke,stdcall
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.StdCall)]
-    public static extern bool MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall([In, Out]ref IncludeOuterIntergerStructSequential argStr);
+    public static extern bool MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall([In, Out]ref IncludeOuterIntegerStructSequential argStr);
     //Delegate PInvoke,stdcall
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.StdCall)]
     [return: MarshalAs(UnmanagedType.FunctionPtr)]
-    public static extern IncludeOuterIntergerStructSequentialByRefDelegateStdCall Get_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall_FuncPtr();
+    public static extern IncludeOuterIntegerStructSequentialByRefDelegateStdCall Get_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall_FuncPtr();
 
     #endregion
 
@@ -640,23 +640,23 @@ public class MarshalStructTest
 
     //For Delegate Pinvoke ByVal
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate bool IncludeOuterIntergerStructSequentialByValDelegateCdecl([In, Out] IncludeOuterIntergerStructSequential argStr);
+    public delegate bool IncludeOuterIntegerStructSequentialByValDelegateCdecl([In, Out] IncludeOuterIntegerStructSequential argStr);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public delegate bool IncludeOuterIntergerStructSequentialByValDelegateStdCall([In, Out] IncludeOuterIntergerStructSequential argStr);
+    public delegate bool IncludeOuterIntegerStructSequentialByValDelegateStdCall([In, Out] IncludeOuterIntegerStructSequential argStr);
     //Pinvoke,cdecl
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.Cdecl)]
-    public static extern bool MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl([In, Out] IncludeOuterIntergerStructSequential argStr);
+    public static extern bool MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl([In, Out] IncludeOuterIntegerStructSequential argStr);
     //Delegate PInvoke,cdecl
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.Cdecl)]
     [return: MarshalAs(UnmanagedType.FunctionPtr)]
-    public static extern IncludeOuterIntergerStructSequentialByValDelegateCdecl Get_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl_FuncPtr();
+    public static extern IncludeOuterIntegerStructSequentialByValDelegateCdecl Get_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl_FuncPtr();
     //Pinvoke,stdcall
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.StdCall)]
-    public static extern bool MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall([In, Out] IncludeOuterIntergerStructSequential argStr);
+    public static extern bool MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall([In, Out] IncludeOuterIntegerStructSequential argStr);
     //Delegate PInvoke,stdcall
     [DllImport("SeqPInvokeNative", CallingConvention = CallingConvention.StdCall)]
     [return: MarshalAs(UnmanagedType.FunctionPtr)]
-    public static extern IncludeOuterIntergerStructSequentialByValDelegateStdCall Get_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall_FuncPtr();
+    public static extern IncludeOuterIntegerStructSequentialByValDelegateStdCall Get_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall_FuncPtr();
 
     #endregion
 
@@ -883,14 +883,14 @@ public class MarshalStructTest
                 Assert.True(caller12(ref sourceS9));
                 Assert.True(Helper.ValidateS9(sourceS9, changeS9, "DelegatePInvoke_MarshalStructS9ByRef_Cdecl"));
                 break;
-            case StructID.IncludeOuterIntergerStructSequentialId:
-                IncludeOuterIntergerStructSequential sourceIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(32, 32);
-                IncludeOuterIntergerStructSequential changeIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(64, 64);
-                Console.WriteLine("Calling DelegatePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl...");
-                IncludeOuterIntergerStructSequentialByRefDelegateCdecl caller13 = Get_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl_FuncPtr();
-                Assert.True(caller13(ref sourceIncludeOuterIntergerStructSequential));
-                Assert.True(Helper.ValidateIncludeOuterIntergerStructSequential(sourceIncludeOuterIntergerStructSequential,
-                    changeIncludeOuterIntergerStructSequential, "DelegatePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByRef_Cdecl"));
+            case StructID.IncludeOuterIntegerStructSequentialId:
+                IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
+                IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
+                Console.WriteLine("Calling DelegatePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl...");
+                IncludeOuterIntegerStructSequentialByRefDelegateCdecl caller13 = Get_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl_FuncPtr();
+                Assert.True(caller13(ref sourceIncludeOuterIntegerStructSequential));
+                Assert.True(Helper.ValidateIncludeOuterIntegerStructSequential(sourceIncludeOuterIntegerStructSequential,
+                    changeIncludeOuterIntegerStructSequential, "DelegatePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByRef_Cdecl"));
                 break;
             case StructID.S11Id:
                 S11 sourceS11 = Helper.NewS11((int*)(32), 32);
@@ -1025,14 +1025,14 @@ public class MarshalStructTest
                 Assert.True(caller12(ref sourceS9));
                 Assert.True(Helper.ValidateS9(sourceS9, changeS9, "DelegatePInvoke_MarshalStructS9ByRef_StdCall"));
                 break;
-            case StructID.IncludeOuterIntergerStructSequentialId:
-                IncludeOuterIntergerStructSequential sourceIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(32, 32);
-                IncludeOuterIntergerStructSequential changeIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(64, 64);
-                Console.WriteLine("Calling DelegatePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall...");
-                IncludeOuterIntergerStructSequentialByRefDelegateStdCall caller13 = Get_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall_FuncPtr();
-                Assert.True(caller13(ref sourceIncludeOuterIntergerStructSequential));
-                Assert.True(Helper.ValidateIncludeOuterIntergerStructSequential(sourceIncludeOuterIntergerStructSequential,
-                    changeIncludeOuterIntergerStructSequential, "DelegatePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByRef_StdCall"));
+            case StructID.IncludeOuterIntegerStructSequentialId:
+                IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
+                IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
+                Console.WriteLine("Calling DelegatePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall...");
+                IncludeOuterIntegerStructSequentialByRefDelegateStdCall caller13 = Get_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall_FuncPtr();
+                Assert.True(caller13(ref sourceIncludeOuterIntegerStructSequential));
+                Assert.True(Helper.ValidateIncludeOuterIntegerStructSequential(sourceIncludeOuterIntegerStructSequential,
+                    changeIncludeOuterIntegerStructSequential, "DelegatePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByRef_StdCall"));
                 break;
             case StructID.S11Id:
                 S11 sourceS11 = Helper.NewS11((int*)(32), 32);
@@ -1167,14 +1167,14 @@ public class MarshalStructTest
                 Assert.True(caller12(sourceS9));
                 Assert.True(Helper.ValidateS9(sourceS9, cloneS9, "DelegatePInvoke_MarshalStructS9ByVal_Cdecl"));
                 break;
-            case StructID.IncludeOuterIntergerStructSequentialId:
-                IncludeOuterIntergerStructSequential sourceIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(32, 32);
-                IncludeOuterIntergerStructSequential cloneIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(32, 32);
-                Console.WriteLine("Calling DelegatePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl...");
-                IncludeOuterIntergerStructSequentialByValDelegateCdecl caller13 = Get_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl_FuncPtr();
-                Assert.True(caller13(sourceIncludeOuterIntergerStructSequential));
-                Assert.True(Helper.ValidateIncludeOuterIntergerStructSequential(sourceIncludeOuterIntergerStructSequential,
-                    cloneIncludeOuterIntergerStructSequential, "DelegatePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByVal_Cdecl"));
+            case StructID.IncludeOuterIntegerStructSequentialId:
+                IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
+                IncludeOuterIntegerStructSequential cloneIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
+                Console.WriteLine("Calling DelegatePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl...");
+                IncludeOuterIntegerStructSequentialByValDelegateCdecl caller13 = Get_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl_FuncPtr();
+                Assert.True(caller13(sourceIncludeOuterIntegerStructSequential));
+                Assert.True(Helper.ValidateIncludeOuterIntegerStructSequential(sourceIncludeOuterIntegerStructSequential,
+                    cloneIncludeOuterIntegerStructSequential, "DelegatePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByVal_Cdecl"));
                 break;
             case StructID.S11Id:
                 S11 sourceS11 = Helper.NewS11((int*)(32), 32);
@@ -1309,14 +1309,14 @@ public class MarshalStructTest
                 Assert.True(caller12(sourceS9));
                 Assert.True(Helper.ValidateS9(sourceS9, cloneS9, "DelegatePInvoke_MarshalStructS9ByVal_StdCall"));
                 break;
-            case StructID.IncludeOuterIntergerStructSequentialId:
-                IncludeOuterIntergerStructSequential sourceIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(32, 32);
-                IncludeOuterIntergerStructSequential cloneIncludeOuterIntergerStructSequential = Helper.NewIncludeOuterIntergerStructSequential(32, 32);
-                Console.WriteLine("Calling DelegatePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall...");
-                IncludeOuterIntergerStructSequentialByValDelegateStdCall caller13 = Get_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall_FuncPtr();
-                Assert.True(caller13(sourceIncludeOuterIntergerStructSequential));
-                Assert.True(Helper.ValidateIncludeOuterIntergerStructSequential(sourceIncludeOuterIntergerStructSequential,
-                    cloneIncludeOuterIntergerStructSequential, "DelegatePInvoke_MarshalStructIncludeOuterIntergerStructSequentialByVal_StdCall"));
+            case StructID.IncludeOuterIntegerStructSequentialId:
+                IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
+                IncludeOuterIntegerStructSequential cloneIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
+                Console.WriteLine("Calling DelegatePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall...");
+                IncludeOuterIntegerStructSequentialByValDelegateStdCall caller13 = Get_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall_FuncPtr();
+                Assert.True(caller13(sourceIncludeOuterIntegerStructSequential));
+                Assert.True(Helper.ValidateIncludeOuterIntegerStructSequential(sourceIncludeOuterIntegerStructSequential,
+                    cloneIncludeOuterIntegerStructSequential, "DelegatePInvoke_MarshalStructIncludeOuterIntegerStructSequentialByVal_StdCall"));
                 break;
             case StructID.S11Id:
                 S11 sourceS11 = Helper.NewS11((int*)(32), 32);
@@ -1349,7 +1349,7 @@ public class MarshalStructTest
         TestMethod_DelegatePInvoke_MarshalByRef_Cdecl(StructID.StringStructSequentialUnicodeId);
         TestMethod_DelegatePInvoke_MarshalByRef_Cdecl(StructID.S8Id);
         TestMethod_DelegatePInvoke_MarshalByRef_Cdecl(StructID.S9Id);
-        TestMethod_DelegatePInvoke_MarshalByRef_Cdecl(StructID.IncludeOuterIntergerStructSequentialId);
+        TestMethod_DelegatePInvoke_MarshalByRef_Cdecl(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DelegatePInvoke_MarshalByRef_Cdecl(StructID.S11Id);
     }
 
@@ -1367,7 +1367,7 @@ public class MarshalStructTest
         TestMethod_DelegatePInvoke_MarshalByRef_StdCall(StructID.StringStructSequentialUnicodeId);
         TestMethod_DelegatePInvoke_MarshalByRef_StdCall(StructID.S8Id);
         TestMethod_DelegatePInvoke_MarshalByRef_StdCall(StructID.S9Id);
-        TestMethod_DelegatePInvoke_MarshalByRef_StdCall(StructID.IncludeOuterIntergerStructSequentialId);
+        TestMethod_DelegatePInvoke_MarshalByRef_StdCall(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DelegatePInvoke_MarshalByRef_StdCall(StructID.S11Id);
     }
 
@@ -1389,7 +1389,7 @@ public class MarshalStructTest
         TestMethod_DelegatePInvoke_MarshalByVal_Cdecl(StructID.StringStructSequentialUnicodeId);
         TestMethod_DelegatePInvoke_MarshalByVal_Cdecl(StructID.S8Id);
         TestMethod_DelegatePInvoke_MarshalByVal_Cdecl(StructID.S9Id);
-        TestMethod_DelegatePInvoke_MarshalByVal_Cdecl(StructID.IncludeOuterIntergerStructSequentialId);
+        TestMethod_DelegatePInvoke_MarshalByVal_Cdecl(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DelegatePInvoke_MarshalByVal_Cdecl(StructID.S11Id);
     }
 
@@ -1407,7 +1407,7 @@ public class MarshalStructTest
         TestMethod_DelegatePInvoke_MarshalByVal_StdCall(StructID.StringStructSequentialUnicodeId);
         TestMethod_DelegatePInvoke_MarshalByVal_StdCall(StructID.S8Id);
         TestMethod_DelegatePInvoke_MarshalByVal_StdCall(StructID.S9Id);
-        TestMethod_DelegatePInvoke_MarshalByVal_StdCall(StructID.IncludeOuterIntergerStructSequentialId);
+        TestMethod_DelegatePInvoke_MarshalByVal_StdCall(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DelegatePInvoke_MarshalByVal_StdCall(StructID.S11Id);
     }
 

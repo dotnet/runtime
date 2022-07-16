@@ -283,7 +283,7 @@ namespace System.ComponentModel
         ///
         /// Add operations are cancellable via the <see cref="ICancelAddNew" /> interface. The position of the
         /// new item is tracked until the add operation is either cancelled by a call to <see cref="CancelNew" />,
-        /// explicitly commited by a call to <see cref="EndNew" />, or implicitly commmited some other operation
+        /// explicitly committed by a call to <see cref="EndNew" />, or implicitly commmited some other operation
         /// changes the contents of the list (such as an Insert or Remove). When an add operation is
         /// cancelled, the new item is removed from the list.
         /// </summary>

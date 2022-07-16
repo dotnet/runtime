@@ -40,7 +40,7 @@ namespace ILCompiler.IBC
         }
 
         //
-        // Class constuctor for class IBCData
+        // Class constructor for class IBCData
         //
         private static SectionTypeInfo[] ComputeSectionTypeInfos()
         {

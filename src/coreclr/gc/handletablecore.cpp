@@ -516,7 +516,7 @@ BOOL SegmentInitialize(TableSegment *pSegment, HandleTable *pTable)
         return FALSE;
     }
 
-    // remember how many blocks we commited
+    // remember how many blocks we committed
     pSegment->bCommitLine = (uint8_t)((dwCommit - HANDLE_HEADER_SIZE) / HANDLE_BYTES_PER_BLOCK);
 
     // now preinitialize the 0xFF guys
@@ -873,7 +873,7 @@ uint32_t SegmentInsertBlockFromFreeListWorker(TableSegment *pSegment, uint32_t u
                 // use the previous commit line as the new decommit line
                 pSegment->bDecommitLine = (uint8_t)uCommitLine;
 
-                // adjust the commit line by the number of blocks we commited
+                // adjust the commit line by the number of blocks we committed
                 pSegment->bCommitLine = (uint8_t)(uCommitLine + (dwCommit / HANDLE_BYTES_PER_BLOCK));
             }
 

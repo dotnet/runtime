@@ -715,7 +715,7 @@ class Tests
 
 	public static int INT_VAL = 0x13456799;
 
-	public static int test_0_int4_to_float_convertion ()
+	public static int test_0_int4_to_float_conversion ()
     {
 		double d = (double)(float)INT_VAL;
 
@@ -724,7 +724,7 @@ class Tests
 		return 0;
 	}
 
-	public static int test_0_int8_to_float_convertion ()
+	public static int test_0_int8_to_float_conversion ()
     {
 		double d = (double)(float)(long)INT_VAL;
 

@@ -50,7 +50,7 @@ namespace System.Threading
                 {
                     handle.SetHandleAsInvalid();
 
-                    if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
+                    if (errorCode == Interop.Errors.ERROR_FILENAME_EXCEED_RANGE)
                     {
                         throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
                     }

@@ -112,7 +112,7 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestInterfaceRequiresImplmentation()
+        public void TestInterfaceRequiresImplementation()
         {
             MetadataType i1Type = _testModule.GetType("InterfaceArrangements", "I1");
             MetadataType i2Type = _testModule.GetType("InterfaceArrangements", "I2");

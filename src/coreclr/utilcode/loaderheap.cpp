@@ -1280,7 +1280,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         if (IsInterleaved())
         {
-            // The end of commited region for interleaved heaps points to the end of the executable
+            // The end of committed region for interleaved heaps points to the end of the executable
             // page and the data pages goes right after that. So we skip the data page here.
             m_pPtrToEndOfCommittedRegion += GetOsPageSize();
         }

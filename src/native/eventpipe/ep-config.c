@@ -375,7 +375,7 @@ ep_config_build_event_metadata_event (
 	memcpy(current, payload_data, payload_data_len);
 
 	// Construct the metadata event instance.
-	instance = ep_event_metdata_event_alloc (
+	instance = ep_event_metadata_event_alloc (
 		config->metadata_event,
 		ep_rt_current_processor_get_number (),
 		ep_rt_thread_id_t_to_uint64_t (ep_rt_current_thread_get_id ()),
@@ -593,7 +593,7 @@ config_enable_disable (
  */
 
 EventPipeEventMetadataEvent *
-ep_event_metdata_event_alloc (
+ep_event_metadata_event_alloc (
 	EventPipeEvent *ep_event,
 	uint32_t proc_num,
 	uint64_t thread_id,
@@ -622,13 +622,13 @@ ep_on_exit:
 	return instance;
 
 ep_on_error:
-	ep_event_metdata_event_free (instance);
+	ep_event_metadata_event_free (instance);
 	instance = NULL;
 	ep_exit_error_handler ();
 }
 
 void
-ep_event_metdata_event_free (EventPipeEventMetadataEvent *metadata_event)
+ep_event_metadata_event_free (EventPipeEventMetadataEvent *metadata_event)
 {
 	ep_return_void_if_nok (metadata_event != NULL);
 

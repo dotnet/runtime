@@ -622,7 +622,7 @@ enterandleave_cs( LPVOID lpParam )
 
 	 DWORD dwWaitResult;
 
-	//Intialize Critical Section Structures
+	//Initialize Critical Section Structures
 	InitializeCriticalSection ( &lcs);
 	InitializeCriticalSection ( &lcsNested);
 

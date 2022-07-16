@@ -27,7 +27,7 @@ namespace System.Composition.TypedParts.Tests
         /// revert to a default value during GetExport.
         /// </remarks>
         [ConditionalFact(nameof(HasMultiplerProcessors))]
-        public void MultiThreadedGetExportsWorkWithImportingConstuctor()
+        public void MultiThreadedGetExportsWorkWithImportingConstructor()
         {
             var errors = new ConcurrentBag<Exception>();
 

@@ -349,7 +349,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // It's a local group, because either (1) it's a local machine user, and local users can't be a member of a domain group,
                     // or (2) it's a domain user that's a member of a group on the local machine.  Pass the default machine context options
-                    // If we initially targetted AD then those options will not be valid for the machine store.
+                    // If we initially targeted AD then those options will not be valid for the machine store.
 
                     PrincipalContext ctx = SDSCache.LocalMachine.GetContext(
                                                                     sidIssuerName,

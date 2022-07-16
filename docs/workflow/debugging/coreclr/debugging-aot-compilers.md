@@ -29,11 +29,11 @@ To do this use the `--parallelism 1` switch to specify that the maximum parallel
 
 - Since the compilers are by default multi-threaded, they produce results fairly quickly even when compiling using a Debug variant of the JIT. In general, when debugging JIT issues we recommend using the debug JIT regardless of which environment caused a problem.
 
-- The compilers support nearly arbitrary cross-targetting, including OS and architecture cross targeting. The only restriction is that 32bit architecture cannot compile targetting a 64bit architecture. This allows the use of the debugging environment most convenient to the developer. In particular, if there is an issue which crosses the managed/native boundary, it is often convenient to debug using the mixed mode debugger on Windows X64.
+- The compilers support nearly arbitrary cross-targeting, including OS and architecture cross targeting. The only restriction is that 32bit architecture cannot compile targeting a 64bit architecture. This allows the use of the debugging environment most convenient to the developer. In particular, if there is an issue which crosses the managed/native boundary, it is often convenient to debug using the mixed mode debugger on Windows X64.
   - If the correct set of assemblies/command line arguments are passed to the compiler, it should produce binary identical output on all platforms.
   - The compiler does not check the OS/Architecture specified for input assemblies, which allows compiling using a non-architecture/OS matched version of the framework to target an arbitrary target. While this isn't useful for producing the diagnosing all issues, it can be cheaply used to identify the general behavior of a change on the full swath of supported architectures.
 
-Control compilation behavior by using the `--targetos` and `--targetarch` switches. The default behavior is to target the compiler's own OS/Arch pair, but all 64bit versions of the compilers are capable of targetting arbitrary OS/Arch combinations.
+Control compilation behavior by using the `--targetos` and `--targetarch` switches. The default behavior is to target the compiler's own OS/Arch pair, but all 64bit versions of the compilers are capable of targeting arbitrary OS/Arch combinations.
 At the time of writing the current supported sets of valid arguments are:
 | Command line arguments
 | --- |

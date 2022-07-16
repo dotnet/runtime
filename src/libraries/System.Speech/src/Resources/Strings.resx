@@ -502,10 +502,10 @@ Possible constructors are: '{2}'.</value>
   <data name="NoLanguageSet" xml:space="preserve">
     <value>Must set 'language' attribute for grammars with scripts.</value>
   </data>
-  <data name="MethodAttributeDefinedMultipeTimes" xml:space="preserve">
+  <data name="MethodAttributeDefinedMultipleTimes" xml:space="preserve">
     <value>Attribute 'method' in 'script' defined more than once.</value>
   </data>
-  <data name="RuleAttributeDefinedMultipeTimes" xml:space="preserve">
+  <data name="RuleAttributeDefinedMultipleTimes" xml:space="preserve">
     <value>Attribute 'rule' in 'script'  defined more than once.</value>
   </data>
   <data name="InvalidAssemblyReferenceAttribute" xml:space="preserve">

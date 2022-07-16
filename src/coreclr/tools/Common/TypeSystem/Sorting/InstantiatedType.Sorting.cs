@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    // Functionality related to determinstic ordering of types
+    // Functionality related to deterministic ordering of types
     partial class InstantiatedType
     {
         protected internal override int ClassCode => 1150020412;

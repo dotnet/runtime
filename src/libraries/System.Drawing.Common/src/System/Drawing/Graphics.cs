@@ -428,7 +428,7 @@ namespace System.Drawing
             }
             set
             {
-                // Libgdiplus doesn't perform argument validation, so do this here for compatability.
+                // Libgdiplus doesn't perform argument validation, so do this here for compatibility.
                 if (value <= 0 || value > 1000000032)
                     throw new ArgumentException(SR.GdiplusInvalidParameter);
 
@@ -839,7 +839,7 @@ namespace System.Drawing
             ArgumentNullException.ThrowIfNull(matrix);
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
-            // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
+            // with the libgdiplus backend. Simulate a nop for compatibility with GDI+.
             if (matrix.NativeMatrix == IntPtr.Zero)
                 return;
 

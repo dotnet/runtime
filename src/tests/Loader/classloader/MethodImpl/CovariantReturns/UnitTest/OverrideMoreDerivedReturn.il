@@ -123,7 +123,7 @@
 }
 
 // ========================================================================================
-// Main base type with various virtual methods that will be overriden later
+// Main base type with various virtual methods that will be overridden later
 // ========================================================================================
 
 .class public auto ansi beforefieldinit GenBaseType<A,B>

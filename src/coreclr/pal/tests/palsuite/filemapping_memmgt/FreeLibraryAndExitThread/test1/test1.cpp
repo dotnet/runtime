@@ -8,7 +8,7 @@
 ** Purpose: Tests the PAL implementation of the FreeLibraryAndExitThread
 **          function. FreeLibraryAndExitThread when run will exit the 
 **          process that it is called within, therefore we create a
-**          thread to run the API. Then test for the existance of the
+**          thread to run the API. Then test for the existence of the
 **          thread and access to the library.
 **
 **

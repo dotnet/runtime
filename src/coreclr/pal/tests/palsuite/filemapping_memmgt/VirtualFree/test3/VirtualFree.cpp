@@ -40,7 +40,7 @@ PALTEST(filemapping_memmgt_VirtualFree_test3_paltest_virtualfree_test3, "filemap
 
     //decommit and release the specified region
     err = VirtualFree(lpVirtualAddress,     //base address
-                    VIRTUALSIZE,            //decommited size
+                    VIRTUALSIZE,            //decommitted size
                     MEM_DECOMMIT|MEM_RELEASE);//free operation
     if(0 != err)
     {

@@ -878,7 +878,7 @@ def compare_results(args):
         root.appendChild(assemblies)
 
         assembly = root.createElement('assembly')
-        assembly.setAttribute('name', 'crossgen2_comparison_job_targetting_{0}'.format(args.target_arch_os))
+        assembly.setAttribute('name', 'crossgen2_comparison_job_targeting_{0}'.format(args.target_arch_os))
         assembly.setAttribute('total', '{0}'.format(len(both_assemblies)))
         assembly.setAttribute('passed', '{0}'.format(len(both_assemblies) - num_omitted_results - num_mismatched_results))
         assembly.setAttribute('failed', '{0}'.format(num_omitted_results+num_mismatched_results))
@@ -886,7 +886,7 @@ def compare_results(args):
         assemblies.appendChild(assembly)
 
         collection = root.createElement('collection')
-        collection.setAttribute('name', 'crossgen2_comparison_job_targetting_{0}'.format(args.target_arch_os))
+        collection.setAttribute('name', 'crossgen2_comparison_job_targeting_{0}'.format(args.target_arch_os))
         collection.setAttribute('total', '{0}'.format(len(both_assemblies)))
         collection.setAttribute('passed', '{0}'.format(len(both_assemblies) - num_omitted_results - num_mismatched_results))
         collection.setAttribute('failed', '{0}'.format(num_omitted_results+num_mismatched_results))

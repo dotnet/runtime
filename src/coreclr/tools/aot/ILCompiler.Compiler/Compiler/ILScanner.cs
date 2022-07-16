@@ -366,7 +366,7 @@ namespace ILCompiler
         {
             private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
-            private HashSet<TypeDesc> _abstractButNonabstractlyOverridenTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _abstractButNonabstractlyOverriddenTypes = new HashSet<TypeDesc>();
 
             public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
@@ -405,7 +405,7 @@ namespace ILCompiler
 
                                 bool currentTypeIsAbstract = ((MetadataType)baseType).IsAbstract;
                                 if (currentTypeIsAbstract && hasNonAbstractTypeInHierarchy)
-                                    added |= _abstractButNonabstractlyOverridenTypes.Add(baseType);
+                                    added |= _abstractButNonabstractlyOverriddenTypes.Add(baseType);
                                 hasNonAbstractTypeInHierarchy |= !currentTypeIsAbstract;
 
                                 baseType = baseType.BaseType;
@@ -451,7 +451,7 @@ namespace ILCompiler
                     // This lets us optimize out some unused virtual method implementations.
                     // Allowing this to devirtualize would cause trouble because we didn't scan the method
                     // and expected it would be optimized out.
-                    if (!_abstractButNonabstractlyOverridenTypes.Contains(mdType.ConvertToCanonForm(CanonicalFormKind.Specific)))
+                    if (!_abstractButNonabstractlyOverriddenTypes.Contains(mdType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                     {
                         // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
                         devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;

@@ -21,7 +21,7 @@ class UTF8StringTests
 		string nativeString = StringParameterInOut(passedString, index);
 		if (!(nativeString == expectedNativeString))
 		{
-			Console.WriteLine("StringParameterInOut: nativeString != expecedNativeString ");
+			Console.WriteLine("StringParameterInOut: nativeString != expectedNativeString ");
 			return false;
 		}
 		return true;
@@ -33,11 +33,11 @@ class UTF8StringTests
 	public static bool TestOutStringParameter(string orgString, int index)
 	{
 		string passedString = orgString;
-		string expecedNativeString = passedString;
+		string expectedNativeString = passedString;
 		string nativeString = StringParameterInOut(passedString, index);
-		if (!(nativeString == expecedNativeString))
+		if (!(nativeString == expectedNativeString))
 		{
-			Console.WriteLine("StringParameterInOut: nativeString != expecedNativeString ");
+			Console.WriteLine("StringParameterInOut: nativeString != expectedNativeString ");
 			return false;
 		}
 		return true;
@@ -93,7 +93,7 @@ class UTF8StringBuilderTests
 		
 		if (!nativeStrBuilder.ToString().Equals(expectedString))
 		{
-			Console.WriteLine($"TestInOutStringBuilderParameter: nativeString != expecedNativeString index={index} got={nativeStrBuilder} and expected={expectedString} ");
+			Console.WriteLine($"TestInOutStringBuilderParameter: nativeString != expectedNativeString index={index} got={nativeStrBuilder} and expected={expectedString} ");
 			return false;
 		}
 		return true;
@@ -110,7 +110,7 @@ class UTF8StringBuilderTests
 		
 		if (!nativeStringBuilder.ToString().Equals(expectedString))
 		{
-			Console.WriteLine("TestOutStringBuilderParameter: string != expecedString ");
+			Console.WriteLine("TestOutStringBuilderParameter: string != expectedString ");
 			return false;
 		}
 		return true;
@@ -125,7 +125,7 @@ class UTF8StringBuilderTests
 		StringBuilder nativeString = StringBuilderParameterReturn(index);
 		if (!expectedReturn.Equals(nativeString.ToString()))
 		{
-			Console.WriteLine(string.Format( "TestReturnStringBuilder: nativeString {0} != expecedNativeString {1}",nativeString.ToString(),expectedReturn) );
+			Console.WriteLine(string.Format( "TestReturnStringBuilder: nativeString {0} != expectedNativeString {1}",nativeString.ToString(),expectedReturn) );
 			return false;
 		}
 		return true;

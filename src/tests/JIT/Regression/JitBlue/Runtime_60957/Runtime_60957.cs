@@ -12,7 +12,7 @@ namespace mdarray
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         // Count the number of times this function gets called. It shouldn't change whether
-        // all the MD functions get implemented as intriniscs or not.
+        // all the MD functions get implemented as intrinsics or not.
         static int[,] GetArray(int[,] a)
         {
             ++access_count;

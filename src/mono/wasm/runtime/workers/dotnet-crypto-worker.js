@@ -73,7 +73,7 @@ var ChannelWorker = {
                         if (state === this.STATE_SHUTDOWN)
                             break;
                         if (state === this.STATE_RESET)
-                            console.debug(`caller failed, reseting worker`);
+                            console.debug(`caller failed, resetting worker`);
                     } else {
                         console.error(`Worker failed to handle the request: ${_stringify_err(err)}`);
                         this._change_state_locked(this.STATE_REQ_FAILED);

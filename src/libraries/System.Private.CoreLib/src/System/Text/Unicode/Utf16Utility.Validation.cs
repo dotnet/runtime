@@ -272,7 +272,7 @@ namespace System.Text.Unicode
 
                             // If we're 64-bit, we can perform the zero-extension of the surrogate pairs count for
                             // free right now, saving the extension step a few lines below. If we're 32-bit, the
-                            // convertion to nuint immediately below is a no-op, and we'll pay the cost of the real
+                            // conversion to nuint immediately below is a no-op, and we'll pay the cost of the real
                             // 64 -bit extension a few lines below.
                             nuint surrogatePairsCountNuint = (uint)BitOperations.PopCount(highSurrogatesMask);
 

@@ -113,7 +113,7 @@
     IL_001d:  callvirt   instance void [mscorlib]System.Array::Initialize()
     IL_0022:  ldsfld     bool Test_vsw188290::run
     IL_0027:  brtrue.s   IL_0033
-    IL_0029:  ldstr      "contructor not run"
+    IL_0029:  ldstr      "constructor not run"
     IL_002e:  call       void Test_vsw188290::fail(string)
 
 
@@ -133,7 +133,7 @@
     IL_0055:  ldsfld     bool Test_vsw188290::run
     IL_005a:  brtrue.s   IL_0066
 
-    IL_005c:  ldstr      "contructor not run"
+    IL_005c:  ldstr      "constructor not run"
     IL_0061:  call       void Test_vsw188290::fail(string)
     IL_0066:   ldstr      "C<string> passed" call void [System.Console]System.Console::WriteLine(string)
 
@@ -150,7 +150,7 @@
     IL_0088:  ldsfld     bool Test_vsw188290::run
     IL_008d:  brtrue.s   IL_0099
 
-    IL_008f:  ldstr      "contructor not run"
+    IL_008f:  ldstr      "constructor not run"
     IL_0094:  call       void Test_vsw188290::fail(string)
     IL_0099:  ldstr      "C<string[]> passed" call void [System.Console]System.Console::WriteLine(string)
 
@@ -167,7 +167,7 @@
     IL_00bb:  ldsfld     bool Test_vsw188290::run
     IL_00c0:  brtrue.s   IL_00cc
 
-    IL_00c2:  ldstr      "contructor not run"
+    IL_00c2:  ldstr      "constructor not run"
     IL_00c7:  call       void Test_vsw188290::fail(string)
     IL_00cc:  ldstr      "C<object> passed" call void [System.Console]System.Console::WriteLine(string)
 

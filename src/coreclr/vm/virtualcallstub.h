@@ -1074,7 +1074,7 @@ public:
         stub = (LookupStub*) s;
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
+    //default constructor to allow stack and inline allocation of lookup entries
     LookupEntry() {LIMITED_METHOD_CONTRACT; stub = NULL;}
 
     //implementations of abstract class Entry
@@ -1111,7 +1111,7 @@ public:
         stub = (VTableCallStub*)s;
     }
 
-    //default contructor to allow stack and inline allocation of vtable call entries
+    //default constructor to allow stack and inline allocation of vtable call entries
     VTableCallEntry() { LIMITED_METHOD_CONTRACT; stub = NULL; }
 
     //implementations of abstract class Entry
@@ -1152,7 +1152,7 @@ public:
         pElem = (ResolveCacheElem*) elem;
     }
 
-    //default contructor to allow stack and inline allocation of lookup entries
+    //default constructor to allow stack and inline allocation of lookup entries
     ResolveCacheEntry() { LIMITED_METHOD_CONTRACT; pElem = NULL; }
 
     //access and compare the keys of the entry
@@ -1197,7 +1197,7 @@ public:
         _ASSERTE(VirtualCallStubManager::isResolvingStubStatic((PCODE)s));
         stub = (ResolveStub*) s;
     }
-    //default contructor to allow stack and inline allocation of resovler entries
+    //default constructor to allow stack and inline allocation of resovler entries
     ResolveEntry()  { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
@@ -1235,7 +1235,7 @@ public:
         _ASSERTE(VirtualCallStubManager::isDispatchingStubStatic((PCODE)s));
         stub = (DispatchStub*) s;
     }
-    //default contructor to allow stack and inline allocation of resovler entries
+    //default constructor to allow stack and inline allocation of resovler entries
     DispatchEntry()                       { LIMITED_METHOD_CONTRACT;    stub = CALL_STUB_EMPTY_ENTRY; }
 
     //implementations of abstract class Entry
@@ -1445,7 +1445,7 @@ a power of 2, so we force stride to be odd.
 
 Note -- it must be assumed that multiple probers are walking the same tables and buckets at the same time.
 Additionally, the counts may not be accurate, and there may be duplicates in the tables.  Since the tables
-do not allow concurrrent deletion, some of the concurrency issues are ameliorated.
+do not allow concurrent deletion, some of the concurrency issues are ameliorated.
 */
 class Prober
 {

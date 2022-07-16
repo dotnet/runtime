@@ -196,7 +196,7 @@ namespace DebuggerTests
             { "invoke_add()", "IntAdd", "foo.bar", false },
             { "invoke_add()", "IntAdd", "Math.IntAdd()", false },
             { "invoke_add()", "IntAdd", "c == \"xyz\"", false },
-            { "invoke_add()", "IntAdd", "Math.NonExistantProperty", false },
+            { "invoke_add()", "IntAdd", "Math.NonExistentProperty", false },
             { "invoke_add()", "IntAdd", "g == 40", false },
             { "invoke_add()", "IntAdd", "null", false },
         };

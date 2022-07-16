@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            // Out of compressable range
+            // Out of compressible range
             throw new NotImplementedException();
         }
 

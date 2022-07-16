@@ -19721,7 +19721,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
             namespaceManager.AddNamespace("p2", "http://book.htm");
             namespaceManager.AddNamespace("p3", "http://movie.htm");
             namespaceManager.AddNamespace("p4", "http://book2.htm");
-            namespaceManager.AddNamespace("p5", "http://documentry.htm");
+            namespaceManager.AddNamespace("p5", "http://documentary.htm");
             var expected = new XPathResult(0);
             ;
 

@@ -297,7 +297,7 @@ public class ReliabilityFramework
     /// All code in here runs in our starting app domain.  
     /// </summary>
     /// <param name="testConfig">configuration file to use</param>
-    /// <returns>100 on sucess, another number on failure.</returns>
+    /// <returns>100 on success, another number on failure.</returns>
     public int RunReliabilityTests(string testConfig, bool doReplay)
     {
         _totalSuccess = true;

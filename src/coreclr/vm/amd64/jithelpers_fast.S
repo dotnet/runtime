@@ -219,7 +219,7 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-// JIT_ByRefWriteBarrier has weird symantics, see usage in StubLinkerX86.cpp
+// JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 //
 // Entry:
 //   RDI - address of ref-field (assigned to)

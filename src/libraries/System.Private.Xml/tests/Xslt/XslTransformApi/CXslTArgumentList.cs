@@ -2823,7 +2823,7 @@ namespace System.Xml.Tests
         {
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
 		DoNothing Function Test Pass
-		Construtor Function
+		Constructor Function
 		Return Int  Function Test Pass
 		Return String Function Test Pass
 		ReturnInt  Function Test Pass

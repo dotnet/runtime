@@ -1870,7 +1870,7 @@ Namespace Microsoft.VisualBasic.FileIO
                     Throw New IO.DirectoryNotFoundException()
                 Case NativeTypes.ERROR_ACCESS_DENIED
                     Throw New UnauthorizedAccessException()
-                Case NativeTypes.ERROR_FILENAME_EXCED_RANGE
+                Case NativeTypes.ERROR_FILENAME_EXCEED_RANGE
                     Throw New IO.PathTooLongException()
                 Case NativeTypes.ERROR_INVALID_DRIVE
                     Throw New IO.DriveNotFoundException()

@@ -91,7 +91,7 @@ ErrorString palErrorStrings[] =
     { ERROR_EXE_MARKED_INVALID, W("The operating system cannot run %1.\n") },
     { ERROR_BAD_EXE_FORMAT, W("%1 is not a valid Win32 application.\n") },
     { ERROR_ENVVAR_NOT_FOUND, W("The system could not find the environment option that was entered.\n") },
-    { ERROR_FILENAME_EXCED_RANGE, W("The filename or extension is too long.\n") },
+    { ERROR_FILENAME_EXCEED_RANGE, W("The filename or extension is too long.\n") },
     { ERROR_PIPE_BUSY, W("All pipe instances are busy.\n") },
     { ERROR_NO_DATA,  W("The pipe is being closed\n")},
     { ERROR_MORE_DATA, W("More data is available.\n") },

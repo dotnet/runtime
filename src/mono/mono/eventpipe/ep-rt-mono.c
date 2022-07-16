@@ -4853,7 +4853,7 @@ mono_profiler_fire_event_enter (void)
 		old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
 		if (MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS (old_state)) {
 			// GC in progress and thread tries to fire event (this should be an unlikely scenario). Wait until GC is done.
-			ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+			ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
 			old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
 		}
@@ -4883,7 +4883,7 @@ mono_profiler_gc_in_progress_start (void)
 	mono_profiler_gc_state_t new_state = 0;
 
 	// Make sure fire event calls will block and wait for GC completion.
-	ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+	ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 
 	// Set gc in progress state, preventing new fire event requests.
 	do {
@@ -5148,14 +5148,14 @@ void
 mono_profiler_trigger_heap_collect (MonoProfiler *prof)
 {
 	if (mono_profiler_gc_heap_collect_requested ()) {
-		ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+		ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			mono_profiler_gc_heap_collect_requests_dec ();
 			mono_profiler_gc_heap_collect_in_progress_start ();
 		ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
 
 		mono_gc_collect (mono_gc_max_generation ());
 
-		ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+		ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			mono_profiler_pop_gc_heap_collect_param_request_value ();
 			mono_profiler_gc_heap_collect_in_progress_stop ();
 		ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);

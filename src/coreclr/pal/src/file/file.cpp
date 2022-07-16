@@ -3122,7 +3122,7 @@ GetTempFileNameA(
     if ( strlen( lpPathName ) + MAX_SEEDSIZE + MAX_PREFIX >= MAX_LONGPATH )
     {
         WARN( "File names larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH );
-        pThread->SetLastError( ERROR_FILENAME_EXCED_RANGE );
+        pThread->SetLastError( ERROR_FILENAME_EXCEED_RANGE );
         goto done;
     }
 
@@ -3215,7 +3215,7 @@ GetTempFileNameA(
             if (strcpy_s( lpTempFileName, MAX_LONGPATH, full_name ) != SAFECRT_SUCCESS)
             {
                 ERROR( "strcpy_s failed!\n");
-                pThread->SetLastError( ERROR_FILENAME_EXCED_RANGE );
+                pThread->SetLastError( ERROR_FILENAME_EXCEED_RANGE );
                 *lpTempFileName = '\0';
                 uRet = 0;
             }
@@ -3365,7 +3365,7 @@ GetTempFileNameW(
             if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
             {
                 WARN("File names larger than MAX_PATH_FNAME (%d)! \n", MAX_LONGPATH);
-                dwLastError = ERROR_FILENAME_EXCED_RANGE;
+                dwLastError = ERROR_FILENAME_EXCEED_RANGE;
             }
             else
             {
@@ -3401,7 +3401,7 @@ DWORD FILEGetLastErrorFromErrno( void )
         dwRet = ERROR_SUCCESS;
         break;
     case ENAMETOOLONG:
-        dwRet = ERROR_FILENAME_EXCED_RANGE;
+        dwRet = ERROR_FILENAME_EXCEED_RANGE;
         break;
     case ENOTDIR:
         dwRet = ERROR_PATH_NOT_FOUND;

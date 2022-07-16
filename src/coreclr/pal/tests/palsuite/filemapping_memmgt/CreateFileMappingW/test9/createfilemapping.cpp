@@ -68,7 +68,7 @@ PALTEST(filemapping_memmgt_CreateFileMappingW_test9_paltest_createfilemappingw_t
         Fail("");
     }
 
-    /* Attempt to create a unnamed file-mapping object to a zero lenght
+    /* Attempt to create a unnamed file-mapping object to a zero length
      * file.
      */
     hFileMapping = CreateFileMapping(

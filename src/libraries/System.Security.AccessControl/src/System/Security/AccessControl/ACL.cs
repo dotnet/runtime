@@ -2869,7 +2869,7 @@ namespace System.Security.AccessControl
         #region Constructors
 
         //
-        // Creates an emtpy ACL
+        // Creates an empty ACL
         //
 
         public SystemAcl(bool isContainer, bool isDS, int capacity)
@@ -3020,7 +3020,7 @@ namespace System.Security.AccessControl
         #region Constructors
 
         //
-        // Creates an emtpy ACL
+        // Creates an empty ACL
         //
 
         public DiscretionaryAcl(bool isContainer, bool isDS, int capacity)

@@ -126,7 +126,7 @@ namespace ILCompiler
                 bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
                 if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
                 {
-                    //LogWarning(assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
+                    //LogWarning(assemblyNav, DiagnosticId.XmlUnsupportedWildcard);
                     continue;
                 }
 

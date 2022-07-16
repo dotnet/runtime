@@ -97,7 +97,7 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 // the non-zero m_pTransitionFrame value that we saw during suspend so that stackwalks can read this value
 // without concern of sometimes reading a 0, as would be the case if they read m_pTransitionFrame directly.
 //
-// Returns true if it sucessfully cached the transition frame (i.e. the thread was in unmanaged).
+// Returns true if it successfully cached the transition frame (i.e. the thread was in unmanaged).
 // Returns false otherwise.
 // 
 // WARNING: This method is called by suspension while one thread is interrupted

@@ -52,7 +52,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Const ERROR_PATH_NOT_FOUND As Integer = 3
         Friend Const ERROR_ACCESS_DENIED As Integer = 5
         Friend Const ERROR_ALREADY_EXISTS As Integer = 183
-        Friend Const ERROR_FILENAME_EXCED_RANGE As Integer = 206
+        Friend Const ERROR_FILENAME_EXCEED_RANGE As Integer = 206
         Friend Const ERROR_INVALID_DRIVE As Integer = 15
         Friend Const ERROR_INVALID_PARAMETER As Integer = 87
         Friend Const ERROR_SHARING_VIOLATION As Integer = 32

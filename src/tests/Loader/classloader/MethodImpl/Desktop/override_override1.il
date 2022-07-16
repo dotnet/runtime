@@ -5,7 +5,7 @@
 // MyBar is a normal reference type that extends MyFoo.
 // MyBar::DoBar explicitly overrides MyFoo::DoFoo
 // MyBar::DoBarOverride explicitly overrides MyBar::DoBar
-// Expect TypeLoadException when loading MyBar because on override is being overriden.
+// Expect TypeLoadException when loading MyBar because on override is being overridden.
 
 .assembly extern mscorlib{}
 .assembly override_override1{}

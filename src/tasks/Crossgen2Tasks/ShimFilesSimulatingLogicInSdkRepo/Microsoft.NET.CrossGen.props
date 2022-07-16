@@ -11,7 +11,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <Crossgen2TasksOverriden>true</Crossgen2TasksOverriden>
+    <Crossgen2TasksOverridden>true</Crossgen2TasksOverridden>
   </PropertyGroup>
 
   <UsingTask TaskName="PrepareForReadyToRunCompilation" AssemblyFile="$(MSBuildThisFileDirectory)Crossgen2Tasks.dll" />

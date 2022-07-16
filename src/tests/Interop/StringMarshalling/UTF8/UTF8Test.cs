@@ -20,7 +20,7 @@ class UTF8StringTests
         string nativeString = StringParameterInOut(passedString, index);
         if (!(nativeString == expectedNativeString))
         {
-            throw new Exception("StringParameterInOut: nativeString != expecedNativeString ");
+            throw new Exception("StringParameterInOut: nativeString != expectedNativeString ");
         }
     }
 
@@ -30,11 +30,11 @@ class UTF8StringTests
     public static void TestOutStringParameter(string orgString, int index)
     {
         string passedString = orgString;
-        string expecedNativeString = passedString;
+        string expectedNativeString = passedString;
         string nativeString = StringParameterInOut(passedString, index);
-        if (!(nativeString == expecedNativeString))
+        if (!(nativeString == expectedNativeString))
         {
-            throw new Exception("StringParameterInOut: nativeString != expecedNativeString ");
+            throw new Exception("StringParameterInOut: nativeString != expectedNativeString ");
         }
     }
 
@@ -82,7 +82,7 @@ class UTF8StringBuilderTests
 
         if (!nativeStrBuilder.ToString().Equals(expectedString))
         {
-            throw new Exception("TestInOutStringBuilderParameter: nativeString != expecedNativeString ");
+            throw new Exception("TestInOutStringBuilderParameter: nativeString != expectedNativeString ");
         }        
     }
 
@@ -96,7 +96,7 @@ class UTF8StringBuilderTests
 
         if (!nativeStringBuilder.ToString().Equals(expectedString))
         {
-            throw new Exception("TestOutStringBuilderParameter: string != expecedString ");
+            throw new Exception("TestOutStringBuilderParameter: string != expectedString ");
         }
     }
 
@@ -109,7 +109,7 @@ class UTF8StringBuilderTests
         StringBuilder nativeString = StringBuilderParameterReturn(index);
         if (!expectedReturn.Equals(nativeString.ToString()))
         {
-            throw new Exception(string.Format( "TestReturnStringBuilder: nativeString {0} != expecedNativeString {1}",nativeString.ToString(),expectedReturn) );
+            throw new Exception(string.Format( "TestReturnStringBuilder: nativeString {0} != expectedNativeString {1}",nativeString.ToString(),expectedReturn) );
         }
     }
 }

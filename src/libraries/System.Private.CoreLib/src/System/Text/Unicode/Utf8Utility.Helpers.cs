@@ -716,7 +716,7 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianess,
+        /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianness,
         /// converts those scalar values to their 3-byte UTF-8 representation and writes the
         /// resulting 6 bytes to the destination buffer.
         /// </summary>
@@ -751,7 +751,7 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianess,
+        /// Given a DWORD which represents a buffer of 2 packed UTF-16 values in machine endianness,
         /// converts the first UTF-16 value to its 3-byte UTF-8 representation and writes the
         /// resulting 3 bytes to the destination buffer.
         /// </summary>

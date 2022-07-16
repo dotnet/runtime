@@ -23,11 +23,11 @@
 			<!-- Comment 4 -->
 			<NSmovie:title>Veritcal Limit</NSmovie:title>
 		</NSmovie:movie>
-		<documentry xmlns:NSmovie="http://documentry.htm">
+		<documentary xmlns:NSmovie="http://documentary.htm">
 			<NSmovie:movie quantity="1" inventory="m112">
 				<NSmovie:title>Jinnah</NSmovie:title>
 			</NSmovie:movie>
-		</documentry>
+		</documentary>
 		<!-- Comment 5 -->
 	</moviesection>
 	

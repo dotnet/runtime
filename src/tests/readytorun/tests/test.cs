@@ -387,7 +387,7 @@ public struct MyStructWithVirtuals
 #if V2
     public override string ToString()
     {
-        X = "Overriden";
+        X = "Overridden";
         return base.ToString();
     }
 #endif
@@ -490,7 +490,7 @@ public class ILInliningVersioningTest<T>
             // Make sure the constrained call to ToString doesn't box
             var mystruct = new MyStructWithVirtuals();
             mystruct.ToString();
-            Assert.AreEqual(mystruct.X, "Overriden");
+            Assert.AreEqual(mystruct.X, "Overridden");
         }
     }
 

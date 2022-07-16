@@ -398,7 +398,7 @@ namespace System.Management
         /// </overload>
         /// <summary>
         /// <para>Adds a new <see cref='System.Management.PropertyData'/> with the specified value. The value cannot
-        ///    be null and must be convertable to a CIM type.</para>
+        ///    be null and must be convertible to a CIM type.</para>
         /// </summary>
         /// <param name='propertyName'>The name of the new property.</param>
         /// <param name='propertyValue'>The value of the property (cannot be null).</param>

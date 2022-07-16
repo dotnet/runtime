@@ -748,7 +748,7 @@ namespace ILCompiler
                             {
                                 if (!assignableParam.TryAssign(stack.PopIntoLocation(argType)))
                                 {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsuported store");
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
                                 }
                             }
                             else

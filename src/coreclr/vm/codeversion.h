@@ -190,7 +190,7 @@ public:
 
         // The CLR has initiated the call to the profiler's GetReJITParameters() callback
         // but it hasn't completed yet. At this point we have to assume the profiler has
-        // commited to a specific IL body, even if the CLR doesn't know what it is yet.
+        // committed to a specific IL body, even if the CLR doesn't know what it is yet.
         // If the profiler calls RequestRejit we need to allocate a new ILCodeVersion
         // and call GetReJITParameters() again.
         kStateGettingReJITParameters = 0x00000001,

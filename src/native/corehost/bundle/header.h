@@ -53,7 +53,7 @@ namespace bundle
         bool is_valid() const { return offset != 0; }
     };
 
-    // header_fixed_v2_t is available in single-file apps targetting .net5+ frameworks.
+    // header_fixed_v2_t is available in single-file apps targeting .net5+ frameworks.
     // It stores information that facilitates the host to process contents of the bundle without extraction.
     //
     // The location of deps.json and runtimeconfig.json is already available in the Bundle manifest.

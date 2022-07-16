@@ -1752,7 +1752,7 @@ CordbFunction * CordbModule::LookupOrCreateFunction(mdMethodDef funcMetaDataToke
 
     CordbFunction * pFunction = m_functions.GetBase(funcMetaDataToken);
 
-    // special case non-existance as need to add to the hash table too
+    // special case non-existence as need to add to the hash table too
     if (pFunction == NULL)
     {
         // EnC adds each version to the hash. So if the hash lookup fails,

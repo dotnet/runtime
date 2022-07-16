@@ -457,7 +457,7 @@ ep_file_write_event (
 	file_write_event_to_block (file, event_instance, metadata_id, capture_thread_id, sequence_number, stack_id, is_sorted_event);
 
 ep_on_exit:
-	ep_event_metdata_event_free (metadata_instance);
+	ep_event_metadata_event_free (metadata_instance);
 	return;
 
 ep_on_error:

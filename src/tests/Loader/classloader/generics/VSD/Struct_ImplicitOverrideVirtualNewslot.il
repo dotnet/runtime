@@ -7,7 +7,7 @@
 // The reason we are using IL is because C# doesn't allow struct to have virtual methods with 'virtual' keyword.
 // Methods that implement interface methods are by default virtual (which translates to 'virtual newslot final' in IL.
 // But if we use 'virtual' keyword in C# it translates to 'virtual newslot' in  IL
-// and struct virtual methods can't be overriden.
+// and struct virtual methods can't be overridden.
 
 
 .assembly extern mscorlib {}

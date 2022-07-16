@@ -733,7 +733,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 //   WARNING: This method cannot access any stack-data below its frame on the stack
 //   (i.e. anything allocated in a caller frame), so all stack-based arguments must
 //   EXPLICITLY be copied by value and this method cannot be inlined.  We may need to expand
-//   the stack frame to accomodate the new method, and so extra buffer space must have
+//   the stack frame to accommodate the new method, and so extra buffer space must have
 //   been allocated on the stack.  Note that passing a struct by value (via C++) is not
 //   enough to ensure its data is really copied (on x64, large structs may internally be
 //   passed by reference).  Thus we explicitly make copies of structs passed in, at the

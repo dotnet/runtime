@@ -125,7 +125,7 @@ PALTEST(threading_CreateEventW_test3_paltest_createeventw_test3, "threading/Crea
                        testCases[i].lpName, dwError,
                        testCases[i].lastError, i);
             }
-            if ( ERROR_FILENAME_EXCED_RANGE == testCases[i].lastError )
+            if ( ERROR_FILENAME_EXCEED_RANGE == testCases[i].lastError )
             {
                 result [i] = 1;
             }

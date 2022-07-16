@@ -148,7 +148,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             CheckGraphConsistency();
         }
 
-        // Helper function to perform parametric mapping on the NodeResults dictionary.
+        // Helper function to perform parameteric mapping on the NodeResults dictionary.
         public Dictionary<T, S> MapNodes<S>(Func<T, long, S> transformation)
         {
             Dictionary<T, S> results = new Dictionary<T, S>();
@@ -161,7 +161,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return results;
         }
 
-        // Helper function to perform parametric mapping on the EdgeResults dictionary.
+        // Helper function to perform parameteric mapping on the EdgeResults dictionary.
         public Dictionary<(T, T), S> MapEdges<S>(Func<(T, T), long, S> transformation)
         {
             Dictionary<(T, T), S> results = new Dictionary<(T, T), S>();

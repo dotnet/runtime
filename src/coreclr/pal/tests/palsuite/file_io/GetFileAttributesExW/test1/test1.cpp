@@ -152,7 +152,7 @@ PALTEST(file_io_GetFileAttributesExW_test1_paltest_getfileattributesexw_test1, "
     RunTest_GetFileAttributesExW_test1(".hidden_directory", 
             FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_DIRECTORY, IS_DIR);
 
-    /* Test a Non-Existant File */
+    /* Test a Non-Existent File */
     
     FileName = convert("nonexistent_test_file");
     

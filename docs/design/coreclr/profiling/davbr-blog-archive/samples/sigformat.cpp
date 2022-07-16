@@ -197,7 +197,7 @@ protected:
 	}
 
  	// sentinel indication the location of the "..." in the method signature
-	virtual void NotifySentinal()
+	virtual void NotifySentinel()
 	{
 		Print("...\n");
 	}

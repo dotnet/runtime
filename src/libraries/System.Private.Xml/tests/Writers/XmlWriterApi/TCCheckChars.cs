@@ -314,7 +314,7 @@ namespace System.Xml.Tests
         }
 
         /*=============================================================================
-        The writer contructor will throw XmlException when CheckCharacters=true and
+        The writer constructor will throw XmlException when CheckCharacters=true and
             - IndentChars or NewLineChars contains non-whitespace character when NewLineOnAttributes=true
         or
             - IndentChars or NewLineChars contains <, &, ]]> or an invalid surrogate character when NewLineOnAttributes=false

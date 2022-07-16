@@ -180,7 +180,7 @@ enum TargetHandleType : BYTE
     THT_Unknown                  = 2,
     THT_GSCookieCheck            = 4,
     THT_SetGSCookie              = 6,
-    THT_IntializeArrayIntrinsics = 8
+    THT_InitializeArrayIntrinsics = 8
 };
 #endif
 /*****************************************************************************/
@@ -6761,7 +6761,7 @@ struct GenTreeAddrMode : public GenTreeOp
     //
     // So, for example:
     //      1. Base + Index is legal with Scale==1
-    //      2. If Index is null, Scale should be zero (or unintialized / unused)
+    //      2. If Index is null, Scale should be zero (or uninitialized / unused)
     //      3. If Scale==1, then we should have "Base" instead of "Index*Scale", and "Base + Offset" instead of
     //         "Index*Scale + Offset".
 

@@ -416,9 +416,9 @@ bool NameTests()
         name[STRING_LENGTH(name)] = '\0';
         TestCreateMutex(m, name);
         TestAssert(m == nullptr);
-        TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);
+        TestAssert(GetLastError() == ERROR_FILENAME_EXCEED_RANGE);
         TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) == nullptr);
-        TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);
+        TestAssert(GetLastError() == ERROR_FILENAME_EXCEED_RANGE);
     }
 
     // Invalid characters in name

@@ -2034,7 +2034,7 @@ namespace Internal.NativeFormat
         // How many entries to target per bucket. Higher fill factor means smaller size, but worse runtime perf.
         private int _nFillFactor;
 
-        // Number of buckets choosen for the table. Must be power of two. 0 means that the table is still open for mutation.
+        // Number of buckets chosen for the table. Must be power of two. 0 means that the table is still open for mutation.
         private uint _nBuckets;
 
         // Current size of index entry

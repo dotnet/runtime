@@ -146,7 +146,7 @@ public:
             // table to map values encoded into the real sizes. Experiments with EEClass packed fields over
             // CoreLib show that this currently doesn't yield us much benefit, primarily due to the DWORD
             // round-up size semantic, which implies we'd need a lot more optimization than this to reduce the
-            // average structure size below the next DWORD threshhold.
+            // average structure size below the next DWORD threshold.
             BitVectorSet(dwOffset, kMaxLengthBits, dwFieldLength - 1);
             dwOffset += kMaxLengthBits;
 

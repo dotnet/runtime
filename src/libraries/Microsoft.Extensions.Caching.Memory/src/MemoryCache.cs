@@ -157,7 +157,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
                     else
                     {
-                        // The update will fail if the previous entry was removed after retrival.
+                        // The update will fail if the previous entry was removed after retrivial.
                         // Adding the new entry will succeed only if no entry has been added since.
                         // This guarantees removing an old entry does not prevent adding a new entry.
                         entryAdded = coherentState._entries.TryAdd(entry.Key, entry);

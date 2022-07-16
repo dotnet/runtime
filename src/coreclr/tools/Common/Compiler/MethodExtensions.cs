@@ -91,7 +91,7 @@ namespace ILCompiler
 
             // Methods on interfaces never go into sealed vtable
             // We would hit this code path for default implementations of interface methods (they are newslot+final).
-            // Inteface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
+            // Interface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
             // attempt to place final+newslot methods differently.
             if (method.IsFinal && method.IsNewSlot && !isInterfaceMethod)
                 return true;

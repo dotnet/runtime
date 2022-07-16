@@ -49,7 +49,7 @@ int test1(int num, ...)
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal INSERT Testing"),
               wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal INSERT "
+        Fail("ERROR:  The formatted string should have been 'Pal INSERT "
              "Testing' but '%s' was returned.",
              convertC(OutBuffer_FormatMessageW_test2));
     }
@@ -91,7 +91,7 @@ int test2(int num, ...)
     
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal 40 Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal 40 Testing' "
+        Fail("ERROR:  The formatted string should have been 'Pal 40 Testing' "
              "but '%s' was returned.", convertC(OutBuffer_FormatMessageW_test2));
     }
     return PASS;
@@ -127,7 +127,7 @@ int test3(int num, ...) {
     
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal a Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal a Testing' "
+        Fail("ERROR:  The formatted string should have been 'Pal a Testing' "
              "but '%s' was returned.", convertC(OutBuffer_FormatMessageW_test2));
     
     }
@@ -165,7 +165,7 @@ int test4(int num, ...) {
     
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal a Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal a Testing' "
+        Fail("ERROR:  The formatted string should have been 'Pal a Testing' "
              "but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     }
     
@@ -205,7 +205,7 @@ int test5(int num, ...)
     
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal 57 Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal 57 Testing' "
+        Fail("ERROR:  The formatted string should have been 'Pal 57 Testing' "
              "but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     
     }
@@ -246,7 +246,7 @@ int test6(int num, ...) {
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal a and b Testing"),
               wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal a and b "
+        Fail("ERROR:  The formatted string should have been 'Pal a and b "
              "Testing' but '%s' was returned.", convertC(OutBuffer_FormatMessageW_test2));
     
     }
@@ -289,7 +289,7 @@ int test7(int num, ...)
               convert("Pal 90 and foo and bar Testing"),
               wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal 90 and foo "
+        Fail("ERROR:  The formatted string should have been 'Pal 90 and foo "
              "and bar Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     }
     
@@ -332,7 +332,7 @@ int test8(int num, ...)
               convert("Pal a and b and 50 and 100 Testing"),
               wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal a and b and 50"
+        Fail("ERROR:  The formatted string should have been 'Pal a and b and 50"
              " and 100 Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     
     }
@@ -375,7 +375,7 @@ int test9(int num, ...) {
               convert("Pal foo and bar and 56 Testing"),
               wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal foo and bar "
+        Fail("ERROR:  The formatted string should have been 'Pal foo and bar "
              "and 56 Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     
     }
@@ -417,7 +417,7 @@ int test10(int num, ...)
               convert("Pal 123ab and 123CD Testing"),
               wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal 123ab and "
+        Fail("ERROR:  The formatted string should have been 'Pal 123ab and "
              "123CD Testing' but '%s' was returned.", convertC(OutBuffer_FormatMessageW_test2));
     
     }
@@ -469,7 +469,7 @@ int test11(int num, ...)
                convert( "Pal 0x123ab and foo Testing" ),
                wcslen(OutBuffer_FormatMessageW_test2)*2+2 ) != 0 )  
     {
-        Fail("ERROR:  The formated string should have been 'Pal 000123AB and "
+        Fail("ERROR:  The formatted string should have been 'Pal 000123AB and "
              "foo Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     
     }
@@ -484,7 +484,7 @@ int test11(int num, ...)
                convert( "Pal 0x123ab and foo Testing" ),
                wcslen(OutBuffer_FormatMessageW_test2)*2+2 ) != 0 )  
     {
-        Fail("ERROR:  The formated string should have been 'Pal 000123AB and "
+        Fail("ERROR:  The formatted string should have been 'Pal 000123AB and "
              "foo Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     
     }
@@ -530,7 +530,7 @@ int test12(int num, ...)
               convert("Pal 100 and 123ab and 123CD Testing"),
               wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
     {
-        Fail("ERROR:  The formated string should have been 'Pal 100 and "
+        Fail("ERROR:  The formatted string should have been 'Pal 100 and "
              "123ab and 123CD Testing' but '%s' was returned.",
              convertC(OutBuffer_FormatMessageW_test2));
     

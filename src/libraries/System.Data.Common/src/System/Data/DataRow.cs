@@ -228,7 +228,7 @@ namespace System.Data
             DataRelation[] nestedParentRelations = _table.NestedParentRelations;
             foreach (DataRelation rel in nestedParentRelations)
             {
-                if (rel == null) // don't like this but done for backward code compatability
+                if (rel == null) // don't like this but done for backward code compatibility
                 {
                     continue;
                 }
@@ -886,7 +886,7 @@ namespace System.Data
             DataRelation[] nestedParentRelations = _table.NestedParentRelations;
             foreach (DataRelation rel in nestedParentRelations)
             {
-                if (rel == null) // don't like this but done for backward code compatability
+                if (rel == null) // don't like this but done for backward code compatibility
                 {
                     continue;
                 }

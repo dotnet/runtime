@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem.Interop
 {
-    // Functionality related to determinstic ordering of types
+    // Functionality related to deterministic ordering of types
     partial class NativeStructType
     {
         protected override int ClassCode => -377751537;

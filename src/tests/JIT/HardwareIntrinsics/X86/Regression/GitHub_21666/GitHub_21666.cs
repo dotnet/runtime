@@ -24,17 +24,17 @@ namespace GitHub_21666
 
         static int Main(string[] args)
         {
-            bool sucess = true;
+            bool success = true;
             byteSF = 0;
             ushortSF = 0;
             uintSF = 0;
             ulongSF = 0;
-            sucess = sucess && TestByteContainment();
-            sucess = sucess && TestUInt16Containment();
-            sucess = sucess && TestUInt32Containment();
-            sucess = sucess && TestUInt64Containment();
+            success = success && TestByteContainment();
+            success = success && TestUInt16Containment();
+            success = success && TestUInt32Containment();
+            success = success && TestUInt64Containment();
 
-            return sucess ? Pass : Fail;
+            return success ? Pass : Fail;
         }
 
         static unsafe bool TestByteContainment()

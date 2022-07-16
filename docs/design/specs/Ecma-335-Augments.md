@@ -881,7 +881,7 @@ Edit the first paragraph "The .override directive specifies that a virtual metho
 
 ### II.10.3.4 Impact of overrides on derived classes
 Add a third bullet
-"- If a virtual method is overridden via an .override directive or if a derived class provides an implentation and that virtual method in parent class was overriden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
+"- If a virtual method is overridden via an .override directive or if a derived class provides an implentation and that virtual method in parent class was overridden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
 
 
 ```

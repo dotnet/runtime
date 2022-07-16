@@ -352,14 +352,14 @@ namespace Microsoft.NET.HostModel.AppHost
         ///    * The bytes for the bundler may be unnecessarily loaded at startup
         ///    * Tools that process the string table may be confused (?)
         ///    * The string table size is limited to 4GB. Bundles larger than that size
-        ///      cannot be accomodated by this utility.
+        ///      cannot be accommodated by this utility.
         ///
         /// </summary>
         /// <param name="filePath">Path to the AppHost</param>
         /// <returns>
         ///  True if
         ///    - The input is a MachO binary, and
-        ///    - The additional bytes were successfully accomodated within the MachO segments.
+        ///    - The additional bytes were successfully accommodated within the MachO segments.
         ///   False otherwise
         /// </returns>
         /// <exception cref="AppHostMachOFormatException">

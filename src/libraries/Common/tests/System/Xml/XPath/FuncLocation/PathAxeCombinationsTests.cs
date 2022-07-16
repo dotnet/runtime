@@ -45165,8 +45165,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 {
                     NodeType = XPathNodeType.Element,
                     HasChildren = true,
-                    LocalName = "documentry",
-                    Name = "documentry",
+                    LocalName = "documentary",
+                    Name = "documentary",
                     HasNameTable = true,
                     Value = "\n\t\t\t\n\t\t\t\tJinnah\n\t\t\t\n\t\t"
                 },
@@ -45178,7 +45178,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasAttributes = true,
                     LocalName = "movie",
                     Name = "NSmovie:movie",
-                    NamespaceURI = "http://documentry.htm",
+                    NamespaceURI = "http://documentary.htm",
                     HasNameTable = true,
                     Prefix = "NSmovie",
                     Value = "\n\t\t\t\tJinnah\n\t\t\t"
@@ -45190,7 +45190,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasChildren = true,
                     LocalName = "title",
                     Name = "NSmovie:title",
-                    NamespaceURI = "http://documentry.htm",
+                    NamespaceURI = "http://documentary.htm",
                     HasNameTable = true,
                     Prefix = "NSmovie",
                     Value = "Jinnah"
@@ -45396,8 +45396,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 {
                     NodeType = XPathNodeType.Element,
                     HasChildren = true,
-                    LocalName = "documentry",
-                    Name = "documentry",
+                    LocalName = "documentary",
+                    Name = "documentary",
                     HasNameTable = true,
                     Value = "\n\t\t\t\n\t\t\t\tJinnah\n\t\t\t\n\t\t"
                 },
@@ -45409,7 +45409,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasAttributes = true,
                     LocalName = "movie",
                     Name = "NSmovie:movie",
-                    NamespaceURI = "http://documentry.htm",
+                    NamespaceURI = "http://documentary.htm",
                     HasNameTable = true,
                     Prefix = "NSmovie",
                     Value = "\n\t\t\t\tJinnah\n\t\t\t"
@@ -45421,7 +45421,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     HasChildren = true,
                     LocalName = "title",
                     Name = "NSmovie:title",
-                    NamespaceURI = "http://documentry.htm",
+                    NamespaceURI = "http://documentary.htm",
                     HasNameTable = true,
                     Prefix = "NSmovie",
                     Value = "Jinnah"
@@ -54270,7 +54270,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                     LocalName = "NSmovie",
                     Name = "NSmovie",
                     HasNameTable = true,
-                    Value = "http://documentry.htm"
+                    Value = "http://documentary.htm"
                 });
             ;
 

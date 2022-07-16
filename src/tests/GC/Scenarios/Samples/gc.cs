@@ -514,7 +514,7 @@ class Application {
         WeakRefDemo(false);  // Demos WeakReferences without resurrection tracking 
         WeakRefDemo(true);   // Demos WeakReferences with resurrection tracking 
         
-        // Demos Finalize on Shutdown symantics (this demo is inline) 
+        // Demos Finalize on Shutdown semantics (this demo is inline) 
         Display(0, "\n\nDemo start: Finalize on shutdown.", +1);
 
         // When Main returns, obj will have its Finalize method called.

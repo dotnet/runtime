@@ -388,7 +388,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
 
         // Here's the "within reason" part:  the user may not customize these values to
         // be more "extreme" than the constants, or to be 0 (which would confuse the
-        // issue of whether these statics were intialized yet).
+        // issue of whether these statics were initialized yet).
         if ((s_dwMinSleepMs < kdwDefaultMinSleepMs) || (s_dwMinSleepMs > kdwDefaultMaxSleepMs))
         {
             // Sleeping less than 300ms between evac checks could negatively affect the

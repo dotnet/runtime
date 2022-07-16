@@ -59,7 +59,7 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestUnoverridenSyntheticEqualsAndGetHashCode()
+        public void TestUnoverriddenSyntheticEqualsAndGetHashCode()
         {
             //
             // Tests that the synthetic implementation on a base class is propagated to
@@ -82,10 +82,10 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestOverridenSyntheticEqualsAndGetHashCode()
+        public void TestOverriddenSyntheticEqualsAndGetHashCode()
         {
             //
-            // Tests that the synthetic implementation on a base class can be overriden by
+            // Tests that the synthetic implementation on a base class can be overridden by
             // derived classes.
             //
 

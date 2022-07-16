@@ -3485,7 +3485,7 @@ done
 
 ./make_ldvirtftn_test.sh ldvirtftn_ctor unverifiable "ldvirtftn void class Test::.ctor()" "newobj void class Test::.ctor()"
 ./make_ldvirtftn_test.sh ldvirtftn_static_method unverifiable "ldvirtftn void class Test::StaticMethod()" "newobj void class Test::.ctor()"
-./make_ldvirtftn_test.sh ldvirtftn_method_not_present invalid "ldvirtftn void class Test::NonExistant()" "newobj void Test::.ctor()"
+./make_ldvirtftn_test.sh ldvirtftn_method_not_present invalid "ldvirtftn void class Test::NonExistent()" "newobj void Test::.ctor()"
 
 
 ./make_ldvirtftn_test.sh ldvirtftn_method_stack_type_obj_compatible_1 valid "ldvirtftn instance string object::ToString()" "newobj void Test::.ctor()"

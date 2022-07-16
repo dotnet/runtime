@@ -1877,7 +1877,7 @@
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c30">
-	<SymbolicName>CORDBG_E_UNCOMPATIBLE_PLATFORMS</SymbolicName>
+	<SymbolicName>CORDBG_E_INCOMPATIBLE_PLATFORMS</SymbolicName>
 	<Message>"The operation failed because debuggee and debugger are on incompatible platforms."</Message>
 	<Comment> The operation failed because debuggee and debugger are on incompatible platform </Comment>
 </HRESULT>
@@ -2163,7 +2163,7 @@
 	<Comment> 0x80070216 // Overflow or underflow in mathematical operations.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_FILENAME_EXCED_RANGE)">
+<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_FILENAME_EXCEED_RANGE)">
 	<SymbolicName>COR_E_PATHTOOLONG</SymbolicName>
 	<Comment> The specified path was too long.</Comment>
 </HRESULT>

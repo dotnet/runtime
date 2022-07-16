@@ -432,7 +432,7 @@ RtlVirtualUnwind_Worker (
         // It is of note that we are significantly pruning the funtion here in making the fake
         // code buffer, all that we are making room for is 1 byte for the prologue, 1 byte for
         // function code and what is left of the epilogue to be executed. This is _very_ closely
-        // tied to the implmentation of RtlVirtualUnwind and the knowledge that by passing the
+        // tied to the implementation of RtlVirtualUnwind and the knowledge that by passing the
         // the test above and having InEpilogue==TRUE then the code path which will be followed
         // through RtlVirtualUnwind is known.
         //

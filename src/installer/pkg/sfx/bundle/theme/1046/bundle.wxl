@@ -50,8 +50,8 @@ Tudo pronto? Então, vamos nessa!</String>
   <String Id="FailureRestartText">Você deve reiniciar seu computador para concluir a reversão do software.</String>
   <String Id="FailureRestartButton">&amp;Reiniciar</String>
   <String Id="FailureCloseButton">&amp;Fechar</String>
-  <String Id="FailureNotSupportedCurrentOperatingSystem">Não há suporte para o [PRODUCT_NAME] neste sistema operacional. Para obter mais informações, confira [LINK_PREREQ_PAGE].</String>
-  <String Id="FailureNotSupportedX86OperatingSystem">O [PRODUCT_NAME] não tem suporte em sistemas operacionais x86. Instale usando o instalador x86 correspondente.</String>
+  <String Id="FailureNotSupportedCurrentOperatingSystem">Não há supporte para o [PRODUCT_NAME] neste sistema operacional. Para obter mais informações, confira [LINK_PREREQ_PAGE].</String>
+  <String Id="FailureNotSupportedX86OperatingSystem">O [PRODUCT_NAME] não tem supporte em sistemas operacionais x86. Instale usando o instalador x86 correspondente.</String>
   <String Id="FilesInUseHeader">Arquivos em Uso</String>
   <String Id="FilesInUseLabel">Os aplicativos a seguir estão usando arquivos que precisam ser atualizados:</String>
   <String Id="FilesInUseCloseRadioButton">Feche os &amp;aplicativos e tente reiniciá-los.</String>
@@ -59,7 +59,7 @@ Tudo pronto? Então, vamos nessa!</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Cancelar</String>
   <String Id="WelcomeHeaderMessage">Runtime do .NET</String>
-  <String Id="WelcomeDescription">O Runtime do .NET é usado para executar aplicativos .NET no seu computador com Windows. O .NET é um software livre, com plataforma cruzada e possui o suporte da Microsoft. Esperamos que você goste!</String>
+  <String Id="WelcomeDescription">O Runtime do .NET é usado para executar aplicativos .NET no seu computador com Windows. O .NET é um software livre, com plataforma cruzada e possui o supporte da Microsoft. Esperamos que você goste!</String>
   <String Id="LearnMoreTitle">Saiba mais sobre o .NET</String>
   <String Id="SuccessInstallLocation">O seguinte foi instalado em [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>

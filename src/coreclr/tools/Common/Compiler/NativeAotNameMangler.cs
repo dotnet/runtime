@@ -467,19 +467,19 @@ namespace ILCompiler
             return sb.ToUtf8String();
         }
 
-        private Utf8String GetPrefixMangledMethodName(IPrefixMangledMethod prefixMangledMetod)
+        private Utf8String GetPrefixMangledMethodName(IPrefixMangledMethod prefixMangledMethod)
         {
             Utf8StringBuilder sb = new Utf8StringBuilder();
-            sb.Append(EnterNameScopeSequence).Append(prefixMangledMetod.Prefix).Append(ExitNameScopeSequence);
+            sb.Append(EnterNameScopeSequence).Append(prefixMangledMethod.Prefix).Append(ExitNameScopeSequence);
 
             if (_mangleForCplusPlus)
             {
-                string name = GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString().Replace("::", "_");
+                string name = GetMangledMethodName(prefixMangledMethod.BaseMethod).ToString().Replace("::", "_");
                 sb.Append(name);
             }
             else
             {
-                sb.Append(GetMangledMethodName(prefixMangledMetod.BaseMethod));
+                sb.Append(GetMangledMethodName(prefixMangledMethod.BaseMethod));
             }
 
             return sb.ToUtf8String();

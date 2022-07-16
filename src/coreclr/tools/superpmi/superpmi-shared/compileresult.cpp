@@ -220,7 +220,7 @@ void CompileResult::repAllocMem(ULONG*              hotCodeSize,
     *orig_roDataBlock   = (void*)value.roDataBlock;
 }
 
-// Note - Ownership of pMap is transfered with this call. In replay icorjitinfo we should free it.
+// Note - Ownership of pMap is transferred with this call. In replay icorjitinfo we should free it.
 void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, ICorDebugInfo::OffsetMapping* pMap)
 {
     if (SetBoundaries == nullptr)
@@ -267,7 +267,7 @@ bool CompileResult::repSetBoundaries(CORINFO_METHOD_HANDLE* ftn, ULONG32* cMap, 
     return true;
 }
 
-// Note - Ownership of vars is transfered with this call. In replay icorjitinfo we should free it.
+// Note - Ownership of vars is transferred with this call. In replay icorjitinfo we should free it.
 void CompileResult::recSetVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars)
 {
     if (SetVars == nullptr)
@@ -317,7 +317,7 @@ bool CompileResult::repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorD
     return true;
 }
 
-// Note - Ownership of patchpointInfo is transfered with this call. In replay icorjitinfo we should free it.
+// Note - Ownership of patchpointInfo is transferred with this call. In replay icorjitinfo we should free it.
 void CompileResult::recSetPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     if (SetPatchpointInfo == nullptr)

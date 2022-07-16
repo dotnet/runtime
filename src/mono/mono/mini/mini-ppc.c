@@ -4624,7 +4624,7 @@ mono_arch_register_lowlevel_calls (void)
 		__load [9] =  ((guint64)(gsize)(val))        & 0xffff;	\
 	} while (0)
 #else
-#error huh?  No endianess defined by compiler
+#error huh?  No endianness defined by compiler
 #endif
 #else
 #define patch_load_sequence(ip,val) do {\

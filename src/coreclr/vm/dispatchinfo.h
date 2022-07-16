@@ -308,7 +308,7 @@ protected:
     void                    MarshalReturnValueManagedToNative(DispatchMemberInfo *pMemberInfo, OBJECTREF *pSrcObj, VARIANT *pDestVar);
     void                    CleanUpNativeParam(DispatchMemberInfo *pDispMemberInfo, int iParam, OBJECTREF *pBackupStaticArray, VARIANT *pArgVariant);
 
-    // DISPID to named argument convertion helper.
+    // DISPID to named argument conversion helper.
     void                    SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID *pSrcArgNames, int NumNamedArgs, PTRARRAYREF *pNamedParamArray);
 
     // Helper method to retrieve the source VARIANT from the VARIANT contained in the disp params.

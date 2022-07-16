@@ -11,22 +11,22 @@
 **===================================================================*/
 
 /*
-1. copy an existing file to non-existant with overwrite true
-2. copy an existing file to non-existant with overwrite false
+1. copy an existing file to non-existent with overwrite true
+2. copy an existing file to non-existent with overwrite false
 3. copy an existing file to existing with overwrite true
 4. copy an existing file to existing with overwrite false
-5. copy non-existant file to non-existant with overwrite true
-6. copy non-existant file to non-existant with overwrite false
-7. copy non-existant file to existing with overwrite true
-8. copy non-existant file to existing with overwrite false
+5. copy non-existent file to non-existent with overwrite true
+6. copy non-existent file to non-existent with overwrite false
+7. copy non-existent file to existing with overwrite true
+8. copy non-existent file to existing with overwrite false
 */
 
 #include <palsuite.h>
 
 PALTEST(file_io_CopyFileW_test1_paltest_copyfilew_test1, "file_io/CopyFileW/test1/paltest_copyfilew_test1")
 {
-    LPSTR lpSource[2] = {"src_existing.tmp", "src_non-existant.tmp"};
-    LPSTR lpDestination[2] = {"dst_existing.tmp", "dst_non-existant.tmp"};
+    LPSTR lpSource[2] = {"src_existing.tmp", "src_non-existent.tmp"};
+    LPSTR lpDestination[2] = {"dst_existing.tmp", "dst_non-existent.tmp"};
     WCHAR* wcSource;
     WCHAR* wcDest;
     BOOL bFailIfExists[3] = {FALSE, TRUE};

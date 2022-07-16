@@ -135,7 +135,7 @@ namespace ILCompiler.Dataflow
         /// Doesn't check the associated symbol for overrides and virtual methods because we should warn on mismatched between the property AND the accessors
         /// </summary>
         /// <param name="method">
-        ///	MethodDesc that is either an overriding member or an overriden/virtual member
+        ///	MethodDesc that is either an overriding member or an overridden/virtual member
         /// </param>
         internal static bool IsOverrideInRequiresScope(this MethodDesc method, string requiresAttribute) =>
             method.IsInRequiresScope(requiresAttribute, false);

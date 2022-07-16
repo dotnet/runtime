@@ -6,7 +6,7 @@
 {
 	ldc.i4 1
 	stsfld int32 NS.TestClass::TestField
-	ldstr "Module contructor executed"
+	ldstr "Module constructor executed"
 	call void [mscorlib]System.Console::WriteLine(string)
 	ret
 }

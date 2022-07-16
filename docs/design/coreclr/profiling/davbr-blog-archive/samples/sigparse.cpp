@@ -161,7 +161,7 @@ protected:
 	virtual void NotifyEndParam() {}
 
  	// sentinel indication the location of the "..." in the method signature
-	virtual void NotifySentinal() {}
+	virtual void NotifySentinel() {}
 
  	// number of generic parameters in this method signature (if any)
 	virtual void NotifyGenericParamCount(sig_count) {}
@@ -362,7 +362,7 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
 		return false;
 	}
 
-	bool fEncounteredSentinal = false;
+	bool fEncounteredSentinel = false;
 
 	for (sig_count i = 0; i < param_count; i++)
 	{
@@ -373,13 +373,13 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
 
 		if (*pbCur == ELEMENT_TYPE_SENTINEL)
 		{
-			if (fEncounteredSentinal)
+			if (fEncounteredSentinel)
 			{
 				return false;
 			}
 
-			fEncounteredSentinal = true;
-			NotifySentinal();
+			fEncounteredSentinel = true;
+			NotifySentinel();
 			pbCur++;
 		}
 

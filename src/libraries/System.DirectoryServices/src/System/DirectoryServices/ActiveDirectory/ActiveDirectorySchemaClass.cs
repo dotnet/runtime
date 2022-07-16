@@ -625,7 +625,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                // there are no superiors, return an emtpy collection
+                                // there are no superiors, return an empty collection
                                 _possibleSuperiors = new ActiveDirectorySchemaClassCollection(_context, this, true /* is Bound */, PropertyManager.PossibleSuperiors, new ArrayList());
                             }
                         }
@@ -724,7 +724,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                // there are no mandatory properties, return an emtpy collection
+                                // there are no mandatory properties, return an empty collection
                                 _mandatoryProperties = new ActiveDirectorySchemaPropertyCollection(_context, this, true /* isBound */, PropertyManager.MustContain, new ArrayList());
                             }
                         }
@@ -800,7 +800,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                // there are no optional properties, return an emtpy collection
+                                // there are no optional properties, return an empty collection
                                 _optionalProperties = new ActiveDirectorySchemaPropertyCollection(_context, this, true /* isBound */, PropertyManager.MayContain, new ArrayList());
                             }
                         }
@@ -885,7 +885,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                             else
                             {
-                                // there are no auxiliary classes, return an emtpy collection
+                                // there are no auxiliary classes, return an empty collection
                                 _auxiliaryClasses = new ActiveDirectorySchemaClassCollection(_context, this, true /* is Bound */, PropertyManager.AuxiliaryClass, new ArrayList());
                             }
                         }

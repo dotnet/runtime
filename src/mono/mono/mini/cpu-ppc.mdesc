@@ -17,7 +17,7 @@
 #	b  base register (used in address references)
 #	f  floating point register
 #
-# len:number         describe the maximun length in bytes of the instruction
+# len:number         describe the maximum length in bytes of the instruction
 # number is a positive integer
 #
 # cost:number        describe how many cycles are needed to complete the instruction (unused)

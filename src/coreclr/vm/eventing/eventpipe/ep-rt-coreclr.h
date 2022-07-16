@@ -1343,10 +1343,10 @@ ep_rt_shutdown (void)
 static
 inline
 bool
-ep_rt_config_aquire (void)
+ep_rt_config_acquire (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return ep_rt_lock_aquire (ep_rt_coreclr_config_lock_get ());
+	return ep_rt_lock_acquire (ep_rt_coreclr_config_lock_get ());
 }
 
 static
@@ -2322,7 +2322,7 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 
 static
 bool
-ep_rt_lock_aquire (ep_rt_lock_handle_t *lock)
+ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 {
 	STATIC_CONTRACT_NOTHROW;
 
@@ -2421,7 +2421,7 @@ ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock)
 static
 inline
 bool
-ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock)
+ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));

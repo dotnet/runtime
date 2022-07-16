@@ -86,7 +86,7 @@ In the analyzer project make sure to do the following. Ensure it only targets `n
   </PropertyGroup>
 ```
 
-In order to mitigate design-time/build-time performance issues with source generators, we generate build logic to allow the end user to disable the source generator from the package. By default, the MSBuild property an end user can set is named `Disable{PackageId}SourceGenerator`. If a package needs a custom property name, this can be overriden by setting the following property in the project that produces the package
+In order to mitigate design-time/build-time performance issues with source generators, we generate build logic to allow the end user to disable the source generator from the package. By default, the MSBuild property an end user can set is named `Disable{PackageId}SourceGenerator`. If a package needs a custom property name, this can be overridden by setting the following property in the project that produces the package
 ```xml
   <PropertyGroup>
     <DisableSourceGeneratorPropertyName>CustomPropertyName</DisableSourceGeneratorPropertyName>

@@ -317,7 +317,7 @@ private:
     //
     // For CIterator & Iterator, we try our best to iterate the string without
     // modifying it. (Currently, we do require an ASCII or Unicode string
-    // for simple WCHAR retrival, but you could imagine being more flexible
+    // for simple WCHAR retrivial, but you could imagine being more flexible
     // going forward - perhaps even supporting iterating multibyte encodings
     // directly.)
     //
@@ -356,7 +356,7 @@ private:
 
       public:
         // Note these should supercede the Indexer versions
-        // since this class comes first in the inheritence list
+        // since this class comes first in the inheritance list
         WCHAR operator*() const;
         void operator->() const;
         WCHAR operator[](int index) const;

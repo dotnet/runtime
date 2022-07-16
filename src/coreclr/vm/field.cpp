@@ -367,7 +367,7 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
     //
     // assert that o is derived from MT of enclosing class
     //
-    // walk up o's inheritence chain to make sure m_pMTOfEnclosingClass is along it
+    // walk up o's inheritance chain to make sure m_pMTOfEnclosingClass is along it
     //
     MethodTable* pCursor = o->GetMethodTable();
 

@@ -437,7 +437,7 @@ namespace System.Diagnostics
         public Activity(string operationName)
         {
             Source = s_defaultSource;
-            // Allow data by default in the constructor to keep the compatability.
+            // Allow data by default in the constructor to keep the compatibility.
             IsAllDataRequested = true;
 
             if (string.IsNullOrEmpty(operationName))

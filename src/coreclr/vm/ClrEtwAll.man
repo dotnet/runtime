@@ -7483,7 +7483,7 @@
                             <opcode name="GCHeapDumpObjectReference" message="$(string.MonoProfilerPublisher.GCHeapDumpObjectReferenceOpcodeMessage)" symbol="CLR_MONO_PROFILER_GC_HEAP_DUMP_OBJECT_REFERENCE_OPCODE" value="70" />
                             <opcode name="MonitorContention" message="$(string.MonoProfilerPublisher.MonitorContentionOpcodeMessage)" symbol="CLR_MONO_PROFILER_MONITOR_CONTENTION_OPCODE" value="71" />
                             <opcode name="MonitorFailed" message="$(string.MonoProfilerPublisher.MonitorFailedOpcodeMessage)" symbol="CLR_MONO_PROFILER_MONITOR_FAILED_OPCODE" value="72" />
-                            <opcode name="MonitorAquired" message="$(string.MonoProfilerPublisher.MonitorAquiredOpcodeMessage)" symbol="CLR_MONO_PROFILER_MONITOR_AQUIRED_OPCODE" value="73" />
+                            <opcode name="MonitorAcquired" message="$(string.MonoProfilerPublisher.MonitorAcquiredOpcodeMessage)" symbol="CLR_MONO_PROFILER_MONITOR_AQUIRED_OPCODE" value="73" />
                             <opcode name="ThreadStarted" message="$(string.MonoProfilerPublisher.ThreadStartedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_STARTED_OPCODE" value="74" />
                             <opcode name="ThreadStopping" message="$(string.MonoProfilerPublisher.ThreadStoppingOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_STOPPING_OPCODE" value="75" />
                             <opcode name="ThreadStopped" message="$(string.MonoProfilerPublisher.ThreadStoppedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_STOPPED_OPCODE" value="76" />
@@ -8282,7 +8282,7 @@
                            symbol="MonoProfilerMonitorFailed" message="$(string.MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage)" />
 
                     <event value="56" version="0" level="win:Informational"  template="MonitorContentionFailedAcquired"
-                           keywords ="MonitorKeyword" opcode="MonitorAquired"
+                           keywords ="MonitorKeyword" opcode="MonitorAcquired"
                            task="MonoProfiler"
                            symbol="MonoProfilerMonitorAcquired" message="$(string.MonoProfilerPublisher.MonitorContentionFailedAcquiredEventMessage)" />
 
@@ -9148,7 +9148,7 @@
                 <string id="RuntimePublisher.StatsOpcodeMessage" value="Stats" />
                 <string id="RuntimePublisher.ModuleRangeLoadOpcodeMessage" value="ModuleRangeLoad" />
                 <string id="RuntimePublisher.SetGCHandleOpcodeMessage" value="SetGCHandle" />
-                <string id="RuntimePublisher.DestroyGCHandleOpcodeMessage" value="DestoryGCHandle" />
+                <string id="RuntimePublisher.DestroyGCHandleOpcodeMessage" value="DestroyGCHandle" />
                 <string id="RuntimePublisher.TriggeredOpcodeMessage" value="Triggered" />
                 <string id="RuntimePublisher.PinObjectAtGCTimeOpcodeMessage" value="PinObjectAtGCTime" />
                 <string id="RuntimePublisher.IncreaseMemoryPressureOpcodeMessage" value="IncreaseMemoryPressure" />
@@ -9241,7 +9241,7 @@
                 <string id="PrivatePublisher.BGCAllocWaitEndOpcodeMessage" value="BGCAllocWaitStop" />
                 <string id="PrivatePublisher.FinalizeObjectOpcodeMessage" value="FinalizeObject" />
                 <string id="PrivatePublisher.SetGCHandleOpcodeMessage" value="SetGCHandle" />
-                <string id="PrivatePublisher.DestroyGCHandleOpcodeMessage" value="DestoryGCHandle" />
+                <string id="PrivatePublisher.DestroyGCHandleOpcodeMessage" value="DestroyGCHandle" />
                 <string id="PrivatePublisher.PinPlugAtGCTimeOpcodeMessage" value="PinPlugAtGCTime" />
                 <string id="PrivatePublisher.CCWRefCountChangeOpcodeMessage" value="CCWRefCountChange" />
                 <string id="PrivatePublisher.EEStartupStartOpcodeMessage" value="EEStartupStart" />
@@ -9434,7 +9434,7 @@
 
                 <string id="MonoProfilerPublisher.MonitorContentionOpcodeMessage" value="MonitorContention" />
                 <string id="MonoProfilerPublisher.MonitorFailedOpcodeMessage" value="MonitorFailed" />
-                <string id="MonoProfilerPublisher.MonitorAquiredOpcodeMessage" value="MonitorAquired" />
+                <string id="MonoProfilerPublisher.MonitorAcquiredOpcodeMessage" value="MonitorAcquired" />
 
                 <string id="MonoProfilerPublisher.ThreadStartedOpcodeMessage" value="ThreadStarted" />
                 <string id="MonoProfilerPublisher.ThreadStoppingOpcodeMessage" value="ThreadStopping" />

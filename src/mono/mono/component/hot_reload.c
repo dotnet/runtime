@@ -826,7 +826,7 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		}
 		/* The invariant is that once we made a copy in any previous generation, we'll make
 		 * a copy in this generation.  So subsequent generations can copy either from the
-		 * immediately preceeding generation or from the baseline if the preceeding
+		 * immediately preceding generation or from the baseline if the preceding
 		 * generation didn't make a copy. */
 
 		guint32 rows = count->prev_gen_rows + count->inserted_rows;
@@ -1620,8 +1620,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 
 		/*
 		 * So the way a non-default func_code works is that it's attached to the EnCLog
-		 * record preceeding the new member defintion (so e.g. an addMethod code will be on
-		 * the preceeding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
+		 * record preceding the new member defintion (so e.g. an addMethod code will be on
+		 * the preceding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
 		 */
 		switch (func_code) {
 			case ENC_FUNC_DEFAULT: /* default */

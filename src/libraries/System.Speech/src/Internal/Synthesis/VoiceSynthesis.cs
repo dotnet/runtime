@@ -849,7 +849,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         private void SpeakText(SpeakInfo speakInfo, Prompt prompt, List<LexiconEntry> lexicons)
         {
-            VoiceInfo currrentVoiceId = null;
+            VoiceInfo currentVoiceId = null;
 
             //=== Main processing loop ===========================================
             for (SpeechSeg speechSeg; (speechSeg = speakInfo.RemoveFirst()) != null;)
@@ -860,10 +860,10 @@ namespace System.Speech.Internal.Synthesis
                 voice = speechSeg.Voice;
 
                 // Fire the voice change object token if necessary
-                if (voice != null && (currrentVoiceId == null || !currrentVoiceId.Equals(voice.VoiceInfo)))
+                if (voice != null && (currentVoiceId == null || !currentVoiceId.Equals(voice.VoiceInfo)))
                 {
-                    currrentVoiceId = voice.VoiceInfo;
-                    InjectEvent(TtsEventId.VoiceChange, prompt, null, currrentVoiceId);
+                    currentVoiceId = voice.VoiceInfo;
+                    InjectEvent(TtsEventId.VoiceChange, prompt, null, currentVoiceId);
                 }
 
                 lock (_processingSpeakLock)

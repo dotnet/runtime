@@ -11,7 +11,7 @@
 **===================================================================*/
 
 //	delete an existing file
-//	delete a non-existant file
+//	delete a non-existent file
 //  delete an open file
 //	delete files using wild cards
 //	delete a hidden file
@@ -92,13 +92,13 @@ PALTEST(file_io_DeleteFileA_test1_paltest_deletefilea_test1, "file_io/DeleteFile
 
 
     //
-    // deleting a non-existant file : should fail
+    // deleting a non-existent file : should fail
     //
 
     bRc = DeleteFileA("testFile02.txt");
     if (bRc != FALSE)
     {
-        Fail ("DeleteFileA: ERROR: Was able to delete the non-existant"
+        Fail ("DeleteFileA: ERROR: Was able to delete the non-existent"
             " file \"testFile02.txt\"\n");
     }
 

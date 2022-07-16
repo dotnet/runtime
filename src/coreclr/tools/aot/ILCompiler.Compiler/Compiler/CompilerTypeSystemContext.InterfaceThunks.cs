@@ -53,7 +53,7 @@ using Debug = System.Diagnostics.Debug;
 // Notice the thunk now has the expected signature, and some code to compute the context.
 //
 // The GetOrdinalInterface method retrieves the specified interface MethodTable off the MethodTable's interface list.
-// The thunks are per-type (since the position in the inteface list is different).
+// The thunks are per-type (since the position in the interface list is different).
 //
 // We hardcode the position in the interface list instead of just hardcoding the interface type
 // itself so that we don't require runtime code generation when a new type is loaded

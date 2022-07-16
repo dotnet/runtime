@@ -779,7 +779,7 @@ public class NeuralJagged : NNetStruct
     /********************
     ** randomize_wts() **
     *********************
-    ** Intialize the weights in the middle and output layers to
+    ** Initialize the weights in the middle and output layers to
     ** random values between -0.25..+0.25
     ** Function rand() returns a value between 0 and 32767.
     **

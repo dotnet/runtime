@@ -42,7 +42,7 @@ namespace JitCrashPOC
             for (int i = 0; i < _Pool.Length; ++i) { _Pool[i] = new Item(); }
         }
 
-        private const float _LenghtZ = 1000.0f;
+        private const float _LengthZ = 1000.0f;
 
         private static readonly Vector3 _Start = new Vector3(0.0f, -1021.7f, -3451.3f);
         private static readonly Vector3 _Slope = new Vector3(0.0f, 0.286f, 0.958f);
@@ -71,7 +71,7 @@ namespace JitCrashPOC
             {
                 vDelta = _Slope * fDelta;
 
-                if (_LastGenerated != null) _Pool[i]._Position = _LastGenerated._Position - _Slope * _LenghtZ;
+                if (_LastGenerated != null) _Pool[i]._Position = _LastGenerated._Position - _Slope * _LengthZ;
                 else _Pool[i]._Position = _Start - vDelta;
 
                 _LastGenerated = _Pool[i];

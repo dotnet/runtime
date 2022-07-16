@@ -98,7 +98,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Implements IRecordEnum
         Public m_oFile As VB6File
 
-        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Sub New(ByVal oFile As VB6File)
             MyBase.New()
             m_oFile = oFile
@@ -220,7 +220,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Implements IRecordEnum
         Dim m_oFile As VB6File
 
-        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overriden methods as unsafe.")>
+        <RequiresUnreferencedCode("This implementation of IRecordEnum is unsafe. Marking ctor unsafe in order to suppress warnings for overridden methods as unsafe.")>
         Sub New(ByVal oFile As VB6File)
             MyBase.New()
             m_oFile = oFile

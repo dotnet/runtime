@@ -139,12 +139,12 @@ enum LogLevel
     LL_FATALERROR,
     LL_ERROR,
     LL_WARNING,
-    LL_INFO10,       // can be expected to generate 10 logs per small but not trival run
-    LL_INFO100,      // can be expected to generate 100 logs per small but not trival run
-    LL_INFO1000,     // can be expected to generate 1,000 logs per small but not trival run
-    LL_INFO10000,    // can be expected to generate 10,000 logs per small but not trival run
-    LL_INFO100000,   // can be expected to generate 100,000 logs per small but not trival run
-    LL_INFO1000000,  // can be expected to generate 1,000,000 logs per small but not trival run
+    LL_INFO10,       // can be expected to generate 10 logs per small but not trivial run
+    LL_INFO100,      // can be expected to generate 100 logs per small but not trivial run
+    LL_INFO1000,     // can be expected to generate 1,000 logs per small but not trivial run
+    LL_INFO10000,    // can be expected to generate 10,000 logs per small but not trivial run
+    LL_INFO100000,   // can be expected to generate 100,000 logs per small but not trivial run
+    LL_INFO1000000,  // can be expected to generate 1,000,000 logs per small but not trivial run
     LL_EVERYTHING,
 };
 

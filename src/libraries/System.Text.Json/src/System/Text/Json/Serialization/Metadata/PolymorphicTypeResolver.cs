@@ -195,7 +195,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             DerivedJsonTypeInfo? result = null;
 
-            // First, walk up the class hierarchy for any suported types.
+            // First, walk up the class hierarchy for any supported types.
             for (Type? candidate = type.BaseType; BaseType.IsAssignableFrom(candidate); candidate = candidate.BaseType)
             {
                 Debug.Assert(candidate != null);

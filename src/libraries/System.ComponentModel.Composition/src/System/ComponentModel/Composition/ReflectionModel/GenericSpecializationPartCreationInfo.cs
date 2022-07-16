@@ -71,13 +71,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             if (_constructor == null)
             {
-                ConstructorInfo? genericConstuctor = _originalPartCreationInfo.GetConstructor();
+                ConstructorInfo? genericConstructor = _originalPartCreationInfo.GetConstructor();
                 ConstructorInfo? result = null;
-                if (genericConstuctor != null)
+                if (genericConstructor != null)
                 {
                     foreach (ConstructorInfo constructor in GetPartType().GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                     {
-                        if (constructor.MetadataToken == genericConstuctor.MetadataToken)
+                        if (constructor.MetadataToken == genericConstructor.MetadataToken)
                         {
                             result = constructor;
                             break;

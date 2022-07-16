@@ -1180,15 +1180,15 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 d
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbArrayValue::HasBaseIndicies(BOOL* pbHasBaseIndicies)
+HRESULT STDMETHODCALLTYPE CordbArrayValue::HasBaseIndices(BOOL* pbHasBaseIndices)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - HasBaseIndicies - NOT IMPLEMENTED\n"));
+    LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - HasBaseIndices - NOT IMPLEMENTED\n"));
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indicies[])
+HRESULT STDMETHODCALLTYPE CordbArrayValue::GetBaseIndices(ULONG32 cdim, ULONG32 indices[])
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - GetBaseIndicies - NOT IMPLEMENTED\n"));
+    LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - GetBaseIndices - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 

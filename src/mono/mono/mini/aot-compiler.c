@@ -6871,7 +6871,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		guint32 offset;
 
 		/*
-		 * entry->d.klass/method has a lenghtly encoding and multiple rgctx_fetch entries
+		 * entry->d.klass/method has a lengthly encoding and multiple rgctx_fetch entries
 		 * reference the same klass/method, so encode it only once.
 		 * For patches which refer to got entries, this sharing is done by get_got_offset, but
 		 * these are not got entries.

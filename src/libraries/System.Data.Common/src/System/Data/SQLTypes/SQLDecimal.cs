@@ -1242,7 +1242,7 @@ namespace System.Data.SqlTypes
             ResPrec = Math.Min(MaxPrecision, ResPrec);
 
             // If precision adjusted, scale is reduced to keep the integer part untruncated.
-            // But discard the extra carry, only keep the interger part as ResInteger, not ResInteger + 1.
+            // But discard the extra carry, only keep the integer part as ResInteger, not ResInteger + 1.
             Debug.Assert(ResPrec - ResInteger >= 0);
             if (ResPrec - ResInteger < ResScale)
                 ResScale = ResPrec - ResInteger;

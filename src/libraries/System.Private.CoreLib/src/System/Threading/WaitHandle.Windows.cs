@@ -162,7 +162,7 @@ namespace System.Threading
                 case Interop.Errors.ERROR_ALREADY_EXISTS:
                     return new IOException(SR.Format(SR.IO_AlreadyExists_Name, path));
 
-                case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
+                case Interop.Errors.ERROR_FILENAME_EXCEED_RANGE:
                     return new PathTooLongException();
 
                 default:

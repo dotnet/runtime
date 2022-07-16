@@ -666,17 +666,17 @@ void ChangeS8(S8* str)
 }
 
 #pragma pack (8)
-struct IntergerStructSequential // size = 4 bytes
+struct IntegerStructSequential // size = 4 bytes
 {
     INT i;
 };
 
-void PrintIntergerStructSequential(IntergerStructSequential* str, const char* name)
+void PrintIntegerStructSequential(IntegerStructSequential* str, const char* name)
 {
     printf("\t%s.i = %d\n", name, str->i);
 }
 
-bool IsCorrectIntergerStructSequential(IntergerStructSequential* str)
+bool IsCorrectIntegerStructSequential(IntegerStructSequential* str)
 {
     if(str->i != 32)
         return false;
@@ -692,24 +692,24 @@ struct S9 // size = 8 bytes
     TestDelegate1 myDelegate1;
 };
 
-struct OuterIntergerStructSequential // size = 8 bytes
+struct OuterIntegerStructSequential // size = 8 bytes
 {
     INT i;
-    struct IntergerStructSequential s_int;
+    struct IntegerStructSequential s_int;
 };
 
-struct IncludeOuterIntergerStructSequential // size = 8 bytes
+struct IncludeOuterIntegerStructSequential // size = 8 bytes
 {
-    struct OuterIntergerStructSequential s;
+    struct OuterIntegerStructSequential s;
 };
 
-void PrintIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential* str, const char* name)
+void PrintIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential* str, const char* name)
 {
     printf("\t%s.s.s_int.i = %d\n", name, str->s.s_int.i);
     printf("\t%s.s.i = %d\n", name, str->s.i);
 }
 
-bool IsCorrectIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential* str)
+bool IsCorrectIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential* str)
 {
     if(str->s.s_int.i != 32)
         return false;
@@ -718,7 +718,7 @@ bool IsCorrectIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSeq
     return true;
 }
 
-void ChangeIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential* str)
+void ChangeIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential* str)
 {
     str->s.s_int.i = 64;
     str->s.i = 64;

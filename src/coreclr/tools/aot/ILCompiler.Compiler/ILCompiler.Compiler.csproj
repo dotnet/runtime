@@ -310,7 +310,7 @@
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
-    <Compile Include="Compiler\CompilerTypeSystemContext.IntefaceThunks.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.InterfaceThunks.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.DelegateInfo.cs" />
