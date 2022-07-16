@@ -5,6 +5,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+    <!-- Disable analyzers warnings about JSON being misformatted in string literals -->
+    <NoWarn>$(NoWarn);JSON001</NoWarn>
 
     <!-- these tests depend on the pdb files. Causes test failures like:
           [FAIL] System.Text.Json.Tests.DebuggerTests.DefaultJsonElement -->

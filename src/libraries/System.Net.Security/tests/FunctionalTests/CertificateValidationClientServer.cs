@@ -157,7 +157,6 @@ namespace System.Net.Security.Tests
                     serverConnection.GetStream(),
                     false,
                     ServerSideRemoteClientCertificateValidation))
-
                 {
                     string serverName = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
                     var clientCerts = new X509CertificateCollection();
@@ -181,22 +180,25 @@ namespace System.Net.Security.Tests
 
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientAuthentication, serverAuthentication);
 
-                    if (!_clientCertificateRemovedByFilter)
+                    using (sslServerStream.RemoteCertificate)
                     {
-                        Assert.True(sslClientStream.IsMutuallyAuthenticated, "sslClientStream.IsMutuallyAuthenticated");
-                        Assert.True(sslServerStream.IsMutuallyAuthenticated, "sslServerStream.IsMutuallyAuthenticated");
+                        if (!_clientCertificateRemovedByFilter)
+                        {
+                            Assert.True(sslClientStream.IsMutuallyAuthenticated, "sslClientStream.IsMutuallyAuthenticated");
+                            Assert.True(sslServerStream.IsMutuallyAuthenticated, "sslServerStream.IsMutuallyAuthenticated");
 
-                        Assert.Equal(sslServerStream.RemoteCertificate.Subject, _clientCertificate.Subject);
+                            Assert.Equal(sslServerStream.RemoteCertificate.Subject, _clientCertificate.Subject);
+                        }
+                        else
+                        {
+                            Assert.False(sslClientStream.IsMutuallyAuthenticated, "sslClientStream.IsMutuallyAuthenticated");
+                            Assert.False(sslServerStream.IsMutuallyAuthenticated, "sslServerStream.IsMutuallyAuthenticated");
+
+                            Assert.Null(sslServerStream.RemoteCertificate);
+                        }
+
+                        Assert.Equal(sslClientStream.RemoteCertificate.Subject, _serverCertificate.Subject);
                     }
-                    else
-                    {
-                        Assert.False(sslClientStream.IsMutuallyAuthenticated, "sslClientStream.IsMutuallyAuthenticated");
-                        Assert.False(sslServerStream.IsMutuallyAuthenticated, "sslServerStream.IsMutuallyAuthenticated");
-
-                        Assert.Null(sslServerStream.RemoteCertificate);
-                    }
-
-                    Assert.Equal(sslClientStream.RemoteCertificate.Subject, _serverCertificate.Subject);
                 }
             }
         }

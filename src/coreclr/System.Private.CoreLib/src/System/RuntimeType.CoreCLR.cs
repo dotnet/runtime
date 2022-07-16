@@ -2403,6 +2403,11 @@ namespace System
 
         #region Private\Internal Members
 
+        internal unsafe TypeHandle GetNativeTypeHandle()
+        {
+            return new TypeHandle((void*)m_handle);
+        }
+
         internal IntPtr GetUnderlyingNativeHandle()
         {
             return m_handle;
@@ -3360,7 +3365,56 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void GetGUID(ref Guid result);
 
-        internal bool IsDelegate() => GetBaseType() == typeof(MulticastDelegate);
+        protected override unsafe bool IsValueTypeImpl()
+        {
+            TypeHandle th = GetNativeTypeHandle();
+
+            // We need to return true for generic parameters with the ValueType constraint.
+            if (th.IsTypeDesc)
+                return IsSubclassOf(typeof(ValueType));
+
+            bool isValueType = th.AsMethodTable()->IsValueType;
+            GC.KeepAlive(this);
+            return isValueType;
+        }
+
+        public override unsafe bool IsEnum
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                // We need to return true for generic parameters with the Enum constraint.
+                if (th.IsTypeDesc)
+                    return IsSubclassOf(typeof(Enum));
+
+                bool isEnum = th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
+                GC.KeepAlive(this);
+                return isEnum;
+            }
+        }
+
+        // This returns true for actual enum types only.
+        internal unsafe bool IsActualEnum
+        {
+            get
+            {
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isEnum = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<Enum>().AsMethodTable();
+                GC.KeepAlive(this);
+                return isEnum;
+            }
+        }
+
+        internal unsafe bool IsDelegate()
+        {
+            TypeHandle th = GetNativeTypeHandle();
+
+            bool isDelegate = !th.IsTypeDesc && th.AsMethodTable()->ParentMethodTable == System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<MulticastDelegate>().AsMethodTable();
+            GC.KeepAlive(this);
+            return isDelegate;
+        }
 
         public override GenericParameterAttributes GenericParameterAttributes
         {
@@ -3756,7 +3810,7 @@ namespace System
 
         internal static CorElementType GetUnderlyingType(RuntimeType type)
         {
-            if (type.IsEnum)
+            if (type.IsActualEnum)
             {
                 type = (RuntimeType)Enum.GetUnderlyingType(type);
             }

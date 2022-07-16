@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -226,13 +225,13 @@ namespace Microsoft.Interop
             {
                 marshallingStrategy = new StatelessValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
-                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax, isLinearCollectionMarshalling: false);
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
             {
@@ -305,11 +304,20 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatelessLinearCollectionNonBlittableElementsMarshalling(marshallerTypeSyntax, nativeTypeSyntax, marshallerData.Shape, unmanagedElementType, elementMarshaller, elementInfo, numElementsExpression);
                 }
 
+                if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+                {
+                    // Check if the buffer element type is actually the unmanaged element type
+                    TypeSyntax bufferElementTypeSyntax = marshallerData.BufferElementType.Syntax.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)
+                        ? unmanagedElementType
+                        : marshallerData.BufferElementType.Syntax;
+                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax, isLinearCollectionMarshalling: true);
+                }
+
                 if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(
                 marshallingStrategy,
                 enableByValueContentsMarshalling: info.ManagedType is SzArrayType && (!elementIsBlittable || ElementTypeIsSometimesNonBlittable(elementInfo)));
 
@@ -337,8 +345,8 @@ namespace Microsoft.Interop
             NativeLinearCollectionMarshallingInfo marshalInfo,
             TypeSyntax unmanagedElementType)
             => originalTypeSyntax.ReplaceNodes(
-                        originalTypeSyntax.DescendantNodesAndSelf().OfType<TypeSyntax>().Where(t => t.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)),
-                        (_, _) => unmanagedElementType);
+                    originalTypeSyntax.DescendantNodesAndSelf().OfType<TypeSyntax>().Where(t => t.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)),
+                    (_, _) => unmanagedElementType);
 
         private void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
@@ -375,7 +383,7 @@ namespace Microsoft.Interop
             if (!info.IsByRef
                 && !info.IsManagedReturnPosition
                 && context.SingleFrameSpansNativeContext
-                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode)))
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {

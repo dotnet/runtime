@@ -3,10 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -411,12 +408,30 @@ namespace Microsoft.Interop
             public IMethodSymbol? ToUnmanaged { get; init; }
             public IMethodSymbol? Free { get; init; }
             public IMethodSymbol? OnInvoked { get; init; }
+            public IMethodSymbol? StatefulGetPinnableReference { get; init; }
 
             // Linear collection
             public IMethodSymbol? ManagedValuesSource { get; init; }
             public IMethodSymbol? UnmanagedValuesDestination { get; init; }
             public IMethodSymbol? ManagedValuesDestination { get; init; }
             public IMethodSymbol? UnmanagedValuesSource { get; init; }
+
+            public bool IsShapeMethod(IMethodSymbol method)
+            {
+                return SymbolEqualityComparer.Default.Equals(method, FromManaged)
+                    || SymbolEqualityComparer.Default.Equals(method, FromManagedWithBuffer)
+                    || SymbolEqualityComparer.Default.Equals(method, ToManaged)
+                    || SymbolEqualityComparer.Default.Equals(method, ToManagedGuranteed)
+                    || SymbolEqualityComparer.Default.Equals(method, FromUnmanaged)
+                    || SymbolEqualityComparer.Default.Equals(method, ToUnmanaged)
+                    || SymbolEqualityComparer.Default.Equals(method, Free)
+                    || SymbolEqualityComparer.Default.Equals(method, OnInvoked)
+                    || SymbolEqualityComparer.Default.Equals(method, StatefulGetPinnableReference)
+                    || SymbolEqualityComparer.Default.Equals(method, ManagedValuesSource)
+                    || SymbolEqualityComparer.Default.Equals(method, UnmanagedValuesDestination)
+                    || SymbolEqualityComparer.Default.Equals(method, ManagedValuesDestination)
+                    || SymbolEqualityComparer.Default.Equals(method, UnmanagedValuesSource);
+            }
         }
 
         public static (MarshallerShape shape, MarshallerMethods methods) GetShapeForType(ITypeSymbol marshallerType, ITypeSymbol managedType, bool isLinearCollectionMarshaller, Compilation compilation)
@@ -518,9 +533,12 @@ namespace Microsoft.Interop
             {
                 shape |= MarshallerShape.StatelessPinnableReference;
             }
-            if (GetStatefulGetPinnableReference(marshallerType) is not null)
+
+            IMethodSymbol statefulGetPinnableReference = GetStatefulGetPinnableReference(marshallerType);
+            if (statefulGetPinnableReference is not null)
             {
                 shape |= MarshallerShape.StatefulPinnableReference;
+                methods = methods with { StatefulGetPinnableReference = statefulGetPinnableReference };
             }
 
             return (shape, methods);
@@ -648,7 +666,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? GetManagedValuesSource(ITypeSymbol type, ITypeSymbol readOnlySpanOfT)
             {
                 // static ReadOnlySpan<TManagedElement> GetManagedValuesSource()
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesSource)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesSource)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
                         && SymbolEqualityComparer.Default.Equals(readOnlySpanOfT, returnType.ConstructedFrom));
@@ -657,7 +675,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? GetUnmanagedValuesDestination(ITypeSymbol type, ITypeSymbol spanOfT)
             {
                 // static Span<TUnmanagedElement> GetUnmanagedValuesDestination()
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesDestination)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesDestination)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
                         && SymbolEqualityComparer.Default.Equals(spanOfT, returnType.ConstructedFrom));
@@ -666,7 +684,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? GetManagedValuesDestination(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
             {
                 // static Span<TManagedElement> GetManagedValuesDestination(int numElements)
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
                         && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32
@@ -676,7 +694,7 @@ namespace Microsoft.Interop
             internal static IMethodSymbol? GetUnmanagedValuesSource(ITypeSymbol type, ITypeSymbol readOnlySpanOfT)
             {
                 // static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
-                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesSource)
+                return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesSource)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
                         && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32

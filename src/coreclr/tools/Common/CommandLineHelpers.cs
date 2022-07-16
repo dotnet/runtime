@@ -41,23 +41,23 @@ namespace System.CommandLine
             if(string.IsNullOrEmpty(token))
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    return Internal.TypeSystem.TargetOS.Windows;
+                    return TargetOS.Windows;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    return Internal.TypeSystem.TargetOS.Linux;
+                    return TargetOS.Linux;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    return Internal.TypeSystem.TargetOS.OSX;
+                    return TargetOS.OSX;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
-                    return Internal.TypeSystem.TargetOS.FreeBSD;
+                    return TargetOS.FreeBSD;
 
                 throw new NotImplementedException();
             }
 
             if (token.Equals("windows", StringComparison.OrdinalIgnoreCase))
-                return Internal.TypeSystem.TargetOS.Windows;
+                return TargetOS.Windows;
             else if (token.Equals("linux", StringComparison.OrdinalIgnoreCase))
-                return Internal.TypeSystem.TargetOS.Linux;
+                return TargetOS.Linux;
             else if (token.Equals("osx", StringComparison.OrdinalIgnoreCase))
-                return Internal.TypeSystem.TargetOS.OSX;
+                return TargetOS.OSX;
 
             throw new CommandLineException($"Target OS '{token}' is not supported");
         }
@@ -68,22 +68,25 @@ namespace System.CommandLine
             {
                 return RuntimeInformation.ProcessArchitecture switch
                 {
-                    Architecture.X86 => Internal.TypeSystem.TargetArchitecture.X86,
-                    Architecture.X64 => Internal.TypeSystem.TargetArchitecture.X64,
-                    Architecture.Arm => Internal.TypeSystem.TargetArchitecture.ARM,
-                    Architecture.Arm64 => Internal.TypeSystem.TargetArchitecture.ARM64,
+                    Architecture.X86 => TargetArchitecture.X86,
+                    Architecture.X64 => TargetArchitecture.X64,
+                    Architecture.Arm => TargetArchitecture.ARM,
+                    Architecture.Arm64 => TargetArchitecture.ARM64,
+                    Architecture.LoongArch64 => TargetArchitecture.LoongArch64,
                     _ => throw new NotImplementedException()
                 };
             }
 
             if (token.Equals("x86", StringComparison.OrdinalIgnoreCase))
-                return Internal.TypeSystem.TargetArchitecture.X86;
+                return TargetArchitecture.X86;
             else if (token.Equals("x64", StringComparison.OrdinalIgnoreCase))
-                return Internal.TypeSystem.TargetArchitecture.X64;
+                return TargetArchitecture.X64;
             else if (token.Equals("arm", StringComparison.OrdinalIgnoreCase))
-                return Internal.TypeSystem.TargetArchitecture.ARM;
+                return TargetArchitecture.ARM;
             else if (token.Equals("arm64", StringComparison.OrdinalIgnoreCase))
-                return Internal.TypeSystem.TargetArchitecture.ARM64;
+                return TargetArchitecture.ARM64;
+            else if (archArg.Equals("loongarch64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.LoongArch64;
 
             throw new CommandLineException($"Target architecture '{token}' is not supported");
         }

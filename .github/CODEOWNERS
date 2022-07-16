@@ -62,9 +62,11 @@
 /src/native/public/mono @marek-safar @lambdageek
 
 /src/libraries/sendtohelix-wasm.targets @radical
-/src/mono/wasm @lewing
+/src/mono/wasm @lewing @pavelsavara
 /src/mono/wasm/debugger @thaystg @radical
 /src/mono/wasm/build @radical
+/src/mono/sample/wasm @lewing @pavelsavara
+/src/libraries/System.Runtime.InteropServices.JavaScript @lewing @pavelsavara
 
 /src/mono/nuget/*WebAssembly*/ @lewing @radical
 /src/mono/nuget/*MonoTargets*/ @lewing @radical

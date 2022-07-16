@@ -3213,7 +3213,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             dstRW += 4;
 
-            emitRecordRelocation(dstRW2, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
+            emitRecordRelocation(dstRW2 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
 
             dstRW2 += 4;
 
