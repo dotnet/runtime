@@ -423,11 +423,6 @@
       "label": "area-Microsoft.CSharp"
     },
     {
-      "lead": "ericstj",
-      "owners": null,
-      "label": "area-Microsoft.Extensions"
-    },
-    {
       "lead": "jaredpar",
       "owners": [
         "333fred",
