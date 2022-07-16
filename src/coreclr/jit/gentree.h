@@ -177,9 +177,9 @@ inline ExceptionSetFlags& operator&=(ExceptionSetFlags& a, ExceptionSetFlags b)
 */
 enum TargetHandleType : BYTE
 {
-    THT_Unknown                  = 2,
-    THT_GSCookieCheck            = 4,
-    THT_SetGSCookie              = 6,
+    THT_Unknown                   = 2,
+    THT_GSCookieCheck             = 4,
+    THT_SetGSCookie               = 6,
     THT_InitializeArrayIntrinsics = 8
 };
 #endif
