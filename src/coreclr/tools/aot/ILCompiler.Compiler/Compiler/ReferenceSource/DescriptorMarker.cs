@@ -252,12 +252,12 @@ namespace Mono.Linker.Steps
             if (property.GetMethod != null && Array.IndexOf(accessors, "get") >= 0)
                 ProcessMethod(type, property.GetMethod, nav, customData);
             else if (property.GetMethod == null)
-                LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccessorOfPropertyOnType, property.Name, type.FullName);
+                LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccesorOfPropertyOnType, property.Name, type.FullName);
 
             if (property.SetMethod != null && Array.IndexOf(accessors, "set") >= 0)
                 ProcessMethod(type, property.SetMethod, nav, customData);
             else if (property.SetMethod == null)
-                LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccessorOfPropertyOnType, property.Name, type.FullName);
+                LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccesorOfPropertyOnType, property.Name, type.FullName);
         }
 
         static bool IsRequired(XPathNavigator nav)

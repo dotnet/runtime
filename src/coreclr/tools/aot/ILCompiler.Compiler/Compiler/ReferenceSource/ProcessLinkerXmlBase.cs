@@ -122,7 +122,7 @@ namespace Mono.Linker.Steps
                 bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyNameReference? name);
                 if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
                 {
-                    LogWarning(assemblyNav, DiagnosticId.XmlUnsupportedWildcard);
+                    LogWarning(assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
                     continue;
                 }
 

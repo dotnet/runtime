@@ -501,16 +501,16 @@
   <data name="XmlCouldNotFindPropertyOnTypeMessage" xml:space="preserve">
     <value>Could not find property '{0}' on type '{1}'.</value>
   </data>
-  <data name="XmlCouldNotFindGetAccessorOfPropertyOnTypeTitle" xml:space="preserve">
+  <data name="XmlCouldNotFindGetAccesorOfPropertyOnTypeTitle" xml:space="preserve">
     <value>The XML defined the get accessor of property on a type, but the accessor was not found.</value>
   </data>
-  <data name="XmlCouldNotFindGetAccessorOfPropertyOnTypeMessage" xml:space="preserve">
+  <data name="XmlCouldNotFindGetAccesorOfPropertyOnTypeMessage" xml:space="preserve">
     <value>Could not find the get accessor of property '{0}' on type '{1}'.</value>
   </data>
-  <data name="XmlCouldNotFindSetAccessorOfPropertyOnTypeTitle" xml:space="preserve">
+  <data name="XmlCouldNotFindSetAccesorOfPropertyOnTypeTitle" xml:space="preserve">
     <value>The XML defined the set accessor of property on a type, but the accessor was not found.</value>
   </data>
-  <data name="XmlCouldNotFindSetAccessorOfPropertyOnTypeMessage" xml:space="preserve">
+  <data name="XmlCouldNotFindSetAccesorOfPropertyOnTypeMessage" xml:space="preserve">
     <value>Could not find the set accessor of property '{0}' in type '{1}'.</value>
   </data>
   <data name="XmlCouldNotFindMatchingConstructorForCustomAttributeTitle" xml:space="preserve">
@@ -963,10 +963,10 @@
   <data name="DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStringsMessage" xml:space="preserve">
     <value>Property '{0}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'.</value>
   </data>
-  <data name="XmlUnsupportedWildcardTitle" xml:space="preserve">
+  <data name="XmlUnsuportedWildcardTitle" xml:space="preserve">
     <value>XML contains unsupported wildcard for assembly 'fullname' attribute.</value>
   </data>
-  <data name="XmlUnsupportedWildcardMessage" xml:space="preserve">
+  <data name="XmlUnsuportedWildcardMessage" xml:space="preserve">
     <value>XML contains unsupported wildcard for assembly 'fullname' attribute.</value>
   </data>
   <data name="AssemblyWithEmbeddedXmlApplyToAnotherAssemblyTitle" xml:space="preserve">
