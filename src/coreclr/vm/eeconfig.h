@@ -61,11 +61,12 @@ enum TieredPGOStrategy
     // will be promoted to an intermediate InstrumentedTier (without optimizations in it)
     UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier = 1,
 
+    // NOTE: The following strategies work but aren't tested yet:
+
     // Use InstrumentedTier for new code without R2R (or if it's disabled), hot R2R
     // will be promoted to an intermediate InstrumentedTierOptimized (without optimizations in it)
     UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized = 2,
 
-    // NYI:
     // In these modes we never instrument Tier0 and only promote hot Tier0 and R2R
     // code to intermediate tiers with instrumentation
     PromoteHotTier0ToInstrumentedTier = 3,
