@@ -4767,15 +4767,6 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     }
     CONTRACTL_END;
 
-    // If a debugger is attached, then the CLR will still send ClassLoad notifications for dynamic modules,
-    // which mean we still need to keep the metadata available. This is the same as Whidbey.
-    // An alternative (and better) design would be to suppress ClassLoad notifications too, but then we'd
-    // need some way of sending a "catchup" notification to the debugger after we re-enable notifications.
-    if (!CORDebuggerAttached())
-    {
-        return;
-    }
-
     // Do not release the emitter. This is a weak reference.
     IMetaDataEmit *pEmitter = this->GetEmitter();
     _ASSERTE(pEmitter != NULL);

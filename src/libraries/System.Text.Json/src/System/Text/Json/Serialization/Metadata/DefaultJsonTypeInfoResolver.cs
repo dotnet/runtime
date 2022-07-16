@@ -90,7 +90,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>(JsonSerializerOptions options) => new ReflectionJsonTypeInfo<T>(options);
+        private static JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>(JsonSerializerOptions options)
+        {
+            JsonConverter converter = GetConverterForType(typeof(T), options);
+            return new ReflectionJsonTypeInfo<T>(converter, options);
+        }
 
         /// <summary>
         /// List of JsonTypeInfo modifiers. Modifying callbacks are called consecutively after initial resolution
