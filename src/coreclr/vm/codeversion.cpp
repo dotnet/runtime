@@ -151,7 +151,13 @@ NativeCodeVersion::OptimizationTier NativeCodeVersionNode::GetOptimizationTier()
 void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationTier tier)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(tier >= m_optTier);
+
+    if (tier != m_optTier &&
+        (m_optTier == NativeCodeVersion::OptimizationTier::OptimizationTier1 ||
+         m_optTier == NativeCodeVersion::OptimizationTier::OptimizationTierOptimized))
+    {
+        _ASSERTE("Unexpected deoptimization");
+    }
 
     m_optTier = tier;
 }
