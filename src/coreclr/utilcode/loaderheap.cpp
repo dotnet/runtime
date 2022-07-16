@@ -741,7 +741,7 @@ struct LoaderHeapFreeBlock
             {
                 memset((BYTE*)pMem + GetOsPageSize(), 0xcc, dwTotalSize);
             }
-#endif // DEBUG            
+#endif // DEBUG
 
             LoaderHeapFreeBlock *pNewBlock = new (nothrow) LoaderHeapFreeBlock;
             // If we fail allocating the LoaderHeapFreeBlock, ignore the failure and don't insert the free block at all.

@@ -22,7 +22,7 @@ namespace Internal.TypeSystem.Ecma
             Dictionary<ModuleDesc, EntityHandle> _moduleRefs = new Dictionary<ModuleDesc, EntityHandle>();
             List<string> _moduleRefStrings = new List<string>();
             readonly Func<ModuleDesc, int> _moduleToIndex;
-            
+
             MutableModule _mutableModule;
 
             protected override EntityHandle GetNonNestedResolutionScope(MetadataType metadataType)

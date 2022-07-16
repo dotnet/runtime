@@ -30,7 +30,7 @@ public class Test_testExplicitOverride
 		try
 		{
 			I<String> cGen = new C();
-			
+
 			int ret = cGen.M<String>("Hello");
 
 			if (ret == 3)
@@ -49,6 +49,6 @@ public class Test_testExplicitOverride
 			Console.WriteLine("FAIL: Caugh unexpected exception: " + e);
 			return 101;
 		}
-		
+
 	}
 }

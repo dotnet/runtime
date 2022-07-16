@@ -15,7 +15,7 @@ namespace JitCrashPOC
             var map = new ItemRunner();
 
             s_res = 0;
-            map.UpdateItem(0,10);            
+            map.UpdateItem(0,10);
 
             if (s_res == 300)
             {
@@ -49,7 +49,7 @@ namespace JitCrashPOC
 
         private Item[] _Pool = new Item[30];
 
-        private Item _LastGenerated;        
+        private Item _LastGenerated;
 
 
         // This method qualifies for the optimization:

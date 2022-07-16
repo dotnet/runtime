@@ -97,7 +97,7 @@ namespace TypeSystemTests
             Assert.Equal(4, virtualSlots.Count);
 
             List<MethodDesc> vtable = virtualSlots.Select(s => t.FindVirtualFunctionTargetMethodOnObjectType(s)).ToList();
-            
+
             Assert.Contains(vtable, m => m.Name == "Equals" && m.OwningType == t);
             Assert.Contains(vtable, m => m.Name == "GetHashCode" && m.OwningType == t);
             Assert.Contains(vtable, m => m.Name == "Finalize" && m.OwningType.IsObject);

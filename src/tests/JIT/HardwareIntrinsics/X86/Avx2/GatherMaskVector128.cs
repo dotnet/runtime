@@ -783,7 +783,7 @@ namespace IntelHardwareIntrinsicTest
                         // success
                     }
                 }
-                
+
                 // public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<long> index, Vector128<float> mask, byte scale)
                 using (TestTable<float, long> floatTable = new TestTable<float, long>(floatSourceTable, new float[4]))
                 {
@@ -991,7 +991,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                // public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector256<long> index, Vector128<uint> mask, byte scale) 
+                // public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector256<long> index, Vector128<uint> mask, byte scale)
                 using (TestTable<int, long> intTable = new TestTable<int, long>(intSourceTable, new int[4]))
                 {
                     var vf = Avx2.GatherMaskVector128(sourceui, (uint*)(intTable.inArrayPtr), indexl256, maskui, 4);

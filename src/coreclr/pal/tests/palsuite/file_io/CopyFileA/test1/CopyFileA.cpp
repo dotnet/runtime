@@ -136,7 +136,7 @@ PALTEST(file_io_CopyFileA_test1_paltest_copyfilea_test1, "file_io/CopyFileA/test
                 }
                 else
                 {
-                    /* verify attributes of destination file to source file*/                    
+                    /* verify attributes of destination file to source file*/
                     if(GetFileAttributes(testCase[i].lpSource) !=
                             GetFileAttributes(testCase[i].lpDestination))
                     {

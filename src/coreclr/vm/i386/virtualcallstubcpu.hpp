@@ -944,7 +944,7 @@ void ResolveHolder::InitializeStatic()
     resolveInit.toResolveStub          = (offsetof(ResolveStub, _resolveEntryPoint) - (offsetof(ResolveStub, toResolveStub) + 1)) & 0xFF;
 };
 
-void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX, 
+void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
                                 PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32 * counterAddr

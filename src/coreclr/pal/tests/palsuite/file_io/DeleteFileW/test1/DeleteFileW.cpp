@@ -48,7 +48,7 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
     if (fclose(tempFile) != 0)
     {
         Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
-        " testFile01.tmp\"\n");   
+        " testFile01.tmp\"\n");
     }
 
     pTemp = convert("testFile01.tmp");
@@ -92,7 +92,7 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
     if (fclose(tempFile) != 0)
     {
         Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
-        " testFile03.tmp\"\n");   
+        " testFile03.tmp\"\n");
     }
 
     pTemp = convert("testFile03.tmp");
@@ -125,7 +125,7 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
     if (fclose(tempFile) != 0)
     {
         Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
-        " testFile04.tmp\"\n");   
+        " testFile04.tmp\"\n");
     }
 
     // delete using '?'
@@ -158,6 +158,6 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
             " Error is %d\n", GetLastError());
     }
 
-    PAL_Terminate();  
+    PAL_Terminate();
     return PASS;
 }

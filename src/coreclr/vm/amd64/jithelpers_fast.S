@@ -209,7 +209,7 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
         REPRET
 #endif
 
-    // make sure this is bigger than any of the others 
+    // make sure this is bigger than any of the others
     .balign 16
         nop
 LEAF_END_MARKED JIT_WriteBarrier, _TEXT

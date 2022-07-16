@@ -358,11 +358,11 @@ ep_config_build_event_metadata_event (
 	uint32_t payload_data_len = ep_event_get_metadata_len (source_event);
 	uint32_t provider_name_len = (uint32_t)((ep_rt_utf16_string_len (provider_name_utf16) + 1) * sizeof (ep_char16_t));
 	uint32_t instance_payload_size = sizeof (metadata_id) + provider_name_len + payload_data_len;
-	
+
 	// Allocate the payload.
 	instance_payload = ep_rt_byte_array_alloc (instance_payload_size);
 	ep_raise_error_if_nok (instance_payload != NULL);
-	
+
 	// Fill the buffer with the payload.
 	uint8_t *current;
 	current = instance_payload;
@@ -469,7 +469,7 @@ config_create_provider (
 	EP_ASSERT (provider_name != NULL);
 
 	ep_requires_lock_held ();
-	
+
 	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data_free_func, callback_data);
 	ep_raise_error_if_nok (provider != NULL);
 

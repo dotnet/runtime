@@ -5,7 +5,7 @@
 **
 ** Source:  test1.c
 **
-** Purpose: Take two wide strings and compare them, giving different lengths. 
+** Purpose: Take two wide strings and compare them, giving different lengths.
 ** Comparing str1 and str2 with str2 length, should return <0
 ** Comparing str2 and str1 with str2 length, should return >0
 ** Comparing str1 and str2 with str1 length, should return 0
@@ -73,7 +73,7 @@ PALTEST(c_runtime__wcsnicmp_test1_paltest_wcsnicmp_test1, "c_runtime/_wcsnicmp/t
     }
 
     /* new testing */
-    
+
     /* str4 should be greater than str5 */
     if (_wcsnicmp(str4, str5, wcslen(str4)) <= 0)
     {

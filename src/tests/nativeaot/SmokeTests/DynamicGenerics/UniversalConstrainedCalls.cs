@@ -368,7 +368,7 @@ namespace UnivConstCalls
         [TestMethod]
         public static void TestUSCCallsOnSharedGenStruct()
         {
-            // Use an explicit typeof here for GenericStructThatImplementsInterface<string> so that 
+            // Use an explicit typeof here for GenericStructThatImplementsInterface<string> so that
             // that case uses the normal shared generic path, and not anything else.
             var t = TypeOf.UCC_UCGConstrainedCall.MakeGenericType(typeof(GenericStructThatImplementsInterface<string>), TypeOf.Int16, TypeOf.String);
             var o = (TestConstrainedCallBase)Activator.CreateInstance(t);

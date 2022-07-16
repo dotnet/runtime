@@ -232,7 +232,7 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
             s_profilerDetachInfos.Push(detachInfo);
         }
         EX_CATCH_HRESULT(hr);
-        
+
         if (FAILED(hr))
         {
             return hr;
@@ -489,7 +489,7 @@ void ProfilingAPIDetach::UnloadProfiler(ProfilerDetachInfo *pDetachInfo)
 
         // Notify profiler it's about to be unloaded
         _ASSERTE(pDetachInfo->m_pProfilerInfo != NULL);
-        
+
         {
             // This EvacuationCounterHolder is just to make asserts in EEToProfInterfaceImpl happy.
             // Using it like this without the dirty read/evac counter increment/clean read pattern
@@ -498,7 +498,7 @@ void ProfilingAPIDetach::UnloadProfiler(ProfilerDetachInfo *pDetachInfo)
             EvacuationCounterHolder evacuationCounter(pDetachInfo->m_pProfilerInfo);
             pDetachInfo->m_pProfilerInfo->pProfInterface->ProfilerDetachSucceeded();
         }
-        
+
         EEToProfInterfaceImpl *pProfInterface = pDetachInfo->m_pProfilerInfo->pProfInterface.Load();
         pDetachInfo->m_pProfilerInfo->pProfInterface.Store(NULL);
         delete pProfInterface;

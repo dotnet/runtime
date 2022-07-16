@@ -4559,7 +4559,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         // the exception to be thrown
         *ex.GetContextRecord() = *frameContext;
 
-        // Move the exception address to the first managed frame on the stack except for the hardware exceptions 
+        // Move the exception address to the first managed frame on the stack except for the hardware exceptions
         // stemming from from a native code out of the well known runtime helpers
         if (!ex.IsExternal)
         {

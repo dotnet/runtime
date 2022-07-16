@@ -454,7 +454,7 @@ struct ResolveHolder
 {
     static void  InitializeStatic();
 
-    void  Initialize(ResolveHolder* pResolveHolderRX, 
+    void  Initialize(ResolveHolder* pResolveHolderRX,
                      PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
                      void * cacheAddr, INT32* counterAddr);
@@ -772,7 +772,7 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part10 [1]             = 0xE0;
 };
 
-void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX, 
+void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
                                 PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32* counterAddr)

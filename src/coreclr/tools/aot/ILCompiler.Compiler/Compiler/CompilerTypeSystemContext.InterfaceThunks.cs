@@ -94,7 +94,7 @@ namespace ILCompiler
             // target default interface method.
             var methodKey = new DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(targetMethod, interfaceIndex);
             MethodDesc thunk = _dimThunkHashtable.GetOrCreateValue(methodKey);
-            
+
             return thunk;
         }
 

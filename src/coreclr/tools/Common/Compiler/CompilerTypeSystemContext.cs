@@ -342,7 +342,7 @@ namespace ILCompiler
                     if (!File.Exists(candidatePath))
                         continue;
                 }
-                
+
                 pdbFileName = candidatePath;
                 pdbContentId = new BlobContentId(debugDirectoryData.Guid, debugEntry.Stamp);
                 break;

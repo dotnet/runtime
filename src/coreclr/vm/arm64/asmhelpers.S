@@ -213,7 +213,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     // x12 will be used for pointers
 
     mov x8, x0
-    mov x9, x1 
+    mov x9, x1
 
     PREPARE_EXTERNAL_VAR g_card_table, x12
     ldr  x0, [x12]

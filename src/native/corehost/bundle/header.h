@@ -12,8 +12,8 @@ namespace bundle
 {
     // The Bundle Header (v1)
     // Fixed size thunk (header_fixed_t)
-    //   - Major Version     
-    //   - Minor Version     
+    //   - Major Version
+    //   - Minor Version
     //   - Number of embedded files
     // Variable size portion:
     //   - Bundle ID (7-bit extension encoded length prefixed string)

@@ -5,7 +5,7 @@
 **
 ** Source:  test1.c
 **
-** Purpose: 
+** Purpose:
 ** Search for a number of tokens within strings.  Check that the return values
 ** are what is expect, and also that the strings match up with our expected
 ** results.
@@ -24,7 +24,7 @@ PALTEST(c_runtime_strtok_test1_paltest_strtok_test1, "c_runtime/strtok/test1/pal
     int len = strlen(str) + 1;
     char *ptr;
 
-    
+
     if (PAL_Initialize(argc, argv))
     {
         return FAIL;

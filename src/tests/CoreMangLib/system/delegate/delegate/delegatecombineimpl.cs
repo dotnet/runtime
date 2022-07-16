@@ -9,7 +9,7 @@ namespace DelegateTest
 {
     delegate bool booldelegate();
     delegate void voiddelegate();
-   
+
     public class DelegateCombineImpl
     {
         const string c_StartWrok = "Start";
@@ -20,7 +20,7 @@ namespace DelegateTest
             c_Start_null_false,
             c_Working_null_true,
             c_Working_null_false,
-            c_Start_null_false_duplicate 
+            c_Start_null_false_duplicate
 
         }
         booldelegate starkWork;
@@ -77,7 +77,7 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("001", "delegate combineimpl is not successful ");
                     retVal = false;
                 }
-              
+
             }
             catch (Exception e)
             {
@@ -104,7 +104,7 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("003", "delegate combine is not successful ");
                     retVal = false;
                 }
-                
+
 
             }
             catch (Exception e)
@@ -132,7 +132,7 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("005", "delegate combine is not successful ");
                     retVal = false;
                 }
-             
+
 
             }
             catch (Exception e)
@@ -159,7 +159,7 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("007", "delegate combine is not successful ");
                     retVal = false;
                 }
-               
+
 
             }
             catch (Exception e)
@@ -200,7 +200,7 @@ namespace DelegateTest
         {
             DelegateCombineImpl delctor = new DelegateCombineImpl();
             TestClass testinstance = new TestClass();
-            
+
             string sFlag = string.Empty;
             string sFlagAdd=string.Empty ;
             booldelegate combineImpl = delegatesrc;
@@ -209,7 +209,7 @@ namespace DelegateTest
                 delctor.starkWork = new booldelegate(testinstance.StartWork_Bool);
                 combineImpl += (booldelegate)delctor.starkWork;
                 sFlagAdd = c_StartWrok;
-               
+
             }
             else if (start == identify_null.c_Start_null_false_duplicate )
             {
@@ -236,7 +236,7 @@ namespace DelegateTest
                 delctor.working = null;
                 combineImpl += (booldelegate)delctor.working;
             }
-          
+
             if (combineImpl == null)
             {
                 return true;
@@ -245,7 +245,7 @@ namespace DelegateTest
             for (IEnumerator itr = combineImpl.GetInvocationList().GetEnumerator(); itr.MoveNext(); )
             {
                 booldelegate bd = (booldelegate)itr.Current;
-                //the filter is to get the delegate which is appended through equals method. 
+                //the filter is to get the delegate which is appended through equals method.
                 if (bd.Equals(delctor.starkWork))
                 {
                     sFlag += c_StartWrok;
@@ -256,14 +256,14 @@ namespace DelegateTest
                 }
             }
             combineImpl();
-            //judge delegate is appended  to the end of the invocation list of the current 
+            //judge delegate is appended  to the end of the invocation list of the current
             if (sFlag == sFlagAdd)
                 return true;
             else
                 return false;
-            
+
         }
-       
+
     }
     //create testclass for provding test method and test target.
     class TestClass
@@ -281,7 +281,7 @@ namespace DelegateTest
         public void CompleteWork_Void()
         {
             TestLibrary.TestFramework.LogInformation("CompleteWork_Void method  is running .");
-           
+
         }
     }
 

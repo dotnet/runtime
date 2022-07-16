@@ -162,7 +162,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 Age = age;
             }
         }
-        
+
 
         public record RecordTypeOptions(string Color, int Length);
 
@@ -206,7 +206,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public string Color { get; set; }
             public int Length { get; set;  }
         }
-        
+
         public class ImmutableLengthAndColorClass
         {
             public ImmutableLengthAndColorClass(string color, int length)
@@ -454,7 +454,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = config.Get<ComplexOptions>();
-            
+
             Assert.Equal("Yo", options.NamedProperty);
         }
 
@@ -1495,7 +1495,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<MutableStructWithConstructor>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
-        }        
+        }
 
         // If the immutable type has a public parameterized constructor,
         // then pick it.

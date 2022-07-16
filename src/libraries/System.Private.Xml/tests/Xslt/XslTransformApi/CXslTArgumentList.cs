@@ -1156,15 +1156,15 @@ namespace System.Xml.Tests
         public void AddParam17(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>
-		1.Test  
+		1.Test
 		2.Test
 
-		3.Test	
+		3.Test
 		4.Test
 
-		5.Test	
-  
-	
+		5.Test
+
+
 		6.No Value Specified</result>";
 
             int i = 1;
@@ -3025,8 +3025,8 @@ namespace System.Xml.Tests
 		C:23
 		D:23
 		E:37
-		F:Hello 
-		G:Hello World 
+		F:Hello
+		G:Hello World
 		E:-13</result>";
 
             MyObject obj = new MyObject(27, _output);
@@ -3060,7 +3060,7 @@ namespace System.Xml.Tests
         {
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result xmlns:myObj=""urn:my-object"">
 
-		Aiming with Gun: &gt;"" $tmp &gt;;'	 
+		Aiming with Gun: &gt;"" $tmp &gt;;'
 &amp;
 		Aiming with Missile: &lt;xsl:variable name=""tmp""/&gt;
 		Aiming with Nuclear: &lt;/xsl:stylesheet&gt;

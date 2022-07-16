@@ -991,7 +991,7 @@ NextOctCharacter:
                     vtSuffix = VariantType.Integer
                     cDecMax = 0
                 Case "@"c
-                    'Convert currency to Decimal            
+                    'Convert currency to Decimal
                     'vtSuffix = VariantType.Currency
                     vtSuffix = VariantType.Decimal
                     cDecMax = 4
@@ -1059,7 +1059,7 @@ NextOctCharacter:
 
         Private Function ShiftVTBits(ByVal vt As Integer) As Integer
             Select Case vt
-                'Case VariantType.Empty     
+                'Case VariantType.Empty
                 'Case VariantType.Null
                 Case VariantType.Short
                     Return VTBIT_I2

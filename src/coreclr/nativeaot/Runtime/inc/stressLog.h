@@ -98,8 +98,8 @@ enum LogFacilitiesEnum: unsigned int {
 
 /*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
     in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
-     or string literals. This was done because GC Trace uses dprintf which dosen't contain info on 
-    how many arguments are getting passed in and using va_args would require parsing the format 
+     or string literals. This was done because GC Trace uses dprintf which dosen't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
     string during the GC
 */
 #define _Args(...) __VA_ARGS__

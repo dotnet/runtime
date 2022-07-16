@@ -629,7 +629,7 @@ namespace DebuggerTests
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
                 "DebuggerAttribute." + evalFunName
             );
-            
+
             await SetJustMyCode(justMyCodeEnabled);
             if (!justMyCodeEnabled && funName == "")
             {
@@ -689,12 +689,12 @@ namespace DebuggerTests
         [InlineData(true, "Debugger.resume", "RunStepThroughWithNonUserCode", "RunStepThroughWithNonUserCode", -1, 8, "RunStepThroughWithNonUserCode", -1, 4)]
         public async Task StepThroughOrNonUserCodeAttributeWithUserBp(
             bool justMyCodeEnabled, string debuggingFunction, string evalFunName,
-            string functionNameCheck1, int line1, int col1, 
+            string functionNameCheck1, int line1, int col1,
             string functionNameCheck2, int line2, int col2)
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 2);
             var bp_outside_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 3);
-            
+
             var init_location = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:{evalFunName}'); }}, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
@@ -708,7 +708,7 @@ namespace DebuggerTests
                 line1 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>() - 1;
             if (line2 == -1)
                 line2 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
-            
+
             await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line1, col1, "DebuggerAttribute." + functionNameCheck1);
             await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line2, col2, "DebuggerAttribute." + functionNameCheck2);
         }
@@ -727,7 +727,7 @@ namespace DebuggerTests
         {
             // behavior of StepperBoundary is the same for JMC enabled and disabled
             // but the effect of NonUserCode escape is better visible for JMC: enabled
-            await SetJustMyCode(true); 
+            await SetJustMyCode(true);
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", className, evalFunName, lineBpInit);
             var init_location = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] {className}:{evalFunName}'); }}, {lineBpInit});",
@@ -746,7 +746,7 @@ namespace DebuggerTests
             }
             if (isTestingUserBp)
                 await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", 879, 8, decoratedMethodClassName + ".BoundaryUserBp");
-            
+
             var line = bp_final.Value["locations"][0]["lineNumber"].Value<int>();
             var col = bp_final.Value["locations"][0]["columnNumber"].Value<int>();
             await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line, col,  className + "." + evalFunName);
@@ -855,7 +855,7 @@ namespace DebuggerTests
                 bpFunCalledFromDim.Value["locations"][0]["lineNumber"].Value<int>(),
                 bpFunCalledFromDim.Value["locations"][0]["columnNumber"].Value<int>(),
                 "DefaultInterfaceMethod." + funCalledFromDim);
-            
+
             string prevFrameFromDim = dimName;
             Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["functionName"].Value<string>(), dimClassName + "." + prevFrameFromDim);
             Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), dimAsPrevFrameLine);

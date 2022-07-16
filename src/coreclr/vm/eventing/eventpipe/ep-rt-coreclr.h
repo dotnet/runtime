@@ -2745,7 +2745,7 @@ ep_rt_diagnostics_command_line_get (void)
 	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
-	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
+	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested.
 	// As a result, we cannot actually cache this value. We need to return the _current_ value.
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
 	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value

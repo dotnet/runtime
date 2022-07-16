@@ -504,7 +504,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                // public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector256<long> index, Vector256<long> mask, byte scale) 
+                // public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector256<long> index, Vector256<long> mask, byte scale)
                 using (TestTable<long, long> longTable = new TestTable<long, long>(longSourceTable, new long[4]))
                 {
                     var vf = Avx2.GatherMaskVector256(sourcel, (long*)(longTable.inArrayPtr), indexl, maskl, 8);
@@ -640,7 +640,7 @@ namespace IntelHardwareIntrinsicTest
                     {
                         // success
                     }
-                }                
+                }
 
                 // public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector256<long> index, Vector256<double> mask, byte scale)
                 using (TestTable<double, long> doubletTable = new TestTable<double, long>(doubleSourceTable, new double[4]))
@@ -713,7 +713,7 @@ namespace IntelHardwareIntrinsicTest
 
             }
 
-            
+
 
             return testResult;
         }

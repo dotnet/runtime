@@ -492,7 +492,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var origin = new Dictionary<string, int> { ["a"] = 97 };
 
             config.Bind("ascii", origin);
-            
+
             Assert.Equal(2, origin.Count);
             Assert.Equal(97, origin["a"]);
             Assert.Equal(98, origin["b"]);

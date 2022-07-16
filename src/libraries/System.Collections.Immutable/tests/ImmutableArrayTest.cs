@@ -80,7 +80,7 @@ namespace System.Collections.Immutable.Tests
         public void AsSpanRoundTripEmptyArrayTests()
         {
             ImmutableArray<int> immutableArray = ImmutableArray.Create(Array.Empty<int>());
-            
+
             ReadOnlySpan<int> span = immutableArray.AsSpan();
             Assert.Equal(immutableArray, span.ToArray());
             Assert.Equal(immutableArray.Length, span.Length);
@@ -95,7 +95,7 @@ namespace System.Collections.Immutable.Tests
         {
             ImmutableArray<int> immutableArray = new ImmutableArray<int>();
             Assert.True(immutableArray.IsDefault);
-            
+
             ReadOnlySpan<int> span = immutableArray.AsSpan();
             Assert.Equal(0, span.Length);
             Assert.True(span.IsEmpty);
@@ -120,7 +120,7 @@ namespace System.Collections.Immutable.Tests
         {
             ImmutableArray<string> immutableArray = new ImmutableArray<string>();
             Assert.True(immutableArray.IsDefault);
-            
+
             ReadOnlySpan<string> span = immutableArray.AsSpan();
             Assert.Equal(0, span.Length);
             Assert.True(span.IsEmpty);
@@ -1187,7 +1187,7 @@ namespace System.Collections.Immutable.Tests
         public void AddRangeEmptyOptimization(IEnumerable<int> source)
         {
             ImmutableArray<int> array = source.ToImmutableArray();
-            
+
             // Verify that underlying array is reference-equal as original array
             Assert.True(array.AddRange(Array.Empty<int>()) == array);
             Assert.True(array.AddRange(ReadOnlySpan<int>.Empty) == array);
@@ -1222,7 +1222,7 @@ namespace System.Collections.Immutable.Tests
             int[] sourceArray = source.ToArray();
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(sourceArray)); // Array overload
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(new ReadOnlySpan<int>(sourceArray))); // ReadOnlySpan overload
-            
+
             Assert.Throws<InvalidOperationException>(() => source.ToImmutableArray().AddRange((IEnumerable<int>)s_emptyDefault)); // Enumerable overload
 
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AddRange(s_emptyDefault));
@@ -1307,7 +1307,7 @@ namespace System.Collections.Immutable.Tests
             int[] array = s_oneElement.ToArray();
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(immutableArray.Length + 1, array));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => immutableArray.InsertRange(-1, array));
-            
+
             var span = new ReadOnlySpan<int>(array);
             AssertExtensions.Throws<ArgumentOutOfRangeException, int>("index", span, s => immutableArray.InsertRange(immutableArray.Length + 1, s));
             AssertExtensions.Throws<ArgumentOutOfRangeException, int>("index", span, s => immutableArray.InsertRange(-1, s));
@@ -1373,7 +1373,7 @@ namespace System.Collections.Immutable.Tests
                 {
                     array = it.ToArray();
                 }
-                
+
                 Assert.Equal(expected, immutableArray.InsertRange(index, array)); // Array overload
                 Assert.Equal(expected, immutableArray.InsertRange(index, new ReadOnlySpan<int>(array))); // Span overload
 
@@ -1381,7 +1381,7 @@ namespace System.Collections.Immutable.Tests
                 {
                     // Insertion at the end is equivalent to adding.
                     expected = source.Concat(items);
-                    
+
                     Assert.Equal(expected, immutableArray.InsertRange(index, it)); // Enumerable overload
                     Assert.Equal(expected, immutableArray.InsertRange(index, it.ToImmutableArray())); // ImmutableArray overload
                     Assert.Equal(expected, immutableArray.InsertRange(index, array)); // Array overload

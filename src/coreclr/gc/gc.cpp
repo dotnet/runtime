@@ -12980,14 +12980,14 @@ uint32_t gc_heap::adjust_heaps_hard_limit (uint32_t nhp)
 
 size_t gc_heap::adjust_segment_size_hard_limit_va (size_t seg_size)
 {
-    return (use_large_pages_p ? 
-            align_on_segment_hard_limit (seg_size) : 
+    return (use_large_pages_p ?
+            align_on_segment_hard_limit (seg_size) :
             round_up_power2 (seg_size));
 }
 
 size_t gc_heap::adjust_segment_size_hard_limit (size_t limit, uint32_t nhp)
 {
-    if (!limit) 
+    if (!limit)
     {
         limit = min_segment_size_hard_limit;
     }
@@ -44075,7 +44075,7 @@ HRESULT GCHeap::Initialize()
     seg_size = gc_heap::soh_segment_size;
 
 #ifndef USE_REGIONS
-    
+
     if (gc_heap::heap_hard_limit)
     {
         if (gc_heap::heap_hard_limit_oh[soh])

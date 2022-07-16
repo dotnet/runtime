@@ -751,7 +751,7 @@ namespace IntelHardwareIntrinsicTest
                         // success
                     }
                 }
-                
+
                 // public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<long> index, byte scale)
                 using (TestTable<float, long> floatTable = new TestTable<float, long>(floatSourceTable, new float[4]))
                 {

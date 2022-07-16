@@ -187,7 +187,7 @@ namespace ILCompiler.Dataflow
         /// <summary>
         /// Determines if member requires (and thus any usage of such method should be warned about).
         /// </summary>
-        /// <remarks>Unlike <see cref="IsInRequiresScope(MethodDesc, string)"/> only static methods 
+        /// <remarks>Unlike <see cref="IsInRequiresScope(MethodDesc, string)"/> only static methods
         /// and .ctors are reported as requires when the declaring type has Requires on it.</remarks>
         internal static bool DoesMemberRequire(this TypeSystemEntity member, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {

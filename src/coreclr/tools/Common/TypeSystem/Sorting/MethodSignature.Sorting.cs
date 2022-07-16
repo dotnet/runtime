@@ -25,7 +25,7 @@ namespace Internal.TypeSystem
             result = comparer.Compare(_returnType, other._returnType);
             if (result != 0)
                 return result;
-            
+
             for (int i = 0; i < _parameters.Length; i++)
             {
                 result = comparer.Compare(_parameters[i], other._parameters[i]);

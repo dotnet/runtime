@@ -89,7 +89,7 @@ namespace ILCompiler
             string sanitizedName = (sb != null) ? sb.ToString() : s;
 
             // The character sequences denoting generic instantiations, arrays, byrefs, or pointers must be
-            // restricted to that use only. Replace them if they happened to be used in any identifiers in 
+            // restricted to that use only. Replace them if they happened to be used in any identifiers in
             // the compilation input.
             return _mangleForCplusPlus
                 ? sanitizedName.Replace(EnterNameScopeSequence, "_AA_").Replace(ExitNameScopeSequence, "_VV_")
@@ -132,7 +132,7 @@ namespace ILCompiler
 
                     hash = _sha256.ComputeHash(GetBytesFromString(literal));
                 }
-                                
+
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
             }
 
@@ -199,7 +199,7 @@ namespace ILCompiler
 
                 string assemblyName = ((EcmaAssembly)ecmaType.EcmaModule).GetName().Name;
                 bool isSystemPrivate = assemblyName.StartsWith("System.Private.");
-                
+
                 // Abbreviate System.Private to S.P. This might conflict with user defined assembly names,
                 // but we already have a problem due to running SanitizeName without disambiguating the result
                 // This problem needs a better fix.
@@ -286,11 +286,11 @@ namespace ILCompiler
             switch (type.Category)
             {
                 case TypeFlags.Array:
-                    mangledName = "__MDArray" + 
-                                  EnterNameScopeSequence + 
-                                  GetMangledTypeName(((ArrayType)type).ElementType) + 
-                                  DelimitNameScopeSequence + 
-                                  ((ArrayType)type).Rank.ToStringInvariant() + 
+                    mangledName = "__MDArray" +
+                                  EnterNameScopeSequence +
+                                  GetMangledTypeName(((ArrayType)type).ElementType) +
+                                  DelimitNameScopeSequence +
+                                  ((ArrayType)type).Rank.ToStringInvariant() +
                                   ExitNameScopeSequence;
                     break;
                 case TypeFlags.SzArray:

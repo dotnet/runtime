@@ -174,7 +174,7 @@ public:
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
     void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
-    HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, 
+    HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier,
         NativeCodeVersion* pNativeCodeVersion, PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     HRESULT GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion);
     HRESULT SetActiveNativeCodeVersion(NativeCodeVersion activeNativeCodeVersion);
@@ -254,7 +254,7 @@ class NativeCodeVersionNode
 
 public:
 #ifndef DACCESS_COMPILE
-    NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier, 
+    NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier,
         PatchpointInfo* patchpointInfo, unsigned ilOffset);
 #endif
 

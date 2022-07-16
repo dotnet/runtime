@@ -239,7 +239,7 @@ namespace GitHub_21666
                     Console.WriteLine("TestUInt64Containment failed on Crc32");
                     return false;
                 }
-                
+
                 if (Sse42.X64.Crc32(0xffffffffffffffffUL, *ptr1) != 0x0000000073d74d75UL)
                 {
                     Console.WriteLine("TestUInt64Containment failed on Crc32");

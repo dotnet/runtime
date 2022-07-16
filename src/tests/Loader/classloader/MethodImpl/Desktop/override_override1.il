@@ -12,7 +12,7 @@
 
 
 .class public auto ansi beforefieldinit MyFoo{
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -34,7 +34,7 @@
 .class public auto ansi beforefieldinit MyBar
        extends MyFoo
 {
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  DoBar()
   {
     .maxstack  1
@@ -51,7 +51,7 @@
   } // end of method MyBar::DoBar
 
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  DoBarOverride()
   {
     // Code size       16 (0x10)
@@ -69,7 +69,7 @@
   }
 
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -114,10 +114,10 @@
         call       void [mscorlib]System.Console::WriteLine(string)
         leave.s L1
     }
-    catch [mscorlib]System.TypeLoadException{   
+    catch [mscorlib]System.TypeLoadException{
         ldstr "Caught expected TypeLoadException:"
         call       void [mscorlib]System.Console::WriteLine(string)
-        call       void [mscorlib]System.Console::WriteLine(object)        
+        call       void [mscorlib]System.Console::WriteLine(object)
         leave.s L1
     }
 
@@ -141,7 +141,7 @@
     IL_002a:  ret
   } // end of method CMain::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

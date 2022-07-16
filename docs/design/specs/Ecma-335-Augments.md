@@ -725,7 +725,7 @@ operations.
 T Exponential<T, TFloat>(T exponent) where
     T : IArithmetic<T>,
     T : IMultiplicationBy<T, TFloat>
-        
+
 {
     T result = T.One();
     T powerOfValue = exponent;
@@ -852,7 +852,7 @@ class Base
 
 class Derived : Base
 {
-  // Note that the VirtualMethod here overrides the VirtualMethod defined on Base even though the 
+  // Note that the VirtualMethod here overrides the VirtualMethod defined on Base even though the
   // return types are not the same. However, the return types are compatible in a covariant fashion.
   public override string VirtualMethod() { return null;}
 }
@@ -890,8 +890,8 @@ Add a third bullet
 }
 .class B extends A {
   .method virtual DerivedRetType VirtualFunction() {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 ) 
-    .override A.VirtualFuncion 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
+    .override A.VirtualFuncion
     ...
   }
 }
@@ -905,8 +905,8 @@ Add a third bullet
 .class D extends C
 {
   .method virtual DerivedRetTypeNotDerivedFromMoreDerivedRetType VirtualFunction() {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 ) 
-    .override A.VirtualFuncion 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
+    .override A.VirtualFuncion
     ...
   }
 }

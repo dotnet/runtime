@@ -7,7 +7,7 @@ using System.Text;
 using System.Collections.Generic;
 
 
-// UTF8 
+// UTF8
 class UTF8StringTests
 {
 	[DllImport("libtest", CallingConvention = CallingConvention.Cdecl)]
@@ -17,7 +17,7 @@ class UTF8StringTests
 	{
 		string passedString = orgString;
 		string expectedNativeString = passedString;
-		
+
 		string nativeString = StringParameterInOut(passedString, index);
 		if (!(nativeString == expectedNativeString))
 		{
@@ -47,7 +47,7 @@ class UTF8StringTests
 	public static extern void StringParameterRefOut([MarshalAs(UnmanagedType.LPUTF8Str)]out string s, int index);
 	public static bool TestStringPassByOut(string orgString, int index)
 	{
-		// out string 
+		// out string
 		string expectedNative = string.Empty;
 		StringParameterRefOut(out expectedNative, index);
 		if (orgString != expectedNative)
@@ -88,9 +88,9 @@ class UTF8StringBuilderTests
 	public static bool TestInOutStringBuilderParameter(string expectedString, int index)
 	{
 		StringBuilder nativeStrBuilder = new StringBuilder(expectedString);
-		
+
 		StringBuilderParameterInOut(nativeStrBuilder, index);
-		
+
 		if (!nativeStrBuilder.ToString().Equals(expectedString))
 		{
 			Console.WriteLine($"TestInOutStringBuilderParameter: nativeString != expectedNativeString index={index} got={nativeStrBuilder} and expected={expectedString} ");
@@ -98,16 +98,16 @@ class UTF8StringBuilderTests
 		}
 		return true;
 	}
-	
+
 	[DllImport("libtest", CallingConvention = CallingConvention.Cdecl)]
 	public static extern void StringBuilderParameterOut([Out][MarshalAs(UnmanagedType.LPUTF8Str)]StringBuilder s, int index);
 	public static bool TestOutStringBuilderParameter(string expectedString, int index)
 	{
 		// string builder capacity
 		StringBuilder nativeStringBuilder = new StringBuilder(expectedString.Length);
-		
+
 		StringBuilderParameterOut(nativeStringBuilder, index);
-		
+
 		if (!nativeStringBuilder.ToString().Equals(expectedString))
 		{
 			Console.WriteLine("TestOutStringBuilderParameter: string != expectedString ");
@@ -115,7 +115,7 @@ class UTF8StringBuilderTests
 		}
 		return true;
 	}
-	
+
 
 	[DllImport("libtest", CallingConvention = CallingConvention.Cdecl)]
 	[return: MarshalAs(UnmanagedType.LPUTF8Str,SizeConst = 512)]
@@ -165,16 +165,16 @@ class UTF8DelegateMarshalling
 
 	[DllImport("libtest", CallingConvention = CallingConvention.Cdecl)]
 	public static extern void Utf8DelegateAsParameter(DelegateUTF8Parameter param);
-	
+
 	static bool failed;
 	public static bool TestUTF8DelegateMarshalling()
 	{
 		failed = false;
 		Utf8DelegateAsParameter(new DelegateUTF8Parameter(Utf8StringCallback));
-		
+
 		return !failed;
 	}
-	
+
 	public static void Utf8StringCallback(string nativeString, int index)
 	{
 		if (string.CompareOrdinal(nativeString, Test.utf8Strings[index]) != 0)
@@ -197,36 +197,36 @@ class Test
 		"Τη γλώσσα μου έδωσαν ελληνική",
 		null,
 	};
-	
+
 	public static int Main(string[] args)
 	{
 		// Test string as [In,Out] parameter
 		for (int i = 0; i < utf8Strings.Length; i++)
 			if (!UTF8StringTests.TestInOutStringParameter(utf8Strings[i], i))
 				return i+1;
-		
+
 		// Test string as [Out] parameter
 		for (int i = 0; i < utf8Strings.Length; i++)
 			if (!UTF8StringTests.TestOutStringParameter(utf8Strings[i], i))
 				return i+100;
-		
+
 		for (int i = 0; i < utf8Strings.Length - 1; i++)
 			if (!UTF8StringTests.TestStringPassByOut(utf8Strings[i], i))
 				return i+200;
-		
+
 		for (int i = 0; i < utf8Strings.Length - 1; i++)
 			if (!UTF8StringTests.TestStringPassByRef(utf8Strings[i], i))
 				return i+300;
-		
-		
+
+
 		// Test StringBuilder as [In,Out] parameter
 		for (int i = 0; i < utf8Strings.Length - 1; i++)
 			if (!UTF8StringBuilderTests.TestInOutStringBuilderParameter(utf8Strings[i], i))
 				return i+400;
-		
+
 #if NOT_YET
 		// This requires support for [Out] in StringBuilder
-		
+
 		// Test StringBuilder as [Out] parameter
 		for (int i = 0; i < utf8Strings.Length - 1; i++){
 			if (!UTF8StringBuilderTests.TestOutStringBuilderParameter(utf8Strings[i], i))
@@ -234,7 +234,7 @@ class Test
 		}
 
 #endif
-	
+
         	// utf8 string as struct fields
 		if (!UTF8StructMarshalling.TestUTF8StructMarshalling(utf8Strings))
 			return 600;

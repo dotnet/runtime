@@ -793,7 +793,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y.RO1.Count == 1);
         Assert.True((char)y.RO1[0] == 'x');
     }
-	
+
     [Fact]
     public static void DCS_EnumerableMemberConcreteTypeWithoutDefaultContructor()
     {

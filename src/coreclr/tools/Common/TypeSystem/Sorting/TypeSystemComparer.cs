@@ -20,7 +20,7 @@ namespace Internal.TypeSystem
     // how to compare itself to other categories (does "array of pointers to uint" sort before a "byref
     // to an object"?). The nature of the type system potentially allows for an unlimited number of TypeDesc
     // descendants.
-    // 
+    //
     // We solve this problem by only requiring each TypeDesc or MethodDesc descendant to know how
     // to sort itself with respect to other instances of the same type.
     // Comparisons between different categories of types are centralized to a single location that
@@ -64,7 +64,7 @@ namespace Internal.TypeSystem
                 return 0;
 
             int result = x.CompareToImpl(y, this);
-            
+
             // We did a reference equality check above so an "Equal" result is not expected
             Debug.Assert(result != 0);
 

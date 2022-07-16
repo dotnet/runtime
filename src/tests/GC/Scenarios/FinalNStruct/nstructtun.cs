@@ -27,7 +27,7 @@ namespace NStruct
             public void DestroyStrmap()
             {
                 Strmap = null;
-            }                       
+            }
 
             public bool RunTest()
             {

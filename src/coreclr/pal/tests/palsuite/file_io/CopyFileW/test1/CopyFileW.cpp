@@ -112,7 +112,7 @@ PALTEST(file_io_CopyFileW_test1_paltest_copyfilew_test1, "file_io/CopyFileW/test
                         /* verify the file was moved */
                         if (GetFileAttributesA(lpDestination[j]) == -1)
                         {
-                            Trace("CopyFileW: GetFileAttributes of destination" 
+                            Trace("CopyFileW: GetFileAttributes of destination"
                                 "file failed on test[%d][%d][%d] with error "
                                 "code %ld. \n",i,j,k,GetLastError());
                             bSuccess = FALSE;
@@ -126,8 +126,8 @@ PALTEST(file_io_CopyFileW_test1_paltest_copyfilew_test1, "file_io/CopyFileW/test
                         }
                         else
                         {
-                            /* verify attributes of destination file to 
-                            source file*/                    
+                            /* verify attributes of destination file to
+                            source file*/
                             if(GetFileAttributes(lpSource[i]) !=
                                     GetFileAttributes(lpDestination[j]))
                             {

@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 var r2rInstructionSet = instructionSetUnsupported.R2RInstructionSet(instructionSetSupport.Architecture);
                 if (r2rInstructionSet == null)
                     continue;
-                    
+
                 if (r2rAlreadyEmitted.Add(r2rInstructionSet.Value))
                 {
                     if (addDelimiter)

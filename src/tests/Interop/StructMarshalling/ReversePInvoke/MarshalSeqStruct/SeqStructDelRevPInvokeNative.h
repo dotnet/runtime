@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <xplatform.h>
- 
+
 const int NumArrElements = 2;
 struct InnerSequential
 {
@@ -88,7 +88,7 @@ bool IsCorrectINNER2(INNER2* p)
     return true;
 }
 
-struct InnerExplicit 
+struct InnerExplicit
 {
 #ifdef WINDOWS
     union
@@ -106,7 +106,7 @@ struct InnerExplicit
     };
     INT _unused0;
     LPCSTR f3;
-#endif 
+#endif
 };
 
 void PrintInnerExplicit(InnerExplicit* p, const char* name)
@@ -292,7 +292,7 @@ bool IsCorrectCharSetAnsiSequential(CharSetAnsiSequential* p)
 }
 
 
-struct CharSetUnicodeSequential 
+struct CharSetUnicodeSequential
 {
     LPCWSTR f1;
     WCHAR f2;
@@ -346,15 +346,15 @@ struct NumberSequential // size = 64 bytes
     LONG64 i64;
     ULONG64 ui64;
     DOUBLE d;
-    INT i32;		
-    UINT ui32;		
-    SHORT s1;		
-    WORD us1;	
-    SHORT i16;		
+    INT i32;
+    UINT ui32;
+    SHORT s1;
+    WORD us1;
+    SHORT i16;
     WORD ui16;
     FLOAT sgl;
-    BYTE b;			
-    CHAR sb;		  
+    BYTE b;
+    CHAR sb;
 };
 
 void PrintNumberSequential(NumberSequential* str, const char* name)
@@ -423,7 +423,7 @@ void ChangeS3(S3* p)
 
     const char* strSource = "change string";
     size_t len = strlen(strSource);
-    LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*(len+1));	
+    LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*(len+1));
     if(temp != NULL)
     {
         memset((LPVOID)temp,0,len+1);
@@ -462,10 +462,10 @@ struct S4 // size = 8 bytes
     LPCSTR name;
 };
 
-enum Enum1 
+enum Enum1
 {
     e1 = 1,
-    e2 = 3 
+    e2 = 3
 };
 
 struct S5 // size = 8 bytes
@@ -484,7 +484,7 @@ void PrintS5(S5* str, const char* name)
 void ChangeS5(S5* str)
 {
     Enum1 eInstance = e2;
-    const char* strSource = "change string";	
+    const char* strSource = "change string";
     size_t len = strlen(strSource);
     LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*(len+1));
     if(temp != NULL)
@@ -552,7 +552,7 @@ void ChangeStringStructSequentialAnsi(StringStructSequentialAnsi* str)
     newFirst[512] = '\0';
     newLast[512] = '\0';
 
-    str->first = newFirst;	
+    str->first = newFirst;
     str->last = newLast;
 }
 

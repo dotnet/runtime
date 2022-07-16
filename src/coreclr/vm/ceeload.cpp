@@ -2130,7 +2130,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
     IMDInternalImport* pMdImport = GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
     if (pMdImport == NULL)
         return FALSE;
-    
+
     LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
 
     HENUMInternal assemblyEnum;

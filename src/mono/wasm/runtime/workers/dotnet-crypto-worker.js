@@ -360,7 +360,7 @@ async function handle_req_async(msg) {
 
     if (req.func === "digest") {
         return await call_digest(req.type, new Uint8Array(req.data));
-    } 
+    }
     else if (req.func === "sign") {
         return await sign(req.type, new Uint8Array(req.key), new Uint8Array(req.data));
     }

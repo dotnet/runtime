@@ -99,7 +99,7 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 //
 // Returns true if it successfully cached the transition frame (i.e. the thread was in unmanaged).
 // Returns false otherwise.
-// 
+//
 // WARNING: This method is called by suspension while one thread is interrupted
 //          in a random location, possibly holding random locks.
 //          It is unsafe to use blocking APIs or allocate in this method.

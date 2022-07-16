@@ -16,6 +16,6 @@
 		Default Function<xsl:if test="function-available('myObj:DefaultFunction')"> Test Pass</xsl:if>
 
 		</result>
-	
+
     </xsl:template>
 </xsl:stylesheet>

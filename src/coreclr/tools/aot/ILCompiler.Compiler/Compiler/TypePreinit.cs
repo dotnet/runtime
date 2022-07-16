@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 namespace ILCompiler
 {
     // Class that computes the initial state of static fields on a type by interpreting the static constructor.
-    // 
+    //
     // Values are represented by instances of an abstract Value class. Several specialized descendants of
     // the Value class exist, representing value types (including e.g. a specialized class representing
     // RuntimeFieldHandle), or reference types (including e.g. specialized class representing an array).
@@ -192,7 +192,7 @@ namespace ILCompiler
                             stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(value));
                         }
                         break;
-                    
+
                     case ILOpcode.ldc_i8:
                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)reader.ReadILUInt64()));
                         break;
@@ -357,7 +357,7 @@ namespace ILCompiler
                             else
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
-                            }   
+                            }
                         }
                         break;
 
@@ -763,7 +763,7 @@ namespace ILCompiler
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                             }
-                            stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeFieldHandleValue(field)));                                
+                            stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeFieldHandleValue(field)));
                         }
                         break;
 
@@ -829,7 +829,7 @@ namespace ILCompiler
                             }
                             else
                                 locals[index] = stack.PopIntoLocation(localType);
-                                
+
                         }
                         break;
 
@@ -1667,7 +1667,7 @@ namespace ILCompiler
                             ThrowHelper.ThrowInvalidProgramException();
                         }
                         return popped.Value;
-                    
+
                     default:
                         throw new NotImplementedException();
                 }
@@ -2281,7 +2281,7 @@ namespace ILCompiler
                     Debug.Assert(value == null);
                     return;
                 }
-                
+
                 int fieldOffset = field.Offset.AsInt;
                 int fieldSize = field.FieldType.GetElementSize().AsInt;
                 if (fieldOffset + fieldSize > _instanceBytes.Length - _offset)

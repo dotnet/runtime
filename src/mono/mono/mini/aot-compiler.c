@@ -12289,7 +12289,7 @@ emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_star
  * If a method has at least one generic parameter constrained to a reference type, then REF shared method must be generated.
  * On the other hand, if a method has at least one generic parameter constrained to a value type, then GSHAREDVT method must be generated.
  * A special case, when extra methods are always generated, is for generic methods of generic types.
- * 
+ *
  * Returns: TRUE - extra method should be generated, otherwise FALSE
  */
 static gboolean

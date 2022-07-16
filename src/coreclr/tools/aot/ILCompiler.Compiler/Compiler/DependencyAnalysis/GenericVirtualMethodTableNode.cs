@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
 
         /// <summary>
         /// Helper method to compute the dependencies that would be needed by a hashtable entry for a GVM call.
-        /// This helper is used by the TypeGVMEntriesNode, which is used by the dependency analysis to compute the 
+        /// This helper is used by the TypeGVMEntriesNode, which is used by the dependency analysis to compute the
         /// GVM hashtable entries for the compiled types.
         /// The dependencies returned from this function will be reported as static dependencies of the TypeGVMEntriesNode,
         /// which we create for each type that has generic virtual methods.
