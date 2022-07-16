@@ -398,15 +398,13 @@ namespace System.Net.Http.Functional.Tests
             RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
             {
                 const string Url = "https://www.microsoft.com";
+                var version = Version.Parse(useVersionString);
+                using HttpClientHandler handler = CreateHttpClientHandler(
+                    useVersion: version,
+                    allowAllCertificates: version >= HttpVersion20.Value && bool.Parse(allowAllCertificatesString));
+                using HttpClient client = CreateHttpClient(handler, useVersionString);
 
-                HttpClientHandler handler = CreateHttpClientHandler(
-                    Version.Parse(useVersionString),
-                    allowAllCertificates: bool.Parse(allowAllCertificatesString));
-
-                using (HttpClient client = CreateHttpClient(handler, useVersionString))
-                {
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
-                }
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
             }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }

@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true)
+        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = false)
         {
             useVersion ??= HttpVersion.Version11;
 

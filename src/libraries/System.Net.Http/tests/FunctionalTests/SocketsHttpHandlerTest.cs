@@ -2843,7 +2843,7 @@ namespace System.Net.Http.Functional.Tests
                 async uri =>
                 {
                     string[] parts = uri.Authority.Split(':', 2);
-                    HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSslStream);
+                    HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectCallback = async (context, token) =>
                     {
@@ -2852,7 +2852,7 @@ namespace System.Net.Http.Functional.Tests
                         if (useSslStream)
                         {
                             SslClientAuthenticationOptions options = new SslClientAuthenticationOptions();
-                            options.RemoteCertificateValidationCallback = (a, b, c, d) => true; // TODO ??!!
+                            options.RemoteCertificateValidationCallback = (a, b, c, d) => true;
                             options.TargetHost = parts[0];
                             if (context.InitialRequestMessage.Version.Major == 2 && PlatformDetection.SupportsAlpn)
                             {
