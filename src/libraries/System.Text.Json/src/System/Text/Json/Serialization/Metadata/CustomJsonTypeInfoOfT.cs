@@ -18,8 +18,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
-        internal CustomJsonTypeInfo(JsonSerializerOptions options)
-            : base(options.GetConverterFromListOrBuiltInConverter(typeof(T)), options)
+        internal CustomJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
+            : base(converter, options)
         {
         }
 

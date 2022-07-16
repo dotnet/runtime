@@ -17,13 +17,6 @@ namespace System.Text.Json.Serialization.Metadata
     {
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal ReflectionJsonTypeInfo(JsonSerializerOptions options)
-            : this(DefaultJsonTypeInfoResolver.GetConverterForType(typeof(T), options), options)
-        {
-        }
-
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(converter, options)
         {
@@ -160,7 +153,7 @@ namespace System.Text.Json.Serialization.Metadata
             ref bool propertyOrderSpecified,
             ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
-            JsonPropertyInfo? jsonPropertyInfo = AddProperty(typeToConvert, memberInfo, Options);
+            JsonPropertyInfo? jsonPropertyInfo = CreateProperty(typeToConvert, memberInfo, Options);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -177,7 +170,7 @@ namespace System.Text.Json.Serialization.Metadata
             Justification = "The ctor is marked as RequiresUnreferencedCode")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "The ctor is marked RequiresDynamicCode.")]
-        private JsonPropertyInfo? AddProperty(
+        private JsonPropertyInfo? CreateProperty(
             Type typeToConvert,
             MemberInfo memberInfo,
             JsonSerializerOptions options)
@@ -192,23 +185,19 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(typeToConvert, memberInfo.DeclaringType, memberInfo);
             }
 
+            // Resolve any custom converters on the attribute level.
             JsonConverter? customConverter;
-            JsonConverter converter;
-
             try
             {
-                converter = DefaultJsonTypeInfoResolver.GetConverterForMember(
-                    typeToConvert,
-                    memberInfo,
-                    options,
-                    out customConverter);
+                customConverter = DefaultJsonTypeInfoResolver.GetCustomConverterForMember(typeToConvert, memberInfo, options);
             }
             catch (InvalidOperationException) when (ignoreCondition == JsonIgnoreCondition.Always)
             {
+                // skip property altogether if attribute is invalid and the property is ignored
                 return null;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert, converter);
+            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert);
             jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition);
             return jsonPropertyInfo;
         }

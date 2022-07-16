@@ -188,7 +188,6 @@ namespace System.Text.Json.Serialization.Metadata
             SrcGen_IsPublic = propertyInfo.IsPublic;
             SrcGen_HasJsonInclude = propertyInfo.HasJsonInclude;
             IsExtensionData = propertyInfo.IsExtensionData;
-            DefaultConverterForType = propertyInfo.PropertyTypeInfo?.Converter as JsonConverter<T>;
             CustomConverter = propertyInfo.Converter;
 
             if (propertyInfo.IgnoreCondition != JsonIgnoreCondition.Always)
@@ -202,12 +201,11 @@ namespace System.Text.Json.Serialization.Metadata
             NumberHandling = propertyInfo.NumberHandling;
         }
 
-        private protected override void DetermineEffectiveConverter()
+        private protected override void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo)
         {
             JsonConverter converter =
                 Options.ExpandConverterFactory(CustomConverter, PropertyType)
-                ?? DefaultConverterForType
-                ?? Options.GetConverterFromTypeInfo(PropertyType);
+                ?? jsonTypeInfo.Converter;
 
             TypedEffectiveConverter = converter is JsonConverter<T> typedConv ? typedConv : converter.CreateCastingConverter<T>();
             ConverterStrategy = TypedEffectiveConverter.ConverterStrategy;
