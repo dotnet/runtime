@@ -68,7 +68,7 @@ namespace Microsoft.NET.HostModel
                     case 0x0000009A: // ERROR_LABEL_TOO_LONG
                     case 0x000000A0: // ERROR_BAD_ARGUMENTS
                     case 0x000000A1: // ERROR_BAD_PATHNAME
-                    case 0x000000CE: // ERROR_FILENAME_EXCEED_RANGE
+                    case 0x000000CE: // ERROR_FILENAME_EXCED_RANGE
                     case 0x000000DF: // ERROR_FILE_TOO_LARGE
                     case 0x000003ED: // ERROR_UNRECOGNIZED_VOLUME
                     case 0x000003EE: // ERROR_FILE_INVALID

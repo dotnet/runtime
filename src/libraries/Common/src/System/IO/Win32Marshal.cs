@@ -43,7 +43,7 @@ namespace System.IO
                     if (string.IsNullOrEmpty(path))
                         goto default;
                     return new IOException(SR.Format(SR.IO_AlreadyExists_Name, path), MakeHRFromErrorCode(errorCode));
-                case Interop.Errors.ERROR_FILENAME_EXCEED_RANGE:
+                case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
                     return new PathTooLongException(
                         string.IsNullOrEmpty(path) ? SR.IO_PathTooLong : SR.Format(SR.IO_PathTooLong_Path, path));
                 case Interop.Errors.ERROR_SHARING_VIOLATION:

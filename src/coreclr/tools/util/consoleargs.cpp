@@ -13,12 +13,12 @@ size_t SafeStrCopy( _In_ LPCWSTR wszSrc, _In_ size_t cchSrc, _Out_ LPWSTR wszDes
         cchSrc = wcslen(wszSrc);
 
     if (cchSrc >= cchDest) {
-        SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+        SetLastError(ERROR_FILENAME_EXCED_RANGE);
         return 0;
     }
 
     if (FAILED(StringCchCopyNW( wszDest, cchDest, wszSrc, cchSrc))) {
-        SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+        SetLastError(ERROR_FILENAME_EXCED_RANGE);
         return 0;
     }
     return cchSrc;
@@ -30,7 +30,7 @@ size_t SafeStrLower( _In_ LPCWSTR wszSrc, _In_ size_t cchSrc, _Out_ LPWSTR wszDe
         cchSrc = wcslen(wszSrc);
 
     if (cchSrc >= cchDest) {
-        SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+        SetLastError(ERROR_FILENAME_EXCED_RANGE);
         return 0;
     }
 
@@ -76,7 +76,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
         else
             temp_path[i++] = wszSrcFileName[j++];
         if (i >= cchDestFileName) {
-            SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+            SetLastError(ERROR_FILENAME_EXCED_RANGE);
             goto FAIL;
         }
     }
@@ -88,7 +88,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
     if (full_len == 0) {
         goto FAIL;
     } else if (full_len >= cchDestFileName) {
-        SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+        SetLastError(ERROR_FILENAME_EXCED_RANGE);
         goto FAIL;
     }
 
@@ -178,7 +178,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
 
         // Check to make sure we have enough room for the next part of the path
         if (out_cur + (slash - full_cur) >= out_end) {
-            SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+            SetLastError(ERROR_FILENAME_EXCED_RANGE);
             goto FAIL;
         }
 
@@ -225,7 +225,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
             } else if (temp_len >= cchDestFileName) {
                 // The short filename is longer than the whole thing?
                 // This shouldn't ever happen, right?
-                SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+                SetLastError(ERROR_FILENAME_EXCED_RANGE);
                 goto FAIL;
             } else {
                 // GetShortPathName succeeded with a path that is less than BUFFER_LEN
@@ -254,7 +254,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
             FindClose(hFind);
             size_t name_len = wcslen(find_data.cFileName);
             if (out_cur + name_len + (hasSlash ? 1 : 0) >= out_end) {
-                SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+                SetLastError(ERROR_FILENAME_EXCED_RANGE);
                 goto FAIL;
             }
 
@@ -277,7 +277,7 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
 
         if (hasSlash) {
             if (out_cur + 1 >= out_end) {
-                SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+                SetLastError(ERROR_FILENAME_EXCED_RANGE);
                 goto FAIL;
             }
             full_cur++;

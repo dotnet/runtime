@@ -41,7 +41,7 @@ namespace System
                         // Allow user to try to clear a environment variable
                         return;
 
-                    case Interop.Errors.ERROR_FILENAME_EXCEED_RANGE:
+                    case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
                         // The error message from Win32 is "The filename or extension is too long",
                         // which is not accurate.
                         throw new ArgumentException(SR.Argument_LongEnvVarValue);

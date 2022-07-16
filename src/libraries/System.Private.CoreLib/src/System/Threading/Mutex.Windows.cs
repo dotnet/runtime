@@ -25,7 +25,7 @@ namespace System.Threading
             {
                 mutexHandle.SetHandleAsInvalid();
 #if TARGET_UNIX || TARGET_BROWSER
-                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCEED_RANGE)
+                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
                     throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
 #endif
@@ -57,7 +57,7 @@ namespace System.Threading
                 myHandle.Dispose();
 
 #if TARGET_UNIX || TARGET_BROWSER
-                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCEED_RANGE)
+                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
                     throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));

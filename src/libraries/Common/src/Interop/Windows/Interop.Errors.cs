@@ -43,7 +43,7 @@ internal static partial class Interop
         internal const int ERROR_ALREADY_EXISTS = 0xB7;
         internal const int ERROR_BAD_EXE_FORMAT = 0xC1;
         internal const int ERROR_ENVVAR_NOT_FOUND = 0xCB;
-        internal const int ERROR_FILENAME_EXCEED_RANGE = 0xCE;
+        internal const int ERROR_FILENAME_EXCED_RANGE = 0xCE;
         internal const int ERROR_EXE_MACHINE_TYPE_MISMATCH = 0xD8;
         internal const int ERROR_FILE_TOO_LARGE = 0xDF;
         internal const int ERROR_PIPE_BUSY = 0xE7;

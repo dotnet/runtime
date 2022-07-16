@@ -68,7 +68,7 @@ public:
 enum class SharedMemoryError : DWORD
 {
     NameEmpty = ERROR_INVALID_PARAMETER,
-    NameTooLong = ERROR_FILENAME_EXCEED_RANGE,
+    NameTooLong = ERROR_FILENAME_EXCED_RANGE,
     NameInvalid = ERROR_INVALID_NAME,
     HeaderMismatch = ERROR_INVALID_HANDLE,
     OutOfMemory = ERROR_NOT_ENOUGH_MEMORY,

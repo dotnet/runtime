@@ -45,11 +45,11 @@ namespace Internal.Win32
             int errorCode = Interop.Advapi32.RegDeleteValue(_hkey, name);
 
             //
-            // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCEED_RANGE
+            // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE
             // This still means the name doesn't exist. We need to be consistent with previous OS.
             //
             if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
-                errorCode == Interop.Errors.ERROR_FILENAME_EXCEED_RANGE)
+                errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
             {
                 if (throwOnMissingValue)
                 {

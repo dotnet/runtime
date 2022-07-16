@@ -281,7 +281,7 @@ FindFirstFileW(
         if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
         {
             WARN("lpFileName is larger than MAX_PATH_FNAME (%d)!\n", MAX_PATH_FNAME);
-            SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+            SetLastError(ERROR_FILENAME_EXCED_RANGE);
         }
         else
         {
@@ -317,7 +317,7 @@ FindFirstFileW(
         if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
         {
             WARN("FindFileDataA.cFileName is larger than MAX_PATH_FNAME (%d)!\n", MAX_PATH_FNAME);
-            SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+            SetLastError(ERROR_FILENAME_EXCED_RANGE);
         }
         else
         {
@@ -401,7 +401,7 @@ FindNextFileA(
             if (strcpy_s( lpFindFileData->cFileName, sizeof(lpFindFileData->cFileName), find_data->fname ) != SAFECRT_SUCCESS)
             {
                 TRACE("strcpy_s failed!\n");
-                dwLastError = ERROR_FILENAME_EXCEED_RANGE;
+                dwLastError = ERROR_FILENAME_EXCED_RANGE;
                 goto done;
             }
 
@@ -523,7 +523,7 @@ FindNextFileW(
         if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
         {
             WARN("FindFileDataA.cFileName is larger than MAX_PATH_FNAME (%d)!\n", MAX_PATH_FNAME);
-            SetLastError(ERROR_FILENAME_EXCEED_RANGE);
+            SetLastError(ERROR_FILENAME_EXCED_RANGE);
         }
         else
         {
