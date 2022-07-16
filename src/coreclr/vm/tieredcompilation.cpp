@@ -120,7 +120,16 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
             case UseInstrumentedTierForILOnly:
             case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier:
             case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized:
+            {
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
+                NativeCodeVersion version = pMethodDesc->GetCodeVersionManager()->GetActiveILCodeVersion(pMethodDesc)
+                    .GetActiveNativeCodeVersion(pMethodDesc);
+                if (!version.IsNull() && ExecutionManager::IsReadyToRunCode(version.GetNativeCode()))
+                {
+                    return NativeCodeVersion::OptimizationTier0;
+                }
                 return NativeCodeVersion::OptimizationTierInstrumented;
+            }
             default:
                 return NativeCodeVersion::OptimizationTier0;
         }
