@@ -4506,9 +4506,7 @@ namespace System.Text.RegularExpressions.Generator
                 // (In the future, we could possibly extend the rm.Analysis to produce a known
                 // lower-bound and compare against that rather than always using 128 as the
                 // pivot point.)
-                return negate ?
-                    $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+                return EmitContainsNoAscii();
             }
 
             if (analysis.AllAsciiContained)
@@ -4516,9 +4514,7 @@ namespace System.Text.RegularExpressions.Generator
                 // We determined that every ASCII character is in the class, for example
                 // if the class were the negated example from case 1 above:
                 // [^\p{IsGreek}\p{IsGreekExtended}].
-                return negate ?
-                    $"((ch = {chExpr}) >= 128 && !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+                return EmitAllAsciiContained();
             }
 
             // Now, our big hammer is to generate a lookup table that lets us quickly index by character into a yes/no
@@ -4547,6 +4543,15 @@ namespace System.Text.RegularExpressions.Generator
                     }
                 }
             });
+
+            // There's a chance that the class contains either no ASCII characters or all of them,
+            // and the analysis could not find it (for example if the class has a subtraction).
+            // We optimize away the bit vector in these trivial cases.
+            switch (bitVectorString)
+            {
+                case "\0\0\0\0\0\0\0\0": return EmitContainsNoAscii();
+                case "\uffff\uffff\uffff\uffff\uffff\uffff\uffff\uffff": return EmitAllAsciiContained();
+            }
 
             // We determined that the character class may contain ASCII, so we
             // output the lookup against the lookup table.
@@ -4577,6 +4582,20 @@ namespace System.Text.RegularExpressions.Generator
             return negate ?
                 $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
                 $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+
+            string EmitContainsNoAscii()
+            {
+                return negate ?
+                    $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+            }
+
+            string EmitAllAsciiContained()
+            {
+                return negate ?
+                    $"((ch = {chExpr}) >= 128 && !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+            }
         }
 
         /// <summary>
