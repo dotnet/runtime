@@ -23,7 +23,6 @@ namespace System.Runtime.InteropServices.Marshalling
 
             public void OnInvoked() => GC.KeepAlive(_handle.Wrapper);
 
-            [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "This method is part of the marshaller shape and is required to be an instance method.")]
             public void Free() { }
         }
     }

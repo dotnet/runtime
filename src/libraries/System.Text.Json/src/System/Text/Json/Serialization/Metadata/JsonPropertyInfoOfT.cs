@@ -197,21 +197,18 @@ namespace System.Text.Json.Serialization.Metadata
                 Set = propertyInfo.Setter;
             }
 
-            // NB setting the ignore condition must follow converter & getter/setter
-            // configuration in order for access policies to be applied correctly.
             IgnoreCondition = propertyInfo.IgnoreCondition;
             JsonTypeInfo = propertyInfo.PropertyTypeInfo;
             NumberHandling = propertyInfo.NumberHandling;
         }
 
-        private protected override void DetermineEffectiveConverter(JsonConverter? customConverter)
+        private protected override void DetermineEffectiveConverter()
         {
-            if (customConverter != null)
-            {
-                customConverter = Options.ExpandConverterFactory(customConverter, PropertyType);
-            }
+            JsonConverter converter =
+                Options.ExpandConverterFactory(CustomConverter, PropertyType)
+                ?? DefaultConverterForType
+                ?? Options.GetConverterFromTypeInfo(PropertyType);
 
-            JsonConverter converter = customConverter ?? DefaultConverterForType ?? Options.GetConverterFromTypeInfo(PropertyType);
             TypedEffectiveConverter = converter is JsonConverter<T> typedConv ? typedConv : converter.CreateCastingConverter<T>();
             ConverterStrategy = TypedEffectiveConverter.ConverterStrategy;
         }
@@ -422,8 +419,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         private protected override void ConfigureIgnoreCondition(JsonIgnoreCondition? ignoreCondition)
         {
-            DetermineSerializationCapabilities(ignoreCondition);
-
             switch (ignoreCondition)
             {
                 case null:
@@ -470,41 +465,6 @@ namespace System.Text.Json.Serialization.Metadata
         private static bool IsDefaultValue(T? value)
         {
             return default(T) is null ? value is null : EqualityComparer<T>.Default.Equals(default, value);
-        }
-
-        private void DetermineSerializationCapabilities(JsonIgnoreCondition? ignoreCondition)
-        {
-            if (ignoreCondition == JsonIgnoreCondition.Always)
-            {
-                Debug.Assert(Get == null && Set == null, "Getters or Setters should not be set when JsonIgnoreCondition.Always is specified.");
-                return;
-            }
-
-            Debug.Assert(TypedEffectiveConverter != null, "Must have calculated the effective converter strategy.");
-            if ((ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) == 0)
-            {
-                // We serialize if there is a getter + not ignoring readonly properties.
-                if (Get != null && Set == null)
-                {
-                    // Three possible values for ignoreCondition:
-                    // null = JsonIgnore was not placed on this property, global IgnoreReadOnlyProperties/Fields wins
-                    // WhenNull = only ignore when null, global IgnoreReadOnlyProperties/Fields loses
-                    // Never = never ignore (always include), global IgnoreReadOnlyProperties/Fields loses
-                    bool serializeReadOnlyProperty = ignoreCondition != null || !IgnoreReadOnlyMember;
-                    if (!serializeReadOnlyProperty)
-                    {
-                        Get = null;
-                    }
-                }
-            }
-            else
-            {
-                if (Get == null && Set != null)
-                {
-                    // Collection properties with setters only are not supported.
-                    Set = null;
-                }
-            }
         }
     }
 }

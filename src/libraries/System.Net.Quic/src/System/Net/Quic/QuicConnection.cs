@@ -81,7 +81,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <summary>
     /// Handle to MsQuic connection object.
     /// </summary>
-    private MsQuicContextSafeHandle _handle;
+    private readonly MsQuicContextSafeHandle _handle;
 
     /// <summary>
     /// Set to non-zero once disposed. Prevents double and/or concurrent disposal.

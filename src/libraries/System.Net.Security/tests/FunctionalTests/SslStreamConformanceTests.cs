@@ -21,7 +21,7 @@ namespace System.Net.Security.Tests
 
         protected override async Task<StreamPair> CreateWrappedConnectedStreamsAsync(StreamPair wrapped, bool leaveOpen = false)
         {
-            X509Certificate2? cert = Test.Common.Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 cert = Test.Common.Configuration.Certificates.GetServerCertificate();
             var ssl1 = new SslStream(wrapped.Stream1, leaveOpen, delegate { return true; });
             var ssl2 = new SslStream(wrapped.Stream2, leaveOpen, delegate { return true; });
 

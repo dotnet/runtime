@@ -1518,7 +1518,7 @@ namespace System.Text.Json.Serialization.Tests
                             Assert.Equal(1, jsonTypeInfo.Properties.Count);
 
                             JsonPropertyInfo jpi = jsonTypeInfo.Properties[0];
-                            Assert.Null(jpi.Set);
+                            Assert.NotNull(jpi.Set);
                             jpi.Set = (obj, value) => ((ClassWithSetterOnlyProperty<T>)obj)._value = (T)value;
                         }
                     }
@@ -1575,20 +1575,27 @@ namespace System.Text.Json.Serialization.Tests
 
                             JsonPropertyInfo jpi = jsonTypeInfo.Properties[0];
                             Assert.Equal("Field", jpi.Name); // JsonPropertyOrder should ensure correct ordering of properties.
-                            Assert.Null(jpi.Get);
-                            jpi.Get = obj => ((ClassWithReadOnlyMembers)obj).Field;
+                            Assert.NotNull(jpi.Get);
+                            jpi.ShouldSerialize = null;
 
                             jpi = jsonTypeInfo.Properties[1];
                             Assert.Equal("Property", jpi.Name); // JsonPropertyOrder should ensure correct ordering of properties.
-                            Assert.Null(jpi.Get);
-                            jpi.Get = obj => ((ClassWithReadOnlyMembers)obj).Property;
+                            Assert.NotNull(jpi.Get);
+                            jpi.ShouldSerialize = null;
+
+                            // No policy is applied to custom read-only properties
+                            // regardless of `ShouldSerialize` configuration.
+                            jpi = jsonTypeInfo.CreateJsonPropertyInfo(typeof(int), "CustomProperty");
+                            jpi.Get = static _ => 42;
+                            jpi.Order = 2;
+                            jsonTypeInfo.Properties.Add(jpi);
                         }
                     }
                 }
             };
 
             json = JsonSerializer.Serialize(value, options);
-            Assert.Equal("""{"Field":1,"Property":2}""", json);
+            Assert.Equal("""{"Field":1,"Property":2,"CustomProperty":42}""", json);
         }
 
         public class ClassWithReadOnlyMembers
