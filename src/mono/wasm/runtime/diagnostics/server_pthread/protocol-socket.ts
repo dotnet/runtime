@@ -7,7 +7,9 @@ import type {
     EventPipeClientCommandBase,
     EventPipeCommandCollectTracing2,
     EventPipeCollectTracingCommandProvider,
-    ProcessClientCommandBase
+    EventPipeCommandStopTracing,
+    ProcessClientCommandBase,
+    ProcessCommandResumeRuntime,
 } from "./protocol-client-commands";
 
 export const dotnetDiagnosticsServerProtocolCommandEvent = "dotnet:diagnostics:protocolCommand" as const;
@@ -59,21 +61,21 @@ interface PartialCommandState {
 
 
 interface ParseResultBase {
-    success: boolean;
+    readonly success: boolean;
 }
 
 interface ParseResultOk extends ParseResultBase {
-    success: true;
+    readonly success: true;
 }
 
 interface ParseResultBinaryCommandOk extends ParseResultOk {
-    command: BinaryProtocolCommand | undefined;
-    newState: State;
+    readonly command: BinaryProtocolCommand | undefined;
+    readonly newState: State;
 }
 
 interface ParseResultFail extends ParseResultBase {
-    success: false;
-    error: string;
+    readonly success: false;
+    readonly error: string;
 }
 
 type ParseResult = ParseResultBinaryCommandOk | ParseResultFail;
@@ -178,11 +180,12 @@ class ProtocolSocketImpl implements ProtocolSocket {
             return { success: true, command: undefined, newState };
         } else {
             const pos = { pos: Parser.MinimalHeaderSize };
-            const result = this.tryParseCompletedBuffer(buf, pos);
+            let result = this.tryParseCompletedBuffer(buf, pos);
             if (overflow) {
                 console.warn("additional bytes past command payload", overflow);
                 if (result.success) {
-                    result.newState = { state: InState.Error };
+                    const newResult: ParseResultBinaryCommandOk = { success: true, command: result.command, newState: { state: InState.Error } };
+                    result = newResult;
                 }
             }
             return result;
@@ -378,7 +381,7 @@ const Parser = {
 };
 
 
-const enum CommandSet {
+const enum CommandSetId {
     Reserved = 0,
     Dump = 1,
     EventPipe = 2,
@@ -391,41 +394,41 @@ const enum CommandSet {
 }
 
 interface ParseClientCommandResultOk<C = ProtocolClientCommandBase> extends ParseResultOk {
-    result: C;
+    readonly result: C;
 }
 
 export type ParseClientCommandResult<C = ProcessClientCommandBase> = ParseClientCommandResultOk<C> | ParseResultFail;
 
 export function parseBinaryProtocolCommand(cmd: BinaryProtocolCommand): ParseClientCommandResult<ProtocolClientCommandBase> {
     switch (cmd.commandSet) {
-        case CommandSet.Reserved:
+        case CommandSetId.Reserved:
             throw new Error("unexpected reserved command_set command");
-        case CommandSet.Dump:
+        case CommandSetId.Dump:
             throw new Error("TODO");
-        case CommandSet.EventPipe:
+        case CommandSetId.EventPipe:
             return parseEventPipeCommand(cmd);
-        case CommandSet.Profiler:
+        case CommandSetId.Profiler:
             throw new Error("TODO");
-        case CommandSet.Process:
-            throw new Error("TODO");
+        case CommandSetId.Process:
+            return parseProcessCommand(cmd);
         default:
             return { success: false, error: `unexpected command_set ${cmd.commandSet} command` };
     }
 }
 
-const enum EventPipeCommand {
+const enum EventPipeCommandId {
     StopTracing = 1,
     CollectTracing = 2,
     CollectTracing2 = 3,
 }
 
-function parseEventPipeCommand(cmd: BinaryProtocolCommand & { commandSet: CommandSet.EventPipe }): ParseClientCommandResult<EventPipeClientCommandBase> {
+function parseEventPipeCommand(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe }): ParseClientCommandResult<EventPipeClientCommandBase> {
     switch (cmd.command) {
-        case EventPipeCommand.StopTracing:
+        case EventPipeCommandId.StopTracing:
+            return parseEventPipeStopTracing(cmd);
+        case EventPipeCommandId.CollectTracing:
             throw new Error("TODO");
-        case EventPipeCommand.CollectTracing:
-            throw new Error("TODO");
-        case EventPipeCommand.CollectTracing2:
+        case EventPipeCommandId.CollectTracing2:
             return parseEventPipeCollectTracing2(cmd);
         default:
             console.warn("unexpected EventPipe command: " + cmd.command);
@@ -433,7 +436,7 @@ function parseEventPipeCommand(cmd: BinaryProtocolCommand & { commandSet: Comman
     }
 }
 
-function parseEventPipeCollectTracing2(cmd: BinaryProtocolCommand & { commandSet: CommandSet.EventPipe, command: EventPipeCommand.CollectTracing2 }): ParseClientCommandResult<EventPipeCommandCollectTracing2> {
+function parseEventPipeCollectTracing2(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe, command: EventPipeCommandId.CollectTracing2 }): ParseClientCommandResult<EventPipeCommandCollectTracing2> {
     const pos = { pos: 0 };
     const buf = cmd.payload;
     const circularBufferMB = Parser.tryParseUint32(buf, pos);
@@ -480,4 +483,51 @@ function parseEventPipeCollectTracingCommandProvider(buf: Uint8Array, pos: { pos
         return { success: false, error: "failed to parse filterData in EventPipe CollectTracing provider" };
     const provider: EventPipeCollectTracingCommandProvider = { keywords, logLevel, provider_name: providerName, filter_data: filterData };
     return { success: true, result: provider };
+}
+
+function parseEventPipeStopTracing(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.EventPipe, command: EventPipeCommandId.StopTracing }): ParseClientCommandResult<EventPipeCommandStopTracing> {
+    const pos = { pos: 0 };
+    const buf = cmd.payload;
+    const sessionID = Parser.tryParseUint64(buf, pos);
+    if (sessionID === undefined) {
+        return { success: false, error: "failed to parse sessionID in EventPipe StopTracing command" };
+    }
+    const [lo, hi] = sessionID;
+    if (hi !== 0) {
+        return { success: false, error: "sessionID is too large in EventPipe StopTracing command" };
+    }
+    const command: EventPipeCommandStopTracing = { command_set: "EventPipe", command: "StopTracing", sessionID: lo };
+    return { success: true, result: command };
+}
+
+const enum ProcessCommandId {
+    ProcessInfo = 0,
+    ResumeRuntime = 1,
+    ProcessEnvironment = 2,
+    ProcessInfo2 = 4,
+}
+
+function parseProcessCommand(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.Process }): ParseClientCommandResult<ProcessClientCommandBase> {
+    switch (cmd.command) {
+        case ProcessCommandId.ProcessInfo:
+            throw new Error("TODO");
+        case ProcessCommandId.ResumeRuntime:
+            return parseProcessResumeRuntime(cmd);
+        case ProcessCommandId.ProcessEnvironment:
+            throw new Error("TODO");
+        case ProcessCommandId.ProcessInfo2:
+            throw new Error("TODO");
+        default:
+            console.warn("unexpected Process command: " + cmd.command);
+            return { success: false, error: `unexpected Process command ${cmd.command}` };
+    }
+}
+
+function parseProcessResumeRuntime(cmd: BinaryProtocolCommand & { commandSet: CommandSetId.Process, command: ProcessCommandId.ResumeRuntime }): ParseClientCommandResult<ProcessCommandResumeRuntime> {
+    const buf = cmd.payload;
+    if (buf.byteLength !== 0) {
+        return { success: false, error: "unexpected payload in Process ResumeRuntime command" };
+    }
+    const command: ProcessCommandResumeRuntime = { command_set: "Process", command: "ResumeRuntime" };
+    return { success: true, result: command };
 }
