@@ -38,7 +38,7 @@ jobs:
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-      container: '${{ parameters.container }}'
+      container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
       testScope: ${{ parameters.testScope }}
       runTests: true
