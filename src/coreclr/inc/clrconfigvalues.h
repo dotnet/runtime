@@ -625,8 +625,8 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 //  0 -    [Default] Use InstrumentedTier for non-R2R code as the initial tier
 //  1 -              Use InstrumentedTier for non-R2R code as the initial tier, promote hot R2R to InstrumentedTier
 //  2 - [Not tested] Use InstrumentedTier for non-R2R code as the initial tier, promote hot R2R to InstrumentedTierOptimized
-//  3 -        [NYI] Promote hot Tier0/R2R to InstrumentedTier
-//  4 -        [NYI] Promote hot Tier0/R2R to InstrumentedTierOptimized
+//  3 - [Not tested] Promote hot Tier0/R2R to InstrumentedTier
+//  4 - [Not tested] Promote hot Tier0/R2R to InstrumentedTierOptimized
 //
 // Pros & cons of using optimizations inside the instrumented tiers (modes '2' and '4')
 // Pros:

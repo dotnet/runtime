@@ -794,8 +794,7 @@ HRESULT EEConfig::sync()
             tieredCompilation_CallCountingDelayMs /= 3;
             tieredCompilation_CallCountingDelayMs = max(1, tieredCompilation_CallCountingDelayMs);
         }
-        _ASSERTE(fTieredPGO_Strategy >= 0 && fTieredPGO_Strategy <= 2 &&
-            "Only '0', '1' and '2' strategies are currently supported");
+        _ASSERTE(fTieredPGO_Strategy >= 0 && fTieredPGO_Strategy <= 4);
     }
 #endif
 

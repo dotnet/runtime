@@ -115,7 +115,15 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
 #ifdef FEATURE_PGO
     if (g_pConfig->TieredPGO())
     {
-        return NativeCodeVersion::OptimizationTierInstrumented;
+        switch (g_pConfig->TieredPGO_Strategy())
+        {
+            case UseInstrumentedTierForILOnly:
+            case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier:
+            case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized:
+                return NativeCodeVersion::OptimizationTierInstrumented;
+            default:
+                return NativeCodeVersion::OptimizationTier0;
+        }
     }
 #endif
 
@@ -276,23 +284,44 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     // If TieredPGO is enabled, follow TieredPGO_Strategy, see comments in clrconfigvalues.h around it
     if (g_pConfig->TieredPGO() && pMethodDesc->IsEligibleForTieredCompilation())
     {
-        TieredPGOStrategy strategy = g_pConfig->TieredPGO_Strategy();
-        if ((strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier ||
-             strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized) &&
-            tier0NativeCodeVersion.IsDefaultVersion() &&
-            tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
-            ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+        if (tier0NativeCodeVersion.IsDefaultVersion() &&
+            tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
         {
-            if (strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier)
+            switch (g_pConfig->TieredPGO_Strategy())
             {
-                // Promote hot R2R code to InstrumentedTier
-                nextTier = NativeCodeVersion::OptimizationTierInstrumented;
-            }
-            else
-            {
-                // Promote hot R2R code to InstrumentedTierOptimized
-                assert(strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized);
-                nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
+                // 0: Always use TierInstrumented for new ILOnly code
+                case UseInstrumentedTierForILOnly:
+                    nextTier = NativeCodeVersion::OptimizationTierInstrumented;
+                    break;
+
+                    // 1: Promote hot R2R code to TierInstrumented
+                case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier:
+                    if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+                    {
+                        nextTier = NativeCodeVersion::OptimizationTierInstrumented;
+                    }
+                    break;
+
+                    // 2: Promote hot R2R code to TierInstrumentedOptimized
+                case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized:
+                    if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+                    {
+                        nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
+                    }
+                    break;
+
+                // 3: Promote hot Tier0/R2R code to TierInstrumented
+                case PromoteHotTier0ToInstrumentedTier:
+                    nextTier = NativeCodeVersion::OptimizationTierInstrumented;
+                    break;
+
+                // 4: Promote hot Tier0/R2R code to TierInstrumentedOptimized
+                case PromoteHotTier0ToInstrumentedTierOptimized:
+                    nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
+                    break;
+
+                default:
+                    _ASSERT("Unknown TieredPGO_Strategy");
             }
         }
     }
