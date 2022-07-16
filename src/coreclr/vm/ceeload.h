@@ -1908,10 +1908,6 @@ private:
     // A dynamic module will eagerly serialize its metadata to this buffer.
     PTR_SBuffer m_pDynamicMetadata;
 
-    // If true, does not eagerly serialize metadata in code:ReflectionModule.CaptureModuleMetaDataToMemory.
-    // This is used to allow bulk emitting types without re-emitting the metadata between each type.
-    bool m_fSuppressMetadataCapture;
-
 #if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
