@@ -35,6 +35,7 @@ import {
     ProtocolCommandEvent,
     isBinaryProtocolCommand,
     parseBinaryProtocolCommand,
+    ParseClientCommandResult,
 } from "./protocol-socket";
 
 function addOneShotMessageEventListener(src: EventTarget): Promise<MessageEvent<string | ArrayBuffer>> {
@@ -200,7 +201,13 @@ class DiagnosticServerImpl implements DiagnosticServer {
             return parseMockCommand(message.data);
         } else {
             console.debug("parsing byte command: ", message.data);
-            return parseProtocolCommand(message.data);
+            const result = parseProtocolCommand(message.data);
+            if (result.success) {
+                return result.result;
+            } else {
+                console.warn("failed to parse command: ", result.error);
+                return null;
+            }
         }
     }
 
@@ -270,7 +277,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 }
 
-function parseProtocolCommand(data: ArrayBuffer | BinaryProtocolCommand): ProtocolClientCommandBase | null {
+function parseProtocolCommand(data: ArrayBuffer | BinaryProtocolCommand): ParseClientCommandResult<ProtocolClientCommandBase> {
     if (isBinaryProtocolCommand(data)) {
         return parseBinaryProtocolCommand(data);
     } else {
