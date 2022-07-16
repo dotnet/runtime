@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { JSHandle, GCHandle, MonoObjectRef } from "./types";
-import { PromiseControl } from "./cancelable-promise";
+import { PromiseController } from "./promise-controller";
 import { runtimeHelpers } from "./imports";
 
 // TODO replace all of this with [JSExport]
@@ -47,8 +47,7 @@ export interface t_CSwraps {
     _set_tcs_failure(gcHandle: GCHandle, result: string): void
     _get_tcs_task_ref(gcHandle: GCHandle, result: MonoObjectRef): void;
     _task_from_result_ref(value: any, result: MonoObjectRef): void;
-    // FIXME: PromiseControl is a JS object so we can't pass an address directly
-    _setup_js_cont_ref(task: MonoObjectRef, continuation: PromiseControl): void;
+    _setup_js_cont_ref(task: MonoObjectRef, continuation: PromiseController): void;
 
     _object_to_string_ref(obj: MonoObjectRef): string;
     _get_date_value_ref(obj: MonoObjectRef): number;

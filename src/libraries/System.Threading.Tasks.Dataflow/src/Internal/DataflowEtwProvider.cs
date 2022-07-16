@@ -102,10 +102,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "WriteEvent Parameters are trimmer safe")]
-#endif
         [Event(TASKLAUNCHED_EVENTID, Level = EventLevel.Informational)]
         private void TaskLaunchedForMessageHandling(int blockId, TaskLaunchedReason reason, int availableMessages, int taskId)
         {
@@ -161,10 +159,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Canceled = (int)TaskStatus.Canceled
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "WriteEvent Parameters are trimmer safe")]
-#endif
         [Event(BLOCKCOMPLETED_EVENTID, Level = EventLevel.Informational)]
         private void DataflowBlockCompleted(int blockId, BlockCompletionReason reason, string exceptionData)
         {
