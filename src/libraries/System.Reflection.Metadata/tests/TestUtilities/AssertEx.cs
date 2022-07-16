@@ -457,13 +457,10 @@ namespace System.Reflection.Metadata.Tests
                 testCode();
                 Assert.False(true, $"Exception of type '{typeof(T)}' was expected but none was thrown.");
             }
-            catch (T e)
-            {
-                exceptionValidation(e);
-            }
             catch (Exception e)
             {
-                Assert.False(true, $"Exception of type '{typeof(T)}' was expected but '{e.GetType()}' was thrown instead.");
+                Assert.True(e is T, $"Exception of type '{typeof(T)}' was expected but '{e.GetType()}' was thrown instead.");
+                exceptionValidation((T)e);
             }
         }
     }

@@ -176,6 +176,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: true) };
 
             // Custom type marshalling
+            yield return new[] { ID(), CodeSnippets.CustomStructMarshalling.StructMarshallerEntryPoint };
             yield return new[] { ID(), CodeSnippets.CustomStructMarshalling.Stateless.ParametersAndModifiers };
             yield return new[] { ID(), CodeSnippets.CustomStructMarshalling.Stateless.MarshalUsingParametersAndModifiers };
             yield return new[] { ID(), CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedOnlyOutParameter };

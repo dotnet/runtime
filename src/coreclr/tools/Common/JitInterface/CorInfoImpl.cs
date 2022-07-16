@@ -52,6 +52,7 @@ namespace Internal.JitInterface
             AMD64 = 0x8664,
             ARM = 0x01c4,
             ARM64 = 0xaa64,
+            LoongArch64 = 0x6264,
         }
 
         internal const string JitLibrary = "clrjitilc";
@@ -2916,11 +2917,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
-        {
-            throw new NotImplementedException("For LoongArch64, would be implemented later");
-        }
-
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
@@ -3138,6 +3134,12 @@ namespace Internal.JitInterface
 
             SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
             return true;
+        }
+
+        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc typeDesc = HandleToObject(cls);
+            return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
@@ -3518,25 +3520,46 @@ namespace Internal.JitInterface
         // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
         private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
         {
-            if (targetArchitecture != TargetArchitecture.ARM64)
-                return (RelocType)fRelocType;
-
-            const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
-            const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
-            const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
-
-            switch (fRelocType)
+            switch (targetArchitecture)
             {
-                case IMAGE_REL_ARM64_BRANCH26:
-                    return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
-                case IMAGE_REL_ARM64_PAGEBASE_REL21:
-                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
-                case IMAGE_REL_ARM64_PAGEOFFSET_12A:
-                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                case TargetArchitecture.ARM64:
+                {
+                    const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
+                    const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
+                    const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+
+                    switch (fRelocType)
+                    {
+                        case IMAGE_REL_ARM64_BRANCH26:
+                            return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
+                        case IMAGE_REL_ARM64_PAGEBASE_REL21:
+                            return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
+                        case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+                            return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                        default:
+                            Debug.Fail("Invalid RelocType: " + fRelocType);
+                            return 0;
+                    }
+                }
+                case TargetArchitecture.LoongArch64:
+                {
+                    const ushort IMAGE_REL_LOONGARCH64_PC = 3;
+                    const ushort IMAGE_REL_LOONGARCH64_JIR = 4;
+
+                    switch (fRelocType)
+                    {
+                        case IMAGE_REL_LOONGARCH64_PC:
+                            return RelocType.IMAGE_REL_BASED_LOONGARCH64_PC;
+                        case IMAGE_REL_LOONGARCH64_JIR:
+                            return RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR;
+                        default:
+                            Debug.Fail("Invalid RelocType: " + fRelocType);
+                            return 0;
+                    }
+                }
                 default:
-                    Debug.Fail("Invalid RelocType: " + fRelocType);
-                    return 0;
-            };
+                    return (RelocType)fRelocType;
+            }
         }
 
         private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
@@ -3631,6 +3654,8 @@ namespace Internal.JitInterface
                     return (uint)ImageFileMachine.ARM;
                 case TargetArchitecture.ARM64:
                     return (uint)ImageFileMachine.ARM64;
+                case TargetArchitecture.LoongArch64:
+                    return (uint)ImageFileMachine.LoongArch64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }

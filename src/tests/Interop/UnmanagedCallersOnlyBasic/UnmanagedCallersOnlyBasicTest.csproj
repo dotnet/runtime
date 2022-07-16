@@ -4,11 +4,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="UnmanagedCallersOnly_MonoAotTest.cs" />
+    <Compile Include="UnmanagedCallersOnlyBasicTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- This is needed to make sure native binary gets installed in the right location -->
-    <CMakeProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="../UnmanagedCallersOnly/CMakeLists.txt" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

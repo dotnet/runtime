@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 {
     public class CustomAttributeDecoderTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoder()
