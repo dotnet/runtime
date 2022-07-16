@@ -7,9 +7,7 @@ two existing limitations of the current design:
 1) R2R code never benefits from Dynamic PGO as it's not instrumented and is promoted straight to Tier1 when it's hot
 2) Instrumentation in Tier0 comes with a big overhead and it's better to only instrument hot Tier0 code (whether it's ILOnly or R2R)
 
-As of today, [#70941](https://github.com/dotnet/runtime/pull/70941) only provides a solution for the 1st problem by introducing a new tier for hot R2R code in order to instrument it first, collect profile and only then compile to the final tier. Thus, we don't sacrifice start up speed and still benefit from Dynamic PGO.
-A good example explaining the problem is this TechEmpower benchmark:
-
+A good example explaining the problem with non-instrumented R2R code is this TechEmpower benchmark:
 
 ![Plaintext](DynamicPgo-InstrumentedTiers-Plaintext.png)
 
@@ -33,31 +31,35 @@ flowchart
     prestub(.NET Function) -->|Compilation| hasAO{"Marked with<br/>[AggressiveOpts]?"}
     hasAO-->|Yes|tier1ao["JIT to <b><ins>Tier1</ins></b><br/><br/>(that attribute is extremely<br/> rarely a good idea)"]
     hasAO-->|No|hasR2R
-    hasR2R{"Is prejitted (R2R)<br/>and ReadyToRun==1"?} -->|No| tier00
+    hasR2R{"Is prejitted (R2R)<br/>and ReadyToRun==1"?} -->|No| istrTier0Q
 
-    
-    tier00["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot55
-    ishot55{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo22
-    tier1pgo22["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
-    ishot55-.->|No,<br/>keep running...|ishot55
-
+    istrTier0Q{"<b>TieredPGO_Strategy:</b><br/>Instrument only<br/>hot Tier0 code?"}
+    istrTier0Q-->|No, always instrument tier0|tier0
+    istrTier0Q-->|Yes, only hot|tier000
+    tier000["JIT to <b><ins>Tier0</ins></b><br/><br/>(not optimized, not instrumented,<br/> with patchpoints)"]-->ishot555
+    ishot555{"Is hot?<br/>(called >30 times)"}
+    ishot555-.->|No,<br/>keep running...|ishot555
+    ishot555-->|Yes|istier1inst
    
     hasR2R -->|Yes| R2R
     R2R["Use <b><ins>R2R</ins></b> code<br/><br/>(optimized, not instrumented,<br/>with patchpoints)"] -->|Running...|ishot1
     ishot1{"Is hot?<br/>(called >30 times)"}-.->|No,<br/>keep running...|ishot1
-    ishot1--->|"Yes"|istier1inst
+    ishot1--->|"Yes"|instrumentR2R
+
+    instrumentR2R{"<b>TieredPGO_Strategy:</b><br/>Instrument hot<br/>R2R'd code?"}
+    instrumentR2R-->|Yes, instrument R2R'd code|istier1inst
+    instrumentR2R-->|No, don't instrument R2R'd code|tier1nopgo["JIT to <b><ins>Tier1</ins></b><br/><br/>(no dynamic profile data)"]
+
     tier0["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot5
     tier1pgo2["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
       
-    istier1inst{"Enable optimizations<br/>for InstrumentedTier?"}-->|"No (default)"|tier0
-    istier1inst-.->|"Yes (not well tested yet)"|tier1inst["JIT to <b><ins>InstrumentedTierOptimized</ins></b><br/><br/>(optimized, instrumented, <br/>no patchpoints)"]
+    istier1inst{"<b>TieredPGO_Strategy:</b><br/>Enable optimizations<br/>for InstrumentedTier?"}-->|"No"|tier0
+    istier1inst--->|"Yes"|tier1inst["JIT to <b><ins>InstrumentedTierOptimized</ins></b><br/><br/>(optimized, instrumented, <br/>with patchpoints)"]
     tier1inst-->|Running...|ishot5
     ishot5{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2
     ishot5-.->|No,<br/>keep running...|ishot5
 ```
 (_VSCode doesn't support mermaid diagrams, consider installing external add-ins_)
-
-As we can see from the diagram, it's also possible to choose whether to use optimizations in the instrumentation tier or not - it's controlled via `DOTNET_TieredPGO_Strategy` knob.
 
 ## Pros & cons of using optimizations inside the instrumented tiers
 
