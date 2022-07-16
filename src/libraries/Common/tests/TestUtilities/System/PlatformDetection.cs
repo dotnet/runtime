@@ -152,6 +152,8 @@ namespace System
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
         public static bool IsMethodBodySupported => !IsNativeAot;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
+        public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
+        public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -241,7 +243,7 @@ namespace System
 
         public static bool SupportsAlpn => s_supportsAlpn.Value;
         public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
-        public static bool SupportsHardLinkCreation => !IsAndroid;
+        public static bool SupportsHardLinkCreation => !IsAndroid && !IsLinuxBionic;
 
         private static readonly Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
         private static readonly Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);

@@ -38,9 +38,7 @@ namespace System.Net
     /// <summary>Provides logging facilities for System.Net libraries.</summary>
     internal sealed partial class NetEventSource : EventSource
     {
-#if !ES_BUILD_STANDALONE
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
-#endif
 
         /// <summary>The single event source instance to use for all logging.</summary>
         public static readonly NetEventSource Log = new NetEventSource();
@@ -373,10 +371,8 @@ namespace System.Net
 
         #region Custom WriteEvent overloads
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3, string? arg4)
         {
@@ -421,10 +417,8 @@ namespace System.Net
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, byte[]? arg3)
         {
@@ -468,10 +462,8 @@ namespace System.Net
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string? arg1, int arg2, int arg3, int arg4)
         {
@@ -510,10 +502,8 @@ namespace System.Net
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string? arg1, int arg2, string? arg3)
         {
@@ -549,10 +539,8 @@ namespace System.Net
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, int arg3)
         {
@@ -588,10 +576,8 @@ namespace System.Net
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3, int arg4)
         {
@@ -634,10 +620,8 @@ namespace System.Net
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
         {
@@ -696,10 +680,8 @@ namespace System.Net
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string arg1, string arg2, int arg3, int arg4, int arg5)
         {

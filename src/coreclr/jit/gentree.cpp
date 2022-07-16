@@ -21687,9 +21687,10 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
         else
         {
             CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, simdBaseJitType, isSimdAsHWIntrinsic);
-
-            GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
-            retNode = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize,
+            // for double we need SSE2, but we can't use the integral path ^ because we still need op1Dup here
+            NamedIntrinsic ni     = simdBaseType == TYP_DOUBLE ? NI_SSE2_Shuffle : NI_SSE_Shuffle;
+            GenTree*       op1Dup = fgMakeMultiUse(&op1, clsHnd);
+            retNode               = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, ni, simdBaseJitType, simdSize,
                                                isSimdAsHWIntrinsic);
         }
     }

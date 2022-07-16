@@ -373,7 +373,10 @@ namespace System.Threading
                 // If the handle is a repeating handle, set up the next call. Otherwise, remove it from the wait thread.
                 if (registeredHandle.Repeating)
                 {
-                    registeredHandle.RestartTimeout();
+                    if (!registeredHandle.IsInfiniteTimeout)
+                    {
+                        registeredHandle.RestartTimeout();
+                    }
                 }
                 else
                 {

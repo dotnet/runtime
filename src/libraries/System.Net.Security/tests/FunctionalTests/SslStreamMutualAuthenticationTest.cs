@@ -12,7 +12,7 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamMutualAuthenticationTest
+    public class SslStreamMutualAuthenticationTest : IDisposable
     {
         private readonly X509Certificate2 _clientCertificate;
         private readonly X509Certificate2 _serverCertificate;
@@ -21,6 +21,12 @@ namespace System.Net.Security.Tests
         {
             _serverCertificate = Configuration.Certificates.GetServerCertificate();
             _clientCertificate = Configuration.Certificates.GetClientCertificate();
+        }
+
+        public void Dispose()
+        {
+            _serverCertificate.Dispose();
+            _clientCertificate.Dispose();
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]

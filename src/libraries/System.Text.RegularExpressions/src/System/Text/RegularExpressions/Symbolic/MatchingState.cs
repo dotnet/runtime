@@ -104,6 +104,43 @@ namespace System.Text.RegularExpressions.Symbolic
             return Node.IsNullableFor(context);
         }
 
+        /// <summary>
+        /// Builds a <see cref="StateFlags"/> with the relevant flags set.
+        /// </summary>
+        /// <param name="solver">a solver for <typeparamref name="TSet"/></param>
+        /// <param name="isInitial">whether this state is an initial state</param>
+        /// <returns>the flags for this matching state</returns>
+        internal StateFlags BuildStateFlags(ISolver<TSet> solver, bool isInitial)
+        {
+            StateFlags info = 0;
+
+            if (isInitial)
+            {
+                info |= StateFlags.IsInitialFlag;
+            }
+
+            if (IsDeadend(solver))
+            {
+                info |= StateFlags.IsDeadendFlag;
+            }
+
+            if (Node.CanBeNullable)
+            {
+                info |= StateFlags.CanBeNullableFlag;
+                if (Node.IsNullable)
+                {
+                    info |= StateFlags.IsNullableFlag;
+                }
+            }
+
+            if (Node.Kind != SymbolicRegexNodeKind.DisableBacktrackingSimulation)
+            {
+                info |= StateFlags.SimulatesBacktrackingFlag;
+            }
+
+            return info;
+        }
+
         public override bool Equals(object? obj) =>
             obj is MatchingState<TSet> s && PrevCharKind == s.PrevCharKind && Node.Equals(s.Node);
 

@@ -180,9 +180,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
             <Issue>TraceEvent can't parse unaligned floats on arm32</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/unittest/releaseondetach/*">
-            <Issue>https://github.com/dotnet/runtime/issues/64986</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe_readevents/*">
             <Issue>TraceEvent can't parse unaligned floats on arm32</Issue>
         </ExcludeList>
@@ -3365,7 +3362,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly_MonoAot/UnmanagedCallersOnly_MonoAotTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/LocallocLarge_d/**">
@@ -3731,7 +3728,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly_MonoAot/UnmanagedCallersOnly_MonoAotTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
